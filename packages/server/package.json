@@ -1,6 +1,6 @@
 {
   "name": "@partyhub/server",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "main": "./dist/index.js",
@@ -12,8 +12,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@partyhub/games": "0.2.0",
-    "@partyhub/shared": "0.2.0",
+    "@partyhub/games": "0.3.0",
+    "@partyhub/shared": "0.3.0",
     "better-sqlite3": "12.2.0",
     "express": "5.1.0",
     "pino": "9.7.0",

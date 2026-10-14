@@ -64,7 +64,15 @@ async function ensureAdminPassword(store: Store, config: AppConfig, logger: Logg
 
 export async function createServer(opts: ServerOptions): Promise<PartyServer> {
   const { config, logger } = opts;
-  const store = new Store(config.dbFile);
+  // Avant toute migration d'une base existante, une copie de sécurité est créée dans DATA_DIR/migrations.
+  const store = new Store(config.dbFile, { backupDir: path.join(config.dataDir, 'migrations') });
+  const migration = store.migration;
+  if (migration.to !== migration.from) {
+    logger.info(
+      { from: migration.from, to: migration.to, backup: migration.backup },
+      'Schéma de la base mis à jour',
+    );
+  }
   await ensureAdminPassword(store, config, logger);
 
   const profiles = new ProfileService(store);

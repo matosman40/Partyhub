@@ -2,6 +2,28 @@
 
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [0.3.0] - 2026-10-14
+
+### Ajouté
+- Versions du schéma de la base (`PRAGMA user_version`) et migrations ordonnées : chaque changement de schéma a un numéro.
+- Copie de sécurité de la base dans `/data/migrations/` avant toute migration d'une base existante. Ces copies ne sont
+  jamais supprimées automatiquement.
+- Refus de démarrer sur une base plus récente que la version installée, pour ne pas l'abîmer lors d'un retour arrière.
+- Tests : base neuve, migration d'une base ancienne avec conservation des données, base déjà à jour, base trop récente,
+  annulation complète d'une migration en échec, ordre d'application.
+
+### Modifié
+- Les bases créées par la version 0.2.x (version de schéma 0) passent automatiquement à la version 1 au premier démarrage.
+  Le schéma lui-même n'a pas changé.
+
+### Migration et compatibilité
+- Action automatique au premier démarrage : une copie de la base est créée dans `/data/migrations/`. Conservez-la jusqu'à
+  avoir vérifié le bon fonctionnement de la version.
+- Le schéma de la version 1 est identique à celui de 0.2.x : un retour vers 0.2.x reste possible sans restauration.
+
+### Problèmes connus
+- Non encore testé sur un vrai serveur CasaOS (voir `docs/ROADMAP.md`).
+
 ## [0.2.0] - 2026-10-14
 
 ### Ajouté

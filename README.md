@@ -165,6 +165,8 @@ dossier de données (`/data/backups` dans Docker). Sept copies sont conservées.
 que le serveur fonctionne. L'administration, section « Base de données », affiche les sauvegardes et en crée une
 immédiatement.
 
+Avant chaque mise à jour du schéma (migration), une copie de la base est créée dans `migrations/` (`/data/migrations` dans Docker). Ces copies ne sont jamais supprimées automatiquement : conservez celle de la version précédente jusqu’à avoir vérifié la nouvelle version.
+
 Ces fichiers contiennent des données personnelles (pseudos, statistiques) : ne les publiez pas.
 
 Copie hors du serveur :

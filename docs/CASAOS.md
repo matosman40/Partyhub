@@ -78,6 +78,11 @@ d'application et les mêmes variables, afin de réutiliser le volume existant.
 
 Consulter les notes de chaque version (`CHANGELOG.md`) avant une mise à jour : elles indiquent si une action manuelle est nécessaire.
 
+Si la version modifie le schéma de la base, une copie est créée automatiquement dans le dossier `migrations` du volume
+(`/data/migrations`) avant la mise à jour. Ne la supprimez pas tant que la nouvelle version n'est pas vérifiée. Si le démarrage
+échoue avec un message « plus récente que cette version », réinstallez la version indiquée dans `compose.yaml` d'une version
+supérieure, ou restaurez la copie correspondante (section 7).
+
 ## 7. Sauvegarde et restauration
 
 Sauvegarde complète du volume (à faire avant une mise à jour importante) :

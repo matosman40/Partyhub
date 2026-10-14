@@ -98,27 +98,111 @@ const SCHEMA = `
 `;
 
 /** Persistance SQLite : réglages, jeux activés et statistiques. */
+
 /**
- * Mises à jour de schéma pour les bases déjà existantes. Chaque étape est idempotente :
- * on regarde si la colonne existe avant de l'ajouter.
+ * Une migration fait passer la base de `version - 1` à `version`. Règles :
+ * - ne jamais modifier une migration déjà publiée ; en ajouter une nouvelle à la fin ;
+ * - chaque migration s'exécute dans sa propre transaction : en cas d'erreur, rien n'est appliqué.
  */
-function migrate(db: Database.Database): void {
-  const columns = (db.prepare('PRAGMA table_info(profiles)').all() as { name: string }[]).map((c) => c.name);
-  if (!columns.includes('avatar_shared')) {
-    db.exec('ALTER TABLE profiles ADD COLUMN avatar_shared INTEGER NOT NULL DEFAULT 0');
+export interface Migration {
+  version: number;
+  description: string;
+  up: (db: Database.Database) => void;
+}
+
+/** Schéma initial (version 1). Les bases créées avant 0.3.0 ont la version 0 et passent par ici. */
+export const MIGRATIONS: Migration[] = [
+  {
+    version: 1,
+    description: 'Schéma initial et colonne avatar_shared',
+    up(db) {
+      db.exec(SCHEMA);
+      const columns = (db.prepare('PRAGMA table_info(profiles)').all() as { name: string }[]).map((c) => c.name);
+      if (!columns.includes('avatar_shared')) {
+        db.exec('ALTER TABLE profiles ADD COLUMN avatar_shared INTEGER NOT NULL DEFAULT 0');
+      }
+    },
+  },
+];
+
+export const LATEST_SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1]!.version;
+
+export interface MigrationOptions {
+  /** Dossier où copier la base avant d'appliquer une migration sur une base existante. */
+  backupDir?: string;
+}
+
+export interface MigrationReport {
+  from: number;
+  to: number;
+  /** Copie de sécurité créée avant la migration, s'il y en a une. */
+  backup?: string;
+}
+
+function userVersion(db: Database.Database): number {
+  return db.pragma('user_version', { simple: true }) as number;
+}
+
+function hasTables(db: Database.Database): boolean {
+  const row = db
+    .prepare("SELECT COUNT(*) AS n FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'")
+    .get() as { n: number };
+  return row.n > 0;
+}
+
+/**
+ * Applique les migrations en attente, dans l'ordre. Refuse une base plus récente que ce programme,
+ * car un retour arrière pourrait la corrompre sans le savoir.
+ */
+export function migrate(
+  db: Database.Database,
+  migrations: Migration[] = MIGRATIONS,
+  options: MigrationOptions = {},
+): MigrationReport {
+  const ordered = [...migrations].sort((a, b) => a.version - b.version);
+  const latest = ordered[ordered.length - 1]?.version ?? 0;
+  const from = userVersion(db);
+
+  if (from > latest) {
+    throw new Error(
+      `La base est en version ${from}, plus récente que cette version de PartyHub (schéma ${latest}). ` +
+        'Démarrage refusé pour ne pas l’abîmer : installez la version correspondante ou restaurez une sauvegarde.',
+    );
   }
+
+  const pending = ordered.filter((m) => m.version > from);
+  if (pending.length === 0) return { from, to: from };
+
+  let backup: string | undefined;
+  if (options.backupDir && hasTables(db)) {
+    mkdirSync(options.backupDir, { recursive: true });
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+    backup = path.join(options.backupDir, `avant-schema-${pending[0]!.version}-${stamp}.db`);
+    db.prepare('VACUUM INTO ?').run(backup);
+  }
+
+  for (const migration of pending) {
+    db.transaction(() => {
+      migration.up(db);
+      db.pragma(`user_version = ${migration.version}`);
+    })();
+  }
+
+  return { from, to: pending[pending.length - 1]!.version, backup };
 }
 
 export class Store {
   readonly db: Database.Database;
 
-  constructor(file: string) {
+  /** Résultat de la mise à jour du schéma à l'ouverture. */
+  readonly migration: MigrationReport;
+
+  constructor(file: string, options: MigrationOptions & { migrations?: Migration[] } = {}) {
     if (file !== ':memory:') mkdirSync(path.dirname(file), { recursive: true });
     this.db = new Database(file);
     this.db.pragma('journal_mode = WAL');
     this.db.pragma('foreign_keys = ON');
-    this.db.exec(SCHEMA);
-    migrate(this.db);
+    this.migration = migrate(this.db, options.migrations ?? MIGRATIONS, options);
   }
 
   close(): void {

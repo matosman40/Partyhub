@@ -20,7 +20,7 @@ Légende : **Fait** = dans le dépôt. **À faire** = pas commencé. **En cours*
 | 0.1.0 | Première publication | Code validé, licence MIT, installation par compilation locale | **Fait** |
 | 0.1.1 | Correctifs de documentation | Fichier `.env.example` rétabli ; installation vérifiée par GitHub Actions | **Fait** (tag à créer) |
 | 0.2.0 | Installation sans compilation | Image GHCR, compose sans `build:`, icône CasaOS, CI, publication sur tag | **Prêt sur `main`** (tag à créer, puis paquet GHCR rendu public) |
-| 0.3.0 | Données et migrations | Migrations `user_version`, sauvegarde avant migration, test de montée de version | À faire |
+| 0.3.0 | Données et migrations | Migrations `user_version`, sauvegarde avant migration, test de montée de version | **Prêt sur `main`** (tag à créer) |
 | 0.4.0 | Jeux de cartes et poker | Poker validé en navigateur, Rami 51, Tarot | En cours (hors dépôt) |
 | 0.5.0 | Jeux autonomes `.phgame` | Format de paquet, import dans l'administration, exécution isolée, cache | En cours (hors dépôt) |
 | 0.6.0 | Éditeurs et médiathèque | Éditeur de cartes et de plateau, médiathèque partagée | À faire |
