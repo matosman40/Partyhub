@@ -7,7 +7,7 @@ Légende : **Fait** = dans le dépôt. **À faire** = pas commencé. **En cours*
 
 ## Règles de publication (pour chaque version)
 
-- Tag Git `vX.Y.Z` sur un commit de `main` dont les contrôles sont verts.
+- Tag Git `vX.Y.Z` sur un commit de `main` dont les contrôles sont verts. Le tag déclenche la publication de l'image (à partir de 0.2.0).
 - Notes de version dans `CHANGELOG.md` : ajouté, modifié, corrigé, sécurité, migration, problèmes connus.
 - Image Docker `X.Y.Z` sur GHCR (à partir de 0.2.0), tag `latest` seulement après validation.
 - Une version déjà publiée n'est jamais remplacée : un correctif devient une nouvelle version.
@@ -18,8 +18,8 @@ Légende : **Fait** = dans le dépôt. **À faire** = pas commencé. **En cours*
 | Version | Thème | Contenu principal | État |
 |---|---|---|---|
 | 0.1.0 | Première publication | Code validé, licence MIT, installation par compilation locale | **Fait** |
-| 0.1.1 | Correctifs de documentation | Corrections après test sur un vrai Docker et CasaOS | À faire |
-| 0.2.0 | Installation sans compilation | Image GHCR, compose sans `build:`, icône CasaOS, CI, publication sur tag | À faire |
+| 0.1.1 | Correctifs de documentation | Fichier `.env.example` rétabli ; installation vérifiée par GitHub Actions | **Fait** (tag à créer) |
+| 0.2.0 | Installation sans compilation | Image GHCR, compose sans `build:`, icône CasaOS, CI, publication sur tag | **Prêt sur `main`** (tag à créer, puis paquet GHCR rendu public) |
 | 0.3.0 | Données et migrations | Migrations `user_version`, sauvegarde avant migration, test de montée de version | À faire |
 | 0.4.0 | Jeux de cartes et poker | Poker validé en navigateur, Rami 51, Tarot | En cours (hors dépôt) |
 | 0.5.0 | Jeux autonomes `.phgame` | Format de paquet, import dans l'administration, exécution isolée, cache | En cours (hors dépôt) |
@@ -31,8 +31,9 @@ Légende : **Fait** = dans le dépôt. **À faire** = pas commencé. **En cours*
 ## Détail par version
 
 ### 0.1.1 : correctifs de documentation
-- Tester les commandes du README sur une machine Docker (`compose up -d --build`, `ps`, `logs`, mise à jour).
-- Corriger ce qui échoue, sans changement de comportement.
+- Vérifié par GitHub Actions sur un serveur Linux avec Docker : `cp .env.example .env`, `up -d --build`, état « healthy », mot de passe généré, mise à jour.
+- Corrigé : `.env.example` manquait dans le dépôt publié.
+- Reste à faire : un test sur un vrai serveur (CasaOS).
 - Critère : les commandes du README fonctionnent telles quelles sur une machine propre.
 
 ### 0.2.0 : installation sans compilation

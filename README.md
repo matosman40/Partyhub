@@ -28,10 +28,10 @@ Jeux fournis (architecture modulaire, un dossier par jeu, voir [docs/ADDING-A-GA
 ## Installation (Docker Compose, CasaOS)
 
 Prérequis : Docker avec le plugin Compose (`docker compose version`), et un terminal sur le serveur
-(sur CasaOS : application Terminal, ou SSH).
+(sur CasaOS : application Terminal, ou SSH). L'image est téléchargée depuis GHCR : aucune compilation n'est nécessaire.
 
 ```bash
-# 1. Télécharger PartyHub
+# 1. Télécharger PartyHub (le fichier compose.yaml indique la version à installer)
 sudo mkdir -p /DATA/AppData && cd /DATA/AppData
 sudo git clone https://github.com/matosman40/Partyhub.git partyhub
 cd partyhub
@@ -40,8 +40,8 @@ cd partyhub
 sudo cp .env.example .env
 sudo nano .env
 
-# 3. Construire et démarrer
-sudo docker compose up -d --build
+# 3. Télécharger l'image et démarrer
+sudo docker compose up -d
 
 # 4. Vérifier : le service doit afficher « healthy » après quelques secondes
 sudo docker compose ps
@@ -55,8 +55,9 @@ sur les téléphones (ou scanner le QR code). Le détail pour CasaOS est dans [d
 
 ```bash
 cd /DATA/AppData/partyhub
-sudo git pull
-sudo docker compose up -d --build
+sudo git pull                      # récupère la nouvelle version du compose.yaml
+sudo docker compose pull           # télécharge l'image de cette version
+sudo docker compose up -d
 ```
 
 Ne jamais lancer `docker compose down -v` : l'option `-v` supprime les données.
@@ -69,8 +70,7 @@ sudo docker compose exec partyhub cat /data/admin-password.txt
 sudo docker compose exec partyhub rm /data/admin-password.txt
 ```
 
-**Installation prévue sans compilation** : une image publiée sur GHCR permettra d'installer PartyHub sans
-`--build`. Ce n'est pas encore disponible ; voir [docs/ROADMAP.md](docs/ROADMAP.md).
+**Compilation locale (développeurs)** : `sudo docker compose -f compose.dev.yaml up -d --build`.
 
 ## Développement local
 
@@ -195,6 +195,8 @@ de la médiathèque (dossier `assets`) ne sont pas dans la sauvegarde : copiez-l
   [docs/ADDING-A-GAME.md](docs/ADDING-A-GAME.md) pour en ajouter d'autres.
 
 ## Licence et ressources
+
+PartyHub est distribué sous licence MIT (voir [LICENSE](LICENSE)).
 
 Aucun graphisme, logo ni personnage n'est repris d'un produit existant. Les icônes sont des emoji Unicode.
 Les contenus (questions du quiz, mots, prompts, cartes des jeux) sont fournis à titre d'exemple et modifiables dans le dossier de chaque jeu (`packages/games/src/<jeu>/*.fr.json`).

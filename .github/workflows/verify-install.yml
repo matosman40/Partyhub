@@ -1,5 +1,6 @@
 # Vérifie que les commandes d'installation du README fonctionnent telles quelles
 # (Docker Compose sur un runner Linux) : configuration, démarrage, santé, mot de passe, mise à jour.
+# Teste le fichier de compilation locale (compose.dev.yaml) ; l image publiée est testée par release.yml.
 name: Vérification de l'installation
 
 on:
@@ -22,8 +23,8 @@ jobs:
       - name: Configuration (cp .env.example .env, sans ADMIN_PASSWORD)
         run: cp .env.example .env
 
-      - name: Premier démarrage (docker compose up -d --build)
-        run: docker compose up -d --build
+      - name: Premier démarrage (docker compose -f compose.dev.yaml up -d --build)
+        run: docker compose -f compose.dev.yaml up -d --build
 
       - name: Attendre l'état « healthy »
         run: |
@@ -31,10 +32,10 @@ jobs:
             status=$(docker inspect --format='{{.State.Health.Status}}' partyhub 2>/dev/null || echo starting)
             echo "état : $status"
             if [ "$status" = "healthy" ]; then exit 0; fi
-            if [ "$status" = "unhealthy" ]; then docker compose logs --no-color; exit 1; fi
+            if [ "$status" = "unhealthy" ]; then docker compose -f compose.dev.yaml logs --no-color; exit 1; fi
             sleep 3
           done
-          docker compose logs --no-color
+          docker compose -f compose.dev.yaml logs --no-color
           exit 1
 
       - name: Vérifier la réponse de santé et la page d'accueil
@@ -45,13 +46,13 @@ jobs:
 
       - name: Mot de passe administrateur généré
         run: |
-          docker compose exec -T partyhub test -f /data/admin-password.txt
-          docker compose exec -T partyhub rm /data/admin-password.txt
+          docker compose -f compose.dev.yaml exec -T partyhub test -f /data/admin-password.txt
+          docker compose -f compose.dev.yaml exec -T partyhub rm /data/admin-password.txt
           echo "mot de passe généré présent, puis supprimé comme indiqué dans le README"
 
       - name: Mise à jour (même commande, données conservées)
         run: |
-          docker compose up -d --build
+          docker compose -f compose.dev.yaml up -d --build
           for i in $(seq 1 60); do
             status=$(docker inspect --format='{{.State.Health.Status}}' partyhub 2>/dev/null || echo starting)
             [ "$status" = "healthy" ] && break
@@ -62,8 +63,8 @@ jobs:
 
       - name: Journaux en cas d'échec
         if: failure()
-        run: docker compose logs --no-color || true
+        run: docker compose -f compose.dev.yaml logs --no-color || true
 
       - name: Arrêt (volume conservé)
         if: always()
-        run: docker compose down
+        run: docker compose -f compose.dev.yaml down

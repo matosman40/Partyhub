@@ -1,0 +1,98 @@
+# Publication d'une version : uniquement lorsqu'un tag vX.Y.Z est poussé.
+# Vérifie le tag, reteste le code, publie l'image sur GHCR (amd64 et arm64),
+# vérifie l'image téléchargée sans authentification, puis crée la release GitHub.
+name: Publication d'une version
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Vérifier le tag et la version du paquet
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          if ! [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Tag invalide : $TAG (attendu vX.Y.Z)"; exit 1
+          fi
+          VERSION="${TAG#v}"
+          PKG="$(node -p "require('./package.json').version")"
+          if [ "$PKG" != "$VERSION" ]; then
+            echo "package.json indique $PKG, le tag indique $VERSION"; exit 1
+          fi
+          if ! grep -q "^## \[$VERSION\]" CHANGELOG.md; then
+            echo "CHANGELOG.md ne contient pas de section [$VERSION]"; exit 1
+          fi
+          MAJOR_MINOR="$(echo "$VERSION" | cut -d. -f1-2)"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "MAJOR_MINOR=$MAJOR_MINOR" >> "$GITHUB_ENV"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Connexion à GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Construire et publier l'image (amd64, arm64)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ghcr.io/matosman40/partyhub:${{ env.VERSION }}
+            ghcr.io/matosman40/partyhub:${{ env.MAJOR_MINOR }}
+          build-args: |
+            VERSION=${{ env.VERSION }}
+            REVISION=${{ github.sha }}
+
+      - name: Vérifier l'image publiée, téléchargée sans authentification
+        run: |
+          docker logout ghcr.io
+          docker pull ghcr.io/matosman40/partyhub:${VERSION}
+          mkdir -p "$RUNNER_TEMP/verif-data"
+          docker run -d --name verif -p 18282:8282 -v "$RUNNER_TEMP/verif-data:/data" \
+            -e ADMIN_PASSWORD=verif-admin-password ghcr.io/matosman40/partyhub:${VERSION}
+          for i in $(seq 1 60); do
+            s=$(docker inspect --format='{{.State.Health.Status}}' verif 2>/dev/null || echo starting)
+            [ "$s" = "healthy" ] && break
+            sleep 3
+          done
+          curl -fsS http://127.0.0.1:18282/api/health
+          docker rm -f verif
+
+      - name: Créer la release GitHub avec les notes du CHANGELOG
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          awk -v v="$VERSION" '
+            $0 ~ "^## \\[" v "\\]" {on=1; next}
+            on && /^## \[/ {exit}
+            on {print}
+          ' CHANGELOG.md > "$RUNNER_TEMP/notes.md"
+          gh release create "$GITHUB_REF_NAME" --title "PartyHub $VERSION" \
+            --notes-file "$RUNNER_TEMP/notes.md" --verify-tag

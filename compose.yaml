@@ -1,15 +1,14 @@
-# PartyHub — déploiement Docker Compose et compatibilité CasaOS.
-# Démarrage : docker compose up -d --build
-# Mise à jour : voir docs/CASAOS.md (les données du volume sont conservées).
+# PartyHub — déploiement Docker Compose et CasaOS, sans compilation.
+# Installation : voir README.md. Chaque version utilise une image figée (tag de version) :
+# la mise à jour consiste à récupérer le nouveau compose (git pull), puis `docker compose up -d`.
+# Compilation locale (développeurs) : voir compose.dev.yaml.
 
 name: partyhub
 
 services:
   partyhub:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: partyhub:1.0.0
+    image: ghcr.io/matosman40/partyhub:0.2.0
+    pull_policy: missing
     container_name: partyhub
     restart: unless-stopped
     stop_grace_period: 20s
@@ -48,13 +47,14 @@ services:
         - amd64
         - arm64
       main: partyhub
+      icon: https://raw.githubusercontent.com/matosman40/Partyhub/main/docs/casaos/icon.png
       description:
         en_US: PartyHub is a browser-based party game platform. Players join from their phones; the TV shows the game.
         fr_FR: PartyHub est une plateforme de jeux de soirée sur navigateur. Les joueurs rejoignent depuis leur téléphone, la TV affiche la partie.
       tagline:
         en_US: Party games on your local network
         fr_FR: Jeux de soirée sur votre réseau local
-      developer: PartyHub
+      developer: PartyHub contributors
       category: Games
       port_map: "${PARTYHUB_PORT:-8282}"
       index: /

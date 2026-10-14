@@ -1,0 +1,89 @@
+# Intégration continue : contrôles sur chaque pull request et chaque commit de main.
+# Ne publie aucune image ni aucune version.
+name: Intégration continue
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  code:
+    name: Typecheck, tests, build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+  image:
+    name: Construction de l'image (sans publication)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          push: false
+          tags: partyhub:ci
+          build-args: |
+            VERSION=ci
+            REVISION=${{ github.sha }}
+      - name: Vérifier les métadonnées de l'image
+        run: |
+          docker image inspect partyhub:ci --format '{{ index .Config.Labels "org.opencontainers.image.source" }}'
+          docker image inspect partyhub:ci --format '{{ .Config.User }}' | grep -qx node
+
+  navigation:
+    name: Navigation sur plusieurs tailles d'écran
+    needs: code
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run build
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: |
+          pip install playwright==1.56.0
+          python -m playwright install --with-deps chromium
+      - name: Démarrer le serveur
+        env:
+          DATA_DIR: ${{ runner.temp }}/partyhub-data
+          PORT: "8282"
+          ADMIN_PASSWORD: ci-admin-password-test
+        run: |
+          mkdir -p "$DATA_DIR"
+          node packages/server/dist/index.js > "$RUNNER_TEMP/server.log" 2>&1 &
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8282/api/health && exit 0; sleep 1; done
+          cat "$RUNNER_TEMP/server.log"; exit 1
+      - name: Lancer le test de navigation
+        env:
+          BASE_URL: http://127.0.0.1:8282
+        run: python scripts/smoke-browser.py
+      - name: Journal du serveur en cas d'échec
+        if: failure()
+        run: cat "$RUNNER_TEMP/server.log" || true

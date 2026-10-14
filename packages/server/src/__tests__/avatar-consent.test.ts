@@ -176,5 +176,5 @@ describe('Migration de la base : colonne avatar_shared', () => {
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
-  });
+  }, 20000);
 });

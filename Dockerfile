@@ -42,6 +42,17 @@ COPY --from=build /app/packages/server/package.json ./packages/server/
 COPY --from=build /app/packages/server/dist ./packages/server/dist
 COPY --from=build /app/packages/web/dist ./packages/web/dist
 
+# Métadonnées OCI : relient l'image au dépôt, à la version et au commit source.
+ARG VERSION=dev
+ARG REVISION=unknown
+LABEL org.opencontainers.image.title="PartyHub" \
+      org.opencontainers.image.description="Plateforme de jeux de soirée sur navigateur" \
+      org.opencontainers.image.source="https://github.com/matosman40/Partyhub" \
+      org.opencontainers.image.url="https://github.com/matosman40/Partyhub" \
+      org.opencontainers.image.licenses="MIT" \
+      org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.revision="${REVISION}"
+
 # Dossier persistant (SQLite) appartenant à l'utilisateur « node ».
 RUN mkdir -p /data && chown node:node /data
 

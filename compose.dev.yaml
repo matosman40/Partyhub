@@ -1,0 +1,48 @@
+# PartyHub — compilation locale (développeurs et tests).
+# Démarrage : docker compose -f compose.dev.yaml up -d --build
+# Pour un utilisateur final, utiliser compose.yaml (image publiée, sans compilation).
+
+name: partyhub
+
+services:
+  partyhub:
+    image: partyhub:dev
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: partyhub
+    restart: unless-stopped
+    stop_grace_period: 20s
+    ports:
+      # Seul le port HTTP est publié ; le port interne n'est jamais exposé directement.
+      - "${PARTYHUB_PORT:-8282}:8282"
+    environment:
+      PORT: "8282"
+      HOST: "0.0.0.0"
+      DATA_DIR: /data
+      ADMIN_PASSWORD: "${ADMIN_PASSWORD:-}"
+      LOG_LEVEL: "${LOG_LEVEL:-info}"
+      COOKIE_SECURE: "${COOKIE_SECURE:-false}"
+      TRUST_PROXY: "${TRUST_PROXY:-loopback}"
+      DB_BACKUP_EVERY_HOURS: "${DB_BACKUP_EVERY_HOURS:-24}"
+      DB_BACKUP_KEEP: "${DB_BACKUP_KEEP:-7}"
+    volumes:
+      - partyhub-data:/data
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:8282/api/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+volumes:
+  partyhub-data:
+    name: partyhub-data

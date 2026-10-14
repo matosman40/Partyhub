@@ -2,6 +2,30 @@
 
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [0.2.0] - 2026-10-14
+
+### Ajouté
+- Image Docker publiée sur GHCR (`ghcr.io/matosman40/partyhub`), en `amd64` et `arm64`, téléchargeable sans compte.
+- `compose.yaml` pour les utilisateurs : utilise l'image, sans compilation. `compose.dev.yaml` pour les développeurs (compilation locale).
+- Icône et métadonnées CasaOS complètes (catégorie, description, port).
+- Labels OCI dans l'image (source, version, commit).
+- Intégration continue sur chaque pull request et chaque commit de `main` : typecheck, tests, build, construction de l'image,
+  test de navigation sur cinq tailles d'écran (téléphones, tablette, ordinateur, TV).
+- Publication automatique à partir d'un tag `vX.Y.Z` : contrôle du tag et de la version, tests, publication de l'image,
+  vérification de l'image téléchargée sans authentification, création de la release avec les notes de ce changelog.
+
+### Modifié
+- Installation : `docker compose up -d` télécharge l'image. La compilation n'est plus nécessaire.
+- Mise à jour : `git pull`, puis `docker compose pull` et `docker compose up -d`.
+
+### Migration et compatibilité
+- Aucune action manuelle. Le volume `partyhub-data` est réutilisé.
+- Les installations faites avec `docker compose up -d --build` peuvent passer à l'image publiée sans perte de données.
+
+### Problèmes connus
+- Le paquet GHCR doit être rendu public une fois, dans les réglages GitHub, pour que l'installation sans authentification fonctionne.
+- Non encore testé sur un vrai serveur CasaOS ni sur des téléphones réels (voir `docs/ROADMAP.md`).
+
 ## [0.1.1] - 2026-10-14
 
 ### Corrigé
