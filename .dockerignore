@@ -1,0 +1,14 @@
+**/node_modules
+**/dist
+**/coverage
+data
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+*.db
+*.db-*
+**/*.log
+README.md
+docs

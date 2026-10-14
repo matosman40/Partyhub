@@ -1,0 +1,432 @@
+import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { Link } from 'react-router-dom';
+import type { CatalogGame } from '@partyhub/shared';
+import { api } from '../api.js';
+import { CardGamesAdmin } from '../admin/CardGamesAdmin.js';
+import { AssetLibrary } from '../admin/AssetLibrary.js';
+import { MediaGamesAdmin } from '../admin/MediaGamesAdmin.js';
+import { GameDetailsEditor } from '../admin/GameDetailsEditor.js';
+import { BackupPanel } from '../admin/BackupPanel.js';
+import { DbBackups } from '../admin/DbBackups.js';
+
+const ORIGIN_LABEL: Record<CatalogGame['origin'], string | null> = {
+  builtin: null,
+  cards: 'Cartes',
+  media: 'Questions médias',
+};
+
+interface AdminSettings {
+  maxPlayers: number;
+  graceSeconds: number;
+  inactivityMinutes: number;
+  maxRoomAgeMinutes: number;
+}
+
+interface RoomSummary {
+  code: string;
+  gameName: string;
+  status: string;
+  players: number;
+  connected: number;
+  hostConnected: boolean;
+  lastActivity: string;
+}
+
+interface Overview {
+  settings: AdminSettings;
+  games: CatalogGame[];
+  rooms: RoomSummary[];
+  stats: Record<string, number>;
+  uptimeSec: number;
+}
+
+const STATUS_LABEL: Record<string, string> = {
+  waiting: 'En attente',
+  full: 'Complète',
+  in_game: 'En cours',
+  ended: 'Terminée',
+};
+
+function Login({ onDone }: { onDone: () => void }) {
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      await api('/api/admin/login', { method: 'POST', body: JSON.stringify({ password }) });
+      onDone();
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <main className="page center fade-in">
+      <h1>Administration</h1>
+      <form className="stack" onSubmit={submit}>
+        <label className="field big-field">
+          <span>Mot de passe</span>
+          <input
+            type="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoFocus
+          />
+        </label>
+        <button type="submit" className="btn primary big" disabled={busy || !password}>
+          Se connecter
+        </button>
+      </form>
+      {error && <p className="error" role="alert">{error}</p>}
+      <p className="muted small">
+        <Link to="/">Retour à l’accueil</Link>
+      </p>
+    </main>
+  );
+}
+
+const lines = (text: string) =>
+  text
+    .split('\n')
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0);
+
+/** Notice d'un jeu : but, étapes (une par ligne), astuces. Restauration de la notice d'origine possible. */
+function NoticeEditor({ game, onSaved }: { game: CatalogGame; onSaved: () => void }) {
+  const [goal, setGoal] = useState(game.notice.goal);
+  const [steps, setSteps] = useState(game.notice.steps.join('\n'));
+  const [tips, setTips] = useState(game.notice.tips.join('\n'));
+  const [message, setMessage] = useState<string | null>(null);
+
+  async function save(e: FormEvent) {
+    e.preventDefault();
+    setMessage(null);
+    try {
+      await api(`/api/admin/notices/${encodeURIComponent(game.id)}`, {
+        method: 'PUT',
+        body: JSON.stringify({ goal: goal.trim(), steps: lines(steps), tips: lines(tips) }),
+      });
+      setMessage('Notice enregistrée.');
+      onSaved();
+    } catch (err) {
+      setMessage((err as Error).message);
+    }
+  }
+
+  async function restore() {
+    setMessage(null);
+    try {
+      await api(`/api/admin/notices/${encodeURIComponent(game.id)}`, { method: 'DELETE' });
+      setGoal(game.defaultNotice.goal);
+      setSteps(game.defaultNotice.steps.join('\n'));
+      setTips(game.defaultNotice.tips.join('\n'));
+      setMessage('Notice d’origine restaurée.');
+      onSaved();
+    } catch (err) {
+      setMessage((err as Error).message);
+    }
+  }
+
+  return (
+    <details className="notice-editor card">
+      <summary>
+        <span aria-hidden="true">{game.icon}</span> {game.name}{' '}
+        {game.customNotice && <span className="badge">modifiée</span>}
+      </summary>
+      <form className="stack" onSubmit={save} style={{ marginTop: '1rem' }}>
+        <label className="field">
+          <span>But du jeu</span>
+          <textarea rows={2} maxLength={400} value={goal} onChange={(e) => setGoal(e.target.value)} />
+        </label>
+        <label className="field">
+          <span>Étapes, une par ligne, dans l’ordre</span>
+          <textarea rows={5} value={steps} onChange={(e) => setSteps(e.target.value)} />
+        </label>
+        <label className="field">
+          <span>Astuces, une par ligne</span>
+          <textarea rows={3} value={tips} onChange={(e) => setTips(e.target.value)} />
+        </label>
+        <div className="section-head">
+          <button type="submit" className="btn primary">
+            Enregistrer la notice
+          </button>
+          {game.customNotice && (
+            <button type="button" className="btn ghost" onClick={restore}>
+              Restaurer la notice d’origine
+            </button>
+          )}
+        </div>
+        {message && (
+          <p className="notice" role="status">
+            {message}
+          </p>
+        )}
+      </form>
+    </details>
+  );
+}
+
+function SettingsForm({ settings, onSaved }: { settings: AdminSettings; onSaved: () => void }) {
+  const [draft, setDraft] = useState<AdminSettings>(settings);
+  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
+
+  useEffect(() => setDraft(settings), [settings]);
+
+  async function save(e: FormEvent) {
+    e.preventDefault();
+    setMessage(null);
+    try {
+      await api('/api/admin/settings', { method: 'PUT', body: JSON.stringify(draft) });
+      setMessage({ ok: true, text: 'Réglages enregistrés.' });
+      onSaved();
+    } catch (err) {
+      setMessage({ ok: false, text: (err as Error).message });
+    }
+  }
+
+  const field = (key: keyof AdminSettings, label: string, min: number, max: number) => (
+    <label className="field">
+      <span>{label}</span>
+      <input
+        type="number"
+        min={min}
+        max={max}
+        value={draft[key]}
+        onChange={(e) => setDraft({ ...draft, [key]: Number(e.target.value) })}
+      />
+    </label>
+  );
+
+  return (
+    <form className="admin-form" onSubmit={save}>
+      {field('maxPlayers', 'Joueurs maximum par salle (2–20)', 2, 20)}
+      {field('graceSeconds', 'Délai de reconnexion, en secondes (10–600)', 10, 600)}
+      {field('inactivityMinutes', 'Inactivité avant suppression, en minutes (5–1440)', 5, 1440)}
+      {field('maxRoomAgeMinutes', 'Durée maximale d’une salle, en minutes (15–1440)', 15, 1440)}
+      <button type="submit" className="btn primary">Enregistrer</button>
+      {message && (
+        <p className={message.ok ? 'notice' : 'error'} role="status">
+          {message.text}
+        </p>
+      )}
+    </form>
+  );
+}
+
+export function AdminPage() {
+  const [authenticated, setAuthenticated] = useState<boolean | null>(null);
+  const [overview, setOverview] = useState<Overview | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    try {
+      setOverview(await api<Overview>('/api/admin/overview'));
+      setError(null);
+    } catch (err) {
+      setError((err as Error).message);
+      setAuthenticated(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    api<{ authenticated: boolean }>('/api/admin/session')
+      .then((r) => {
+        setAuthenticated(r.authenticated);
+        if (r.authenticated) void load();
+      })
+      .catch(() => setAuthenticated(false));
+  }, [load]);
+
+  useEffect(() => {
+    if (!authenticated) return;
+    const id = setInterval(() => void load(), 15_000);
+    return () => clearInterval(id);
+  }, [authenticated, load]);
+
+  async function onLoggedIn() {
+    setAuthenticated(true);
+    await load();
+  }
+
+  async function logout() {
+    await api('/api/admin/logout', { method: 'POST' }).catch(() => undefined);
+    setAuthenticated(false);
+    setOverview(null);
+  }
+
+  async function toggleGame(game: CatalogGame) {
+    await api(`/api/admin/games/${encodeURIComponent(game.id)}`, {
+      method: 'PUT',
+      body: JSON.stringify({ enabled: !game.enabled }),
+    }).catch((err: Error) => setError(err.message));
+    void load();
+  }
+
+  async function closeRoom(code: string) {
+    await api(`/api/admin/rooms/${encodeURIComponent(code)}`, { method: 'DELETE' }).catch(
+      (err: Error) => setError(err.message),
+    );
+    void load();
+  }
+
+  async function purgeIdle() {
+    const res = await api<{ removed: number }>('/api/admin/rooms/purge-idle', { method: 'POST' }).catch(
+      (err: Error) => {
+        setError(err.message);
+        return null;
+      },
+    );
+    if (res) setError(`${res.removed} salle(s) sans connexion supprimée(s).`);
+    void load();
+  }
+
+  if (authenticated === null) {
+    return (
+      <main className="page center">
+        <p>Vérification de la session…</p>
+      </main>
+    );
+  }
+  if (!authenticated || !overview) {
+    return <Login onDone={onLoggedIn} />;
+  }
+
+  const stat = (key: string) => overview.stats[key] ?? 0;
+
+  return (
+    <main className="page admin fade-in">
+      <header className="admin-top">
+        <h1>Administration</h1>
+        <div>
+          <span className="muted small">Uptime : {Math.floor(overview.uptimeSec / 60)} min</span>{' '}
+          <button type="button" className="btn ghost" onClick={logout}>Déconnexion</button>
+        </div>
+      </header>
+
+      {error && <p className="notice" role="status">{error}</p>}
+
+      <section className="card">
+        <h2>Statistiques</h2>
+        <div className="stats">
+          <div><span className="big-number">{overview.rooms.length}</span><span>Salles ouvertes</span></div>
+          <div><span className="big-number">{stat('rooms_created')}</span><span>Salles créées</span></div>
+          <div><span className="big-number">{stat('games_started')}</span><span>Parties lancées</span></div>
+          <div><span className="big-number">{stat('games_completed')}</span><span>Parties terminées</span></div>
+        </div>
+      </section>
+
+      <section className="card">
+        <div className="section-head">
+          <h2>Salles</h2>
+          <button type="button" className="btn ghost" onClick={purgeIdle}>
+            Supprimer les salles sans connexion
+          </button>
+        </div>
+        {overview.rooms.length === 0 ? (
+          <p className="muted">Aucune salle active.</p>
+        ) : (
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Code</th><th>Jeu</th><th>Statut</th><th>Joueurs</th><th>Hôte</th><th>Dernière activité</th><th />
+              </tr>
+            </thead>
+            <tbody>
+              {overview.rooms.map((r) => (
+                <tr key={r.code}>
+                  <td><strong>{r.code}</strong></td>
+                  <td>{r.gameName}</td>
+                  <td>{STATUS_LABEL[r.status] ?? r.status}</td>
+                  <td>{r.connected}/{r.players}</td>
+                  <td>{r.hostConnected ? 'connecté' : 'absent'}</td>
+                  <td>{new Date(r.lastActivity).toLocaleTimeString('fr-FR')}</td>
+                  <td>
+                    <button type="button" className="link-btn" onClick={() => closeRoom(r.code)}>
+                      Fermer
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </section>
+
+      <section className="card">
+        <h2>Jeux du catalogue</h2>
+        <ul className="games-admin">
+          {overview.games.map((g) => (
+            <li key={g.id}>
+              <span>
+                {g.icon} {g.name} <span className="muted small">v{g.version}</span>{' '}
+                {ORIGIN_LABEL[g.origin] && <span className="badge">{ORIGIN_LABEL[g.origin]}</span>}
+              </span>
+              <button
+                type="button"
+                className={g.enabled ? 'btn primary' : 'btn ghost'}
+                onClick={() => toggleGame(g)}
+              >
+                {g.enabled ? 'Activé' : 'Désactivé'}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section className="card stack">
+        <h2>Jeux de cartes</h2>
+        <CardGamesAdmin onChanged={load} />
+      </section>
+
+      <section className="card stack">
+        <h2>Médiathèque</h2>
+        <AssetLibrary onChanged={load} />
+      </section>
+
+      <section className="card stack">
+        <h2>Jeux de questions médias</h2>
+        <MediaGamesAdmin onChanged={load} />
+      </section>
+
+      <section className="card stack">
+        <h2>Modifier les jeux intégrés</h2>
+        <p className="muted">
+          Nom, icône et description s’affichent partout dans l’application. Les règles de chaque jeu restent celles
+          du code ; seule la présentation change.
+        </p>
+        {overview.games
+          .filter((g) => g.origin === 'builtin')
+          .map((g) => (
+            <GameDetailsEditor key={g.id} game={g} onSaved={load} />
+          ))}
+      </section>
+
+      <section className="card stack">
+        <h2>Notices des jeux</h2>
+        <p className="muted">Ce que voient les joueurs avant de jouer. La notice d’origine reste disponible.</p>
+        {overview.games.map((g) => (
+          <NoticeEditor key={g.id} game={g} onSaved={load} />
+        ))}
+      </section>
+
+      <section className="card stack">
+        <h2>Sauvegarde et restauration</h2>
+        <BackupPanel onChanged={load} />
+        <h3>Base de données</h3>
+        <DbBackups />
+      </section>
+
+      <section className="card">
+        <h2>Réglages généraux</h2>
+        <SettingsForm settings={overview.settings} onSaved={load} />
+      </section>
+    </main>
+  );
+}

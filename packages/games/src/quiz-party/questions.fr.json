@@ -1,0 +1,111 @@
+[
+  {
+    "id": "geo-001",
+    "category": "Géographie",
+    "question": "Quelle est la capitale de l'Australie ?",
+    "choices": ["Sydney", "Melbourne", "Canberra", "Brisbane"],
+    "answer": 2,
+    "explanation": "Canberra a été choisie comme capitale pour éviter la rivalité entre Sydney et Melbourne."
+  },
+  {
+    "id": "sci-001",
+    "category": "Sciences",
+    "question": "Combien de planètes compte le Système solaire ?",
+    "choices": ["7", "8", "9", "10"],
+    "answer": 1,
+    "explanation": "Depuis 2006, Pluton n'est plus classée parmi les planètes."
+  },
+  {
+    "id": "his-001",
+    "category": "Histoire",
+    "question": "En quelle année le mur de Berlin est-il tombé ?",
+    "choices": ["1987", "1989", "1991", "1993"],
+    "answer": 1,
+    "explanation": "La chute du mur a eu lieu le 9 novembre 1989."
+  },
+  {
+    "id": "art-001",
+    "category": "Culture",
+    "question": "Quel peintre a réalisé « La Nuit étoilée » ?",
+    "choices": ["Claude Monet", "Vincent van Gogh", "Paul Gauguin", "Pablo Picasso"],
+    "answer": 1
+  },
+  {
+    "id": "sci-002",
+    "category": "Sciences",
+    "question": "Quel est le symbole chimique de l'or ?",
+    "choices": ["Ag", "Au", "Gd", "Or"],
+    "answer": 1,
+    "explanation": "Au vient du latin « aurum »."
+  },
+  {
+    "id": "geo-002",
+    "category": "Géographie",
+    "question": "Quel est le plus long fleuve de France ?",
+    "choices": ["La Seine", "Le Rhône", "La Loire", "La Garonne"],
+    "answer": 2
+  },
+  {
+    "id": "spo-001",
+    "category": "Sport",
+    "question": "Combien de joueurs compte une équipe de football sur le terrain ?",
+    "choices": ["9", "10", "11", "12"],
+    "answer": 2,
+    "explanation": "Hors remplaçants, chaque équipe aligne onze joueurs dont un gardien."
+  },
+  {
+    "id": "lit-001",
+    "category": "Littérature",
+    "question": "Qui a écrit « Les Misérables » ?",
+    "choices": ["Émile Zola", "Victor Hugo", "Alexandre Dumas", "Honoré de Balzac"],
+    "answer": 1
+  },
+  {
+    "id": "inf-001",
+    "category": "Informatique",
+    "question": "Que signifie l'acronyme HTML ?",
+    "choices": [
+      "HyperText Markup Language",
+      "High Tech Modern Language",
+      "Home Tool Markup Language",
+      "Hyperlink Text Mode Logic"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "cin-001",
+    "category": "Cinéma",
+    "question": "Quel réalisateur a dirigé « Jurassic Park » (1993) ?",
+    "choices": ["Steven Spielberg", "James Cameron", "George Lucas", "Ridley Scott"],
+    "answer": 0
+  },
+  {
+    "id": "geo-003",
+    "category": "Géographie",
+    "question": "Quel est le plus grand océan du monde ?",
+    "choices": ["Atlantique", "Indien", "Arctique", "Pacifique"],
+    "answer": 3
+  },
+  {
+    "id": "his-002",
+    "category": "Histoire",
+    "question": "En quelle année Christophe Colomb atteint-il les Amériques ?",
+    "choices": ["1392", "1492", "1592", "1692"],
+    "answer": 1,
+    "explanation": "Il débarque aux Bahamas le 12 octobre 1492."
+  },
+  {
+    "id": "mus-001",
+    "category": "Musique",
+    "question": "Combien de cordes possède une guitare classique standard ?",
+    "choices": ["4", "5", "6", "7"],
+    "answer": 2
+  },
+  {
+    "id": "ast-001",
+    "category": "Astronomie",
+    "question": "Quelle est l'étoile la plus proche de la Terre ?",
+    "choices": ["Sirius", "Proxima du Centaure", "Le Soleil", "Véga"],
+    "answer": 2
+  }
+]

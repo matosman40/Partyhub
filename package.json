@@ -1,0 +1,30 @@
+{
+  "name": "partyhub",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Plateforme de jeux multijoueurs sur navigateur (TV + smartphones)",
+  "type": "module",
+  "workspaces": [
+    "packages/shared",
+    "packages/games",
+    "packages/server",
+    "packages/web"
+  ],
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "build": "npm run build -w @partyhub/shared && npm run build -w @partyhub/games && npm run build -w @partyhub/web && npm run build -w @partyhub/server",
+    "test": "npm run build -w @partyhub/shared && npm run build -w @partyhub/games && npm test -w @partyhub/server",
+    "typecheck": "npm run typecheck -w @partyhub/shared && npm run typecheck -w @partyhub/games && npm run typecheck -w @partyhub/server && npm run typecheck -w @partyhub/web",
+    "dev:server": "npm run dev -w @partyhub/server",
+    "dev:web": "npm run dev -w @partyhub/web",
+    "start": "node packages/server/dist/index.js"
+  },
+  "devDependencies": {
+    "typescript": "5.8.3"
+  },
+  "overrides": {
+    "tinypool": "^2.1.2"
+  }
+}

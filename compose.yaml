@@ -1,0 +1,67 @@
+# PartyHub — déploiement Docker Compose et compatibilité CasaOS.
+# Démarrage : docker compose up -d --build
+# Mise à jour : voir docs/CASAOS.md (les données du volume sont conservées).
+
+name: partyhub
+
+services:
+  partyhub:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: partyhub:1.0.0
+    container_name: partyhub
+    restart: unless-stopped
+    stop_grace_period: 20s
+    ports:
+      # Seul le port HTTP est publié ; le port interne n'est jamais exposé directement.
+      - "${PARTYHUB_PORT:-8282}:8282"
+    environment:
+      PORT: "8282"
+      HOST: "0.0.0.0"
+      DATA_DIR: /data
+      ADMIN_PASSWORD: "${ADMIN_PASSWORD:-}"
+      LOG_LEVEL: "${LOG_LEVEL:-info}"
+      COOKIE_SECURE: "${COOKIE_SECURE:-false}"
+      TRUST_PROXY: "${TRUST_PROXY:-loopback}"
+      DB_BACKUP_EVERY_HOURS: "${DB_BACKUP_EVERY_HOURS:-24}"
+      DB_BACKUP_KEEP: "${DB_BACKUP_KEEP:-7}"
+    volumes:
+      - partyhub-data:/data
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:8282/api/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+    x-casaos:
+      architectures:
+        - amd64
+        - arm64
+      main: partyhub
+      description:
+        en_US: PartyHub is a browser-based party game platform. Players join from their phones; the TV shows the game.
+        fr_FR: PartyHub est une plateforme de jeux de soirée sur navigateur. Les joueurs rejoignent depuis leur téléphone, la TV affiche la partie.
+      tagline:
+        en_US: Party games on your local network
+        fr_FR: Jeux de soirée sur votre réseau local
+      developer: PartyHub
+      category: Games
+      port_map: "${PARTYHUB_PORT:-8282}"
+      index: /
+      title:
+        en_US: PartyHub
+        fr_FR: PartyHub
+
+volumes:
+  partyhub-data:
+    name: partyhub-data

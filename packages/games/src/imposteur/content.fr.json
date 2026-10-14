@@ -1,0 +1,10 @@
+[
+  { "category": "Fruits", "words": ["Banane", "Pomme", "Fraise", "Kiwi", "Ananas", "Mangue", "Cerise"] },
+  { "category": "Animaux", "words": ["Girafe", "Pingouin", "Hérisson", "Dauphin", "Koala", "Chameau", "Renard"] },
+  { "category": "Métiers", "words": ["Pompier", "Boulanger", "Astronaute", "Vétérinaire", "Pilote", "Facteur", "Magicien"] },
+  { "category": "Lieux", "words": ["Aéroport", "Piscine", "Bibliothèque", "Stade", "Hôpital", "Plage", "Cirque"] },
+  { "category": "Objets du quotidien", "words": ["Parapluie", "Trottinette", "Grille-pain", "Brosse à dents", "Tire-bouchon", "Lampe de poche"] },
+  { "category": "Sports", "words": ["Escrime", "Curling", "Judo", "Surf", "Badminton", "Escalade", "Rugby"] },
+  { "category": "Films et séries", "words": ["Titanic", "Le Roi lion", "Jurassic Park", "Harry Potter", "Star Wars", "Le Parrain"] },
+  { "category": "Boissons", "words": ["Chocolat chaud", "Mojito", "Thé vert", "Limonade", "Cidre", "Espresso"] }
+]

@@ -1,0 +1,14 @@
+node_modules/
+dist/
+data/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.tar.gz
+*.log
+admin-password.txt
+.env
+.env.*
+!.env.example
+coverage/

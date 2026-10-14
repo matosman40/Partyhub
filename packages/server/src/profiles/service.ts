@@ -1,0 +1,264 @@
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
+import { resolveGame } from '../games-registry.js';
+import {
+  defaultAvatarFor,
+  type AvatarInfo,
+  type ProfileStats,
+  type ProfileView,
+  type AvatarEmoji,
+} from '@partyhub/shared';
+import { hashPassword, verifyPassword } from '../auth.js';
+import type { Store } from '../db/store.js';
+
+const SESSION_TTL_MS = 90 * 24 * 60 * 60 * 1000;
+
+/** Erreur métier : le message est destiné à l'utilisateur, le statut à la réponse HTTP. */
+export class ProfileError extends Error {
+  constructor(
+    readonly status: number,
+    message: string,
+  ) {
+    super(message);
+  }
+}
+
+interface ProfileRow {
+  id: string;
+  username: string;
+  display_name: string;
+  password_hash: string;
+  avatar_hue: number;
+  avatar_emoji: string;
+  avatar_image: string | null;
+  avatar_version: number;
+  avatar_shared: number;
+  created_at: string;
+}
+
+/** Profil tel que la salle le voit : identité et apparence, sans secret. */
+export interface PlayerProfile {
+  id: string;
+  displayName: string;
+  avatar: AvatarInfo;
+}
+
+const hashToken = (token: string) => createHash('sha256').update(token).digest('hex');
+
+/**
+ * Comptes joueurs : inscription, connexion, sessions à durée limitée, avatar et statistiques.
+ * Les jetons de session ne sont jamais stockés en clair (seule leur empreinte SHA-256 l'est).
+ */
+export class ProfileService {
+  constructor(
+    private readonly store: Store,
+    private readonly now: () => number = () => Date.now(),
+  ) {}
+
+  private get db() {
+    return this.store.db;
+  }
+
+  private rowById(id: string): ProfileRow | undefined {
+    return this.db.prepare('SELECT * FROM profiles WHERE id = ?').get(id) as ProfileRow | undefined;
+  }
+
+  /** Avatar complet, vu par le titulaire du profil (sa photo est toujours visible pour lui). */
+  private avatarOf(row: ProfileRow): AvatarInfo {
+    return {
+      hue: row.avatar_hue,
+      emoji: row.avatar_emoji,
+      imageUrl: row.avatar_image ? `/api/avatars/${row.id}?v=${row.avatar_version}` : null,
+    };
+  }
+
+  /**
+   * Avatar tel que les autres joueurs de la salle le voient : la photo n'est envoyée
+   * que si le titulaire l'a explicitement autorisée. Sinon, l'emoji sur sa couleur.
+   */
+  private roomAvatarOf(row: ProfileRow): AvatarInfo {
+    const shared = row.avatar_shared === 1 && !!row.avatar_image;
+    return {
+      hue: row.avatar_hue,
+      emoji: row.avatar_emoji,
+      imageUrl: shared ? `/api/avatars/${row.id}?v=${row.avatar_version}` : null,
+    };
+  }
+
+  private createSession(profileId: string): string {
+    const token = randomBytes(32).toString('base64url');
+    this.db
+      .prepare('INSERT INTO profile_sessions (token_hash, profile_id, expires_at) VALUES (?, ?, ?)')
+      .run(hashToken(token), profileId, this.now() + SESSION_TTL_MS);
+    return token;
+  }
+
+  async register(input: { username: string; password: string; displayName: string }) {
+    const exists = this.db.prepare('SELECT 1 FROM profiles WHERE username = ?').get(input.username);
+    if (exists) throw new ProfileError(409, 'Cet identifiant est déjà pris. Choisissez-en un autre.');
+    const id = randomUUID();
+    const avatar = defaultAvatarFor(input.username);
+    this.db
+      .prepare(
+        `INSERT INTO profiles (id, username, display_name, password_hash, avatar_hue, avatar_emoji, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      )
+      .run(
+        id,
+        input.username,
+        input.displayName,
+        await hashPassword(input.password),
+        avatar.hue,
+        avatar.emoji,
+        new Date(this.now()).toISOString(),
+      );
+    return { token: this.createSession(id), profile: this.view(id)! };
+  }
+
+  async login(username: string, password: string) {
+    const row = this.db.prepare('SELECT * FROM profiles WHERE username = ?').get(username) as
+      | ProfileRow
+      | undefined;
+    const valid = row !== undefined && (await verifyPassword(password, row.password_hash));
+    if (!row || !valid) {
+      throw new ProfileError(401, 'Identifiant ou mot de passe incorrect.');
+    }
+    return { token: this.createSession(row.id), profile: this.view(row.id)! };
+  }
+
+  /** Retrouve le profil rattaché à un jeton de session valide, sinon undefined. */
+  authenticate(token: string | undefined): string | undefined {
+    if (!token) return undefined;
+    const row = this.db
+      .prepare('SELECT profile_id, expires_at FROM profile_sessions WHERE token_hash = ?')
+      .get(hashToken(token)) as { profile_id: string; expires_at: number } | undefined;
+    if (!row) return undefined;
+    if (row.expires_at < this.now()) {
+      this.db.prepare('DELETE FROM profile_sessions WHERE token_hash = ?').run(hashToken(token));
+      return undefined;
+    }
+    return row.profile_id;
+  }
+
+  logout(token: string): void {
+    this.db.prepare('DELETE FROM profile_sessions WHERE token_hash = ?').run(hashToken(token));
+  }
+
+  /** Profil utilisable par la salle (nom et avatar figés au moment de l'entrée). */
+  playerProfile(profileId: string): PlayerProfile | undefined {
+    const row = this.rowById(profileId);
+    if (!row) return undefined;
+    return { id: row.id, displayName: row.display_name, avatar: this.roomAvatarOf(row) };
+  }
+
+  view(profileId: string): ProfileView | undefined {
+    const row = this.rowById(profileId);
+    if (!row) return undefined;
+    return {
+      id: row.id,
+      username: row.username,
+      displayName: row.display_name,
+      avatar: this.avatarOf(row),
+      avatarShared: row.avatar_shared === 1,
+      createdAt: row.created_at,
+      stats: this.stats(profileId),
+    };
+  }
+
+  update(
+    profileId: string,
+    patch: {
+      displayName?: string;
+      avatarHue?: number;
+      avatarEmoji?: AvatarEmoji;
+      avatarImage?: string | null;
+      avatarShared?: boolean;
+    },
+  ): ProfileView {
+    if (patch.displayName !== undefined) {
+      this.db.prepare('UPDATE profiles SET display_name = ? WHERE id = ?').run(patch.displayName, profileId);
+    }
+    if (patch.avatarHue !== undefined) {
+      this.db.prepare('UPDATE profiles SET avatar_hue = ? WHERE id = ?').run(patch.avatarHue, profileId);
+    }
+    if (patch.avatarEmoji !== undefined) {
+      this.db.prepare('UPDATE profiles SET avatar_emoji = ? WHERE id = ?').run(patch.avatarEmoji, profileId);
+    }
+    if (patch.avatarShared !== undefined) {
+      this.db
+        .prepare('UPDATE profiles SET avatar_shared = ? WHERE id = ?')
+        .run(patch.avatarShared ? 1 : 0, profileId);
+    }
+    if (patch.avatarImage !== undefined) {
+      // Chaque changement d'image change la version : les navigateurs rechargent l'image.
+      this.db
+        .prepare('UPDATE profiles SET avatar_image = ?, avatar_version = avatar_version + 1 WHERE id = ?')
+        .run(patch.avatarImage, profileId);
+    }
+    return this.view(profileId)!;
+  }
+
+  async changePassword(profileId: string, current: string, next: string): Promise<void> {
+    const row = this.rowById(profileId);
+    if (!row) throw new ProfileError(404, 'Profil introuvable.');
+    if (!(await verifyPassword(current, row.password_hash))) {
+      throw new ProfileError(401, 'Le mot de passe actuel est incorrect.');
+    }
+    this.db
+      .prepare('UPDATE profiles SET password_hash = ? WHERE id = ?')
+      .run(await hashPassword(next), profileId);
+    // Les autres appareils doivent se reconnecter avec le nouveau mot de passe.
+    this.db.prepare('DELETE FROM profile_sessions WHERE profile_id = ?').run(profileId);
+    return undefined;
+  }
+
+  /** Ouvre une nouvelle session après changement de mot de passe, sur cet appareil. */
+  renewSession(profileId: string): string {
+    return this.createSession(profileId);
+  }
+
+  delete(profileId: string): void {
+    this.db.prepare('DELETE FROM profiles WHERE id = ?').run(profileId);
+  }
+
+  count(): number {
+    return (this.db.prepare('SELECT COUNT(*) AS n FROM profiles').get() as { n: number }).n;
+  }
+
+  /** Image de profil décodée, pour la route /api/avatars/:id. */
+  avatarImage(profileId: string): { mime: string; data: Buffer } | undefined {
+    const row = this.rowById(profileId);
+    if (!row?.avatar_image) return undefined;
+    const match = /^data:(image\/[a-z]+);base64,(.+)$/.exec(row.avatar_image);
+    if (!match) return undefined;
+    return { mime: match[1]!, data: Buffer.from(match[2]!, 'base64') };
+  }
+
+  recordResult(profileId: string, gameId: string, points: number, won: boolean): void {
+    this.db
+      .prepare(
+        `INSERT INTO profile_stats (profile_id, game_id, played, wins, points) VALUES (?, ?, 1, ?, ?)
+         ON CONFLICT(profile_id, game_id) DO UPDATE SET
+           played = played + 1, wins = wins + excluded.wins, points = points + excluded.points`,
+      )
+      .run(profileId, gameId, won ? 1 : 0, Math.max(0, Math.round(points)));
+  }
+
+  stats(profileId: string): ProfileStats {
+    const rows = this.db
+      .prepare('SELECT game_id, played, wins, points FROM profile_stats WHERE profile_id = ? ORDER BY played DESC')
+      .all(profileId) as { game_id: string; played: number; wins: number; points: number }[];
+    const perGame = rows.map((r) => ({
+      gameId: r.game_id,
+      name: resolveGame(r.game_id)?.manifest.name ?? r.game_id,
+      played: r.played,
+      wins: r.wins,
+      points: r.points,
+    }));
+    return {
+      played: perGame.reduce((n, g) => n + g.played, 0),
+      wins: perGame.reduce((n, g) => n + g.wins, 0),
+      points: perGame.reduce((n, g) => n + g.points, 0),
+      perGame,
+    };
+  }
+}

@@ -1,0 +1,41 @@
+import type { ComponentType } from 'react';
+
+/**
+ * Contrat d'affichage d'un jeu côté navigateur.
+ * Chaque jeu fournit trois composants :
+ * - Settings : réglages affichés dans le salon (TV, avant le lancement) ;
+ * - Host : écran principal (TV / ordinateur) ;
+ * - Player : interface du smartphone.
+ *
+ * Les états reçus sont ceux produits par getPublicState / getHostState /
+ * getPlayerState côté serveur : le navigateur n'a jamais la bonne réponse
+ * avant la phase de révélation.
+ */
+
+export interface SettingsProps {
+  settings: Record<string, unknown>;
+  disabled: boolean;
+  onChange: (settings: Record<string, unknown>) => void;
+}
+
+export interface HostViewProps {
+  publicState: any;
+  hostState: any;
+  /** Horodatage serveur au moment de l'émission de la vue. */
+  now: number;
+}
+
+export interface PlayerViewProps {
+  publicState: any;
+  playerState: any;
+  playerId: string;
+  now: number;
+  /** Envoie une action au serveur et attend sa validation. */
+  send: (type: string, payload?: unknown) => Promise<{ ok: boolean; error?: string }>;
+}
+
+export interface GameClientViews {
+  Settings: ComponentType<SettingsProps>;
+  Host: ComponentType<HostViewProps>;
+  Player: ComponentType<PlayerViewProps>;
+}
