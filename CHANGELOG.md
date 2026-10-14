@@ -14,6 +14,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
   tous les modules, avec le nombre de joueurs du manifeste.
 - Copie modifiable d'un paquet actif (« Créer une copie modifiable » dans l'administration) : la copie est un jeu de
   l'administration, éditable en entier (nom, description, cartes, cases, questions, règles). Le paquet reste inchangé.
+- Sources GitHub en dépôt commun : `auteur/depot/jeu`, avec des tags `<jeu>-vX.Y.Z`. Une source dédiée à un seul jeu
+  (`auteur/nom`) fonctionne comme avant.
 - Tests : 12 nouveaux pour le format 2, 5 pour la copie.
 
 ### Modifié

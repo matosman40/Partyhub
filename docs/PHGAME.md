@@ -187,6 +187,9 @@ Dans l'administration, section **Sources GitHub** : indiquer `auteur/nom`.
   manuel (pas de retour arrière, contenu identique reconnu).
 - Mise à jour **à la demande** (« Vérifier et mettre à jour ») ou **automatique** une fois par jour pour les sources qui l'ont activée.
 - Un dépôt privé demande la variable `GITHUB_TOKEN` du serveur. Le jeton n'est jamais affiché, ni journalisé, ni sauvegardé.
+- **Dépôt commun** : indiquez `auteur/depot/jeu`. Le dépôt contient plusieurs jeux ; chaque version est un tag
+  `<jeu>-vX.Y.Z`, et la release contient `<jeu>.phgame` et `<jeu>.phgame.sha256`. PartyHub retient la version la plus haute
+  de ce jeu, sans toucher aux autres. Le dépôt `matosman40/jeux-partyhub` est organisé ainsi.
 - Supprimer une source laisse le paquet installé, mais il ne se met plus à jour.
 - Le serveur doit pouvoir joindre GitHub. Seuls les hôtes GitHub sont autorisés, y compris lors des redirections.
 
