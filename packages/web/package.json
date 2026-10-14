@@ -1,6 +1,6 @@
 {
   "name": "@partyhub/web",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -13,8 +13,8 @@
     "@fontsource-variable/archivo": "^5.3.0",
     "@fontsource-variable/outfit": "^5.3.0",
     "@fontsource/dela-gothic-one": "^5.3.0",
-    "@partyhub/games": "0.7.0",
-    "@partyhub/shared": "0.7.0",
+    "@partyhub/games": "0.7.1",
+    "@partyhub/shared": "0.7.1",
     "@react-three/fiber": "9.8.1",
     "qrcode": "1.5.4",
     "react": "19.3.0",

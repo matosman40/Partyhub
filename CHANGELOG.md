@@ -4,6 +4,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 
 ## Non publié
 
+## [0.7.1] - 2026-10-14
+
 ### Ajouté
 - Identité visuelle : chaque jeu a son logo (titre en Luckiest Guy, couleurs et motif propres). Les jeux sans logo
   dessiné reçoivent un logo généré de façon stable à partir de leur identifiant. Polices auto-hébergées (SIL OFL 1.1).
