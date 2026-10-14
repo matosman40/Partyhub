@@ -52,6 +52,7 @@ export interface PokerMe {
   minRaiseTo: number;
   maxRaiseTo: number;
   canAllIn: boolean;
+  canSit: boolean;
 }
 
 export const STREET_LABEL: Record<PokerPub['street'], string> = {

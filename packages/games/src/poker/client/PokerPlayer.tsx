@@ -46,7 +46,7 @@ export function PokerPlayer({ publicState, playerState, playerId, send }: Player
   if (pub.phase === 'final') {
     const ranking = chipsRanking(pub);
     return (
-      <section className="player-game fade-in cards-player">
+      <section className={`player-game fade-in cards-player poker-amb-${pub.settings.ambiance}`}>
         <p className="big">Partie terminée</p>
         <p className="big-number">{fmt(pub.stacks[playerId] ?? 0)} jetons</p>
         <Ranking entries={ranking} limit={4} />
@@ -57,16 +57,22 @@ export function PokerPlayer({ publicState, playerState, playerId, send }: Player
   // Hors places : le joueur suit la table sans jouer.
   if (!me || !me.seated) {
     return (
-      <section className="player-game fade-in">
+      <section className={`player-game fade-in poker-amb-${pub.settings.ambiance}`}>
         <p className="big">{pub.started ? 'Partie en cours' : 'Table complète'}</p>
         <p className="muted">Vous êtes spectateur : vous suivez la partie sans y jouer.</p>
+        {me?.canSit && (
+          <button type="button" className="btn primary big" disabled={busy} onClick={() => void run('sit')}>
+            Prendre une place
+          </button>
+        )}
+        {error && <p className="error">{error}</p>}
       </section>
     );
   }
 
   if (!pub.started) {
     return (
-      <section className="player-game fade-in">
+      <section className={`player-game fade-in poker-amb-${pub.settings.ambiance}`}>
         <p className="big">Préparez-vous !</p>
         <p className="muted">
           Chacun commence avec {fmt(pub.settings.startingChips)} jetons. Gardez vos cartes à l’abri des regards.
@@ -77,7 +83,7 @@ export function PokerPlayer({ publicState, playerState, playerId, send }: Player
 
   if (me.spectator && (pub.stacks[playerId] ?? 0) > 0) {
     return (
-      <section className="player-game fade-in">
+      <section className={`player-game fade-in poker-amb-${pub.settings.ambiance}`}>
         <p className="big">Partie en cours</p>
         <p className="muted">Vous observez cette partie.</p>
       </section>
@@ -135,7 +141,7 @@ export function PokerPlayer({ publicState, playerState, playerId, send }: Player
 
   return (
     <section
-      className="player-game fade-in cards-player poker-player"
+      className={`player-game fade-in cards-player poker-player poker-amb-${pub.settings.ambiance}`}
       data-mat="classique"
       onPointerDownCapture={() => unlockAudio()}
     >

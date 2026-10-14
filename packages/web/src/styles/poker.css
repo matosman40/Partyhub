@@ -195,3 +195,9 @@
 .poker-host.poker-amb-nuit { --amb-glow: rgba(90, 120, 255, 0.28); }
 .poker-host.poker-amb-bar { --amb-glow: rgba(214, 110, 40, 0.28); }
 .poker-host.poker-amb-tournoi { --amb-glow: rgba(200, 60, 160, 0.26); }
+
+/* Ambiance sur le téléphone : même halo que sur l'écran principal. */
+.player-game.poker-amb-casino { box-shadow: inset 0 0 120px rgba(255, 196, 60, 0.22); }
+.player-game.poker-amb-nuit { box-shadow: inset 0 0 120px rgba(90, 120, 255, 0.28); }
+.player-game.poker-amb-bar { box-shadow: inset 0 0 120px rgba(214, 110, 40, 0.28); }
+.player-game.poker-amb-tournoi { box-shadow: inset 0 0 120px rgba(200, 60, 160, 0.26); }

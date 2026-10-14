@@ -89,7 +89,31 @@ const actionSchemas = {
   call: z.any().optional(),
   allin: z.any().optional(),
   raise: z.object({ to: z.number().int().min(1).max(100_000_000) }),
+  sit: z.any().optional(),
 };
+
+/**
+ * Un spectateur prend une place : celle d'un joueur éliminé, ou une place libre.
+ * Seulement entre deux mains, pour que la rotation du croupier reste cohérente.
+ */
+function sitDown(s: PokerState, player: PlayerRef): GameResult<PokerState> {
+  const pid = player.id;
+  if (!s.started) return fail('La partie n’a pas commencé : les places se prennent à l’arrivée.');
+  if (s.phase !== 'hand-over') return fail('Vous pourrez vous asseoir entre deux mains.');
+  if (s.order.includes(pid)) return fail('Vous êtes déjà à la table.');
+  const freed = s.order.find((id) => (s.stacks[id] ?? 0) === 0);
+  if (freed === undefined && s.order.length >= s.settings.seats) return fail('Aucune place libre.');
+  if (freed !== undefined) {
+    s.order[s.order.indexOf(freed)] = pid;
+    delete s.stacks[freed];
+    if (s.dealer === freed) s.dealer = pid;
+  } else {
+    s.order.push(pid);
+  }
+  s.stacks[pid] = s.settings.startingChips;
+  s.lastEvent = `${s.names[pid] ?? '?'} prend une place.`;
+  return ok(s);
+}
 
 /** Premier joueur après `from` (dans l'ordre circulaire) qui satisfait `pred`. */
 function nextAfter(order: string[], from: string | null, pred: (id: string) => boolean): string | null {
@@ -430,6 +454,7 @@ export function createPokerGame(): GameModule<PokerState, PokerSettings> {
   ): GameResult<PokerState> {
     const s = structuredClone(state);
     const pid = player.id;
+    if (type === 'sit') return sitDown(s, player);
     if (!s.started || !s.inHand.includes(pid)) return fail('Vous ne participez pas à cette main.');
     if (s.phase !== 'play') return fail('La main est terminée.');
     if (s.turn !== pid) return fail("Ce n'est pas votre tour.");
@@ -530,6 +555,11 @@ export function createPokerGame(): GameModule<PokerState, PokerSettings> {
       minRaiseTo: Math.min(maxTo, state.currentBet + state.lastRaise),
       maxRaiseTo: maxTo,
       canAllIn: myTurn && stack > 0,
+      canSit:
+        !state.order.includes(playerId) &&
+        state.started &&
+        state.phase === 'hand-over' &&
+        (state.order.some((id) => (state.stacks[id] ?? 0) === 0) || state.order.length < state.settings.seats),
     };
   }
 
