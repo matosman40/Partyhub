@@ -21,7 +21,15 @@ import type { MediaQuizService } from '../media/service.js';
 import { AdminSessions, LoginLimiter, readCookie, verifyPassword } from '../auth.js';
 import { catalog, gameInfo, originOf } from '../catalog.js';
 import { withOverrides } from '../game-details.js';
-import { buildBackup, restoreBackup } from '../backup.js';
+import {
+  ARCHIVE_MAX_BYTES,
+  ArchiveTooLargeError,
+  buildArchive,
+  buildBackup,
+  restoreArchive,
+  restoreBackup,
+  type ConflictMode,
+} from '../backup.js';
 import { gameDetailsSchema } from '@partyhub/shared';
 import type { AppConfig } from '../config.js';
 import { adminSettingsSchema, type Store } from '../db/store.js';
@@ -71,7 +79,9 @@ export function createApp(deps: AppDeps): express.Express {
   const jsonBody = express.json({ limit: '80kb' });
   // Ces deux routes lisent elles-mêmes leur corps : le JSON global ne doit pas y toucher.
   app.use((req, res, next) => {
-    const selfParsed = req.path === '/api/admin/backup/import' || (req.method === 'POST' && req.path === '/api/admin/assets');
+    const selfParsed =
+      req.path === '/api/admin/backup/import' ||
+      (req.method === 'POST' && (req.path === '/api/admin/assets' || req.path === '/api/admin/backup/archive'));
     return selfParsed ? next() : jsonBody(req, res, next);
   });
 
@@ -377,8 +387,18 @@ export function createApp(deps: AppDeps): express.Express {
       return;
     }
     store.setNoticeOverride(id, JSON.stringify(parsed.data));
-    res.json({ ok: true });
+    res.json({ ok: true, openRooms: openRoomsOf(id) });
   });
+
+  /**
+   * Nombre de salles ouvertes d'un jeu. Une modification ne s'applique qu'aux salles créées
+   * après elle : l'administration le signale.
+   */
+  const openRoomsOf = (gameId: string): number =>
+    manager.all().filter((r) => {
+      const summary = r.summary();
+      return summary.gameId === gameId && summary.status !== 'ended';
+    }).length;
 
   /** Nom, icône et description d'un jeu intégré : surcharge de l'administration. */
   admin.put('/game-details/:id', (req, res) => {
@@ -394,7 +414,7 @@ export function createApp(deps: AppDeps): express.Express {
       return;
     }
     store.setDetailsOverride(id, JSON.stringify(parsed.data));
-    res.json({ ok: true });
+    res.json({ ok: true, openRooms: openRoomsOf(id) });
   });
 
   /** Retour au nom, à l'icône et à la description d'origine. */
@@ -760,14 +780,58 @@ export function createApp(deps: AppDeps): express.Express {
     res.json(backup);
   });
 
+  /** « remplacer » : un jeu de même nom est mis à jour au lieu d'être copié (défaut : copie). */
+  const conflictMode = (query: unknown): ConflictMode => (query === 'replace' ? 'replace' : 'add');
+
   admin.post('/backup/import', (req, res) => {
-    const result = restoreBackup(req.body, store, cardGames, mediaGames, boardGames);
+    const result = restoreBackup(req.body, store, cardGames, mediaGames, boardGames, {
+      conflict: conflictMode(req.query.conflict),
+    });
     if (!result.ok) {
       res.status(400).json({ error: result.error });
       return;
     }
     res.json({ ok: true, summary: result.summary });
   });
+
+  /** Archive complète (ZIP) : sauvegarde et fichiers de la médiathèque. */
+  admin.get('/backup/archive', (_req, res) => {
+    try {
+      const bytes = buildArchive(buildBackup(store, cardGames, mediaGames, boardGames), assets);
+      const stamp = new Date().toISOString().slice(0, 10);
+      res.setHeader('Content-Type', 'application/zip');
+      res.setHeader('Content-Disposition', `attachment; filename="partyhub-sauvegarde-complete-${stamp}.zip"`);
+      res.end(Buffer.from(bytes));
+    } catch (err) {
+      if (err instanceof ArchiveTooLargeError) {
+        res.status(413).json({ error: err.message });
+        return;
+      }
+      throw err;
+    }
+  });
+
+  admin.post(
+    '/backup/archive',
+    express.raw({ type: () => true, limit: ARCHIVE_MAX_BYTES + 8 * 1024 * 1024 }),
+    (req, res) => {
+      const body = req.body as unknown;
+      if (!Buffer.isBuffer(body) || body.length === 0) {
+        res.status(400).json({ error: 'Archive vide.' });
+        return;
+      }
+      const result = restoreArchive(
+        body,
+        { store, cards: cardGames, media: mediaGames, boards: boardGames, assets },
+        { conflict: conflictMode(req.query.conflict) },
+      );
+      if (!result.ok) {
+        res.status(400).json({ error: result.error });
+        return;
+      }
+      res.json({ ok: true, summary: result.summary });
+    },
+  );
 
   /** Médiathèque : fichiers audio, vidéo et images réutilisables par les jeux. */
   /** Jeux qui utilisent une ressource de la médiathèque : questions médias et cartes (dos, police). */
@@ -873,7 +937,9 @@ export function createApp(deps: AppDeps): express.Express {
     (req, res, next) => {
       // L'envoi de médiathèque est lu en flux par sa route : pas de lecture JSON ici.
       // Les paquets sont lus bruts par leur propre route (archive ZIP, pas de JSON).
-      if (req.method === 'POST' && (req.path === '/assets' || req.path === '/packages')) return next();
+      if (req.method === 'POST' && (req.path === '/assets' || req.path === '/packages' || req.path === '/backup/archive')) {
+        return next();
+      }
       return express.json({ limit: req.path === '/backup/import' ? '20mb' : '512kb' })(req, res, next);
     },
     admin,

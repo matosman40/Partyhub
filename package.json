@@ -15,7 +15,7 @@
   },
   "scripts": {
     "build": "npm run build -w @partyhub/shared && npm run build -w @partyhub/games && npm run build -w @partyhub/web && npm run build -w @partyhub/server",
-    "test": "npm run build -w @partyhub/shared && npm run build -w @partyhub/games && npm test -w @partyhub/shared && npm test -w @partyhub/games && npm test -w @partyhub/server",
+    "test": "npm run build -w @partyhub/shared && npm run build -w @partyhub/games && npm test -w @partyhub/shared && npm test -w @partyhub/games && npm test -w @partyhub/server && npm test -w @partyhub/web",
     "typecheck": "npm run typecheck -w @partyhub/shared && npm run typecheck -w @partyhub/games && npm run typecheck -w @partyhub/server && npm run typecheck -w @partyhub/web",
     "lint": "eslint .",
     "dev:server": "npm run dev -w @partyhub/server",

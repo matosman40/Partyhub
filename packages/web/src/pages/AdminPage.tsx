@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import type { CatalogGame } from '@partyhub/shared';
+import { DEVICE_KIND_ICONS, type CatalogGame, type DeviceKind } from '@partyhub/shared';
 import { api } from '../api.js';
+import { openRoomsText } from '../admin/messages.js';
 import { CardGamesAdmin } from '../admin/CardGamesAdmin.js';
 import { BoardGamesAdmin } from '../admin/BoardGamesAdmin.js';
 import { PackagesAdmin } from '../admin/PackagesAdmin.js';
@@ -32,7 +33,17 @@ interface RoomSummary {
   players: number;
   connected: number;
   hostConnected: boolean;
+  observers: number;
+  devices: Record<string, number>;
   lastActivity: string;
+}
+
+/** Résume les types d'appareils d'une salle, par exemple « 📱 2 · 💻 1 ». */
+function deviceSummary(devices: Record<string, number>): string {
+  const parts = Object.entries(devices)
+    .filter(([, count]) => count > 0)
+    .map(([kind, count]) => `${DEVICE_KIND_ICONS[kind as DeviceKind] ?? '❔'} ${count}`);
+  return parts.length > 0 ? parts.join(' · ') : '—';
 }
 
 interface Overview {
@@ -112,11 +123,11 @@ function NoticeEditor({ game, onSaved }: { game: CatalogGame; onSaved: () => voi
     e.preventDefault();
     setMessage(null);
     try {
-      await api(`/api/admin/notices/${encodeURIComponent(game.id)}`, {
+      const res = await api<{ openRooms: number }>(`/api/admin/notices/${encodeURIComponent(game.id)}`, {
         method: 'PUT',
         body: JSON.stringify({ goal: goal.trim(), steps: lines(steps), tips: lines(tips) }),
       });
-      setMessage('Notice enregistrée.');
+      setMessage(`Notice enregistrée. ${openRoomsText(res.openRooms)}`);
       onSaved();
     } catch (err) {
       setMessage((err as Error).message);
@@ -338,7 +349,7 @@ export function AdminPage() {
           <table className="table">
             <thead>
               <tr>
-                <th>Code</th><th>Jeu</th><th>Statut</th><th>Joueurs</th><th>Hôte</th><th>Dernière activité</th><th />
+                <th>Code</th><th>Jeu</th><th>Statut</th><th>Joueurs</th><th>Appareils</th><th>Spectateurs</th><th>Hôte</th><th>Dernière activité</th><th />
               </tr>
             </thead>
             <tbody>
@@ -348,6 +359,8 @@ export function AdminPage() {
                   <td>{r.gameName}</td>
                   <td>{STATUS_LABEL[r.status] ?? r.status}</td>
                   <td>{r.connected}/{r.players}</td>
+                  <td>{deviceSummary(r.devices ?? {})}</td>
+                  <td>{r.observers ?? 0}</td>
                   <td>{r.hostConnected ? 'connecté' : 'absent'}</td>
                   <td>{new Date(r.lastActivity).toLocaleTimeString('fr-FR')}</td>
                   <td>

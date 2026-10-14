@@ -28,6 +28,8 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - run: npm run build
       - run: npm run lint
+      - name: Contrôle des secrets dans les fichiers suivis
+        run: python3 scripts/secret-scan.py
       - run: npm run typecheck
       - run: npm test
       - name: "Paquet .phgame d'exemple : contrôle et reproductibilité"
@@ -106,6 +108,11 @@ jobs:
           BASE_URL: http://127.0.0.1:8282
           SHOTS_DIR: ${{ runner.temp }}/captures-appareils
         run: python scripts/devices-browser.py
+      - name: Accessibilité (axe-core, WCAG 2 A et AA)
+        env:
+          BASE_URL: http://127.0.0.1:8282
+          ADMIN_PASSWORD: ci-admin-password-test
+        run: python scripts/a11y-browser.py
       - name: Journal du serveur en cas d'échec
         if: failure()
         run: cat "$RUNNER_TEMP/server.log" || true

@@ -9,6 +9,7 @@ import { ChatPanel, EmoteBar } from '../components/Social.js';
 import { NoticeDialog } from '../components/NoticeDialog.js';
 import { Qr } from '../components/Qr.js';
 import { getDevice } from '../device/device.js';
+import { SHARED_PLACE_PARAM } from './share.js';
 
 /**
  * Un siège : un joueur avec sa propre connexion, son jeton et sa place dans la salle.
@@ -354,13 +355,6 @@ export function PlayerSeat({
  * Lien et QR code pour ouvrir la même place sur un deuxième appareil (tablette, téléphone d'un proche).
  * Le jeton est dans le fragment de l'adresse (#place=…) : il n'est jamais envoyé au serveur.
  */
-export const SHARED_PLACE_PARAM = 'place';
-
-export function sharedPlaceToken(hash: string): string | null {
-  const match = new RegExp(`[#&]${SHARED_PLACE_PARAM}=([A-Za-z0-9_-]{8,200})`).exec(hash);
-  return match ? match[1] : null;
-}
-
 function SeatShare({ code, seatId }: { code: string; seatId: string }) {
   const token = readSeat(code, seatId)?.token ?? null;
   const [copied, setCopied] = useState(false);

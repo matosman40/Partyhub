@@ -200,10 +200,12 @@ describe('Sauvegarde complète', () => {
     expect(backup.data.gameDetails.taquin.name).toBe('Taquin du salon');
 
     await call('/api/admin/game-details/taquin', { method: 'DELETE' });
+    // Les jeux sont encore là, à l'identique : ce sont des doublons, rien n'est recréé.
     const restored = await call('/api/admin/backup/import', { method: 'POST', json: backup.data });
     expect(restored.status).toBe(200);
-    expect(restored.data.summary.cardGames).toBe(backup.data.cardGames.length);
-    expect(restored.data.summary.mediaGames).toBe(backup.data.mediaGames.length);
+    expect(restored.data.summary.cardGames).toBe(0);
+    expect(restored.data.summary.mediaGames).toBe(0);
+    expect(restored.data.summary.duplicates).toBe(backup.data.cardGames.length + backup.data.mediaGames.length);
     expect(restored.data.summary.details).toBe(1);
 
     const admin = await call('/api/admin/overview');
@@ -265,9 +267,12 @@ describe('Jeux de plateau', () => {
     const original = list.data.games.find((g: any) => g.definition.name === 'Plateau de test');
     await call(`/api/admin/board-games/${original.id}`, { method: 'DELETE' });
 
+    // Le plateau « copie » est toujours là : seul l'original, supprimé, est recréé.
     const restored = await call('/api/admin/backup/import', { method: 'POST', json: backup.data });
     expect(restored.status).toBe(200);
-    expect(restored.data.summary.boardGames).toBe(2);
+    expect(restored.data.summary.boardGames).toBe(1);
+    // « duplicates » additionne tous les types : cartes et médias déjà là, plus le plateau copie.
+    expect(restored.data.summary.duplicates).toBe(backup.data.cardGames.length + backup.data.mediaGames.length + 1);
   });
 
   it('accepte une sauvegarde antérieure sans plateaux', async () => {
@@ -275,5 +280,28 @@ describe('Jeux de plateau', () => {
     const res = await call('/api/admin/backup/import', { method: 'POST', json: legacy });
     expect(res.status).toBe(200);
     expect(res.data.summary.boardGames).toBe(0);
+  });
+});
+
+describe('Surcharges et salles déjà ouvertes', () => {
+  it('la réponse indique combien de salles ouvertes gardent l’ancienne présentation', async () => {
+    const room = await call('/api/rooms', { method: 'POST', json: { gameId: 'sudoku', practice: false } });
+    expect(room.status).toBe(201);
+
+    const put = await call('/api/admin/game-details/sudoku', {
+      method: 'PUT',
+      json: { name: 'Sudoku du soir', icon: '🧩', description: 'Une grille, le soir.' },
+    });
+    expect(put.status).toBe(200);
+    expect(put.data.openRooms).toBeGreaterThanOrEqual(1);
+
+    const notice = await call('/api/admin/notices/sudoku', {
+      method: 'PUT',
+      json: { goal: 'Remplir la grille.', steps: ['Placez un chiffre.'], tips: [] },
+    });
+    expect(notice.data.openRooms).toBeGreaterThanOrEqual(1);
+
+    await call('/api/admin/game-details/sudoku', { method: 'DELETE' });
+    await call('/api/admin/notices/sudoku', { method: 'DELETE' });
   });
 });

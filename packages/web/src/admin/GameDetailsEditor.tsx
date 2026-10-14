@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import type { CatalogGame } from '@partyhub/shared';
 import { api } from '../api.js';
+import { openRoomsText } from './messages.js';
 
 /**
  * Nom, icône et description d'un jeu intégré. Les règles du jeu ne se modifient pas :
@@ -24,11 +25,11 @@ export function GameDetailsEditor({ game, onSaved }: { game: CatalogGame; onSave
     setBusy(true);
     setMessage(null);
     try {
-      await api(`/api/admin/game-details/${encodeURIComponent(game.id)}`, {
+      const res = await api<{ openRooms: number }>(`/api/admin/game-details/${encodeURIComponent(game.id)}`, {
         method: 'PUT',
         body: JSON.stringify({ name: name.trim(), icon: icon.trim(), description: description.trim() }),
       });
-      setMessage({ ok: true, text: 'Enregistré. Les prochaines salles utiliseront ce nom.' });
+      setMessage({ ok: true, text: `Enregistré. ${openRoomsText(res.openRooms)}` });
       onSaved();
     } catch (err) {
       setMessage({ ok: false, text: (err as Error).message });

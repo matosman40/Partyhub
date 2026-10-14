@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto';
-import { createWriteStream, mkdirSync, readdirSync, renameSync, rmSync } from 'node:fs';
+import { createWriteStream, mkdirSync, readdirSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import type { Readable } from 'node:stream';
 import type { Store, AssetRow } from '../db/store.js';
@@ -68,6 +68,11 @@ export function sniffMedia(buf: Buffer): SniffedMedia | null {
   if (buf[0] === 0x00 && buf[1] === 0x01 && buf[2] === 0x00 && buf[3] === 0x00) return { kind: 'font', mime: 'font/ttf' };
   return null;
 }
+
+/** Identifiant d'un fichier : 16 octets aléatoires en hexadécimal. */
+const ASSET_ID = /^[0-9a-f]{32}$/;
+
+export type ImportResult = { ok: true; status: 'added' | 'present' } | { ok: false; error: string };
 
 export interface AssetRecord {
   id: string;
@@ -288,6 +293,39 @@ export class AssetService {
   }
 
   /** Supprime un fichier. La vérification « encore utilisé ? » est faite par l'appelant. */
+  /**
+   * Restaure un fichier d'une sauvegarde avec son identifiant d'origine : les jeux le référencent
+   * par cet identifiant. Un fichier déjà présent n'est jamais remplacé.
+   */
+  importRecord(record: AssetRecord, bytes: Buffer): ImportResult {
+    if (!ASSET_ID.test(record.id)) return { ok: false, error: `Identifiant de fichier invalide (« ${record.name} »).` };
+    if (this.get(record.id)) return { ok: true, status: 'present' };
+    const sniffed = sniffMedia(bytes);
+    if (!sniffed || sniffed.kind !== record.kind) {
+      return { ok: false, error: `Fichier « ${record.name} » : format non reconnu.` };
+    }
+    if (bytes.length === 0 || bytes.length > this.limits[sniffed.kind]) {
+      return { ok: false, error: `Fichier « ${record.name} » : taille non admise.` };
+    }
+    const tempPath = path.join(this.dir, `${TEMP_PREFIX}${randomBytes(12).toString('hex')}`);
+    try {
+      writeFileSync(tempPath, bytes, { flag: 'wx', mode: 0o600 });
+      renameSync(tempPath, this.filePath(record.id));
+      this.store.saveAsset({
+        id: record.id,
+        kind: sniffed.kind,
+        mime: sniffed.mime,
+        name: cleanFileName(record.name),
+        size: bytes.length,
+        created_at: record.createdAt,
+      });
+      return { ok: true, status: 'added' };
+    } catch {
+      rmSync(tempPath, { force: true });
+      return { ok: false, error: `Fichier « ${record.name} » : enregistrement impossible.` };
+    }
+  }
+
   remove(id: string): boolean {
     if (!this.get(id)) return false;
     this.store.deleteAsset(id);

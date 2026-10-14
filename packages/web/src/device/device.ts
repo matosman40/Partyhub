@@ -67,7 +67,8 @@ function measure(): DeviceInfo {
   };
 }
 
-let current: DeviceInfo = resolve();
+/** Calculé au premier besoin : le module reste importable hors navigateur (tests). */
+let current: DeviceInfo | null = null;
 const listeners = new Set<() => void>();
 
 /** Type retenu : le choix de l'utilisateur prime sur la détection. */
@@ -90,11 +91,13 @@ function apply(info: DeviceInfo): void {
 
 function refresh(): void {
   const next = resolve();
+  const previous = current;
   const changed =
-    next.kind !== current.kind ||
-    next.width !== current.width ||
-    next.height !== current.height ||
-    next.touch !== current.touch;
+    !previous ||
+    next.kind !== previous.kind ||
+    next.width !== previous.width ||
+    next.height !== previous.height ||
+    next.touch !== previous.touch;
   current = next;
   apply(current);
   if (changed) listeners.forEach((fn) => fn());
@@ -106,7 +109,7 @@ let started = false;
 export function initDevice(): void {
   if (started) return;
   started = true;
-  apply(current);
+  refresh();
   let timer: number | undefined;
   const schedule = () => {
     window.clearTimeout(timer);
@@ -118,6 +121,7 @@ export function initDevice(): void {
 
 /** Informations à transmettre au serveur à chaque connexion d'une place ou d'un spectateur. */
 export function getDevice(): DeviceInfo {
+  if (!current) current = resolve();
   return current;
 }
 

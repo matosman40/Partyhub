@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api } from '../api.js';
-import { PlayerSeat, readSeat, removeSeat, sharedPlaceToken, writeSeat } from '../seat/PlayerSeat.js';
+import { PlayerSeat, readSeat, removeSeat, writeSeat } from '../seat/PlayerSeat.js';
+import { sharedPlaceToken } from '../seat/share.js';
 import { readProfileToken, clearProfileToken, authHeaders } from '../profile/session.js';
 
 /** Nombre maximal de joueurs qu'un même téléphone peut tenir. */
