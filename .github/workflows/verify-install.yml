@@ -1,0 +1,69 @@
+# Vérifie que les commandes d'installation du README fonctionnent telles quelles
+# (Docker Compose sur un runner Linux) : configuration, démarrage, santé, mot de passe, mise à jour.
+name: Vérification de l'installation
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  install:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v4
+
+      - name: Configuration (cp .env.example .env, sans ADMIN_PASSWORD)
+        run: cp .env.example .env
+
+      - name: Premier démarrage (docker compose up -d --build)
+        run: docker compose up -d --build
+
+      - name: Attendre l'état « healthy »
+        run: |
+          for i in $(seq 1 60); do
+            status=$(docker inspect --format='{{.State.Health.Status}}' partyhub 2>/dev/null || echo starting)
+            echo "état : $status"
+            if [ "$status" = "healthy" ]; then exit 0; fi
+            if [ "$status" = "unhealthy" ]; then docker compose logs --no-color; exit 1; fi
+            sleep 3
+          done
+          docker compose logs --no-color
+          exit 1
+
+      - name: Vérifier la réponse de santé et la page d'accueil
+        run: |
+          curl -fsS http://127.0.0.1:8282/api/health
+          curl -fsS -o /dev/null -w "accueil HTTP %{http_code}\n" http://127.0.0.1:8282/
+          curl -fsS -o /dev/null -w "join HTTP %{http_code}\n" http://127.0.0.1:8282/join
+
+      - name: Mot de passe administrateur généré
+        run: |
+          docker compose exec -T partyhub test -f /data/admin-password.txt
+          docker compose exec -T partyhub rm /data/admin-password.txt
+          echo "mot de passe généré présent, puis supprimé comme indiqué dans le README"
+
+      - name: Mise à jour (même commande, données conservées)
+        run: |
+          docker compose up -d --build
+          for i in $(seq 1 60); do
+            status=$(docker inspect --format='{{.State.Health.Status}}' partyhub 2>/dev/null || echo starting)
+            [ "$status" = "healthy" ] && break
+            sleep 3
+          done
+          test "$(docker inspect --format='{{.State.Health.Status}}' partyhub)" = "healthy"
+          curl -fsS http://127.0.0.1:8282/api/health
+
+      - name: Journaux en cas d'échec
+        if: failure()
+        run: docker compose logs --no-color || true
+
+      - name: Arrêt (volume conservé)
+        if: always()
+        run: docker compose down
