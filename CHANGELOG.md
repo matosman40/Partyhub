@@ -2,6 +2,21 @@
 
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [0.1.1] - 2026-10-14
+
+### Corrigé
+- Le fichier `.env.example` manquait dans le dépôt publié : la commande `cp .env.example .env` du README échouait.
+
+### Ajouté
+- Vérification automatique de l'installation décrite dans le README, sur un serveur Linux avec Docker
+  (GitHub Actions) : démarrage, état « healthy », mot de passe généré, mise à jour.
+
+### Migration et compatibilité
+- Aucune.
+
+### Problèmes connus
+- Non encore testé sur un vrai serveur CasaOS ni sur des téléphones réels (voir `docs/ROADMAP.md`).
+
 ## [0.1.0] - 2026-10-14
 
 Première version publiée sur GitHub. Elle reprend l'état validé du projet (tests et build passants).
