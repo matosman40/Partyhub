@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { DEFAULT_PACKAGE_LIMITS, PackageValidationError, pathProblem, validatePackage } from '../packages/format.js';
+import { createPackageGame } from '../packages/factory.js';
 import { launchCheck } from '../packages/launch-check.js';
 import { writeZip, type ZipFileEntry } from '../packages/zip.js';
 
@@ -53,8 +54,8 @@ function pack(source: string, output: string): void {
 function check(file: string): void {
   const pkg = validatePackage(fs.readFileSync(file));
   console.log(`Paquet valide : ${pkg.manifest.name} (${pkg.manifest.id}) version ${pkg.manifest.version}`);
-  console.log(`  moteur minimum ${pkg.manifest.engine.minVersion}, API ${pkg.manifest.engine.api}`);
-  const result = launchCheck(pkg.definition, `pkg-${pkg.manifest.id}`);
+  console.log(`  moteur minimum ${pkg.manifest.engine.minVersion}, API ${pkg.manifest.engine.api}, module ${pkg.module}`);
+  const result = launchCheck(createPackageGame(pkg));
   if (!result.ok) {
     console.error(`Lancement de contrôle échoué : ${result.error}.`);
     process.exitCode = 1;

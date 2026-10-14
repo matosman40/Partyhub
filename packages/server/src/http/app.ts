@@ -16,6 +16,7 @@ import type { PackageSourceService } from '../sources/service.js';
 import type { CardGameService } from '../cards/service.js';
 import type { AssetService } from '../assets/service.js';
 import type { PackageService } from '../packages/service.js';
+import { copyPackageToEditable } from '../packages/copy.js';
 import type { MediaQuizService } from '../media/service.js';
 import { AdminSessions, LoginLimiter, readCookie, verifyPassword } from '../auth.js';
 import { catalog, gameInfo, originOf } from '../catalog.js';
@@ -588,6 +589,16 @@ export function createApp(deps: AppDeps): express.Express {
     }
     const closed = manager.closeWhere((r) => r.module.manifest.id === record.gameId, 'admin');
     res.json({ ok: true, closedRooms: closed });
+  });
+
+  /** Copie modifiable d'un paquet actif : le paquet reste installé et inchangé. */
+  admin.post('/packages/:id/copy', (req, res) => {
+    const result = copyPackageToEditable(req.params.id ?? '', { packages, cardGames, boardGames, mediaGames });
+    if (!result.ok) {
+      res.status(result.error === 'Paquet inconnu.' ? 404 : 400).json({ error: result.error });
+      return;
+    }
+    res.status(201).json(result);
   });
 
   /** Jeux de questions médias (extraits de vidéos YouTube ou de la médiathèque). */

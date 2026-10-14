@@ -2,6 +2,39 @@
 
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [0.7.0] - 2026-10-14
+
+### Ajouté
+- Format de paquet 2 : les jeux de plateau et les jeux de questions peuvent être livrés dans un `.phgame`. Un paquet
+  porte exactement un module : `cards`, `board` ou `quiz`.
+- Jeux de questions en paquet : vidéos YouTube seulement (identifiant et plage de lecture). Les fichiers de la
+  médiathèque sont refusés dans un paquet.
+- Exemples `examples/exemple-plateau/` et `examples/exemple-quiz/`. Chacun pèse environ 1,4 Ko.
+- Fabrique de jeux par module (`packages/server/src/packages/factory.ts`). Le lancement de contrôle fonctionne pour
+  tous les modules, avec le nombre de joueurs du manifeste.
+- Copie modifiable d'un paquet actif (« Créer une copie modifiable » dans l'administration) : la copie est un jeu de
+  l'administration, éditable en entier (nom, description, cartes, cases, questions, règles). Le paquet reste inchangé.
+- Tests : 12 nouveaux pour le format 2, 5 pour la copie.
+
+### Modifié
+- Moteur déclaré en 0.7.0, avec les modules `cards`, `board` et `quiz`. Versions des paquets portées à 0.7.0.
+- Identifiants des jeux issus de paquets : `pkg-` pour les cartes (inchangé), `pkgb-` pour les plateaux, `pkgq-` pour
+  les questions.
+- Une mise à jour qui change le module d'un paquet installé est refusée : il faut un autre identifiant.
+- Le modèle de publication (`docs/PUBLIER-UN-JEU.md`) utilise la version 0.7.0 du moteur.
+
+### Migration et compatibilité
+- Aucune migration de base de données. Les paquets de cartes déjà installés restent valides et gardent leur identifiant.
+- Un paquet de format 2 ne s'installe pas sur une version antérieure à 0.7.0.
+
+### Problèmes connus
+- Hors paquet : les jeux en temps réel (type Bomberman) et les jeux de mouvement (type Just Dance). Un paquet ne porte que
+  des données ; ces mécaniques restent du code intégré, ou demanderont le bac à sable JavaScript de la version 0.9.0.
+- Les vidéos et les sons de la médiathèque ne peuvent pas être embarqués dans un paquet.
+- Les jeux de plateau et de questions venus d'un paquet sont vérifiés par les tests serveur et le lancement de contrôle ;
+  leur affichage dans un navigateur reste à vérifier sur de vrais téléphones.
+- Aucune release GitHub de test n'a encore été créée pour ces modules.
+
 ## [0.6.3] - 2026-10-14
 
 ### Ajouté

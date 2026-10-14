@@ -1,23 +1,25 @@
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import { createCardGame } from '@partyhub/games';
 import type { GameModule } from '@partyhub/shared';
 import type { PackageRow, Store } from '../db/store.js';
 import { setCustomGames } from '../games-registry.js';
 import {
   DEFAULT_PACKAGE_LIMITS,
   PackageValidationError,
+  packageGameId,
   validatePackage,
   type PackageLimits,
+  type PackageModule,
   type ValidatedPackage,
 } from './format.js';
+import { createPackageGame } from './factory.js';
 import { launchCheck, type LaunchCheckOptions } from './launch-check.js';
 import { compareVersions } from './semver.js';
 
-/** Préfixe des identifiants de jeux issus d'un paquet, pour les distinguer des autres sources. */
-export const PACKAGE_GAME_PREFIX = 'pkg-';
 const ARCHIVE_NAME = 'package.phgame';
+
+const MODULE_LABEL: Record<PackageModule, string> = { cards: 'cartes', board: 'plateau', quiz: 'questions' };
 
 const CONTENT_TYPES: Record<string, string> = {
   '.png': 'image/png',
@@ -26,8 +28,8 @@ const CONTENT_TYPES: Record<string, string> = {
   '.webp': 'image/webp',
 };
 
-export function gameIdOf(packageId: string): string {
-  return `${PACKAGE_GAME_PREFIX}${packageId}`;
+export function gameIdOf(packageId: string, module: PackageModule = 'cards'): string {
+  return packageGameId(packageId, module);
 }
 
 export interface PackageRecord {
@@ -94,9 +96,9 @@ export class PackageService {
     const next = new Map<string, Loaded>();
     const modules: GameModule[] = [];
     for (const row of this.store.listPackages()) {
-      const gameId = gameIdOf(row.id);
-      const enabled = this.store.isGameEnabled(gameId);
       const manifest = parseStoredManifest(row.manifest);
+      const gameId = gameIdOf(row.id, manifest.module);
+      const enabled = this.store.isGameEnabled(gameId);
       const base = {
         id: row.id,
         gameId,
@@ -113,7 +115,7 @@ export class PackageService {
         const bytes = fs.readFileSync(this.archivePath(row.id, row.version));
         if (sha256Of(bytes) !== row.sha256) throw new Error('l’archive ne correspond plus à l’empreinte enregistrée');
         const pkg = validatePackage(bytes, this.limits);
-        const module = createCardGame(pkg.definition, { id: gameId });
+        const module = createPackageGame(pkg);
         next.set(row.id, {
           record: { ...base, status: enabled ? 'actif' : 'désactivé' },
           assets: assetsOf(pkg),
@@ -153,10 +155,17 @@ export class PackageService {
       throw err;
     }
     const { manifest } = pkg;
-    const gameId = gameIdOf(manifest.id);
+    const gameId = gameIdOf(manifest.id, pkg.module);
     const current = this.store.getPackage(manifest.id);
 
     if (current) {
+      const installedModule = parseStoredManifest(current.manifest).module;
+      if (installedModule !== pkg.module) {
+        return {
+          ok: false,
+          error: `Ce paquet est un jeu de ${MODULE_LABEL[pkg.module]}, alors que « ${manifest.id} » est installé comme jeu de ${MODULE_LABEL[installedModule]}. Changez d’identifiant pour l’installer.`,
+        };
+      }
       const order = compareVersions(manifest.version, current.version);
       if (order < 0) {
         return {
@@ -175,7 +184,13 @@ export class PackageService {
       }
     }
 
-    const check = launchCheck(pkg.definition, gameId, this.launch);
+    let mod: GameModule;
+    try {
+      mod = createPackageGame(pkg);
+    } catch (err) {
+      return { ok: false, error: `Le jeu ne peut pas être créé : ${errorMessage(err)}.` };
+    }
+    const check = launchCheck(mod, this.launch);
     if (!check.ok) {
       return { ok: false, error: `Le jeu ne se lance pas correctement : ${check.error}.` };
     }
@@ -206,6 +221,25 @@ export class PackageService {
     }
     this.reload();
     return { ok: true, id: manifest.id, gameId, version: manifest.version, unchanged: false };
+  }
+
+  /**
+   * Paquet actif relu et revalidé, pour en faire une copie modifiable. L'archive installée
+   * n'est jamais modifiée : la copie est un jeu distinct, enregistré comme les jeux de l'administration.
+   */
+  readActive(id: string): { ok: true; pkg: ValidatedPackage } | { ok: false; error: string } {
+    const entry = this.loaded.get(id);
+    if (!entry) return { ok: false, error: 'Paquet inconnu.' };
+    if (entry.record.status !== 'actif') {
+      return { ok: false, error: 'Le paquet doit être actif pour être copié.' };
+    }
+    try {
+      const bytes = fs.readFileSync(this.archivePath(id, entry.record.version));
+      if (sha256Of(bytes) !== entry.record.sha256) throw new Error('l’archive ne correspond plus à l’empreinte enregistrée');
+      return { ok: true, pkg: validatePackage(bytes, this.limits) };
+    } catch (err) {
+      return { ok: false, error: errorMessage(err) };
+    }
   }
 
   setEnabled(id: string, enabled: boolean): boolean {
@@ -240,15 +274,17 @@ function assetsOf(pkg: ValidatedPackage): Map<string, Uint8Array> {
   return new Map([...pkg.files].filter(([name]) => name.startsWith('assets/')));
 }
 
-function parseStoredManifest(raw: string): { description: string; author: string } {
+function parseStoredManifest(raw: string): { description: string; author: string; module: PackageModule } {
   try {
-    const parsed = JSON.parse(raw) as { description?: unknown; author?: unknown };
+    const parsed = JSON.parse(raw) as { description?: unknown; author?: unknown; requires?: { modules?: unknown } };
+    const first = Array.isArray(parsed.requires?.modules) ? parsed.requires?.modules[0] : undefined;
     return {
       description: typeof parsed.description === 'string' ? parsed.description : '',
       author: typeof parsed.author === 'string' ? parsed.author : '',
+      module: first === 'board' || first === 'quiz' ? first : 'cards',
     };
   } catch {
-    return { description: '', author: '' };
+    return { description: '', author: '', module: 'cards' };
   }
 }
 

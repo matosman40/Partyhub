@@ -118,7 +118,7 @@ export function PackageSourcesAdmin({ onChanged }: { onChanged: () => void }) {
 
       <form className="ed-new" onSubmit={add}>
         <label className="field">
-          <span>Dépôt (auteur/nom)</span>
+          <span>Dépôt : auteur/nom, ou auteur/depot/jeu pour un dépôt commun</span>
           <input value={repo} onChange={(e) => setRepo(e.target.value)} placeholder="auteur/mon-jeu" required />
         </label>
         <label className="field">

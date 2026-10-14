@@ -1,0 +1,31 @@
+{
+  "name": "Exemple de plateau",
+  "description": "Avancez au dé jusqu’à l’arrivée. Attention aux cases qui reculent ou font perdre des points.",
+  "icon": "🎲",
+  "theme": "arcade",
+  "cells": [
+    { "label": "Départ", "kind": "normal", "value": 0 },
+    { "label": "", "kind": "normal", "value": 0 },
+    { "label": "Bond", "kind": "avance", "value": 2 },
+    { "label": "", "kind": "normal", "value": 0 },
+    { "label": "Amende", "kind": "perte", "value": 1 },
+    { "label": "", "kind": "normal", "value": 0 },
+    { "label": "Pause", "kind": "passe", "value": 0 },
+    { "label": "Bonus", "kind": "gain", "value": 2 },
+    { "label": "", "kind": "normal", "value": 0 },
+    { "label": "Retour", "kind": "recule", "value": 2 },
+    { "label": "", "kind": "normal", "value": 0 },
+    { "label": "Coup de pouce", "kind": "avance", "value": 1 },
+    { "label": "", "kind": "normal", "value": 0 },
+    { "label": "Arrivée", "kind": "arrivee", "value": 0 }
+  ],
+  "rules": { "minPlayers": 2, "maxPlayers": 4, "dice": 1, "turnSeconds": 30 },
+  "notice": {
+    "goal": "Être le premier arrivé sur la dernière case.",
+    "steps": [
+      "Lancer le dé à votre tour, puis avancer le nombre de cases obtenu.",
+      "Appliquer l’effet de la case d’arrivée."
+    ],
+    "tips": ["Les cases Bonus rapportent des points, utiles en cas d’égalité."]
+  }
+}

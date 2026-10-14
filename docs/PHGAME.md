@@ -8,7 +8,7 @@ avant toute installation.
 
 | Type | Contenu | État |
 |---|---|---|
-| **Déclaratif** | Des données seulement : un jeu de cartes décrit en JSON, rendu par le moteur de PartyHub. | **Disponible** (version 0.5.0). |
+| **Déclaratif** | Des données seulement, rendues par le moteur de PartyHub : jeu de cartes, jeu de plateau, jeu de questions (liens YouTube). | **Disponible** : cartes depuis 0.5.0, plateau et questions depuis 0.7.0 (format 2). |
 | **JavaScript** | Du code de jeu exécuté dans un bac à sable séparé du serveur. | **Non implémenté.** Prévu dans la feuille de route (`docs/ROADMAP.md`). |
 | **Émulation rétro** | Ressources et code d'une console ou d'un ordinateur ancien. | **Non pris en charge.** Hors périmètre. |
 
@@ -52,6 +52,50 @@ Le manifeste déclare chaque fichier de l'archive avec sa taille et son empreint
 
 Le champ `files` est calculé par la commande `pack` : il n'est pas à remplir à la main.
 
+## Formats et modules
+
+Chaque paquet porte **exactement un module de jeu**, déclaré dans `requires.modules`. Le module détermine le schéma de
+`game/definition.json`, la catégorie du jeu et les vues utilisées.
+
+| Format | Modules admis | Version du moteur |
+|---|---|---|
+| `formatVersion: 1` | `cards` | 0.5.0 et suivantes |
+| `formatVersion: 2` | `cards`, `board`, `quiz` | 0.7.0 et suivantes |
+
+| Module | Définition | Catégorie | Contraintes |
+|---|---|---|---|
+| `cards` | Jeu de cartes (familles, cartes, effets, règles) | cartes | Pas de dos ni de police de la médiathèque. |
+| `board` | Plateau de 8 à 60 cases, dés, règles, effets des cases | plateau | Première case normale, dernière case d'arrivée. Aucune ressource externe. |
+| `quiz` | Extraits à reconnaître, réponses, durée, mode | quiz | Vidéo **YouTube seulement** : identifiant et plage de lecture. Aucun fichier de la médiathèque. |
+
+Exemple de manifeste pour un plateau (format 2) :
+
+```json
+{
+  "format": "phgame",
+  "formatVersion": 2,
+  "id": "mon-plateau",
+  "name": "Mon plateau",
+  "version": "1.0.0",
+  "description": "Un parcours de 14 cases.",
+  "author": "Votre nom",
+  "kind": "declarative",
+  "engine": { "minVersion": "0.7.0", "api": 1 },
+  "requires": { "modules": ["board"] },
+  "entry": "game/definition.json",
+  "licenses": [{ "path": "licenses/LICENCE.txt", "covers": [] }],
+  "files": []
+}
+```
+
+Les exemples fournis : `examples/exemple-plateau/` et `examples/exemple-quiz/` (identifiants YouTube à remplacer), à côté de
+`examples/exemple-cartes/`. Chaque paquet d'exemple pèse environ 1,4 Ko : un plateau ou une liste de questions tient dans un
+paquet très léger. Le poids d'un paquet vient surtout de ses images : un jeu sans image reste minuscule.
+
+Un identifiant de jeu dépend du module : `pkg-` pour les cartes, `pkgb-` pour les plateaux, `pkgq-` pour les questions. Un
+paquet de plateau et un paquet de cartes ne peuvent donc jamais partager le même identifiant de jeu. Une mise à jour qui
+change le module d'un paquet installé est refusée : il faut un autre identifiant.
+
 ## Règles de validation
 
 Un paquet est refusé dès qu'une règle n'est pas respectée. Les anomalies du contenu sont toutes affichées ; une archive mal formée est refusée au premier problème rencontré.
@@ -68,7 +112,9 @@ Un paquet est refusé dès qu'une règle n'est pas respectée. Les anomalies du 
 - **Moteur** : la version minimale du moteur doit être égale ou inférieure à celle du serveur, et l'API doit être `1`.
 - **Licences** : chaque ressource de `assets/` doit être couverte par une licence ou une attribution listée dans le manifeste.
 - **Images** : la signature doit correspondre à l'extension. Pour les PNG, les côtés ne dépassent pas 2048 px (les JPEG et WebP sont contrôlés sur leur signature seulement).
-- **Définition** : `game/definition.json` est validé avec les mêmes règles que les jeux de cartes créés dans l'administration.
+- **Définition** : `game/definition.json` est validé avec les mêmes règles que les jeux créés dans l'administration, selon le
+  module (cartes, plateau ou questions). Un paquet de questions ne peut référencer que des vidéos YouTube.
+- **Module** : exactement un module par paquet, admis par le format (version 1 : cartes seulement).
 - **Lancement de contrôle** : avant installation, deux parties complètes sont jouées par des robots. Un jeu qui ne démarre pas,
   qui refuse une action légale, qui reste bloqué ou dont les vues ne se sérialisent pas est refusé.
 
@@ -93,6 +139,16 @@ npm run phgame -- check ../../examples/exemple-cartes.phgame
 
 Le paquet d'exemple est reconstruit à l'identique par la commande `pack` : la CI vérifie que le fichier committé correspond
 à son dossier source.
+
+## Copier un paquet pour le modifier
+
+Un paquet installé reste tel quel : c'est ce qui permet de le mettre à jour. Pour changer son nom, sa description, ses cartes,
+ses cases, ses questions ou ses règles, cliquez sur **Créer une copie modifiable** dans la section des paquets.
+
+- La copie est un jeu de l'administration, avec la même définition que le paquet. Elle s'édite dans l'éditeur de son type :
+  jeux de cartes, jeux de plateau ou jeux de questions médias. Son nom porte le suffixe « (copie) ».
+- Le paquet d'origine reste installé et inchangé. La copie ne reçoit plus ses mises à jour.
+- Seul un paquet actif peut être copié.
 
 ## Mise à jour et retour arrière
 
@@ -141,4 +197,6 @@ Le modèle de publication pour un dépôt de jeu est décrit dans [PUBLIER-UN-JE
 - Cache hors ligne et lancement sans réseau des paquets installés : prévus avec l'application installable (version 0.7.0).
 - Transfert d'un paquet entre téléphones : prévu avec la reprise d'écran (version 0.7.0).
 - Jeux JavaScript dans un bac à sable : prévus dans une version ultérieure (voir la feuille de route).
-- Jeux de plateau : créés dans l'administration depuis la version 0.6.2, mais pas encore dans un paquet `.phgame`.
+- Jeux de temps réel et de mouvement (type Bomberman, Just Dance) : pas dans un paquet. Un paquet ne porte que des données ;
+  ces mécaniques restent du code intégré à PartyHub, ou demanderont le bac à sable JavaScript.
+- Vidéos et sons de la médiathèque dans un paquet : non pris en charge. Les questions utilisent des liens YouTube.

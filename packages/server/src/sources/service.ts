@@ -3,7 +3,7 @@ import { z } from 'zod';
 import type { PackageSourceRow, Store } from '../db/store.js';
 import { PackageValidationError, validatePackage } from '../packages/format.js';
 import type { PackageService } from '../packages/service.js';
-import { GitHubError, downloadArchive, isValidRepo, latestRelease, type GitHubOptions } from './github.js';
+import { GitHubError, downloadArchive, latestRelease, parseSource, type GitHubOptions } from './github.js';
 
 /**
  * Sources GitHub des paquets : chaque source est un dépôt dont la dernière release contient un
@@ -87,7 +87,9 @@ export class PackageSourceService {
     const parsed = addSchema.safeParse(input);
     if (!parsed.success) return { ok: false, error: 'Données de la source invalides.' };
     const { repo } = parsed.data;
-    if (!isValidRepo(repo)) return { ok: false, error: 'Dépôt invalide : indiquez auteur/nom.' };
+    if (!parseSource(repo)) {
+      return { ok: false, error: 'Dépôt invalide : indiquez auteur/nom, ou auteur/depot/jeu pour un dépôt commun.' };
+    }
     if (this.store.listPackageSources().some((row) => row.repo === repo)) {
       return { ok: false, error: 'Cette source existe déjà.' };
     }
@@ -177,7 +179,9 @@ export class PackageSourceService {
     try {
       if (row.private === 1 && !this.options.token) throw new GitHubError('GITHUB_TOKEN n’est pas configuré.');
 
-      const release = await latestRelease(row.repo, github);
+      const source = parseSource(row.repo);
+      if (!source) throw new GitHubError('Source invalide : indiquez auteur/nom ou auteur/depot/jeu.');
+      const release = await latestRelease(source.repo, github, source.game);
       this.patch(row.id, { latest_version: release.version, last_checked_at: checkedAt });
 
       if (row.package_id && row.installed_version === release.version) {
@@ -209,6 +213,9 @@ export class PackageSourceService {
         throw new GitHubError(
           `Le fichier annonce la version ${manifestVersion}, mais la release est la version ${release.version}.`,
         );
+      }
+      if (source.game && source.game !== manifestId) {
+        throw new GitHubError(`Ce jeu du dépôt commun s’appelle « ${source.game} », pas « ${manifestId} ».`);
       }
       if (row.package_id && row.package_id !== manifestId) {
         throw new GitHubError(`Cette source fournit « ${manifestId} », pas « ${row.package_id} ».`);

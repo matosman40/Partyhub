@@ -1,5 +1,5 @@
 import { DEFAULT_PACKAGE_LIMITS } from '../packages/format.js';
-import { isValidVersion } from '../packages/semver.js';
+import { compareVersions, isValidVersion } from '../packages/semver.js';
 
 /**
  * Client minimal de l'API GitHub pour les releases. Seules les releases publiques ou accessibles
@@ -24,6 +24,33 @@ export function isValidRepo(value: string): boolean {
   if (!REPO.test(value)) return false;
   const name = value.split('/')[1]!;
   return name !== '.' && name !== '..';
+}
+
+/** Identifiant de jeu, tel que dans le manifeste (et dans le nom du dossier d'un dépôt commun). */
+const GAME_ID = /^[a-z0-9][a-z0-9-]{1,47}$/;
+
+export interface SourceRef {
+  /** Dépôt GitHub, « auteur/nom ». */
+  repo: string;
+  /**
+   * Jeu choisi dans un dépôt commun, ou null pour un dépôt dédié à un seul jeu. Dans un dépôt
+   * commun, chaque version est un tag `<jeu>-vX.Y.Z` et son fichier s'appelle `<jeu>.phgame`.
+   */
+  game: string | null;
+}
+
+/**
+ * Lit une source : « auteur/nom » (un jeu par dépôt) ou « auteur/depot/jeu » (dépôt commun).
+ * Renvoie null si la forme n'est pas admise.
+ */
+export function parseSource(value: string): SourceRef | null {
+  const parts = value.split('/');
+  if (parts.length === 2 && isValidRepo(value)) return { repo: value, game: null };
+  if (parts.length === 3) {
+    const repo = `${parts[0]}/${parts[1]}`;
+    if (isValidRepo(repo) && GAME_ID.test(parts[2]!)) return { repo, game: parts[2]! };
+  }
+  return null;
 }
 
 export class GitHubError extends Error {}
@@ -83,12 +110,15 @@ function parseAsset(raw: unknown): ReleaseAsset | null {
   return { name, url, size };
 }
 
-/** Dernière release publiée du dépôt, avec son fichier `.phgame` et le fichier `.sha256` associé. */
-export async function latestRelease(repo: string, options: GitHubOptions): Promise<Release> {
-  const res = await request(`${GITHUB_API}/repos/${repo}/releases/latest`, 'application/vnd.github+json', options);
-  const data = (await res.json()) as { tag_name?: unknown; assets?: unknown };
+interface ReleaseData {
+  tag_name?: unknown;
+  assets?: unknown;
+}
+
+/** Lit une release : version issue du tag, fichier `.phgame` et `.sha256` associé. */
+function parseRelease(data: ReleaseData, game: string | null): Release {
   const tag = typeof data.tag_name === 'string' ? data.tag_name : '';
-  const version = tag.replace(/^v/, '');
+  const version = game ? tag.slice(`${game}-v`.length) : tag.replace(/^v/, '');
   if (!isValidVersion(version)) {
     throw new GitHubError(`Le tag « ${tag} » n’est pas un numéro de version (X.Y.Z, avec ou sans « v »).`);
   }
@@ -96,18 +126,55 @@ export async function latestRelease(repo: string, options: GitHubOptions): Promi
   const assets = Array.isArray(data.assets)
     ? data.assets.map(parseAsset).filter((a): a is ReleaseAsset => a !== null)
     : [];
-  const archives = assets.filter((a) => a.name.endsWith('.phgame'));
-  if (archives.length === 0) throw new GitHubError('Aucun fichier .phgame dans la dernière release.');
-  if (archives.length > 1) {
-    throw new GitHubError('Plusieurs fichiers .phgame dans la dernière release : un seul est accepté.');
+  let archive: ReleaseAsset | undefined;
+  if (game) {
+    archive = assets.find((a) => a.name === `${game}.phgame`);
+    if (!archive) throw new GitHubError(`Le fichier ${game}.phgame est absent de la release ${tag}.`);
+  } else {
+    const archives = assets.filter((a) => a.name.endsWith('.phgame'));
+    if (archives.length === 0) throw new GitHubError('Aucun fichier .phgame dans la dernière release.');
+    if (archives.length > 1) {
+      throw new GitHubError('Plusieurs fichiers .phgame dans la dernière release : un seul est accepté.');
+    }
+    archive = archives[0]!;
   }
-  const archive = archives[0]!;
   if (archive.size > DEFAULT_PACKAGE_LIMITS.maxArchiveBytes) {
     throw new GitHubError('Le fichier .phgame de la release dépasse la taille maximale.');
   }
   const checksum = assets.find((a) => a.name === `${archive.name}.sha256`);
   if (!checksum) throw new GitHubError(`Le fichier ${archive.name}.sha256 est absent de la release.`);
   return { tag, version, archive, checksum };
+}
+
+/**
+ * Dernière release publiée. Pour un dépôt commun (`game` renseigné), on prend la version la plus
+ * haute parmi les tags `<game>-vX.Y.Z`, sans toucher aux autres jeux du dépôt.
+ */
+export async function latestRelease(repo: string, options: GitHubOptions, game: string | null = null): Promise<Release> {
+  if (!game) {
+    const res = await request(`${GITHUB_API}/repos/${repo}/releases/latest`, 'application/vnd.github+json', options);
+    return parseRelease((await res.json()) as ReleaseData, null);
+  }
+
+  const prefix = `${game}-v`;
+  const refs = await request(
+    `${GITHUB_API}/repos/${repo}/git/matching-refs/tags/${prefix}`,
+    'application/vnd.github+json',
+    options,
+  );
+  const list: unknown = await refs.json();
+  const versions = (Array.isArray(list) ? list : [])
+    .map((r) => (r && typeof r === 'object' && typeof (r as { ref?: unknown }).ref === 'string' ? (r as { ref: string }).ref : ''))
+    .map((ref) => ref.replace(/^refs\/tags\//, ''))
+    .filter((tag) => tag.startsWith(prefix))
+    .map((tag) => ({ tag, version: tag.slice(prefix.length) }))
+    .filter((c) => isValidVersion(c.version))
+    .sort((a, b) => compareVersions(b.version, a.version));
+  const best = versions[0];
+  if (!best) throw new GitHubError(`Aucune version publiée pour « ${game} » : les tags attendus sont ${prefix}X.Y.Z.`);
+
+  const res = await request(`${GITHUB_API}/repos/${repo}/releases/tags/${best.tag}`, 'application/vnd.github+json', options);
+  return parseRelease((await res.json()) as ReleaseData, game);
 }
 
 /** Télécharge le paquet et lit l'empreinte attendue. La comparaison est faite par l'appelant. */

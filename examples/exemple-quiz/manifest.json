@@ -1,0 +1,15 @@
+{
+  "format": "phgame",
+  "formatVersion": 2,
+  "id": "exemple-quiz",
+  "name": "Exemple de questions",
+  "version": "1.0.0",
+  "description": "Questions de démonstration à partir d’extraits YouTube. Les identifiants sont à remplacer par les vôtres.",
+  "author": "PartyHub contributors",
+  "kind": "declarative",
+  "engine": { "minVersion": "0.7.0", "api": 1 },
+  "requires": { "modules": ["quiz"] },
+  "entry": "game/definition.json",
+  "licenses": [{ "path": "licenses/LICENCE.txt", "covers": [] }],
+  "files": []
+}

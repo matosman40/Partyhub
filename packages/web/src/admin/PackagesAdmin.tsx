@@ -16,6 +16,13 @@ export interface PackageRecord {
   installedAt: string;
 }
 
+/** Section de l'administration où retrouver la copie modifiable, selon le type de jeu. */
+const COPY_SECTION: Record<'cards' | 'board' | 'quiz', string> = {
+  cards: 'Jeux de cartes',
+  board: 'Jeux de plateau',
+  quiz: 'Jeux de questions médias',
+};
+
 const STATUS_LABEL: Record<PackageRecord['status'], string> = {
   actif: 'Actif',
   désactivé: 'Désactivé',
@@ -90,6 +97,21 @@ export function PackagesAdmin({ onChanged }: { onChanged: () => void }) {
     }
   }
 
+  async function copy(record: PackageRecord) {
+    setError(null);
+    setNotice(null);
+    try {
+      const res = await api<{ name: string; module: 'cards' | 'board' | 'quiz' }>(
+        `/api/admin/packages/${encodeURIComponent(record.id)}/copy`,
+        { method: 'POST' },
+      );
+      setNotice(`Copie créée : « ${res.name} ». Modifiez-la dans « ${COPY_SECTION[res.module]} ».`);
+      onChanged();
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  }
+
   async function remove(record: PackageRecord) {
     if (!window.confirm(`Supprimer le paquet « ${record.name} » ? Ses fichiers seront effacés et les salles qui le jouent seront fermées.`)) {
       return;
@@ -109,7 +131,9 @@ export function PackagesAdmin({ onChanged }: { onChanged: () => void }) {
     <div className="stack">
       <p className="muted">
         Un paquet .phgame contient un jeu complet dans un seul fichier. Il est vérifié avant installation : une version
-        plus ancienne, une archive altérée ou un fichier non déclaré est refusé.
+        plus ancienne, une archive altérée ou un fichier non déclaré est refusé. Un paquet installé reste tel quel, pour
+        rester à jour. Pour changer son nom, sa description, ses cartes, ses cases ou ses questions, créez une copie
+        modifiable.
       </p>
       <div className="stack">
         <label className="btn primary">
@@ -158,6 +182,11 @@ export function PackagesAdmin({ onChanged }: { onChanged: () => void }) {
               {r.status !== 'erreur' && (
                 <button type="button" className={r.enabled ? 'btn primary' : 'btn ghost'} onClick={() => toggle(r)}>
                   {r.enabled ? 'Activé' : 'Désactivé'}
+                </button>
+              )}
+              {r.status === 'actif' && (
+                <button type="button" className="btn ghost small" onClick={() => copy(r)}>
+                  Créer une copie modifiable
                 </button>
               )}
               <button type="button" className="btn ghost small" onClick={() => remove(r)}>
