@@ -26,9 +26,9 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci --no-audit --no-fund
+      - run: npm run build
       - run: npm run typecheck
       - run: npm test
-      - run: npm run build
 
   image:
     name: Construction de l'image (sans publication)
