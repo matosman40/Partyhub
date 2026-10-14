@@ -13,6 +13,9 @@ Jeux fournis (architecture modulaire, un dossier par jeu, voir [docs/ADDING-A-GA
 | 🕵️ **L'Imposteur** | Soirée | Un imposteur ignore le mot secret : donnez des indices, puis démasquez-le. |
 | 🃏 **Plus ou moins** | Cartes | Un paquet de 52 cartes : la suivante sera-t-elle plus haute ou plus basse ? |
 | ⚡ **Réflexe** | Adresse | Attendez le vert, puis touchez le plus vite possible. |
+| ♠️ **Poker** | Cartes | Texas hold’em : mises, bluff et meilleure main de cinq cartes. |
+| 🃏 **Rami 51** | Cartes | Ouvrez à 51 points, posez vos combinaisons, videz votre main le premier. |
+| 🎴 **Tarot** | Cartes | Enchères, chien, écart et plis à quatre joueurs. |
 
 ## Fonctionnalités
 

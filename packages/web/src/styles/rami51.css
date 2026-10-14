@@ -1,0 +1,342 @@
+/* ==========================================================================
+   Rami 51 : combinaisons sur le tapis (TV) et préparation des poses (téléphone)
+   Les classes communes aux jeux de cartes viennent de styles.css.
+   ========================================================================== */
+
+.dealer-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 1.3rem;
+  height: 1.3rem;
+  margin-left: 0.4rem;
+  border-radius: 50%;
+  background: var(--sun);
+  color: #1a1030;
+  font-size: 0.75rem;
+  font-weight: 800;
+  vertical-align: middle;
+}
+
+.rami-ok {
+  color: var(--lime);
+  font-weight: 700;
+}
+
+.rami-ko {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+/* ---------- Écran principal ---------- */
+
+.rami-felt.table-mat {
+  display: flex;
+  align-items: stretch;
+  gap: clamp(1rem, 2.5vw, 2rem);
+  width: 100%;
+  padding: clamp(1.2rem, 3vw, 2.2rem) clamp(1.2rem, 3vw, 2.2rem);
+  min-height: clamp(240px, 38vh, 360px);
+  text-align: left;
+}
+
+.rami-stock {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.6rem;
+}
+
+.rami-stock .cards-pile {
+  width: clamp(64px, 7vw, 92px);
+}
+
+.rami-stock .cards-discard {
+  width: clamp(78px, 8.5vw, 112px);
+  min-height: 1px;
+}
+
+.rami-melds {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 0.9rem 1.6rem;
+}
+
+.rami-empty {
+  margin: auto;
+  color: rgba(255, 255, 255, 0.55);
+  font-weight: 600;
+}
+
+.rami-owner {
+  min-width: 0;
+}
+
+.rami-owner-name {
+  margin: 0 0 0.35rem;
+  font-family: var(--ui);
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--sun-2);
+}
+
+.rami-owner-melds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 1rem;
+}
+
+.rami-meld {
+  padding: 0.35rem 0.5rem 0.5rem;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.22);
+}
+
+.rami-meld-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+  margin-bottom: 0.3rem;
+  font-size: 0.85rem;
+}
+
+.rami-meld-cards {
+  display: flex;
+}
+
+.rami-mc {
+  position: relative;
+  width: clamp(34px, 3.6vw, 48px);
+  margin-left: -5px;
+}
+
+.rami-mc:first-child {
+  margin-left: 0;
+}
+
+.rami-mc .pcard {
+  filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.5));
+}
+
+.rami-mc.is-joker {
+  margin-bottom: 1rem;
+}
+
+.rami-mc-tag {
+  position: absolute;
+  left: 50%;
+  bottom: -1.1rem;
+  transform: translateX(-50%);
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: var(--sun);
+  color: #1a1030;
+  font-size: 0.7rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.rami-sec {
+  margin-left: 0.8rem;
+  border-color: var(--magenta);
+  color: var(--magenta-2);
+}
+
+/* ---------- Téléphone ---------- */
+
+.rami-status {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+.rami-status .hud-pill {
+  padding: 0.3rem 0.7rem;
+  font-size: 0.85rem;
+}
+
+.rami-status .is-must {
+  border-color: var(--sun);
+  color: var(--sun);
+}
+
+.rami-stock-row {
+  gap: 0.8rem;
+}
+
+.rami-back {
+  width: clamp(54px, 15vw, 70px);
+  flex: none;
+}
+
+.rami-stock-row .cards-top {
+  width: clamp(72px, 22vw, 96px);
+  min-height: 1px;
+}
+
+.rami-sort {
+  min-height: 44px;
+}
+
+.rami-live {
+  min-height: 2.6em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.4rem;
+  font-size: 0.95rem;
+  text-wrap: balance;
+}
+
+.rami-staging {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.rami-groups {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.rami-group {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 14px;
+  background: var(--glass);
+  border: 2px solid var(--line);
+  text-align: left;
+}
+
+.rami-group.is-ok {
+  border-color: var(--lime);
+}
+
+.rami-group.is-ko {
+  border-color: var(--danger);
+}
+
+.rami-group-cards {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.rami-group-pts {
+  font-size: 0.85rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.rami-group .btn {
+  min-height: 44px;
+}
+
+.rami-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.rami-actions-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.rami-actions .btn.big {
+  min-height: 52px;
+  padding: 0.6rem 0.4rem;
+  font-size: 0.95rem;
+  line-height: 1.15;
+}
+
+.rami-actions .btn[aria-pressed='true'] {
+  outline: 3px solid var(--sun);
+  outline-offset: 2px;
+}
+
+.rami-pick {
+  padding: 0.7rem;
+  border-radius: 18px;
+  background: var(--glass);
+  border: 2px solid var(--sun);
+  text-align: left;
+}
+
+.rami-pick-title {
+  margin-bottom: 0.5rem;
+  font-weight: 800;
+}
+
+.rami-pick ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.rami-pick-btn {
+  display: grid;
+  gap: 0.15rem;
+  width: 100%;
+  min-height: 48px;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  background: var(--glass-2);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.rami-pick-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.rami-dock {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.rami-dock .btn.big {
+  min-height: 52px;
+  padding: 0.55rem 0.4rem;
+  font-size: 1rem;
+  line-height: 1.15;
+}
+
+@media (max-width: 900px) {
+  .rami-felt.table-mat {
+    flex-direction: column;
+    align-items: center;
+  }
+  .rami-stock {
+    flex-direction: row;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rami-mc,
+  .rami-pick-btn {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Deux éventails superposés quand la main est grande */
+.rami-fans {
+  display: grid;
+  gap: 0.2rem;
+}

@@ -84,6 +84,10 @@ jobs:
         env:
           BASE_URL: http://127.0.0.1:8282
         run: python scripts/smoke-browser.py
+      - name: Parties de cartes avec robots et téléphone
+        env:
+          BASE_URL: http://127.0.0.1:8282
+        run: python scripts/games-browser.py
       - name: Journal du serveur en cas d'échec
         if: failure()
         run: cat "$RUNNER_TEMP/server.log" || true

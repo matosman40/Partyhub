@@ -22,6 +22,9 @@ import { LoupsHostScreen } from '../loups-village/client/HostScreen.js';
 import { LoupsPlayerScreen } from '../loups-village/client/PlayerScreen.js';
 import { soloClientViews } from '../solo/client/index.js';
 import type { GameClientViews } from './types.js';
+import { ramiViews } from '../rami51/client/index.js';
+import { pokerViews } from '../poker/client/index.js';
+import { tarotViews } from '../tarot/client/index.js';
 
 export type { GameClientViews, HostViewProps, PlayerViewProps, SettingsProps } from './types.js';
 export { Avatar } from './ui.js';
@@ -103,6 +106,9 @@ export const clientViews: Record<string, GameClientViews> = {
     Player: LoupsPlayerScreen,
   },
   ...soloClientViews,
+  'rami-51': ramiViews,
+  poker: pokerViews,
+  tarot: tarotViews,
 };
 
 // Briques partagées avec la vue 3D du Promoteur (écran TV, chargement différé côté web).

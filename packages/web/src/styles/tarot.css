@@ -1,0 +1,293 @@
+/* ==========================================================================
+   Tarot français à 4 joueurs : plateau en croix sur l'écran principal, main
+   et pli sur le téléphone. Les classes communes aux jeux de cartes viennent de styles.css.
+   ========================================================================== */
+
+.tarot-board {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr minmax(260px, 1.5fr) 1fr;
+  grid-template-rows: auto minmax(220px, 1fr) auto;
+  gap: clamp(0.6rem, 1.6vw, 1.2rem);
+  align-items: center;
+  width: 100%;
+}
+
+.tarot-board .tarot-seat {
+  position: relative;
+  justify-self: center;
+}
+
+.tarot-board .pos-top {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.tarot-board .pos-left {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.tarot-board .pos-right {
+  grid-column: 3;
+  grid-row: 2;
+}
+
+.tarot-board .pos-bottom {
+  grid-column: 2;
+  grid-row: 3;
+}
+
+.tarot-seat.is-turn {
+  outline: 3px solid var(--sun);
+  outline-offset: 4px;
+  border-radius: 14px;
+}
+
+.tarot-seat.is-taker .seat-name::after {
+  content: ' ★';
+  color: var(--sun);
+}
+
+.tarot-center.table-mat {
+  grid-column: 2;
+  grid-row: 2;
+  display: grid;
+  place-items: center;
+  min-height: clamp(220px, 38vh, 340px);
+  padding: clamp(0.8rem, 2vw, 1.4rem);
+}
+
+.tarot-center .tarot-trick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  justify-content: center;
+}
+
+.tarot-slot {
+  position: relative;
+  width: clamp(64px, 9vw, 96px);
+  aspect-ratio: 5 / 8;
+  border-radius: 10px;
+}
+
+.tarot-slot.is-winner {
+  box-shadow: 0 0 0 3px var(--lime), 0 0 18px rgba(182, 255, 92, 0.6);
+}
+
+.tarot-trick-empty {
+  margin: 0;
+  text-align: center;
+}
+
+.tarot-contract {
+  font-weight: 800;
+  font-size: clamp(1rem, 2vw, 1.3rem);
+  text-align: center;
+}
+
+.tarot-count {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.tarot-dealer {
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
+
+.tarot-chien {
+  display: flex;
+  gap: 0.3rem;
+  justify-content: center;
+}
+
+.tarot-bids {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  justify-content: center;
+}
+
+.tarot-bid-name {
+  display: inline-block;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  font-size: 0.85rem;
+}
+
+.tarot-ecart {
+  margin: 0.4rem 0 0;
+  text-align: center;
+  font-weight: 700;
+}
+
+.tarot-notice {
+  padding: 0.8rem 1rem;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.tarot-notice-title {
+  margin: 0 0 0.3rem;
+  font-weight: 800;
+}
+
+.tarot-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.tarot-table th,
+.tarot-table td {
+  padding: 0.35rem 0.5rem;
+  text-align: right;
+}
+
+.tarot-table th:first-child,
+.tarot-table td:first-child {
+  text-align: left;
+}
+
+.tarot-summary {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.tarot-summary-calc {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.tarot-summary-chien {
+  display: flex;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+}
+
+.tarot-seat-note {
+  display: block;
+  font-size: 0.75rem;
+  opacity: 0.75;
+}
+
+.tarot-lines {
+  display: grid;
+  gap: 0.25rem;
+}
+
+/* ---------- Téléphone ---------- */
+
+.tarot-player .tarot-hand-mat {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.6rem;
+}
+
+.tarot-hand {
+  display: flex;
+  gap: 0.25rem;
+  overflow-x: auto;
+  padding: 0.4rem 0.2rem 0.6rem;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+}
+
+.tarot-hand > * {
+  flex: 0 0 auto;
+  scroll-snap-align: center;
+}
+
+.tarot-strip {
+  display: flex;
+  gap: 0.4rem;
+  justify-content: center;
+}
+
+.tarot-strip-cell {
+  display: grid;
+  justify-items: center;
+  gap: 0.2rem;
+}
+
+.tarot-strip-slot {
+  width: clamp(40px, 12vw, 56px);
+  aspect-ratio: 5 / 8;
+  border-radius: 8px;
+}
+
+.tarot-strip-card {
+  width: 100%;
+  height: 100%;
+}
+
+.tarot-strip-name {
+  font-size: 0.7rem;
+  opacity: 0.7;
+}
+
+.tarot-strip-name.is-turn {
+  color: var(--sun);
+  opacity: 1;
+  font-weight: 800;
+}
+
+.tarot-strip-info {
+  margin: 0;
+  text-align: center;
+  font-size: 0.85rem;
+}
+
+.tarot-dock.is-bids {
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.tarot-phone-trick {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.tarot-won {
+  margin: 0;
+  text-align: center;
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
+/* ---------- Phases (cadre visuel léger) ---------- */
+
+.tarot-host.phase-round-over .tarot-board,
+.tarot-host.phase-final .tarot-board {
+  opacity: 0.85;
+}
+
+@media (max-width: 760px) {
+  .tarot-board {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto auto auto;
+  }
+  .tarot-board .pos-top {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+  .tarot-center.table-mat {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  .tarot-board .pos-left {
+    grid-column: 1;
+    grid-row: 3;
+  }
+  .tarot-board .pos-right {
+    grid-column: 2;
+    grid-row: 3;
+  }
+  .tarot-board .pos-bottom {
+    grid-column: 1 / -1;
+    grid-row: 4;
+  }
+}

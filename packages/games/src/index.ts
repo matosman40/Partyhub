@@ -12,6 +12,9 @@ import { president } from './president/module.js';
 import { promoteur } from './promoteur/module.js';
 import { loupsVillage } from './loups-village/module.js';
 import { sudoku, solitaire, taquin, motsCroises } from './solo/index.js';
+import { rami51 } from './rami51/module.js';
+import { poker } from './poker/module.js';
+import { tarot } from './tarot/module.js';
 
 /**
  * Registre explicite des jeux disponibles.
@@ -35,6 +38,9 @@ export const gameRegistry: GameModule[] = [
   solitaire,
   taquin,
   motsCroises,
+  rami51,
+  poker,
+  tarot,
 ];
 
 export function findGame(id: string): GameModule | undefined {
@@ -66,3 +72,61 @@ export { createMediaGame } from './media-game.js';
 export * from './solo/index.js';
 export { createCaptionGame, type CaptionState, type CaptionSettings } from './captions/module.js';
 export { matchAnswer, normalizeAnswer, editDistance } from './media-quiz/answer.js';
+export { rami51, createRamiGame, ramiSettingsSchema } from './rami51/module.js';
+export type { RamiState, RamiSettings, RamiPhase, RamiRoundResult } from './rami51/module.js';
+export {
+  RAMI_DEFINITION,
+  RAMI_NOTICE,
+  checkMeld,
+  checkLayoff,
+  checkSwap,
+  checkOpening,
+  handPenalty,
+  penaltyValue,
+  positionValue,
+  meldPoints,
+  meldTitle,
+  jokerText,
+  fullDeck,
+  sortCards,
+} from './rami51/rules.js';
+export type { RamiCard, Meld, MeldCard, MeldCheck, OpeningCheck, SwapCheck } from './rami51/rules.js';
+export { planOpening, planMeld, planLayoff, planDiscard, meldCandidates } from './rami51/bot.js';
+export { poker, createPokerGame } from './poker/module.js';
+export type { PokerState, PokerSettings, PokerWinner } from './poker/module.js';
+export { POKER_DEFINITION, evaluateBest, evaluateFive, compareHands, buildPots, resolvePots, parseCard } from './poker/rules.js';
+export { tarot, createTarotGame, tarotSettingsSchema } from './tarot/module.js';
+export type { TarotState, TarotSettings, TarotPhase, TarotBid, TarotTrick, TarotSummary, PlayedCard } from './tarot/module.js';
+export {
+  TAROT_DEFINITION,
+  TAROT_DECK,
+  TAROT_NOTICE,
+  CONTRACTS,
+  CONTRACT_LABEL,
+  CONTRACT_COEF,
+  POINTS_NEEDED,
+  TOTAL_HALF_POINTS,
+  EXCUSE,
+  PETIT,
+  VINGT_ET_UN,
+  OUDLERS,
+  autoEcart,
+  canDiscard,
+  cardHalfPoints,
+  cardName,
+  cardSymbol,
+  contractsAbove,
+  countHalfPoints,
+  dealDeltas,
+  ecartError,
+  formatHalf,
+  hasPetitSec,
+  isOudler,
+  legalCards,
+  playError,
+  scoreDeal,
+  sortHand,
+  trickWinner,
+} from './tarot/rules.js';
+export type { Contract, DealInput, DealScore, Side } from './tarot/rules.js';
+export { botBid, botEcart, botPlay, handStrength } from './tarot/bot.js';

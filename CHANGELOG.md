@@ -2,6 +2,26 @@
 
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [0.4.0] - 2026-10-14
+
+### Ajouté
+- Trois jeux de cartes, disponibles dans le catalogue :
+  - **Poker (Texas hold’em)** de 2 à 8 joueurs : blindes, mises, tapis, pots secondaires, croupier, 25 s par action.
+  - **Rami 51** de 2 à 5 joueurs (avec le jeu de 108 cartes) : ouverture à 51 points, tierce franche, échange de joker, rami sec.
+  - **Tarot à 4 joueurs** : enchères, chien, écart, obligations de couleur et d'atout, Excuse, petit au bout, chelem.
+- Robots pour chacun des trois jeux (salle d'entraînement).
+- Tests serveur : 260 au total, dont 10 pour le tarot, 37 pour Rami 51 et 16 pour le poker.
+- Test navigateur des jeux de cartes (`scripts/games-browser.py`) : une partie avec robots et un téléphone réel par jeu,
+  écran TV et téléphone en 390 px, sans erreur ni débordement. Lancé en intégration continue.
+
+### Migration et compatibilité
+- Aucune action manuelle. Aucune donnée existante n'est modifiée.
+
+### Problèmes connus
+- Tarot : une partie demande 4 joueurs ; la salle d'entraînement ne fournit que 3 robots, il faut donc un téléphone.
+- Poker : la relance rouvre l'action à tous les joueurs encore en jeu (simplification documentée dans le module).
+- Non testé sur de vrais téléphones ni sur une TV (seulement Chromium, tailles d'écran simulées).
+
 ## [0.3.0] - 2026-10-14
 
 ### Ajouté

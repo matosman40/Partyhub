@@ -21,7 +21,7 @@ Légende : **Fait** = dans le dépôt. **À faire** = pas commencé. **En cours*
 | 0.1.1 | Correctifs de documentation | Fichier `.env.example` rétabli ; installation vérifiée par GitHub Actions | **Fait** (tag à créer) |
 | 0.2.0 | Installation sans compilation | Image GHCR, compose sans `build:`, icône CasaOS, CI, publication sur tag | **Prêt sur `main`** (tag à créer, puis paquet GHCR rendu public) |
 | 0.3.0 | Données et migrations | Migrations `user_version`, sauvegarde avant migration, test de montée de version | **Prêt sur `main`** (tag à créer) |
-| 0.4.0 | Jeux de cartes et poker | Poker validé en navigateur, Rami 51, Tarot | En cours (hors dépôt) |
+| 0.4.0 | Jeux de cartes | Poker, Rami 51 et Tarot intégrés, tests serveur et navigateur | **Prêt sur `main`** (tag à créer) |
 | 0.5.0 | Jeux autonomes `.phgame` | Format de paquet, import dans l'administration, exécution isolée, cache | En cours (hors dépôt) |
 | 0.6.0 | Éditeurs et médiathèque | Éditeur de cartes et de plateau, médiathèque partagée | À faire |
 | 0.7.0 | Reprise d'écran et contexte hors ligne | Reprise de l'écran principal (WebRTC), application installable (PWA) | À faire |
@@ -55,11 +55,13 @@ Légende : **Fait** = dans le dépôt. **À faire** = pas commencé. **En cours*
 - Documentation du retour arrière : restaurer la sauvegarde puis redéployer la version précédente.
 - Critère : une mise à jour depuis 0.2.0 ne perd aucune donnée, et le retour arrière est testé.
 
-### 0.4.0 : jeux de cartes et poker
-- Poker : validation dans le navigateur (téléphones et écran), puis intégration.
-- Rami 51 : module, vues et tests présents dans une copie de travail ; intégration après relecture et test navigateur.
-- Tarot à 4 joueurs : même processus.
-- Critère : chaque jeu se termine sans blocage, avec des tests serveur et un test navigateur par jeu.
+### 0.4.0 : jeux de cartes
+- Poker (Texas hold’em) : blindes, mises, tapis, pots secondaires. Testé en navigateur (écran et téléphone).
+- Rami 51 : ouverture à 51 points, tierce franche, échange de joker, rami sec. Testé en navigateur.
+- Tarot à 4 joueurs : enchères, chien, écart, Excuse, petit au bout, chelem.
+- Test navigateur : `scripts/games-browser.py`, lancé en intégration continue.
+- Critère atteint : chaque jeu se termine sans blocage (tests serveur) et s'affiche sans erreur (test navigateur).
+- Reste à faire : essai sur de vrais téléphones et une TV.
 
 ### 0.5.0 : format `.phgame`
 Objectif : un jeu livré dans un seul fichier (code, graphismes, sons, données, licences), importable depuis l'administration,
