@@ -4,6 +4,15 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 
 ## Non publié
 
+### Modifié
+- Écrans téléphone épurés : le nom, le bouton « Je suis prêt » ou le jeu restent en avant. Les options de l'appareil,
+  « Comment jouer », le partage d'une place, la discussion et « Quitter la salle » sont dans le tiroir d'angle.
+- Le tiroir d'angle s'affiche au-dessus de toute la page (portail) et son fond est plein.
+- CSS : règles mortes retirées (classes sans usage dans le code, anciennes mises en page de l'accueil et du TV).
+
+### Ajouté
+- Tests de la minuterie d'inactivité des commandes (délai de 3,5 s, repoussé à chaque action).
+
 ## [0.7.1] - 2026-10-14
 
 ### Ajouté

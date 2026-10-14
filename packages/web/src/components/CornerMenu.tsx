@@ -1,4 +1,5 @@
 import { useEffect, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 
 /**
  * Menu discret dans un coin de l'écran : un petit bouton qui ouvre un tiroir. Les options et les
@@ -41,20 +42,30 @@ export function CornerMenu({
         <span aria-hidden="true" />
         <span aria-hidden="true" />
       </button>
-      {open && (
-        <>
-          <button type="button" className="corner-scrim" aria-label="Fermer le menu" onClick={onClose} tabIndex={-1} />
-          <aside id="corner-drawer" className="corner-drawer" aria-label="Menu">
-            <div className="corner-drawer-head">
-              <p>Menu</p>
-              <button type="button" className="btn ghost small" onClick={onClose}>
-                Fermer
-              </button>
-            </div>
-            <div className="corner-drawer-body">{children}</div>
-          </aside>
-        </>
-      )}
+      {open &&
+        // Hors de la page : les animations et les contextes d'empilement de l'écran ne doivent pas
+        // faire passer le contenu de la page au-dessus du tiroir.
+        createPortal(
+          <>
+            <button
+              type="button"
+              className="corner-scrim"
+              aria-label="Fermer le menu"
+              onClick={onClose}
+              tabIndex={-1}
+            />
+            <aside id="corner-drawer" className="corner-drawer" aria-label="Menu">
+              <div className="corner-drawer-head">
+                <p>Menu</p>
+                <button type="button" className="btn ghost small" onClick={onClose}>
+                  Fermer
+                </button>
+              </div>
+              <div className="corner-drawer-body">{children}</div>
+            </aside>
+          </>,
+          document.body,
+        )}
     </>
   );
 }

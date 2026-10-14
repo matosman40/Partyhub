@@ -374,15 +374,6 @@ a:hover {
   --btn-glow: rgba(255, 200, 61, 0.55);
 }
 
-.btn.primary.magenta,
-.btn.magenta {
-  --shade: #9c0f4e;
-  background: linear-gradient(180deg, #ff8ec0 0%, var(--magenta) 50%, #d81d6e 100%);
-  color: #fff;
-  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.2);
-  --btn-glow: rgba(255, 61, 139, 0.55);
-}
-
 .btn.ghost {
   --shade: #05041a;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04));
@@ -496,11 +487,6 @@ a:hover {
   background: var(--lime);
   border-color: transparent;
   color: #0c1a03;
-}
-
-.badge.bot-tag {
-  background: rgba(139, 92, 255, 0.25);
-  border-color: rgba(139, 92, 255, 0.5);
 }
 
 .dot {
@@ -776,14 +762,6 @@ input[type='checkbox'] {
    Accueil : catalogue des jeux
    ========================================================================== */
 
-.home-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-
 .hero {
   display: flex;
   flex-direction: column;
@@ -909,34 +887,6 @@ input[type='checkbox'] {
 .game-card.cat-solo {
   --g1: #b6ff5c;
   --g2: #3ff5e0;
-}
-
-.game-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.75rem;
-}
-
-.game-icon {
-  width: 60px;
-  height: 60px;
-  display: grid;
-  place-items: center;
-  border-radius: 20px;
-  font-size: 1.75rem;
-  background:
-    radial-gradient(circle at 30% 22%, rgba(255, 255, 255, 0.55), transparent 38%),
-    linear-gradient(150deg, var(--g1), var(--g2));
-  box-shadow:
-    inset 0 -6px 14px rgba(0, 0, 0, 0.25),
-    0 18px 30px -12px var(--g1);
-  transform: rotate(-5deg);
-  transition: transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.4);
-}
-
-.game-card:hover .game-icon {
-  transform: rotate(4deg) scale(1.06);
 }
 
 .game-card h2 {
@@ -1223,92 +1173,10 @@ input[type='checkbox'] {
   letter-spacing: 0.12em;
 }
 
-.tv-lobby,
-.tv-game {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: clamp(1rem, 2vw, 1.5rem);
-  align-items: start;
-}
-
-.tv-lobby.with-side,
-.tv-game.with-side {
-  grid-template-columns: minmax(0, 1fr);
-}
-
 @media (min-width: 960px) {
-  .tv-lobby.with-side,
-  .tv-game.with-side {
-    grid-template-columns: minmax(0, 1fr) 360px;
-  }
 }
 
 @media (min-width: 1280px) {
-  .tv-game.with-side {
-    grid-template-columns: minmax(0, 1fr) 400px;
-  }
-}
-
-.tv-side {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  min-width: 0;
-}
-
-.tv-note {
-  color: var(--muted);
-  font-size: 0.95rem;
-}
-
-.join-panel {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.9rem;
-  text-align: center;
-  background:
-    radial-gradient(90% 100% at 50% 0%, rgba(255, 200, 61, 0.18), transparent 60%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.015)), rgba(14, 10, 40, 0.85);
-  padding: clamp(1.25rem, 3vw, 2.25rem);
-}
-
-.join-panel .qr,
-.join-panel .qr-placeholder {
-  margin: 0.2rem 0;
-}
-
-.join-url {
-  font-weight: 700;
-  font-size: clamp(1rem, 2.2vw, 1.3rem);
-  color: var(--cyan);
-  word-break: break-all;
-}
-
-.code-big {
-  font-family: var(--display);
-  font-size: clamp(3.2rem, 11vw, 7rem);
-  line-height: 1;
-  letter-spacing: 0.14em;
-  padding-left: 0.14em;
-  background: linear-gradient(180deg, #fff 10%, var(--sun) 70%, #ff9a1f 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  filter: drop-shadow(0 10px 30px rgba(255, 200, 61, 0.35));
-}
-
-.lobby-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.lobby-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
 }
 
 .lobby-icon {
@@ -1358,10 +1226,6 @@ input[type='checkbox'] {
   flex: 1;
 }
 
-.players li.offline {
-  opacity: 0.5;
-}
-
 .players li .avatar {
   width: 44px;
   height: 44px;
@@ -1369,20 +1233,6 @@ input[type='checkbox'] {
 
 .players li .badge {
   font-size: 0.7rem;
-}
-
-.bot-list-actions {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.6rem;
-}
-
-.host-controls {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.6rem;
-  justify-content: center;
 }
 
 .round-info {
@@ -1558,14 +1408,6 @@ input[type='checkbox'] {
   margin: 0 auto;
   padding: 14px 16px 40px;
   gap: 1rem;
-}
-
-.player-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 0.5rem;
-  font-weight: 700;
 }
 
 .player-game {
@@ -1915,17 +1757,14 @@ button.bet:active:not(:disabled) {
 }
 
 .choice.correct,
-.option-card.correct,
-.option-card.is-correct,
-.choice.is-correct {
+.option-card.correct {
   background: linear-gradient(135deg, rgba(182, 255, 92, 0.35), rgba(63, 245, 224, 0.15));
   border-color: var(--lime);
   box-shadow: 0 0 30px -8px rgba(182, 255, 92, 0.7);
 }
 
 .choice.wrong,
-.option-card.wrong,
-.choice.is-wrong {
+.option-card.wrong {
   background: rgba(255, 93, 115, 0.18);
   border-color: var(--danger);
 }
@@ -2207,12 +2046,6 @@ button.bet:active:not(:disabled) {
   color: var(--danger);
 }
 
-.ko-banner,
-.impostor-banner {
-  font-family: var(--display);
-  color: var(--danger);
-}
-
 /* Settings (réglages du salon) */
 .settings,
 .section-head {
@@ -2402,12 +2235,6 @@ button.bet:active:not(:disabled) {
   border-color: transparent;
 }
 
-.hud-hint {
-  margin: 0;
-  font-size: 0.88rem;
-  color: var(--faint);
-}
-
 .sound-toggle {
   font-size: 0.9rem;
   padding: 0.4rem 0.9rem;
@@ -2585,9 +2412,7 @@ html {
 .chat-list,
 .players,
 .ranking,
-.crew,
-.tv-side ul,
-.tv-lobby ul {
+.crew {
   list-style: none;
 }
 
@@ -2641,7 +2466,6 @@ html {
 }
 
 .quiz-host,
-.reflex-host,
 .impostor,
 .plutot-qui,
 .plus-ou-moins {
@@ -3627,40 +3451,6 @@ body {
 }
 
 /* En-tête : une seule ligne ; sur téléphone, les liens défilent horizontalement. */
-.home-top {
-  flex-wrap: nowrap;
-  gap: 0.75rem;
-}
-
-.home-top .page-nav {
-  flex: 1 1 auto;
-  min-width: 0;
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
-  padding-bottom: 2px;
-}
-
-.home-top .page-nav::-webkit-scrollbar {
-  display: none;
-}
-
-.home-top .page-nav a {
-  flex: none;
-  white-space: nowrap;
-  padding: 0.55rem 1rem;
-  border-radius: 999px;
-  background: var(--glass);
-  border: 1px solid var(--line);
-  color: var(--text);
-  font-weight: 700;
-  font-size: 0.95rem;
-}
-
-.home-top .theme-toggle {
-  flex: none;
-}
 
 /* ==========================================================================
    Le Président : pli central, sélection multiple, rôles
@@ -4040,142 +3830,13 @@ html.is-tv #root > .tv {
   margin: 0;
 }
 
-.tv-lobby.with-side,
-.tv-game.with-side {
-  flex: 1 1 auto;
-  min-height: 0;
-  display: grid;
-  grid-template-rows: minmax(0, 1fr);
-  grid-template-columns: minmax(0, 1fr) clamp(300px, 24vw, 440px);
-  gap: clamp(1rem, 2.2vw, 2rem);
-}
-
 /* Scène : salon (QR + joueurs) ou jeu (écran de jeu + barre d'actions) */
-.tv-stage {
-  min-width: 0;
-  min-height: 0;
-  height: 100%;
-  display: grid;
-  gap: clamp(0.8rem, 1.8vw, 1.6rem);
-}
-
-.tv-lobby .tv-stage {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  align-items: stretch;
-}
-
-.tv-stage.is-game {
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: minmax(0, 1fr) auto;
-}
-
-.tv-stage.is-game > :first-child {
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
-.tv-stage.is-game .host-controls {
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 0.8rem;
-  padding-top: 0.2rem;
-}
 
 /* Salon : QR code et code à gauche, joueurs et réglages à droite */
-.join-panel {
-  min-height: 0;
-  height: 100%;
-  justify-content: center;
-  gap: clamp(0.4rem, 1.2vh, 0.9rem);
-  padding: clamp(1rem, 2.6vh, 2rem);
-}
-
-.join-panel img.qr {
-  width: clamp(180px, min(40vh, 24vw), 440px);
-  height: auto;
-  aspect-ratio: 1 / 1;
-  border-radius: 1rem;
-}
-
-.join-panel .join-url {
-  font-size: clamp(0.85rem, 1.6vh, 1.2rem);
-}
-
-.join-panel .code-big {
-  font-size: clamp(3rem, min(6.5vw, 12vh), 8rem);
-}
-
-.lobby-panel {
-  min-height: 0;
-  height: 100%;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  gap: clamp(0.5rem, 1.3vh, 0.9rem);
-  padding: clamp(1rem, 2.4vh, 1.8rem);
-}
-
-.lobby-panel > * {
-  flex: none;
-}
-
-.lobby-panel .players {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow: auto;
-  margin: 0;
-  padding: 0;
-  scrollbar-width: thin;
-}
 
 /* Rail : manette (haut), discussion (reste de la hauteur, défilement interne) */
-.tv-side {
-  min-height: 0;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: clamp(0.6rem, 1.4vh, 1rem);
-  overflow: hidden;
-}
-
-.tv-side > section:first-child {
-  flex: none;
-}
-
-.tv-side > section:first-child h2 {
-  font-size: clamp(1.1rem, 2.4vh, 1.5rem);
-}
-
-.tv-side > .card:last-child {
-  flex: 1 1 auto;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  padding: clamp(0.9rem, 2vh, 1.3rem);
-}
-
-.tv-side .chat {
-  flex: 1 1 auto;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.tv-side .chat-list {
-  flex: 1 1 auto;
-  min-height: 0;
-  max-height: none;
-  overflow: auto;
-}
 
 @media (max-height: 820px) {
-  .tv-note {
-    display: none;
-  }
 }
 
 /* Petits écrans en largeur (tablette à l'horizontale, etc.) : la page peut défiler */
@@ -4190,22 +3851,6 @@ html.is-tv #root > .tv {
     position: static;
     min-height: 100dvh;
     overflow: visible;
-  }
-
-  .tv-lobby.with-side,
-  .tv-game.with-side,
-  .tv-lobby .tv-stage {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto;
-  }
-
-  .tv-side {
-    height: auto;
-    overflow: visible;
-  }
-
-  .tv-side .chat-list {
-    max-height: 40vh;
   }
 }
 
@@ -4226,37 +3871,8 @@ html.is-tv #root > .tv {
 /* Finitions de la console TV */
 
 /* Salon : état vide des joueurs = emplacement pleine largeur */
-.lobby-panel .players li {
-  width: 100%;
-}
-
-.lobby-panel .players li.muted {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 7rem;
-  border: 1px dashed var(--line-strong);
-  border-radius: 18px;
-  text-align: center;
-}
 
 /* Rail : formulaire d'entrée compact (pour l'hôte qui joue aussi) */
-.tv-side .join-card {
-  gap: 0.6rem;
-  padding: clamp(0.9rem, 2vh, 1.3rem);
-}
-
-.tv-side .join-card > p.muted {
-  display: none;
-}
-
-.tv-side .join-card h2 {
-  font-size: clamp(1.05rem, 2.3vh, 1.4rem);
-}
-
-.tv-side .join-card .big-field input {
-  padding-block: 0.55rem;
-}
 
 /* Titres géants : coupures équilibrées, pas de tiret isolé en fin de ligne */
 .huge-word {
@@ -4327,21 +3943,8 @@ html.is-tv #root > .tv {
 }
 
 /* Barre d'actions : dock centré, façon console */
-.tv-stage.is-game .host-controls {
-  justify-self: center;
-  align-self: center;
-  padding: 0.35rem;
-  border-radius: 999px;
-  background: rgba(8, 6, 26, 0.55);
-  border: 1px solid var(--line);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-}
 
 /* Rail : cartes au même rayon, titres de section sobres */
-.tv-side > section:first-child > h2 {
-  letter-spacing: -0.01em;
-}
 
 @media (prefers-reduced-motion: reduce) {
   html.is-tv body::before,
@@ -4351,52 +3954,8 @@ html.is-tv #root > .tv {
 }
 
 /* Salon : liste des joueurs en lignes verticales, lisibles à distance */
-.lobby-panel .players {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  align-content: flex-start;
-}
-
-.lobby-panel .players li {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  min-height: 0;
-  padding: 0.55rem 0.9rem;
-  border-radius: 16px;
-  background: var(--glass);
-  border: 1px solid var(--line);
-  white-space: nowrap;
-}
-
-.lobby-panel .players li .name {
-  flex: 1 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.lobby-panel .players li.muted {
-  justify-content: center;
-  min-height: 5.5rem;
-}
 
 /* Réglages du salon : une case à cocher reste sur la même ligne que son libellé */
-.lobby-panel .field.checkbox {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 0.6rem;
-  font-size: clamp(1rem, 1.9vh, 1.15rem);
-}
-
-.lobby-panel .field.checkbox input[type='checkbox'] {
-  width: 1.4rem;
-  height: 1.4rem;
-  margin: 0;
-  flex: none;
-}
 
 /* Pastilles de joueurs (salle d'attente) : avatar et prénom bien séparés */
 .chips .chip {
@@ -4489,17 +4048,7 @@ html.is-tv #root > .tv {
   color: var(--ok);
   letter-spacing: 0.05em;
 }
-.pm-tokens {
-  position: absolute;
-  bottom: 0.3em;
-  left: 0.3em;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.15em;
-}
-.pm-tokens .avatar {
-  box-shadow: 0 0 0 2px var(--bg0);
-}
+
 .pm-center {
   grid-column: 2 / 7;
   grid-row: 2 / 7;
@@ -5883,13 +5432,6 @@ html[data-device='tablet'] .observer-page {
   max-width: 14rem;
 }
 
-.home-tools {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  flex-wrap: wrap;
-}
-
 /* Spectateur : plateau et discussion ; sur grand écran, la colonne est à droite. */
 .observer-page {
   width: 100%;
@@ -6631,7 +6173,7 @@ html.is-tv #root > .stage {
   width: min(440px, 92vw);
   display: flex;
   flex-direction: column;
-  background: rgba(12, 9, 34, 0.97);
+  background: #0c0922;
   color: #fff;
   border-left: 1px solid rgba(255, 255, 255, 0.12);
   box-shadow: -20px 0 40px rgba(0, 0, 0, 0.4);
@@ -6646,7 +6188,7 @@ html.is-tv #root > .stage {
 }
 
 html:not([data-theme='dark']) .corner-drawer {
-  background: rgba(252, 250, 255, 0.98);
+  background: #fcfaff;
   color: #1a1030;
 }
 

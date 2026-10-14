@@ -4,6 +4,7 @@ import { api } from '../api.js';
 import { PlayerSeat, readSeat, removeSeat, writeSeat } from '../seat/PlayerSeat.js';
 import { sharedPlaceToken } from '../seat/share.js';
 import { readProfileToken, clearProfileToken, authHeaders } from '../profile/session.js';
+import { DrawerSection } from '../components/CornerMenu.js';
 
 /** Nombre maximal de joueurs qu'un même téléphone peut tenir. */
 const MAX_SEATS = 6;
@@ -111,12 +112,40 @@ export function PlayerPage() {
     setProfileName(null);
   };
 
+  // Options de l'appareil : rangées dans le tiroir d'angle de chaque siège, hors de l'écran de jeu.
+  const deviceMenu = (
+    <>
+      <DrawerSection title={`Salle ${code}`}>
+        <Link className="link-btn" to="/join">
+          Changer de salle
+        </Link>
+      </DrawerSection>
+      <DrawerSection title="Sur cet appareil">
+        {seats.length < MAX_SEATS && (
+          <button type="button" className="link-btn" onClick={addSeat}>
+            Ajouter un joueur sur cet appareil
+          </button>
+        )}
+        {active !== 'main' && seats.includes(active) && (
+          <button type="button" className="link-btn" onClick={() => dropSeat(active)}>
+            Retirer ce joueur de l’appareil
+          </button>
+        )}
+      </DrawerSection>
+      {!profileToken && (
+        <DrawerSection title="Compte">
+          <p className="muted small">
+            Aucun compte nécessaire. <Link to="/profil">Créer un profil</Link> pour garder votre image et vos
+            statistiques.
+          </p>
+        </DrawerSection>
+      )}
+    </>
+  );
+
   return (
     <main className="page player fade-in">
-      <header className="page-nav">
-        <h1 style={{ fontSize: 'clamp(1.6rem, 5vw, 2.4rem)', margin: 0 }}>Salle {code}</h1>
-        <Link to="/join">Changer de salle</Link>
-      </header>
+      <h1 className="sr-only">Salle {code}</h1>
 
       {seats.length > 1 && (
         <nav className="seat-tabs" aria-label="Joueurs sur cet appareil">
@@ -145,29 +174,11 @@ export function PlayerPage() {
           hidden={id !== active}
           profileToken={id === 'main' ? profileToken : null}
           profileName={id === 'main' ? profileName : null}
+          deviceMenu={deviceMenu}
           onIdentity={onIdentity}
           onProfileRejected={id === 'main' ? profileRejected : undefined}
         />
       ))}
-
-      <div className="stack">
-        {seats.length < MAX_SEATS && (
-          <button type="button" className="link-btn" onClick={addSeat}>
-            Ajouter un joueur sur cet appareil
-          </button>
-        )}
-        {active !== 'main' && seats.includes(active) && (
-          <button type="button" className="link-btn" onClick={() => dropSeat(active)}>
-            Retirer ce joueur de l’appareil
-          </button>
-        )}
-        {!profileToken && (
-          <p className="muted small">
-            Aucun compte nécessaire. <Link to="/profil">Créer un profil</Link> pour garder votre image et vos
-            statistiques.
-          </p>
-        )}
-      </div>
     </main>
   );
 }

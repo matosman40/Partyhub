@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useState, type FormEvent } from 'react';
+import { Suspense, useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import type { ChatMessage, PlayerRoomView } from '@partyhub/shared';
 import { createSocket, type AppSocket } from '../realtime.js';
 import { newId } from '../api.js';
@@ -8,6 +8,7 @@ import { PlayerAvatar } from '../components/PlayerAvatar.js';
 import { ChatPanel, EmoteBar } from '../components/Social.js';
 import { NoticeDialog } from '../components/NoticeDialog.js';
 import { Qr } from '../components/Qr.js';
+import { CornerMenu, DrawerSection } from '../components/CornerMenu.js';
 import { getDevice } from '../device/device.js';
 import { SHARED_PLACE_PARAM } from './share.js';
 
@@ -61,6 +62,8 @@ export interface PlayerSeatProps {
   /** Vue réduite (écran principal) : pas de liste des joueurs dans le salon. */
   compact?: boolean;
   hidden?: boolean;
+  /** Options de l'appareil (changer de salle, ajouter un joueur…), rangées dans le tiroir. */
+  deviceMenu?: ReactNode;
   onIdentity?: (seatId: string, name: string | null) => void;
   onProfileRejected?: () => void;
 }
@@ -72,6 +75,7 @@ export function PlayerSeat({
   profileName = null,
   compact = false,
   hidden = false,
+  deviceMenu,
   onIdentity,
   onProfileRejected,
 }: PlayerSeatProps) {
@@ -86,6 +90,8 @@ export function PlayerSeat({
   const [name, setName] = useState(() => readSeat(code, seatId)?.name ?? '');
   const [noticeOpen, setNoticeOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const closeMenu = useCallback(() => setMenuOpen(false), []);
 
   useEffect(() => {
     const rejoin = () => {
@@ -210,8 +216,12 @@ export function PlayerSeat({
     });
   }
 
-  const wrapper = (children: React.ReactNode) => (
+  const wrapper = (children: ReactNode, drawer?: ReactNode) => (
     <section className="seat-panel" hidden={hidden} aria-label={`Joueur, siège ${seatId}`}>
+      <CornerMenu open={menuOpen} onOpen={() => setMenuOpen(true)} onClose={closeMenu}>
+        {drawer}
+        {deviceMenu}
+      </CornerMenu>
       {children}
     </section>
   );
@@ -260,6 +270,40 @@ export function PlayerSeat({
   const views = viewsFor(lobby.game.id);
 
   const avatars = Object.fromEntries(lobby.players.map((p) => [p.name, p.avatar]));
+  const drawer = (
+    <>
+      <DrawerSection title="Ce joueur">
+        <button
+          type="button"
+          className="link-btn"
+          onClick={() => {
+            closeMenu();
+            setNoticeOpen(true);
+          }}
+        >
+          Comment jouer
+        </button>
+        <button type="button" className="link-btn" aria-expanded={shareOpen} onClick={() => setShareOpen((v) => !v)}>
+          {shareOpen ? 'Fermer le partage' : 'Jouer ce joueur sur un autre appareil'}
+        </button>
+        {shareOpen && <SeatShare code={code} seatId={seatId} />}
+        <button
+          type="button"
+          className="link-btn"
+          onClick={() => {
+            closeMenu();
+            leave();
+          }}
+        >
+          Quitter la salle
+        </button>
+      </DrawerSection>
+      <DrawerSection title="Discussion">
+        <ChatPanel messages={chat} onSend={sendChat} error={socialError} compact />
+      </DrawerSection>
+    </>
+  );
+
   return wrapper(
     <AvatarsContext.Provider value={avatars}>
       <div className="seat-head">
@@ -267,16 +311,6 @@ export function PlayerSeat({
         <span className="name">{you.name}</span>
         <span className="muted small">Salle {lobby.code}</span>
       </div>
-
-      <button
-        type="button"
-        className="link-btn small"
-        aria-expanded={shareOpen}
-        onClick={() => setShareOpen((v) => !v)}
-      >
-        {shareOpen ? 'Fermer le partage' : 'Jouer ce joueur sur un autre appareil'}
-      </button>
-      {shareOpen && <SeatShare code={code} seatId={seatId} />}
 
       {error && (
         <p className="error" role="alert" onClick={() => setError(null)}>
@@ -290,21 +324,15 @@ export function PlayerSeat({
             <span className="lobby-icon" aria-hidden="true">
               {lobby.game.icon}
             </span>
-            <div>
-              <p className="big">{lobby.game.name}</p>
-              <p className="muted small">{lobby.game.description}</p>
-            </div>
+            <p className="big">{lobby.game.name}</p>
           </div>
-          <button type="button" className="link-btn" onClick={() => setNoticeOpen(true)}>
-            Comment jouer
-          </button>
-          <p>
+          <p className="muted small">
             {lobby.players.length} joueur(s) · {lobby.readyCount} prêt(s)
           </p>
           <button type="button" className={`btn big ${you.ready ? 'ready' : 'primary'}`} onClick={toggleReady}>
             {you.ready ? 'Prêt ! Annuler' : 'Je suis prêt'}
           </button>
-          <p className="muted">Patientez : l’hôte lance la partie depuis l’écran principal.</p>
+          <p className="muted small">L’hôte lance la partie depuis l’écran principal.</p>
           {!compact && (
             <ul className="chips" aria-label="Joueurs de la salle">
               {lobby.players.map((p) => (
@@ -316,18 +344,11 @@ export function PlayerSeat({
             </ul>
           )}
           <EmoteBar onPick={sendReaction} />
-          <ChatPanel messages={chat} onSend={sendChat} error={socialError} compact />
-          <button type="button" className="link-btn" onClick={leave}>
-            Quitter la salle
-          </button>
         </section>
       ) : (
         views &&
         game && (
           <section className="stack">
-            <button type="button" className="link-btn small" onClick={() => setNoticeOpen(true)}>
-              Comment jouer
-            </button>
             <Suspense fallback={<p className="muted">Chargement du jeu…</p>}>
               <views.Player
                 publicState={game.public}
@@ -338,16 +359,13 @@ export function PlayerSeat({
               />
             </Suspense>
             <EmoteBar onPick={sendReaction} />
-            <details className="card">
-              <summary className="big small">Discussion</summary>
-              <ChatPanel messages={chat} onSend={sendChat} error={socialError} compact />
-            </details>
           </section>
         )
       )}
 
       {noticeOpen && <NoticeDialog game={lobby.game} onClose={() => setNoticeOpen(false)} />}
     </AvatarsContext.Provider>,
+    drawer,
   );
 }
 
