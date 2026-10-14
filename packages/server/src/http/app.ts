@@ -645,6 +645,7 @@ export function createApp(deps: AppDeps): express.Express {
   admin.get('/assets', (_req, res) => {
     res.json({
       assets: assets.list().map((a) => ({ ...a, usedBy: mediaGames.usersOfAsset(a.id) })),
+      limits: assets.limitsByKind,
     });
   });
 

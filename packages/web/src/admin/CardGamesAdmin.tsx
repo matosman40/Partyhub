@@ -253,6 +253,21 @@ function CardGameEditor({
   onSaved: () => void | Promise<void>;
 }) {
   const [draft, setDraft] = useState<CardGameDefinition>(initial);
+  const [images, setImages] = useState<{ id: string; name: string }[]>([]);
+
+  useEffect(() => {
+    api<{ assets: { id: string; name: string; kind: string }[] }>('/api/admin/assets')
+      .then((res) => setImages(res.assets.filter((a) => a.kind === 'image').map((a) => ({ id: a.id, name: a.name }))))
+      .catch(() => setImages([]));
+  }, []);
+
+  function patchBack(fields: Partial<NonNullable<CardGameDefinition['back']>>) {
+    setDraft((d) => {
+      const next = { ...d.back, ...fields };
+      const empty = !next.color && !next.label && !next.imageAssetId;
+      return { ...d, back: empty ? undefined : next };
+    });
+  }
   const [message, setMessage] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -395,6 +410,51 @@ function CardGameEditor({
               {THEME_LABEL[t]}
             </button>
           ))}
+        </div>
+      </Section>
+
+      <Section title="Dos de carte">
+        <p className="muted small">Visible sur la pioche et sur les cartes cachées. Sans réglage, le dos suit le thème.</p>
+        <div className="ed-grid-2">
+          <label className="field">
+            <span>Couleur de fond</span>
+            <input type="color" value={draft.back?.color ?? '#1d2a5c'} onChange={(e) => patchBack({ color: e.target.value })} />
+          </label>
+          <label className="field">
+            <span>Texte au centre</span>
+            <input
+              value={draft.back?.label ?? ''}
+              maxLength={16}
+              onChange={(e) => patchBack({ label: e.target.value || undefined })}
+            />
+          </label>
+        </div>
+        <label className="field">
+          <span>Image (médiathèque)</span>
+          <select
+            value={draft.back?.imageAssetId ?? ''}
+            onChange={(e) => patchBack({ imageAssetId: e.target.value || undefined })}
+          >
+            <option value="">Aucune</option>
+            {images.map((img) => (
+              <option key={img.id} value={img.id}>
+                {img.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <div className="row">
+          <div className="ed-theme-thumb">
+            <CardFace def={draft} back />
+          </div>
+          <button
+            type="button"
+            className="btn ghost small"
+            disabled={!draft.back}
+            onClick={() => setDraft((d) => ({ ...d, back: undefined }))}
+          >
+            Revenir au dos du thème
+          </button>
         </div>
       </Section>
 

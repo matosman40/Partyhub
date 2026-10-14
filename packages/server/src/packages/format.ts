@@ -274,7 +274,12 @@ export function validatePackage(bytes: Uint8Array, limits: PackageLimits = DEFAU
     } else {
       try {
         const def = cardGameDefinitionSchema.safeParse(JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(rawDefinition)));
-        if (def.success) definition = def.data;
+        if (def.success) {
+          definition = def.data;
+          if (definition.back?.imageAssetId) {
+            issues.push(`${manifest.entry} (back.imageAssetId) : un paquet ne peut pas utiliser une image de la médiathèque pour le dos de carte.`);
+          }
+        }
         else for (const i of def.error.issues) issues.push(`${manifest.entry} (${i.path.join('.') || 'racine'}) : ${i.message}`);
       } catch {
         issues.push(`${manifest.entry} n’est pas un JSON valide.`);

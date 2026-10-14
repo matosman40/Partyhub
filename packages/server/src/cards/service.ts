@@ -65,6 +65,13 @@ export class CardGameService {
       const issue = parsed.error.issues[0];
       return { ok: false, error: issue?.message ?? 'Définition invalide.' };
     }
+    const backImage = parsed.data.back?.imageAssetId;
+    if (backImage) {
+      const asset = this.store.getAsset(backImage);
+      if (!asset || asset.kind !== 'image') {
+        return { ok: false, error: 'L’image du dos n’existe pas dans la médiathèque.' };
+      }
+    }
     if (id !== null && !this.exists(id)) return { ok: false, error: 'Jeu inconnu.' };
     const gameId = id ?? `${CUSTOM_GAME_PREFIX}${randomBytes(4).toString('hex')}`;
     this.store.saveCardGame(gameId, JSON.stringify(parsed.data));

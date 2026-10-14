@@ -140,6 +140,9 @@ la bonne réponse n'apparaît qu'à la révélation, et les réponses privées r
 | `DB_BACKUP_EVERY_HOURS` | `24` | Sauvegarde automatique de la base, en heures (`0` pour la désactiver) |
 | `DB_BACKUP_KEEP` | `7` | Nombre de sauvegardes de la base conservées |
 | `DB_BACKUP_DIR` | `<DATA_DIR>/backups` | Dossier des sauvegardes de la base |
+| `ASSET_MAX_AUDIO_MB` | `15` | Taille maximale d'un fichier audio de la médiathèque (1 à 512) |
+| `ASSET_MAX_VIDEO_MB` | `80` | Taille maximale d'une vidéo de la médiathèque (1 à 2048) |
+| `ASSET_MAX_IMAGE_MB` | `5` | Taille maximale d'une image de la médiathèque (1 à 64) |
 | `PORT`, `HOST` | `8282`, `0.0.0.0` | Écoute du serveur dans le conteneur |
 
 Réglages modifiables depuis l'administration (sans redémarrage) : joueurs maximum par salle, délai de

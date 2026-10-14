@@ -13,6 +13,10 @@ export interface AssetRecord {
   usedBy: string[];
 }
 
+export type AssetLimits = Record<AssetRecord['kind'], number>;
+
+const MB = 1024 * 1024;
+
 const KIND_LABEL: Record<AssetRecord['kind'], string> = {
   audio: 'Son',
   video: 'Vidéo',
@@ -29,12 +33,15 @@ export function AssetLibrary({ onChanged }: { onChanged?: () => void }) {
   const [assets, setAssets] = useState<AssetRecord[] | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [limits, setLimits] = useState<AssetLimits | null>(null);
   const input = useRef<HTMLInputElement | null>(null);
+  const sizeOf = (kind: AssetRecord['kind']) => (limits ? `${Math.round(limits[kind] / MB)} Mo` : '…');
 
   async function load() {
     try {
-      const res = await api<{ assets: AssetRecord[] }>('/api/admin/assets');
+      const res = await api<{ assets: AssetRecord[]; limits?: AssetLimits }>('/api/admin/assets');
       setAssets(res.assets);
+      setLimits(res.limits ?? null);
     } catch (err) {
       setError((err as Error).message);
     }
@@ -47,9 +54,10 @@ export function AssetLibrary({ onChanged }: { onChanged?: () => void }) {
   async function upload(file: File) {
     setError(null);
     // Contrôle indicatif avant envoi, d'après le type déclaré. Le serveur reste seul juge.
-    const limitMb = file.type.startsWith('audio/') ? 15 : file.type.startsWith('image/') ? 5 : 80;
-    if (file.size > limitMb * 1024 * 1024) {
-      setError(`« ${file.name} » est trop volumineux (maximum ${limitMb} Mo pour ce type de fichier).`);
+    const kind = file.type.startsWith('audio/') ? 'audio' : file.type.startsWith('image/') ? 'image' : 'video';
+    const limitBytes = limits?.[kind];
+    if (limitBytes !== undefined && file.size > limitBytes) {
+      setError(`« ${file.name} » est trop volumineux (maximum ${Math.round(limitBytes / MB)} Mo pour ce type de fichier).`);
       if (input.current) input.current.value = '';
       return;
     }
@@ -91,8 +99,8 @@ export function AssetLibrary({ onChanged }: { onChanged?: () => void }) {
   return (
     <div className="stack">
       <p className="muted">
-        Les fichiers envoyés ici servent aux extraits des jeux de questions. Audio : MP3, WAV, OGG, M4A (15 Mo
-        maximum). Vidéo : MP4 ou WebM (80 Mo maximum). Image : PNG, JPEG ou WebP (5 Mo maximum). Le format est
+        Les fichiers envoyés ici servent aux extraits des jeux de questions et aux dos de carte. Audio : MP3, WAV, OGG, M4A ({sizeOf('audio')}
+        maximum). Vidéo : MP4 ou WebM ({sizeOf('video')} maximum). Image : PNG, JPEG ou WebP ({sizeOf('image')} maximum). Le format est
         vérifié sur le contenu du fichier. N’envoyez que des médias dont vous avez le droit d’usage.
       </p>
 

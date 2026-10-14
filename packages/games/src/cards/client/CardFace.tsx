@@ -1,5 +1,5 @@
 import { useId } from 'react';
-import { WILD_FAMILY, type CardEntry, type CardGameDefinition, type CardTheme } from '@partyhub/shared';
+import { WILD_FAMILY, type CardBack, type CardEntry, type CardGameDefinition, type CardTheme } from '@partyhub/shared';
 
 /**
  * Rendu vectoriel des cartes. Tout est dessiné en SVG (aucune image externe) :
@@ -53,7 +53,7 @@ export function CardFace({ def, entry, back, label }: CardFaceProps) {
       aria-label={showBack ? 'Dos de carte' : label ?? entry?.label ?? 'Carte'}
     >
       {showBack ? (
-        <Back theme={theme} uid={uid} />
+        def.back ? <CustomBack back={def.back} uid={uid} /> : <Back theme={theme} uid={uid} />
       ) : (
         <Front def={def} entry={entry!} theme={theme} uid={uid} />
       )}
@@ -381,6 +381,63 @@ function ClassiqueFront({ uid, base, symbol, bigSize, cornerSize, label, palette
       <g transform="rotate(180 100 140)">
         <Corner symbol={symbol} size={cornerSize} x={30} y={34} fill={isWild ? '#16162e' : base} font="var(--display)" />
       </g>
+    </>
+  );
+}
+
+/** Dos personnalisé par le créateur du jeu : couleur, texte et image de la médiathèque. */
+function CustomBack({ back, uid }: { back: CardBack; uid: string }) {
+  const color = back.color ?? '#1d2a5c';
+  const clip = `cb${uid}`;
+  const label = back.label ?? '';
+  return (
+    <>
+      <defs>
+        <clipPath id={clip}>
+          <rect x="8" y="8" width="184" height="264" rx="16" />
+        </clipPath>
+      </defs>
+      <rect x="0" y="0" width={VIEW_W} height={VIEW_H} rx="22" fill={darken(color, 0.45)} />
+      <g clipPath={`url(#${clip})`}>
+        <rect x="8" y="8" width="184" height="264" fill={color} />
+        {back.imageAssetId && (
+          <image
+            href={`/api/assets/${back.imageAssetId}`}
+            x="8"
+            y="8"
+            width="184"
+            height="264"
+            preserveAspectRatio="xMidYMid slice"
+          />
+        )}
+      </g>
+      <rect
+        x="14"
+        y="14"
+        width="172"
+        height="252"
+        rx="12"
+        fill="none"
+        stroke={lighten(color, 0.5)}
+        strokeOpacity="0.8"
+        strokeWidth="2"
+      />
+      {label && (
+        <text
+          x="100"
+          y="140"
+          textAnchor="middle"
+          dominantBaseline="middle"
+          fontSize={label.length > 8 ? 22 : 30}
+          fontWeight="800"
+          fill="#ffffff"
+          stroke="rgba(0,0,0,0.5)"
+          strokeWidth="4"
+          paintOrder="stroke"
+        >
+          {label}
+        </text>
+      )}
     </>
   );
 }

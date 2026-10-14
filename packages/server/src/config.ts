@@ -13,6 +13,8 @@ export interface AppConfig {
   secureCookies: boolean;
   /** Proxys de confiance (TRUST_PROXY, syntaxe d'Express). Absent = « loopback ». */
   trustProxy?: string;
+  /** Limites de taille de la médiathèque, en octets (ASSET_MAX_*_MB). Absent = valeurs par défaut. */
+  assetLimits?: { audio: number; video: number; image: number };
   /** Sauvegardes automatiques de la base. Absent = pas de sauvegarde (tests). */
   backup?: {
     dir: string;
@@ -33,6 +35,8 @@ function intFromEnv(name: string, raw: string | undefined, fallback: number, min
   }
   return value;
 }
+
+const MB = 1024 * 1024;
 
 /** Lit la configuration depuis l'environnement. Échoue tôt si une valeur est invalide. */
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
@@ -62,6 +66,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     logLevel: env.LOG_LEVEL?.trim() || 'info',
     secureCookies: env.COOKIE_SECURE === 'true',
     trustProxy,
+    assetLimits: {
+      audio: intFromEnv('ASSET_MAX_AUDIO_MB', env.ASSET_MAX_AUDIO_MB, 15, 1, 512) * MB,
+      video: intFromEnv('ASSET_MAX_VIDEO_MB', env.ASSET_MAX_VIDEO_MB, 80, 1, 2048) * MB,
+      image: intFromEnv('ASSET_MAX_IMAGE_MB', env.ASSET_MAX_IMAGE_MB, 5, 1, 64) * MB,
+    },
     backup: {
       dir: env.DB_BACKUP_DIR?.trim() || path.join(dataDir, 'backups'),
       everyMs: everyHours * 60 * 60 * 1000,

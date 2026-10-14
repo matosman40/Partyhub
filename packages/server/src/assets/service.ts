@@ -116,6 +116,11 @@ export class AssetService {
     }
   }
 
+  /** Limites appliquées par format, en octets (affichées dans l'administration). */
+  get limitsByKind(): Record<AssetKind, number> {
+    return { ...this.limits };
+  }
+
   /** Taille maximale acceptée, tous formats confondus. */
   get maxBytes(): number {
     return Math.max(...Object.values(this.limits));

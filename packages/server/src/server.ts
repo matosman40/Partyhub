@@ -78,7 +78,7 @@ export async function createServer(opts: ServerOptions): Promise<PartyServer> {
 
   const profiles = new ProfileService(store);
   const cardGames = new CardGameService(store);
-  const assets = new AssetService(store, config.dataDir);
+  const assets = new AssetService(store, config.dataDir, config.assetLimits);
   const mediaGames = new MediaQuizService(store, assets);
   const packages = new PackageService(store, config.dataDir);
   const hub = new RealtimeHub(compileTrustProxy(config.trustProxy ?? 'loopback'), opts.joinThrottle);

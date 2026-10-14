@@ -69,6 +69,17 @@ export const cardNoticeSchema = z.object({
   tips: z.array(z.string().trim().min(1).max(300)).max(6),
 });
 
+/**
+ * Dos de carte personnalisé. Absent = dos du thème graphique.
+ * `color` : couleur de fond. `label` : texte centré. `imageAssetId` : image de la médiathèque
+ * (les paquets .phgame ne peuvent pas la référencer : leurs ressources sont dans leur archive).
+ */
+export const cardBackSchema = z.object({
+  color: hexColor.optional(),
+  label: z.string().trim().max(16).optional(),
+  imageAssetId: z.string().regex(/^[0-9a-f]{32}$/, 'Image du dos invalide.').optional(),
+});
+
 export const cardGameBaseSchema = z.object({
   name: z.string().trim().min(2, 'Nom trop court.').max(40),
   description: z.string().trim().min(1).max(160),
@@ -78,6 +89,7 @@ export const cardGameBaseSchema = z.object({
   cards: z.array(cardEntrySchema).min(1).max(60),
   rules: cardRulesSchema,
   notice: cardNoticeSchema,
+  back: cardBackSchema.optional(),
 });
 
 export const cardGameDefinitionSchema = cardGameBaseSchema.superRefine((def, ctx) => {
@@ -131,6 +143,7 @@ export type CardFamily = z.infer<typeof cardFamilySchema>;
 export type CardEntry = z.infer<typeof cardEntrySchema>;
 export type CardRules = z.infer<typeof cardRulesSchema>;
 export type CardGameDefinition = z.infer<typeof cardGameDefinitionSchema>;
+export type CardBack = z.infer<typeof cardBackSchema>;
 
 /** Réglages qu'un hôte peut modifier dans le salon, pour tout jeu de cartes. */
 export function cardSettingsSchema(defaults: { targetScore: number; turnSeconds: number }) {

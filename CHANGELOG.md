@@ -2,6 +2,28 @@
 
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [0.6.0] - 2026-10-14
+
+### Ajouté
+- Dos de carte personnalisé dans l'éditeur de jeux de cartes : couleur de fond, texte centré (16 caractères maximum) et
+  image de la médiathèque. Sans réglage, le dos suit le thème graphique. Aperçu directement dans l'éditeur.
+- Limites de taille de la médiathèque configurables : `ASSET_MAX_AUDIO_MB` (15 par défaut), `ASSET_MAX_VIDEO_MB` (80),
+  `ASSET_MAX_IMAGE_MB` (5). L'administration affiche désormais les limites réellement appliquées au lieu de valeurs fixes.
+- 11 tests nouveaux (dos de carte, limites de configuration), 313 au total.
+
+### Modifié
+- L'administration ne code plus les limites de la médiathèque : elle les reçoit du serveur.
+
+### Migration et compatibilité
+- Aucune action. Aucun changement de base de données. Les jeux existants gardent le dos de leur thème.
+- Un paquet `.phgame` ne peut pas utiliser une image de la médiathèque pour son dos : ses ressources restent dans son archive.
+
+### Problèmes connus
+- L'image recouvre entièrement la couleur de fond : la couleur n'est visible que sans image, ou avec une image transparente.
+- La suppression d'une image utilisée comme dos n'est pas bloquée : le dos reprend alors sa couleur de fond.
+- Éditeur de plateau et polices : reportés à 0.6.1 (voir `docs/ROADMAP.md`).
+- Non testé sur de vrais téléphones ni sur une TV.
+
 ## [0.5.0] - 2026-10-14
 
 ### Ajouté
