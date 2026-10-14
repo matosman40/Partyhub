@@ -20,13 +20,6 @@ function loadImage(file: File): Promise<HTMLImageElement> {
   });
 }
 
-function encode(canvas: HTMLCanvasElement): string {
-  // WebP d'abord (plus léger) ; repli sur JPEG si le navigateur ne sait pas l'écrire.
-  const webp = canvas.toDataURL('image/webp', 0.85);
-  if (webp.startsWith('data:image/webp')) return webp;
-  return canvas.toDataURL('image/jpeg', 0.85);
-}
-
 export async function fileToAvatarDataUrl(file: File): Promise<string> {
   if (!file.type.startsWith('image/')) throw new Error('Choisissez un fichier image.');
   const img = await loadImage(file);

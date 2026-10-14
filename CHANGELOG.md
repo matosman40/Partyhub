@@ -2,6 +2,15 @@
 
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## Non publié
+
+### Ajouté
+- Lint du code avec ESLint (`npm run lint`), exécuté en intégration continue avant le typecheck.
+
+### Modifié
+- Correctifs relevés par le lint, sans changement de comportement : variables et imports inutilisés, `let` devenus `const`,
+  paramètre `ctx` retiré de la fonction d'action du poker, fonction `encode` inutilisée retirée des avatars.
+
 ## [0.7.0] - 2026-10-14
 
 ### Ajouté

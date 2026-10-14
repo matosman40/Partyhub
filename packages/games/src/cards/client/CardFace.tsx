@@ -358,7 +358,7 @@ function NuitFront({ uid, base, symbol, bigSize, cornerSize, label, glyph, palet
   );
 }
 
-function ClassiqueFront({ uid, base, symbol, bigSize, cornerSize, label, palette, isWild }: FrontProps) {
+function ClassiqueFront({ uid, base, symbol, bigSize, cornerSize, label, isWild }: FrontProps) {
   const paper = `p${uid}`;
   const ink = isWild ? '#16162e' : base;
   return (

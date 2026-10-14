@@ -233,7 +233,7 @@ function enterDecide(s: PromoteurState, index: number): PromoteurState {
 }
 
 function drawCard(s: PromoteurState, id: string, kind: 'chance' | 'chest', diceSum: number): PromoteurState {
-  let n = clone(s);
+  const n = clone(s);
   let card: Card;
   if (kind === 'chance') {
     card = CHANCE[n.chanceOrder[n.chanceIndex % n.chanceOrder.length] ?? 0]!;

@@ -1,6 +1,6 @@
 import type { HostViewProps } from '../../client/types.js';
 import { useRemaining } from '../../client/hooks.js';
-import { FinalHost, RankRow, TimerBar, WaitingScreen } from '../../client/ui.js';
+import { FinalHost, TimerBar, WaitingScreen } from '../../client/ui.js';
 import { GROUP_COLOR, GROUP_LABEL, STACK_OFFSETS, cellOf, type Group } from '../board.js';
 import type { PlayerPub, PromoteurPub } from './types.js';
 import { Avatar } from '../../client/ui.js';

@@ -26,7 +26,7 @@ async function call(path: string, init: RequestInit & { json?: unknown } = {}) {
   }
   const res = await fetch(`${base}${path}`, { ...init, headers, body });
   const text = await res.text();
-  let data: any = null;
+  let data: any;
   try {
     data = text ? JSON.parse(text) : null;
   } catch {

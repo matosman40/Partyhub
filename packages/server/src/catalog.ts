@@ -3,7 +3,7 @@ import type { CatalogGame, GameInfo, GameModule, GameOrigin } from '@partyhub/sh
 import type { Store } from './db/store.js';
 import { CUSTOM_GAME_PREFIX } from './cards/service.js';
 import { MEDIA_GAME_PREFIX } from './media/service.js';
-import { defaultDetails, detailsOverride, effectiveNotice, withOverrides } from './game-details.js';
+import { defaultDetails, detailsOverride, withOverrides } from './game-details.js';
 
 export { effectiveNotice } from './game-details.js';
 

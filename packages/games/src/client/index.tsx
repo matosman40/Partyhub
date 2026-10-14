@@ -25,7 +25,6 @@ import type { GameClientViews } from './types.js';
 import { ramiViews } from '../rami51/client/index.js';
 import { pokerViews } from '../poker/client/index.js';
 import { tarotViews } from '../tarot/client/index.js';
-import { boardViews } from '../board/client/index.js';
 
 export type { GameClientViews, HostViewProps, PlayerViewProps, SettingsProps } from './types.js';
 export { Avatar } from './ui.js';

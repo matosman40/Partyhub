@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { cardGameDefinitionSchema, type CardGameDefinition, type GameContext, type PlayerRef } from '@partyhub/shared';
-import { createCardGame, canPlayCard, cardGamePresets, type CardGameState } from '@partyhub/games';
+import { createCardGame, canPlayCard, cardGamePresets } from '@partyhub/games';
 
 /** Générateur pseudo-aléatoire reproductible (graine fixe). */
 function seeded(seed: number): () => number {
@@ -55,11 +55,6 @@ const SMALL: CardGameDefinition = {
   rules: { minPlayers: 2, maxPlayers: 3, handSize: 4, matchOn: 'family', targetScore: 50, turnSeconds: 0 },
   notice: { goal: 'Test', steps: ['Jouer'], tips: [] },
 };
-
-/** Trouve une carte de la main d'un joueur par identifiant d'entrée. */
-function cardOf(state: CardGameState, playerId: string, entry: string) {
-  return state.hands[playerId]!.find((c) => c.entry === entry);
-}
 
 describe('schéma des jeux de cartes', () => {
   it('valide les deux jeux intégrés', () => {

@@ -111,7 +111,7 @@ export interface ProfileView {
 }
 
 /** Réponse à une commande. Toujours `ok` + éventuelle erreur lisible. */
-export type Ack<T extends object = {}> =
+export type Ack<T extends object = object> =
   | ((res: ({ ok: true } & T) | { ok: false; error: string }) => void);
 
 export interface ClientToServerEvents {

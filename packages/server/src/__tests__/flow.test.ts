@@ -3,7 +3,6 @@ import { io as ioClient, type Socket } from 'socket.io-client';
 import type {
   ClientToServerEvents,
   HostRoomView,
-  PlayerRoomView,
   ServerToClientEvents,
 } from '@partyhub/shared';
 import { createServer, type PartyServer } from '../server.js';

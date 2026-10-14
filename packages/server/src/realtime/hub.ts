@@ -30,8 +30,8 @@ export interface SocketData {
   playerId?: string;
 }
 
-type IO = Server<ClientToServerEvents, ServerToClientEvents, {}, SocketData>;
-type TypedSocket = Socket<ClientToServerEvents, ServerToClientEvents, {}, SocketData>;
+type IO = Server<ClientToServerEvents, ServerToClientEvents, Record<string, never>, SocketData>;
+type TypedSocket = Socket<ClientToServerEvents, ServerToClientEvents, Record<string, never>, SocketData>;
 
 /** Limite de débit par socket : pas plus de `max` commandes par fenêtre. */
 class RateLimiter {

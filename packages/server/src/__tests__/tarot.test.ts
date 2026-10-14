@@ -120,7 +120,7 @@ describe('déroulement d’une partie de tarot', () => {
   it('une partie complète jouée par les robots se termine, avec 78 cartes à chaque étape', () => {
     const h = makeCtx(IDS, seeded(21));
     const init = tarot.initialize(tarot.settingsSchema.parse({}), IDS.map(P), h.ctx);
-    let state = tarot.start(init, h.ctx);
+    const state = tarot.start(init, h.ctx);
     if (!state.ok) throw new Error(state.error);
     let s: TarotState = state.state;
 

@@ -92,6 +92,8 @@ function toRecord(row: AssetRow): AssetRecord {
 /** Nom affichable : sans chemin, sans caractères de contrôle, 120 caractères au plus. */
 export function cleanFileName(raw: string): string {
   const base = path.basename(raw.replace(/\\/g, '/'));
+  // Les caractères de contrôle sont justement ce que l'on retire ici.
+  // eslint-disable-next-line no-control-regex
   const clean = base.replace(/[\u0000-\u001f\u007f]/g, '').trim();
   return (clean || 'fichier').slice(0, 120);
 }

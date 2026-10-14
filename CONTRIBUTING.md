@@ -13,9 +13,13 @@ Merci de votre intérêt. PartyHub est un jeu de soirée sur navigateur, déploy
 ```bash
 npm ci
 npm run build
+npm run lint
 npm run typecheck
 npm test
 ```
+
+`npm run lint` vérifie le code avec ESLint (configuration `eslint.config.js`). Les erreurs bloquent ; les
+avertissements, comme les `any` restants, sont à réduire mais ne bloquent pas.
 
 Pour tester le déploiement sur votre machine : `docker compose -f compose.dev.yaml up -d --build`.
 Pour un utilisateur final, `compose.yaml` utilise l'image publiée et ne compile rien.

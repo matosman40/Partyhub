@@ -27,7 +27,7 @@ import type { JoinThrottleOptions } from './realtime/join-throttle.js';
 
 export interface PartyServer {
   httpServer: HttpServer;
-  io: Server<ClientToServerEvents, ServerToClientEvents, {}, SocketData>;
+  io: Server<ClientToServerEvents, ServerToClientEvents, Record<string, never>, SocketData>;
   manager: RoomManager;
   store: Store;
   profiles: ProfileService;
@@ -147,7 +147,7 @@ export async function createServer(opts: ServerOptions): Promise<PartyServer> {
   dbBackups?.start();
   const httpServer = createHttpServer(app);
 
-  const io = new Server<ClientToServerEvents, ServerToClientEvents, {}, SocketData>(httpServer, {
+  const io = new Server<ClientToServerEvents, ServerToClientEvents, Record<string, never>, SocketData>(httpServer, {
     serveClient: false,
     maxHttpBufferSize: 64 * 1024,
     pingInterval: 20_000,

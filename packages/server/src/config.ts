@@ -68,7 +68,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   try {
     compileTrustProxy(trustProxy);
   } catch (err) {
-    throw new Error(`TRUST_PROXY invalide : « ${trustProxy} » (${(err as Error).message})`);
+    throw new Error(`TRUST_PROXY invalide : « ${trustProxy} » (${(err as Error).message})`, { cause: err });
   }
 
   return {

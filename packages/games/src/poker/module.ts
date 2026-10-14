@@ -279,7 +279,7 @@ function endHand(s: PokerState, ctx: GameContext): void {
 }
 
 /** Applique une action de mise. Renvoie un message d'erreur, ou null si l'action est acceptée. */
-function applyAction(s: PokerState, id: string, type: string, payload: unknown, ctx: GameContext): string | null {
+function applyAction(s: PokerState, id: string, type: string, payload: unknown): string | null {
   const name = s.names[id] ?? '?';
   const need = toCall(s, id);
 
@@ -423,7 +423,7 @@ export function createPokerGame(): GameModule<PokerState, PokerSettings> {
     if (s.phase !== 'play') return fail('La main est terminée.');
     if (s.turn !== pid) return fail("Ce n'est pas votre tour.");
     if (s.folded.includes(pid)) return fail('Vous êtes couché.');
-    const error = applyAction(s, pid, type, payload, ctx);
+    const error = applyAction(s, pid, type, payload);
     if (error) return fail(error);
     advance(s, ctx, pid);
     return ok(s);
@@ -442,7 +442,7 @@ export function createPokerGame(): GameModule<PokerState, PokerSettings> {
     const s = structuredClone(state);
     const id = s.turn!;
     // Temps écoulé : on checke si c'est gratuit, sinon on se couche.
-    const error = applyAction(s, id, toCall(s, id) === 0 ? 'check' : 'fold', undefined, ctx);
+    const error = applyAction(s, id, toCall(s, id) === 0 ? 'check' : 'fold', undefined);
     if (error) return state;
     s.lastEvent = `Temps écoulé : ${s.lastEvent}`;
     advance(s, ctx, id);

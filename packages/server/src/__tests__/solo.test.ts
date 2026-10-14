@@ -82,7 +82,7 @@ describe('Sudoku', () => {
     const module = sudoku;
     const { ctx, advance } = makeCtx(['a', 'b']);
     const s0 = module.initialize({ timeLimitSec: 0, difficulty: 'facile' }, players, ctx);
-    let state = module.start(s0, ctx);
+    const state = module.start(s0, ctx);
     if (!state.ok) throw new Error(state.error);
     let s = state.state;
     advance(10_000);

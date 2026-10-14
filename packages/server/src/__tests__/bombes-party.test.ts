@@ -89,7 +89,7 @@ describe('Bombes party : règles', () => {
 
   it('pose une bombe par case et par bombe disponible', () => {
     const { state, ctx, timers } = started([A, B]);
-    let res = bombesParty.handleAction(state, A, 'bomb', undefined, ctx);
+    const res = bombesParty.handleAction(state, A, 'bomb', undefined, ctx);
     expect(res.ok).toBe(true);
     if (!res.ok) return;
     expect(res.state.bombs).toHaveLength(1);
