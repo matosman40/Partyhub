@@ -29,7 +29,7 @@ jobs:
       - run: npm run build
       - run: npm run typecheck
       - run: npm test
-      - name: Paquet .phgame d'exemple : contrôle et reproductibilité
+      - name: "Paquet .phgame d'exemple : contrôle et reproductibilité"
         run: |
           npm run phgame -w @partyhub/server -- check ../../examples/exemple-cartes.phgame
           npm run phgame -w @partyhub/server -- pack ../../examples/exemple-cartes "$RUNNER_TEMP/exemple.phgame"
