@@ -120,7 +120,15 @@ export function TvPage() {
   // Plateau du Promoteur : vue 3D par défaut quand le navigateur sait l'afficher, 2D sinon ou en cas d'erreur.
   const can3d = lobby.game.id === 'promoteur' && !board3dFailed && supportsWebGL();
   const use3d = can3d && board3d;
-  const flat = <FitStage>{views && game && <views.Host publicState={game.public} hostState={game.host} now={view.now} />}</FitStage>;
+  const flat = (
+    <FitStage>
+      {views && game && (
+        <Suspense fallback={<p className="muted">Chargement du jeu…</p>}>
+          <views.Host publicState={game.public} hostState={game.host} now={view.now} />
+        </Suspense>
+      )}
+    </FitStage>
+  );
 
   function emitAck(event: 'host:start' | 'host:next' | 'host:end' | 'host:replay') {
     const done = (res: { ok: true } | { ok: false; error: string }) => setError(res.ok ? null : res.error);
@@ -284,7 +292,11 @@ export function TvPage() {
               <span className="muted small">Pour compléter une partie ou s’entraîner seul.</span>
             </div>
 
-            {views && <views.Settings settings={lobby.gameSettings} disabled={false} onChange={configure} />}
+            {views && (
+              <Suspense fallback={<p className="muted">Chargement des réglages…</p>}>
+                <views.Settings settings={lobby.gameSettings} disabled={false} onChange={configure} />
+              </Suspense>
+            )}
 
             <button type="button" className="btn primary big" disabled={!canStart} onClick={() => emitAck('host:start')}>
               Lancer la partie

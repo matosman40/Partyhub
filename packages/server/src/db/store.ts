@@ -205,6 +205,19 @@ export const MIGRATIONS: Migration[] = [
       `);
     },
   },
+  {
+    version: 6,
+    description: 'Sessions d’administration stockées en base (0.8.0)',
+    up(db) {
+      // Seule l'empreinte du jeton est stockée, comme pour les comptes joueurs.
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS admin_sessions (
+          token_hash TEXT PRIMARY KEY,
+          expires_at INTEGER NOT NULL
+        );
+      `);
+    },
+  },
 ];
 
 /** Source GitHub d'un paquet : un dépôt, sa dernière release et l'état de la dernière vérification. */

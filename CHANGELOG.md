@@ -6,10 +6,26 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 
 ### Ajouté
 - Lint du code avec ESLint (`npm run lint`), exécuté en intégration continue avant le typecheck.
+- Sessions d'administration stockées dans la base (migration 6, table `admin_sessions`, jeton haché) : elles survivent à
+  un redémarrage et expirent après 12 heures. Une restauration de sauvegarde rétablit aussi les sessions qu'elle contient.
+- Tests unitaires des packages `shared` (codes de salle, avatars, schéma des plateaux) et `games` (évaluation des mains
+  et pots du poker). `npm test` les lance avant le serveur.
+- Contrôle navigateur `scripts/lobby-browser.py` : pour chacun des 22 jeux, les réglages du salon TV et la page du
+  téléphone s'affichent sans erreur. Il tourne en intégration continue.
 
 ### Modifié
+- Découpage du bundle par jeu : chaque jeu est chargé à la demande (`lazyViews`). Le fichier principal passe de
+  709 Ko à 534 Ko (environ 160 Ko compressé). Les vues sont rendues sous une frontière `Suspense`.
+- Dépendances mineures mises à jour (socket.io 4.8.4, React 19.3.0, tsx 4.23.15, tinypool 2.2.0, types). React est
+  fixé à une seule version dans tout l'arbre (`overrides`), pour éviter deux copies au navigateur.
 - Correctifs relevés par le lint, sans changement de comportement : variables et imports inutilisés, `let` devenus `const`,
-  paramètre `ctx` retiré de la fonction d'action du poker, fonction `encode` inutilisée retirée des avatars.
+  paramètre `ctx` retiré de la fonction d'action du poker, fonction `encode` inutilisée retirée des avatars,
+  types précis pour les réglages de l'écran d'un rôle (jeu de l'Imposteur).
+- Les tests ne sont plus compilés dans `dist` des packages `shared` et `games`.
+
+### Non modifié (volontairement)
+- `express` 5.3.0 n'est pas encore adopté : publié il y a quelques jours seulement.
+- Les versions majeures (zod 4, vite 8, vitest 5, pino 10, better-sqlite3 13, TypeScript 7) restent à traiter à part.
 
 ## [0.7.0] - 2026-10-14
 

@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { Suspense, useEffect, useState, type FormEvent } from 'react';
 import type { ChatMessage, PlayerRoomView } from '@partyhub/shared';
 import { createSocket, type AppSocket } from '../realtime.js';
 import { newId } from '../api.js';
@@ -318,13 +318,15 @@ export function PlayerSeat({
             <button type="button" className="link-btn small" onClick={() => setNoticeOpen(true)}>
               Comment jouer
             </button>
-            <views.Player
-              publicState={game.public}
-              playerState={game.player}
-              playerId={you.id}
-              now={view.now}
-              send={send}
-            />
+            <Suspense fallback={<p className="muted">Chargement du jeu…</p>}>
+              <views.Player
+                publicState={game.public}
+                playerState={game.player}
+                playerId={you.id}
+                now={view.now}
+                send={send}
+              />
+            </Suspense>
             <EmoteBar onPick={sendReaction} />
             <details className="card">
               <summary className="big small">Discussion</summary>

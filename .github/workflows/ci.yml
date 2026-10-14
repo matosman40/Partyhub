@@ -97,6 +97,10 @@ jobs:
         env:
           BASE_URL: http://127.0.0.1:8282
         run: python scripts/games-browser.py
+      - name: Salon et téléphone de chaque jeu (chargement à la demande)
+        env:
+          BASE_URL: http://127.0.0.1:8282
+        run: python scripts/lobby-browser.py
       - name: Journal du serveur en cas d'échec
         if: failure()
         run: cat "$RUNNER_TEMP/server.log" || true

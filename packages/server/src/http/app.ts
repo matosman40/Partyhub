@@ -58,7 +58,8 @@ const ADMIN_SESSION_MS = 12 * 60 * 60 * 1000;
 export function createApp(deps: AppDeps): express.Express {
   const { config, logger, store, manager, profiles, cardGames, boardGames, packageSources, assets, mediaGames, dbBackups, packages } = deps;
   const app = express();
-  const sessions = new AdminSessions();
+  // Sessions d'administration stockées en base : elles survivent à un redémarrage.
+  const sessions = new AdminSessions(store.db);
   const limiter = new LoginLimiter();
   const registerLimiter = new LoginLimiter(40);
   const profileLimiter = new LoginLimiter(10);

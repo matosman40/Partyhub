@@ -28,7 +28,7 @@ Légende : **Fait** = dans le dépôt. **À faire** = pas commencé. **En cours*
 | 0.6.2 | Éditeur de plateau | Format de plateau déclaré en données, éditeur | **Prêt sur `main`** (tag à créer). Paquets `.phgame` de plateau reportés |
 | 0.6.3 | Sources GitHub | Installation et mise à jour des paquets depuis les releases d'un dépôt (publiques ou privées), manuelles ou quotidiennes | **Prêt sur la branche** `version-0.6.3` (pull request à ouvrir) |
 | 0.7.0 | Paquets de plateau et de questions, reprise d'écran et contexte hors ligne | Format 2 (plateau, questions YouTube), reprise de l'écran principal (WebRTC), application installable (PWA), cache des paquets, transfert entre téléphones | **En cours** : format 2 **fait** sur la branche `version-0.7.0` ; le reste est à faire |
-| 0.8.0 | Robustesse des parties | Salles et parties survivant à un redémarrage, sessions d'administration persistantes | À étudier |
+| 0.8.0 | Robustesse des parties | Salles et parties survivant à un redémarrage (à faire) ; sessions d'administration persistantes (**Fait**, migration 6) | À étudier |
 | 0.9.0 | Jeux JavaScript | Code de paquet exécuté dans un bac à sable WebAssembly, limites de temps et de mémoire | À faire (revue de sécurité requise) |
 | 1.0.0 | Première version stable | Critères ci-dessous | À faire |
 
@@ -115,7 +115,7 @@ Détail du format et des règles : `docs/PHGAME.md`.
 
 ### 0.8.0 : robustesse des parties
 - Persister les salles et les parties (aujourd'hui en mémoire) afin qu'un redémarrage ne les interrompe pas.
-- Sessions d'administration persistantes.
+- **Fait** : sessions d'administration persistantes, stockées dans la base avec expiration (migration 6).
 - Option : à décider après étude (complexité et intérêt pour un usage familial).
 
 ### 0.9.0 : jeux JavaScript en bac à sable

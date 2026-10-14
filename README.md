@@ -216,7 +216,8 @@ de la médiathèque (dossier `assets`) ne sont pas dans la sauvegarde : copiez-l
 
 - Les salles et leurs parties sont en mémoire : un redémarrage du serveur interrompt les parties en cours.
   Les réglages, les jeux activés et les statistiques, eux, sont persistés.
-- Les sessions d'administration sont perdues au redémarrage (il faut se reconnecter).
+- Les sessions d'administration sont stockées dans la base : elles survivent à un redémarrage et expirent au bout de
+  12 heures. Une restauration de sauvegarde rétablit aussi les sessions qu'elle contient, jusqu'à leur expiration.
 - Sur un réseau local en HTTP, le navigateur de l'écran principal doit rester ouvert pendant la partie.
 - Les jeux fournis sont volontairement simples : pas de blind test audio ni de dessin. Ils suivent le guide
   [docs/ADDING-A-GAME.md](docs/ADDING-A-GAME.md) pour en ajouter d'autres.

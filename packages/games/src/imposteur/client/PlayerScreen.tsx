@@ -8,7 +8,8 @@ interface Candidate {
   name: string;
 }
 
-function RoleCard({ me }: { me: any }) {
+/** Rôle secret reçu par le joueur : imposteur sans mot, ou membre de l'équipe avec le mot. */
+function RoleCard({ me }: { me: { role?: string; category?: string; word?: string } | null | undefined }) {
   if (me?.role === 'impostor') {
     return (
       <div className="role-card impostor">

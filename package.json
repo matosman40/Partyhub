@@ -15,7 +15,7 @@
   },
   "scripts": {
     "build": "npm run build -w @partyhub/shared && npm run build -w @partyhub/games && npm run build -w @partyhub/web && npm run build -w @partyhub/server",
-    "test": "npm run build -w @partyhub/shared && npm run build -w @partyhub/games && npm test -w @partyhub/server",
+    "test": "npm run build -w @partyhub/shared && npm run build -w @partyhub/games && npm test -w @partyhub/shared && npm test -w @partyhub/games && npm test -w @partyhub/server",
     "typecheck": "npm run typecheck -w @partyhub/shared && npm run typecheck -w @partyhub/games && npm run typecheck -w @partyhub/server && npm run typecheck -w @partyhub/web",
     "lint": "eslint .",
     "dev:server": "npm run dev -w @partyhub/server",
@@ -31,6 +31,8 @@
     "typescript-eslint": "^8.71.2"
   },
   "overrides": {
-    "tinypool": "^2.1.2"
+    "tinypool": "^2.1.2",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
   }
 }

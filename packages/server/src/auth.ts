@@ -1,5 +1,6 @@
-import { randomBytes, scrypt as scryptCb, timingSafeEqual } from 'node:crypto';
+import { createHash, randomBytes, scrypt as scryptCb, timingSafeEqual } from 'node:crypto';
 import { promisify } from 'node:util';
+import type Database from 'better-sqlite3';
 
 const scryptAsync = promisify(scryptCb) as unknown as (
   password: string,
@@ -27,37 +28,54 @@ export async function verifyPassword(password: string, stored: string): Promise<
   return expected.length === actual.length && timingSafeEqual(expected, actual);
 }
 
-/** Sessions d'administration en mémoire (un redémarrage oblige à se reconnecter). */
+const hashSessionToken = (token: string) => createHash('sha256').update(token).digest('hex');
+
+/**
+ * Sessions d'administration, stockées dans la table `admin_sessions`. Elles survivent à un
+ * redémarrage du serveur, et plusieurs processus qui partagent la même base les voient.
+ * Seule l'empreinte du jeton est enregistrée.
+ */
 export class AdminSessions {
-  private readonly sessions = new Map<string, number>();
+  constructor(
+    private readonly db: Database.Database,
+    private readonly now: () => number = Date.now,
+    private readonly ttlMs = SESSION_TTL_MS,
+  ) {}
 
   create(): string {
     this.prune();
     const token = randomBytes(32).toString('base64url');
-    this.sessions.set(token, Date.now() + SESSION_TTL_MS);
+    this.db
+      .prepare('INSERT INTO admin_sessions (token_hash, expires_at) VALUES (?, ?)')
+      .run(hashSessionToken(token), this.now() + this.ttlMs);
     return token;
   }
 
   valid(token: string | undefined): boolean {
     if (!token) return false;
-    const expiresAt = this.sessions.get(token);
-    if (expiresAt === undefined) return false;
-    if (expiresAt < Date.now()) {
-      this.sessions.delete(token);
+    const hash = hashSessionToken(token);
+    const row = this.db.prepare('SELECT expires_at FROM admin_sessions WHERE token_hash = ?').get(hash) as
+      | { expires_at: number }
+      | undefined;
+    if (!row) return false;
+    if (row.expires_at < this.now()) {
+      this.db.prepare('DELETE FROM admin_sessions WHERE token_hash = ?').run(hash);
       return false;
     }
     return true;
   }
 
   revoke(token: string | undefined): void {
-    if (token) this.sessions.delete(token);
+    if (token) this.db.prepare('DELETE FROM admin_sessions WHERE token_hash = ?').run(hashSessionToken(token));
+  }
+
+  /** Nombre de sessions encore enregistrées (y compris expirées non nettoyées). */
+  count(): number {
+    return (this.db.prepare('SELECT COUNT(*) AS n FROM admin_sessions').get() as { n: number }).n;
   }
 
   private prune(): void {
-    const now = Date.now();
-    for (const [token, expiresAt] of this.sessions) {
-      if (expiresAt < now) this.sessions.delete(token);
-    }
+    this.db.prepare('DELETE FROM admin_sessions WHERE expires_at < ?').run(this.now());
   }
 }
 
