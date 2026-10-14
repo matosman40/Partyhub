@@ -21,6 +21,15 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
   Une source GitHub qui trouve une version plus ancienne que celle jouée la conserve et la signale comme « conservée ».
 - Tests : 12 nouveaux pour le format 2, 5 pour la copie, 9 pour les versions et les sources.
 
+### Corrigé
+- Docker Compose : `GITHUB_TOKEN` est maintenant transmis au conteneur (`compose.yaml` et `compose.dev.yaml`). Auparavant,
+  la variable documentée dans `.env.example` n'avait aucun effet, et les dépôts privés de jeux étaient inaccessibles.
+  Un test vérifie désormais la cohérence entre les fichiers de déploiement et `.env.example`.
+
+### Ajouté (déploiement)
+- `CONTRIBUTING.md` : mise en place, règles du code, contenu attendu d'une pull request.
+- `.gitattributes` : fins de ligne LF pour le code, fichiers binaires marqués comme tels.
+
 ### Modifié
 - Moteur déclaré en 0.7.0, avec les modules `cards`, `board` et `quiz`. Versions des paquets portées à 0.7.0.
 - Identifiants des jeux issus de paquets : `pkg-` pour les cartes (inchangé), `pkgb-` pour les plateaux, `pkgq-` pour
