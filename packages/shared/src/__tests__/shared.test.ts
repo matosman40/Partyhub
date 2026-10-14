@@ -1,25 +1,35 @@
 import { describe, expect, it } from 'vitest';
 import { boardGameDefinitionSchema, type BoardCellKind } from '../board-games.js';
 import { defaultAvatarFor, hashText, AVATAR_EMOJIS } from '../avatars.js';
-import { isValidRoomCode, normalizeRoomCode, ROOM_CODE_ALPHABET, ROOM_CODE_LENGTH } from '../room-codes.js';
+import {
+  isValidRoomCode,
+  normalizeRoomCode,
+  ROOM_CODE_ALPHABET,
+  ROOM_CODE_DEFAULT_LENGTH,
+  ROOM_CODE_MAX_LENGTH,
+  ROOM_CODE_MIN_LENGTH,
+} from '../room-codes.js';
 
 describe('Codes de salle', () => {
-  it('accepte un code de la longueur et de l’alphabet attendus', () => {
-    expect(ROOM_CODE_LENGTH).toBe(4);
-    expect(isValidRoomCode('ABCD')).toBe(true);
-    expect(isValidRoomCode('2345')).toBe(true);
+  it('sont faits de chiffres, de 4 à 6, 4 par défaut', () => {
+    expect(ROOM_CODE_DEFAULT_LENGTH).toBe(4);
+    expect(ROOM_CODE_MIN_LENGTH).toBe(4);
+    expect(ROOM_CODE_MAX_LENGTH).toBe(6);
+    expect(ROOM_CODE_ALPHABET).toBe('0123456789');
+    expect(isValidRoomCode('1234')).toBe(true);
+    expect(isValidRoomCode('123456')).toBe(true);
+    expect(isValidRoomCode('12345')).toBe(true);
   });
 
-  it('refuse les caractères ambigus (0, O, 1, I, L) et les mauvaises longueurs', () => {
-    for (const bad of ['AB0D', 'ABOD', 'AB1D', 'ABID', 'ABLD', 'ABC', 'ABCDE', '']) {
+  it('refuse les lettres, les autres caractères et les mauvaises longueurs', () => {
+    for (const bad of ['ABCD', '12a4', '12 4', '1-34', '123', '1234567', '']) {
       expect(isValidRoomCode(bad), bad).toBe(false);
     }
-    expect(ROOM_CODE_ALPHABET).not.toMatch(/[01ILO]/);
   });
 
-  it('normalise la saisie : espaces retirés, majuscules', () => {
-    expect(normalizeRoomCode('  ab3d ')).toBe('AB3D');
-    expect(isValidRoomCode(normalizeRoomCode(' k7m2 '))).toBe(true);
+  it('normalise la saisie : espaces retirés', () => {
+    expect(normalizeRoomCode('  1234 ')).toBe('1234');
+    expect(isValidRoomCode(normalizeRoomCode(' 0042 '))).toBe(true);
   });
 });
 

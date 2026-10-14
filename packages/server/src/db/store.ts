@@ -2,6 +2,7 @@ import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import Database from 'better-sqlite3';
 import { z } from 'zod';
+import { ROOM_CODE_DEFAULT_LENGTH, ROOM_CODE_MAX_LENGTH, ROOM_CODE_MIN_LENGTH } from '@partyhub/shared';
 
 /** Fichier de la médiathèque (les octets sont sur le disque, pas en base). */
 export interface AssetRow {
@@ -14,6 +15,36 @@ export interface AssetRow {
 }
 
 /** Paquet .phgame installé. `manifest` contient le manifeste JSON tel qu'il a été validé. */
+/** Copie modifiable d'un paquet : le paquet, la version copiée et l'empreinte du contenu copié. */
+export interface PackageCopyRow {
+  gameId: string;
+  packageId: string;
+  module: 'cards' | 'board' | 'quiz';
+  copiedVersion: string;
+  copiedHash: string;
+  createdAt: string;
+}
+
+interface PackageCopyDbRow {
+  game_id: string;
+  package_id: string;
+  module: PackageCopyRow['module'];
+  copied_version: string;
+  copied_hash: string;
+  created_at: string;
+}
+
+function toPackageCopy(row: PackageCopyDbRow): PackageCopyRow {
+  return {
+    gameId: row.game_id,
+    packageId: row.package_id,
+    module: row.module,
+    copiedVersion: row.copied_version,
+    copiedHash: row.copied_hash,
+    createdAt: row.created_at,
+  };
+}
+
 export interface PackageRow {
   id: string;
   version: string;
@@ -30,6 +61,13 @@ export const adminSettingsSchema = z.object({
   graceSeconds: z.number().int().min(10).max(600),
   inactivityMinutes: z.number().int().min(5).max(1440),
   maxRoomAgeMinutes: z.number().int().min(15).max(1440),
+  /** Chiffres du code de salle : de ROOM_CODE_MIN_LENGTH à ROOM_CODE_MAX_LENGTH. */
+  roomCodeLength: z
+    .number()
+    .int()
+    .min(ROOM_CODE_MIN_LENGTH)
+    .max(ROOM_CODE_MAX_LENGTH)
+    .default(ROOM_CODE_DEFAULT_LENGTH),
 });
 
 export type AdminSettings = z.infer<typeof adminSettingsSchema>;
@@ -39,6 +77,7 @@ export const DEFAULT_ADMIN_SETTINGS: AdminSettings = {
   graceSeconds: 90,
   inactivityMinutes: 30,
   maxRoomAgeMinutes: 240,
+  roomCodeLength: ROOM_CODE_DEFAULT_LENGTH,
 };
 
 const SCHEMA = `
@@ -227,6 +266,22 @@ export const MIGRATIONS: Migration[] = [
           game_id    TEXT PRIMARY KEY,
           content    TEXT NOT NULL,
           updated_at TEXT NOT NULL
+        );
+      `);
+    },
+  },
+  {
+    version: 8,
+    description: 'Lien entre une copie modifiable et le paquet dont elle vient (version non publiée)',
+    up(db) {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS package_copies (
+          game_id        TEXT PRIMARY KEY,
+          package_id     TEXT NOT NULL,
+          module         TEXT NOT NULL,
+          copied_version TEXT NOT NULL,
+          copied_hash    TEXT NOT NULL,
+          created_at     TEXT NOT NULL
         );
       `);
     },
@@ -457,6 +512,37 @@ export class Store {
     this.db.prepare('DELETE FROM notices WHERE game_id = ?').run(gameId);
     this.db.prepare('DELETE FROM game_details WHERE game_id = ?').run(gameId);
     this.db.prepare('DELETE FROM game_settings WHERE game_id = ?').run(gameId);
+    this.db.prepare('DELETE FROM package_copies WHERE game_id = ?').run(gameId);
+  }
+
+  /** Lien d'une copie modifiable vers le paquet dont elle vient. */
+  getPackageCopy(gameId: string): PackageCopyRow | undefined {
+    const row = this.db.prepare('SELECT * FROM package_copies WHERE game_id = ?').get(gameId) as
+      | PackageCopyDbRow
+      | undefined;
+    return row ? toPackageCopy(row) : undefined;
+  }
+
+  listPackageCopies(): PackageCopyRow[] {
+    const rows = this.db.prepare('SELECT * FROM package_copies ORDER BY created_at').all() as PackageCopyDbRow[];
+    return rows.map(toPackageCopy);
+  }
+
+  savePackageCopy(row: Omit<PackageCopyRow, 'createdAt'> & { createdAt?: string }): void {
+    this.db
+      .prepare(
+        `INSERT INTO package_copies (game_id, package_id, module, copied_version, copied_hash, created_at)
+         VALUES (?, ?, ?, ?, ?, ?)
+         ON CONFLICT(game_id) DO UPDATE SET copied_version = excluded.copied_version, copied_hash = excluded.copied_hash`,
+      )
+      .run(
+        row.gameId,
+        row.packageId,
+        row.module,
+        row.copiedVersion,
+        row.copiedHash,
+        row.createdAt ?? new Date().toISOString(),
+      );
   }
 
   /** Jeux de cartes créés dans l'administration (définition au format JSON). */

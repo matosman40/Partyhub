@@ -147,7 +147,11 @@ ses cases, ses questions ou ses règles, cliquez sur **Créer une copie modifiab
 
 - La copie est un jeu de l'administration, avec la même définition que le paquet. Elle s'édite dans l'éditeur de son type :
   jeux de cartes, jeux de plateau ou jeux de questions médias. Son nom porte le suffixe « (copie) ».
-- Le paquet d'origine reste installé et inchangé. La copie ne reçoit plus ses mises à jour.
+- Le paquet d'origine reste installé et inchangé.
+- La copie garde le lien avec son paquet. La section des paquets indique si elle a été modifiée, et si le paquet a une
+  version plus récente. **Mettre la copie à jour** la remplace par cette version : son nom est conservé. Une copie
+  modifiée demande une confirmation, car ses modifications sont perdues.
+- Si le paquet d'origine est supprimé, la copie reste modifiable mais ne reçoit plus de mises à jour.
 - Seul un paquet actif peut être copié.
 
 ## Mise à jour et retour arrière

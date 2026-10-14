@@ -150,7 +150,8 @@ la bonne réponse n'apparaît qu'à la révélation, et les réponses privées r
 | `PORT`, `HOST` | `8282`, `0.0.0.0` | Écoute du serveur dans le conteneur |
 
 Réglages modifiables depuis l'administration (sans redémarrage) : joueurs maximum par salle, délai de
-reconnexion, délai d'inactivité, durée maximale d'une salle. Pour chaque jeu (intégré, cartes, médias, plateau ou
+reconnexion, délai d'inactivité, durée maximale d'une salle, nombre de chiffres du code de salle (4 à 6, 4 par défaut).
+Les salles déjà ouvertes gardent leur code. Pour chaque jeu (intégré, cartes, médias, plateau ou
 paquet importé), l'administration permet aussi de modifier les réglages par défaut (durées, manches, etc.), la
 présentation (nom, icône, description, durée estimée), la notice, et d'activer ou désactiver le jeu. Le nombre de
 joueurs reste fixé par le code du jeu. La structure du jeu (cartes, cases, questions) d'un paquet ne change pas : il

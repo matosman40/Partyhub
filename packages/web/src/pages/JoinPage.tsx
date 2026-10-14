@@ -1,20 +1,21 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { api } from '../api.js';
+import { isValidRoomCode, ROOM_CODE_MAX_LENGTH } from '@partyhub/shared';
 import { QrScanner, canScanQr } from '../components/QrScanner.js';
 
 /** Extrait le code de salle d'un QR code (lien /j/CODE) ou d'un code saisi à la main. */
 export function codeFromScan(value: string): string | null {
-  const fromLink = value.match(/\/j\/([A-Za-z0-9]{4})(?:[/?#]|$)/);
-  if (fromLink?.[1]) return fromLink[1].toUpperCase();
+  const fromLink = value.match(/\/j\/([0-9]{4,6})(?:[/?#]|$)/);
+  if (fromLink?.[1]) return fromLink[1];
   const bare = value.trim();
-  return /^[A-Za-z0-9]{4}$/.test(bare) ? bare.toUpperCase() : null;
+  return isValidRoomCode(bare) ? bare : null;
 }
 
 export function JoinPage() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const [code, setCode] = useState((params.get('code') ?? '').toUpperCase());
+  const [code, setCode] = useState((params.get('code') ?? '').replace(/\D/g, '').slice(0, ROOM_CODE_MAX_LENGTH));
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [scanning, setScanning] = useState(false);
@@ -38,9 +39,9 @@ export function JoinPage() {
 
   function submit(e: FormEvent) {
     e.preventDefault();
-    const clean = code.trim().toUpperCase();
-    if (clean.length !== 4) {
-      setError('Le code de salle comporte 4 caractères.');
+    const clean = code.trim();
+    if (!isValidRoomCode(clean)) {
+      setError('Le code de salle comporte de 4 à 6 chiffres.');
       return;
     }
     void verifyAndGo(clean);
@@ -70,12 +71,12 @@ export function JoinPage() {
             <input
               className="code-input"
               value={code}
-              placeholder="ABCD"
-              maxLength={4}
-              autoCapitalize="characters"
-              autoComplete="off"
+              placeholder="1234"
+              maxLength={ROOM_CODE_MAX_LENGTH}
+              inputMode="numeric"
+              autoComplete="one-time-code"
               spellCheck={false}
-              onChange={(e) => setCode(e.target.value.toUpperCase())}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, ROOM_CODE_MAX_LENGTH))}
               autoFocus
             />
           </label>

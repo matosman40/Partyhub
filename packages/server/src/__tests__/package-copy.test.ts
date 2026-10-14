@@ -4,12 +4,18 @@ import os from 'node:os';
 import path from 'node:path';
 import { Store } from '../db/store.js';
 import { PackageService } from '../packages/service.js';
-import { copyNameOf, copyPackageToEditable, type CopyServices } from '../packages/copy.js';
+import {
+  copyNameOf,
+  copyPackageToEditable,
+  packageCopyStatuses,
+  updateCopyFromPackage,
+  type CopyServices,
+} from '../packages/copy.js';
 import { CardGameService } from '../cards/service.js';
 import { BoardGameService } from '../boards/service.js';
 import { MediaQuizService } from '../media/service.js';
 import type { AssetService } from '../assets/service.js';
-import { buildPackage, packExample } from './helpers/package-kit.js';
+import { buildPackage, exampleDefinition, packExample } from './helpers/package-kit.js';
 
 let dir: string;
 let store: Store;
@@ -25,6 +31,7 @@ beforeEach(() => {
     cardGames: new CardGameService(store),
     boardGames: new BoardGameService(store),
     mediaGames: new MediaQuizService(store, assets),
+    store,
   };
 });
 
@@ -104,5 +111,91 @@ describe('copie modifiable d’un paquet', () => {
     expect(copyNameOf(long)).toHaveLength(40);
     expect(copyNameOf(long).endsWith(' (copie)')).toBe(true);
     expect(copyNameOf('Court')).toBe('Court (copie)');
+  });
+
+  it('garde le lien vers le paquet, la version copiée et l’empreinte du contenu', () => {
+    services.packages.install(packExample('exemple-plateau'));
+    const copy = copyPackageToEditable('exemple-plateau', services);
+    if (!copy.ok) throw new Error('copie refusée');
+    expect(services.store.getPackageCopy(copy.id)).toMatchObject({
+      packageId: 'exemple-plateau',
+      module: 'board',
+      copiedVersion: '1.0.0',
+    });
+    expect(packageCopyStatuses(services)).toMatchObject([
+      { gameId: copy.id, modified: false, updateAvailable: false, originMissing: false },
+    ]);
+  });
+
+  it('signale une copie modifiée, puis une version plus récente du paquet', () => {
+    services.packages.install(buildPackage());
+    const copy = copyPackageToEditable('exemple-cartes', services);
+    if (!copy.ok) throw new Error('copie refusée');
+    const record = services.cardGames.list().find((r) => r.id === copy.id)!;
+    services.cardGames.save(copy.id, { ...record.definition, description: 'Ma propre description.' });
+    expect(packageCopyStatuses(services)[0]).toMatchObject({ modified: true, updateAvailable: false });
+
+    services.packages.install(
+      buildPackage({ version: '1.1.0', definition: { ...exampleDefinition(), description: 'Nouvelle version.' } }),
+    );
+    expect(packageCopyStatuses(services)[0]).toMatchObject({
+      copiedVersion: '1.0.0',
+      currentVersion: '1.1.0',
+      updateAvailable: true,
+      modified: true,
+    });
+  });
+
+  it('refuse de remplacer une copie modifiée sans confirmation, puis la remplace en gardant son nom', () => {
+    services.packages.install(buildPackage());
+    const copy = copyPackageToEditable('exemple-cartes', services);
+    if (!copy.ok) throw new Error('copie refusée');
+    const record = services.cardGames.list().find((r) => r.id === copy.id)!;
+    services.cardGames.save(copy.id, { ...record.definition, name: 'Mon nom à moi' });
+    services.packages.install(
+      buildPackage({ version: '1.1.0', definition: { ...exampleDefinition(), description: 'Nouvelle version.' } }),
+    );
+
+    const refused = updateCopyFromPackage(copy.id, {}, services);
+    expect(refused).toMatchObject({ ok: false, modified: true });
+
+    const done = updateCopyFromPackage(copy.id, { force: true }, services);
+    expect(done).toEqual({ ok: true, version: '1.1.0' });
+    const after = services.cardGames.list().find((r) => r.id === copy.id)!;
+    expect(after.definition).toMatchObject({ name: 'Mon nom à moi', description: 'Nouvelle version.' });
+    expect(packageCopyStatuses(services)[0]).toMatchObject({
+      copiedVersion: '1.1.0',
+      modified: false,
+      updateAvailable: false,
+    });
+  });
+
+  it('met à jour une copie non modifiée sans confirmation', () => {
+    services.packages.install(buildPackage());
+    const copy = copyPackageToEditable('exemple-cartes', services);
+    if (!copy.ok) throw new Error('copie refusée');
+    services.packages.install(
+      buildPackage({ version: '1.1.0', definition: { ...exampleDefinition(), description: 'Nouvelle version.' } }),
+    );
+    expect(updateCopyFromPackage(copy.id, {}, services)).toEqual({ ok: true, version: '1.1.0' });
+  });
+
+  it('signale un paquet d’origine supprimé, sans effacer la copie', () => {
+    services.packages.install(buildPackage());
+    const copy = copyPackageToEditable('exemple-cartes', services);
+    if (!copy.ok) throw new Error('copie refusée');
+    services.packages.remove('exemple-cartes');
+    expect(packageCopyStatuses(services)[0]).toMatchObject({ originMissing: true, currentVersion: null });
+    expect(updateCopyFromPackage(copy.id, { force: true }, services)).toMatchObject({ ok: false });
+    expect(services.cardGames.list().map((r) => r.id)).toEqual([copy.id]);
+  });
+
+  it('supprimer la copie efface son lien', () => {
+    services.packages.install(buildPackage());
+    const copy = copyPackageToEditable('exemple-cartes', services);
+    if (!copy.ok) throw new Error('copie refusée');
+    services.cardGames.remove(copy.id);
+    expect(services.store.getPackageCopy(copy.id)).toBeUndefined();
+    expect(packageCopyStatuses(services)).toEqual([]);
   });
 });

@@ -1,6 +1,6 @@
 import { randomInt } from 'node:crypto';
 import type { AvatarInfo, GameModule } from '@partyhub/shared';
-import { ROOM_CODE_ALPHABET, ROOM_CODE_LENGTH, normalizeRoomCode } from '@partyhub/shared';
+import { ROOM_CODE_ALPHABET, ROOM_CODE_DEFAULT_LENGTH, normalizeRoomCode } from '@partyhub/shared';
 import { Room, type RoomEnv, type RoomHooks, type RoomOptions } from './room.js';
 
 export type CloseReason = 'closed' | 'inactive' | 'abandoned' | 'expired' | 'admin';
@@ -28,6 +28,8 @@ export class RoomManager {
     private readonly env: RoomEnv,
     private readonly hooks: ManagerHooks,
     private readonly maxRooms = 200,
+    /** Longueur du code, lue à chaque création : elle suit le réglage de l'administration. */
+    private readonly codeLength: () => number = () => ROOM_CODE_DEFAULT_LENGTH,
   ) {}
 
   create(module: GameModule, options: RoomOptions = { practice: false }): Room | null {
@@ -43,7 +45,8 @@ export class RoomManager {
   private newCode(): string | null {
     for (let attempt = 0; attempt < MAX_CODE_ATTEMPTS; attempt++) {
       let code = '';
-      for (let i = 0; i < ROOM_CODE_LENGTH; i++) {
+      const length = this.codeLength();
+      for (let i = 0; i < length; i++) {
         code += ROOM_CODE_ALPHABET[randomInt(ROOM_CODE_ALPHABET.length)];
       }
       if (!this.byCode.has(code)) return code;

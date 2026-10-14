@@ -134,7 +134,7 @@ describe('salles et connexions', () => {
     const socket = await connect();
     const bad = await call(socket, 'player:join', { code: 'AB', name: 'Alice' });
     expect(bad.ok).toBe(false);
-    const unknown = await call(socket, 'player:join', { code: 'BCDF', name: 'Alice' });
+    const unknown = await call(socket, 'player:join', { code: '9876', name: 'Alice' });
     expect(unknown.ok).toBe(false);
     expect(unknown.error).toMatch(/inconnu/);
   });

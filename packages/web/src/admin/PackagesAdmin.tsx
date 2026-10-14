@@ -16,6 +16,18 @@ export interface PackageRecord {
   installedAt: string;
 }
 
+/** Copie modifiable d'un paquet, avec son état par rapport au paquet d'origine. */
+interface PackageCopy {
+  gameId: string;
+  packageId: string;
+  name: string;
+  copiedVersion: string;
+  currentVersion: string | null;
+  modified: boolean;
+  updateAvailable: boolean;
+  originMissing: boolean;
+}
+
 interface PackageVersion {
   version: string;
   sha256: string;
@@ -47,11 +59,16 @@ export function PackagesAdmin({ onChanged }: { onChanged: () => void }) {
   /** Paquet dont la liste des versions est dépliée, et les versions déjà chargées par paquet. */
   const [openId, setOpenId] = useState<string | null>(null);
   const [versionsById, setVersionsById] = useState<Record<string, PackageVersion[]>>({});
+  const [copies, setCopies] = useState<PackageCopy[]>([]);
 
   async function load() {
     try {
-      const res = await api<{ packages: PackageRecord[] }>('/api/admin/packages');
-      setRecords(res.packages);
+      const [packagesRes, copiesRes] = await Promise.all([
+        api<{ packages: PackageRecord[] }>('/api/admin/packages'),
+        api<{ copies: PackageCopy[] }>('/api/admin/package-copies'),
+      ]);
+      setRecords(packagesRes.packages);
+      setCopies(copiesRes.copies);
     } catch (err) {
       setError((err as Error).message);
     }
@@ -186,6 +203,31 @@ export function PackagesAdmin({ onChanged }: { onChanged: () => void }) {
     }
   }
 
+  /** Remplace une copie par la version active du paquet. Une copie modifiée demande une confirmation. */
+  async function updateCopy(copy: PackageCopy) {
+    if (
+      copy.modified &&
+      !window.confirm(
+        `« ${copy.name} » a été modifiée. La remplacer par la version ${copy.currentVersion ?? ''} du paquet ? Ses modifications seront perdues.`,
+      )
+    ) {
+      return;
+    }
+    setError(null);
+    setNotice(null);
+    try {
+      await api(`/api/admin/package-copies/${encodeURIComponent(copy.gameId)}/update`, {
+        method: 'POST',
+        body: JSON.stringify({ force: copy.modified }),
+      });
+      setNotice(`« ${copy.name} » mise à jour à la version ${copy.currentVersion ?? ''}. Son nom est conservé.`);
+      await load();
+      onChanged();
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  }
+
   async function remove(record: PackageRecord) {
     if (
       !window.confirm(
@@ -213,7 +255,8 @@ export function PackagesAdmin({ onChanged }: { onChanged: () => void }) {
         plus ancienne est conservée sans être jouée, et vous la choisissez dans « Versions ». Le nom, l’icône, la
         description et les réglages par défaut d’un paquet se modifient dans les sections « Présentation » et « Réglages
         par défaut ». Son contenu (cartes, cases, questions) ne change pas : créez une copie modifiable pour le
-        transformer.
+        transformer. Une copie garde le lien avec son paquet : elle signale les nouvelles versions, et peut être
+        remplacée par la nouvelle version (son nom est conservé ; une copie modifiée demande une confirmation).
       </p>
       <div className="stack">
         <label className="btn primary">
@@ -267,6 +310,22 @@ export function PackagesAdmin({ onChanged }: { onChanged: () => void }) {
               </span>
               {r.description && <span className="muted small">{r.description}</span>}
               {r.error && <span className="error small">{r.error}</span>}
+              {copies
+                .filter((c) => c.packageId === r.id)
+                .map((c) => (
+                  <div key={c.gameId} className="row small">
+                    <span className="small">
+                      Copie « {c.name} » · version copiée {c.copiedVersion}
+                    </span>
+                    {c.modified && <span className="badge">modifiée</span>}
+                    {c.updateAvailable && <span className="badge">mise à jour disponible : {c.currentVersion}</span>}
+                    {c.updateAvailable && (
+                      <button type="button" className="btn ghost small" onClick={() => updateCopy(c)}>
+                        Mettre la copie à jour
+                      </button>
+                    )}
+                  </div>
+                ))}
               {openId === r.id && (
                 <div className="stack small">
                   {versionsById[r.id] === undefined && <span className="muted small">Chargement des versions…</span>}
@@ -323,6 +382,14 @@ export function PackagesAdmin({ onChanged }: { onChanged: () => void }) {
           </li>
         ))}
       </ul>
+      {copies
+        .filter((c) => c.originMissing)
+        .map((c) => (
+          <p key={c.gameId} className="muted small">
+            Copie « {c.name} » : le paquet d’origine a été supprimé. La copie reste modifiable et ne reçoit plus de
+            mises à jour.
+          </p>
+        ))}
     </div>
   );
 }

@@ -1,13 +1,11 @@
 import { deviceInfoSchema } from './devices.js';
 import { z } from 'zod';
-import { ROOM_CODE_ALPHABET, ROOM_CODE_LENGTH } from './room-codes.js';
+import { ROOM_CODE_PATTERN } from './room-codes.js';
 import { AVATAR_EMOJIS } from './avatars.js';
 
 export const PLAYER_NAME_MAX = 16;
 
-const CODE_PATTERN = new RegExp(`^[${ROOM_CODE_ALPHABET}]{${ROOM_CODE_LENGTH}}$`);
-
-export const roomCodeSchema = z.string().trim().toUpperCase().regex(CODE_PATTERN, 'Code de salle invalide');
+export const roomCodeSchema = z.string().trim().regex(ROOM_CODE_PATTERN, 'Code de salle invalide : 4 à 6 chiffres.');
 
 export const playerNameSchema = z
   .string()

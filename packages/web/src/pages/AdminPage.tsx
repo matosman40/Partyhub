@@ -28,6 +28,7 @@ interface AdminSettings {
   graceSeconds: number;
   inactivityMinutes: number;
   maxRoomAgeMinutes: number;
+  roomCodeLength: number;
 }
 
 interface RoomSummary {
@@ -232,6 +233,7 @@ function SettingsForm({ settings, onSaved }: { settings: AdminSettings; onSaved:
       {field('graceSeconds', 'Délai de reconnexion, en secondes (10–600)', 10, 600)}
       {field('inactivityMinutes', 'Inactivité avant suppression, en minutes (5–1440)', 5, 1440)}
       {field('maxRoomAgeMinutes', 'Durée maximale d’une salle, en minutes (15–1440)', 15, 1440)}
+      {field('roomCodeLength', 'Chiffres du code de salle (4–6) : les salles déjà ouvertes gardent leur code', 4, 6)}
       <button type="submit" className="btn primary">
         Enregistrer
       </button>

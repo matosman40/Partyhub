@@ -123,6 +123,8 @@ export async function createServer(opts: ServerOptions): Promise<PartyServer> {
         }
       },
     },
+    200,
+    () => store.getSettings().roomCodeLength,
   );
 
   const dbBackups = config.backup ? new DbBackupScheduler(store, config.backup, logger) : undefined;

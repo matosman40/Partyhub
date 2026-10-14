@@ -16,7 +16,12 @@ import type { PackageSourceService } from '../sources/service.js';
 import type { CardGameService } from '../cards/service.js';
 import type { AssetService } from '../assets/service.js';
 import type { PackageService } from '../packages/service.js';
-import { copyPackageToEditable } from '../packages/copy.js';
+import {
+  copyPackageToEditable,
+  packageCopyStatuses,
+  updateCopyFromPackage,
+  type CopyServices,
+} from '../packages/copy.js';
 import type { MediaQuizService } from '../media/service.js';
 import { AdminSessions, LoginLimiter, readCookie, verifyPassword } from '../auth.js';
 import { catalog, gameInfo, originOf } from '../catalog.js';
@@ -695,14 +700,34 @@ export function createApp(deps: AppDeps): express.Express {
     res.json({ ok: true, version: result.version });
   });
 
+  const copyServices: CopyServices = { packages, cardGames, boardGames, mediaGames, store };
+
   /** Copie modifiable d'un paquet actif : le paquet reste installé et inchangé. */
   admin.post('/packages/:id/copy', (req, res) => {
-    const result = copyPackageToEditable(req.params.id ?? '', { packages, cardGames, boardGames, mediaGames });
+    const result = copyPackageToEditable(req.params.id ?? '', copyServices);
     if (!result.ok) {
       res.status(result.error === 'Paquet inconnu.' ? 404 : 400).json({ error: result.error });
       return;
     }
     res.status(201).json(result);
+  });
+
+  /** État des copies : modifiée ou non, mise à jour disponible dans le paquet d'origine. */
+  admin.get('/package-copies', (_req, res) => {
+    res.json({ copies: packageCopyStatuses(copyServices) });
+  });
+
+  /**
+   * Remplace une copie par la version active de son paquet. Une copie modifiée exige
+   * « force » : ses modifications sont alors perdues.
+   */
+  admin.post('/package-copies/:id/update', (req, res) => {
+    const result = updateCopyFromPackage(req.params.id ?? '', { force: req.body?.force === true }, copyServices);
+    if (!result.ok) {
+      res.status(result.modified ? 409 : 400).json({ error: result.error, modified: result.modified === true });
+      return;
+    }
+    res.json({ ok: true, version: result.version });
   });
 
   /** Jeux de questions médias (extraits de vidéos YouTube ou de la médiathèque). */

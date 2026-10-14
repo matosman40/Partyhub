@@ -5,6 +5,10 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 ## Non publié
 
 ### Ajouté
+- Copies de paquets gérées : une copie garde le lien avec son paquet. La section des paquets indique si elle a été
+  modifiée et si le paquet a une version plus récente ; « Mettre la copie à jour » la remplace par cette version, son
+  nom est conservé (confirmation si elle a été modifiée). Migration 8 (table `package_copies`).
+- Nombre de chiffres du code de salle réglable dans l'administration (4 à 6, 4 par défaut).
 - Durée estimée d'un jeu modifiable dans la présentation (affichée au catalogue et au salon). Le nombre de joueurs
   reste fixé par le code.
 - Le formulaire de réglages reçoit les bornes exactes du serveur : une valeur valide n'est jamais ramenée d'office.
@@ -63,6 +67,10 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
   formulaire des questions médias accepte 10 à 120 s, et le serveur refuse une valeur hors limites de chaque jeu.
 
 ### Modifié
+- Codes de salle en chiffres (0 à 9) au lieu de lettres : plus de confusion entre 0/O ou 1/I/L. Les salles ouvertes
+  gardent leur code ; la page de saisie accepte de 4 à 6 chiffres.
+- Dépendances fusionnées dans une même branche : vitest 5, pino 10, better-sqlite3 13, vite 8 (ajouté à la racine),
+  zod 4 et Prettier sur tout le code. Le serveur de tests du web est celui de la racine.
 - Découpage du bundle par jeu : chaque jeu est chargé à la demande (`lazyViews`). Le fichier principal passe de
   709 Ko à 534 Ko (environ 160 Ko compressé). Les vues sont rendues sous une frontière `Suspense`.
 - Dépendances mineures mises à jour (socket.io 4.8.4, React 19.3.0, tsx 4.23.15, tinypool 2.2.0, types). React est
