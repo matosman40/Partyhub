@@ -17,7 +17,7 @@
     "@partyhub/shared": "0.7.0",
     "better-sqlite3": "12.2.0",
     "express": "5.1.0",
-    "pino": "9.7.0",
+    "pino": "^10.3.1",
     "proxy-addr": "2.0.8",
     "socket.io": "4.8.4",
     "zod": "3.25.76"
