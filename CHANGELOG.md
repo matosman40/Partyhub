@@ -11,7 +11,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 - Vérifications strictes : empreinte SHA-256 de la release, version du tag égale à celle du manifeste, paquet d'un autre
   dépôt refusé, redirection hors GitHub refusée, taille limitée.
 - Modèle de publication pour les dépôts de jeux : [docs/PUBLIER-UN-JEU.md](docs/PUBLIER-UN-JEU.md).
-- Tests : 18 nouveaux (sources, empreintes, jeton, mise à jour automatique) avec un faux client GitHub.
+- Tests : 25 nouveaux (sources, empreintes, jeton, mise à jour automatique, jeux intégrés) avec un faux client GitHub.
+- Réglage `BUILTIN_GAMES` (`off` par défaut) : sur une installation neuve, les jeux intégrés restent dans le code mais sont désactivés. L'administrateur les active un par un.
 
 ### Modifié
 - Base de données : version de schéma 4 (table `package_sources`). Migration automatique au premier démarrage, avec copie de sécurité.
@@ -21,6 +22,7 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 - Retour arrière vers 0.6.2 : la version 0.6.2 refuse une base de version 4. Restaurez la copie faite à la mise à jour,
   puis redéployez l'image 0.6.2.
 - Aucune source n'est ajoutée automatiquement : rien ne change tant qu'une source n'est pas créée.
+- Installation neuve : les jeux intégrés sont désactivés. Une installation existante (mot de passe administrateur déjà créé) n'est pas modifiée.
 
 ### Problèmes connus
 - Les sources ne sont pas incluses dans la sauvegarde JSON de l'administration ; elles sont dans la copie de la base.

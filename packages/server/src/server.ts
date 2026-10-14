@@ -4,6 +4,7 @@ import { createServer as createHttpServer, type Server as HttpServer } from 'nod
 import path from 'node:path';
 import { Server } from 'socket.io';
 import type { ClientToServerEvents, ServerToClientEvents } from '@partyhub/shared';
+import { gameRegistry } from '@partyhub/games';
 import { resolveGame } from './games-registry.js';
 import { CardGameService } from './cards/service.js';
 import { BoardGameService } from './boards/service.js';
@@ -75,6 +76,12 @@ export async function createServer(opts: ServerOptions): Promise<PartyServer> {
       { from: migration.from, to: migration.to, backup: migration.backup },
       'Schéma de la base mis à jour',
     );
+  }
+  // Installation neuve (aucun mot de passe administrateur encore créé) : jeux intégrés désactivés si configuré.
+  // Une installation existante garde ses réglages, même si elle a été mise à jour.
+  if (config.builtinGames === false && store.getKv('admin_password_hash') === undefined) {
+    for (const game of gameRegistry) store.setGameEnabled(game.manifest.id, false);
+    logger.info({ count: gameRegistry.length }, 'Installation neuve : jeux intégrés désactivés (BUILTIN_GAMES=on pour les activer)');
   }
   await ensureAdminPassword(store, config, logger);
 

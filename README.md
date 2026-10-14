@@ -5,6 +5,8 @@ chaque joueur rejoint avec son téléphone, sans rien installer ni créer de com
 
 Jeux fournis (architecture modulaire, un dossier par jeu, voir [docs/ADDING-A-GAME.md](docs/ADDING-A-GAME.md)) :
 
+Sur une installation neuve, les jeux intégrés sont désactivés : l'administrateur les active un par un, ou avec `BUILTIN_GAMES=on`. Une installation existante garde ses réglages. Les jeux installés depuis une source GitHub ou un paquet sont actifs.
+
 | Jeu | Catégorie | Principe |
 | --- | --- | --- |
 | 🧠 **Quiz Party** | Quiz | Questions à choix multiples, points et bonus de rapidité. |
@@ -144,6 +146,7 @@ la bonne réponse n'apparaît qu'à la révélation, et les réponses privées r
 | `ASSET_MAX_VIDEO_MB` | `80` | Taille maximale d'une vidéo de la médiathèque (1 à 2048) |
 | `ASSET_MAX_IMAGE_MB` | `5` | Taille maximale d'une image de la médiathèque (1 à 64) |
 | `ASSET_MAX_FONT_MB` | `2` | Taille maximale d'une police de la médiathèque (1 à 16) |
+| `BUILTIN_GAMES` | `off` | `on` active les jeux intégrés sur une installation neuve ; `off` les laisse désactivés (les installations existantes ne changent pas) |
 | `GITHUB_TOKEN` | vide | Jeton GitHub (lecture des releases). Requis pour les dépôts privés ; évite aussi la limite d'appels anonymes. Jamais affiché ni sauvegardé |
 | `PORT`, `HOST` | `8282`, `0.0.0.0` | Écoute du serveur dans le conteneur |
 
