@@ -1,4 +1,5 @@
 import type { RankRow } from '../../client/ui.js';
+import type { MusicMood } from '../../client/audio.js';
 
 /** Vue publique du poker, telle qu'émise par le serveur (jamais les cartes privées avant l'abattage). */
 export interface PokerPub {
@@ -74,3 +75,11 @@ export function chipsRanking(pub: PokerPub): RankRow[] {
   rows.sort((a, b) => b.points - a.points || a.name.localeCompare(b.name, 'fr'));
   return rows.map((r) => ({ ...r, rank: 1 + rows.filter((o) => o.points > r.points).length }));
 }
+
+/** Musique de fond par ambiance : tempo (BPM) et timbre de la basse. */
+export const AMBIANCE_MUSIC: Record<PokerPub['settings']['ambiance'], MusicMood> = {
+  casino: { bpm: 128, bass: 'triangle' },
+  nuit: { bpm: 96, bass: 'sine' },
+  bar: { bpm: 110, bass: 'triangle' },
+  tournoi: { bpm: 150, bass: 'triangle' },
+};

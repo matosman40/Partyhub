@@ -1,14 +1,15 @@
 import type { CSSProperties } from 'react';
 import type { HostViewProps } from '../../client/types.js';
 import { useRemaining } from '../../client/hooks.js';
-import { play, unlockAudio } from '../../client/audio.js';
+import { play, setMusicMood, startMusic, stopMusic, unlockAudio } from '../../client/audio.js';
+import { useEffect } from 'react';
 import { Avatar, FinalHost, TimerBar, WaitingScreen } from '../../client/ui.js';
 import { SoundToggle } from '../../client/SoundToggle.js';
 import { CardFace } from '../../cards/client/CardFace.js';
 import { useChange } from '../../cards/client/cues.js';
 import { entryOf } from '../../cards/client/common.js';
 import { POKER_DEFINITION } from '../rules.js';
-import { STREET_LABEL, chipsRanking, fmt, type PokerPub } from './common.js';
+import { AMBIANCE_MUSIC, STREET_LABEL, chipsRanking, fmt, type PokerPub } from './common.js';
 
 /** Écran principal du poker : les joueurs et leurs mises, le tableau commun et le pot. */
 export function PokerHost({ publicState, now }: HostViewProps) {
@@ -29,6 +30,19 @@ export function PokerHost({ publicState, now }: HostViewProps) {
     if (phase === 'hand-over') play('win');
     else if (phase === 'final') play('final');
   });
+
+  // Musique de fond pendant la partie, selon l'ambiance choisie.
+  const ambiance = pub?.settings.ambiance;
+  const inGame = !!pub?.started && pub.phase !== 'final';
+  useEffect(() => {
+    if (!inGame || !ambiance) return;
+    setMusicMood(AMBIANCE_MUSIC[ambiance]);
+    startMusic();
+    return () => {
+      stopMusic();
+      setMusicMood(null);
+    };
+  }, [inGame, ambiance]);
 
   if (!pub) return null;
   if (!pub.started) {

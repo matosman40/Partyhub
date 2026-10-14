@@ -228,13 +228,28 @@ const LEAD = [69, 72, 76, 72, 67, 71, 74, 71, 65, 69, 72, 69, 64, 68, 71, 68];
 let timer: number | null = null;
 let nextTime = 0;
 let stepIndex = 0;
+// Tempo et timbre de la basse : valeurs par défaut, modifiables par `setMusicMood`.
+let step = STEP;
+let bassWave: OscillatorType = 'triangle';
+
+/** Ambiance musicale : tempo (battements par minute) et timbre de la basse. */
+export interface MusicMood {
+  bpm: number;
+  bass: OscillatorType;
+}
+
+/** Change l'ambiance de la musique de fond ; `null` revient à la musique par défaut. */
+export function setMusicMood(mood: MusicMood | null): void {
+  step = mood ? 60 / mood.bpm / 2 : STEP;
+  bassWave = mood ? mood.bass : 'triangle';
+}
 
 function scheduleStep(c: AudioContext, at: number, i: number): void {
   if (!musicBus) return;
   const bass = BASS[i % BASS.length] ?? 45;
   const lead = LEAD[i % LEAD.length] ?? 69;
-  tone(c, musicBus, 'triangle', midi(bass), at, STEP * 1.7, 0.6);
-  if (i % 2 === 0) tone(c, musicBus, 'square', midi(lead), at, STEP * 0.8, 0.12);
+  tone(c, musicBus, bassWave, midi(bass), at, step * 1.7, 0.6);
+  if (i % 2 === 0) tone(c, musicBus, 'square', midi(lead), at, step * 0.8, 0.12);
   if (i % 4 === 2 && noise) burst(c, musicBus, at, 0.05, 0.25, 'highpass', 6000, 3000);
 }
 
@@ -248,7 +263,7 @@ export function startMusic(): void {
     if (!unlocked) return;
     while (nextTime < c.currentTime + 0.15) {
       scheduleStep(c, nextTime, stepIndex);
-      nextTime += STEP;
+      nextTime += step;
       stepIndex++;
     }
   }, 40);
