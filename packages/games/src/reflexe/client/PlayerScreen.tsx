@@ -24,7 +24,9 @@ export function ReflexePlayer({ publicState: pub, playerState: me, send }: Playe
               : 'Trop lent'}
         </p>
         {gained > 0 && <p className="big-number">+{gained}</p>}
-        <p>Total : {me?.points ?? 0} pts · {me?.rank ? `${me.rank}ᵉ` : ''}</p>
+        <p>
+          Total : {me?.points ?? 0} pts · {me?.rank ? `${me.rank}ᵉ` : ''}
+        </p>
       </section>
     );
   }
@@ -72,7 +74,11 @@ export function ReflexePlayer({ publicState: pub, playerState: me, send }: Playe
       <button type="button" className="reflex-pad green" onClick={tap}>
         TOUCHEZ !
       </button>
-      {error && <p className="error" role="alert">{error}</p>}
+      {error && (
+        <p className="error" role="alert">
+          {error}
+        </p>
+      )}
     </section>
   );
 }

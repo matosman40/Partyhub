@@ -189,9 +189,13 @@ function hostView(s: CaptionState) {
   const q = scene(s);
   const pending =
     s.phase === 'write'
-      ? Object.keys(s.players).filter((id) => !(id in s.captions)).map((id) => s.players[id]!)
+      ? Object.keys(s.players)
+          .filter((id) => !(id in s.captions))
+          .map((id) => s.players[id]!)
       : s.phase === 'vote'
-        ? Object.keys(s.players).filter((id) => !(id in s.votes)).map((id) => s.players[id]!)
+        ? Object.keys(s.players)
+            .filter((id) => !(id in s.votes))
+            .map((id) => s.players[id]!)
         : [];
   if (!q || s.phase === 'ready' || s.phase === 'final') return { media: null, pending };
   return { media: hostMediaOf(q, s.index), pending };
@@ -224,8 +228,7 @@ export function createCaptionGame(
     questionCount: z.number().int().min(1).max(30).default(defaultCount),
     answerSeconds: z.number().int().min(15).max(120).default(Math.max(15, def.rules.answerSeconds)),
   });
-  const description =
-    def.description || 'Écrivez la réplique qui manque, puis votez pour la plus drôle.';
+  const description = def.description || 'Écrivez la réplique qui manque, puis votez pour la plus drôle.';
 
   return {
     manifest: {
@@ -359,8 +362,7 @@ export function createCaptionGame(
         myCaption: s.captions[playerId] ?? null,
         myOption: myOption >= 0 ? myOption : null,
         myVote: s.votes[playerId] ?? null,
-        answered:
-          s.phase === 'write' ? playerId in s.captions : s.phase === 'vote' ? playerId in s.votes : false,
+        answered: s.phase === 'write' ? playerId in s.captions : s.phase === 'vote' ? playerId in s.votes : false,
         gained: s.phase === 'reveal' ? (s.gains[playerId] ?? 0) : null,
       };
     },
@@ -389,4 +391,3 @@ export function createCaptionGame(
     },
   };
 }
-

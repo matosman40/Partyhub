@@ -131,12 +131,15 @@ export function PresidentPlayer({ publicState, playerState, playerId, send }: Pl
     if (!res.ok) setError(res.error ?? 'Passe refusée.');
   }
 
-  const topLabel = pub.pile[0] ? entryOf(pub.def, pub.pile[0].entry)?.label ?? '' : '';
-  const banner = pub.phase === 'round-over'
-    ? 'Manche terminée'
-    : me.isMyTurn
-      ? pub.pileCount > 0 ? `Battez le pli de ${pub.pileCount} × ${topLabel}` : 'À vous : posez une carte'
-      : `Tour de ${pub.current ? pub.names[pub.current] : ''}`;
+  const topLabel = pub.pile[0] ? (entryOf(pub.def, pub.pile[0].entry)?.label ?? '') : '';
+  const banner =
+    pub.phase === 'round-over'
+      ? 'Manche terminée'
+      : me.isMyTurn
+        ? pub.pileCount > 0
+          ? `Battez le pli de ${pub.pileCount} × ${topLabel}`
+          : 'À vous : posez une carte'
+        : `Tour de ${pub.current ? pub.names[pub.current] : ''}`;
 
   return (
     <section
@@ -144,7 +147,9 @@ export function PresidentPlayer({ publicState, playerState, playerId, send }: Pl
       data-mat={pub.def.theme}
       onPointerDownCapture={() => unlockAudio()}
     >
-      <div className="round-info">Manche {pub.round} / {pub.rounds}</div>
+      <div className="round-info">
+        Manche {pub.round} / {pub.rounds}
+      </div>
       <div className="sound-row">
         <SoundToggle />
       </div>
@@ -160,7 +165,11 @@ export function PresidentPlayer({ publicState, playerState, playerId, send }: Pl
           <div className="pres-status">
             {me.finished && <span className="hud-pill">Vous êtes sorti(e)</span>}
             <span className="hud-pill">{pub.counts[playerId] ?? 0} cartes</span>
-            {pub.pileCount > 0 && <span className="hud-pill">Pli : {pub.pileCount} × {topLabel}</span>}
+            {pub.pileCount > 0 && (
+              <span className="hud-pill">
+                Pli : {pub.pileCount} × {topLabel}
+              </span>
+            )}
           </div>
 
           <div className="table-mat hand-mat">
@@ -183,7 +192,11 @@ export function PresidentPlayer({ publicState, playerState, playerId, send }: Pl
           </div>
 
           {check && !check.ok && <p className="muted small">{check.error}</p>}
-          {error && <p className="error" role="alert">{error}</p>}
+          {error && (
+            <p className="error" role="alert">
+              {error}
+            </p>
+          )}
         </>
       )}
 

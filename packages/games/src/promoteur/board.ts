@@ -85,10 +85,7 @@ export const BOARD: Square[] = [
   { index: 23, kind: 'street', name: 'Boulevard Vert', group: 'vert', price: 240, rent: 20, house: 200 },
 ];
 
-export type CardEffect =
-  | { kind: 'money'; amount: number }
-  | { kind: 'move'; to: number }
-  | { kind: 'jail' };
+export type CardEffect = { kind: 'money'; amount: number } | { kind: 'move'; to: number } | { kind: 'jail' };
 
 export interface Card {
   text: string;

@@ -90,7 +90,10 @@ function badgeOf(cell: BoardCell): string {
 }
 
 function linesOf(text: string): string[] {
-  return text.split('\n').map((l) => l.trim()).filter(Boolean);
+  return text
+    .split('\n')
+    .map((l) => l.trim())
+    .filter(Boolean);
 }
 
 /** Liste des plateaux personnalisés, avec création, modification, copie et suppression. */
@@ -148,8 +151,8 @@ export function BoardGamesAdmin({ onChanged }: { onChanged: () => void }) {
     <div className="stack">
       <p className="muted">
         Créez vos plateaux de parcours : une suite de cases, des dés et des règles simples. Les cases peuvent faire
-        avancer, reculer, gagner ou perdre des points, passer un tour, ou mener à l’arrivée. Les joueurs les
-        retrouvent dans le catalogue, dans la catégorie plateau.
+        avancer, reculer, gagner ou perdre des points, passer un tour, ou mener à l’arrivée. Les joueurs les retrouvent
+        dans le catalogue, dans la catégorie plateau.
       </p>
       <div className="ed-new">
         <button
@@ -164,7 +167,11 @@ export function BoardGamesAdmin({ onChanged }: { onChanged: () => void }) {
         </button>
       </div>
 
-      {error && <p className="error" role="alert">{error}</p>}
+      {error && (
+        <p className="error" role="alert">
+          {error}
+        </p>
+      )}
       {records === null && <p className="muted">Chargement…</p>}
       {records?.length === 0 && <p className="muted">Aucun plateau personnalisé pour l’instant.</p>}
 
@@ -177,13 +184,17 @@ export function BoardGamesAdmin({ onChanged }: { onChanged: () => void }) {
             <div className="ed-list-body">
               <strong>{r.definition.name}</strong>
               <span className="muted small">
-                {THEME_LABEL[r.definition.theme]} · {r.definition.cells.length} cases ·{' '}
-                {r.definition.rules.minPlayers}–{r.definition.rules.maxPlayers} joueurs · {r.definition.rules.dice}{' '}
-                dé{r.definition.rules.dice > 1 ? 's' : ''}
+                {THEME_LABEL[r.definition.theme]} · {r.definition.cells.length} cases · {r.definition.rules.minPlayers}–
+                {r.definition.rules.maxPlayers} joueurs · {r.definition.rules.dice} dé
+                {r.definition.rules.dice > 1 ? 's' : ''}
               </span>
             </div>
             <div className="ed-list-actions">
-              <button type="button" className="btn ghost small" onClick={() => setEditing({ id: r.id, draft: structuredClone(r.definition) })}>
+              <button
+                type="button"
+                className="btn ghost small"
+                onClick={() => setEditing({ id: r.id, draft: structuredClone(r.definition) })}
+              >
                 Modifier
               </button>
               <button
@@ -310,7 +321,12 @@ function BoardGameEditor({
         </label>
         <label className="field">
           <span>Description</span>
-          <input value={draft.description} maxLength={160} onChange={(e) => patch({ description: e.target.value })} required />
+          <input
+            value={draft.description}
+            maxLength={160}
+            onChange={(e) => patch({ description: e.target.value })}
+            required
+          />
         </label>
         <label className="field">
           <span>Thème graphique</span>
@@ -366,8 +382,8 @@ function BoardGameEditor({
 
       <Section title={`Cases (${cells.length} sur ${MAX_CELLS} au plus)`}>
         <p className="muted small">
-          La première case est le départ et la dernière l’arrivée. Une case d’avance, de recul, de gain ou de perte
-          a besoin d’une valeur d’au moins 1. Les effets ne s’enchaînent pas.
+          La première case est le départ et la dernière l’arrivée. Une case d’avance, de recul, de gain ou de perte a
+          besoin d’une valeur d’au moins 1. Les effets ne s’enchaînent pas.
         </p>
         <table className="bd-cells">
           <thead>
@@ -476,7 +492,11 @@ function BoardGameEditor({
         </label>
       </Section>
 
-      {message && <p className="error" role="alert">{message}</p>}
+      {message && (
+        <p className="error" role="alert">
+          {message}
+        </p>
+      )}
       <div className="ed-list-actions">
         <button type="submit" className="btn primary" disabled={saving}>
           Enregistrer le plateau

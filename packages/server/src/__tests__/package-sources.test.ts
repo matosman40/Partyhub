@@ -37,15 +37,28 @@ function fakeGitHub(repos: Record<string, RepoState>) {
     if (state.status) return response('{}', state.status, url, 'application/json');
     if (latest) {
       const assets = [
-        { name: 'jeu.phgame', url: `https://api.github.com/repos/${repo}/releases/assets/1`, size: state.archive.length },
+        {
+          name: 'jeu.phgame',
+          url: `https://api.github.com/repos/${repo}/releases/assets/1`,
+          size: state.archive.length,
+        },
       ];
       if (state.sha !== null) {
-        assets.push({ name: 'jeu.phgame.sha256', url: `https://api.github.com/repos/${repo}/releases/assets/2`, size: 80 });
+        assets.push({
+          name: 'jeu.phgame.sha256',
+          url: `https://api.github.com/repos/${repo}/releases/assets/2`,
+          size: 80,
+        });
       }
       return response(JSON.stringify({ tag_name: state.tag, assets }), 200, url, 'application/json');
     }
     if (asset?.[2] === '1') {
-      return response(state.archive, 200, `https://${state.finalHost ?? 'objects.githubusercontent.com'}/archive`, 'application/octet-stream');
+      return response(
+        state.archive,
+        200,
+        `https://${state.finalHost ?? 'objects.githubusercontent.com'}/archive`,
+        'application/octet-stream',
+      );
     }
     return response(`${state.sha ?? ''}  jeu.phgame\n`, 200, url, 'text/plain');
   };

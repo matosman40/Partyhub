@@ -7,23 +7,23 @@ export const PLAYER_NAME_MAX = 16;
 
 const CODE_PATTERN = new RegExp(`^[${ROOM_CODE_ALPHABET}]{${ROOM_CODE_LENGTH}}$`);
 
-export const roomCodeSchema = z
-  .string()
-  .trim()
-  .toUpperCase()
-  .regex(CODE_PATTERN, 'Code de salle invalide');
+export const roomCodeSchema = z.string().trim().toUpperCase().regex(CODE_PATTERN, 'Code de salle invalide');
 
 export const playerNameSchema = z
   .string()
   .trim()
   .min(1, 'Entrez un pseudo')
   .max(PLAYER_NAME_MAX, `Pseudo trop long (${PLAYER_NAME_MAX} caractères maximum)`)
-  .regex(/^[\p{L}\p{N} _.'-]+$/u, 'Pseudo : lettres, chiffres, espaces et - _ . \' uniquement');
+  .regex(/^[\p{L}\p{N} _.'-]+$/u, "Pseudo : lettres, chiffres, espaces et - _ . ' uniquement");
 
 const tokenSchema = z.string().min(20).max(128);
 
 export const createRoomSchema = z.object({
-  gameId: z.string().min(1).max(64).regex(/^[a-z0-9-]+$/),
+  gameId: z
+    .string()
+    .min(1)
+    .max(64)
+    .regex(/^[a-z0-9-]+$/),
   practice: z.boolean().optional(),
 });
 

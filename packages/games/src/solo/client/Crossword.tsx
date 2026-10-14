@@ -21,7 +21,11 @@ interface CrosswordPublic {
 
 /** Une seule lettre A à Z, sans accent : ce qui est tapé est normalisé. */
 function toLetter(raw: string): string {
-  const letter = raw.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z]/g, '');
+  const letter = raw
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toUpperCase()
+    .replace(/[^A-Z]/g, '');
   return letter.slice(-1);
 }
 
@@ -39,7 +43,7 @@ export function CrosswordView({ board, disabled, send }: SoloBoardProps) {
   }, [board]);
 
   const total = view.rows * view.cols;
-  const valueOf = (i: number) => (i in local ? local[i]! : view.letters[i] ?? '');
+  const valueOf = (i: number) => (i in local ? local[i]! : (view.letters[i] ?? ''));
   const errors = new Set(view.errors);
 
   function nextWhite(i: number, step: 1 | -1): number {
@@ -140,7 +144,11 @@ export function CrosswordView({ board, disabled, send }: SoloBoardProps) {
         {checked && errors.size === 0 && <span className="ok small">Aucune erreur pour l’instant.</span>}
         {checked && errors.size > 0 && <span className="error small">{errors.size} lettre(s) à corriger.</span>}
       </div>
-      {error && <p className="error small" role="alert">{error}</p>}
+      {error && (
+        <p className="error small" role="alert">
+          {error}
+        </p>
+      )}
 
       <div className="solo-xw-clues">
         <ClueList title="Horizontal" clues={view.clues.across} onPick={focusClue} />

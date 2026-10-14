@@ -64,7 +64,20 @@ const ADMIN_COOKIE_PATH = '/api/admin';
 const ADMIN_SESSION_MS = 12 * 60 * 60 * 1000;
 
 export function createApp(deps: AppDeps): express.Express {
-  const { config, logger, store, manager, profiles, cardGames, boardGames, packageSources, assets, mediaGames, dbBackups, packages } = deps;
+  const {
+    config,
+    logger,
+    store,
+    manager,
+    profiles,
+    cardGames,
+    boardGames,
+    packageSources,
+    assets,
+    mediaGames,
+    dbBackups,
+    packages,
+  } = deps;
   const app = express();
   // Sessions d'administration stockées en base : elles survivent à un redémarrage.
   const sessions = new AdminSessions(store.db);
@@ -407,7 +420,8 @@ export function createApp(deps: AppDeps): express.Express {
     const origin = originOf(id);
     if (!game || (origin !== 'builtin' && origin !== 'package')) {
       res.status(404).json({
-        error: 'Nom, icône et description se modifient ici pour les jeux intégrés et les paquets importés. Les autres se modifient dans leur éditeur.',
+        error:
+          'Nom, icône et description se modifient ici pour les jeux intégrés et les paquets importés. Les autres se modifient dans leur éditeur.',
       });
       return;
     }
@@ -742,7 +756,11 @@ export function createApp(deps: AppDeps): express.Express {
       res.status(404).json({ error: 'Jeu inconnu.' });
       return;
     }
-    const slug = exported.definition.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'jeu';
+    const slug =
+      exported.definition.name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '') || 'jeu';
     res.setHeader('Content-Disposition', `attachment; filename="${slug}.partyhub.json"`);
     res.json(exported);
   });
@@ -775,7 +793,11 @@ export function createApp(deps: AppDeps): express.Express {
       res.status(404).json({ error: 'Jeu inconnu.' });
       return;
     }
-    const slug = exported.definition.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'jeu';
+    const slug =
+      exported.definition.name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '') || 'jeu';
     res.setHeader('Content-Disposition', `attachment; filename="${slug}.partyhub.json"`);
     res.json(exported);
   });
@@ -885,7 +907,10 @@ export function createApp(deps: AppDeps): express.Express {
 
   /** Médiathèque : fichiers audio, vidéo et images réutilisables par les jeux. */
   /** Jeux qui utilisent une ressource de la médiathèque : questions médias et cartes (dos, police). */
-  const usersOf = (assetId: string): string[] => [...mediaGames.usersOfAsset(assetId), ...cardGames.usersOfAsset(assetId)];
+  const usersOf = (assetId: string): string[] => [
+    ...mediaGames.usersOfAsset(assetId),
+    ...cardGames.usersOfAsset(assetId),
+  ];
 
   admin.get('/assets', (_req, res) => {
     res.json({
@@ -987,7 +1012,10 @@ export function createApp(deps: AppDeps): express.Express {
     (req, res, next) => {
       // L'envoi de médiathèque est lu en flux par sa route : pas de lecture JSON ici.
       // Les paquets sont lus bruts par leur propre route (archive ZIP, pas de JSON).
-      if (req.method === 'POST' && (req.path === '/assets' || req.path === '/packages' || req.path === '/backup/archive')) {
+      if (
+        req.method === 'POST' &&
+        (req.path === '/assets' || req.path === '/packages' || req.path === '/backup/archive')
+      ) {
         return next();
       }
       return express.json({ limit: req.path === '/backup/import' ? '20mb' : '512kb' })(req, res, next);
@@ -1016,10 +1044,7 @@ export function createApp(deps: AppDeps): express.Express {
   // --- Erreurs ---------------------------------------------------------------
 
   app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
-    const status =
-      typeof (err as { status?: unknown })?.status === 'number'
-        ? (err as { status: number }).status
-        : 500;
+    const status = typeof (err as { status?: unknown })?.status === 'number' ? (err as { status: number }).status : 500;
     if (status >= 500) logger.error({ err }, 'Erreur HTTP');
     const message =
       status === 400 ? 'Requête invalide.' : status === 413 ? 'Requête trop volumineuse.' : 'Erreur interne.';

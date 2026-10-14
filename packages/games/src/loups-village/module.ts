@@ -116,10 +116,9 @@ function enter(s: LoupsState, phase: LoupsPhase, ms: number, ctx: GameContext): 
 
 function finishGame(s: LoupsState, winner: Team, ctx: GameContext): LoupsState {
   for (const key of PHASE_TIMERS) ctx.cancel(key);
-  const points = Object.fromEntries(
-    s.order.map((id) => [id, teamOf(roleOf(s, id)) === winner ? WIN_POINTS : 0]),
-  );
-  const verdict = winner === 'village' ? 'Le village a démasqué tous les loups !' : 'Les loups ont pris le contrôle du village !';
+  const points = Object.fromEntries(s.order.map((id) => [id, teamOf(roleOf(s, id)) === winner ? WIN_POINTS : 0]));
+  const verdict =
+    winner === 'village' ? 'Le village a démasqué tous les loups !' : 'Les loups ont pris le contrôle du village !';
   return { ...s, phase: 'final', winner, points, reveal: null, lastEvent: verdict, step: s.step + 1, endsAt: 0 };
 }
 
@@ -158,9 +157,8 @@ function resolveNight(s: LoupsState, ctx: GameContext): LoupsState {
   const killed = victim !== null && !saved;
 
   const alive = killed ? s.alive.filter((id) => id !== victim) : s.alive;
-  const dead = killed && victim
-    ? [...s.dead, { id: victim, name: nameOf(s, victim), role: roleOf(s, victim) }]
-    : s.dead;
+  const dead =
+    killed && victim ? [...s.dead, { id: victim, name: nameOf(s, victim), role: roleOf(s, victim) }] : s.dead;
 
   let lastEvent = 'Aucune victime cette nuit';
   if (killed && victim) lastEvent = `${nameOf(s, victim)} a été dévoré(e) cette nuit`;
@@ -330,7 +328,14 @@ export const loupsVillage: GameModule<LoupsState, LoupsSettings> = {
     if (s.order.length < 4) return fail('Il faut au moins quatre joueurs');
     const deck = shuffle(compositionFor(s.order.length), ctx.random);
     const roles = Object.fromEntries(s.order.map((id, i) => [id, deck[i] ?? 'villageois']));
-    const dealt: LoupsState = { ...s, roles, alive: [...s.order], seen: {}, round: 0, lastEvent: 'Découvrez votre rôle' };
+    const dealt: LoupsState = {
+      ...s,
+      roles,
+      alive: [...s.order],
+      seen: {},
+      round: 0,
+      lastEvent: 'Découvrez votre rôle',
+    };
     return ok(enter(dealt, 'deal', DEAL_SECONDS * 1000, ctx));
   },
 
@@ -400,15 +405,19 @@ export const loupsVillage: GameModule<LoupsState, LoupsSettings> = {
 
   getPublicState(s) {
     const durationMs =
-      s.phase === 'deal' ? DEAL_SECONDS * 1000
-        : s.phase === 'night' ? NIGHT_SECONDS * 1000
-          : s.phase === 'debate' ? s.settings.debateSeconds * 1000
-            : s.phase === 'vote' ? VOTE_SECONDS * 1000
-              : s.phase === 'reveal' ? REVEAL_MS
+      s.phase === 'deal'
+        ? DEAL_SECONDS * 1000
+        : s.phase === 'night'
+          ? NIGHT_SECONDS * 1000
+          : s.phase === 'debate'
+            ? s.settings.debateSeconds * 1000
+            : s.phase === 'vote'
+              ? VOTE_SECONDS * 1000
+              : s.phase === 'reveal'
+                ? REVEAL_MS
                 : 0;
-    const finalRoles = s.phase === 'final'
-      ? s.order.map((id) => ({ id, name: nameOf(s, id), role: roleOf(s, id) }))
-      : null;
+    const finalRoles =
+      s.phase === 'final' ? s.order.map((id) => ({ id, name: nameOf(s, id), role: roleOf(s, id) })) : null;
     return {
       phase: s.phase,
       round: s.round,
@@ -437,9 +446,10 @@ export const loupsVillage: GameModule<LoupsState, LoupsSettings> = {
     const nightRole = role !== null && isNightRole(role);
     const acted = playerId in s.acts;
     const targets = targetsFor(s, playerId);
-    const allies = role === 'loup'
-      ? s.order.filter((id) => roleOf(s, id) === 'loup' && id !== playerId).map((id) => nameOf(s, id))
-      : [];
+    const allies =
+      role === 'loup'
+        ? s.order.filter((id) => roleOf(s, id) === 'loup' && id !== playerId).map((id) => nameOf(s, id))
+        : [];
     const rank = rankEntries(s.players, s.points).find((e) => e.playerId === playerId)?.rank ?? null;
 
     return {
@@ -484,7 +494,12 @@ export const loupsVillage: GameModule<LoupsState, LoupsSettings> = {
     if (s.phase === 'deal' && !(playerId in s.seen)) {
       return { type: 'seen', key: `d${s.round}` };
     }
-    if (s.phase === 'night' && s.alive.includes(playerId) && isNightRole(roleOf(s, playerId)) && !(playerId in s.acts)) {
+    if (
+      s.phase === 'night' &&
+      s.alive.includes(playerId) &&
+      isNightRole(roleOf(s, playerId)) &&
+      !(playerId in s.acts)
+    ) {
       const options = targetsFor(s, playerId);
       const target = options[Math.floor(random() * options.length)];
       if (!target) return null;

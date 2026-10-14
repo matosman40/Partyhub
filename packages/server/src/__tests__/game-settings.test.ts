@@ -187,7 +187,19 @@ describe('Durée estimée, bornes et réglages devenus invalides', () => {
 describe('Jeux importés', () => {
   const schema = z.object({ rounds: z.number().int().min(1).max(5).default(2) });
   const pkg = {
-    manifest: { id: 'pkg-reglages', name: 'Paquet', description: '', icon: '📦', version: '1.0.0', category: 'cartes', minPlayers: 2, maxPlayers: 6, durationMin: 5, notice: { goal: '', steps: [], tips: [] }, apiVersion: 1 },
+    manifest: {
+      id: 'pkg-reglages',
+      name: 'Paquet',
+      description: '',
+      icon: '📦',
+      version: '1.0.0',
+      category: 'cartes',
+      minPlayers: 2,
+      maxPlayers: 6,
+      durationMin: 5,
+      notice: { goal: '', steps: [], tips: [] },
+      apiVersion: 1,
+    },
     settingsSchema: schema,
     defaultSettings: { rounds: 2 },
   } as unknown as GameModule;
@@ -215,7 +227,10 @@ describe('Surcharges, nettoyage et origine des jeux', () => {
     const file = path.join(upgradeDir, 'partyhub.db');
     try {
       const old = new Database(file);
-      migrate(old, MIGRATIONS.filter((m) => m.version <= 6));
+      migrate(
+        old,
+        MIGRATIONS.filter((m) => m.version <= 6),
+      );
       old.close();
       const store = new Store(file, { backupDir: path.join(upgradeDir, 'migrations') });
       try {

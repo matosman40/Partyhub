@@ -9,9 +9,7 @@ import type { MediaKind } from '@partyhub/shared';
 
 export interface HostMedia {
   key: number;
-  source:
-    | { type: 'youtube'; videoId: string }
-    | { type: 'asset'; assetId: string; mediaKind: 'audio' | 'video' };
+  source: { type: 'youtube'; videoId: string } | { type: 'asset'; assetId: string; mediaKind: 'audio' | 'video' };
   startSec: number;
   durationSec: number;
 }
@@ -240,9 +238,7 @@ export function MediaStage({ media, active, kind }: MediaStageProps) {
           </span>
         </div>
       )}
-      {visual === 'video' && isYouTube && (
-        <div className="mq-yt-cover" aria-hidden="true" />
-      )}
+      {visual === 'video' && isYouTube && <div className="mq-yt-cover" aria-hidden="true" />}
       {needsTap && (
         <button
           type="button"

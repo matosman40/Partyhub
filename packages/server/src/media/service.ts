@@ -102,7 +102,9 @@ export class MediaQuizService {
       if (!asset) {
         errors.push(`Extrait ${i + 1} (« ${item.answer} ») : fichier absent de la médiathèque.`);
       } else if (asset.kind !== item.source.mediaKind) {
-        errors.push(`Extrait ${i + 1} (« ${item.answer} ») : « ${asset.name} » n’est pas un fichier ${item.source.mediaKind === 'audio' ? 'audio' : 'vidéo'}.`);
+        errors.push(
+          `Extrait ${i + 1} (« ${item.answer} ») : « ${asset.name} » n’est pas un fichier ${item.source.mediaKind === 'audio' ? 'audio' : 'vidéo'}.`,
+        );
       }
     });
     return errors;

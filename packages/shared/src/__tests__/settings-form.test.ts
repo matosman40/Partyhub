@@ -35,7 +35,9 @@ describe('messages des réglages refusés', () => {
     const schema = z.object({ size: z.union([z.literal(3), z.literal(4)]), count: z.number() });
     const wrongChoice = schema.safeParse({ size: 9, count: 1 });
     const wrongType = schema.safeParse({ size: 3, count: 'deux' });
-    if (!wrongChoice.success) expect(settingsIssueMessage(wrongChoice.error)).toBe('Réglage « size » : choix non reconnu.');
-    if (!wrongType.success) expect(settingsIssueMessage(wrongType.error)).toBe('Réglage « count » : valeur de type incorrect.');
+    if (!wrongChoice.success)
+      expect(settingsIssueMessage(wrongChoice.error)).toBe('Réglage « size » : choix non reconnu.');
+    if (!wrongType.success)
+      expect(settingsIssueMessage(wrongType.error)).toBe('Réglage « count » : valeur de type incorrect.');
   });
 });

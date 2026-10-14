@@ -84,13 +84,7 @@ export interface GameModule<S = any, C = any> {
   onPlayerJoin(state: S, player: PlayerRef, ctx: GameContext): S;
   onPlayerLeave(state: S, player: PlayerRef, ctx: GameContext): S;
   start(state: S, ctx: GameContext): GameResult<S>;
-  handleAction(
-    state: S,
-    player: PlayerRef,
-    type: string,
-    payload: unknown,
-    ctx: GameContext,
-  ): GameResult<S>;
+  handleAction(state: S, player: PlayerRef, type: string, payload: unknown, ctx: GameContext): GameResult<S>;
   onTimer(state: S, key: string, ctx: GameContext): S;
   nextRound(state: S, ctx: GameContext): S;
   calculateScores(state: S): ScoreEntry[];

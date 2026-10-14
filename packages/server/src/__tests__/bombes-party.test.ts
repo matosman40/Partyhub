@@ -274,7 +274,11 @@ describe('Bombes party : animaux et vitesse', () => {
 
   it('la vitesse raccourcit le délai entre deux pas', () => {
     const { state, ctx, clock } = started([A, B]);
-    const s: BombesPartyState = { ...state, grid: emptyGrid(), units: { ...state.units, a: { ...state.units.a!, speed: 2 } } };
+    const s: BombesPartyState = {
+      ...state,
+      grid: emptyGrid(),
+      units: { ...state.units, a: { ...state.units.a!, speed: 2 } },
+    };
     clock.t += 120;
     const res = bombesParty.handleAction(s, A, 'move', { dir: 'right' }, ctx);
     if (!res.ok) throw new Error(res.error);

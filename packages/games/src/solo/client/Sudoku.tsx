@@ -33,10 +33,21 @@ export function SudokuView({ board, disabled, send }: SoloBoardProps) {
         const r = Math.floor(selected / 9);
         const c = selected % 9;
         const next =
-          e.key === 'ArrowUp' ? (r > 0 ? selected - 9 : selected)
-          : e.key === 'ArrowDown' ? (r < 8 ? selected + 9 : selected)
-          : e.key === 'ArrowLeft' ? (c > 0 ? selected - 1 : selected)
-          : c < 8 ? selected + 1 : selected;
+          e.key === 'ArrowUp'
+            ? r > 0
+              ? selected - 9
+              : selected
+            : e.key === 'ArrowDown'
+              ? r < 8
+                ? selected + 9
+                : selected
+              : e.key === 'ArrowLeft'
+                ? c > 0
+                  ? selected - 1
+                  : selected
+                : c < 8
+                  ? selected + 1
+                  : selected;
         setSelected(next);
       }
     }
@@ -84,15 +95,30 @@ export function SudokuView({ board, disabled, send }: SoloBoardProps) {
 
       <div className="solo-pad" role="group" aria-label="Chiffres">
         {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
-          <button key={n} type="button" className="btn ghost solo-pad-key" disabled={disabled || selected === null} onClick={() => put(n)}>
+          <button
+            key={n}
+            type="button"
+            className="btn ghost solo-pad-key"
+            disabled={disabled || selected === null}
+            onClick={() => put(n)}
+          >
             {n}
           </button>
         ))}
-        <button type="button" className="btn ghost solo-pad-key is-erase" disabled={disabled || selected === null} onClick={() => put(0)}>
+        <button
+          type="button"
+          className="btn ghost solo-pad-key is-erase"
+          disabled={disabled || selected === null}
+          onClick={() => put(0)}
+        >
           Effacer
         </button>
       </div>
-      {error && <p className="error small" role="alert">{error}</p>}
+      {error && (
+        <p className="error small" role="alert">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

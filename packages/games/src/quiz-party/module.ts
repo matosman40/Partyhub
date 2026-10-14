@@ -1,11 +1,5 @@
 import { z } from 'zod';
-import type {
-  GameContext,
-  GameModule,
-  GameResult,
-  PlayerRef,
-  ScoreEntry,
-} from '@partyhub/shared';
+import type { GameContext, GameModule, GameResult, PlayerRef, ScoreEntry } from '@partyhub/shared';
 import { QUESTIONS, type QuizQuestion } from './questions.js';
 
 export const quizSettingsSchema = z.object({
@@ -109,10 +103,7 @@ function reveal(s: QuizState, ctx: GameContext): QuizState {
     const a = s.answers[id];
     const correct = a !== undefined && a.choice === q.answer;
     const elapsed = a?.elapsedMs ?? limit;
-    const bonus =
-      correct && s.settings.speedBonus
-        ? Math.round(MAX_SPEED_BONUS * Math.max(0, 1 - elapsed / limit))
-        : 0;
+    const bonus = correct && s.settings.speedBonus ? Math.round(MAX_SPEED_BONUS * Math.max(0, 1 - elapsed / limit)) : 0;
     const gained = correct ? BASE_POINTS + bonus : 0;
     points[id] = (points[id] ?? 0) + gained;
     gains[id] = { correct, gained, choice: a ? a.choice : null };
@@ -165,9 +156,7 @@ function publicView(s: QuizState) {
   }
 
   // Phase « reveal » : la bonne réponse et les résultats deviennent publics.
-  const counts = q.choices.map(
-    (_, i) => Object.values(s.answers).filter((a) => a.choice === i).length,
-  );
+  const counts = q.choices.map((_, i) => Object.values(s.answers).filter((a) => a.choice === i).length);
   const results = Object.keys(s.players)
     .map((id) => ({
       playerId: id,
@@ -200,17 +189,17 @@ export const quizParty: GameModule<QuizState, QuizSettings> = {
     maxPlayers: 12,
     durationMin: 10,
     notice: {
-      "goal": "Répondre le plus vite et le plus juste aux questions pour marquer le plus de points.",
-      "steps": [
+      goal: 'Répondre le plus vite et le plus juste aux questions pour marquer le plus de points.',
+      steps: [
         "L'hôte lance la partie depuis l'écran principal.",
         "Chaque question s'affiche sur l'écran et sur votre téléphone.",
-        "Touchez la bonne réponse avant la fin du temps.",
-        "Les points arrivent après la révélation : répondre vite rapporte un bonus."
+        'Touchez la bonne réponse avant la fin du temps.',
+        'Les points arrivent après la révélation : répondre vite rapporte un bonus.',
       ],
-      "tips": [
-        "Une mauvaise réponse ne retire aucun point.",
-        "Le nombre de questions et le temps se règlent dans le salon, avant le lancement."
-      ]
+      tips: [
+        'Une mauvaise réponse ne retire aucun point.',
+        'Le nombre de questions et le temps se règlent dans le salon, avant le lancement.',
+      ],
     },
   },
 
@@ -281,8 +270,7 @@ export const quizParty: GameModule<QuizState, QuizSettings> = {
     const next: QuizState = { ...s, answers: { ...s.answers, [p.id]: { choice, elapsedMs } } };
 
     const connected = ctx.connectedPlayerIds();
-    const everyoneAnswered =
-      connected.length > 0 && connected.every((id) => id in next.answers);
+    const everyoneAnswered = connected.length > 0 && connected.every((id) => id in next.answers);
 
     return ok(everyoneAnswered ? reveal(next, ctx) : next);
   },

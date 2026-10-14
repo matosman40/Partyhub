@@ -167,7 +167,11 @@ export const mediaQuizDefinitionSchema = z
         if (item.answer.length === 0) {
           ctx.addIssue({ code: 'custom', path: ['items', i, 'answer'], message: 'La réponse est obligatoire.' });
         } else if (item.answer.length > 80) {
-          ctx.addIssue({ code: 'custom', path: ['items', i, 'answer'], message: 'La réponse compte 80 caractères au plus.' });
+          ctx.addIssue({
+            code: 'custom',
+            path: ['items', i, 'answer'],
+            message: 'La réponse compte 80 caractères au plus.',
+          });
         }
       }
     });

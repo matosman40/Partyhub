@@ -60,12 +60,14 @@ export function sniffMedia(buf: Buffer): SniffedMedia | null {
   if (startsWith(buf, 0, 'wOF2')) return { kind: 'font', mime: 'font/woff2' };
   if (startsWith(buf, 0, 'wOFF')) return { kind: 'font', mime: 'font/woff' };
   if (startsWith(buf, 0, 'OTTO')) return { kind: 'font', mime: 'font/otf' };
-  if (buf[0] === 0x00 && buf[1] === 0x01 && buf[2] === 0x00 && buf[3] === 0x00) return { kind: 'font', mime: 'font/ttf' };
+  if (buf[0] === 0x00 && buf[1] === 0x01 && buf[2] === 0x00 && buf[3] === 0x00)
+    return { kind: 'font', mime: 'font/ttf' };
   // Polices : WOFF2, WOFF, OpenType (CFF) et TrueType.
   if (startsWith(buf, 0, 'wOF2')) return { kind: 'font', mime: 'font/woff2' };
   if (startsWith(buf, 0, 'wOFF')) return { kind: 'font', mime: 'font/woff' };
   if (startsWith(buf, 0, 'OTTO')) return { kind: 'font', mime: 'font/otf' };
-  if (buf[0] === 0x00 && buf[1] === 0x01 && buf[2] === 0x00 && buf[3] === 0x00) return { kind: 'font', mime: 'font/ttf' };
+  if (buf[0] === 0x00 && buf[1] === 0x01 && buf[2] === 0x00 && buf[3] === 0x00)
+    return { kind: 'font', mime: 'font/ttf' };
   return null;
 }
 
@@ -107,12 +109,11 @@ export function cleanFileName(raw: string): string {
 const TEMP_PREFIX = '.upload-';
 /** Octets lus avant de reconnaître le format (le plus long des en-têtes utilisés tient en 12). */
 const SNIFF_BYTES = 16;
-const FORMAT_ERROR = 'Format non accepté. Utilisez MP3, WAV, OGG, M4A, MP4, WebM, PNG, JPEG, WebP, WOFF2, WOFF, TTF ou OTF.';
+const FORMAT_ERROR =
+  'Format non accepté. Utilisez MP3, WAV, OGG, M4A, MP4, WebM, PNG, JPEG, WebP, WOFF2, WOFF, TTF ou OTF.';
 const INTERRUPTED = 'Envoi interrompu avant la fin.';
 
-export type ReceiveResult =
-  | { ok: true; asset: AssetRecord }
-  | { ok: false; status: 400 | 413 | 500; error: string };
+export type ReceiveResult = { ok: true; asset: AssetRecord } | { ok: false; status: 400 | 413 | 500; error: string };
 
 function tooLarge(limit: number): string {
   return `Fichier trop volumineux (maximum ${Math.round(limit / (1024 * 1024))} Mo).`;

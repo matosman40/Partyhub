@@ -113,7 +113,8 @@ export function CardsPlayer({ publicState, playerState, playerId, send }: Player
       {pub.phase === 'round-over' ? (
         <>
           <p className="muted">
-            {pub.roundWinner ? `${pub.names[pub.roundWinner]} a vidé sa main.` : 'Manche terminée.'} La suite démarre bientôt.
+            {pub.roundWinner ? `${pub.names[pub.roundWinner]} a vidé sa main.` : 'Manche terminée.'} La suite démarre
+            bientôt.
           </p>
           <Ranking entries={rankingOf(pub)} />
         </>
@@ -177,15 +178,29 @@ export function CardsPlayer({ publicState, playerState, playerId, send }: Player
         </>
       )}
 
-      {error && <p className="error" role="alert">{error}</p>}
+      {error && (
+        <p className="error" role="alert">
+          {error}
+        </p>
+      )}
       {me.hand.length === 0 && pub.phase === 'play' && <p className="muted">Votre main est vide.</p>}
 
       {pub.phase === 'play' && !me.mustPick && (
         <div className="control-dock cards-dock">
-          <button type="button" className="btn primary big" disabled={busy || !me.canDraw} onClick={() => void run('draw')}>
+          <button
+            type="button"
+            className="btn primary big"
+            disabled={busy || !me.canDraw}
+            onClick={() => void run('draw')}
+          >
             Piocher
           </button>
-          <button type="button" className="btn ghost big" disabled={busy || !me.canPass} onClick={() => void run('pass')}>
+          <button
+            type="button"
+            className="btn ghost big"
+            disabled={busy || !me.canPass}
+            onClick={() => void run('pass')}
+          >
             Passer
           </button>
         </div>

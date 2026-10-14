@@ -1,5 +1,13 @@
 import { z } from 'zod';
-import type { GameContext, GameManifest, GameModule, GameNotice, GameResult, PlayerRef, ScoreEntry } from '@partyhub/shared';
+import type {
+  GameContext,
+  GameManifest,
+  GameModule,
+  GameNotice,
+  GameResult,
+  PlayerRef,
+  ScoreEntry,
+} from '@partyhub/shared';
 import { directory, everyConnectedDone, fail, ok, rankEntries } from '../common/engine.js';
 import { seedFrom } from './rng.js';
 

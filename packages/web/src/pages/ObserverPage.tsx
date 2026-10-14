@@ -155,7 +155,10 @@ export function ObserverPage() {
             <span className="muted small" aria-live="polite">
               {lobby.observers.count} spectateur(s)
               {lobby.observers.devices.length > 0 && (
-                <span className="device-icons"> {lobby.observers.devices.map((d) => DEVICE_KIND_ICONS[d]).join(' ')}</span>
+                <span className="device-icons">
+                  {' '}
+                  {lobby.observers.devices.map((d) => DEVICE_KIND_ICONS[d]).join(' ')}
+                </span>
               )}
             </span>
             <button type="button" className="btn ghost" onClick={() => setNoticeOpen(true)}>

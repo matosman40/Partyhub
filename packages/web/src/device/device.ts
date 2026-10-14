@@ -83,10 +83,7 @@ function apply(info: DeviceInfo): void {
   root.dataset.device = info.kind;
   root.dataset.orientation = info.orientation ?? 'landscape';
   root.dataset.touch = info.touch ? 'true' : 'false';
-  root.style.setProperty(
-    '--ui-scale',
-    String(uiScaleFor(info.kind, info.width ?? 1280, info.height ?? 720)),
-  );
+  root.style.setProperty('--ui-scale', String(uiScaleFor(info.kind, info.width ?? 1280, info.height ?? 720)));
 }
 
 function refresh(): void {

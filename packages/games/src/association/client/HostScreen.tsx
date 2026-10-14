@@ -14,7 +14,9 @@ export function AssociationHost({ publicState: pub, hostState: host, now }: Host
   if (pub.phase === 'write') {
     return (
       <section className="game-host fade-in" key={`w-${pub.round}`}>
-        <div className="round-info">Manche {pub.round + 1} / {pub.total}</div>
+        <div className="round-info">
+          Manche {pub.round + 1} / {pub.total}
+        </div>
         <p className="label">Le mot de la manche</p>
         <h2 className="huge-word">{pub.prompt}</h2>
         <p className="muted">Écrivez le premier mot qui vous vient à l’esprit, sur votre téléphone.</p>
@@ -30,7 +32,9 @@ export function AssociationHost({ publicState: pub, hostState: host, now }: Host
   if (pub.phase === 'vote') {
     return (
       <section className="game-host fade-in" key={`v-${pub.round}`}>
-        <div className="round-info">Manche {pub.round + 1} / {pub.total} · Vote anonyme</div>
+        <div className="round-info">
+          Manche {pub.round + 1} / {pub.total} · Vote anonyme
+        </div>
         <h2 className="huge-word small">{pub.prompt}</h2>
         <p className="label">Votez pour le mot le plus drôle</p>
         <ol className="option-grid">
@@ -54,23 +58,23 @@ export function AssociationHost({ publicState: pub, hostState: host, now }: Host
   const top = Math.max(0, ...pub.results.map((r: { votes: number }) => r.votes));
   return (
     <section className="game-host fade-in" key={`r-${pub.round}`}>
-      <div className="round-info">Manche {pub.round + 1} / {pub.total} · Résultats</div>
+      <div className="round-info">
+        Manche {pub.round + 1} / {pub.total} · Résultats
+      </div>
       <h2 className="huge-word small">{pub.prompt}</h2>
       <ol className="option-grid revealed">
-        {pub.results.map(
-          (r: { word: string; author: string; votes: number; gained: number }, i: number) => (
-            <li key={i} className={`option-card${r.votes > 0 && r.votes === top ? ' top' : ''}`}>
-              <span className="option-word">{r.word}</span>
-              <span className="author">
-                <Avatar name={r.author} size="sm" />
-                {r.author}
-              </span>
-              <span className="option-score">
-                {r.votes} vote{r.votes > 1 ? 's' : ''} · +{r.gained}
-              </span>
-            </li>
-          ),
-        )}
+        {pub.results.map((r: { word: string; author: string; votes: number; gained: number }, i: number) => (
+          <li key={i} className={`option-card${r.votes > 0 && r.votes === top ? ' top' : ''}`}>
+            <span className="option-word">{r.word}</span>
+            <span className="author">
+              <Avatar name={r.author} size="sm" />
+              {r.author}
+            </span>
+            <span className="option-score">
+              {r.votes} vote{r.votes > 1 ? 's' : ''} · +{r.gained}
+            </span>
+          </li>
+        ))}
       </ol>
       {pub.results.length === 0 && <p className="muted">Pas assez de mots pour voter cette fois.</p>}
       <h3>Classement</h3>

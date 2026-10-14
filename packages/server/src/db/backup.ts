@@ -59,9 +59,7 @@ export function pruneDbBackups(dir: string, keep: number): string[] {
   return removed;
 }
 
-export type BackupOutcome =
-  | { ok: true; name: string; removed: string[] }
-  | { ok: false; error: string };
+export type BackupOutcome = { ok: true; name: string; removed: string[] } | { ok: false; error: string };
 
 export class DbBackupScheduler {
   private timer: NodeJS.Timeout | undefined;

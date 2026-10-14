@@ -115,9 +115,7 @@ export class ProfileService {
   }
 
   async login(username: string, password: string) {
-    const row = this.db.prepare('SELECT * FROM profiles WHERE username = ?').get(username) as
-      | ProfileRow
-      | undefined;
+    const row = this.db.prepare('SELECT * FROM profiles WHERE username = ?').get(username) as ProfileRow | undefined;
     const valid = row !== undefined && (await verifyPassword(password, row.password_hash));
     if (!row || !valid) {
       throw new ProfileError(401, 'Identifiant ou mot de passe incorrect.');
@@ -184,9 +182,7 @@ export class ProfileService {
       this.db.prepare('UPDATE profiles SET avatar_emoji = ? WHERE id = ?').run(patch.avatarEmoji, profileId);
     }
     if (patch.avatarShared !== undefined) {
-      this.db
-        .prepare('UPDATE profiles SET avatar_shared = ? WHERE id = ?')
-        .run(patch.avatarShared ? 1 : 0, profileId);
+      this.db.prepare('UPDATE profiles SET avatar_shared = ? WHERE id = ?').run(patch.avatarShared ? 1 : 0, profileId);
     }
     if (patch.avatarImage !== undefined) {
       // Chaque changement d'image change la version : les navigateurs rechargent l'image.
@@ -203,9 +199,7 @@ export class ProfileService {
     if (!(await verifyPassword(current, row.password_hash))) {
       throw new ProfileError(401, 'Le mot de passe actuel est incorrect.');
     }
-    this.db
-      .prepare('UPDATE profiles SET password_hash = ? WHERE id = ?')
-      .run(await hashPassword(next), profileId);
+    this.db.prepare('UPDATE profiles SET password_hash = ? WHERE id = ?').run(await hashPassword(next), profileId);
     // Les autres appareils doivent se reconnecter avec le nouveau mot de passe.
     this.db.prepare('DELETE FROM profile_sessions WHERE profile_id = ?').run(profileId);
     return undefined;

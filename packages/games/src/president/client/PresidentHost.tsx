@@ -52,8 +52,14 @@ export function PresidentHost({ publicState, now }: HostViewProps) {
       onPointerDownCapture={() => unlockAudio()}
     >
       <div className="cards-hud">
-        <span className="hud-pill">Manche {pub.round} / {pub.rounds}</span>
-        {pub.phase === 'play' && pub.pileCount > 0 && <span className="hud-pill">Pli : {pub.pileCount} × {pileLabel(pub, pile)}</span>}
+        <span className="hud-pill">
+          Manche {pub.round} / {pub.rounds}
+        </span>
+        {pub.phase === 'play' && pub.pileCount > 0 && (
+          <span className="hud-pill">
+            Pli : {pub.pileCount} × {pileLabel(pub, pile)}
+          </span>
+        )}
         {pub.pileCount === 0 && pub.phase === 'play' && <span className="hud-pill">Table libre</span>}
         <SoundToggle />
       </div>
@@ -97,7 +103,9 @@ export function PresidentHost({ publicState, now }: HostViewProps) {
                 className="pres-pile-card"
                 data-uid={c.uid}
                 data-zone="table"
-                style={{ transform: `translateX(${(i - (pile.length - 1) / 2) * 34}px) rotate(${(i - (pile.length - 1) / 2) * 4}deg)` }}
+                style={{
+                  transform: `translateX(${(i - (pile.length - 1) / 2) * 34}px) rotate(${(i - (pile.length - 1) / 2) * 4}deg)`,
+                }}
               >
                 <div className="pres-pile-face" data-fly-target>
                   <CardFace def={pub.def} entry={entryOf(pub.def, c.entry)} />

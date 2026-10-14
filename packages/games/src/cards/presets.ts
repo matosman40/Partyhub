@@ -68,10 +68,7 @@ export const cartesCouleurs: CardGameDefinition = {
       'Un joker se pose toujours et impose la couleur suivante.',
       'Quand vous n’avez plus de cartes, vous marquez les points des cartes restées en main.',
     ],
-    tips: [
-      'Gardez vos jokers pour les moments décisifs.',
-      'Un passe ou un +2 fait perdre son tour au joueur suivant.',
-    ],
+    tips: ['Gardez vos jokers pour les moments décisifs.', 'Un passe ou un +2 fait perdre son tour au joueur suivant.'],
   },
 };
 
@@ -99,7 +96,15 @@ const cocoCards: CardEntry[] = [
     return [
       ...numbers,
       { id: `${f.id.slice(0, 1)}pa`, label: 'Passe', symbol: '⊘', family: f.id, effect: 'skip', count: 2, points: 10 },
-      { id: `${f.id.slice(0, 1)}go`, label: 'Gourmand', symbol: '+2', family: f.id, effect: 'draw2', count: 2, points: 10 },
+      {
+        id: `${f.id.slice(0, 1)}go`,
+        label: 'Gourmand',
+        symbol: '+2',
+        family: f.id,
+        effect: 'draw2',
+        count: 2,
+        points: 10,
+      },
     ];
   }),
   { id: 'wcp', label: 'Caprice', symbol: '✦', family: 'wild', effect: 'wild', count: 4, points: 30 },

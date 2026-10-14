@@ -196,11 +196,23 @@ describe('Archive complète avec la médiathèque', () => {
     const fake = new TextEncoder().encode('pas un son');
     const id = '0'.repeat(31) + '1';
     const bad = writeZip([
-      { name: 'backup.json', data: new TextEncoder().encode(JSON.stringify({ format: 'partyhub-sauvegarde', version: 1 })) },
+      {
+        name: 'backup.json',
+        data: new TextEncoder().encode(JSON.stringify({ format: 'partyhub-sauvegarde', version: 1 })),
+      },
       {
         name: 'assets.json',
         data: new TextEncoder().encode(
-          JSON.stringify([{ id, kind: 'audio', mime: 'audio/wav', name: 'faux.wav', size: fake.length, createdAt: new Date().toISOString() }]),
+          JSON.stringify([
+            {
+              id,
+              kind: 'audio',
+              mime: 'audio/wav',
+              name: 'faux.wav',
+              size: fake.length,
+              createdAt: new Date().toISOString(),
+            },
+          ]),
         ),
       },
       { name: `assets/${id}`, data: fake },

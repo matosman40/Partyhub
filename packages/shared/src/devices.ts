@@ -55,7 +55,8 @@ export interface DeviceSignals {
 }
 
 // Ordre important : un téléviseur peut annoncer « Android » ; une tablette « Android » n'a pas « Mobile ».
-const TV_UA = /SmartTV|SMART-TV|Smart-TV|Tizen|Web0S|WebOS|AppleTV|GoogleTV|Android TV|BRAVIA|HbbTV|CrKey|Roku|NetCast|Viera/i;
+const TV_UA =
+  /SmartTV|SMART-TV|Smart-TV|Tizen|Web0S|WebOS|AppleTV|GoogleTV|Android TV|BRAVIA|HbbTV|CrKey|Roku|NetCast|Viera/i;
 // Un iPad ancien annonce aussi « Mobile » : la tablette doit être reconnue avant le téléphone.
 const TABLET_NAMED_UA = /iPad|Tablet|PlayBook|Silk|Kindle/i;
 const PHONE_UA = /iPhone|iPod|Windows Phone|Mobile/i;
@@ -73,9 +74,7 @@ export const TABLET_MIN_SHORT_SIDE = 600;
 export function classifyDevice(signals: DeviceSignals): DeviceKind {
   const ua = signals.userAgent ?? '';
   const shortSide =
-    signals.width !== undefined && signals.height !== undefined
-      ? Math.min(signals.width, signals.height)
-      : undefined;
+    signals.width !== undefined && signals.height !== undefined ? Math.min(signals.width, signals.height) : undefined;
 
   if (TV_UA.test(ua)) return 'tv';
   if (TABLET_NAMED_UA.test(ua)) return 'tablet';

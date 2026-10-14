@@ -105,10 +105,7 @@ function buildDeck(def: CardGameDefinition, random: () => number): CardInstance[
 }
 
 /** Vrai si la carte peut être posée sur la défausse dans l'état donné. */
-export function canPlayCard(
-  state: Pick<CardGameState, 'def' | 'family' | 'discard'>,
-  entry: CardEntry,
-): boolean {
+export function canPlayCard(state: Pick<CardGameState, 'def' | 'family' | 'discard'>, entry: CardEntry): boolean {
   if (entry.family === WILD_FAMILY) return true;
   if (entry.family === state.family) return true;
   const mode = state.def.rules.matchOn;
@@ -228,13 +225,7 @@ function endRound(s: CardGameState, winnerId: string, ctx: GameContext): void {
   }
 }
 
-function playCard(
-  s: CardGameState,
-  playerId: string,
-  index: number,
-  entry: CardEntry,
-  ctx: GameContext,
-): void {
+function playCard(s: CardGameState, playerId: string, index: number, entry: CardEntry, ctx: GameContext): void {
   const [card] = s.hands[playerId]!.splice(index, 1);
   s.discard.push(card!);
   if (entry.family !== WILD_FAMILY) s.family = entry.family;
@@ -509,7 +500,7 @@ export function createCardGame(
   }
 
   function getPublicState(state: CardGameState) {
-    const current = state.started && state.phase !== 'final' ? state.order[state.turn] ?? null : null;
+    const current = state.started && state.phase !== 'final' ? (state.order[state.turn] ?? null) : null;
     const revealed = state.phase === 'round-over' || state.phase === 'final';
     return {
       phase: state.phase,
@@ -539,9 +530,7 @@ export function createCardGame(
     const hand = state.hands[playerId] ?? [];
     const map = entryMap(state.def);
     const myTurn = state.phase === 'play' && state.order[state.turn] === playerId;
-    const playable = myTurn
-      ? hand.filter((c) => canPlayCard(state, map.get(c.entry)!)).map((c) => c.uid)
-      : [];
+    const playable = myTurn ? hand.filter((c) => canPlayCard(state, map.get(c.entry)!)).map((c) => c.uid) : [];
     return {
       hand,
       playable,
@@ -568,9 +557,7 @@ export function createCardGame(
     }
     if (state.phase === 'play' && state.order[state.turn] === playerId) {
       const map = entryMap(state.def);
-      const playable = (state.hands[playerId] ?? []).find((c) =>
-        canPlayCard(state, map.get(c.entry)!),
-      );
+      const playable = (state.hands[playerId] ?? []).find((c) => canPlayCard(state, map.get(c.entry)!));
       if (playable) {
         return { type: 'play', payload: { cardId: playable.uid }, key: `play:${playable.uid}` };
       }

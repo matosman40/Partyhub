@@ -43,19 +43,17 @@ export function AssociationPlayer({ publicState: pub, playerState: me, now, send
         <form className="stack" onSubmit={submit}>
           <label className="field big-field">
             <span>Votre association</span>
-            <input
-              value={word}
-              maxLength={24}
-              autoComplete="off"
-              autoFocus
-              onChange={(e) => setWord(e.target.value)}
-            />
+            <input value={word} maxLength={24} autoComplete="off" autoFocus onChange={(e) => setWord(e.target.value)} />
           </label>
           <button type="submit" className="btn primary big" disabled={busy || !word.trim() || remaining <= 0}>
             Envoyer
           </button>
         </form>
-        {error && <p className="error" role="alert">{error}</p>}
+        {error && (
+          <p className="error" role="alert">
+            {error}
+          </p>
+        )}
       </section>
     );
   }
@@ -93,7 +91,11 @@ export function AssociationPlayer({ publicState: pub, playerState: me, now, send
             );
           })}
         </div>
-        {error && <p className="error" role="alert">{error}</p>}
+        {error && (
+          <p className="error" role="alert">
+            {error}
+          </p>
+        )}
         {me?.answered ? (
           <p className="notice">Vote enregistré ✔ · En attente des autres…</p>
         ) : (
@@ -111,7 +113,9 @@ export function AssociationPlayer({ publicState: pub, playerState: me, now, send
         {gained > 0 ? 'Votre mot a plu !' : 'Pas de vote pour vous cette fois'}
       </p>
       {gained > 0 && <p className="big-number">+{gained}</p>}
-      <p>Total : {me?.points ?? 0} pts · {me?.rank ? `${me.rank}ᵉ` : ''}</p>
+      <p>
+        Total : {me?.points ?? 0} pts · {me?.rank ? `${me.rank}ᵉ` : ''}
+      </p>
     </section>
   );
 }

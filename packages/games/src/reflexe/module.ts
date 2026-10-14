@@ -1,13 +1,6 @@
 import { z } from 'zod';
 import type { GameContext, GameModule, PlayerRef } from '@partyhub/shared';
-import {
-  addPoints,
-  directory,
-  everyConnectedDone,
-  fail,
-  ok,
-  rankEntries,
-} from '../common/engine.js';
+import { addPoints, directory, everyConnectedDone, fail, ok, rankEntries } from '../common/engine.js';
 
 /**
  * Réflexe : l'écran passe au rouge (« attendez »), puis au vert au bout d'un
@@ -120,17 +113,17 @@ export const reflexe: GameModule<ReflexeState, ReflexeSettings> = {
     maxPlayers: 12,
     durationMin: 5,
     notice: {
-      "goal": "Être le premier à toucher son téléphone quand l'écran passe au vert.",
-      "steps": [
+      goal: "Être le premier à toucher son téléphone quand l'écran passe au vert.",
+      steps: [
         "L'écran passe au rouge : attendez.",
         "Dès que l'écran devient vert, touchez votre téléphone.",
-        "Le plus rapide marque 100 points, puis 70, 50, 30 et ainsi de suite.",
-        "Toucher pendant le rouge est un faux départ : aucun point pour cette manche."
+        'Le plus rapide marque 100 points, puis 70, 50, 30 et ainsi de suite.',
+        'Toucher pendant le rouge est un faux départ : aucun point pour cette manche.',
       ],
-      "tips": [
-        "Les temps sont mesurés par le serveur, la latence du réseau compte.",
-        "Le signal arrive entre deux et cinq secondes après le début de la manche."
-      ]
+      tips: [
+        'Les temps sont mesurés par le serveur, la latence du réseau compte.',
+        'Le signal arrive entre deux et cinq secondes après le début de la manche.',
+      ],
     },
   },
 
@@ -276,8 +269,7 @@ export const reflexe: GameModule<ReflexeState, ReflexeSettings> = {
   },
 
   getHostState(s) {
-    const pending =
-      s.phase === 'go' ? Object.keys(s.players).filter((id) => !hasActed(s, id)) : [];
+    const pending = s.phase === 'go' ? Object.keys(s.players).filter((id) => !hasActed(s, id)) : [];
     return { pending: pending.map((id) => s.players[id] ?? '?') };
   },
 

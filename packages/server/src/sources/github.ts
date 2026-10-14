@@ -150,7 +150,11 @@ function parseRelease(data: ReleaseData, game: string | null): Release {
  * Dernière release publiée. Pour un dépôt commun (`game` renseigné), on prend la version la plus
  * haute parmi les tags `<game>-vX.Y.Z`, sans toucher aux autres jeux du dépôt.
  */
-export async function latestRelease(repo: string, options: GitHubOptions, game: string | null = null): Promise<Release> {
+export async function latestRelease(
+  repo: string,
+  options: GitHubOptions,
+  game: string | null = null,
+): Promise<Release> {
   if (!game) {
     const res = await request(`${GITHUB_API}/repos/${repo}/releases/latest`, 'application/vnd.github+json', options);
     return parseRelease((await res.json()) as ReleaseData, null);
@@ -164,7 +168,9 @@ export async function latestRelease(repo: string, options: GitHubOptions, game: 
   );
   const list: unknown = await refs.json();
   const versions = (Array.isArray(list) ? list : [])
-    .map((r) => (r && typeof r === 'object' && typeof (r as { ref?: unknown }).ref === 'string' ? (r as { ref: string }).ref : ''))
+    .map((r) =>
+      r && typeof r === 'object' && typeof (r as { ref?: unknown }).ref === 'string' ? (r as { ref: string }).ref : '',
+    )
     .map((ref) => ref.replace(/^refs\/tags\//, ''))
     .filter((tag) => tag.startsWith(prefix))
     .map((tag) => ({ tag, version: tag.slice(prefix.length) }))
@@ -173,7 +179,11 @@ export async function latestRelease(repo: string, options: GitHubOptions, game: 
   const best = versions[0];
   if (!best) throw new GitHubError(`Aucune version publiée pour « ${game} » : les tags attendus sont ${prefix}X.Y.Z.`);
 
-  const res = await request(`${GITHUB_API}/repos/${repo}/releases/tags/${best.tag}`, 'application/vnd.github+json', options);
+  const res = await request(
+    `${GITHUB_API}/repos/${repo}/releases/tags/${best.tag}`,
+    'application/vnd.github+json',
+    options,
+  );
   return parseRelease((await res.json()) as ReleaseData, game);
 }
 

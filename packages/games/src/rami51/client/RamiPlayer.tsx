@@ -99,7 +99,8 @@ export function RamiPlayer({ publicState, playerState, playerId, send }: PlayerV
       <section className="player-game fade-in">
         <p className="big">Préparez-vous !</p>
         <p className="muted">
-          Ouverture à {pub.settings.openingPoints} points avec une tierce franche. Gardez vos cartes à l’abri des regards.
+          Ouverture à {pub.settings.openingPoints} points avec une tierce franche. Gardez vos cartes à l’abri des
+          regards.
         </p>
       </section>
     );
@@ -225,23 +226,28 @@ export function RamiPlayer({ publicState, playerState, playerId, send }: PlayerV
     if (await run('discard', { cardId: selected[0] })) setSelected([]);
   }
 
-  let banner = `Tour de ${pub.current ? pub.names[pub.current] ?? '' : ''}`;
+  let banner = `Tour de ${pub.current ? (pub.names[pub.current] ?? '') : ''}`;
   if (pub.phase === 'round-over') banner = 'Manche terminée';
   else if (me.isMyTurn) {
     if (!me.hasDrawn) banner = 'À vous : piochez une carte';
-    else if (mustCards.length > 0) banner = mustCards.some((c) => c.entry === 'jk') ? 'Reposez le joker récupéré' : 'Posez la carte prise';
+    else if (mustCards.length > 0)
+      banner = mustCards.some((c) => c.entry === 'jk') ? 'Reposez le joker récupéré' : 'Posez la carte prise';
     else banner = 'À vous : posez ou défaussez';
   }
 
   const top = pub.discardTop;
-  const owner = (m: Meld) => (m.owner === playerId ? 'vous' : pub.names[m.owner] ?? '?');
+  const owner = (m: Meld) => (m.owner === playerId ? 'vous' : (pub.names[m.owner] ?? '?'));
 
   // Résultat de la manche
   if (pub.phase === 'round-over') {
     const res = pub.result;
     const mine = res?.penalties[playerId] ?? 0;
     return (
-      <section className="player-game fade-in cards-player rami-player" data-mat="classique" onPointerDownCapture={() => unlockAudio()}>
+      <section
+        className="player-game fade-in cards-player rami-player"
+        data-mat="classique"
+        onPointerDownCapture={() => unlockAudio()}
+      >
         <div className="round-info">Manche {pub.round}</div>
         <p className="cards-banner">{banner}</p>
         <p className="muted">
@@ -343,7 +349,9 @@ export function RamiPlayer({ publicState, playerState, playerId, send }: PlayerV
         ) : live ? (
           <span className="rami-ko">{live.error}</span>
         ) : (
-          <span className="muted small">{selectedCards.length} carte choisie : {labels(selectedCards)}</span>
+          <span className="muted small">
+            {selectedCards.length} carte choisie : {labels(selectedCards)}
+          </span>
         )}
       </div>
 
@@ -357,7 +365,9 @@ export function RamiPlayer({ publicState, playerState, playerId, send }: PlayerV
                 return (
                   <li key={i} className={`rami-group ${check.ok ? 'is-ok' : 'is-ko'}`}>
                     <span className="rami-group-cards">{labels(g)}</span>
-                    <span className="rami-group-pts">{check.ok ? `${check.points} pts${check.franche ? ' · franche' : ''}` : 'invalide'}</span>
+                    <span className="rami-group-pts">
+                      {check.ok ? `${check.points} pts${check.franche ? ' · franche' : ''}` : 'invalide'}
+                    </span>
                     <button
                       type="button"
                       className="btn ghost small"
@@ -376,7 +386,12 @@ export function RamiPlayer({ publicState, playerState, playerId, send }: PlayerV
             <button type="button" className="btn ghost big" disabled={busy || !live || !live.ok} onClick={addGroup}>
               Ajouter cette combinaison
             </button>
-            <button type="button" className="btn primary big" disabled={!canAct || !opening || !opening.ok || keepOne} onClick={() => void open()}>
+            <button
+              type="button"
+              className="btn primary big"
+              disabled={!canAct || !opening || !opening.ok || keepOne}
+              onClick={() => void open()}
+            >
               Ouvrir ({opening?.points ?? 0} / {threshold})
             </button>
           </div>
@@ -386,29 +401,64 @@ export function RamiPlayer({ publicState, playerState, playerId, send }: PlayerV
       {/* Après l'ouverture */}
       {me.opened && (
         <div className="rami-actions rami-actions-3">
-          <button type="button" className="btn ghost big" disabled={!canAct || !live || !live.ok} onClick={() => void laySelection()}>
+          <button
+            type="button"
+            className="btn ghost big"
+            disabled={!canAct || !live || !live.ok}
+            onClick={() => void laySelection()}
+          >
             Poser
           </button>
-          <button type="button" className="btn ghost big" disabled={!canAct} aria-pressed={mode === 'layoff'} onClick={() => startMode('layoff')}>
+          <button
+            type="button"
+            className="btn ghost big"
+            disabled={!canAct}
+            aria-pressed={mode === 'layoff'}
+            onClick={() => startMode('layoff')}
+          >
             Compléter
           </button>
-          <button type="button" className="btn ghost big" disabled={!canAct} aria-pressed={mode === 'swap'} onClick={() => startMode('swap')}>
+          <button
+            type="button"
+            className="btn ghost big"
+            disabled={!canAct}
+            aria-pressed={mode === 'swap'}
+            onClick={() => startMode('swap')}
+          >
             Échanger le joker
           </button>
         </div>
       )}
 
       {mode && (
-        <div className="rami-pick" role="group" aria-label={mode === 'layoff' ? 'Choisir la combinaison à compléter' : 'Choisir le joker à échanger'}>
-          <p className="rami-pick-title">{mode === 'layoff' ? `Ajouter ${labels(selectedCards)} à…` : `Échanger le joker contre ${labels(selectedCards)} dans…`}</p>
+        <div
+          className="rami-pick"
+          role="group"
+          aria-label={mode === 'layoff' ? 'Choisir la combinaison à compléter' : 'Choisir le joker à échanger'}
+        >
+          <p className="rami-pick-title">
+            {mode === 'layoff'
+              ? `Ajouter ${labels(selectedCards)} à…`
+              : `Échanger le joker contre ${labels(selectedCards)} dans…`}
+          </p>
           {modeMelds.length === 0 && <p className="muted small">Aucune combinaison avec un joker sur la table.</p>}
           <ul>
             {modeMelds.map((m) => {
-              const check = mode === 'layoff' ? checkLayoff(m, selectedCards) : selectedCards[0] ? checkSwap(m, selectedCards[0]) : null;
+              const check =
+                mode === 'layoff'
+                  ? checkLayoff(m, selectedCards)
+                  : selectedCards[0]
+                    ? checkSwap(m, selectedCards[0])
+                    : null;
               const joker = m.cards.find((c) => c.entry === 'jk');
               return (
                 <li key={m.id}>
-                  <button type="button" className="rami-pick-btn" disabled={busy || !check || !check.ok} onClick={() => void onMeld(m)}>
+                  <button
+                    type="button"
+                    className="rami-pick-btn"
+                    disabled={busy || !check || !check.ok}
+                    onClick={() => void onMeld(m)}
+                  >
                     <b>{meldTitle(m.kind, m.cards)}</b>
                     <span className="muted small">
                       {owner(m)} · {m.cards.map((c) => (c.entry === 'jk' ? '★' : cardLabel(c.entry))).join(' ')}
@@ -428,7 +478,9 @@ export function RamiPlayer({ publicState, playerState, playerId, send }: PlayerV
           {error}
         </p>
       )}
-      {keepOne && !me.opened && groups.length > 0 && <p className="muted small">Gardez au moins une carte en main pour la défausse.</p>}
+      {keepOne && !me.opened && groups.length > 0 && (
+        <p className="muted small">Gardez au moins une carte en main pour la défausse.</p>
+      )}
 
       <div className="control-dock cards-dock rami-dock">
         <button
@@ -447,7 +499,12 @@ export function RamiPlayer({ publicState, playerState, playerId, send }: PlayerV
         >
           Prendre la défausse
         </button>
-        <button type="button" className="btn primary big" disabled={!canAct || selected.length !== 1} onClick={() => void discard()}>
+        <button
+          type="button"
+          className="btn primary big"
+          disabled={!canAct || selected.length !== 1}
+          onClick={() => void discard()}
+        >
           Défausser
         </button>
         <button type="button" className="btn ghost big" disabled={busy || !me.canUndo} onClick={() => void run('undo')}>

@@ -90,7 +90,11 @@ export function JoinPage() {
         </form>
       )}
 
-      {error && <p className="error" role="alert">{error}</p>}
+      {error && (
+        <p className="error" role="alert">
+          {error}
+        </p>
+      )}
       <p className="muted small">
         <Link to="/">Retour à l’accueil</Link>
       </p>

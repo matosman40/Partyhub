@@ -14,7 +14,8 @@ function unwrap(field: z.ZodTypeAny): z.ZodTypeAny {
   let current = field;
   for (;;) {
     if (current instanceof z.ZodDefault) current = current.removeDefault() as z.ZodTypeAny;
-    else if (current instanceof z.ZodOptional || current instanceof z.ZodNullable) current = current.unwrap() as z.ZodTypeAny;
+    else if (current instanceof z.ZodOptional || current instanceof z.ZodNullable)
+      current = current.unwrap() as z.ZodTypeAny;
     else return current;
   }
 }

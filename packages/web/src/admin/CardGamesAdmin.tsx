@@ -71,7 +71,10 @@ function blankDefinition(): CardGameDefinition {
 }
 
 function linesOf(text: string): string[] {
-  return text.split('\n').map((l) => l.trim()).filter(Boolean);
+  return text
+    .split('\n')
+    .map((l) => l.trim())
+    .filter(Boolean);
 }
 
 /** Liste des jeux de cartes personnalisés, avec création, modification et suppression. */
@@ -161,8 +164,8 @@ export function CardGamesAdmin({ onChanged }: { onChanged: () => void }) {
   return (
     <div className="stack">
       <p className="muted">
-        Créez vos propres jeux de cartes : familles, cartes, règles et thème. Vous pouvez partir d’un modèle
-        intégré et le modifier. Les joueurs les retrouvent dans le catalogue, comme les autres jeux.
+        Créez vos propres jeux de cartes : familles, cartes, règles et thème. Vous pouvez partir d’un modèle intégré et
+        le modifier. Les joueurs les retrouvent dans le catalogue, comme les autres jeux.
       </p>
       <div className="ed-new">
         <label className="field">
@@ -191,7 +194,11 @@ export function CardGamesAdmin({ onChanged }: { onChanged: () => void }) {
         </label>
       </div>
 
-      {error && <p className="error" role="alert">{error}</p>}
+      {error && (
+        <p className="error" role="alert">
+          {error}
+        </p>
+      )}
       {records === null && <p className="muted">Chargement…</p>}
       {records?.length === 0 && <p className="muted">Aucun jeu de cartes personnalisé pour l’instant.</p>}
 
@@ -380,7 +387,11 @@ function CardGameEditor({
         </div>
       </div>
 
-      {message && <p className="error" role="alert">{message}</p>}
+      {message && (
+        <p className="error" role="alert">
+          {message}
+        </p>
+      )}
 
       <Section title="Identité">
         <div className="ed-grid-2">
@@ -428,11 +439,17 @@ function CardGameEditor({
       </Section>
 
       <Section title="Dos de carte">
-        <p className="muted small">Visible sur la pioche et sur les cartes cachées. Sans réglage, le dos suit le thème.</p>
+        <p className="muted small">
+          Visible sur la pioche et sur les cartes cachées. Sans réglage, le dos suit le thème.
+        </p>
         <div className="ed-grid-2">
           <label className="field">
             <span>Couleur de fond</span>
-            <input type="color" value={draft.back?.color ?? '#1d2a5c'} onChange={(e) => patchBack({ color: e.target.value })} />
+            <input
+              type="color"
+              value={draft.back?.color ?? '#1d2a5c'}
+              onChange={(e) => patchBack({ color: e.target.value })}
+            />
           </label>
           <label className="field">
             <span>Texte au centre</span>
@@ -508,7 +525,8 @@ function CardGameEditor({
       <Section title={`Cartes (${deckSize} au total)`}>
         <p className="muted small">
           Le paquet doit contenir au moins {needed} cartes pour {draft.rules.maxPlayers} joueurs à{' '}
-          {draft.rules.handSize} cartes. {deckSize < needed && <strong className="warn">Il en manque {needed - deckSize}.</strong>}
+          {draft.rules.handSize} cartes.{' '}
+          {deckSize < needed && <strong className="warn">Il en manque {needed - deckSize}.</strong>}
         </p>
         <div className="ed-cards">
           <div className="ed-cards-head" aria-hidden="true">
@@ -539,11 +557,7 @@ function CardGameEditor({
                 className="ed-symbol"
                 onChange={(e) => updateCard(c.id, { symbol: e.target.value })}
               />
-              <select
-                aria-label="Famille"
-                value={c.family}
-                onChange={(e) => changeFamily(c, e.target.value)}
-              >
+              <select aria-label="Famille" value={c.family} onChange={(e) => changeFamily(c, e.target.value)}>
                 {families.map((f) => (
                   <option key={f.id} value={f.id}>
                     {f.label}
@@ -584,7 +598,12 @@ function CardGameEditor({
                 <button type="button" className="btn ghost small" onClick={() => addCard(c)} aria-label="Dupliquer">
                   ⧉
                 </button>
-                <button type="button" className="btn ghost small" onClick={() => removeCard(c.id)} aria-label="Supprimer">
+                <button
+                  type="button"
+                  className="btn ghost small"
+                  onClick={() => removeCard(c.id)}
+                  aria-label="Supprimer"
+                >
                   ✕
                 </button>
               </span>
@@ -613,19 +632,40 @@ function CardGameEditor({
         <div className="ed-grid-3">
           <label className="field">
             <span>Joueurs minimum</span>
-            <input type="number" min={2} max={8} value={draft.rules.minPlayers} onChange={(e) => patchRule({ minPlayers: Number(e.target.value) })} />
+            <input
+              type="number"
+              min={2}
+              max={8}
+              value={draft.rules.minPlayers}
+              onChange={(e) => patchRule({ minPlayers: Number(e.target.value) })}
+            />
           </label>
           <label className="field">
             <span>Joueurs maximum</span>
-            <input type="number" min={2} max={8} value={draft.rules.maxPlayers} onChange={(e) => patchRule({ maxPlayers: Number(e.target.value) })} />
+            <input
+              type="number"
+              min={2}
+              max={8}
+              value={draft.rules.maxPlayers}
+              onChange={(e) => patchRule({ maxPlayers: Number(e.target.value) })}
+            />
           </label>
           <label className="field">
             <span>Cartes en main au départ</span>
-            <input type="number" min={3} max={10} value={draft.rules.handSize} onChange={(e) => patchRule({ handSize: Number(e.target.value) })} />
+            <input
+              type="number"
+              min={3}
+              max={10}
+              value={draft.rules.handSize}
+              onChange={(e) => patchRule({ handSize: Number(e.target.value) })}
+            />
           </label>
           <label className="field">
             <span>Pour poser une carte</span>
-            <select value={draft.rules.matchOn} onChange={(e) => patchRule({ matchOn: e.target.value as CardGameDefinition['rules']['matchOn'] })}>
+            <select
+              value={draft.rules.matchOn}
+              onChange={(e) => patchRule({ matchOn: e.target.value as CardGameDefinition['rules']['matchOn'] })}
+            >
               {MATCH_MODES.map((m) => (
                 <option key={m} value={m}>
                   {MATCH_LABEL[m]}
@@ -635,11 +675,23 @@ function CardGameEditor({
           </label>
           <label className="field">
             <span>Points pour gagner</span>
-            <input type="number" min={50} max={2000} value={draft.rules.targetScore} onChange={(e) => patchRule({ targetScore: Number(e.target.value) })} />
+            <input
+              type="number"
+              min={50}
+              max={2000}
+              value={draft.rules.targetScore}
+              onChange={(e) => patchRule({ targetScore: Number(e.target.value) })}
+            />
           </label>
           <label className="field">
             <span>Secondes par tour (0 = libre)</span>
-            <input type="number" min={0} max={60} value={draft.rules.turnSeconds} onChange={(e) => patchRule({ turnSeconds: Number(e.target.value) })} />
+            <input
+              type="number"
+              min={0}
+              max={60}
+              value={draft.rules.turnSeconds}
+              onChange={(e) => patchRule({ turnSeconds: Number(e.target.value) })}
+            />
           </label>
         </div>
       </Section>
@@ -651,11 +703,19 @@ function CardGameEditor({
         </label>
         <label className="field">
           <span>Étapes (une par ligne)</span>
-          <textarea rows={4} value={draft.notice.steps.join('\n')} onChange={(e) => patchNotice({ steps: linesOf(e.target.value) })} />
+          <textarea
+            rows={4}
+            value={draft.notice.steps.join('\n')}
+            onChange={(e) => patchNotice({ steps: linesOf(e.target.value) })}
+          />
         </label>
         <label className="field">
           <span>Conseils (une par ligne)</span>
-          <textarea rows={3} value={draft.notice.tips.join('\n')} onChange={(e) => patchNotice({ tips: linesOf(e.target.value) })} />
+          <textarea
+            rows={3}
+            value={draft.notice.tips.join('\n')}
+            onChange={(e) => patchNotice({ tips: linesOf(e.target.value) })}
+          />
         </label>
       </Section>
     </form>

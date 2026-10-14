@@ -13,7 +13,9 @@ export function PlutotQuiHost({ publicState: pub, hostState: host, now }: HostVi
     const pending: string[] = host?.pending ?? [];
     return (
       <section className="game-host fade-in" key={`v-${pub.round}`}>
-        <div className="round-info">Question {pub.round + 1} / {pub.total}</div>
+        <div className="round-info">
+          Question {pub.round + 1} / {pub.total}
+        </div>
         <p className="label">Plutôt qui ?</p>
         <h2 className="huge-word">{pub.prompt}</h2>
         <p className="muted">Votez en secret sur votre téléphone. Suivez la majorité pour marquer !</p>
@@ -29,7 +31,9 @@ export function PlutotQuiHost({ publicState: pub, hostState: host, now }: HostVi
   // reveal
   return (
     <section className="game-host fade-in" key={`r-${pub.round}`}>
-      <div className="round-info">Question {pub.round + 1} / {pub.total} · Résultats</div>
+      <div className="round-info">
+        Question {pub.round + 1} / {pub.total} · Résultats
+      </div>
       <h2 className="huge-word small">{pub.prompt}</h2>
       <ol className="tally">
         {pub.tally.map((t: { playerId: string; name: string; votes: number; voters: string[] }) => (

@@ -48,12 +48,19 @@ export function PlutotQuiPlayer({ publicState: pub, playerState: me, playerId, n
                 onClick={() => choose(c.id)}
               >
                 <Avatar name={c.name} />
-                <span>{c.name}{isMe ? ' (vous)' : ''}</span>
+                <span>
+                  {c.name}
+                  {isMe ? ' (vous)' : ''}
+                </span>
               </button>
             );
           })}
         </div>
-        {error && <p className="error" role="alert">{error}</p>}
+        {error && (
+          <p className="error" role="alert">
+            {error}
+          </p>
+        )}
         {me?.answered ? (
           <p className="notice">Vote enregistré ✔ · En attente des autres…</p>
         ) : (
@@ -71,7 +78,9 @@ export function PlutotQuiPlayer({ publicState: pub, playerState: me, playerId, n
         {me?.myVote ? (gained > 0 ? 'Vous étiez avec la majorité !' : 'Pas la majorité cette fois') : 'Pas de vote'}
       </p>
       {gained > 0 && <p className="big-number">+{gained}</p>}
-      <p>Total : {me?.points ?? 0} pts · {me?.rank ? `${me.rank}ᵉ` : ''}</p>
+      <p>
+        Total : {me?.points ?? 0} pts · {me?.rank ? `${me.rank}ᵉ` : ''}
+      </p>
     </section>
   );
 }

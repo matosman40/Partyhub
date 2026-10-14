@@ -42,10 +42,7 @@ export const solitaire = createSoloGame<KlondikeBoard>({
       'Les colonnes se construisent en ordre décroissant et en alternant rouge et noir.',
       'Les fondations se remplissent de l’As au Roi, par couleur.',
     ],
-    tips: [
-      'Retournez les cartes cachées des colonnes pour avancer.',
-      'Un roi peut occuper une colonne vide.',
-    ],
+    tips: ['Retournez les cartes cachées des colonnes pour avancer.', 'Un roi peut occuper une colonne vide.'],
   },
   engine: solitaireEngine,
 });
@@ -63,10 +60,7 @@ export const taquin = createSoloGame<TaquinBoard>({
       'Répétez pour réordonner les tuiles.',
       'Le classement suit le nombre de secondes pour résoudre la grille.',
     ],
-    tips: [
-      'Commencez par la première ligne, puis la deuxième, et ainsi de suite.',
-      'Le mélange est toujours soluble.',
-    ],
+    tips: ['Commencez par la première ligne, puis la deuxième, et ainsi de suite.', 'Le mélange est toujours soluble.'],
   },
   engine: taquinEngine,
 });

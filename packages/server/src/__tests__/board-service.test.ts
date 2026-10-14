@@ -89,9 +89,12 @@ describe('jeux de plateau personnalisés', () => {
     const copy = service.duplicate(created.id);
     if (!copy.ok) throw new Error(copy.error);
     expect(copy.id).not.toBe(created.id);
-    expect(service.list().map((r) => r.definition.name).sort()).toEqual(
-      ['Parcours du soir', 'Parcours du soir (copie)'].sort(),
-    );
+    expect(
+      service
+        .list()
+        .map((r) => r.definition.name)
+        .sort(),
+    ).toEqual(['Parcours du soir', 'Parcours du soir (copie)'].sort());
   });
 
   it('supprime un plateau et le retire du registre', () => {

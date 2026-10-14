@@ -54,7 +54,9 @@ function pack(source: string, output: string): void {
 function check(file: string): void {
   const pkg = validatePackage(fs.readFileSync(file));
   console.log(`Paquet valide : ${pkg.manifest.name} (${pkg.manifest.id}) version ${pkg.manifest.version}`);
-  console.log(`  moteur minimum ${pkg.manifest.engine.minVersion}, API ${pkg.manifest.engine.api}, module ${pkg.module}`);
+  console.log(
+    `  moteur minimum ${pkg.manifest.engine.minVersion}, API ${pkg.manifest.engine.api}, module ${pkg.module}`,
+  );
   const result = launchCheck(createPackageGame(pkg));
   if (!result.ok) {
     console.error(`Lancement de contrôle échoué : ${result.error}.`);

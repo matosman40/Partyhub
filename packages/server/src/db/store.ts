@@ -340,17 +340,13 @@ export class Store {
   }
 
   getKv(key: string): string | undefined {
-    const row = this.db.prepare('SELECT value FROM kv WHERE key = ?').get(key) as
-      | { value: string }
-      | undefined;
+    const row = this.db.prepare('SELECT value FROM kv WHERE key = ?').get(key) as { value: string } | undefined;
     return row?.value;
   }
 
   setKv(key: string, value: string): void {
     this.db
-      .prepare(
-        'INSERT INTO kv (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value',
-      )
+      .prepare('INSERT INTO kv (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value')
       .run(key, value);
   }
 
@@ -465,9 +461,11 @@ export class Store {
 
   /** Jeux de cartes créés dans l'administration (définition au format JSON). */
   listCardGames(): { id: string; definition: string; updatedAt: string }[] {
-    const rows = this.db
-      .prepare('SELECT id, definition, updated_at FROM card_games ORDER BY updated_at')
-      .all() as { id: string; definition: string; updated_at: string }[];
+    const rows = this.db.prepare('SELECT id, definition, updated_at FROM card_games ORDER BY updated_at').all() as {
+      id: string;
+      definition: string;
+      updated_at: string;
+    }[];
     return rows.map((r) => ({ id: r.id, definition: r.definition, updatedAt: r.updated_at }));
   }
 
@@ -487,9 +485,11 @@ export class Store {
 
   /** Jeux de plateau créés dans l'administration (définition au format JSON). */
   listBoardGames(): { id: string; definition: string; updatedAt: string }[] {
-    const rows = this.db
-      .prepare('SELECT id, definition, updated_at FROM board_games ORDER BY updated_at')
-      .all() as { id: string; definition: string; updated_at: string }[];
+    const rows = this.db.prepare('SELECT id, definition, updated_at FROM board_games ORDER BY updated_at').all() as {
+      id: string;
+      definition: string;
+      updated_at: string;
+    }[];
     return rows.map((r) => ({ id: r.id, definition: r.definition, updatedAt: r.updated_at }));
   }
 
@@ -509,7 +509,9 @@ export class Store {
 
   listPackages(): PackageRow[] {
     return this.db
-      .prepare('SELECT id, version, name, sha256, size, manifest, installed_at, updated_at FROM packages ORDER BY installed_at')
+      .prepare(
+        'SELECT id, version, name, sha256, size, manifest, installed_at, updated_at FROM packages ORDER BY installed_at',
+      )
       .all() as PackageRow[];
   }
 
@@ -616,9 +618,11 @@ export class Store {
   }
 
   listMediaGames(): { id: string; definition: string; updatedAt: string }[] {
-    const rows = this.db
-      .prepare('SELECT id, definition, updated_at FROM media_games ORDER BY updated_at')
-      .all() as { id: string; definition: string; updated_at: string }[];
+    const rows = this.db.prepare('SELECT id, definition, updated_at FROM media_games ORDER BY updated_at').all() as {
+      id: string;
+      definition: string;
+      updated_at: string;
+    }[];
     return rows.map((r) => ({ id: r.id, definition: r.definition, updatedAt: r.updated_at }));
   }
 
@@ -643,9 +647,9 @@ export class Store {
   }
 
   getAsset(id: string): AssetRow | undefined {
-    return this.db
-      .prepare('SELECT id, kind, mime, name, size, created_at FROM assets WHERE id = ?')
-      .get(id) as AssetRow | undefined;
+    return this.db.prepare('SELECT id, kind, mime, name, size, created_at FROM assets WHERE id = ?').get(id) as
+      | AssetRow
+      | undefined;
   }
 
   saveAsset(row: AssetRow): void {

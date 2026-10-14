@@ -78,7 +78,11 @@ describe('service des paquets installés', () => {
   it('importe une version plus ancienne sans l’activer', () => {
     const service = new PackageService(store, dir);
     service.install(buildPackage({ version: '1.1.0' }));
-    expect(service.install(buildPackage({ version: '1.0.0' }))).toMatchObject({ ok: true, version: '1.0.0', active: false });
+    expect(service.install(buildPackage({ version: '1.0.0' }))).toMatchObject({
+      ok: true,
+      version: '1.0.0',
+      active: false,
+    });
     expect(service.get('exemple-cartes')).toMatchObject({ version: '1.1.0', status: 'actif' });
     expect(service.versions('exemple-cartes')?.map((v) => [v.version, v.active])).toEqual([
       ['1.1.0', true],
@@ -90,8 +94,19 @@ describe('service des paquets installés', () => {
     const service = new PackageService(store, dir);
     service.install(buildPackage({ version: '1.1.0' }));
     service.install(buildPackage({ version: '1.0.0' }));
-    expect(service.install(buildPackage({ version: '1.0.0' }))).toMatchObject({ ok: true, unchanged: true, active: false });
-    const other = service.install(buildPackage({ version: '1.0.0', manifest: (m) => { m.description = 'Autre contenu.'; } }));
+    expect(service.install(buildPackage({ version: '1.0.0' }))).toMatchObject({
+      ok: true,
+      unchanged: true,
+      active: false,
+    });
+    const other = service.install(
+      buildPackage({
+        version: '1.0.0',
+        manifest: (m) => {
+          m.description = 'Autre contenu.';
+        },
+      }),
+    );
     expect(other).toMatchObject({ ok: false });
     expect((other as { error: string }).error).toMatch(/contenu différent/);
   });

@@ -115,7 +115,9 @@ const uids = (list: RamiCard[]) => list.map((c) => c.uid).sort();
 /** Toutes les cartes de la manche : mains, pioche, défausse et table. */
 function everyCard(s: RamiState): string[] {
   return [
-    ...Object.values(s.hands).flat().map((c) => c.uid),
+    ...Object.values(s.hands)
+      .flat()
+      .map((c) => c.uid),
     ...s.draw.map((c) => c.uid),
     ...s.discard.map((c) => c.uid),
     ...s.melds.flatMap((m) => m.cards.map((c) => c.uid)),
@@ -356,13 +358,28 @@ describe('Rami 51 : ouverture et poses', () => {
   it('ouvre avec 51 points et une tierce franche, sinon refuse avec le compte exact', () => {
     const t = table({ hands: { a: '8h 9h 10h 4s 5s 6s ks kh kd qs qh qc jh', b: '3h 4h 8c' } });
     const s = act(t, t.state, 'a', 'draw', { from: 'deck' });
-    expect(refused(t, s, 'a', 'open', { melds: [['8h-1', '9h-1', '10h-1'], ['4s-1', '5s-1', '6s-1']] })).toBe(
-      'Ouverture insuffisante : 42 points sur 51.',
-    );
-    expect(refused(t, s, 'a', 'open', { melds: [['ks-1', 'kh-1', 'kd-1'], ['qs-1', 'qh-1', 'qc-1']] })).toBe(
-      'Il faut au moins une tierce franche pour ouvrir.',
-    );
-    const opened = act(t, s, 'a', 'open', { melds: [['8h-1', '9h-1', '10h-1'], ['ks-1', 'kh-1', 'kd-1']] });
+    expect(
+      refused(t, s, 'a', 'open', {
+        melds: [
+          ['8h-1', '9h-1', '10h-1'],
+          ['4s-1', '5s-1', '6s-1'],
+        ],
+      }),
+    ).toBe('Ouverture insuffisante : 42 points sur 51.');
+    expect(
+      refused(t, s, 'a', 'open', {
+        melds: [
+          ['ks-1', 'kh-1', 'kd-1'],
+          ['qs-1', 'qh-1', 'qc-1'],
+        ],
+      }),
+    ).toBe('Il faut au moins une tierce franche pour ouvrir.');
+    const opened = act(t, s, 'a', 'open', {
+      melds: [
+        ['8h-1', '9h-1', '10h-1'],
+        ['ks-1', 'kh-1', 'kd-1'],
+      ],
+    });
     expect(opened.opened.a).toBe(true);
     expect(opened.melds).toHaveLength(2);
     expect(opened.melds.every((m) => m.owner === 'a')).toBe(true);
@@ -439,7 +456,9 @@ describe('Rami 51 : ouverture et poses', () => {
     expect(swapped.melds[0]!.cards.map((c) => c.entry)).toEqual(['5s', '6s', '7s']);
     expect(uids(swapped.hands.a!)).toContain('jk-1');
     expect(swapped.mustUse).toEqual(['jk-1']);
-    expect(refused(t, swapped, 'a', 'discard', { cardId: '2c-1' })).toBe('Reposez d’abord le joker récupéré sur la table.');
+    expect(refused(t, swapped, 'a', 'discard', { cardId: '2c-1' })).toBe(
+      'Reposez d’abord le joker récupéré sur la table.',
+    );
     const relaid = act(t, swapped, 'a', 'meld', { cardIds: ['9h-1', '9d-1', 'jk-1'] });
     expect(relaid.mustUse).toEqual([]);
     expect(relaid.melds[1]!.cards.find((c) => c.entry === 'jk')!.stands).toEqual(['s', 'c']);
@@ -473,7 +492,10 @@ describe('Rami 51 : fin de manche', () => {
     expect(out.lastEvent).toBe('A termine la manche !');
     expect(t.timers.has('next-round')).toBe(true);
     expect(t.timers.has('turn')).toBe(false);
-    const pub = rami51.getPublicState(out) as { result: { hands: Record<string, RamiCard[]> } | null; current: unknown };
+    const pub = rami51.getPublicState(out) as {
+      result: { hands: Record<string, RamiCard[]> } | null;
+      current: unknown;
+    };
     expect(uids(pub.result!.hands.b!)).toEqual(uids(cards('jk as kd 5h')));
     expect(pub.current).toBeNull();
     expect(rami51.handleAction(out, P('b'), 'draw', { from: 'deck' }, t.ctx).ok).toBe(false);
@@ -575,7 +597,12 @@ describe('Rami 51 : temps écoulé et annulation', () => {
   it('temps écoulé après des poses valables : elles restent, la carte la plus forte est défaussée', () => {
     const t = table({ hands: { a: '8h 9h 10h ks kh kd 2c 5d', b: '3c 4c 8c' }, draw: '9s-2 qs' });
     let s = act(t, t.state, 'a', 'draw', { from: 'deck' });
-    s = act(t, s, 'a', 'open', { melds: [['8h-1', '9h-1', '10h-1'], ['ks-1', 'kh-1', 'kd-1']] });
+    s = act(t, s, 'a', 'open', {
+      melds: [
+        ['8h-1', '9h-1', '10h-1'],
+        ['ks-1', 'kh-1', 'kd-1'],
+      ],
+    });
     const after = rami51.onTimer(s, 'turn', t.ctx);
     expect(after.melds).toHaveLength(2);
     expect(after.opened.a).toBe(true);
@@ -588,7 +615,12 @@ describe('Rami 51 : temps écoulé et annulation', () => {
     expect(refused(t, t.state, 'a', 'undo')).toContain('pas encore pioché');
     let s = act(t, t.state, 'a', 'draw', { from: 'deck' });
     expect(refused(t, s, 'a', 'undo')).toBe('Rien à annuler.');
-    const opened = act(t, s, 'a', 'open', { melds: [['8h-1', '9h-1', '10h-1'], ['ks-1', 'kh-1', 'kd-1']] });
+    const opened = act(t, s, 'a', 'open', {
+      melds: [
+        ['8h-1', '9h-1', '10h-1'],
+        ['ks-1', 'kh-1', 'kd-1'],
+      ],
+    });
     const undone = act(t, opened, 'a', 'undo');
     expect(undone.melds).toHaveLength(0);
     expect(undone.opened.a).toBe(false);
@@ -597,7 +629,12 @@ describe('Rami 51 : temps écoulé et annulation', () => {
     expect(undone.lastEvent).toBe('A reprend les cartes posées ce tour.');
 
     s = act(t, t.state, 'a', 'draw', { from: 'discard' });
-    const meld = act(t, s, 'a', 'open', { melds: [['8h-1', '9h-1', '10h-1', 'jh-1'], ['ks-1', 'kh-1', 'kd-1']] });
+    const meld = act(t, s, 'a', 'open', {
+      melds: [
+        ['8h-1', '9h-1', '10h-1', 'jh-1'],
+        ['ks-1', 'kh-1', 'kd-1'],
+      ],
+    });
     const back = act(t, meld, 'a', 'undo');
     expect(back.mustUse).toEqual(['jh-1']);
     const putBack = act(t, back, 'a', 'undo');
@@ -644,7 +681,13 @@ describe('Rami 51 : vues', () => {
 
   it('la notice respecte le format éditable de l’administration', () => {
     expect(noticeSchema.safeParse(rami51.manifest.notice).success).toBe(true);
-    expect(rami51.manifest).toMatchObject({ id: 'rami-51', category: 'cartes', name: 'Rami 51', minPlayers: 2, maxPlayers: 5 });
+    expect(rami51.manifest).toMatchObject({
+      id: 'rami-51',
+      category: 'cartes',
+      name: 'Rami 51',
+      minPlayers: 2,
+      maxPlayers: 5,
+    });
     expect(rami51.defaultSettings).toEqual({ targetScore: 500, openingPoints: 51, turnSeconds: 90 });
   });
 });

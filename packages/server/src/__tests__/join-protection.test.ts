@@ -162,7 +162,7 @@ let nameSeq = 0;
 /** Une connexion par tentative, comme un téléphone qui retape son code. Chaque pseudo est unique. */
 async function tryJoin(ip: string, code: string): Promise<any> {
   const socket = await connectFrom(ip);
-  const letters = String.fromCharCode(97 + (nameSeq % 26)) + String.fromCharCode(97 + Math.floor(nameSeq / 26) % 26);
+  const letters = String.fromCharCode(97 + (nameSeq % 26)) + String.fromCharCode(97 + (Math.floor(nameSeq / 26) % 26));
   nameSeq++;
   const ack = await new Promise<any>((resolve) => {
     (socket as any).emit('player:join', { code, name: `Test${letters}` }, (res: unknown) => resolve(res));

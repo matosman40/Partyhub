@@ -28,6 +28,8 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - run: npm run build
       - run: npm run lint
+      - name: Mise en forme (Prettier)
+        run: npm run format:check
       - name: Contrôle des secrets dans les fichiers suivis
         run: python3 scripts/secret-scan.py
       - run: npm run typecheck

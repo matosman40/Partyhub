@@ -9,7 +9,10 @@ import { MediaGameEditor, type MediaGameRecord } from './MediaGameEditor.js';
  */
 export function MediaGamesAdmin({ onChanged }: { onChanged: () => void }) {
   const [records, setRecords] = useState<MediaGameRecord[] | null>(null);
-  const [editing, setEditing] = useState<{ record: MediaGameRecord | null; initial: MediaQuizDefinition | null } | null>(null);
+  const [editing, setEditing] = useState<{
+    record: MediaGameRecord | null;
+    initial: MediaQuizDefinition | null;
+  } | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -87,17 +90,13 @@ export function MediaGamesAdmin({ onChanged }: { onChanged: () => void }) {
   return (
     <div className="stack">
       <p className="muted">
-        Un jeu de questions médias est une suite d’extraits : un film, une chanson, ou une scène. Les joueurs
-        tapent le titre sur leur téléphone pendant que l’extrait joue sur l’écran principal. Le média n’est jamais
-        envoyé aux téléphones.
+        Un jeu de questions médias est une suite d’extraits : un film, une chanson, ou une scène. Les joueurs tapent le
+        titre sur leur téléphone pendant que l’extrait joue sur l’écran principal. Le média n’est jamais envoyé aux
+        téléphones.
       </p>
 
       <div className="ed-new">
-        <button
-          type="button"
-          className="btn primary"
-          onClick={() => setEditing({ record: null, initial: null })}
-        >
+        <button type="button" className="btn primary" onClick={() => setEditing({ record: null, initial: null })}>
           Nouveau jeu de questions
         </button>
         <label className="btn ghost">
@@ -115,8 +114,16 @@ export function MediaGamesAdmin({ onChanged }: { onChanged: () => void }) {
         </label>
       </div>
 
-      {notice && <p className="notice" role="status">{notice}</p>}
-      {error && <p className="error" role="alert">{error}</p>}
+      {notice && (
+        <p className="notice" role="status">
+          {notice}
+        </p>
+      )}
+      {error && (
+        <p className="error" role="alert">
+          {error}
+        </p>
+      )}
       {records === null && <p className="muted">Chargement…</p>}
       {records?.length === 0 && <p className="muted">Aucun jeu de questions médias pour l’instant.</p>}
 
@@ -129,7 +136,8 @@ export function MediaGamesAdmin({ onChanged }: { onChanged: () => void }) {
             <div className="ed-list-body">
               <strong>{r.definition.name}</strong>
               <span className="muted small">
-                {r.definition.mode === 'sous-titres' ? 'Sous-titres' : MEDIA_KIND_LABEL[r.definition.kind]} · {r.definition.items.length} extrait(s) · {r.definition.rules.questionCount} par partie
+                {r.definition.mode === 'sous-titres' ? 'Sous-titres' : MEDIA_KIND_LABEL[r.definition.kind]} ·{' '}
+                {r.definition.items.length} extrait(s) · {r.definition.rules.questionCount} par partie
               </span>
               {r.missingAssets.length > 0 && (
                 <span className="error small">
@@ -138,13 +146,21 @@ export function MediaGamesAdmin({ onChanged }: { onChanged: () => void }) {
               )}
             </div>
             <div className="ed-list-actions">
-              <button type="button" className="btn ghost small" onClick={() => setEditing({ record: r, initial: r.definition })}>
+              <button
+                type="button"
+                className="btn ghost small"
+                onClick={() => setEditing({ record: r, initial: r.definition })}
+              >
                 Modifier
               </button>
               <button type="button" className="btn ghost small" onClick={() => duplicate(r)}>
                 Dupliquer
               </button>
-              <a className="btn ghost small" href={`/api/admin/media-games/${encodeURIComponent(r.id)}/export`} download>
+              <a
+                className="btn ghost small"
+                href={`/api/admin/media-games/${encodeURIComponent(r.id)}/export`}
+                download
+              >
                 Exporter
               </a>
               <button type="button" className="btn ghost small" onClick={() => remove(r)}>

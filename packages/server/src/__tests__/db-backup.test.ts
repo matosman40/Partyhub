@@ -95,7 +95,11 @@ describe('Sauvegarde de la base', () => {
   });
 
   it('ne lève pas d’erreur si la sauvegarde échoue, et le dit clairement', () => {
-    const broken = { backupTo: () => { throw new Error('disque plein'); } } as unknown as Store;
+    const broken = {
+      backupTo: () => {
+        throw new Error('disque plein');
+      },
+    } as unknown as Store;
     const scheduler = new DbBackupScheduler(broken, { dir, everyMs: 0, keep: 7 }, silent, now);
     const result = scheduler.runNow();
     expect(result.ok).toBe(false);

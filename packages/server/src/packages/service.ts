@@ -179,7 +179,8 @@ export class PackageService {
       }
     }
 
-    const known = current?.version === manifest.version ? current : this.store.getPackageArchive(manifest.id, manifest.version);
+    const known =
+      current?.version === manifest.version ? current : this.store.getPackageArchive(manifest.id, manifest.version);
     if (known) {
       if (known.sha256 === pkg.sha256) {
         return {
@@ -287,7 +288,8 @@ export class PackageService {
     }
     try {
       const bytes = fs.readFileSync(this.archivePath(id, entry.record.version));
-      if (sha256Of(bytes) !== entry.record.sha256) throw new Error('l’archive ne correspond plus à l’empreinte enregistrée');
+      if (sha256Of(bytes) !== entry.record.sha256)
+        throw new Error('l’archive ne correspond plus à l’empreinte enregistrée');
       return { ok: true, pkg: validatePackage(bytes, this.limits) };
     } catch (err) {
       return { ok: false, error: errorMessage(err) };
@@ -310,7 +312,10 @@ export class PackageService {
     const current = this.store.getPackage(id);
     if (!current) return { ok: false, error: 'Paquet inconnu.' };
     if (current.version === version) {
-      return { ok: false, error: 'Cette version est active. Activez d’abord une autre version, puis supprimez celle-ci.' };
+      return {
+        ok: false,
+        error: 'Cette version est active. Activez d’abord une autre version, puis supprimez celle-ci.',
+      };
     }
     const archive = this.store.getPackageArchive(id, version);
     if (!archive) return { ok: false, error: `La version ${version} n’est pas conservée pour ce paquet.` };

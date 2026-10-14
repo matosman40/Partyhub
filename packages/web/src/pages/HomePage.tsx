@@ -152,12 +152,7 @@ export function HomePage() {
               >
                 {busy === `create:${g.id}` ? 'Création…' : 'Créer la salle'}
               </button>
-              <button
-                type="button"
-                className="btn big"
-                disabled={busy !== null}
-                onClick={() => createRoom(g.id, true)}
-              >
+              <button type="button" className="btn big" disabled={busy !== null} onClick={() => createRoom(g.id, true)}>
                 {busy === `try:${g.id}` ? 'Préparation…' : 'Essayer seul'}
               </button>
               <button type="button" className="link-btn" onClick={() => setNotice(g)}>
@@ -168,9 +163,7 @@ export function HomePage() {
         ))}
       </section>
 
-      {games && games.length > 0 && visible.length === 0 && (
-        <p className="muted">Aucun jeu dans cette catégorie.</p>
-      )}
+      {games && games.length > 0 && visible.length === 0 && <p className="muted">Aucun jeu dans cette catégorie.</p>}
 
       {notice && <NoticeDialog game={notice} onClose={() => setNotice(null)} />}
     </main>

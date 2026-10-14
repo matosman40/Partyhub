@@ -36,7 +36,11 @@ const MODE_REGULAR = 0o100000;
 const MODE_SYMLINK = 0o120000;
 
 /** Lit toutes les entrées d'une archive, en contrôlant les tailles et les sommes CRC. */
-export function readZip(bytes: Uint8Array, limits: ZipReadLimits, validateName: (name: string) => void): ZipFileEntry[] {
+export function readZip(
+  bytes: Uint8Array,
+  limits: ZipReadLimits,
+  validateName: (name: string) => void,
+): ZipFileEntry[] {
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   if (bytes.byteLength < EOCD_MIN) throw new ZipError('Le fichier est trop petit pour être une archive ZIP.');
 
@@ -108,10 +112,13 @@ export function readZip(bytes: Uint8Array, limits: ZipReadLimits, validateName: 
 
     if (flags & (FLAG_ENCRYPTED | FLAG_STRONG_ENCRYPTION)) throw new ZipError(`« ${name} » est chiffré : refusé.`);
     if (method !== 0 && method !== 8) throw new ZipError(`« ${name} » utilise une compression non prise en charge.`);
-    if (csize === 0xffffffff || usize === 0xffffffff) throw new ZipError('Les archives ZIP64 ne sont pas prises en charge.');
-    if (name.endsWith('/')) throw new ZipError(`Dossier « ${name} » : les dossiers ne sont pas autorisés dans un paquet.`);
+    if (csize === 0xffffffff || usize === 0xffffffff)
+      throw new ZipError('Les archives ZIP64 ne sont pas prises en charge.');
+    if (name.endsWith('/'))
+      throw new ZipError(`Dossier « ${name} » : les dossiers ne sont pas autorisés dans un paquet.`);
     const mode = externalAttr >>> 16;
-    if (mode !== 0 && (mode & MODE_TYPE_MASK) === MODE_SYMLINK) throw new ZipError(`« ${name} » est un lien symbolique : refusé.`);
+    if (mode !== 0 && (mode & MODE_TYPE_MASK) === MODE_SYMLINK)
+      throw new ZipError(`« ${name} » est un lien symbolique : refusé.`);
     if (mode !== 0 && (mode & MODE_TYPE_MASK) !== 0 && (mode & MODE_TYPE_MASK) !== MODE_REGULAR) {
       throw new ZipError(`« ${name} » n’est pas un fichier ordinaire.`);
     }

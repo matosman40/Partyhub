@@ -137,7 +137,11 @@ export function planOpening(hand: readonly RamiCard[], threshold: number): RamiC
   if (maxCards < 3) return null;
   for (const withJokers of [false, true]) {
     if (withJokers && !hand.some(isJoker)) break;
-    const combo = bestCombination(meldCandidates(hand, withJokers), maxCards, (points, franche) => franche && points >= threshold);
+    const combo = bestCombination(
+      meldCandidates(hand, withJokers),
+      maxCards,
+      (points, franche) => franche && points >= threshold,
+    );
     if (combo) return combo.map((c) => c.cards);
   }
   return null;
@@ -159,7 +163,10 @@ export function planMeld(hand: readonly RamiCard[]): RamiCard[] | null {
  * Une carte à ajouter sur la table (la plus chère d'abord). Le joker n'est placé
  * que pour finir une petite main, où il coûterait 20 points.
  */
-export function planLayoff(hand: readonly RamiCard[], melds: readonly Meld[]): { meldId: string; cardIds: string[] } | null {
+export function planLayoff(
+  hand: readonly RamiCard[],
+  melds: readonly Meld[],
+): { meldId: string; cardIds: string[] } | null {
   if (hand.length <= 1) return null;
   const naturals = hand.filter((c) => !isJoker(c)).sort((a, b) => penaltyValue(b.entry) - penaltyValue(a.entry));
   const order = hand.length <= 4 ? [...naturals, ...hand.filter(isJoker)] : naturals;

@@ -90,7 +90,11 @@ export function PromoteurPlayer({ publicState, playerState, now, send }: PlayerV
 
       <p className={`cards-banner${me?.isMyTurn ? ' is-mine' : ''}`}>{banner}</p>
 
-      {pub.dice && <p className="muted small">Dernier jet : {pub.dice[0]} + {pub.dice[1]}</p>}
+      {pub.dice && (
+        <p className="muted small">
+          Dernier jet : {pub.dice[0]} + {pub.dice[1]}
+        </p>
+      )}
 
       {me?.isMyTurn && pub.durationMs > 0 && (
         <p className="round-info">
@@ -106,7 +110,12 @@ export function PromoteurPlayer({ publicState, playerState, now, send }: PlayerV
             <button type="button" className="btn ghost big" disabled={busy} onClick={() => void run('pass')}>
               Laisser
             </button>
-            <button type="button" className="btn primary big" disabled={busy || !me.canBuy} onClick={() => void run('buy')}>
+            <button
+              type="button"
+              className="btn primary big"
+              disabled={busy || !me.canBuy}
+              onClick={() => void run('buy')}
+            >
               Acheter
             </button>
           </div>

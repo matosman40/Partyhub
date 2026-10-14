@@ -54,7 +54,9 @@ function RoleCard({ me }: { me: LoupsPlayerState }) {
   }
   return (
     <div className={`lv-role-card team-${info.team}`}>
-      <span className="lv-icon" aria-hidden="true">{info.icon}</span>
+      <span className="lv-icon" aria-hidden="true">
+        {info.icon}
+      </span>
       <p className="lv-role-title">{info.label}</p>
       <p className="muted small">{info.text}</p>
       {me.allies.length > 0 && <p className="small">Vos alliés loups : {me.allies.join(', ')}</p>}
@@ -119,7 +121,11 @@ export function LoupsPlayerScreen({ publicState, playerState, send, now }: Playe
           <button type="button" className="btn primary big" disabled={busy} onClick={() => void run('seen')}>
             J’ai compris mon rôle
           </button>
-          {error && <p className="error" role="alert">{error}</p>}
+          {error && (
+            <p className="error" role="alert">
+              {error}
+            </p>
+          )}
         </section>
       );
     }
@@ -188,13 +194,19 @@ export function LoupsPlayerScreen({ publicState, playerState, send, now }: Playe
           <ul className="clue-list">
             {me.checks.map((c, i) => (
               <li key={i}>
-                <span className="clue-author">Nuit {c.round} · {c.name}</span>
+                <span className="clue-author">
+                  Nuit {c.round} · {c.name}
+                </span>
                 <span className="clue-text">{c.wolf ? 'Loup 🐺' : 'Pas un loup'}</span>
               </li>
             ))}
           </ul>
         )}
-        {error && <p className="error" role="alert">{error}</p>}
+        {error && (
+          <p className="error" role="alert">
+            {error}
+          </p>
+        )}
       </section>
     );
   }
@@ -253,7 +265,11 @@ export function LoupsPlayerScreen({ publicState, playerState, send, now }: Playe
       </div>
       {me.voted && <p className="notice">Vote enregistré ✔</p>}
       <RoleCard me={me} />
-      {error && <p className="error" role="alert">{error}</p>}
+      {error && (
+        <p className="error" role="alert">
+          {error}
+        </p>
+      )}
     </section>
   );
 }

@@ -87,7 +87,12 @@ function Tile({ tile, owner, pending }: { tile: TilePub; owner: PlayerPub | unde
   useEffect(() => () => side.dispose(), [side]);
   useEffect(() => () => top.dispose(), [top]);
   return (
-    <mesh position={[(col - 3) * CELL, TILE_H / 2, (row - 3) * CELL]} castShadow receiveShadow material={[side, side, top, side, side, side]}>
+    <mesh
+      position={[(col - 3) * CELL, TILE_H / 2, (row - 3) * CELL]}
+      castShadow
+      receiveShadow
+      material={[side, side, top, side, side, side]}
+    >
       <boxGeometry args={[TILE, TILE_H, TILE]} />
     </mesh>
   );
@@ -125,23 +130,35 @@ function Pawn({
   const target = useMemo(() => worldOf(index, slot), [index, slot]);
   const motion = useRef({ from: target.clone(), to: target.clone(), t: 1 });
 
-  const info: AvatarData = avatar ?? { hue: hueOf(player.name), emoji: player.name.charAt(0).toUpperCase(), imageUrl: null };
+  const info: AvatarData = avatar ?? {
+    hue: hueOf(player.name),
+    emoji: player.name.charAt(0).toUpperCase(),
+    imageUrl: null,
+  };
   const faceTex = useMemo(
     () => avatarTexture(info, player.name),
     [info.hue, info.emoji, info.imageUrl, player.name], // eslint-disable-line react-hooks/exhaustive-deps
   );
   useEffect(() => () => faceTex.dispose(), [faceTex]);
   const sideMat = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: new THREE.Color(`hsl(${info.hue} 80% 58%)`), roughness: 0.35, metalness: 0.1 }),
+    () =>
+      new THREE.MeshStandardMaterial({
+        color: new THREE.Color(`hsl(${info.hue} 80% 58%)`),
+        roughness: 0.35,
+        metalness: 0.1,
+      }),
     [info.hue],
   );
   const topMat = useMemo(() => new THREE.MeshStandardMaterial({ map: faceTex, roughness: 0.5 }), [faceTex]);
   const bottomMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#0d0a1f' }), []);
-  useEffect(() => () => {
-    sideMat.dispose();
-    topMat.dispose();
-    bottomMat.dispose();
-  }, [sideMat, topMat, bottomMat]);
+  useEffect(
+    () => () => {
+      sideMat.dispose();
+      topMat.dispose();
+      bottomMat.dispose();
+    },
+    [sideMat, topMat, bottomMat],
+  );
 
   // Quand la case change, le pion part de sa position courante vers la nouvelle case.
   // Avec « réduire les animations », il est posé directement sur sa case.
@@ -198,7 +215,12 @@ function Die({
   reduced: boolean;
 }) {
   const group = useRef<THREE.Group>(null);
-  const roll = useRef({ from: new THREE.Quaternion(), to: restingQuaternion(value), axis: new THREE.Vector3(0, 1, 0), t: 1 });
+  const roll = useRef({
+    from: new THREE.Quaternion(),
+    to: restingQuaternion(value),
+    axis: new THREE.Vector3(0, 1, 0),
+    t: 1,
+  });
   const faces = useMemo(() => DIE_FACES.map((v) => dieFaceTexture(v)), []);
   const materials = useMemo(
     () => faces.map((map) => new THREE.MeshStandardMaterial({ map, roughness: 0.25 })),
@@ -309,8 +331,22 @@ function Scene({
       ))}
 
       {/* Dés dans les coins vides du panneau central, loin du texte. */}
-      <Die value={pub.dice?.[0] ?? 1} rollKey={pub.lastEvent} x={-1.55} z={-1.55} visible={!!pub.dice} reduced={reduced} />
-      <Die value={pub.dice?.[1] ?? 1} rollKey={pub.lastEvent} x={1.55} z={-1.55} visible={!!pub.dice} reduced={reduced} />
+      <Die
+        value={pub.dice?.[0] ?? 1}
+        rollKey={pub.lastEvent}
+        x={-1.55}
+        z={-1.55}
+        visible={!!pub.dice}
+        reduced={reduced}
+      />
+      <Die
+        value={pub.dice?.[1] ?? 1}
+        rollKey={pub.lastEvent}
+        x={1.55}
+        z={-1.55}
+        visible={!!pub.dice}
+        reduced={reduced}
+      />
     </>
   );
 }

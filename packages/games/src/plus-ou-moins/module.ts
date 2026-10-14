@@ -1,14 +1,6 @@
 import { z } from 'zod';
 import type { GameContext, GameModule, PlayerRef } from '@partyhub/shared';
-import {
-  addPoints,
-  directory,
-  everyConnectedDone,
-  fail,
-  ok,
-  rankEntries,
-  shuffle,
-} from '../common/engine.js';
+import { addPoints, directory, everyConnectedDone, fail, ok, rankEntries, shuffle } from '../common/engine.js';
 
 /**
  * Plus ou moins : un jeu de cartes à 52 cartes. Une carte est affichée sur
@@ -148,17 +140,17 @@ export const plusOuMoins: GameModule<PlusOuMoinsState, PlusOuMoinsSettings> = {
     maxPlayers: 12,
     durationMin: 8,
     notice: {
-      "goal": "Prévoir si la carte suivante sera plus haute ou plus basse.",
-      "steps": [
+      goal: 'Prévoir si la carte suivante sera plus haute ou plus basse.',
+      steps: [
         "Une carte est affichée sur l'écran.",
-        "Sur votre téléphone, pariez « plus haut » ou « plus bas ».",
-        "La carte suivante est révélée : chaque bon pari rapporte 100 points.",
-        "L'as est la carte la plus haute. Une égalité ne rapporte rien à personne."
+        'Sur votre téléphone, pariez « plus haut » ou « plus bas ».',
+        'La carte suivante est révélée : chaque bon pari rapporte 100 points.',
+        "L'as est la carte la plus haute. Une égalité ne rapporte rien à personne.",
       ],
-      "tips": [
+      tips: [
         "Les paris restent secrets jusqu'à la révélation.",
-        "Le paquet est mélangé sur le serveur, la carte suivante n'est jamais envoyée avant."
-      ]
+        "Le paquet est mélangé sur le serveur, la carte suivante n'est jamais envoyée avant.",
+      ],
     },
   },
 
@@ -296,8 +288,7 @@ export const plusOuMoins: GameModule<PlusOuMoinsState, PlusOuMoinsSettings> = {
   },
 
   getHostState(s) {
-    const pending =
-      s.phase === 'bet' ? Object.keys(s.players).filter((id) => !(id in s.bets)) : [];
+    const pending = s.phase === 'bet' ? Object.keys(s.players).filter((id) => !(id in s.bets)) : [];
     return { pending: pending.map((id) => s.players[id] ?? '?') };
   },
 

@@ -123,7 +123,10 @@ describe('moteur des jeux de cartes', () => {
 
   it('une carte joker impose le choix de la famille', () => {
     const { mod, state, ctx } = setup(SMALL, [P('a'), P('b')]);
-    const wild = { ...state, hands: { ...state.hands, a: [{ uid: 'test-wild', entry: 'wk' }, ...state.hands['a']!.slice(1)] } };
+    const wild = {
+      ...state,
+      hands: { ...state.hands, a: [{ uid: 'test-wild', entry: 'wk' }, ...state.hands['a']!.slice(1)] },
+    };
     const played = mod.handleAction(wild, P('a'), 'play', { cardId: 'test-wild' }, ctx);
     expect(played.ok).toBe(true);
     if (!played.ok) return;
@@ -162,7 +165,13 @@ describe('moteur des jeux de cartes', () => {
       turn: 0,
       family: 'r',
       discard: [{ uid: 'top', entry: 'r1' }],
-      hands: { a: [{ uid: 'last', entry: 'r1' }], b: [{ uid: 'x', entry: 'rs' }, { uid: 'y', entry: 'wk' }] },
+      hands: {
+        a: [{ uid: 'last', entry: 'r1' }],
+        b: [
+          { uid: 'x', entry: 'rs' },
+          { uid: 'y', entry: 'wk' },
+        ],
+      },
     };
     const res = mod.handleAction(alone, P('a'), 'play', { cardId: 'last' }, ctx);
     expect(res.ok).toBe(true);
@@ -183,7 +192,14 @@ describe('moteur des jeux de cartes', () => {
       turn: 0,
       family: 'r',
       discard: [{ uid: 'top', entry: 'r1' }],
-      hands: { a: [{ uid: 'last', entry: 'r1' }], b: [{ uid: 'x', entry: 'wk' }, { uid: 'y', entry: 'wk' }, { uid: 'z', entry: 'wk' }] },
+      hands: {
+        a: [{ uid: 'last', entry: 'r1' }],
+        b: [
+          { uid: 'x', entry: 'wk' },
+          { uid: 'y', entry: 'wk' },
+          { uid: 'z', entry: 'wk' },
+        ],
+      },
     };
     const res = mod.handleAction(big, P('a'), 'play', { cardId: 'last' }, ctx);
     expect(res.ok).toBe(true);

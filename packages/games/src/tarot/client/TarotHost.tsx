@@ -99,7 +99,12 @@ export function TarotHost({ publicState, now }: HostViewProps) {
 
       <p className="cards-event" aria-live="polite">
         {pub.lastEvent}
-        {currentName && active && pub.phase !== 'ecart' && <> · À {currentName} {pub.phase === 'bidding' ? 'd’annoncer' : 'de jouer'}</>}
+        {currentName && active && pub.phase !== 'ecart' && (
+          <>
+            {' '}
+            · À {currentName} {pub.phase === 'bidding' ? 'd’annoncer' : 'de jouer'}
+          </>
+        )}
       </p>
     </section>
   );
@@ -175,9 +180,7 @@ function Center({ pub }: { pub: TarotPub }) {
   if (pub.phase === 'ecart') {
     return (
       <div className="tarot-notice">
-        <p className="tarot-notice-title">
-          Le chien{pub.taker ? ` de ${pub.names[pub.taker]}` : ''}
-        </p>
+        <p className="tarot-notice-title">Le chien{pub.taker ? ` de ${pub.names[pub.taker]}` : ''}</p>
         <span className="tarot-chien" role="group" aria-label="Le chien, retourné">
           {(pub.chien ?? []).map((id) => (
             <MiniCard key={id} id={id} className="is-big" />
@@ -207,9 +210,7 @@ function Center({ pub }: { pub: TarotPub }) {
         </div>
       ))}
       {cards.length === 0 && (
-        <p className="tarot-notice-title tarot-trick-empty">
-          {pub.leader ? `${pub.names[pub.leader]} entame` : ''}
-        </p>
+        <p className="tarot-notice-title tarot-trick-empty">{pub.leader ? `${pub.names[pub.leader]} entame` : ''}</p>
       )}
       {winner && <p className="tarot-won">{pub.names[winner]} remporte le pli</p>}
     </div>

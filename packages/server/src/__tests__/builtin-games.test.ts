@@ -24,7 +24,11 @@ function configFor(extra: Partial<AppConfig> = {}): AppConfig {
 }
 
 async function start(extra: Partial<AppConfig> = {}): Promise<PartyServer> {
-  const server = await createServer({ config: configFor(extra), logger: createLogger('silent', true), sweepEveryMs: 0 });
+  const server = await createServer({
+    config: configFor(extra),
+    logger: createLogger('silent', true),
+    sweepEveryMs: 0,
+  });
   servers.push(server);
   return server;
 }

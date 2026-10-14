@@ -163,7 +163,8 @@ export function PlayerPage() {
         )}
         {!profileToken && (
           <p className="muted small">
-            Aucun compte nécessaire. <Link to="/profil">Créer un profil</Link> pour garder votre image et vos statistiques.
+            Aucun compte nécessaire. <Link to="/profil">Créer un profil</Link> pour garder votre image et vos
+            statistiques.
           </p>
         )}
       </div>

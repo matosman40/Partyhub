@@ -92,9 +92,9 @@ export function BackupPanel({ onChanged }: { onChanged: () => void }) {
   return (
     <div className="stack">
       <p className="muted">
-        La sauvegarde complète (ZIP) contient les jeux de cartes, de questions médias et de plateau, les textes et notices
-        modifiés des jeux intégrés, et les fichiers de la médiathèque. Au-delà de 512 Mio de médias, téléchargez la
-        sauvegarde sans les fichiers et copiez le dossier des médias à part.
+        La sauvegarde complète (ZIP) contient les jeux de cartes, de questions médias et de plateau, les textes et
+        notices modifiés des jeux intégrés, et les fichiers de la médiathèque. Au-delà de 512 Mio de médias, téléchargez
+        la sauvegarde sans les fichiers et copiez le dossier des médias à part.
       </p>
       <div className="ed-new">
         <button type="button" className="btn primary" onClick={() => void downloadArchive()} disabled={busy}>
@@ -124,14 +124,18 @@ export function BackupPanel({ onChanged }: { onChanged: () => void }) {
           Remplacer les jeux de même nom au lieu d’ajouter une copie (les jeux identiques sont toujours ignorés)
         </span>
       </label>
-      {busy && <p className="muted" role="status">Patientez…</p>}
+      {busy && (
+        <p className="muted" role="status">
+          Patientez…
+        </p>
+      )}
       {summary && (
         <div className="notice" role="status">
           Restauré : {summary.cardGames} jeu(x) de cartes, {summary.mediaGames} jeu(x) de questions médias,{' '}
           {summary.boardGames} plateau(x), {summary.details} présentation(s), {summary.notices} notice(s).
           <br />
-          Fichiers de la médiathèque : {summary.assets} ajouté(s), {summary.assetsPresent} déjà présent(s).
-          Doublons ignorés : {summary.duplicates}. Remplacés : {summary.replaced}.
+          Fichiers de la médiathèque : {summary.assets} ajouté(s), {summary.assetsPresent} déjà présent(s). Doublons
+          ignorés : {summary.duplicates}. Remplacés : {summary.replaced}.
           {summary.skipped.length > 0 && (
             <>
               <br />
@@ -140,7 +144,11 @@ export function BackupPanel({ onChanged }: { onChanged: () => void }) {
           )}
         </div>
       )}
-      {error && <p className="error" role="alert">{error}</p>}
+      {error && (
+        <p className="error" role="alert">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

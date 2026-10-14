@@ -70,7 +70,13 @@ export interface PromoteurState {
 const TURN = 'turn';
 
 const noPayload = z.object({}).passthrough().optional();
-const buildSchema = z.object({ square: z.number().int().min(0).max(BOARD_SIZE - 1) });
+const buildSchema = z.object({
+  square: z
+    .number()
+    .int()
+    .min(0)
+    .max(BOARD_SIZE - 1),
+});
 
 const squareAt = (i: number): Square => BOARD[((i % BOARD_SIZE) + BOARD_SIZE) % BOARD_SIZE]!;
 const key = (i: number) => String(i);
@@ -479,9 +485,15 @@ export const promoteur: GameModule<PromoteurState, PromoteurSettings> = {
       repeat: false,
       dice: null,
       pending: null,
-      chanceOrder: shuffle(CHANCE.map((_, i) => i), ctx.random),
+      chanceOrder: shuffle(
+        CHANCE.map((_, i) => i),
+        ctx.random,
+      ),
       chanceIndex: 0,
-      chestOrder: shuffle(CHEST.map((_, i) => i), ctx.random),
+      chestOrder: shuffle(
+        CHEST.map((_, i) => i),
+        ctx.random,
+      ),
       chestIndex: 0,
       lastEvent: 'Le plateau est prêt',
       step: 0,

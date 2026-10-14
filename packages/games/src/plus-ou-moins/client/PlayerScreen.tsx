@@ -70,7 +70,9 @@ export function PlusOuMoinsPlayer({ publicState: pub, playerState: me, now, send
       </div>
       <p className={`verdict ${correct ? 'ok' : correct === false ? 'ko' : ''}`}>{verdict}</p>
       {gained > 0 && <p className="big-number">+{gained}</p>}
-      <p>Total : {me?.points ?? 0} pts · {me?.rank ? `${me.rank}ᵉ` : ''}</p>
+      <p>
+        Total : {me?.points ?? 0} pts · {me?.rank ? `${me.rank}ᵉ` : ''}
+      </p>
     </section>
   );
 }

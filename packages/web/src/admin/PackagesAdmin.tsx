@@ -135,9 +135,12 @@ export function PackagesAdmin({ onChanged }: { onChanged: () => void }) {
     setError(null);
     setNotice(null);
     try {
-      await api(`/api/admin/packages/${encodeURIComponent(record.id)}/versions/${encodeURIComponent(version)}/activate`, {
-        method: 'POST',
-      });
+      await api(
+        `/api/admin/packages/${encodeURIComponent(record.id)}/versions/${encodeURIComponent(version)}/activate`,
+        {
+          method: 'POST',
+        },
+      );
       setNotice(`Version ${version} jouée à la place de la version ${record.version}.`);
       await load();
       await loadVersions(record.id);
@@ -148,7 +151,11 @@ export function PackagesAdmin({ onChanged }: { onChanged: () => void }) {
   }
 
   async function removeVersion(record: PackageRecord, version: string) {
-    if (!window.confirm(`Supprimer la version ${version} conservée de « ${record.name} » ? Elle ne pourra plus être rejouée sans réimport.`)) {
+    if (
+      !window.confirm(
+        `Supprimer la version ${version} conservée de « ${record.name} » ? Elle ne pourra plus être rejouée sans réimport.`,
+      )
+    ) {
       return;
     }
     setError(null);
@@ -180,7 +187,11 @@ export function PackagesAdmin({ onChanged }: { onChanged: () => void }) {
   }
 
   async function remove(record: PackageRecord) {
-    if (!window.confirm(`Supprimer le paquet « ${record.name} » ? Ses fichiers et toutes ses versions seront effacés, et les salles qui le jouent seront fermées.`)) {
+    if (
+      !window.confirm(
+        `Supprimer le paquet « ${record.name} » ? Ses fichiers et toutes ses versions seront effacés, et les salles qui le jouent seront fermées.`,
+      )
+    ) {
       return;
     }
     setError(null);
@@ -198,10 +209,11 @@ export function PackagesAdmin({ onChanged }: { onChanged: () => void }) {
     <div className="stack">
       <p className="muted">
         Un paquet .phgame contient un jeu complet dans un seul fichier. Il est vérifié avant installation : une archive
-        altérée ou un fichier non déclaré est refusé. Une version plus récente remplace la version jouée ; une version plus
-        ancienne est conservée sans être jouée, et vous la choisissez dans « Versions ». Le nom, l’icône, la description
-        et les réglages par défaut d’un paquet se modifient dans les sections « Présentation » et « Réglages par défaut ».
-        Son contenu (cartes, cases, questions) ne change pas : créez une copie modifiable pour le transformer.
+        altérée ou un fichier non déclaré est refusé. Une version plus récente remplace la version jouée ; une version
+        plus ancienne est conservée sans être jouée, et vous la choisissez dans « Versions ». Le nom, l’icône, la
+        description et les réglages par défaut d’un paquet se modifient dans les sections « Présentation » et « Réglages
+        par défaut ». Son contenu (cartes, cases, questions) ne change pas : créez une copie modifiable pour le
+        transformer.
       </p>
       <div className="stack">
         <label className="btn primary">
@@ -221,7 +233,11 @@ export function PackagesAdmin({ onChanged }: { onChanged: () => void }) {
         {busy && <span className="muted">Vérification du paquet…</span>}
       </div>
 
-      {error && <p className="error" role="alert">{error}</p>}
+      {error && (
+        <p className="error" role="alert">
+          {error}
+        </p>
+      )}
       {issues.length > 0 && (
         <ul className="error small">
           {issues.map((issue) => (
@@ -229,14 +245,20 @@ export function PackagesAdmin({ onChanged }: { onChanged: () => void }) {
           ))}
         </ul>
       )}
-      {notice && <p className="muted" role="status">{notice}</p>}
+      {notice && (
+        <p className="muted" role="status">
+          {notice}
+        </p>
+      )}
       {records === null && <p className="muted">Chargement…</p>}
       {records?.length === 0 && <p className="muted">Aucun paquet installé pour l’instant.</p>}
 
       <ul className="ed-list">
         {records?.map((r) => (
           <li key={r.id} className="ed-list-item">
-            <div className="ed-list-preview" aria-hidden="true">📦</div>
+            <div className="ed-list-preview" aria-hidden="true">
+              📦
+            </div>
             <div className="ed-list-body">
               <strong>{r.name}</strong>
               <span className="muted small">
@@ -281,7 +303,12 @@ export function PackagesAdmin({ onChanged }: { onChanged: () => void }) {
                   {r.enabled ? 'Activé' : 'Désactivé'}
                 </button>
               )}
-              <button type="button" className="btn ghost small" aria-expanded={openId === r.id} onClick={() => toggleVersions(r)}>
+              <button
+                type="button"
+                className="btn ghost small"
+                aria-expanded={openId === r.id}
+                onClick={() => toggleVersions(r)}
+              >
                 Versions
               </button>
               {r.status === 'actif' && (

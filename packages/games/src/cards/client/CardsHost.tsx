@@ -113,9 +113,7 @@ export function CardsHost({ publicState, now }: HostViewProps) {
         </div>
       </div>
 
-      {totalSeconds > 0 && pub.phase === 'play' && (
-        <TimerBar remaining={remaining} total={totalSeconds * 1000} />
-      )}
+      {totalSeconds > 0 && pub.phase === 'play' && <TimerBar remaining={remaining} total={totalSeconds * 1000} />}
 
       <p className="cards-event" aria-live="polite">
         {pub.lastEvent}

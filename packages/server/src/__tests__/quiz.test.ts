@@ -21,11 +21,7 @@ const bob: PlayerRef = { id: 'b', name: 'Bob' };
 
 function startedGame(questionCount = 3, answerSeconds = 20, speedBonus = true) {
   const { ctx, clock, timers } = makeCtx(['a', 'b']);
-  const init = quizParty.initialize(
-    { questionCount, answerSeconds, speedBonus },
-    [alice, bob],
-    ctx,
-  ) as QuizState;
+  const init = quizParty.initialize({ questionCount, answerSeconds, speedBonus }, [alice, bob], ctx) as QuizState;
   const started = quizParty.start(init, ctx);
   if (!started.ok) throw new Error(started.error);
   return { state: started.state as QuizState, ctx, clock, timers };

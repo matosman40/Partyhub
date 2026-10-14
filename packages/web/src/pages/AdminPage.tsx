@@ -102,7 +102,11 @@ function Login({ onDone }: { onDone: () => void }) {
           Se connecter
         </button>
       </form>
-      {error && <p className="error" role="alert">{error}</p>}
+      {error && (
+        <p className="error" role="alert">
+          {error}
+        </p>
+      )}
       <p className="muted small">
         <Link to="/">Retour à l’accueil</Link>
       </p>
@@ -228,7 +232,9 @@ function SettingsForm({ settings, onSaved }: { settings: AdminSettings; onSaved:
       {field('graceSeconds', 'Délai de reconnexion, en secondes (10–600)', 10, 600)}
       {field('inactivityMinutes', 'Inactivité avant suppression, en minutes (5–1440)', 5, 1440)}
       {field('maxRoomAgeMinutes', 'Durée maximale d’une salle, en minutes (15–1440)', 15, 1440)}
-      <button type="submit" className="btn primary">Enregistrer</button>
+      <button type="submit" className="btn primary">
+        Enregistrer
+      </button>
       {message && (
         <p className={message.ok ? 'notice' : 'error'} role="status">
           {message.text}
@@ -288,8 +294,8 @@ export function AdminPage() {
   }
 
   async function closeRoom(code: string) {
-    await api(`/api/admin/rooms/${encodeURIComponent(code)}`, { method: 'DELETE' }).catch(
-      (err: Error) => setError(err.message),
+    await api(`/api/admin/rooms/${encodeURIComponent(code)}`, { method: 'DELETE' }).catch((err: Error) =>
+      setError(err.message),
     );
     void load();
   }
@@ -324,19 +330,37 @@ export function AdminPage() {
         <h1>Administration</h1>
         <div>
           <span className="muted small">Uptime : {Math.floor(overview.uptimeSec / 60)} min</span>{' '}
-          <button type="button" className="btn ghost" onClick={logout}>Déconnexion</button>
+          <button type="button" className="btn ghost" onClick={logout}>
+            Déconnexion
+          </button>
         </div>
       </header>
 
-      {error && <p className="notice" role="status">{error}</p>}
+      {error && (
+        <p className="notice" role="status">
+          {error}
+        </p>
+      )}
 
       <section className="card">
         <h2>Statistiques</h2>
         <div className="stats">
-          <div><span className="big-number">{overview.rooms.length}</span><span>Salles ouvertes</span></div>
-          <div><span className="big-number">{stat('rooms_created')}</span><span>Salles créées</span></div>
-          <div><span className="big-number">{stat('games_started')}</span><span>Parties lancées</span></div>
-          <div><span className="big-number">{stat('games_completed')}</span><span>Parties terminées</span></div>
+          <div>
+            <span className="big-number">{overview.rooms.length}</span>
+            <span>Salles ouvertes</span>
+          </div>
+          <div>
+            <span className="big-number">{stat('rooms_created')}</span>
+            <span>Salles créées</span>
+          </div>
+          <div>
+            <span className="big-number">{stat('games_started')}</span>
+            <span>Parties lancées</span>
+          </div>
+          <div>
+            <span className="big-number">{stat('games_completed')}</span>
+            <span>Parties terminées</span>
+          </div>
         </div>
       </section>
 
@@ -353,16 +377,28 @@ export function AdminPage() {
           <table className="table">
             <thead>
               <tr>
-                <th>Code</th><th>Jeu</th><th>Statut</th><th>Joueurs</th><th>Appareils</th><th>Spectateurs</th><th>Hôte</th><th>Dernière activité</th><th />
+                <th>Code</th>
+                <th>Jeu</th>
+                <th>Statut</th>
+                <th>Joueurs</th>
+                <th>Appareils</th>
+                <th>Spectateurs</th>
+                <th>Hôte</th>
+                <th>Dernière activité</th>
+                <th />
               </tr>
             </thead>
             <tbody>
               {overview.rooms.map((r) => (
                 <tr key={r.code}>
-                  <td><strong>{r.code}</strong></td>
+                  <td>
+                    <strong>{r.code}</strong>
+                  </td>
                   <td>{r.gameName}</td>
                   <td>{STATUS_LABEL[r.status] ?? r.status}</td>
-                  <td>{r.connected}/{r.players}</td>
+                  <td>
+                    {r.connected}/{r.players}
+                  </td>
                   <td>{deviceSummary(r.devices ?? {})}</td>
                   <td>{r.observers ?? 0}</td>
                   <td>{r.hostConnected ? 'connecté' : 'absent'}</td>
@@ -388,11 +424,7 @@ export function AdminPage() {
                 {g.icon} {g.name} <span className="muted small">v{g.version}</span>{' '}
                 {ORIGIN_LABEL[g.origin] && <span className="badge">{ORIGIN_LABEL[g.origin]}</span>}
               </span>
-              <button
-                type="button"
-                className={g.enabled ? 'btn primary' : 'btn ghost'}
-                onClick={() => toggleGame(g)}
-              >
+              <button type="button" className={g.enabled ? 'btn primary' : 'btn ghost'} onClick={() => toggleGame(g)}>
                 {g.enabled ? 'Activé' : 'Désactivé'}
               </button>
             </li>
@@ -431,8 +463,8 @@ export function AdminPage() {
         <h2>Présentation des jeux intégrés et importés</h2>
         <p className="muted">
           Nom, icône, description et durée estimée s’affichent partout dans l’application. Les règles et le nombre de
-          joueurs de chaque jeu ne se modifient pas ici ; seule la présentation change. Les jeux de cartes, de plateau et de questions médias se modifient
-          dans leur propre éditeur.
+          joueurs de chaque jeu ne se modifient pas ici ; seule la présentation change. Les jeux de cartes, de plateau
+          et de questions médias se modifient dans leur propre éditeur.
         </p>
         {overview.games
           .filter((g) => g.origin === 'builtin' || g.origin === 'package')
@@ -444,8 +476,8 @@ export function AdminPage() {
       <section className="card stack">
         <h2>Réglages par défaut des parties</h2>
         <p className="muted">
-          Durées, nombre de manches et autres options proposées à l’hôte quand il crée une salle. Une salle déjà
-          ouverte garde ses réglages. Pour revenir au réglage du jeu, utilisez « Revenir aux réglages d’origine ».
+          Durées, nombre de manches et autres options proposées à l’hôte quand il crée une salle. Une salle déjà ouverte
+          garde ses réglages. Pour revenir au réglage du jeu, utilisez « Revenir aux réglages d’origine ».
         </p>
         {overview.games
           .filter((g) => viewsFor(g.id)?.Settings)

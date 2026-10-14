@@ -1,10 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { io as ioClient, type Socket } from 'socket.io-client';
-import type {
-  ClientToServerEvents,
-  HostRoomView,
-  ServerToClientEvents,
-} from '@partyhub/shared';
+import type { ClientToServerEvents, HostRoomView, ServerToClientEvents } from '@partyhub/shared';
 import { createServer, type PartyServer } from '../server.js';
 import { createLogger } from '../logger.js';
 import type { AppConfig } from '../config.js';
@@ -157,11 +153,7 @@ describe('salles et connexions', () => {
     const room = await createRoom();
     const host = await connectHost(room.code, room.hostToken);
 
-    const allThree = nextView<HostRoomView>(
-      host,
-      'room:host',
-      (v) => v.lobby.players.length === 3,
-    );
+    const allThree = nextView<HostRoomView>(host, 'room:host', (v) => v.lobby.players.length === 3);
     const names = ['Alice', 'Bruno', 'Chloé'];
     const joins = await Promise.all(names.map((n) => joinPlayer(room.code, n)));
     for (const j of joins) expect(j.ack.ok).toBe(true);
@@ -251,9 +243,7 @@ describe('contrôle des commandes', () => {
     const host = await connectHost(room.code, room.hostToken);
 
     // Le listener est posé avant la connexion du joueur pour ne rien manquer.
-    const seen = nextView<HostRoomView>(host, 'room:host', (v) =>
-      v.lobby.players.some((p) => p.name === 'Farid'),
-    );
+    const seen = nextView<HostRoomView>(host, 'room:host', (v) => v.lobby.players.some((p) => p.name === 'Farid'));
     const { socket, ack } = await joinPlayer(room.code, 'Farid');
     expect(ack.ok).toBe(true);
     const view = await seen;
@@ -296,11 +286,7 @@ describe('partie Quiz Party', () => {
     expect(again.ok).toBe(true);
     expect(again.duplicate).toBe(true);
 
-    const revealed = nextView<HostRoomView>(
-      host,
-      'room:host',
-      (v) => (v.game?.public as any)?.phase === 'reveal',
-    );
+    const revealed = nextView<HostRoomView>(host, 'room:host', (v) => (v.game?.public as any)?.phase === 'reveal');
     const answer2 = await call(p2.socket, 'player:action', {
       commandId: 'cmd-p2-1',
       type: 'answer',
@@ -339,11 +325,7 @@ describe('partie Quiz Party', () => {
     await revealed2;
 
     // Après la révélation, l'hôte passe à la fin de la partie.
-    const finalView = nextView<HostRoomView>(
-      host,
-      'room:host',
-      (v) => (v.game?.public as any)?.phase === 'final',
-    );
+    const finalView = nextView<HostRoomView>(host, 'room:host', (v) => (v.game?.public as any)?.phase === 'final');
     expect((await call(host, 'host:next')).ok).toBe(true);
     const done = await finalView;
     expect(done.lobby.status).toBe('ended');

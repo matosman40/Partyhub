@@ -148,7 +148,10 @@ describe('déroulement d’une partie', () => {
   });
 
   it('gagne et perd des points', () => {
-    const cells = track([{ label: 'Trésor', kind: 'gain', value: 3 }, { label: 'Amende', kind: 'perte', value: 1 }]);
+    const cells = track([
+      { label: 'Trésor', kind: 'gain', value: 3 },
+      { label: 'Amende', kind: 'perte', value: 1 },
+    ]);
     const { game, state } = setup(cells);
     const gained = game.handleAction(state, alice, 'roll', undefined, makeCtx([die(1)]));
     if (!gained.ok) throw new Error(gained.error);
@@ -274,13 +277,16 @@ describe('déroulement d’une partie', () => {
       t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
       return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
     };
-    const cells = track([
-      { label: 'Bonus', kind: 'gain', value: 2 },
-      { label: 'Glissade', kind: 'recule', value: 3 },
-      { label: 'Pause', kind: 'passe', value: 0 },
-      { label: 'Fusée', kind: 'avance', value: 4 },
-      { label: 'Péage', kind: 'perte', value: 1 },
-    ], 30);
+    const cells = track(
+      [
+        { label: 'Bonus', kind: 'gain', value: 2 },
+        { label: 'Glissade', kind: 'recule', value: 3 },
+        { label: 'Pause', kind: 'passe', value: 0 },
+        { label: 'Fusée', kind: 'avance', value: 4 },
+        { label: 'Péage', kind: 'perte', value: 1 },
+      ],
+      30,
+    );
     const def = definition(cells, { dice: 2 });
     const game = createBoardGame(def, { id: 'board-test' });
     const ctx: GameContext = {

@@ -73,7 +73,10 @@ export const examplePath = (name: string): string => path.resolve(here, '../../.
 
 /** Définition JSON d'un exemple du dépôt. */
 export function readExampleDefinition(name: string): Record<string, unknown> {
-  return JSON.parse(fs.readFileSync(path.join(examplePath(name), 'game/definition.json'), 'utf8')) as Record<string, unknown>;
+  return JSON.parse(fs.readFileSync(path.join(examplePath(name), 'game/definition.json'), 'utf8')) as Record<
+    string,
+    unknown
+  >;
 }
 
 /** Archive .phgame construite à partir d'un dossier d'exemple, comme `phgame pack`. */

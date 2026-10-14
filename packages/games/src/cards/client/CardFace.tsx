@@ -52,10 +52,14 @@ export function CardFace({ def, entry, back, label }: CardFaceProps) {
       viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
       style={def.fontAssetId ? { fontFamily: `${assetFontFamily(def.fontAssetId)}, sans-serif` } : undefined}
       role="img"
-      aria-label={showBack ? 'Dos de carte' : label ?? entry?.label ?? 'Carte'}
+      aria-label={showBack ? 'Dos de carte' : (label ?? entry?.label ?? 'Carte')}
     >
       {showBack ? (
-        def.back ? <CustomBack back={def.back} uid={uid} /> : <Back theme={theme} uid={uid} />
+        def.back ? (
+          <CustomBack back={def.back} uid={uid} />
+        ) : (
+          <Back theme={theme} uid={uid} />
+        )
       ) : (
         <Front def={def} entry={entry!} theme={theme} uid={uid} />
       )}
@@ -157,7 +161,14 @@ interface FrontProps {
 }
 
 /** Glyphe vectoriel pour les effets : évite de dépendre des polices pour ⊘ ⇄ ✦. */
-function Glyph({ kind, palette, stroke, cx = 100, cy = 140, r = 46 }: {
+function Glyph({
+  kind,
+  palette,
+  stroke,
+  cx = 100,
+  cy = 140,
+  r = 46,
+}: {
   kind: string;
   palette: string[];
   stroke: string;
@@ -170,7 +181,15 @@ function Glyph({ kind, palette, stroke, cx = 100, cy = 140, r = 46 }: {
     return (
       <g>
         <circle cx={cx} cy={cy} r={r} fill="none" stroke={stroke} strokeWidth={r * 0.28} />
-        <line x1={cx - d} y1={cy + d} x2={cx + d} y2={cy - d} stroke={stroke} strokeWidth={r * 0.28} strokeLinecap="round" />
+        <line
+          x1={cx - d}
+          y1={cy + d}
+          x2={cx + d}
+          y2={cy - d}
+          stroke={stroke}
+          strokeWidth={r * 0.28}
+          strokeLinecap="round"
+        />
       </g>
     );
   }
@@ -178,9 +197,13 @@ function Glyph({ kind, palette, stroke, cx = 100, cy = 140, r = 46 }: {
     return (
       <g fill="none" stroke={stroke} strokeWidth={r * 0.24} strokeLinecap="round" strokeLinejoin="round">
         <path d={`M ${cx - r} ${cy - r * 0.35} A ${r} ${r} 0 0 1 ${cx + r * 0.9} ${cy - r * 0.55}`} />
-        <path d={`M ${cx + r * 0.62} ${cy - r * 0.98} L ${cx + r * 0.95} ${cy - r * 0.5} L ${cx + r * 0.32} ${cy - r * 0.42}`} />
+        <path
+          d={`M ${cx + r * 0.62} ${cy - r * 0.98} L ${cx + r * 0.95} ${cy - r * 0.5} L ${cx + r * 0.32} ${cy - r * 0.42}`}
+        />
         <path d={`M ${cx + r} ${cy + r * 0.35} A ${r} ${r} 0 0 1 ${cx - r * 0.9} ${cy + r * 0.55}`} />
-        <path d={`M ${cx - r * 0.62} ${cy + r * 0.98} L ${cx - r * 0.95} ${cy + r * 0.5} L ${cx - r * 0.32} ${cy + r * 0.42}`} />
+        <path
+          d={`M ${cx - r * 0.62} ${cy + r * 0.98} L ${cx - r * 0.95} ${cy + r * 0.5} L ${cx - r * 0.32} ${cy + r * 0.42}`}
+        />
       </g>
     );
   }
@@ -197,7 +220,14 @@ function Glyph({ kind, palette, stroke, cx = 100, cy = 140, r = 46 }: {
   );
 }
 
-function Corner({ symbol, size, x, y, fill, font }: {
+function Corner({
+  symbol,
+  size,
+  x,
+  y,
+  fill,
+  font,
+}: {
   symbol: string;
   size: number;
   x: number;
@@ -206,7 +236,15 @@ function Corner({ symbol, size, x, y, fill, font }: {
   font: string;
 }) {
   return (
-    <text x={x} y={y} fontSize={size} fill={fill} style={{ fontFamily: font }} textAnchor="middle" dominantBaseline="central">
+    <text
+      x={x}
+      y={y}
+      fontSize={size}
+      fill={fill}
+      style={{ fontFamily: font }}
+      textAnchor="middle"
+      dominantBaseline="central"
+    >
       {symbol}
     </text>
   );
@@ -237,22 +275,68 @@ function ArcadeFront({ uid, base, symbol, bigSize, cornerSize, label, glyph, pal
       </defs>
       <rect x="4" y="4" width="192" height="272" rx="24" fill={`url(#${bg})`} />
       <rect x="4" y="4" width="192" height="272" rx="24" fill={`url(#${shine})`} />
-      <rect x="13" y="13" width="174" height="254" rx="17" fill="none" stroke="#ffffff" strokeOpacity="0.85" strokeWidth="3" />
-      <ellipse cx="100" cy="140" rx="66" ry="100" transform="rotate(-18 100 140)" fill={`url(#${med})`} stroke={darken(base, 0.1)} strokeOpacity="0.25" strokeWidth="2" />
+      <rect
+        x="13"
+        y="13"
+        width="174"
+        height="254"
+        rx="17"
+        fill="none"
+        stroke="#ffffff"
+        strokeOpacity="0.85"
+        strokeWidth="3"
+      />
+      <ellipse
+        cx="100"
+        cy="140"
+        rx="66"
+        ry="100"
+        transform="rotate(-18 100 140)"
+        fill={`url(#${med})`}
+        stroke={darken(base, 0.1)}
+        strokeOpacity="0.25"
+        strokeWidth="2"
+      />
       {glyph ? (
         <Glyph kind={glyph} palette={palette} stroke={ink} />
       ) : (
-        <text x="100" y="140" fontSize={bigSize} fill={darken(base, 0.45)} fillOpacity="0.25" transform="translate(3 5)" textAnchor="middle" dominantBaseline="central" style={{ fontFamily: 'var(--display)' }}>
+        <text
+          x="100"
+          y="140"
+          fontSize={bigSize}
+          fill={darken(base, 0.45)}
+          fillOpacity="0.25"
+          transform="translate(3 5)"
+          textAnchor="middle"
+          dominantBaseline="central"
+          style={{ fontFamily: 'var(--display)' }}
+        >
           {symbol}
         </text>
       )}
       {!glyph && (
-        <text x="100" y="140" fontSize={bigSize} fill={ink} textAnchor="middle" dominantBaseline="central" style={{ fontFamily: 'var(--display)' }}>
+        <text
+          x="100"
+          y="140"
+          fontSize={bigSize}
+          fill={ink}
+          textAnchor="middle"
+          dominantBaseline="central"
+          style={{ fontFamily: 'var(--display)' }}
+        >
           {symbol}
         </text>
       )}
       {label && (
-        <text x="100" y="214" fontSize="15" fill={darken(base, 0.2)} textAnchor="middle" dominantBaseline="central" style={{ fontFamily: 'var(--ui)', fontWeight: 800 }}>
+        <text
+          x="100"
+          y="214"
+          fontSize="15"
+          fill={darken(base, 0.2)}
+          textAnchor="middle"
+          dominantBaseline="central"
+          style={{ fontFamily: 'var(--ui)', fontWeight: 800 }}
+        >
           {label}
         </text>
       )}
@@ -292,18 +376,41 @@ function CocoFront({ uid, base, symbol, bigSize, cornerSize, label, glyph, palet
       {glyph ? (
         <Glyph kind={glyph} palette={palette} stroke={ink} r={38} />
       ) : (
-        <text x="100" y="142" fontSize={bigSize * 0.82} fill={ink} textAnchor="middle" dominantBaseline="central" style={{ fontFamily: 'var(--display)' }}>
+        <text
+          x="100"
+          y="142"
+          fontSize={bigSize * 0.82}
+          fill={ink}
+          textAnchor="middle"
+          dominantBaseline="central"
+          style={{ fontFamily: 'var(--display)' }}
+        >
           {symbol}
         </text>
       )}
       {label && (
-        <text x="100" y="222" fontSize="14" fill="#ffffff" textAnchor="middle" dominantBaseline="central" style={{ fontFamily: 'var(--ui)', fontWeight: 800 }}>
+        <text
+          x="100"
+          y="222"
+          fontSize="14"
+          fill="#ffffff"
+          textAnchor="middle"
+          dominantBaseline="central"
+          style={{ fontFamily: 'var(--ui)', fontWeight: 800 }}
+        >
           {label}
         </text>
       )}
       <Corner symbol={symbol} size={cornerSize} x={34} y={46} fill={isWild ? '#8b5e3c' : base} font="var(--display)" />
       <g transform="rotate(180 100 140)">
-        <Corner symbol={symbol} size={cornerSize} x={34} y={46} fill={isWild ? '#8b5e3c' : base} font="var(--display)" />
+        <Corner
+          symbol={symbol}
+          size={cornerSize}
+          x={34}
+          y={46}
+          fill={isWild ? '#8b5e3c' : base}
+          font="var(--display)"
+        />
       </g>
     </>
   );
@@ -334,19 +441,55 @@ function NuitFront({ uid, base, symbol, bigSize, cornerSize, label, glyph, palet
       </defs>
       <rect x="4" y="4" width="192" height="272" rx="24" fill={`url(#${bg})`} />
       <rect x="4" y="4" width="192" height="272" rx="24" fill={`url(#${grid})`} />
-      <rect x="10" y="10" width="180" height="260" rx="20" fill="none" stroke={neon} strokeWidth="3" filter={`url(#${glow})`} />
-      <ellipse cx="100" cy="140" rx="66" ry="100" fill="#0c0830" stroke={neon} strokeWidth="3" filter={`url(#${glow})`} />
+      <rect
+        x="10"
+        y="10"
+        width="180"
+        height="260"
+        rx="20"
+        fill="none"
+        stroke={neon}
+        strokeWidth="3"
+        filter={`url(#${glow})`}
+      />
+      <ellipse
+        cx="100"
+        cy="140"
+        rx="66"
+        ry="100"
+        fill="#0c0830"
+        stroke={neon}
+        strokeWidth="3"
+        filter={`url(#${glow})`}
+      />
       {glyph ? (
         <g filter={`url(#${glow})`}>
           <Glyph kind={glyph} palette={palette} stroke={neon} />
         </g>
       ) : (
-        <text x="100" y="140" fontSize={bigSize} fill={neon} textAnchor="middle" dominantBaseline="central" filter={`url(#${glow})`} style={{ fontFamily: 'var(--display)' }}>
+        <text
+          x="100"
+          y="140"
+          fontSize={bigSize}
+          fill={neon}
+          textAnchor="middle"
+          dominantBaseline="central"
+          filter={`url(#${glow})`}
+          style={{ fontFamily: 'var(--display)' }}
+        >
           {symbol}
         </text>
       )}
       {label && (
-        <text x="100" y="216" fontSize="14" fill={neon} textAnchor="middle" dominantBaseline="central" style={{ fontFamily: 'var(--ui)', fontWeight: 800 }}>
+        <text
+          x="100"
+          y="216"
+          fontSize="14"
+          fill={neon}
+          textAnchor="middle"
+          dominantBaseline="central"
+          style={{ fontFamily: 'var(--ui)', fontWeight: 800 }}
+        >
           {label}
         </text>
       )}
@@ -370,18 +513,51 @@ function ClassiqueFront({ uid, base, symbol, bigSize, cornerSize, label, isWild 
         </linearGradient>
       </defs>
       <rect x="4" y="4" width="192" height="272" rx="14" fill={`url(#${paper})`} stroke="#d4cfc2" strokeWidth="2" />
-      <rect x="12" y="12" width="176" height="256" rx="9" fill="none" stroke={base} strokeOpacity="0.18" strokeWidth="1.5" />
-      <text x="100" y="142" fontSize={bigSize} fill={ink} textAnchor="middle" dominantBaseline="central" style={{ fontFamily: 'var(--display)' }}>
+      <rect
+        x="12"
+        y="12"
+        width="176"
+        height="256"
+        rx="9"
+        fill="none"
+        stroke={base}
+        strokeOpacity="0.18"
+        strokeWidth="1.5"
+      />
+      <text
+        x="100"
+        y="142"
+        fontSize={bigSize}
+        fill={ink}
+        textAnchor="middle"
+        dominantBaseline="central"
+        style={{ fontFamily: 'var(--display)' }}
+      >
         {symbol}
       </text>
       {label && (
-        <text x="100" y="222" fontSize="13" fill="#6b6a7a" textAnchor="middle" dominantBaseline="central" style={{ fontFamily: 'var(--ui)', fontWeight: 700 }}>
+        <text
+          x="100"
+          y="222"
+          fontSize="13"
+          fill="#6b6a7a"
+          textAnchor="middle"
+          dominantBaseline="central"
+          style={{ fontFamily: 'var(--ui)', fontWeight: 700 }}
+        >
           {label}
         </text>
       )}
       <Corner symbol={symbol} size={cornerSize} x={30} y={34} fill={isWild ? '#16162e' : base} font="var(--display)" />
       <g transform="rotate(180 100 140)">
-        <Corner symbol={symbol} size={cornerSize} x={30} y={34} fill={isWild ? '#16162e' : base} font="var(--display)" />
+        <Corner
+          symbol={symbol}
+          size={cornerSize}
+          x={30}
+          y={34}
+          fill={isWild ? '#16162e' : base}
+          font="var(--display)"
+        />
       </g>
     </>
   );
@@ -463,7 +639,15 @@ function Back({ theme, uid }: LayerProps) {
         <rect x="4" y="4" width="192" height="272" rx="14" fill={`url(#${pat})`} />
         <rect x="14" y="14" width="172" height="252" rx="10" fill="none" stroke="#e7c873" strokeWidth="3" />
         <ellipse cx="100" cy="140" rx="54" ry="84" fill="none" stroke="#e7c873" strokeWidth="2.5" />
-        <text x="100" y="142" fontSize="40" fill="#e7c873" textAnchor="middle" dominantBaseline="central" style={{ fontFamily: 'var(--display)' }}>
+        <text
+          x="100"
+          y="142"
+          fontSize="40"
+          fill="#e7c873"
+          textAnchor="middle"
+          dominantBaseline="central"
+          style={{ fontFamily: 'var(--display)' }}
+        >
           ♛
         </text>
       </>
@@ -523,9 +707,27 @@ function Back({ theme, uid }: LayerProps) {
       </defs>
       <rect x="4" y="4" width="192" height="272" rx="24" fill={`url(#${fill})`} />
       <rect x="4" y="4" width="192" height="272" rx="24" fill={`url(#${pat})`} />
-      <rect x="13" y="13" width="174" height="254" rx="17" fill="none" stroke="#ffffff" strokeOpacity="0.85" strokeWidth="3" />
+      <rect
+        x="13"
+        y="13"
+        width="174"
+        height="254"
+        rx="17"
+        fill="none"
+        stroke="#ffffff"
+        strokeOpacity="0.85"
+        strokeWidth="3"
+      />
       <ellipse cx="100" cy="140" rx="60" ry="92" transform="rotate(-18 100 140)" fill="#ffc83d" />
-      <text x="100" y="140" fontSize="46" fill="#2a1a00" textAnchor="middle" dominantBaseline="central" style={{ fontFamily: 'var(--display)' }}>
+      <text
+        x="100"
+        y="140"
+        fontSize="46"
+        fill="#2a1a00"
+        textAnchor="middle"
+        dominantBaseline="central"
+        style={{ fontFamily: 'var(--display)' }}
+      >
         PH
       </text>
     </>

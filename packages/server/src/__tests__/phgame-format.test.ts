@@ -149,9 +149,23 @@ describe('validation d’un paquet .phgame', () => {
   });
 
   it('classe les chemins : autorisés et refusés', () => {
-    const allowed = ['game/definition.json', 'assets/a.webp', 'data/liste.json', 'licenses/LICENCE.txt', 'manifest.json'];
+    const allowed = [
+      'game/definition.json',
+      'assets/a.webp',
+      'data/liste.json',
+      'licenses/LICENCE.txt',
+      'manifest.json',
+    ];
     for (const p of allowed) expect(pathProblem(p, DEFAULT_PACKAGE_LIMITS), p).toBeNull();
-    const refused = ['/etc/passwd', 'game/../x.json', 'C:/x.json', 'data/x.exe', 'autre/x.json', 'a\\b.json', 'racine.json'];
+    const refused = [
+      '/etc/passwd',
+      'game/../x.json',
+      'C:/x.json',
+      'data/x.exe',
+      'autre/x.json',
+      'a\\b.json',
+      'racine.json',
+    ];
     for (const p of refused) expect(pathProblem(p, DEFAULT_PACKAGE_LIMITS), p).not.toBeNull();
   });
 
