@@ -97,7 +97,12 @@ describe('moteur des jeux de cartes', () => {
     const { mod, state, ctx } = setup(SMALL, [P('a'), P('b')]);
     const top = state.discard[0]!;
     const topEntry = SMALL.cards.find((c) => c.id === top.entry)!;
-    const mine = state.hands['a']!.find((c) => canPlayCard(state, SMALL.cards.find((e) => e.id === c.entry)!));
+    const mine = state.hands['a']!.find((c) =>
+      canPlayCard(
+        state,
+        SMALL.cards.find((e) => e.id === c.entry)!,
+      ),
+    );
     if (!mine) {
       // Pas de carte jouable : la pioche puis le passage suffisent.
       const drew = mod.handleAction(state, P('a'), 'draw', undefined, ctx);

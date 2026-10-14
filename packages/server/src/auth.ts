@@ -55,8 +55,7 @@ export class AdminSessions {
     if (!token) return false;
     const hash = hashSessionToken(token);
     const row = this.db.prepare('SELECT expires_at FROM admin_sessions WHERE token_hash = ?').get(hash) as
-      | { expires_at: number }
-      | undefined;
+      { expires_at: number } | undefined;
     if (!row) return false;
     if (row.expires_at < this.now()) {
       this.db.prepare('DELETE FROM admin_sessions WHERE token_hash = ?').run(hash);

@@ -6,16 +6,7 @@
 export type Group = 'brun' | 'ciel' | 'violet' | 'orange' | 'vert';
 
 export type SquareKind =
-  | 'start'
-  | 'street'
-  | 'station'
-  | 'utility'
-  | 'tax'
-  | 'chance'
-  | 'chest'
-  | 'free'
-  | 'jail'
-  | 'goToJail';
+  'start' | 'street' | 'station' | 'utility' | 'tax' | 'chance' | 'chest' | 'free' | 'jail' | 'goToJail';
 
 export interface Square {
   index: number;
