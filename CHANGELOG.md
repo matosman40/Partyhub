@@ -2,6 +2,37 @@
 
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [0.5.0] - 2026-10-14
+
+### Ajouté
+- Format de paquet `.phgame`, version 1, pour les jeux déclaratifs : une archive ZIP avec le manifeste, la définition du jeu,
+  les ressources graphiques, les données et les licences. Règles et limites dans `docs/PHGAME.md`.
+- Import, activation, désactivation et suppression des paquets dans l'administration (section « Paquets de jeux »).
+- Commande `phgame` (`npm run phgame -- pack` et `check`) pour construire et vérifier un paquet.
+- Validation stricte avant installation : archive, chemins, types de fichiers, tailles, empreintes SHA-256, version du moteur,
+  licences, images et définition du jeu. Les anomalies du contenu sont toutes affichées.
+- Lancement de contrôle : deux parties jouées par des robots avant chaque installation.
+- Mise à jour par version plus récente. Retour arrière et version identique au contenu différent : refusés.
+- Paquet d'exemple `examples/exemple-cartes.phgame`, contrôlé et reconstruit à l'identique par l'intégration continue.
+- Ressources graphiques d'un paquet actif servies par `/api/packages/<identifiant>/assets/…`.
+- 42 tests nouveaux (archive ZIP, validation, service, migration), 302 au total.
+
+### Modifié
+- Base de données : version de schéma 2 (table `packages`). Migration automatique au premier démarrage, avec copie de sécurité.
+
+### Migration et compatibilité
+- Action automatique au premier démarrage : une copie de la base est créée dans `/data/migrations/`. Conservez-la jusqu'à
+  avoir vérifié le bon fonctionnement de la version.
+- Retour arrière vers 0.4.x : la version 0.4.x refuse une base de version 2. Restaurez la copie faite à la mise à jour,
+  puis redéployez l'image 0.4.x.
+- La sauvegarde JSON de l'administration ne contient pas les fichiers `.phgame` : sauvegardez aussi `DATA_DIR/games/`.
+
+### Problèmes connus
+- Les jeux JavaScript et l'émulation ne sont pas pris en charge. Aucun code de paquet n'est exécuté (voir `docs/PHGAME.md`).
+- Les vues de cartes n'affichent pas encore les images des paquets.
+- Pas de cache hors ligne ni de transfert entre téléphones : reportés à 0.7.0 (voir `docs/ROADMAP.md`).
+- Non testé sur de vrais téléphones ni sur une TV.
+
 ## [0.4.0] - 2026-10-14
 
 ### Ajouté

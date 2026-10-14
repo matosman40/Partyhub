@@ -1,0 +1,1 @@
+Ce jeu d'exemple est fourni sous licence MIT, comme le reste de PartyHub (voir LICENSE à la racine du dépôt).

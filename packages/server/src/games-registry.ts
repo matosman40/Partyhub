@@ -6,7 +6,7 @@ import type { GameModule } from '@partyhub/shared';
  * (base de données) : jeux de cartes et jeux de questions médias. Chaque source remplace
  * ses jeux en bloc à chaque modification via `setCustomGames`.
  */
-export type CustomSource = 'cards' | 'media';
+export type CustomSource = 'cards' | 'media' | 'packages';
 
 const customBySource = new Map<CustomSource, Map<string, GameModule>>();
 

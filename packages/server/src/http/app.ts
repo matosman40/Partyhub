@@ -13,6 +13,7 @@ import {
 import { resolveGame } from '../games-registry.js';
 import type { CardGameService } from '../cards/service.js';
 import type { AssetService } from '../assets/service.js';
+import type { PackageService } from '../packages/service.js';
 import type { MediaQuizService } from '../media/service.js';
 import { AdminSessions, LoginLimiter, readCookie, verifyPassword } from '../auth.js';
 import { catalog, gameInfo, originOf } from '../catalog.js';
@@ -37,6 +38,8 @@ export interface AppDeps {
   cardGames: CardGameService;
   assets: AssetService;
   mediaGames: MediaQuizService;
+  /** Paquets .phgame installés (jeux déclaratifs). */
+  packages: PackageService;
   /** Sauvegardes automatiques de la base. Absent = fonction non configurée. */
   dbBackups?: DbBackupScheduler;
 }
@@ -46,7 +49,7 @@ const ADMIN_COOKIE_PATH = '/api/admin';
 const ADMIN_SESSION_MS = 12 * 60 * 60 * 1000;
 
 export function createApp(deps: AppDeps): express.Express {
-  const { config, logger, store, manager, profiles, cardGames, assets, mediaGames, dbBackups } = deps;
+  const { config, logger, store, manager, profiles, cardGames, assets, mediaGames, dbBackups, packages } = deps;
   const app = express();
   const sessions = new AdminSessions();
   const limiter = new LoginLimiter();
@@ -129,6 +132,19 @@ export function createApp(deps: AppDeps): express.Express {
       status: room?.status ?? null,
       gameName: room?.module.manifest.name ?? null,
     });
+  });
+
+  // Ressources graphiques d'un paquet installé et activé. Lecture publique : rien de privé n'est exposé.
+  app.get(/^\/api\/packages\/([a-z0-9-]+)\/assets\/(.+)$/, (req, res) => {
+    const id = String(req.params[0] ?? '');
+    const asset = packages.asset(id, `assets/${String(req.params[1] ?? '')}`);
+    if (!asset) {
+      res.status(404).json({ error: 'Ressource introuvable.' });
+      return;
+    }
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.type(asset.contentType).send(Buffer.from(asset.bytes));
   });
 
   app.use('/api', api);
@@ -429,6 +445,54 @@ export function createApp(deps: AppDeps): express.Express {
     res.status(201).json({ ok: true, id: result.id });
   });
 
+  /** Paquets .phgame : liste, envoi du fichier brut, activation et suppression. */
+  admin.get('/packages', (_req, res) => {
+    res.json({ packages: packages.list() });
+  });
+
+  admin.post('/packages', express.raw({ type: () => true, limit: '16mb' }), (req, res) => {
+    const body = req.body as unknown;
+    if (!Buffer.isBuffer(body) || body.length === 0) {
+      res.status(400).json({ error: 'Aucun fichier reçu.' });
+      return;
+    }
+    const result = packages.install(body);
+    if (!result.ok) {
+      res.status(400).json({ error: result.error, issues: result.issues ?? [] });
+      return;
+    }
+    res.status(result.unchanged ? 200 : 201).json(result);
+  });
+
+  admin.post('/packages/:id/status', (req, res) => {
+    const id = req.params.id ?? '';
+    const enabled = (req.body as { enabled?: unknown } | undefined)?.enabled;
+    if (typeof enabled !== 'boolean') {
+      res.status(400).json({ error: 'Valeur attendue : enabled (vrai ou faux).' });
+      return;
+    }
+    const record = packages.get(id);
+    if (!record) {
+      res.status(404).json({ error: 'Paquet inconnu.' });
+      return;
+    }
+    packages.setEnabled(id, enabled);
+    // Désactiver un paquet ferme les salles qui le jouent : aucune partie ne reste bloquée.
+    const closed = enabled ? 0 : manager.closeWhere((r) => r.module.manifest.id === record.gameId, 'admin');
+    res.json({ ok: true, closedRooms: closed });
+  });
+
+  admin.delete('/packages/:id', (req, res) => {
+    const id = req.params.id ?? '';
+    const record = packages.get(id);
+    if (!record || !packages.remove(id)) {
+      res.status(404).json({ error: 'Paquet inconnu.' });
+      return;
+    }
+    const closed = manager.closeWhere((r) => r.module.manifest.id === record.gameId, 'admin');
+    res.json({ ok: true, closedRooms: closed });
+  });
+
   /** Jeux de questions médias (extraits de vidéos YouTube ou de la médiathèque). */
   admin.get('/media-games', (_req, res) => {
     res.json({ games: mediaGames.list() });
@@ -676,7 +740,8 @@ export function createApp(deps: AppDeps): express.Express {
     '/api/admin',
     (req, res, next) => {
       // L'envoi de médiathèque est lu en flux par sa route : pas de lecture JSON ici.
-      if (req.method === 'POST' && req.path === '/assets') return next();
+      // Les paquets sont lus bruts par leur propre route (archive ZIP, pas de JSON).
+      if (req.method === 'POST' && (req.path === '/assets' || req.path === '/packages')) return next();
       return express.json({ limit: req.path === '/backup/import' ? '20mb' : '512kb' })(req, res, next);
     },
     admin,

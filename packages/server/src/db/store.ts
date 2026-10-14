@@ -13,6 +13,18 @@ export interface AssetRow {
   created_at: string;
 }
 
+/** Paquet .phgame installé. `manifest` contient le manifeste JSON tel qu'il a été validé. */
+export interface PackageRow {
+  id: string;
+  version: string;
+  name: string;
+  sha256: string;
+  size: number;
+  manifest: string;
+  installed_at: string;
+  updated_at: string;
+}
+
 export const adminSettingsSchema = z.object({
   maxPlayers: z.number().int().min(2).max(20),
   graceSeconds: z.number().int().min(10).max(600),
@@ -121,6 +133,24 @@ export const MIGRATIONS: Migration[] = [
       if (!columns.includes('avatar_shared')) {
         db.exec('ALTER TABLE profiles ADD COLUMN avatar_shared INTEGER NOT NULL DEFAULT 0');
       }
+    },
+  },
+  {
+    version: 2,
+    description: 'Paquets .phgame installés (0.5.0)',
+    up(db) {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS packages (
+          id           TEXT PRIMARY KEY,
+          version      TEXT NOT NULL,
+          name         TEXT NOT NULL,
+          sha256       TEXT NOT NULL,
+          size         INTEGER NOT NULL,
+          manifest     TEXT NOT NULL,
+          installed_at TEXT NOT NULL,
+          updated_at   TEXT NOT NULL
+        );
+      `);
     },
   },
 ];
@@ -334,6 +364,36 @@ export class Store {
     this.db.prepare('DELETE FROM card_games WHERE id = ?').run(id);
     this.db.prepare('DELETE FROM game_flags WHERE game_id = ?').run(id);
     this.db.prepare('DELETE FROM notices WHERE game_id = ?').run(id);
+  }
+
+  listPackages(): PackageRow[] {
+    return this.db
+      .prepare('SELECT id, version, name, sha256, size, manifest, installed_at, updated_at FROM packages ORDER BY installed_at')
+      .all() as PackageRow[];
+  }
+
+  getPackage(id: string): PackageRow | undefined {
+    return this.db
+      .prepare('SELECT id, version, name, sha256, size, manifest, installed_at, updated_at FROM packages WHERE id = ?')
+      .get(id) as PackageRow | undefined;
+  }
+
+  /** Crée un paquet ou remplace sa version. La date d'installation d'origine est conservée. */
+  savePackage(row: PackageRow): void {
+    this.db
+      .prepare(
+        `INSERT INTO packages (id, version, name, sha256, size, manifest, installed_at, updated_at)
+         VALUES (@id, @version, @name, @sha256, @size, @manifest, @installed_at, @updated_at)
+         ON CONFLICT(id) DO UPDATE SET version = excluded.version, name = excluded.name, sha256 = excluded.sha256,
+           size = excluded.size, manifest = excluded.manifest, updated_at = excluded.updated_at`,
+      )
+      .run(row);
+  }
+
+  deletePackage(id: string, gameId: string): void {
+    this.db.prepare('DELETE FROM packages WHERE id = ?').run(id);
+    this.db.prepare('DELETE FROM game_flags WHERE game_id = ?').run(gameId);
+    this.db.prepare('DELETE FROM notices WHERE game_id = ?').run(gameId);
   }
 
   listMediaGames(): { id: string; definition: string; updatedAt: string }[] {

@@ -4,6 +4,8 @@ import { cardViews, clientViews, mediaQuizViews } from '@partyhub/games/client';
 const CUSTOM_GAME_PREFIX = 'custom-';
 /** Préfixe des jeux de questions médias créés dans l'administration (voir le serveur). */
 const MEDIA_GAME_PREFIX = 'media-';
+/** Préfixe des jeux installés à partir d'un paquet .phgame (jeux déclaratifs de cartes). */
+const PACKAGE_GAME_PREFIX = 'pkg-';
 
 /**
  * Vues navigateur par jeu : le routage des pages reste générique. Les jeux de
@@ -12,7 +14,7 @@ const MEDIA_GAME_PREFIX = 'media-';
  */
 export function viewsFor(gameId: string) {
   if (clientViews[gameId]) return clientViews[gameId];
-  if (gameId.startsWith(CUSTOM_GAME_PREFIX)) return cardViews;
+  if (gameId.startsWith(CUSTOM_GAME_PREFIX) || gameId.startsWith(PACKAGE_GAME_PREFIX)) return cardViews;
   if (gameId.startsWith(MEDIA_GAME_PREFIX)) return mediaQuizViews;
   return null;
 }

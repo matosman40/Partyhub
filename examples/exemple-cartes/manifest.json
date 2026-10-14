@@ -1,0 +1,15 @@
+{
+  "format": "phgame",
+  "formatVersion": 1,
+  "id": "exemple-cartes",
+  "name": "Exemple de jeu de cartes",
+  "version": "1.0.0",
+  "description": "Jeu de démonstration fourni avec PartyHub : deux familles, des cartes spéciales.",
+  "author": "PartyHub contributors",
+  "kind": "declarative",
+  "engine": { "minVersion": "0.5.0", "api": 1 },
+  "requires": { "modules": ["cards"] },
+  "entry": "game/definition.json",
+  "licenses": [{ "path": "licenses/LICENCE.txt", "covers": [] }],
+  "files": []
+}

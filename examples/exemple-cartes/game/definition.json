@@ -1,0 +1,22 @@
+{
+  "name": "Exemple de jeu de cartes",
+  "description": "Jeu de démonstration : deux familles, des cartes spéciales.",
+  "icon": "🧩",
+  "theme": "arcade",
+  "families": [
+    { "id": "r", "label": "Rouge", "color": "#ff0000" },
+    { "id": "b", "label": "Bleu", "color": "#0000ff" }
+  ],
+  "cards": [
+    { "id": "r1", "label": "Rouge 1", "symbol": "1", "family": "r", "effect": "none", "count": 6, "points": 1 },
+    { "id": "b1", "label": "Bleu 1", "symbol": "1", "family": "b", "effect": "none", "count": 6, "points": 1 },
+    { "id": "rs", "label": "Passe", "symbol": "⊘", "family": "r", "effect": "skip", "count": 4, "points": 20 },
+    { "id": "wk", "label": "Joker", "symbol": "★", "family": "wild", "effect": "wild", "count": 4, "points": 50 }
+  ],
+  "rules": { "minPlayers": 2, "maxPlayers": 3, "handSize": 4, "matchOn": "family", "targetScore": 50, "turnSeconds": 0 },
+  "notice": {
+    "goal": "Être le premier à atteindre le score cible.",
+    "steps": ["Jouer une carte de la même famille ou un joker.", "Passer son tour si rien ne convient."],
+    "tips": ["Garder les cartes à fort score pour la fin."]
+  }
+}

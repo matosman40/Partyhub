@@ -8,6 +8,7 @@ import { resolveGame } from './games-registry.js';
 import { CardGameService } from './cards/service.js';
 import { AssetService } from './assets/service.js';
 import { MediaQuizService } from './media/service.js';
+import { PackageService } from './packages/service.js';
 import { hashPassword } from './auth.js';
 import { effectiveNotice } from './catalog.js';
 import { ProfileService } from './profiles/service.js';
@@ -79,6 +80,7 @@ export async function createServer(opts: ServerOptions): Promise<PartyServer> {
   const cardGames = new CardGameService(store);
   const assets = new AssetService(store, config.dataDir);
   const mediaGames = new MediaQuizService(store, assets);
+  const packages = new PackageService(store, config.dataDir);
   const hub = new RealtimeHub(compileTrustProxy(config.trustProxy ?? 'loopback'), opts.joinThrottle);
   const manager = new RoomManager(
     {
@@ -116,7 +118,19 @@ export async function createServer(opts: ServerOptions): Promise<PartyServer> {
   );
 
   const dbBackups = config.backup ? new DbBackupScheduler(store, config.backup, logger) : undefined;
-  const app = createApp({ config, logger, store, manager, hub, profiles, cardGames, assets, mediaGames, dbBackups });
+  const app = createApp({
+    config,
+    logger,
+    store,
+    manager,
+    hub,
+    profiles,
+    cardGames,
+    assets,
+    mediaGames,
+    packages,
+    dbBackups,
+  });
   dbBackups?.start();
   const httpServer = createHttpServer(app);
 

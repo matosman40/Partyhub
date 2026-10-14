@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import type { CatalogGame } from '@partyhub/shared';
 import { api } from '../api.js';
 import { CardGamesAdmin } from '../admin/CardGamesAdmin.js';
+import { PackagesAdmin } from '../admin/PackagesAdmin.js';
 import { AssetLibrary } from '../admin/AssetLibrary.js';
 import { MediaGamesAdmin } from '../admin/MediaGamesAdmin.js';
 import { GameDetailsEditor } from '../admin/GameDetailsEditor.js';
@@ -383,6 +384,11 @@ export function AdminPage() {
       <section className="card stack">
         <h2>Jeux de cartes</h2>
         <CardGamesAdmin onChanged={load} />
+      </section>
+
+      <section className="card stack">
+        <h2>Paquets de jeux (.phgame)</h2>
+        <PackagesAdmin onChanged={load} />
       </section>
 
       <section className="card stack">

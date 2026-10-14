@@ -145,6 +145,13 @@ la bonne réponse n'apparaît qu'à la révélation, et les réponses privées r
 Réglages modifiables depuis l'administration (sans redémarrage) : joueurs maximum par salle, délai de
 reconnexion, délai d'inactivité, durée maximale d'une salle.
 
+## Ajouter un jeu (paquets `.phgame`)
+
+Un jeu peut être livré dans un seul fichier `.phgame` et importé dans l'administration, section « Paquets de jeux ».
+Le fichier est vérifié avant installation : version du moteur, empreintes, licences, images et définition du jeu.
+Le format, les règles et les limites sont décrits dans [docs/PHGAME.md](docs/PHGAME.md). Un exemple est fourni :
+`examples/exemple-cartes.phgame`.
+
 ## Sécurité
 
 - Les réponses et les scores sont validés côté serveur ; les commandes sont limitées en fréquence par socket.

@@ -22,10 +22,11 @@ Légende : **Fait** = dans le dépôt. **À faire** = pas commencé. **En cours*
 | 0.2.0 | Installation sans compilation | Image GHCR, compose sans `build:`, icône CasaOS, CI, publication sur tag | **Prêt sur `main`** (tag à créer, puis paquet GHCR rendu public) |
 | 0.3.0 | Données et migrations | Migrations `user_version`, sauvegarde avant migration, test de montée de version | **Prêt sur `main`** (tag à créer) |
 | 0.4.0 | Jeux de cartes | Poker, Rami 51 et Tarot intégrés, tests serveur et navigateur | **Prêt sur `main`** (tag à créer) |
-| 0.5.0 | Jeux autonomes `.phgame` | Format de paquet, import dans l'administration, exécution isolée, cache | En cours (hors dépôt) |
+| 0.5.0 | Paquets `.phgame` | Format 1 (jeux déclaratifs), import et contrôle dans l'administration, CLI, paquet d'exemple | **Prêt sur `main`** (tag à créer). Cache hors ligne et transfert reportés à 0.7.0 |
 | 0.6.0 | Éditeurs et médiathèque | Éditeur de cartes et de plateau, médiathèque partagée | À faire |
-| 0.7.0 | Reprise d'écran et contexte hors ligne | Reprise de l'écran principal (WebRTC), application installable (PWA) | À faire |
+| 0.7.0 | Reprise d'écran et contexte hors ligne | Reprise de l'écran principal (WebRTC), application installable (PWA), cache des paquets, transfert entre téléphones | À faire |
 | 0.8.0 | Robustesse des parties | Salles et parties survivant à un redémarrage, sessions d'administration persistantes | À étudier |
+| 0.9.0 | Jeux JavaScript | Code de paquet exécuté dans un bac à sable WebAssembly, limites de temps et de mémoire | À faire (revue de sécurité requise) |
 | 1.0.0 | Première version stable | Critères ci-dessous | À faire |
 
 ## Détail par version
@@ -63,17 +64,20 @@ Légende : **Fait** = dans le dépôt. **À faire** = pas commencé. **En cours*
 - Critère atteint : chaque jeu se termine sans blocage (tests serveur) et s'affiche sans erreur (test navigateur).
 - Reste à faire : essai sur de vrais téléphones et une TV.
 
-### 0.5.0 : format `.phgame`
-Objectif : un jeu livré dans un seul fichier (code, graphismes, sons, données, licences), importable depuis l'administration,
-installable hors ligne.
-- Format : archive ZIP avec `manifest.json`, `game/`, `assets/`, `data/`, `licenses/`, et empreintes SHA-256 de chaque fichier.
-- Validation avant import : chemins, types de fichiers, taille, version du moteur, empreintes. Tout fichier malformé est refusé.
-- Exécution : les jeux déclaratifs (données seules) sont rendus par le moteur ; les jeux JavaScript tournent dans un
-  bac à sable WebAssembly séparé du serveur, sans accès au système. Aucun code importé ne s'exécute dans Node.js.
-- Stockage : `/data/games/<id>/<version>/`, mise en cache locale, lancement sans réseau.
-- Transfert entre téléphones avec vérification d'intégrité avant installation.
-- Documentation : différence entre jeux déclaratifs, jeux JavaScript et émulation (non prise en charge en 0.5.0).
-- Critère : un paquet d'exemple est importé, lancé, mis en cache, et joué réseau coupé.
+### 0.5.0 : paquets `.phgame`
+Objectif : un jeu livré dans un seul fichier, importable depuis l'administration et vérifié avant installation.
+Détail du format et des règles : `docs/PHGAME.md`.
+- **Fait** : format 1 pour les jeux déclaratifs (définition de jeu de cartes, ressources graphiques, données, licences).
+- **Fait** : validation stricte (archive ZIP restreinte, chemins, types de fichiers, tailles, empreintes SHA-256, version du moteur, licences, images, définition).
+- **Fait** : lancement de contrôle avant chaque installation (deux parties jouées par des robots).
+- **Fait** : import, activation, désactivation et suppression dans l'administration ; mise à jour avec refus du retour arrière.
+- **Fait** : commande `phgame pack` et `phgame check` ; paquet d'exemple reconstruit à l'identique en intégration continue.
+- **Fait** : migration de schéma 2 (table `packages`), testée depuis une base de version 1.
+- **Reporté à 0.7.0** : cache hors ligne des paquets installés et lancement réseau coupé ; transfert entre téléphones avec
+  vérification d'intégrité.
+- **Reporté à 0.9.0** : exécution du code JavaScript des paquets dans un bac à sable. Aucun code de paquet n'est exécuté aujourd'hui.
+- Émulation rétro : hors périmètre, non prise en charge.
+- Critère partiel : un paquet d'exemple est importé, vérifié, lancé et joué. Le critère « joué réseau coupé » passe à 0.7.0.
 
 ### 0.6.0 : éditeurs et médiathèque
 - Éditeur de cartes (familles, valeurs, dos, règles de base) et éditeur de plateau.
@@ -83,6 +87,7 @@ installable hors ligne.
 ### 0.7.0 : reprise d'écran et contexte hors ligne
 - Reprise de l'écran principal par un autre appareil, via WebRTC (contrôle de la partie en cours).
 - Application installable (PWA) : cache versionné de l'interface, paquets `.phgame` disponibles hors ligne.
+- Transfert d'un paquet `.phgame` entre téléphones, avec vérification d'intégrité avant installation (reporté depuis 0.5.0).
 - Contraintes : HTTPS requis hors `localhost`, documenté avec les options de reverse proxy.
 - Critère : la reprise d'écran fonctionne entre deux appareils réels ; le jeu démarre réseau coupé.
 
@@ -90,6 +95,14 @@ installable hors ligne.
 - Persister les salles et les parties (aujourd'hui en mémoire) afin qu'un redémarrage ne les interrompe pas.
 - Sessions d'administration persistantes.
 - Option : à décider après étude (complexité et intérêt pour un usage familial).
+
+### 0.9.0 : jeux JavaScript en bac à sable
+- Exécution du code d'un paquet `kind: javascript` dans un bac à sable WebAssembly (QuickJS), séparé du serveur.
+- Aucun accès au système de fichiers, au réseau ni aux variables d'environnement du serveur.
+- Limites de temps de calcul et de mémoire par partie ; API minimale (état, actions, vues).
+- Revue de sécurité indépendante avant publication : c'est un prérequis, pas une étape facultative.
+- Critère : un jeu JavaScript d'exemple est installé et joué ; des tests montrent qu'il ne peut ni lire un fichier du serveur ni appeler le réseau.
+- Reste à décider : le sous-ensemble d'API exposé aux paquets.
 
 ### 1.0.0 : première version stable
 Critères, tous requis :
