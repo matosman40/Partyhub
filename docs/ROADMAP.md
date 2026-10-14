@@ -26,6 +26,7 @@ Légende : **Fait** = dans le dépôt. **À faire** = pas commencé. **En cours*
 | 0.6.0 | Éditeurs et médiathèque (partie 1) | Dos de carte personnalisé, limites de la médiathèque configurables | **Prêt sur `main`** (tag à créer) |
 | 0.6.1 | Polices de la médiathèque | Polices WOFF2, WOFF, TTF, OTF pour les cartes ; usages vérifiés avant suppression | **Prêt sur `main`** (tag à créer) |
 | 0.6.2 | Éditeur de plateau | Format de plateau déclaré en données, éditeur | **Prêt sur `main`** (tag à créer). Paquets `.phgame` de plateau reportés |
+| 0.6.3 | Sources GitHub | Installation et mise à jour des paquets depuis les releases d'un dépôt (publiques ou privées), manuelles ou quotidiennes | **Prêt sur la branche** `version-0.6.3` (pull request à ouvrir) |
 | 0.7.0 | Reprise d'écran et contexte hors ligne | Reprise de l'écran principal (WebRTC), application installable (PWA), cache des paquets, transfert entre téléphones | À faire |
 | 0.8.0 | Robustesse des parties | Salles et parties survivant à un redémarrage, sessions d'administration persistantes | À étudier |
 | 0.9.0 | Jeux JavaScript | Code de paquet exécuté dans un bac à sable WebAssembly, limites de temps et de mémoire | À faire (revue de sécurité requise) |

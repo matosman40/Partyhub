@@ -144,6 +144,7 @@ la bonne réponse n'apparaît qu'à la révélation, et les réponses privées r
 | `ASSET_MAX_VIDEO_MB` | `80` | Taille maximale d'une vidéo de la médiathèque (1 à 2048) |
 | `ASSET_MAX_IMAGE_MB` | `5` | Taille maximale d'une image de la médiathèque (1 à 64) |
 | `ASSET_MAX_FONT_MB` | `2` | Taille maximale d'une police de la médiathèque (1 à 16) |
+| `GITHUB_TOKEN` | vide | Jeton GitHub (lecture des releases). Requis pour les dépôts privés ; évite aussi la limite d'appels anonymes. Jamais affiché ni sauvegardé |
 | `PORT`, `HOST` | `8282`, `0.0.0.0` | Écoute du serveur dans le conteneur |
 
 Réglages modifiables depuis l'administration (sans redémarrage) : joueurs maximum par salle, délai de
@@ -158,6 +159,10 @@ Le format, les règles et les limites sont décrits dans [docs/PHGAME.md](docs/P
 
 Les jeux de plateau (parcours avec dés et cases spéciales) se créent dans l'administration, section « Jeux de plateau ».
 Ils ne sont pas encore livrables en paquet `.phgame`.
+
+**Sources GitHub** : un jeu peut aussi être installé et mis à jour depuis la dernière release d'un dépôt GitHub
+(section « Sources GitHub », sous les paquets). Mise à jour manuelle, ou automatique une fois par jour. Une seule version
+par jeu est installée. Le modèle de publication pour les dépôts de jeux est dans [docs/PUBLIER-UN-JEU.md](docs/PUBLIER-UN-JEU.md).
 
 ## Sécurité
 

@@ -2,6 +2,32 @@
 
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [0.6.3] - 2026-10-14
+
+### Ajouté
+- Sources GitHub pour les paquets `.phgame` : un dépôt `auteur/nom` dont la dernière release contient le paquet et son
+  fichier `.sha256`. Installation et mise à jour depuis l'administration, à la demande ou une fois par jour.
+- Dépôts privés avec la variable `GITHUB_TOKEN`. Le jeton n'est jamais affiché, journalisé ni sauvegardé.
+- Vérifications strictes : empreinte SHA-256 de la release, version du tag égale à celle du manifeste, paquet d'un autre
+  dépôt refusé, redirection hors GitHub refusée, taille limitée.
+- Modèle de publication pour les dépôts de jeux : [docs/PUBLIER-UN-JEU.md](docs/PUBLIER-UN-JEU.md).
+- Tests : 18 nouveaux (sources, empreintes, jeton, mise à jour automatique) avec un faux client GitHub.
+
+### Modifié
+- Base de données : version de schéma 4 (table `package_sources`). Migration automatique au premier démarrage, avec copie de sécurité.
+
+### Migration et compatibilité
+- Action automatique au premier démarrage : une copie de la base est créée dans `/data/migrations/`.
+- Retour arrière vers 0.6.2 : la version 0.6.2 refuse une base de version 4. Restaurez la copie faite à la mise à jour,
+  puis redéployez l'image 0.6.2.
+- Aucune source n'est ajoutée automatiquement : rien ne change tant qu'une source n'est pas créée.
+
+### Problèmes connus
+- Les sources ne sont pas incluses dans la sauvegarde JSON de l'administration ; elles sont dans la copie de la base.
+- Un seul fichier `.phgame` par release, et une seule version active par jeu.
+- Le modèle de publication pour les dépôts de jeux n'a pas encore été exécuté sur GitHub.
+- Non testé sur de vrais téléphones ni sur une TV.
+
 ## [0.6.2] - 2026-10-14
 
 ### Ajouté

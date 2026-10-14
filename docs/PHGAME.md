@@ -116,6 +116,26 @@ Les images d'un paquet actif sont servies par `GET /api/packages/<identifiant>/a
 l'extension et l'en-tête `X-Content-Type-Options: nosniff`. Une ressource d'un paquet désactivé ou en erreur renvoie 404.
 Les vues de cartes n'affichent pas encore ces images : elles utilisent l'icône et les couleurs de la définition.
 
+## Sources GitHub (0.6.3)
+
+Un paquet peut être installé et mis à jour depuis la dernière release d'un dépôt GitHub, au lieu d'être importé à la main.
+Dans l'administration, section **Sources GitHub** : indiquer `auteur/nom`.
+
+- Le serveur lit la **dernière release publiée** (les brouillons et préversions sont ignorés).
+- La release doit contenir **un seul** fichier `.phgame` et son fichier `.sha256` (nom : `<fichier>.phgame.sha256`).
+  Le fichier `.sha256` contient l'empreinte SHA-256 du paquet, au format `sha256sum`.
+- Le numéro de version du tag (`v1.2.0` ou `1.2.0`) doit être égal à la version du manifeste.
+- Le fichier est refusé si son empreinte ne correspond pas, si la version ne correspond pas au tag, ou si un paquet de même
+  identifiant est déjà installé sans être lié à ce dépôt.
+- **Une seule version par jeu** est installée : la mise à jour remplace l'ancienne, avec les mêmes règles que l'import
+  manuel (pas de retour arrière, contenu identique reconnu).
+- Mise à jour **à la demande** (« Vérifier et mettre à jour ») ou **automatique** une fois par jour pour les sources qui l'ont activée.
+- Un dépôt privé demande la variable `GITHUB_TOKEN` du serveur. Le jeton n'est jamais affiché, ni journalisé, ni sauvegardé.
+- Supprimer une source laisse le paquet installé, mais il ne se met plus à jour.
+- Le serveur doit pouvoir joindre GitHub. Seuls les hôtes GitHub sont autorisés, y compris lors des redirections.
+
+Le modèle de publication pour un dépôt de jeu est décrit dans [PUBLIER-UN-JEU.md](PUBLIER-UN-JEU.md).
+
 ## Ce qui n'est pas encore inclus
 
 - Cache hors ligne et lancement sans réseau des paquets installés : prévus avec l'application installable (version 0.7.0).

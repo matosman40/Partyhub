@@ -9,6 +9,8 @@ export interface AppConfig {
   dbFile: string;
   staticDir: string;
   adminPassword?: string;
+  /** Jeton GitHub pour les sources privées et les limites d'appels (GITHUB_TOKEN). Jamais affiché ni sauvegardé. */
+  githubToken?: string;
   logLevel: string;
   secureCookies: boolean;
   /** Proxys de confiance (TRUST_PROXY, syntaxe d'Express). Absent = « loopback ». */
@@ -63,6 +65,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     dbFile: path.join(dataDir, 'partyhub.db'),
     staticDir: env.STATIC_DIR?.trim() || path.resolve(here, '../../web/dist'),
     adminPassword,
+    githubToken: env.GITHUB_TOKEN?.trim() || undefined,
     logLevel: env.LOG_LEVEL?.trim() || 'info',
     secureCookies: env.COOKIE_SECURE === 'true',
     trustProxy,

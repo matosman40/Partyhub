@@ -12,6 +12,7 @@ import {
 } from '@partyhub/shared';
 import { resolveGame } from '../games-registry.js';
 import type { BoardGameService } from '../boards/service.js';
+import type { PackageSourceService } from '../sources/service.js';
 import type { CardGameService } from '../cards/service.js';
 import type { AssetService } from '../assets/service.js';
 import type { PackageService } from '../packages/service.js';
@@ -39,6 +40,8 @@ export interface AppDeps {
   cardGames: CardGameService;
   /** Jeux de plateau créés dans l'administration. */
   boardGames: BoardGameService;
+  /** Sources GitHub des paquets .phgame. */
+  packageSources: PackageSourceService;
   assets: AssetService;
   mediaGames: MediaQuizService;
   /** Paquets .phgame installés (jeux déclaratifs). */
@@ -52,7 +55,7 @@ const ADMIN_COOKIE_PATH = '/api/admin';
 const ADMIN_SESSION_MS = 12 * 60 * 60 * 1000;
 
 export function createApp(deps: AppDeps): express.Express {
-  const { config, logger, store, manager, profiles, cardGames, boardGames, assets, mediaGames, dbBackups, packages } = deps;
+  const { config, logger, store, manager, profiles, cardGames, boardGames, packageSources, assets, mediaGames, dbBackups, packages } = deps;
   const app = express();
   const sessions = new AdminSessions();
   const limiter = new LoginLimiter();
@@ -490,6 +493,53 @@ export function createApp(deps: AppDeps): express.Express {
       return;
     }
     res.status(201).json({ ok: true, id: result.id });
+  });
+
+  /** Sources GitHub : ajout (avec première vérification), réglages, vérification et suppression. */
+  admin.get('/package-sources', (_req, res) => {
+    res.json({ sources: packageSources.list(), tokenConfigured: packageSources.tokenConfigured });
+  });
+
+  admin.post('/package-sources', async (req, res) => {
+    const added = packageSources.add(req.body);
+    if (!added.ok) {
+      res.status(400).json({ error: added.error });
+      return;
+    }
+    const outcome = await packageSources.check(added.id);
+    res.status(201).json({ ok: true, id: added.id, outcome });
+  });
+
+  admin.put('/package-sources/:id', (req, res) => {
+    const result = packageSources.update(req.params.id ?? '', req.body);
+    if (!result.ok) {
+      res.status(result.notFound ? 404 : 400).json({ error: result.error });
+      return;
+    }
+    res.json({ ok: true });
+  });
+
+  admin.post('/package-sources/check-all', async (_req, res) => {
+    const results = await packageSources.checkAll(false);
+    res.json({ results });
+  });
+
+  admin.post('/package-sources/:id/check', async (req, res) => {
+    const id = req.params.id ?? '';
+    const outcome = await packageSources.check(id);
+    if (!outcome.ok && outcome.error === 'Source inconnue.') {
+      res.status(404).json({ error: outcome.error });
+      return;
+    }
+    res.json({ outcome });
+  });
+
+  admin.delete('/package-sources/:id', (req, res) => {
+    if (!packageSources.remove(req.params.id ?? '')) {
+      res.status(404).json({ error: 'Source inconnue.' });
+      return;
+    }
+    res.json({ ok: true });
   });
 
   /** Paquets .phgame : liste, envoi du fichier brut, activation et suppression. */

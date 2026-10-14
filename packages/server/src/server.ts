@@ -7,6 +7,7 @@ import type { ClientToServerEvents, ServerToClientEvents } from '@partyhub/share
 import { resolveGame } from './games-registry.js';
 import { CardGameService } from './cards/service.js';
 import { BoardGameService } from './boards/service.js';
+import { PackageSourceService } from './sources/service.js';
 import { AssetService } from './assets/service.js';
 import { MediaQuizService } from './media/service.js';
 import { PackageService } from './packages/service.js';
@@ -83,6 +84,7 @@ export async function createServer(opts: ServerOptions): Promise<PartyServer> {
   const assets = new AssetService(store, config.dataDir, config.assetLimits);
   const mediaGames = new MediaQuizService(store, assets);
   const packages = new PackageService(store, config.dataDir);
+  const packageSources = new PackageSourceService(store, packages, { token: config.githubToken });
   const hub = new RealtimeHub(compileTrustProxy(config.trustProxy ?? 'loopback'), opts.joinThrottle);
   const manager = new RoomManager(
     {
@@ -129,6 +131,7 @@ export async function createServer(opts: ServerOptions): Promise<PartyServer> {
     profiles,
     cardGames,
     boardGames,
+    packageSources,
     assets,
     mediaGames,
     packages,
@@ -144,6 +147,9 @@ export async function createServer(opts: ServerOptions): Promise<PartyServer> {
     pingTimeout: 20_000,
   });
   hub.attach(io, manager, logger, profiles);
+
+  // Sources à mise à jour automatique : vérification une fois par jour, sans bloquer le démarrage.
+  const sourcesTimer = packageSources.schedule();
 
   const sweepEvery = opts.sweepEveryMs ?? 60_000;
   let sweeper: NodeJS.Timeout | undefined;
@@ -177,6 +183,7 @@ export async function createServer(opts: ServerOptions): Promise<PartyServer> {
     async close() {
       if (sweeper) clearInterval(sweeper);
       dbBackups?.stop();
+      clearInterval(sourcesTimer);
       manager.destroyAll();
       await new Promise<void>((resolve) => io.close(() => resolve()));
       store.close();
