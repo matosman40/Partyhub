@@ -41,6 +41,8 @@ COPY --from=build /app/packages/games/dist ./packages/games/dist
 COPY --from=build /app/packages/server/package.json ./packages/server/
 COPY --from=build /app/packages/server/dist ./packages/server/dist
 COPY --from=build /app/packages/web/dist ./packages/web/dist
+# La licence MIT demande que son texte accompagne toute copie du logiciel.
+COPY LICENSE ./
 
 # Métadonnées OCI : relient l'image au dépôt, à la version et au commit source.
 ARG VERSION=dev

@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question d'installation (Docker, CasaOS)
+    url: https://github.com/matosman40/Partyhub/blob/main/docs/CASAOS.md
+    about: Lisez d'abord le guide d'installation et de dépannage.

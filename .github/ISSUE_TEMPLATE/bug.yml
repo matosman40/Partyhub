@@ -1,0 +1,42 @@
+name: Bug
+description: Signaler un comportement incorrect
+labels: [bug]
+body:
+  - type: textarea
+    id: quoi
+    attributes:
+      label: Ce qui se passe
+      description: Décrivez le problème et ce que vous attendiez.
+    validations:
+      required: true
+  - type: textarea
+    id: etapes
+    attributes:
+      label: Étapes pour reproduire
+      placeholder: "1. …  2. …  3. …"
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version de PartyHub
+      description: Visible dans l'administration, ou dans l'étiquette de l'image (org.opencontainers.image.version).
+    validations:
+      required: true
+  - type: dropdown
+    id: deploiement
+    attributes:
+      label: Mode d'installation
+      options:
+        - Docker Compose (image publiée)
+        - Docker Compose (compilation locale, compose.dev.yaml)
+        - CasaOS
+        - Autre
+    validations:
+      required: true
+  - type: textarea
+    id: journaux
+    attributes:
+      label: Journaux du serveur
+      description: "Sortie de `docker compose logs --no-color` (sans mot de passe ni jeton)."
+      render: text
