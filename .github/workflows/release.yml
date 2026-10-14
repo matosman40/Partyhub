@@ -66,6 +66,7 @@ jobs:
           tags: |
             ghcr.io/matosman40/partyhub:${{ env.VERSION }}
             ghcr.io/matosman40/partyhub:${{ env.MAJOR_MINOR }}
+            ghcr.io/matosman40/partyhub:latest
           build-args: |
             VERSION=${{ env.VERSION }}
             REVISION=${{ github.sha }}
