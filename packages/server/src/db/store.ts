@@ -153,6 +153,19 @@ export const MIGRATIONS: Migration[] = [
       `);
     },
   },
+  {
+    version: 3,
+    description: 'Jeux de plateau créés dans l’administration (0.6.2)',
+    up(db) {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS board_games (
+          id         TEXT PRIMARY KEY,
+          definition TEXT NOT NULL,
+          updated_at TEXT NOT NULL
+        );
+      `);
+    },
+  },
 ];
 
 export const LATEST_SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1]!.version;
@@ -362,6 +375,28 @@ export class Store {
 
   deleteCardGame(id: string): void {
     this.db.prepare('DELETE FROM card_games WHERE id = ?').run(id);
+    this.db.prepare('DELETE FROM game_flags WHERE game_id = ?').run(id);
+    this.db.prepare('DELETE FROM notices WHERE game_id = ?').run(id);
+  }
+
+  /** Jeux de plateau créés dans l'administration (définition au format JSON). */
+  listBoardGames(): { id: string; definition: string; updatedAt: string }[] {
+    const rows = this.db
+      .prepare('SELECT id, definition, updated_at FROM board_games ORDER BY updated_at')
+      .all() as { id: string; definition: string; updated_at: string }[];
+    return rows.map((r) => ({ id: r.id, definition: r.definition, updatedAt: r.updated_at }));
+  }
+
+  saveBoardGame(id: string, definition: string): void {
+    this.db
+      .prepare(
+        'INSERT INTO board_games (id, definition, updated_at) VALUES (?, ?, ?) ON CONFLICT(id) DO UPDATE SET definition = excluded.definition, updated_at = excluded.updated_at',
+      )
+      .run(id, definition, new Date().toISOString());
+  }
+
+  deleteBoardGame(id: string): void {
+    this.db.prepare('DELETE FROM board_games WHERE id = ?').run(id);
     this.db.prepare('DELETE FROM game_flags WHERE game_id = ?').run(id);
     this.db.prepare('DELETE FROM notices WHERE game_id = ?').run(id);
   }

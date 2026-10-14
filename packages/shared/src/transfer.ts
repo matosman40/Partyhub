@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { boardGameDefinitionSchema } from './board-games.js';
 import { cardGameDefinitionSchema } from './card-games.js';
 import { mediaQuizDefinitionSchema } from './media-quiz.js';
 import { gameDetailsSchema, noticeSchema } from './schemas.js';
@@ -29,6 +30,8 @@ export const backupSchema = z.object({
   exportedAt: z.string().max(40).optional(),
   cardGames: z.array(cardGameDefinitionSchema).max(BACKUP_LIMIT).default([]),
   mediaGames: z.array(mediaQuizDefinitionSchema).max(BACKUP_LIMIT).default([]),
+  /** Jeux de plateau (0.6.2). Absent dans les sauvegardes précédentes : liste vide. */
+  boardGames: z.array(boardGameDefinitionSchema).max(BACKUP_LIMIT).default([]),
   /** Nom, icône et description modifiés, par identifiant de jeu intégré. */
   gameDetails: z.record(z.string().max(60), gameDetailsSchema).default({}),
   /** Notices modifiées, par identifiant de jeu intégré. */

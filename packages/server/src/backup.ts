@@ -1,5 +1,6 @@
 import { gameRegistry } from '@partyhub/games';
 import { BACKUP_FORMAT, backupSchema, type Backup, type GameNotice } from '@partyhub/shared';
+import type { BoardGameService } from './boards/service.js';
 import type { CardGameService } from './cards/service.js';
 import type { Store } from './db/store.js';
 import { detailsOverride } from './game-details.js';
@@ -13,7 +14,12 @@ import type { MediaQuizService } from './media/service.js';
 /** Identifiants des jeux intégrés (ceux du code, jamais ceux de l'administration). */
 const BUILTIN_IDS = gameRegistry.map((g) => g.manifest.id);
 
-export function buildBackup(store: Store, cards: CardGameService, media: MediaQuizService): Backup {
+export function buildBackup(
+  store: Store,
+  cards: CardGameService,
+  media: MediaQuizService,
+  boards: BoardGameService,
+): Backup {
   const gameDetails: Backup['gameDetails'] = {};
   const notices: Backup['notices'] = {};
   for (const id of BUILTIN_IDS) {
@@ -34,6 +40,7 @@ export function buildBackup(store: Store, cards: CardGameService, media: MediaQu
     exportedAt: new Date().toISOString(),
     cardGames: cards.list().map((r) => r.definition),
     mediaGames: media.list().map((r) => r.definition),
+    boardGames: boards.list().map((r) => r.definition),
     gameDetails,
     notices,
   };
@@ -42,6 +49,7 @@ export function buildBackup(store: Store, cards: CardGameService, media: MediaQu
 export interface RestoreSummary {
   cardGames: number;
   mediaGames: number;
+  boardGames: number;
   details: number;
   notices: number;
   /** Jeux non restaurés, avec la raison (fichier absent de la médiathèque, par exemple). */
@@ -58,6 +66,7 @@ export function restoreBackup(
   store: Store,
   cards: CardGameService,
   media: MediaQuizService,
+  boards: BoardGameService,
 ): { ok: true; summary: RestoreSummary } | { ok: false; error: string } {
   const parsed = backupSchema.safeParse(input);
   if (!parsed.success) {
@@ -65,7 +74,7 @@ export function restoreBackup(
     return { ok: false, error: issue?.message ?? 'Sauvegarde non reconnue.' };
   }
   const backup = parsed.data;
-  const summary: RestoreSummary = { cardGames: 0, mediaGames: 0, details: 0, notices: 0, skipped: [] };
+  const summary: RestoreSummary = { cardGames: 0, mediaGames: 0, boardGames: 0, details: 0, notices: 0, skipped: [] };
 
   for (const definition of backup.cardGames) {
     const result = cards.save(null, definition);
@@ -75,6 +84,11 @@ export function restoreBackup(
   for (const definition of backup.mediaGames) {
     const result = media.save(null, definition);
     if (result.ok) summary.mediaGames++;
+    else summary.skipped.push(`« ${definition.name} » : ${result.error}`);
+  }
+  for (const definition of backup.boardGames) {
+    const result = boards.save(null, definition);
+    if (result.ok) summary.boardGames++;
     else summary.skipped.push(`« ${definition.name} » : ${result.error}`);
   }
   for (const [id, details] of Object.entries(backup.gameDetails)) {

@@ -1,0 +1,185 @@
+/* Jeux de plateau : piste, pions, dés (écran principal et téléphone). */
+
+.bd-host {
+  --bd-accent: #ffb703;
+  --bd-ink: #101426;
+  --bd-paper: #fff8e7;
+  display: grid;
+  gap: 1.25rem;
+  padding: 1.5rem;
+}
+
+.bd-host[data-theme='nuit'] {
+  --bd-accent: #5cf2ff;
+  --bd-ink: #e8ecff;
+  --bd-paper: #161b33;
+}
+
+.bd-host[data-theme='coco'] {
+  --bd-accent: #ff7aa2;
+  --bd-ink: #2b2140;
+  --bd-paper: #fff3e6;
+}
+
+.bd-host[data-theme='classique'] {
+  --bd-accent: #b23a48;
+  --bd-ink: #1b1b1b;
+  --bd-paper: #f5f1e6;
+}
+
+.bd-head h2 {
+  margin: 0;
+}
+
+.bd-turn {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  margin: 0.25rem 0 0;
+}
+
+.bd-timer {
+  font-variant-numeric: tabular-nums;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background: var(--bd-accent);
+  color: var(--bd-ink);
+}
+
+.bd-track {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.bd-cell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  width: clamp(72px, 9vw, 104px);
+  min-height: 84px;
+  padding: 0.45rem;
+  border-radius: 10px;
+  background: var(--bd-paper);
+  color: var(--bd-ink);
+  border: 2px solid color-mix(in srgb, var(--bd-ink) 18%, transparent);
+  font-size: 0.85rem;
+}
+
+.bd-cell.is-start,
+.bd-cell.is-goal {
+  border-color: var(--bd-accent);
+  border-width: 3px;
+}
+
+.bd-cell.kind-avance .bd-badge { background: #2a9d8f; color: #fff; }
+.bd-cell.kind-recule .bd-badge { background: #e76f51; color: #fff; }
+.bd-cell.kind-gain .bd-badge { background: #2a9d8f; color: #fff; }
+.bd-cell.kind-perte .bd-badge { background: #9d0208; color: #fff; }
+.bd-cell.kind-passe .bd-badge { background: #6c757d; color: #fff; }
+
+.bd-index {
+  font-size: 0.7rem;
+  opacity: 0.7;
+  font-variant-numeric: tabular-nums;
+}
+
+.bd-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.bd-badge {
+  align-self: flex-start;
+  padding: 0 0.4rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--bd-ink) 14%, transparent);
+  font-size: 0.75rem;
+}
+
+.bd-pawns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem;
+  margin-top: auto;
+}
+
+.bd-side {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.bd-faces {
+  display: flex;
+  gap: 0.4rem;
+  font-size: 3rem;
+  line-height: 1;
+}
+
+.bd-log {
+  margin: 0;
+  padding-left: 1.25rem;
+  color: var(--bd-ink);
+}
+
+.bd-log li + li {
+  margin-top: 0.25rem;
+}
+
+.bd-player {
+  display: grid;
+  gap: 1rem;
+  justify-items: center;
+  text-align: center;
+}
+
+.bd-roll {
+  width: 100%;
+  min-height: 4.5rem;
+  font-size: 1.35rem;
+}
+
+.bd-last {
+  margin: 0;
+}
+
+/* Éditeur d'administration : tableau des cases. */
+.bd-cells {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.bd-cells th,
+.bd-cells td {
+  padding: 0.3rem 0.4rem;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.bd-cells td:first-child {
+  font-variant-numeric: tabular-nums;
+  width: 2.5rem;
+}
+
+.bd-cells input[type='number'] {
+  width: 5rem;
+}
+
+@media (max-width: 480px) {
+  .bd-host {
+    padding: 0.75rem;
+  }
+
+  .bd-cell {
+    width: calc((100% - 1rem) / 3);
+    min-height: 72px;
+  }
+}

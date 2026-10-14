@@ -156,6 +156,9 @@ Le fichier est vérifié avant installation : version du moteur, empreintes, lic
 Le format, les règles et les limites sont décrits dans [docs/PHGAME.md](docs/PHGAME.md). Un exemple est fourni :
 `examples/exemple-cartes.phgame`.
 
+Les jeux de plateau (parcours avec dés et cases spéciales) se créent dans l'administration, section « Jeux de plateau ».
+Ils ne sont pas encore livrables en paquet `.phgame`.
+
 ## Sécurité
 
 - Les réponses et les scores sont validés côté serveur ; les commandes sont limitées en fréquence par socket.

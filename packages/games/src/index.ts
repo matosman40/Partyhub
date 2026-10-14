@@ -130,3 +130,7 @@ export {
 } from './tarot/rules.js';
 export type { Contract, DealInput, DealScore, Side } from './tarot/rules.js';
 export { botBid, botEcart, botPlay, handStrength } from './tarot/bot.js';
+
+export { createBoardGame, boardSettingsSchema } from './board/module.js';
+export type { BoardState, BoardSettings } from './board/module.js';
+export { playTurn as playBoardTurn, ranking as boardRanking, rollDice as boardRollDice, currentPlayer as boardCurrentPlayer } from './board/rules.js';

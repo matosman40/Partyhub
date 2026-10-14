@@ -2,6 +2,34 @@
 
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [0.6.2] - 2026-10-14
+
+### Ajouté
+- Jeux de plateau : un nouveau type de jeu, défini par des données. Un parcours de 8 à 60 cases, avec sept types de cases :
+  normale, avance, recule, gain de points, perte de points, passe le prochain tour, et arrivée (toujours la dernière case).
+- Éditeur de plateaux dans l'administration (section « Jeux de plateau ») : nom, icône, thème, règles, tableau des cases
+  avec aperçu, notice. Création, modification, copie et suppression. Les erreurs de règle sont affichées telles quelles.
+- Déroulement : un ou deux dés par tour, minuteur de tour optionnel qui lance les dés à la place du joueur, classement final
+  (les arrivés d'abord, dans l'ordre d'arrivée). Les robots jouent aussi en salle d'entraînement.
+- Les plateaux sont inclus dans la sauvegarde complète. Une sauvegarde faite avant cette version se restaure sans erreur.
+- 34 tests nouveaux (règles de jeu, validation, service, API, sauvegarde, migration), 354 au total.
+
+### Modifié
+- Base de données : version de schéma 3 (table `board_games`). Migration automatique au premier démarrage, avec copie de sécurité.
+
+### Migration et compatibilité
+- Action automatique au premier démarrage : une copie de la base est créée dans `/data/migrations/`. Conservez-la jusqu'à
+  avoir vérifié le bon fonctionnement de la version.
+- Retour arrière vers 0.6.1 : la version 0.6.1 refuse une base de version 3. Restaurez la copie faite à la mise à jour,
+  puis redéployez l'image 0.6.1.
+- Les paquets `.phgame` ne peuvent pas encore contenir de plateau.
+
+### Problèmes connus
+- Pas d'export ni d'import de fichier pour un plateau (contrairement aux jeux de cartes) : utilisez la sauvegarde complète.
+- Les cases n'ont pas d'image : seulement un nom, un effet et une valeur.
+- Si le joueur dont c'est le tour est déconnecté et qu'il n'y a pas de limite de temps, la partie attend son retour.
+- Non testé sur de vrais téléphones ni sur une TV.
+
 ## [0.6.1] - 2026-10-14
 
 ### Ajouté

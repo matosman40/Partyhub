@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { existsSync, mkdtempSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { MIGRATIONS, Store } from '../db/store.js';
+import { LATEST_SCHEMA_VERSION, MIGRATIONS, Store } from '../db/store.js';
 
 let dir: string;
 
@@ -25,14 +25,16 @@ describe('migration 2 : table des paquets', () => {
     old.saveCardGame('custom-avant', '{"name":"Ancien jeu"}');
     old.close();
 
+    // La base remonte jusqu'à la version courante (les migrations suivantes sont aussi appliquées).
     const upgraded = new Store(file, { backupDir });
-    expect(upgraded.migration).toMatchObject({ from: 1, to: 2 });
+    expect(upgraded.migration).toMatchObject({ from: 1, to: LATEST_SCHEMA_VERSION });
     expect(upgraded.migration.backup).toBeDefined();
     expect(existsSync(upgraded.migration.backup!)).toBe(true);
 
     expect(upgraded.getKv('admin_password_hash')).toBe('hash-existant');
     expect(upgraded.listCardGames().map((r) => r.id)).toEqual(['custom-avant']);
     expect(upgraded.listPackages()).toEqual([]);
+    expect(upgraded.listBoardGames()).toEqual([]);
     upgraded.close();
   });
 });

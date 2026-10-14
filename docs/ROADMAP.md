@@ -25,7 +25,7 @@ Légende : **Fait** = dans le dépôt. **À faire** = pas commencé. **En cours*
 | 0.5.0 | Paquets `.phgame` | Format 1 (jeux déclaratifs), import et contrôle dans l'administration, CLI, paquet d'exemple | **Prêt sur `main`** (tag à créer). Cache hors ligne et transfert reportés à 0.7.0 |
 | 0.6.0 | Éditeurs et médiathèque (partie 1) | Dos de carte personnalisé, limites de la médiathèque configurables | **Prêt sur `main`** (tag à créer) |
 | 0.6.1 | Polices de la médiathèque | Polices WOFF2, WOFF, TTF, OTF pour les cartes ; usages vérifiés avant suppression | **Prêt sur `main`** (tag à créer) |
-| 0.6.2 | Éditeur de plateau | Format de plateau déclaré en données, éditeur | À faire (décision de conception requise) |
+| 0.6.2 | Éditeur de plateau | Format de plateau déclaré en données, éditeur | **Prêt sur `main`** (tag à créer). Paquets `.phgame` de plateau reportés |
 | 0.7.0 | Reprise d'écran et contexte hors ligne | Reprise de l'écran principal (WebRTC), application installable (PWA), cache des paquets, transfert entre téléphones | À faire |
 | 0.8.0 | Robustesse des parties | Salles et parties survivant à un redémarrage, sessions d'administration persistantes | À étudier |
 | 0.9.0 | Jeux JavaScript | Code de paquet exécuté dans un bac à sable WebAssembly, limites de temps et de mémoire | À faire (revue de sécurité requise) |
@@ -95,9 +95,11 @@ Détail du format et des règles : `docs/PHGAME.md`.
 - Critère : une police téléversée s'affiche dans un jeu (atteint).
 
 ### 0.6.2 : éditeur de plateau
-- Format de plateau générique déclaré en données (cases, types de cases, règles de déplacement), jouable sans modification du code. Le plateau de Promoteur reste figé.
-- Préalable : décider si le plateau est un nouveau type de jeu (`kind: board`) ou une extension des jeux de cartes.
-- Critère : un plateau créé dans l'éditeur se joue sans modification du code.
+- **Fait** : format de plateau déclaré en données (parcours de 8 à 60 cases, sept types de cases, un ou deux dés, durée de tour), jouable sans modification du code. Le plateau de Promoteur reste figé.
+- **Fait** : décision de conception : un nouveau type de jeu de plateau (catégorie « plateau »), distinct des jeux de cartes.
+- **Fait** : éditeur dans l'administration, sauvegarde et restauration, robots, classement final.
+- **Reporté** : plateaux dans les paquets `.phgame` (format 2, avec la reprise d'écran), export et import de fichier, images sur les cases.
+- Critère : un plateau créé dans l'éditeur se joue sans modification du code (atteint en test serveur ; à confirmer sur de vrais téléphones).
 
 ### 0.7.0 : reprise d'écran et contexte hors ligne
 - Reprise de l'écran principal par un autre appareil, via WebRTC (contrôle de la partie en cours).

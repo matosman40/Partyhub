@@ -11,6 +11,7 @@ import {
   roomCodeSchema,
 } from '@partyhub/shared';
 import { resolveGame } from '../games-registry.js';
+import type { BoardGameService } from '../boards/service.js';
 import type { CardGameService } from '../cards/service.js';
 import type { AssetService } from '../assets/service.js';
 import type { PackageService } from '../packages/service.js';
@@ -36,6 +37,8 @@ export interface AppDeps {
   hub: RealtimeHub;
   profiles: ProfileService;
   cardGames: CardGameService;
+  /** Jeux de plateau créés dans l'administration. */
+  boardGames: BoardGameService;
   assets: AssetService;
   mediaGames: MediaQuizService;
   /** Paquets .phgame installés (jeux déclaratifs). */
@@ -49,7 +52,7 @@ const ADMIN_COOKIE_PATH = '/api/admin';
 const ADMIN_SESSION_MS = 12 * 60 * 60 * 1000;
 
 export function createApp(deps: AppDeps): express.Express {
-  const { config, logger, store, manager, profiles, cardGames, assets, mediaGames, dbBackups, packages } = deps;
+  const { config, logger, store, manager, profiles, cardGames, boardGames, assets, mediaGames, dbBackups, packages } = deps;
   const app = express();
   const sessions = new AdminSessions();
   const limiter = new LoginLimiter();
@@ -445,6 +448,50 @@ export function createApp(deps: AppDeps): express.Express {
     res.status(201).json({ ok: true, id: result.id });
   });
 
+  /** Jeux de plateau personnalisés : liste, création, modification, copie et suppression. */
+  admin.get('/board-games', (_req, res) => {
+    res.json({ games: boardGames.list() });
+  });
+
+  admin.post('/board-games', (req, res) => {
+    const result = boardGames.save(null, req.body);
+    if (!result.ok) {
+      res.status(400).json({ error: result.error });
+      return;
+    }
+    res.status(201).json({ ok: true, id: result.id });
+  });
+
+  admin.put('/board-games/:id', (req, res) => {
+    const id = req.params.id ?? '';
+    const result = boardGames.save(id, req.body);
+    if (!result.ok) {
+      res.status(result.error === 'Jeu inconnu.' ? 404 : 400).json({ error: result.error });
+      return;
+    }
+    res.json({ ok: true, id: result.id });
+  });
+
+  admin.delete('/board-games/:id', (req, res) => {
+    const id = req.params.id ?? '';
+    if (!boardGames.remove(id)) {
+      res.status(404).json({ error: 'Jeu inconnu.' });
+      return;
+    }
+    // Les salles qui jouent ce plateau sont fermées : aucune partie ne reste bloquée.
+    const closed = manager.closeWhere((r) => r.module.manifest.id === id, 'admin');
+    res.json({ ok: true, closedRooms: closed });
+  });
+
+  admin.post('/board-games/:id/duplicate', (req, res) => {
+    const result = boardGames.duplicate(req.params.id ?? '');
+    if (!result.ok) {
+      res.status(result.error === 'Jeu inconnu.' ? 404 : 400).json({ error: result.error });
+      return;
+    }
+    res.status(201).json({ ok: true, id: result.id });
+  });
+
   /** Paquets .phgame : liste, envoi du fichier brut, activation et suppression. */
   admin.get('/packages', (_req, res) => {
     res.json({ packages: packages.list() });
@@ -626,14 +673,14 @@ export function createApp(deps: AppDeps): express.Express {
 
   /** Sauvegarde complète : jeux personnalisés, textes et notices des jeux intégrés. */
   admin.get('/backup', (_req, res) => {
-    const backup = buildBackup(store, cardGames, mediaGames);
+    const backup = buildBackup(store, cardGames, mediaGames, boardGames);
     const stamp = new Date().toISOString().slice(0, 10);
     res.setHeader('Content-Disposition', `attachment; filename="partyhub-sauvegarde-${stamp}.json"`);
     res.json(backup);
   });
 
   admin.post('/backup/import', (req, res) => {
-    const result = restoreBackup(req.body, store, cardGames, mediaGames);
+    const result = restoreBackup(req.body, store, cardGames, mediaGames, boardGames);
     if (!result.ok) {
       res.status(400).json({ error: result.error });
       return;

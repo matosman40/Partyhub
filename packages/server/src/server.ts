@@ -6,6 +6,7 @@ import { Server } from 'socket.io';
 import type { ClientToServerEvents, ServerToClientEvents } from '@partyhub/shared';
 import { resolveGame } from './games-registry.js';
 import { CardGameService } from './cards/service.js';
+import { BoardGameService } from './boards/service.js';
 import { AssetService } from './assets/service.js';
 import { MediaQuizService } from './media/service.js';
 import { PackageService } from './packages/service.js';
@@ -78,6 +79,7 @@ export async function createServer(opts: ServerOptions): Promise<PartyServer> {
 
   const profiles = new ProfileService(store);
   const cardGames = new CardGameService(store);
+  const boardGames = new BoardGameService(store);
   const assets = new AssetService(store, config.dataDir, config.assetLimits);
   const mediaGames = new MediaQuizService(store, assets);
   const packages = new PackageService(store, config.dataDir);
@@ -126,6 +128,7 @@ export async function createServer(opts: ServerOptions): Promise<PartyServer> {
     hub,
     profiles,
     cardGames,
+    boardGames,
     assets,
     mediaGames,
     packages,

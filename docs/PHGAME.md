@@ -121,3 +121,4 @@ Les vues de cartes n'affichent pas encore ces images : elles utilisent l'icône 
 - Cache hors ligne et lancement sans réseau des paquets installés : prévus avec l'application installable (version 0.7.0).
 - Transfert d'un paquet entre téléphones : prévu avec la reprise d'écran (version 0.7.0).
 - Jeux JavaScript dans un bac à sable : prévus dans une version ultérieure (voir la feuille de route).
+- Jeux de plateau : créés dans l'administration depuis la version 0.6.2, mais pas encore dans un paquet `.phgame`.
