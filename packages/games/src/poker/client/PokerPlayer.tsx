@@ -54,6 +54,16 @@ export function PokerPlayer({ publicState, playerState, playerId, send }: Player
     );
   }
 
+  // Hors places : le joueur suit la table sans jouer.
+  if (!me || !me.seated) {
+    return (
+      <section className="player-game fade-in">
+        <p className="big">{pub.started ? 'Partie en cours' : 'Table complète'}</p>
+        <p className="muted">Vous êtes spectateur : vous suivez la partie sans y jouer.</p>
+      </section>
+    );
+  }
+
   if (!pub.started) {
     return (
       <section className="player-game fade-in">
@@ -65,7 +75,7 @@ export function PokerPlayer({ publicState, playerState, playerId, send }: Player
     );
   }
 
-  if (!me || (me.spectator && (pub.stacks[playerId] ?? 0) > 0)) {
+  if (me.spectator && (pub.stacks[playerId] ?? 0) > 0) {
     return (
       <section className="player-game fade-in">
         <p className="big">Partie en cours</p>

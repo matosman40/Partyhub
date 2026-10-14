@@ -4,8 +4,18 @@ import type { RankRow } from '../../client/ui.js';
 export interface PokerPub {
   phase: 'play' | 'hand-over' | 'final';
   started: boolean;
-  settings: { startingChips: number; smallBlind: number; bigBlind: number; turnSeconds: number; hands: number };
+  settings: {
+    startingChips: number;
+    smallBlind: number;
+    bigBlind: number;
+    turnSeconds: number;
+    hands: number;
+    seats: number;
+    theme: 'arcade' | 'coco' | 'nuit' | 'classique';
+    ambiance: 'casino' | 'nuit' | 'bar' | 'tournoi';
+  };
   order: string[];
+  spectators: string[];
   names: Record<string, string>;
   stacks: Record<string, number>;
   dealer: string | null;
@@ -32,6 +42,7 @@ export interface PokerMe {
   stack: number;
   bet: number;
   folded: boolean;
+  seated: boolean;
   spectator: boolean;
   isMyTurn: boolean;
   canCheck: boolean;

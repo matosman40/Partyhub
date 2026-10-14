@@ -35,7 +35,7 @@ export function PokerHost({ publicState, now }: HostViewProps) {
     return (
       <WaitingScreen
         title="Poker : en attente du lancement…"
-        text={`${pub.order.length} joueur(s) · ${fmt(pub.settings.startingChips)} jetons chacun · blindes ${pub.settings.smallBlind} / ${pub.settings.bigBlind}`}
+        text={`${pub.order.length} joueur(s) à la table sur ${pub.settings.seats}${pub.spectators.length ? ` · ${pub.spectators.length} spectateur(s)` : ''} · ${fmt(pub.settings.startingChips)} jetons chacun · blindes ${pub.settings.smallBlind} / ${pub.settings.bigBlind}`}
       />
     );
   }
@@ -46,13 +46,18 @@ export function PokerHost({ publicState, now }: HostViewProps) {
   const total = pub.settings.turnSeconds * 1000;
 
   return (
-    <section className="cards-host poker-host fade-in" data-mat="classique" onPointerDownCapture={() => unlockAudio()}>
+    <section
+      className={`cards-host poker-host poker-amb-${pub.settings.ambiance} fade-in`}
+      data-mat={pub.settings.theme}
+      onPointerDownCapture={() => unlockAudio()}
+    >
       <div className="cards-hud">
         <span className="hud-pill">Main n°{pub.handNumber}</span>
         <span className="hud-pill">
           Blindes {fmt(pub.settings.smallBlind)} / {fmt(pub.settings.bigBlind)}
         </span>
         <span className="hud-pill">{STREET_LABEL[pub.street]}</span>
+        {pub.spectators.length > 0 && <span className="hud-pill">Spectateurs : {pub.spectators.length}</span>}
         <SoundToggle />
       </div>
 

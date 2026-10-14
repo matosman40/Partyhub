@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { BotSuggestion, GameContext, GameManifest, GameModule, GameResult, PlayerRef } from '@partyhub/shared';
+import { CARD_THEMES, type BotSuggestion, type GameContext, type GameManifest, type GameModule, type GameResult, type PlayerRef } from '@partyhub/shared';
 import { directory, fail, ok, rankEntries, shuffle } from '../common/engine.js';
 import { POKER_DEFINITION, buildPots, evaluateBest, resolvePots, type HandValue } from './rules.js';
 
@@ -64,6 +64,8 @@ export interface PokerState {
   turnEndsAt: number | null;
 }
 
+export const AMBIANCES = ['casino', 'nuit', 'bar', 'tournoi'] as const;
+
 export const pokerSettingsSchema = z.object({
   startingChips: z.number().int().min(100).max(100000).default(1000),
   smallBlind: z.number().int().min(1).max(10000).default(10),
@@ -71,6 +73,12 @@ export const pokerSettingsSchema = z.object({
   turnSeconds: z.number().int().min(0).max(120).default(25),
   /** Nombre de mains avant la fin (0 = jusqu'à ce qu'il ne reste qu'un joueur). */
   hands: z.number().int().min(0).max(200).default(0),
+  /** Places à la table ; les joueurs au-delà sont spectateurs. */
+  seats: z.number().int().min(2).max(8).default(8),
+  /** Habillage des cartes et du tapis (mêmes thèmes que les jeux de cartes). */
+  theme: z.enum(CARD_THEMES).default('arcade'),
+  /** Ambiance de la salle : couleurs de fond et de lumière de la table. */
+  ambiance: z.enum(AMBIANCES).default('casino'),
 });
 
 export type PokerSettings = z.infer<typeof pokerSettingsSchema>;
@@ -353,12 +361,14 @@ export function createPokerGame(): GameModule<PokerState, PokerSettings> {
   };
 
   function initialize(settings: PokerSettings, players: PlayerRef[]): PokerState {
+    // Les premiers joueurs prennent les places ; les autres observent.
+    const seated = players.slice(0, settings.seats).map((p) => p.id);
     return {
       started: false,
       settings,
-      order: players.map((p) => p.id),
+      order: seated,
       names: directory(players),
-      stacks: Object.fromEntries(players.map((p) => [p.id, settings.startingChips])),
+      stacks: Object.fromEntries(seated.map((id) => [id, settings.startingChips])),
       dealer: null,
       handNumber: 0,
       phase: 'play',
@@ -385,7 +395,7 @@ export function createPokerGame(): GameModule<PokerState, PokerSettings> {
   function onPlayerJoin(state: PokerState, player: PlayerRef): PokerState {
     const s = structuredClone(state);
     s.names[player.id] = player.name;
-    if (!s.started && !s.order.includes(player.id) && s.order.length < manifest.maxPlayers) {
+    if (!s.started && !s.order.includes(player.id) && s.order.length < s.settings.seats) {
       s.order.push(player.id);
       s.stacks[player.id] = s.settings.startingChips;
     }
@@ -397,6 +407,7 @@ export function createPokerGame(): GameModule<PokerState, PokerSettings> {
     const s = structuredClone(state);
     s.order = s.order.filter((id) => id !== player.id);
     delete s.stacks[player.id];
+    delete s.names[player.id];
     return s;
   }
 
@@ -474,6 +485,7 @@ export function createPokerGame(): GameModule<PokerState, PokerSettings> {
       started: state.started,
       settings: state.settings,
       order: state.order,
+      spectators: Object.keys(state.names).filter((id) => !state.order.includes(id)),
       names: state.names,
       stacks: state.stacks,
       dealer: state.dealer,
@@ -508,7 +520,8 @@ export function createPokerGame(): GameModule<PokerState, PokerSettings> {
       stack,
       bet: state.bets[playerId] ?? 0,
       folded,
-      spectator: state.started && !inHand,
+      seated: state.order.includes(playerId),
+      spectator: !state.order.includes(playerId) || (state.started && !inHand),
       isMyTurn: myTurn,
       canCheck: myTurn && need === 0,
       canCall: myTurn && need > 0,
