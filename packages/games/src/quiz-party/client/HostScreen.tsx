@@ -1,8 +1,23 @@
+import { useMemo } from 'react';
 import type { HostViewProps } from '../../client/types.js';
+import { MoodsContext } from '../../client/avatar-context.js';
 import { useRemaining } from '../../client/hooks.js';
-import { LETTERS, Ranking, TimerBar, type RankRow } from '../../client/ui.js';
+import { Avatar, LETTERS, Ranking, TimerBar, type RankRow } from '../../client/ui.js';
+import { quizMoods } from './moods.js';
 
-export function QuizHost({ publicState: pub, hostState: host, now }: HostViewProps) {
+/** Écran TV du quiz : les personnages réagissent à la phase (salut, joie, tristesse, danse). */
+export function QuizHost(props: HostViewProps) {
+  const pub = props.publicState;
+  const host = props.hostState;
+  const moods = useMemo(() => (pub ? quizMoods(pub, host?.pending ?? []) : {}), [pub, host]);
+  return (
+    <MoodsContext.Provider value={moods}>
+      <QuizBoard {...props} />
+    </MoodsContext.Provider>
+  );
+}
+
+function QuizBoard({ publicState: pub, hostState: host, now }: HostViewProps) {
   const remaining = useRemaining(pub?.answerEndsAt, now);
 
   if (!pub) return null;
@@ -46,6 +61,14 @@ export function QuizHost({ publicState: pub, hostState: host, now }: HostViewPro
           ))}
         </ol>
         <TimerBar remaining={remaining} total={total} />
+        <ul className="answer-roster" aria-label="Qui a répondu">
+          {pub.ranking.map((e: RankRow) => (
+            <li key={e.playerId} className={pending.includes(e.name) ? 'waiting' : 'answered'}>
+              <Avatar name={e.name} size="md" />
+              <span className="name">{e.name}</span>
+            </li>
+          ))}
+        </ul>
         <p className="muted">
           {Math.ceil(remaining / 1000)} s · {pub.answeredCount} / {pub.playerCount} ont répondu
           {pending.length > 0 && <> · En attente : {pending.join(', ')}</>}
@@ -83,6 +106,7 @@ export function QuizHost({ publicState: pub, hostState: host, now }: HostViewPro
             {pub.results.map((r: { playerId: string; name: string; correct: boolean; gained: number }) => (
               <li key={r.playerId} className={r.correct ? 'ok' : 'ko'}>
                 <span>{r.correct ? '✔' : '✘'}</span>
+                <Avatar name={r.name} size="md" />
                 <span className="name">{r.name}</span>
                 <span className="points">+{r.gained}</span>
               </li>

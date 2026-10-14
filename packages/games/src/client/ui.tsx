@@ -1,5 +1,7 @@
-import { useContext, useState, type CSSProperties } from 'react';
-import { AvatarsContext, type AvatarData } from './avatar-context.js';
+import { useContext, useState } from 'react';
+import { defaultCharacterFor, type CharacterMood } from '@partyhub/shared';
+import { AvatarsContext, MoodsContext, type AvatarData } from './avatar-context.js';
+import { Character } from './character.js';
 
 /**
  * Briques d'interface communes à tous les jeux : avatar, classement,
@@ -15,17 +17,22 @@ function hueOf(name: string): number {
   return h;
 }
 
-/** Visage d'un avatar : photo si elle existe et charge, sinon l'emoji sur sa teinte. */
+/**
+ * Visage d'un avatar : photo si elle existe et charge (la photo est un choix explicite du joueur),
+ * sinon son personnage, sinon l'emoji sur sa teinte (profils anciens).
+ */
 function AvatarFace({
   info,
   size,
   highlight,
   name,
+  mood,
 }: {
   info: AvatarData;
   size: 'sm' | 'md' | 'lg';
   highlight: boolean;
   name: string;
+  mood: CharacterMood;
 }) {
   const [broken, setBroken] = useState(false);
   const showImage = !!info.imageUrl && !broken;
@@ -36,7 +43,13 @@ function AvatarFace({
       aria-hidden="true"
       title={name}
     >
-      {showImage ? <img src={info.imageUrl ?? ''} alt="" loading="lazy" onError={() => setBroken(true)} /> : info.emoji}
+      {showImage ? (
+        <img src={info.imageUrl ?? ''} alt="" loading="lazy" onError={() => setBroken(true)} />
+      ) : info.character ? (
+        <Character spec={info.character} mood={mood} framing="bust" />
+      ) : (
+        info.emoji
+      )}
     </span>
   );
 }
@@ -51,15 +64,16 @@ export function Avatar({
   highlight?: boolean;
 }) {
   const known = useContext(AvatarsContext)[name];
-  if (known) return <AvatarFace info={known} size={size} highlight={highlight} name={name} />;
-  const style: CSSProperties = {
-    background: `linear-gradient(135deg, hsl(${hueOf(name)} 85% 62%), hsl(${(hueOf(name) + 40) % 360} 80% 45%))`,
+  const mood = useContext(MoodsContext)[name] ?? 'idle';
+  if (known) return <AvatarFace info={known} size={size} highlight={highlight} name={name} mood={mood} />;
+  // Joueur sans avatar connu : personnage généré à partir de son pseudo, comme pour un invité.
+  const fallback: AvatarData = {
+    hue: hueOf(name),
+    emoji: name.trim().charAt(0).toUpperCase() || '?',
+    imageUrl: null,
+    character: defaultCharacterFor(name),
   };
-  return (
-    <span className={`avatar avatar-${size}${highlight ? ' is-you' : ''}`} style={style} aria-hidden="true">
-      {name.trim().charAt(0).toUpperCase() || '?'}
-    </span>
-  );
+  return <AvatarFace info={fallback} size={size} highlight={highlight} name={name} mood={mood} />;
 }
 
 export interface RankRow {

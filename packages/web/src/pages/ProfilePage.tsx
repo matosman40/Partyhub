@@ -1,10 +1,11 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { AVATAR_EMOJIS, type ProfileView } from '@partyhub/shared';
+import { defaultCharacterFor, type ProfileView } from '@partyhub/shared';
 import { api } from '../api.js';
 import { PlayerAvatar } from '../components/PlayerAvatar.js';
 import { authHeaders, clearProfileToken, readProfileToken, saveProfileToken } from '../profile/session.js';
 import { fileToAvatarDataUrl } from '../profile/avatarImage.js';
+import { CharacterEditor } from '../profile/CharacterEditor.js';
 
 /**
  * Profil : compte réutilisable d'un appareil à l'autre. Le profil garde le pseudo,
@@ -418,7 +419,7 @@ function AvatarSection({
 
   return (
     <section className="card stack" aria-labelledby="avatar-title">
-      <h2 id="avatar-title">Avatar</h2>
+      <h2 id="avatar-title">Mon personnage</h2>
       <div className="profile-hero">
         <PlayerAvatar avatar={profile.avatar} name={profile.displayName} size="lg" />
         <div className="stack" style={{ flex: 1, minWidth: 220 }}>
@@ -451,28 +452,29 @@ function AvatarSection({
           </label>
           <p className="muted small">
             {profile.avatarShared
-              ? 'Les autres joueurs de la salle voient votre photo, sur l’écran et sur leur téléphone. Décochez pour revenir à l’emoji.'
-              : 'Pour l’instant, les autres joueurs voient votre emoji. Votre photo reste privée : vous seul(e) la voyez.'}
+              ? 'Les autres joueurs de la salle voient votre photo, sur l’écran et sur leur téléphone. Décochez pour revenir à votre personnage.'
+              : 'Pour l’instant, les autres joueurs voient votre personnage. Votre photo reste privée : vous seul(e) la voyez.'}
           </p>
         </div>
       )}
-      <p className="muted small">Sans photo, votre avatar est un emoji sur une couleur.</p>
-      <div className="avatar-picker" role="group" aria-label="Emoji de l’avatar">
-        {AVATAR_EMOJIS.map((emoji) => (
-          <button
-            key={emoji}
-            type="button"
-            aria-pressed={!profile.avatar.imageUrl && profile.avatar.emoji === emoji}
-            disabled={busy}
-            onClick={() => onChange({ avatarEmoji: emoji, avatarImage: null })}
-            aria-label={`Avatar ${emoji}`}
-          >
-            <span aria-hidden="true">{emoji}</span>
-          </button>
-        ))}
-      </div>
+      <p className="muted small">
+        Sans photo, c’est votre personnage qui vous représente, sur la couleur de fond choisie plus bas.
+      </p>
+      <CharacterEditor
+        spec={profile.avatar.character ?? defaultCharacterFor(profile.username)}
+        busy={busy}
+        onChange={(spec) => onChange({ avatarCharacter: spec })}
+      />
+      <button
+        type="button"
+        className="btn ghost small"
+        disabled={busy}
+        onClick={() => onChange({ avatarCharacter: null })}
+      >
+        Personnage automatique (d’après mon identifiant)
+      </button>
       <label className="field">
-        <span>Couleur de fond : {profile.avatar.hue}°</span>
+        <span>Couleur de fond de l’avatar : {profile.avatar.hue}°</span>
         <input
           type="range"
           min={0}

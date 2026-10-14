@@ -2,6 +2,7 @@ import { deviceInfoSchema } from './devices.js';
 import { z } from 'zod';
 import { ROOM_CODE_PATTERN } from './room-codes.js';
 import { AVATAR_EMOJIS } from './avatars.js';
+import { characterSchema } from './characters.js';
 
 export const PLAYER_NAME_MAX = 16;
 
@@ -88,6 +89,7 @@ export const profileUpdateSchema = z.object({
   avatarEmoji: z.enum(AVATAR_EMOJIS).optional(),
   avatarImage: avatarImageSchema.nullable().optional(),
   avatarShared: z.boolean().optional(),
+  avatarCharacter: characterSchema.nullable().optional(),
 });
 
 export const passwordChangeSchema = z.object({

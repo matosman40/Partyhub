@@ -5912,3 +5912,210 @@ html[data-device='tablet'] .observer-page {
     top: 1rem;
   }
 }
+
+/* ==========================================================================
+   Personnages : éditeur du profil et humeurs animées (le dessin reste celui du rig)
+   ========================================================================== */
+
+.chara {
+  overflow: visible;
+  transform-origin: 50% 92%;
+}
+
+.chara--idle {
+  animation: chara-breathe 3.2s ease-in-out infinite;
+}
+
+.chara--joy {
+  animation: chara-hop 0.6s ease-in-out infinite;
+}
+
+.chara--sad {
+  animation: chara-sway 2.8s ease-in-out infinite;
+}
+
+.chara--wave {
+  animation: chara-rock 1.6s ease-in-out infinite;
+}
+
+.chara--dance {
+  animation: chara-dance 0.9s ease-in-out infinite;
+}
+
+.chara-wave {
+  transform-box: fill-box;
+  transform-origin: 0% 100%;
+  animation: chara-flap 0.5s ease-in-out infinite alternate;
+}
+
+@keyframes chara-breathe {
+  50% {
+    transform: scale(1.02, 0.98);
+  }
+}
+
+@keyframes chara-hop {
+  50% {
+    transform: translateY(-6%);
+  }
+}
+
+@keyframes chara-sway {
+  50% {
+    transform: translateX(3%) rotate(-2deg);
+  }
+}
+
+@keyframes chara-rock {
+  50% {
+    transform: rotate(-4deg);
+  }
+}
+
+@keyframes chara-dance {
+  50% {
+    transform: translateY(-4%) rotate(5deg);
+  }
+}
+
+@keyframes chara-flap {
+  to {
+    transform: rotate(-12deg);
+  }
+}
+
+.chara-editor {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: minmax(180px, 240px) 1fr;
+  align-items: start;
+}
+
+@media (max-width: 640px) {
+  .chara-editor {
+    grid-template-columns: 1fr;
+  }
+}
+
+.chara-stage {
+  display: grid;
+  gap: 0.75rem;
+  justify-items: center;
+  padding: 1rem;
+  border-radius: var(--r-xl);
+  background: radial-gradient(90% 90% at 50% 0%, rgba(139, 92, 255, 0.45), transparent 70%), rgba(14, 10, 40, 0.85);
+  border: 1px solid var(--line-strong);
+}
+
+.chara-stage-figure {
+  width: min(100%, 220px);
+}
+
+.chara-moods {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  justify-content: center;
+}
+
+.chara-options {
+  display: grid;
+  gap: 0.9rem;
+  min-width: 0;
+}
+
+.chara-group {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.chara-group legend {
+  padding: 0;
+  margin-bottom: 0.4rem;
+  font-family: var(--display);
+  font-size: 0.95rem;
+}
+
+.chara-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.swatch {
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.75);
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.swatch:hover:not(:disabled) {
+  transform: scale(1.08);
+}
+
+.swatch[aria-pressed='true'] {
+  box-shadow:
+    0 0 0 3px var(--bg0),
+    0 0 0 6px var(--cyan);
+}
+
+.chip {
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  background: rgba(255, 255, 255, 0.06);
+  color: inherit;
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.chip[aria-pressed='true'] {
+  background: var(--cyan);
+  border-color: var(--cyan);
+  color: #08061a;
+  font-weight: 600;
+}
+
+.chip:disabled,
+.swatch:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.avatar > .chara {
+  width: 100%;
+  height: auto;
+}
+
+/* Quiz (écran principal) : qui a répondu. Les personnages qui saluent sont vifs ; les autres s'estompent. */
+.answer-roster {
+  list-style: none;
+  margin: 1rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem 1.4rem;
+}
+
+.answer-roster li {
+  display: grid;
+  justify-items: center;
+  gap: 0.3rem;
+  font-weight: 600;
+  transition: opacity 0.3s ease;
+}
+
+.answer-roster li.waiting {
+  opacity: 0.45;
+}
+
+.answer-roster .avatar-md {
+  width: 84px;
+  height: 84px;
+}

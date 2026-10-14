@@ -2,6 +2,7 @@ import type { GameCategory, GameNotice, ScoreEntry } from './game-types.js';
 import type { GameDetails } from './schemas.js';
 import type { DeviceInfo, DeviceKind } from './devices.js';
 import type { SettingsBounds } from './settings-form.js';
+import type { CharacterSpec } from './characters.js';
 
 export type { DeviceInfo, DeviceKind };
 
@@ -29,6 +30,8 @@ export interface AvatarInfo {
   hue: number;
   emoji: string;
   imageUrl: string | null;
+  /** Personnage dessiné. Absent ou null : le joueur garde l'emoji (anciens profils). */
+  character?: CharacterSpec | null;
 }
 
 export interface PublicPlayer {

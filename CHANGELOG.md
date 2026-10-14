@@ -5,6 +5,12 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 ## Non publié
 
 ### Ajouté
+- Personnages : chaque profil crée le sien (couleur du corps, teint, coiffure, couleur des cheveux, accessoire) dans
+  « Mon personnage », avec un aperçu animé. Un invité reçoit un personnage généré à partir de son pseudo. Migration 9
+  (colonne `profiles.avatar_character`, vide = personnage généré). La photo, si elle est partagée, reste prioritaire.
+- Quiz : les personnages réagissent. Pendant la question, ceux qui ont répondu saluent sur l'écran principal ; à la
+  révélation, la bonne réponse est joyeuse, les autres sont tristes ; au classement final, les premiers dansent. À
+  l'arrivée d'un joueur dans le salon, son personnage salue quelques secondes.
 - Copies de paquets gérées : une copie garde le lien avec son paquet. La section des paquets indique si elle a été
   modifiée et si le paquet a une version plus récente ; « Mettre la copie à jour » la remplace par cette version, son
   nom est conservé (confirmation si elle a été modifiée). Migration 8 (table `package_copies`).
@@ -67,6 +73,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
   formulaire des questions médias accepte 10 à 120 s, et le serveur refuse une valeur hors limites de chaque jeu.
 
 ### Modifié
+- Le profil ne choisit plus d’emoji : l’avatar est le personnage (ou la photo, si elle est partagée). Les
+  anciens profils gardent leur emoji dans les données, sans l’afficher.
 - Codes de salle en chiffres (0 à 9) au lieu de lettres : plus de confusion entre 0/O ou 1/I/L. Les salles ouvertes
   gardent leur code ; la page de saisie accepte de 4 à 6 chiffres.
 - Dépendances fusionnées dans une même branche : vitest 5, pino 10, better-sqlite3 13, vite 8 (ajouté à la racine),

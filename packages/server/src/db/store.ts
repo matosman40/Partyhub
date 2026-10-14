@@ -286,6 +286,16 @@ export const MIGRATIONS: Migration[] = [
       `);
     },
   },
+  {
+    version: 9,
+    description: 'Personnage du profil (JSON) ; NULL = personnage généré à partir du pseudo',
+    up(db) {
+      const columns = (db.prepare('PRAGMA table_info(profiles)').all() as { name: string }[]).map((c) => c.name);
+      if (!columns.includes('avatar_character')) {
+        db.exec('ALTER TABLE profiles ADD COLUMN avatar_character TEXT');
+      }
+    },
+  },
 ];
 
 /** Source GitHub d'un paquet : un dépôt, sa dernière release et l'état de la dernière vérification. */
@@ -426,8 +436,7 @@ export class Store {
   /** Un jeu est activé par défaut tant qu'aucun réglage ne le désactive. */
   isGameEnabled(gameId: string): boolean {
     const row = this.db.prepare('SELECT enabled FROM game_flags WHERE game_id = ?').get(gameId) as
-      | { enabled: number }
-      | undefined;
+      { enabled: number } | undefined;
     return row ? row.enabled === 1 : true;
   }
 
@@ -450,8 +459,7 @@ export class Store {
   /** Notice personnalisée d'un jeu, ou undefined si l'on garde celle du code. */
   getNoticeOverride(gameId: string): string | undefined {
     const row = this.db.prepare('SELECT content FROM notices WHERE game_id = ?').get(gameId) as
-      | { content: string }
-      | undefined;
+      { content: string } | undefined;
     return row?.content;
   }
 
@@ -470,8 +478,7 @@ export class Store {
   /** Nom, icône et description modifiés par l'administrateur (JSON), ou undefined. */
   getDetailsOverride(gameId: string): string | undefined {
     const row = this.db.prepare('SELECT content FROM game_details WHERE game_id = ?').get(gameId) as
-      | { content: string }
-      | undefined;
+      { content: string } | undefined;
     return row?.content;
   }
 
@@ -490,8 +497,7 @@ export class Store {
   /** Réglages par défaut remplacés par l'administrateur (JSON validé), ou undefined. */
   getSettingsOverride(gameId: string): string | undefined {
     const row = this.db.prepare('SELECT content FROM game_settings WHERE game_id = ?').get(gameId) as
-      | { content: string }
-      | undefined;
+      { content: string } | undefined;
     return row?.content;
   }
 
@@ -518,8 +524,7 @@ export class Store {
   /** Lien d'une copie modifiable vers le paquet dont elle vient. */
   getPackageCopy(gameId: string): PackageCopyRow | undefined {
     const row = this.db.prepare('SELECT * FROM package_copies WHERE game_id = ?').get(gameId) as
-      | PackageCopyDbRow
-      | undefined;
+      PackageCopyDbRow | undefined;
     return row ? toPackageCopy(row) : undefined;
   }
 
@@ -734,8 +739,7 @@ export class Store {
 
   getAsset(id: string): AssetRow | undefined {
     return this.db.prepare('SELECT id, kind, mime, name, size, created_at FROM assets WHERE id = ?').get(id) as
-      | AssetRow
-      | undefined;
+      AssetRow | undefined;
   }
 
   saveAsset(row: AssetRow): void {

@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import type { AvatarInfo } from '@partyhub/shared';
+import { Character } from '@partyhub/games/client';
 
 /**
- * Avatar d'un joueur : photo de profil si elle existe, sinon emoji sur une teinte stable.
- * Si l'image ne charge pas, l'emoji prend le relais.
+ * Avatar d'un joueur : photo de profil si elle existe, sinon son personnage sur sa couleur de fond.
+ * Si l'image ne charge pas, le personnage (ou l'emoji, pour un ancien profil) prend le relais.
  */
 export function PlayerAvatar({
   avatar,
@@ -27,6 +28,8 @@ export function PlayerAvatar({
     >
       {showImage ? (
         <img src={avatar.imageUrl ?? ''} alt="" loading="lazy" onError={() => setBroken(true)} />
+      ) : avatar.character ? (
+        <Character spec={avatar.character} framing="bust" />
       ) : (
         avatar.emoji
       )}

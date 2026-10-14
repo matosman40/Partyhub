@@ -272,7 +272,7 @@ export function createApp(deps: AppDeps): express.Express {
       res.status(400).json({ error: parsed.error.issues[0]?.message ?? 'Données invalides.' });
       return;
     }
-    const { displayName, avatarHue, avatarEmoji, avatarImage, avatarShared } = parsed.data;
+    const { displayName, avatarHue, avatarEmoji, avatarImage, avatarShared, avatarCharacter } = parsed.data;
     const profileId = profileOf(req);
     const profile = profiles.update(profileId, {
       displayName,
@@ -280,6 +280,7 @@ export function createApp(deps: AppDeps): express.Express {
       avatarEmoji,
       avatarImage,
       avatarShared,
+      avatarCharacter,
     });
     // Une salle en cours montre tout de suite le nouvel état (une photo retirée disparaît aussitôt).
     const inRooms = profiles.playerProfile(profileId);

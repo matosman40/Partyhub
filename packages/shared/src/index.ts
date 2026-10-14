@@ -3,6 +3,7 @@ export * from './game-types.js';
 export * from './protocol.js';
 export * from './schemas.js';
 export * from './avatars.js';
+export * from './characters.js';
 export * from './card-games.js';
 export * from './board-games.js';
 export * from './media-quiz.js';

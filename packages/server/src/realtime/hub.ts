@@ -4,6 +4,7 @@ import {
   actionSchema,
   chatSchema,
   configureSchema,
+  defaultCharacterFor,
   deviceKindFromUserAgent,
   hostConnectSchema,
   joinSchema,
@@ -62,8 +63,13 @@ const CHAT_PER_WINDOW = 6;
 const CHAT_WINDOW_MS = 10_000;
 const REACTIONS_PER_WINDOW = 12;
 
-const HOST_AVATAR: AvatarInfo = { hue: 42, emoji: '🎤', imageUrl: null };
-const OBSERVER_AVATAR: AvatarInfo = { hue: 210, emoji: '👀', imageUrl: null };
+const HOST_AVATAR: AvatarInfo = { hue: 42, emoji: '🎤', imageUrl: null, character: defaultCharacterFor('Hôte') };
+const OBSERVER_AVATAR: AvatarInfo = {
+  hue: 210,
+  emoji: '👀',
+  imageUrl: null,
+  character: defaultCharacterFor('Observateur'),
+};
 
 /**
  * Pont entre le registre des salles et Socket.IO.

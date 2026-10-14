@@ -1,8 +1,11 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { resolveGame } from '../games-registry.js';
 import {
+  characterSchema,
   defaultAvatarFor,
+  defaultCharacterFor,
   type AvatarInfo,
+  type CharacterSpec,
   type ProfileStats,
   type ProfileView,
   type AvatarEmoji,
@@ -32,6 +35,7 @@ interface ProfileRow {
   avatar_image: string | null;
   avatar_version: number;
   avatar_shared: number;
+  avatar_character: string | null;
   created_at: string;
 }
 
@@ -62,12 +66,29 @@ export class ProfileService {
     return this.db.prepare('SELECT * FROM profiles WHERE id = ?').get(id) as ProfileRow | undefined;
   }
 
+  /**
+   * Personnage du profil. Un JSON absent ou invalide (jamais écrit par l'application) donne
+   * le personnage généré à partir du pseudo, comme pour un invité.
+   */
+  private characterOf(row: ProfileRow): CharacterSpec {
+    if (row.avatar_character) {
+      try {
+        const parsed = characterSchema.safeParse(JSON.parse(row.avatar_character));
+        if (parsed.success) return parsed.data;
+      } catch {
+        // JSON corrompu : on retombe sur le personnage généré.
+      }
+    }
+    return defaultCharacterFor(row.username);
+  }
+
   /** Avatar complet, vu par le titulaire du profil (sa photo est toujours visible pour lui). */
   private avatarOf(row: ProfileRow): AvatarInfo {
     return {
       hue: row.avatar_hue,
       emoji: row.avatar_emoji,
       imageUrl: row.avatar_image ? `/api/avatars/${row.id}?v=${row.avatar_version}` : null,
+      character: this.characterOf(row),
     };
   }
 
@@ -81,6 +102,7 @@ export class ProfileService {
       hue: row.avatar_hue,
       emoji: row.avatar_emoji,
       imageUrl: shared ? `/api/avatars/${row.id}?v=${row.avatar_version}` : null,
+      character: this.characterOf(row),
     };
   }
 
@@ -170,10 +192,16 @@ export class ProfileService {
       avatarEmoji?: AvatarEmoji;
       avatarImage?: string | null;
       avatarShared?: boolean;
+      /** null : revenir au personnage généré à partir du pseudo. */
+      avatarCharacter?: CharacterSpec | null;
     },
   ): ProfileView {
     if (patch.displayName !== undefined) {
       this.db.prepare('UPDATE profiles SET display_name = ? WHERE id = ?').run(patch.displayName, profileId);
+    }
+    if (patch.avatarCharacter !== undefined) {
+      const json = patch.avatarCharacter ? JSON.stringify(characterSchema.parse(patch.avatarCharacter)) : null;
+      this.db.prepare('UPDATE profiles SET avatar_character = ? WHERE id = ?').run(json, profileId);
     }
     if (patch.avatarHue !== undefined) {
       this.db.prepare('UPDATE profiles SET avatar_hue = ? WHERE id = ?').run(patch.avatarHue, profileId);

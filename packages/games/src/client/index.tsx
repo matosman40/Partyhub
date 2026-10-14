@@ -4,8 +4,10 @@ import type { GameClientViews } from './types.js';
 
 export type { GameClientViews, HostViewProps, PlayerViewProps, SettingsProps } from './types.js';
 export { Avatar } from './ui.js';
-export { AvatarsContext } from './avatar-context.js';
+export { AvatarsContext, MoodsContext } from './avatar-context.js';
 export type { AvatarData } from './avatar-context.js';
+export { Character } from './character.js';
+export type { CharacterProps } from './character.js';
 export { useWakeLock, vibrate, canVibrate } from './device.js';
 export { isMuted, setMuted, startMusic, stopMusic, unlockAudio } from './audio.js';
 export { SoundToggle } from './SoundToggle.js';
