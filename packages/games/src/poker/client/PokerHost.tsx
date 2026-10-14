@@ -1,14 +1,15 @@
 import type { CSSProperties } from 'react';
 import type { HostViewProps } from '../../client/types.js';
 import { useRemaining } from '../../client/hooks.js';
-import { play, unlockAudio } from '../../client/audio.js';
+import { play, setMusicMood, startMusic, stopMusic, unlockAudio } from '../../client/audio.js';
+import { useEffect } from 'react';
 import { Avatar, FinalHost, TimerBar, WaitingScreen } from '../../client/ui.js';
 import { SoundToggle } from '../../client/SoundToggle.js';
 import { CardFace } from '../../cards/client/CardFace.js';
 import { useChange } from '../../cards/client/cues.js';
 import { entryOf } from '../../cards/client/common.js';
 import { POKER_DEFINITION } from '../rules.js';
-import { STREET_LABEL, chipsRanking, fmt, type PokerPub } from './common.js';
+import { AMBIANCE_MUSIC, STREET_LABEL, chipsRanking, fmt, type PokerPub } from './common.js';
 
 /** Écran principal du poker : les joueurs et leurs mises, le tableau commun et le pot. */
 export function PokerHost({ publicState, now }: HostViewProps) {
@@ -30,12 +31,25 @@ export function PokerHost({ publicState, now }: HostViewProps) {
     else if (phase === 'final') play('final');
   });
 
+  // Musique de fond pendant la partie, selon l'ambiance choisie.
+  const ambiance = pub?.settings.ambiance;
+  const inGame = !!pub?.started && pub.phase !== 'final';
+  useEffect(() => {
+    if (!inGame || !ambiance) return;
+    setMusicMood(AMBIANCE_MUSIC[ambiance]);
+    startMusic();
+    return () => {
+      stopMusic();
+      setMusicMood(null);
+    };
+  }, [inGame, ambiance]);
+
   if (!pub) return null;
   if (!pub.started) {
     return (
       <WaitingScreen
         title="Poker : en attente du lancement…"
-        text={`${pub.order.length} joueur(s) · ${fmt(pub.settings.startingChips)} jetons chacun · blindes ${pub.settings.smallBlind} / ${pub.settings.bigBlind}`}
+        text={`${pub.order.length} joueur(s) à la table sur ${pub.settings.seats}${pub.spectators.length ? ` · ${pub.spectators.length} spectateur(s)` : ''} · ${fmt(pub.settings.startingChips)} jetons chacun · blindes ${pub.settings.smallBlind} / ${pub.settings.bigBlind}`}
       />
     );
   }
@@ -46,13 +60,18 @@ export function PokerHost({ publicState, now }: HostViewProps) {
   const total = pub.settings.turnSeconds * 1000;
 
   return (
-    <section className="cards-host poker-host fade-in" data-mat="classique" onPointerDownCapture={() => unlockAudio()}>
+    <section
+      className={`cards-host poker-host poker-amb-${pub.settings.ambiance} fade-in`}
+      data-mat={pub.settings.theme}
+      onPointerDownCapture={() => unlockAudio()}
+    >
       <div className="cards-hud">
         <span className="hud-pill">Main n°{pub.handNumber}</span>
         <span className="hud-pill">
           Blindes {fmt(pub.settings.smallBlind)} / {fmt(pub.settings.bigBlind)}
         </span>
         <span className="hud-pill">{STREET_LABEL[pub.street]}</span>
+        {pub.spectators.length > 0 && <span className="hud-pill">Spectateurs : {pub.spectators.length}</span>}
         <SoundToggle />
       </div>
 

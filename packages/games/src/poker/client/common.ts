@@ -1,11 +1,22 @@
 import type { RankRow } from '../../client/ui.js';
+import type { MusicMood } from '../../client/audio.js';
 
 /** Vue publique du poker, telle qu'émise par le serveur (jamais les cartes privées avant l'abattage). */
 export interface PokerPub {
   phase: 'play' | 'hand-over' | 'final';
   started: boolean;
-  settings: { startingChips: number; smallBlind: number; bigBlind: number; turnSeconds: number; hands: number };
+  settings: {
+    startingChips: number;
+    smallBlind: number;
+    bigBlind: number;
+    turnSeconds: number;
+    hands: number;
+    seats: number;
+    theme: 'arcade' | 'coco' | 'nuit' | 'classique';
+    ambiance: 'casino' | 'nuit' | 'bar' | 'tournoi';
+  };
   order: string[];
+  spectators: string[];
   names: Record<string, string>;
   stacks: Record<string, number>;
   dealer: string | null;
@@ -32,6 +43,7 @@ export interface PokerMe {
   stack: number;
   bet: number;
   folded: boolean;
+  seated: boolean;
   spectator: boolean;
   isMyTurn: boolean;
   canCheck: boolean;
@@ -41,6 +53,7 @@ export interface PokerMe {
   minRaiseTo: number;
   maxRaiseTo: number;
   canAllIn: boolean;
+  canSit: boolean;
 }
 
 export const STREET_LABEL: Record<PokerPub['street'], string> = {
@@ -62,3 +75,11 @@ export function chipsRanking(pub: PokerPub): RankRow[] {
   rows.sort((a, b) => b.points - a.points || a.name.localeCompare(b.name, 'fr'));
   return rows.map((r) => ({ ...r, rank: 1 + rows.filter((o) => o.points > r.points).length }));
 }
+
+/** Musique de fond par ambiance : tempo (BPM) et timbre de la basse. */
+export const AMBIANCE_MUSIC: Record<PokerPub['settings']['ambiance'], MusicMood> = {
+  casino: { bpm: 128, bass: 'triangle' },
+  nuit: { bpm: 96, bass: 'sine' },
+  bar: { bpm: 110, bass: 'triangle' },
+  tournoi: { bpm: 150, bass: 'triangle' },
+};

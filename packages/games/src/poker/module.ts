@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { BotSuggestion, GameContext, GameManifest, GameModule, GameResult, PlayerRef } from '@partyhub/shared';
+import { CARD_THEMES, type BotSuggestion, type GameContext, type GameManifest, type GameModule, type GameResult, type PlayerRef } from '@partyhub/shared';
 import { directory, fail, ok, rankEntries, shuffle } from '../common/engine.js';
 import { POKER_DEFINITION, buildPots, evaluateBest, resolvePots, type HandValue } from './rules.js';
 
@@ -64,6 +64,8 @@ export interface PokerState {
   turnEndsAt: number | null;
 }
 
+export const AMBIANCES = ['casino', 'nuit', 'bar', 'tournoi'] as const;
+
 export const pokerSettingsSchema = z.object({
   startingChips: z.number().int().min(100).max(100000).default(1000),
   smallBlind: z.number().int().min(1).max(10000).default(10),
@@ -71,6 +73,12 @@ export const pokerSettingsSchema = z.object({
   turnSeconds: z.number().int().min(0).max(120).default(25),
   /** Nombre de mains avant la fin (0 = jusqu'à ce qu'il ne reste qu'un joueur). */
   hands: z.number().int().min(0).max(200).default(0),
+  /** Places à la table ; les joueurs au-delà sont spectateurs. */
+  seats: z.number().int().min(2).max(8).default(8),
+  /** Habillage des cartes et du tapis (mêmes thèmes que les jeux de cartes). */
+  theme: z.enum(CARD_THEMES).default('arcade'),
+  /** Ambiance de la salle : couleurs de fond et de lumière de la table. */
+  ambiance: z.enum(AMBIANCES).default('casino'),
 });
 
 export type PokerSettings = z.infer<typeof pokerSettingsSchema>;
@@ -81,7 +89,31 @@ const actionSchemas = {
   call: z.any().optional(),
   allin: z.any().optional(),
   raise: z.object({ to: z.number().int().min(1).max(100_000_000) }),
+  sit: z.any().optional(),
 };
+
+/**
+ * Un spectateur prend une place : celle d'un joueur éliminé, ou une place libre.
+ * Seulement entre deux mains, pour que la rotation du croupier reste cohérente.
+ */
+function sitDown(s: PokerState, player: PlayerRef): GameResult<PokerState> {
+  const pid = player.id;
+  if (!s.started) return fail('La partie n’a pas commencé : les places se prennent à l’arrivée.');
+  if (s.phase !== 'hand-over') return fail('Vous pourrez vous asseoir entre deux mains.');
+  if (s.order.includes(pid)) return fail('Vous êtes déjà à la table.');
+  const freed = s.order.find((id) => (s.stacks[id] ?? 0) === 0);
+  if (freed === undefined && s.order.length >= s.settings.seats) return fail('Aucune place libre.');
+  if (freed !== undefined) {
+    s.order[s.order.indexOf(freed)] = pid;
+    delete s.stacks[freed];
+    if (s.dealer === freed) s.dealer = pid;
+  } else {
+    s.order.push(pid);
+  }
+  s.stacks[pid] = s.settings.startingChips;
+  s.lastEvent = `${s.names[pid] ?? '?'} prend une place.`;
+  return ok(s);
+}
 
 /** Premier joueur après `from` (dans l'ordre circulaire) qui satisfait `pred`. */
 function nextAfter(order: string[], from: string | null, pred: (id: string) => boolean): string | null {
@@ -353,12 +385,14 @@ export function createPokerGame(): GameModule<PokerState, PokerSettings> {
   };
 
   function initialize(settings: PokerSettings, players: PlayerRef[]): PokerState {
+    // Les premiers joueurs prennent les places ; les autres observent.
+    const seated = players.slice(0, settings.seats).map((p) => p.id);
     return {
       started: false,
       settings,
-      order: players.map((p) => p.id),
+      order: seated,
       names: directory(players),
-      stacks: Object.fromEntries(players.map((p) => [p.id, settings.startingChips])),
+      stacks: Object.fromEntries(seated.map((id) => [id, settings.startingChips])),
       dealer: null,
       handNumber: 0,
       phase: 'play',
@@ -385,7 +419,7 @@ export function createPokerGame(): GameModule<PokerState, PokerSettings> {
   function onPlayerJoin(state: PokerState, player: PlayerRef): PokerState {
     const s = structuredClone(state);
     s.names[player.id] = player.name;
-    if (!s.started && !s.order.includes(player.id) && s.order.length < manifest.maxPlayers) {
+    if (!s.started && !s.order.includes(player.id) && s.order.length < s.settings.seats) {
       s.order.push(player.id);
       s.stacks[player.id] = s.settings.startingChips;
     }
@@ -397,6 +431,7 @@ export function createPokerGame(): GameModule<PokerState, PokerSettings> {
     const s = structuredClone(state);
     s.order = s.order.filter((id) => id !== player.id);
     delete s.stacks[player.id];
+    delete s.names[player.id];
     return s;
   }
 
@@ -419,6 +454,7 @@ export function createPokerGame(): GameModule<PokerState, PokerSettings> {
   ): GameResult<PokerState> {
     const s = structuredClone(state);
     const pid = player.id;
+    if (type === 'sit') return sitDown(s, player);
     if (!s.started || !s.inHand.includes(pid)) return fail('Vous ne participez pas à cette main.');
     if (s.phase !== 'play') return fail('La main est terminée.');
     if (s.turn !== pid) return fail("Ce n'est pas votre tour.");
@@ -474,6 +510,7 @@ export function createPokerGame(): GameModule<PokerState, PokerSettings> {
       started: state.started,
       settings: state.settings,
       order: state.order,
+      spectators: Object.keys(state.names).filter((id) => !state.order.includes(id)),
       names: state.names,
       stacks: state.stacks,
       dealer: state.dealer,
@@ -508,7 +545,8 @@ export function createPokerGame(): GameModule<PokerState, PokerSettings> {
       stack,
       bet: state.bets[playerId] ?? 0,
       folded,
-      spectator: state.started && !inHand,
+      seated: state.order.includes(playerId),
+      spectator: !state.order.includes(playerId) || (state.started && !inHand),
       isMyTurn: myTurn,
       canCheck: myTurn && need === 0,
       canCall: myTurn && need > 0,
@@ -517,6 +555,11 @@ export function createPokerGame(): GameModule<PokerState, PokerSettings> {
       minRaiseTo: Math.min(maxTo, state.currentBet + state.lastRaise),
       maxRaiseTo: maxTo,
       canAllIn: myTurn && stack > 0,
+      canSit:
+        !state.order.includes(playerId) &&
+        state.started &&
+        state.phase === 'hand-over' &&
+        (state.order.some((id) => (state.stacks[id] ?? 0) === 0) || state.order.length < state.settings.seats),
     };
   }
 

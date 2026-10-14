@@ -238,3 +238,93 @@ describe('déroulement d’une main de poker', () => {
     expect(ranking[0]!.points).toBe(800);
   });
 });
+
+describe('places et spectateurs', () => {
+  it('seuls les premiers joueurs prennent une place, les autres observent', () => {
+    const ids = ['a', 'b', 'c', 'd'];
+    const h = makeCtx(ids, seeded(5));
+    const init = poker.initialize(poker.settingsSchema.parse({ turnSeconds: 0, seats: 2 }), ids.map(P), h.ctx);
+    expect(init.order).toEqual(['a', 'b']);
+    expect(poker.getPublicState(init).spectators).toEqual(['c', 'd']);
+    expect(poker.getPlayerState(init, 'c').seated).toBe(false);
+    expect(poker.getPlayerState(init, 'c').spectator).toBe(true);
+    expect(poker.getPlayerState(init, 'a').seated).toBe(true);
+    expect(poker.getPlayerState(init, 'a').spectator).toBe(false);
+  });
+
+  it('un joueur qui arrive hors places reste spectateur, et un départ le retire de la liste', () => {
+    const ids = ['a', 'b', 'c'];
+    const h = makeCtx(ids, seeded(5));
+    const init = poker.initialize(poker.settingsSchema.parse({ turnSeconds: 0, seats: 2 }), ids.slice(0, 2).map(P), h.ctx);
+    const joined = poker.onPlayerJoin!(init, P('c'));
+    expect(joined.order).toEqual(['a', 'b']);
+    expect(poker.getPublicState(joined).spectators).toEqual(['c']);
+    const left = poker.onPlayerLeave!(joined, P('c'));
+    expect(poker.getPublicState(left).spectators).toEqual([]);
+  });
+
+  it('une fois la partie lancée, un nouvel arrivant observe sans recevoir de place', () => {
+    const ids = ['a', 'b'];
+    const h = makeCtx(ids, seeded(5));
+    const init = poker.initialize(poker.settingsSchema.parse({ turnSeconds: 0 }), ids.map(P), h.ctx);
+    const res = poker.start(init, h.ctx);
+    if (!res.ok) throw new Error(res.error);
+    const late = poker.onPlayerJoin!(res.state, P('z'));
+    expect(late.order).toEqual(['a', 'b']);
+    expect(poker.getPlayerState(late, 'z').spectator).toBe(true);
+  });
+});
+
+describe('prise de place entre deux mains', () => {
+  function startedWithSpectator() {
+    const ids = ['a', 'b', 'c'];
+    const h = makeCtx(ids, seeded(5));
+    const init = poker.initialize(poker.settingsSchema.parse({ turnSeconds: 0, seats: 2 }), ids.map(P), h.ctx);
+    const res = poker.start(init, h.ctx);
+    if (!res.ok) throw new Error(res.error);
+    return { h, init, state: res.state };
+  }
+
+  it('refuse de s’asseoir pendant une main', () => {
+    const { h, state } = startedWithSpectator();
+    const res = poker.handleAction(state, P('c'), 'sit', undefined, h.ctx);
+    expect(res.ok).toBe(false);
+  });
+
+  it('un spectateur prend la place d’un joueur éliminé entre deux mains', () => {
+    const { h, init, state } = startedWithSpectator();
+    const between = structuredClone(state);
+    between.phase = 'hand-over';
+    between.stacks.b = 0;
+    const res = poker.handleAction(between, P('c'), 'sit', undefined, h.ctx);
+    if (!res.ok) throw new Error(res.error);
+    expect(res.state.order).toEqual(['a', 'c']);
+    expect(res.state.stacks.c).toBe(init.settings.startingChips);
+    expect(res.state.stacks.b).toBeUndefined();
+    expect(poker.getPlayerState(res.state, 'b').seated).toBe(false);
+    expect(poker.getPlayerState(res.state, 'c').canSit).toBe(false);
+  });
+
+  it('la main suivante démarre avec le nouveau joueur, même si l’ancien croupier est éliminé', () => {
+    const { h, state } = startedWithSpectator();
+    const between = structuredClone(state);
+    between.phase = 'hand-over';
+    between.dealer = 'b';
+    between.stacks.b = 0;
+    const seated = poker.handleAction(between, P('c'), 'sit', undefined, h.ctx);
+    if (!seated.ok) throw new Error(seated.error);
+    expect(seated.state.dealer).toBe('c');
+    const next = poker.onTimer(seated.state, 'next-hand', h.ctx);
+    expect(next.phase).toBe('play');
+    expect(next.inHand).toEqual(['a', 'c']);
+  });
+
+  it('refuse une prise de place quand la table est pleine sans éliminé', () => {
+    const { h, state } = startedWithSpectator();
+    const between = structuredClone(state);
+    between.phase = 'hand-over';
+    const res = poker.handleAction(between, P('c'), 'sit', undefined, h.ctx);
+    expect(res.ok).toBe(false);
+    expect(poker.getPlayerState(between, 'c').canSit).toBe(false);
+  });
+});
