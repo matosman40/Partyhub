@@ -70,17 +70,68 @@ describe('service des paquets installés', () => {
     service.install(buildPackage());
     expect(service.install(buildPackage({ version: '1.1.0' }))).toMatchObject({ ok: true, version: '1.1.0' });
     expect(service.get('exemple-cartes')).toMatchObject({ version: '1.1.0', enabled: true, status: 'actif' });
-    expect(fs.existsSync(path.join(dir, 'games', 'exemple-cartes', '1.0.0'))).toBe(false);
+    // L'ancienne version reste conservée pour un retour arrière.
+    expect(fs.existsSync(path.join(dir, 'games', 'exemple-cartes', '1.0.0', 'package.phgame'))).toBe(true);
     expect(fs.existsSync(path.join(dir, 'games', 'exemple-cartes', '1.1.0', 'package.phgame'))).toBe(true);
   });
 
-  it('refuse le retour arrière vers une version plus ancienne', () => {
+  it('importe une version plus ancienne sans l’activer', () => {
     const service = new PackageService(store, dir);
     service.install(buildPackage({ version: '1.1.0' }));
-    const result = service.install(buildPackage({ version: '1.0.0' }));
-    expect(result).toMatchObject({ ok: false });
-    expect((result as { error: string }).error).toMatch(/Retour arrière refusé/);
+    expect(service.install(buildPackage({ version: '1.0.0' }))).toMatchObject({ ok: true, version: '1.0.0', active: false });
+    expect(service.get('exemple-cartes')).toMatchObject({ version: '1.1.0', status: 'actif' });
+    expect(service.versions('exemple-cartes')?.map((v) => [v.version, v.active])).toEqual([
+      ['1.1.0', true],
+      ['1.0.0', false],
+    ]);
+  });
+
+  it('reconnaît une version conservée déjà importée, sans la réécrire', () => {
+    const service = new PackageService(store, dir);
+    service.install(buildPackage({ version: '1.1.0' }));
+    service.install(buildPackage({ version: '1.0.0' }));
+    expect(service.install(buildPackage({ version: '1.0.0' }))).toMatchObject({ ok: true, unchanged: true, active: false });
+    const other = service.install(buildPackage({ version: '1.0.0', manifest: (m) => { m.description = 'Autre contenu.'; } }));
+    expect(other).toMatchObject({ ok: false });
+    expect((other as { error: string }).error).toMatch(/contenu différent/);
+  });
+
+  it('active une version conservée, puis revient à la version précédente', () => {
+    const service = new PackageService(store, dir);
+    service.install(buildPackage());
+    service.install(buildPackage({ version: '1.1.0' }));
+
+    expect(service.activate('exemple-cartes', '1.0.0')).toEqual({ ok: true, version: '1.0.0' });
+    expect(service.get('exemple-cartes')).toMatchObject({ version: '1.0.0', status: 'actif' });
+    expect(service.versions('exemple-cartes')?.map((v) => [v.version, v.active])).toEqual([
+      ['1.1.0', false],
+      ['1.0.0', true],
+    ]);
+
+    expect(service.activate('exemple-cartes', '1.1.0')).toEqual({ ok: true, version: '1.1.0' });
     expect(service.get('exemple-cartes')?.version).toBe('1.1.0');
+  });
+
+  it('refuse d’activer une version inconnue ou une archive altérée', () => {
+    const service = new PackageService(store, dir);
+    service.install(buildPackage());
+    service.install(buildPackage({ version: '1.1.0' }));
+
+    expect(service.activate('exemple-cartes', '0.9.0')).toMatchObject({ ok: false });
+    expect(service.activate('inconnu', '1.0.0')).toEqual({ ok: false, error: 'Paquet inconnu.' });
+
+    fs.writeFileSync(path.join(dir, 'games', 'exemple-cartes', '1.0.0', 'package.phgame'), enc('altérée'));
+    expect(service.activate('exemple-cartes', '1.0.0')).toMatchObject({ ok: false });
+    expect(service.get('exemple-cartes')?.version).toBe('1.1.0');
+  });
+
+  it('supprime aussi les versions conservées avec le paquet', () => {
+    const service = new PackageService(store, dir);
+    service.install(buildPackage());
+    service.install(buildPackage({ version: '1.1.0' }));
+    expect(service.remove('exemple-cartes')).toBe(true);
+    expect(service.versions('exemple-cartes')).toBeUndefined();
+    expect(store.listPackageArchives('exemple-cartes')).toEqual([]);
   });
 
   it('refuse un paquet invalide sans rien écrire sur le disque', () => {

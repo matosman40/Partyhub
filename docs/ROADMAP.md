@@ -73,7 +73,7 @@ Détail du format et des règles : `docs/PHGAME.md`.
 - **Fait** : format 1 pour les jeux déclaratifs (définition de jeu de cartes, ressources graphiques, données, licences).
 - **Fait** : validation stricte (archive ZIP restreinte, chemins, types de fichiers, tailles, empreintes SHA-256, version du moteur, licences, images, définition).
 - **Fait** : lancement de contrôle avant chaque installation (deux parties jouées par des robots).
-- **Fait** : import, activation, désactivation et suppression dans l'administration ; mise à jour avec refus du retour arrière.
+- **Fait** : import, activation, désactivation et suppression dans l'administration ; versions multiples conservées, avec retour arrière par activation d'une version conservée.
 - **Fait** : commande `phgame pack` et `phgame check` ; paquet d'exemple reconstruit à l'identique en intégration continue.
 - **Fait** : migration de schéma 2 (table `packages`), testée depuis une base de version 1.
 - **Reporté à 0.7.0** : cache hors ligne des paquets installés et lancement réseau coupé ; transfert entre téléphones avec

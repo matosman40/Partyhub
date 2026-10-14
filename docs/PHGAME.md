@@ -152,10 +152,15 @@ ses cases, ses questions ou ses règles, cliquez sur **Créer une copie modifiab
 
 ## Mise à jour et retour arrière
 
-- Un paquet de même identifiant et de version plus récente remplace l'ancien. L'ancienne version est retirée une fois la
-  mise à jour réussie, et l'état d'activation est conservé.
-- Une version plus ancienne est refusée. Pour revenir en arrière, supprimez le paquet puis réimportez l'ancien fichier.
-- Une version identique avec un contenu différent est refusée : il faut augmenter le numéro de version.
+- Un paquet de même identifiant et de version plus récente devient la version jouée. L'ancienne version est conservée,
+  et l'état d'activation du jeu est gardé.
+- Une version plus ancienne est importée sans être jouée : elle est conservée à côté de la version active.
+- Dans l'administration, le bouton « Versions » liste les versions d'un paquet (la jouée et les conservées). « Jouer
+  cette version » bascule sur une version conservée : c'est le retour arrière. Une archive altérée n'est jamais jouée.
+- Une version identique au contenu déjà connu est reconnue sans être réécrite.
+- Une version déjà connue avec un contenu différent est refusée : il faut augmenter le numéro de version.
+- Supprimer un paquet supprime toutes ses versions conservées.
+- Les versions conservées occupent de la place sur le disque : quelques kilo-octets pour un jeu courant.
 
 ## Où sont stockés les paquets
 

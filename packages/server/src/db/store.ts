@@ -186,6 +186,25 @@ export const MIGRATIONS: Migration[] = [
       `);
     },
   },
+  {
+    version: 5,
+    description: 'Versions conservées des paquets .phgame (0.7.0)',
+    up(db) {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS package_archives (
+          package_id   TEXT NOT NULL,
+          version      TEXT NOT NULL,
+          name         TEXT NOT NULL,
+          sha256       TEXT NOT NULL,
+          size         INTEGER NOT NULL,
+          manifest     TEXT NOT NULL,
+          installed_at TEXT NOT NULL,
+          updated_at   TEXT NOT NULL,
+          PRIMARY KEY (package_id, version)
+        );
+      `);
+    },
+  },
 ];
 
 /** Source GitHub d'un paquet : un dépôt, sa dernière release et l'état de la dernière vérification. */
@@ -459,8 +478,49 @@ export class Store {
       .run(row);
   }
 
+  /** Versions conservées d'un paquet, hors de la version active. */
+  listPackageArchives(id: string): PackageRow[] {
+    return this.db
+      .prepare(
+        'SELECT package_id AS id, version, name, sha256, size, manifest, installed_at, updated_at FROM package_archives WHERE package_id = ?',
+      )
+      .all(id) as PackageRow[];
+  }
+
+  getPackageArchive(id: string, version: string): PackageRow | undefined {
+    return this.db
+      .prepare(
+        'SELECT package_id AS id, version, name, sha256, size, manifest, installed_at, updated_at FROM package_archives WHERE package_id = ? AND version = ?',
+      )
+      .get(id, version) as PackageRow | undefined;
+  }
+
+  /** Conserve une version inactive. Une version déjà conservée sous le même numéro est remplacée. */
+  saveArchive(row: PackageRow): void {
+    this.db
+      .prepare(
+        `INSERT OR REPLACE INTO package_archives (package_id, version, name, sha256, size, manifest, installed_at, updated_at)
+         VALUES (@id, @version, @name, @sha256, @size, @manifest, @installed_at, @updated_at)`,
+      )
+      .run(row);
+  }
+
+  /**
+   * Fait de `row` la version active. L'ancienne version active devient une archive. Tout se fait
+   * dans une seule transaction : un paquet ne se retrouve jamais sans version active.
+   */
+  activatePackage(row: PackageRow): void {
+    this.db.transaction(() => {
+      const current = this.getPackage(row.id);
+      if (current && current.version !== row.version) this.saveArchive(current);
+      this.db.prepare('DELETE FROM package_archives WHERE package_id = ? AND version = ?').run(row.id, row.version);
+      this.savePackage(row);
+    })();
+  }
+
   deletePackage(id: string, gameId: string): void {
     this.db.prepare('DELETE FROM packages WHERE id = ?').run(id);
+    this.db.prepare('DELETE FROM package_archives WHERE package_id = ?').run(id);
     this.db.prepare('DELETE FROM game_flags WHERE game_id = ?').run(gameId);
     this.db.prepare('DELETE FROM notices WHERE game_id = ?').run(gameId);
   }

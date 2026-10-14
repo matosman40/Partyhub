@@ -591,6 +591,25 @@ export function createApp(deps: AppDeps): express.Express {
     res.json({ ok: true, closedRooms: closed });
   });
 
+  /** Versions d'un paquet (active et conservées) et retour arrière vers une version conservée. */
+  admin.get('/packages/:id/versions', (req, res) => {
+    const versions = packages.versions(req.params.id ?? '');
+    if (!versions) {
+      res.status(404).json({ error: 'Paquet inconnu.' });
+      return;
+    }
+    res.json({ versions });
+  });
+
+  admin.post('/packages/:id/versions/:version/activate', (req, res) => {
+    const result = packages.activate(req.params.id ?? '', req.params.version ?? '');
+    if (!result.ok) {
+      res.status(result.error === 'Paquet inconnu.' ? 404 : 400).json({ error: result.error });
+      return;
+    }
+    res.json({ ok: true, version: result.version });
+  });
+
   /** Copie modifiable d'un paquet actif : le paquet reste installé et inchangé. */
   admin.post('/packages/:id/copy', (req, res) => {
     const result = copyPackageToEditable(req.params.id ?? '', { packages, cardGames, boardGames, mediaGames });

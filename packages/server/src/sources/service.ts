@@ -24,7 +24,7 @@ export interface PackageSourceRecord {
 }
 
 export type CheckOutcome =
-  | { ok: true; status: 'installé' | 'mis à jour' | 'à jour'; version: string }
+  | { ok: true; status: 'installé' | 'mis à jour' | 'à jour' | 'conservée'; version: string }
   | { ok: false; error: string; issues?: string[] };
 
 const addSchema = z
@@ -229,6 +229,11 @@ export class PackageSourceService {
       if (!result.ok) {
         this.patch(row.id, { last_error: result.error });
         return { ok: false, error: result.error, issues: result.issues };
+      }
+      if (!result.active) {
+        // Version plus ancienne que la version active : conservée pour un retour arrière, mais pas activée.
+        this.patch(row.id, { package_id: result.id, last_error: null });
+        return { ok: true, status: 'conservée', version: result.version };
       }
       this.patch(row.id, { package_id: result.id, installed_version: result.version, last_error: null });
       const status = result.unchanged ? 'à jour' : installed ? 'mis à jour' : 'installé';

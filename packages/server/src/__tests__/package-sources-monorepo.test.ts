@@ -147,6 +147,24 @@ describe('dépôt commun', () => {
     expect(await service.check(id)).toEqual({ ok: true, status: 'installé', version: '1.0.0' });
   });
 
+  it('conserve une version plus ancienne sans la présenter comme installée', async () => {
+    const first = fakeMonorepo('auteur/jeux', { frontieres: [{ version: '1.0.0' }, { version: '2.0.0' }] });
+    const service = new PackageSourceService(store, packages, { fetch: first.fetch });
+    const { id } = service.add({ repo: 'auteur/jeux/frontieres' }) as { ok: true; id: string };
+    expect(await service.check(id)).toMatchObject({ ok: true, version: '2.0.0' });
+
+    // Le dépôt ne publie plus que 1.0.0 : la source la conserve, sans la rendre active.
+    const older = fakeMonorepo('auteur/jeux', { frontieres: [{ version: '1.0.0' }] });
+    const again = new PackageSourceService(store, packages, { fetch: older.fetch });
+    expect(await again.check(id)).toEqual({ ok: true, status: 'conservée', version: '1.0.0' });
+    expect(packages.get('frontieres')?.version).toBe('2.0.0');
+    expect(packages.versions('frontieres')?.map((v) => [v.version, v.active])).toEqual([
+      ['2.0.0', true],
+      ['1.0.0', false],
+    ]);
+    expect(again.list()[0]).toMatchObject({ installedVersion: '2.0.0' });
+  });
+
   it('refuse un jeu sans aucune version publiée', async () => {
     const github = fakeMonorepo('auteur/jeux', { tresor: [{ version: '1.0.0' }] });
     const service = new PackageSourceService(store, packages, { fetch: github.fetch });

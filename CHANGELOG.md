@@ -16,17 +16,26 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
   l'administration, éditable en entier (nom, description, cartes, cases, questions, règles). Le paquet reste inchangé.
 - Sources GitHub en dépôt commun : `auteur/depot/jeu`, avec des tags `<jeu>-vX.Y.Z`. Une source dédiée à un seul jeu
   (`auteur/nom`) fonctionne comme avant.
-- Tests : 12 nouveaux pour le format 2, 5 pour la copie.
+- Versions multiples d'un paquet : la version jouée et les versions conservées sont listées dans l'administration
+  (« Versions »). Une version plus ancienne s'importe sans être jouée ; « Jouer cette version » fait le retour arrière.
+  Une source GitHub qui trouve une version plus ancienne que celle jouée la conserve et la signale comme « conservée ».
+- Tests : 12 nouveaux pour le format 2, 5 pour la copie, 9 pour les versions et les sources.
 
 ### Modifié
 - Moteur déclaré en 0.7.0, avec les modules `cards`, `board` et `quiz`. Versions des paquets portées à 0.7.0.
 - Identifiants des jeux issus de paquets : `pkg-` pour les cartes (inchangé), `pkgb-` pour les plateaux, `pkgq-` pour
   les questions.
 - Une mise à jour qui change le module d'un paquet installé est refusée : il faut un autre identifiant.
+- Une version plus ancienne n'est plus refusée : elle est conservée sans être jouée. La suppression d'un paquet efface
+  toutes ses versions.
 - Le modèle de publication (`docs/PUBLIER-UN-JEU.md`) utilise la version 0.7.0 du moteur.
 
 ### Migration et compatibilité
-- Aucune migration de base de données. Les paquets de cartes déjà installés restent valides et gardent leur identifiant.
+- Une migration de base de données (schéma 5) ajoute la table `package_archives` pour les versions conservées. Elle ne
+  modifie aucune ligne existante, et une copie de sécurité de la base est faite avant. Les paquets de cartes déjà
+  installés restent valides et gardent leur identifiant.
+- Retour arrière vers 0.6.3 : la version 0.6.3 refuse une base de version 5. Restaurez la copie faite à la mise à jour,
+  puis redéployez l'image 0.6.3.
 - Un paquet de format 2 ne s'installe pas sur une version antérieure à 0.7.0.
 
 ### Problèmes connus
