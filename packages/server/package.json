@@ -20,7 +20,7 @@
     "pino": "^10.3.1",
     "proxy-addr": "2.0.8",
     "socket.io": "4.8.4",
-    "zod": "3.25.76"
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@types/better-sqlite3": "7.6.13",
