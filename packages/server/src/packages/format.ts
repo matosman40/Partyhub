@@ -1,12 +1,38 @@
 import { z } from 'zod';
-import { cardGameDefinitionSchema, type CardGameDefinition } from '@partyhub/shared';
+import {
+  boardGameDefinitionSchema,
+  cardGameDefinitionSchema,
+  mediaQuizDefinitionSchema,
+  type BoardGameDefinition,
+  type CardGameDefinition,
+  type MediaQuizDefinition,
+} from '@partyhub/shared';
 import { PARTYHUB_ENGINE } from './engine.js';
 import { readZip, ZipError, type ZipFileEntry, type ZipReadLimits } from './zip.js';
 import { createHash } from 'node:crypto';
 import { compareVersions, isValidVersion } from './semver.js';
 
-/** Format .phgame, version 1. Voir docs/PHGAME.md. */
-export const PHGAME_FORMAT_VERSION = 1;
+/**
+ * Format .phgame. Voir docs/PHGAME.md.
+ * - Version 1 : jeux de cartes.
+ * - Version 2 : jeux de cartes, jeux de plateau et jeux de questions (médias YouTube seulement).
+ */
+export const PHGAME_FORMAT_VERSIONS = [1, 2] as const;
+export const PHGAME_FORMAT_VERSION = 2;
+
+/** Module de jeu porté par un paquet. Un paquet en porte exactement un. */
+export type PackageModule = (typeof PARTYHUB_ENGINE.modules)[number];
+
+/**
+ * Préfixe de l'identifiant du jeu dans le registre, selon le module. Les préfixes ne se recouvrent
+ * jamais (« pkg- » n'est pas un début possible de « pkgb- » ni de « pkgq- »), donc deux paquets
+ * de types différents ne peuvent pas partager un identifiant de jeu.
+ */
+const GAME_ID_PREFIX: Record<PackageModule, string> = { cards: 'pkg-', board: 'pkgb-', quiz: 'pkgq-' };
+
+export function packageGameId(packageId: string, module: PackageModule = 'cards'): string {
+  return `${GAME_ID_PREFIX[module]}${packageId}`;
+}
 
 export interface PackageLimits {
   maxArchiveBytes: number;
@@ -51,7 +77,7 @@ const TOP_DIRS: Record<string, readonly string[]> = {
 export const manifestSchema = z
   .object({
     format: z.literal('phgame'),
-    formatVersion: z.literal(PHGAME_FORMAT_VERSION),
+    formatVersion: z.union([z.literal(1), z.literal(2)]),
     id: z.string().regex(ID, 'Identifiant : minuscules, chiffres et tirets (2 à 48 caractères).'),
     name: z.string().trim().min(2).max(40),
     version: z.string().max(64).refine(isValidVersion, 'Version attendue au format X.Y.Z.'),
@@ -62,7 +88,11 @@ export const manifestSchema = z
       minVersion: z.string().refine(isValidVersion, 'Version minimale du moteur invalide.'),
       api: z.literal(PARTYHUB_ENGINE.api),
     }),
-    requires: z.object({ modules: z.array(z.enum(PARTYHUB_ENGINE.modules)).min(1).max(4) }),
+    requires: z.object({
+      modules: z
+        .array(z.enum(PARTYHUB_ENGINE.modules))
+        .length(1, 'Un paquet déclare exactement un module de jeu (cards, board ou quiz).'),
+    }),
     entry: z.literal('game/definition.json'),
     cover: z.string().optional(),
     licenses: z
@@ -130,13 +160,20 @@ export function imageProblem(data: Uint8Array, ext: string, limits: PackageLimit
   return null;
 }
 
-export interface ValidatedPackage {
+/** Définition validée, avec le module qui la porte. */
+export type DefinitionValue =
+  | { module: 'cards'; definition: CardGameDefinition }
+  | { module: 'board'; definition: BoardGameDefinition }
+  | { module: 'quiz'; definition: MediaQuizDefinition };
+
+interface ValidatedBase {
   manifest: PackageManifest;
-  definition: CardGameDefinition;
   files: Map<string, Uint8Array>;
   sha256: string;
   size: number;
 }
+
+export type ValidatedPackage = ValidatedBase & DefinitionValue;
 
 /** Erreur de validation, avec la liste des problèmes à présenter à l'administrateur. */
 export class PackageValidationError extends Error {
@@ -147,6 +184,45 @@ export class PackageValidationError extends Error {
 
 function sha256Hex(data: Uint8Array): string {
   return createHash('sha256').update(data).digest('hex');
+}
+
+/**
+ * Vérifie la définition du jeu selon son module. Un jeu de questions ne peut référencer que des
+ * vidéos YouTube : les fichiers de la médiathèque n'existent pas dans un paquet.
+ */
+function checkDefinition(module: PackageModule, raw: unknown, entry: string): { issues: string[]; value?: DefinitionValue } {
+  const at = (path: (string | number)[], message: string) => `${entry} (${path.join('.') || 'racine'}) : ${message}`;
+  const fromZod = (error: z.ZodError) => error.issues.map((i) => at(i.path, i.message));
+  switch (module) {
+    case 'cards': {
+      const parsed = cardGameDefinitionSchema.safeParse(raw);
+      if (!parsed.success) return { issues: fromZod(parsed.error) };
+      if (parsed.data.back?.imageAssetId || parsed.data.fontAssetId) {
+        return {
+          issues: [
+            `${entry} (back.imageAssetId, fontAssetId) : un paquet ne peut pas utiliser une ressource de la médiathèque (image du dos ou police).`,
+          ],
+        };
+      }
+      return { issues: [], value: { module: 'cards', definition: parsed.data } };
+    }
+    case 'board': {
+      const parsed = boardGameDefinitionSchema.safeParse(raw);
+      if (!parsed.success) return { issues: fromZod(parsed.error) };
+      return { issues: [], value: { module: 'board', definition: parsed.data } };
+    }
+    case 'quiz': {
+      const parsed = mediaQuizDefinitionSchema.safeParse(raw);
+      if (!parsed.success) return { issues: fromZod(parsed.error) };
+      const issues = parsed.data.items.flatMap((item, i) =>
+        item.source.type === 'asset'
+          ? [at(['items', i, 'source'], 'un paquet ne peut pas utiliser un fichier de la médiathèque : utilisez un lien YouTube.')]
+          : [],
+      );
+      if (issues.length > 0) return { issues };
+      return { issues: [], value: { module: 'quiz', definition: parsed.data } };
+    }
+  }
 }
 
 /**
@@ -198,6 +274,7 @@ export function validatePackage(bytes: Uint8Array, limits: PackageLimits = DEFAU
     );
   }
   const manifest = parsed.data;
+  const module = manifest.requires.modules[0]!;
 
   // Compatibilité du moteur.
   if (compareVersions(manifest.engine.minVersion, PARTYHUB_ENGINE.version) > 0) {
@@ -207,6 +284,9 @@ export function validatePackage(bytes: Uint8Array, limits: PackageLimits = DEFAU
   }
   for (const m of manifest.requires.modules) {
     if (!(PARTYHUB_ENGINE.modules as readonly string[]).includes(m)) issues.push(`Module « ${m} » non disponible.`);
+  }
+  if (manifest.formatVersion === 1 && module !== 'cards') {
+    issues.push(`Le format 1 ne porte que des jeux de cartes : le module « ${module} » demande le format 2.`);
   }
 
   // Fichiers déclarés : présents, sans doublon, de la bonne taille et de la bonne empreinte.
@@ -265,24 +345,25 @@ export function validatePackage(bytes: Uint8Array, limits: PackageLimits = DEFAU
     issues.push('La couverture doit être un fichier déclaré dans assets/.');
   }
 
-  // Définition du jeu.
-  let definition: CardGameDefinition | null = null;
+  // Définition du jeu, selon son module.
+  let definition: DefinitionValue | null = null;
   const rawDefinition = files.get(manifest.entry);
   if (rawDefinition) {
     if (rawDefinition.byteLength > limits.maxJsonBytes) {
       issues.push(`« ${manifest.entry} » est trop volumineux.`);
     } else {
+      let data: unknown;
+      let readable = false;
       try {
-        const def = cardGameDefinitionSchema.safeParse(JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(rawDefinition)));
-        if (def.success) {
-          definition = def.data;
-          if (definition.back?.imageAssetId || definition.fontAssetId) {
-            issues.push(`${manifest.entry} (back.imageAssetId, fontAssetId) : un paquet ne peut pas utiliser une ressource de la médiathèque (image du dos ou police).`);
-          }
-        }
-        else for (const i of def.error.issues) issues.push(`${manifest.entry} (${i.path.join('.') || 'racine'}) : ${i.message}`);
+        data = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(rawDefinition));
+        readable = true;
       } catch {
         issues.push(`${manifest.entry} n’est pas un JSON valide.`);
+      }
+      if (readable) {
+        const checked = checkDefinition(module, data, manifest.entry);
+        issues.push(...checked.issues);
+        definition = checked.value ?? null;
       }
     }
   }
@@ -290,5 +371,5 @@ export function validatePackage(bytes: Uint8Array, limits: PackageLimits = DEFAU
   if (issues.length > 0 || !definition) {
     throw new PackageValidationError(issues.length > 0 ? issues : ['Définition du jeu illisible.']);
   }
-  return { manifest, definition, files, sha256: sha256Hex(bytes), size: bytes.byteLength };
+  return { manifest, files, sha256: sha256Hex(bytes), size: bytes.byteLength, ...definition };
 }

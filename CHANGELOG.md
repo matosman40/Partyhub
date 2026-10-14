@@ -2,6 +2,115 @@
 
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [0.7.0] - 2026-10-14
+
+### Ajouté
+- Format de paquet 2 : les jeux de plateau et les jeux de questions peuvent être livrés dans un `.phgame`. Un paquet
+  porte exactement un module : `cards`, `board` ou `quiz`.
+- Jeux de questions en paquet : vidéos YouTube seulement (identifiant et plage de lecture). Les fichiers de la
+  médiathèque sont refusés dans un paquet.
+- Exemples `examples/exemple-plateau/` et `examples/exemple-quiz/`. Chacun pèse environ 1,4 Ko.
+- Fabrique de jeux par module (`packages/server/src/packages/factory.ts`). Le lancement de contrôle fonctionne pour
+  tous les modules, avec le nombre de joueurs du manifeste.
+- Copie modifiable d'un paquet actif (« Créer une copie modifiable » dans l'administration) : la copie est un jeu de
+  l'administration, éditable en entier (nom, description, cartes, cases, questions, règles). Le paquet reste inchangé.
+- Sources GitHub en dépôt commun : `auteur/depot/jeu`, avec des tags `<jeu>-vX.Y.Z`. Une source dédiée à un seul jeu
+  (`auteur/nom`) fonctionne comme avant.
+- Versions multiples d'un paquet : la version jouée et les versions conservées sont listées dans l'administration
+  (« Versions »). Une version plus ancienne s'importe sans être jouée ; « Jouer cette version » fait le retour arrière.
+  Une source GitHub qui trouve une version plus ancienne que celle jouée la conserve et la signale comme « conservée ».
+- Tests : 12 nouveaux pour le format 2, 5 pour la copie, 9 pour les versions et les sources.
+
+### Corrigé
+- Docker Compose : `GITHUB_TOKEN` est maintenant transmis au conteneur (`compose.yaml` et `compose.dev.yaml`). Auparavant,
+  la variable documentée dans `.env.example` n'avait aucun effet, et les dépôts privés de jeux étaient inaccessibles.
+  Un test vérifie désormais la cohérence entre les fichiers de déploiement et `.env.example`.
+
+### Ajouté (déploiement)
+- `CONTRIBUTING.md` : mise en place, règles du code, contenu attendu d'une pull request.
+- `.gitattributes` : fins de ligne LF pour le code, fichiers binaires marqués comme tels.
+
+### Modifié
+- Moteur déclaré en 0.7.0, avec les modules `cards`, `board` et `quiz`. Versions des paquets portées à 0.7.0.
+- Identifiants des jeux issus de paquets : `pkg-` pour les cartes (inchangé), `pkgb-` pour les plateaux, `pkgq-` pour
+  les questions.
+- Une mise à jour qui change le module d'un paquet installé est refusée : il faut un autre identifiant.
+- Une version plus ancienne n'est plus refusée : elle est conservée sans être jouée. La suppression d'un paquet efface
+  toutes ses versions.
+- Le modèle de publication (`docs/PUBLIER-UN-JEU.md`) utilise la version 0.7.0 du moteur.
+
+### Migration et compatibilité
+- Une migration de base de données (schéma 5) ajoute la table `package_archives` pour les versions conservées. Elle ne
+  modifie aucune ligne existante, et une copie de sécurité de la base est faite avant. Les paquets de cartes déjà
+  installés restent valides et gardent leur identifiant.
+- Retour arrière vers 0.6.3 : la version 0.6.3 refuse une base de version 5. Restaurez la copie faite à la mise à jour,
+  puis redéployez l'image 0.6.3.
+- Un paquet de format 2 ne s'installe pas sur une version antérieure à 0.7.0.
+
+### Problèmes connus
+- Hors paquet : les jeux en temps réel (type Bomberman) et les jeux de mouvement (type Just Dance). Un paquet ne porte que
+  des données ; ces mécaniques restent du code intégré, ou demanderont le bac à sable JavaScript de la version 0.9.0.
+- Les vidéos et les sons de la médiathèque ne peuvent pas être embarqués dans un paquet.
+- Les jeux de plateau et de questions venus d'un paquet sont vérifiés par les tests serveur et le lancement de contrôle ;
+  leur affichage dans un navigateur reste à vérifier sur de vrais téléphones.
+- Aucune release GitHub de test n'a encore été créée pour ces modules.
+
+## [0.6.3] - 2026-10-14
+
+### Ajouté
+- Sources GitHub pour les paquets `.phgame` : un dépôt `auteur/nom` dont la dernière release contient le paquet et son
+  fichier `.sha256`. Installation et mise à jour depuis l'administration, à la demande ou une fois par jour.
+- Dépôts privés avec la variable `GITHUB_TOKEN`. Le jeton n'est jamais affiché, journalisé ni sauvegardé.
+- Vérifications strictes : empreinte SHA-256 de la release, version du tag égale à celle du manifeste, paquet d'un autre
+  dépôt refusé, redirection hors GitHub refusée, taille limitée.
+- Modèle de publication pour les dépôts de jeux : [docs/PUBLIER-UN-JEU.md](docs/PUBLIER-UN-JEU.md).
+- Tests : 25 nouveaux (sources, empreintes, jeton, mise à jour automatique, jeux intégrés) avec un faux client GitHub.
+- Réglage `BUILTIN_GAMES` (`off` par défaut) : sur une installation neuve, les jeux intégrés restent dans le code mais sont désactivés. L'administrateur les active un par un.
+
+### Modifié
+- Base de données : version de schéma 4 (table `package_sources`). Migration automatique au premier démarrage, avec copie de sécurité.
+
+### Migration et compatibilité
+- Action automatique au premier démarrage : une copie de la base est créée dans `/data/migrations/`.
+- Retour arrière vers 0.6.2 : la version 0.6.2 refuse une base de version 4. Restaurez la copie faite à la mise à jour,
+  puis redéployez l'image 0.6.2.
+- Aucune source n'est ajoutée automatiquement : rien ne change tant qu'une source n'est pas créée.
+- Installation neuve : les jeux intégrés sont désactivés. Une installation existante (mot de passe administrateur déjà créé) n'est pas modifiée.
+
+### Problèmes connus
+- Les sources ne sont pas incluses dans la sauvegarde JSON de l'administration ; elles sont dans la copie de la base.
+- Un seul fichier `.phgame` par release, et une seule version active par jeu.
+- Le modèle de publication pour les dépôts de jeux n'a pas encore été exécuté sur GitHub.
+- Non testé sur de vrais téléphones ni sur une TV.
+
+## [0.6.2] - 2026-10-14
+
+### Ajouté
+- Jeux de plateau : un nouveau type de jeu, défini par des données. Un parcours de 8 à 60 cases, avec sept types de cases :
+  normale, avance, recule, gain de points, perte de points, passe le prochain tour, et arrivée (toujours la dernière case).
+- Éditeur de plateaux dans l'administration (section « Jeux de plateau ») : nom, icône, thème, règles, tableau des cases
+  avec aperçu, notice. Création, modification, copie et suppression. Les erreurs de règle sont affichées telles quelles.
+- Déroulement : un ou deux dés par tour, minuteur de tour optionnel qui lance les dés à la place du joueur, classement final
+  (les arrivés d'abord, dans l'ordre d'arrivée). Les robots jouent aussi en salle d'entraînement.
+- Les plateaux sont inclus dans la sauvegarde complète. Une sauvegarde faite avant cette version se restaure sans erreur.
+- 34 tests nouveaux (règles de jeu, validation, service, API, sauvegarde, migration), 354 au total.
+
+### Modifié
+- Base de données : version de schéma 3 (table `board_games`). Migration automatique au premier démarrage, avec copie de sécurité.
+
+### Migration et compatibilité
+- Action automatique au premier démarrage : une copie de la base est créée dans `/data/migrations/`. Conservez-la jusqu'à
+  avoir vérifié le bon fonctionnement de la version.
+- Retour arrière vers 0.6.1 : la version 0.6.1 refuse une base de version 3. Restaurez la copie faite à la mise à jour,
+  puis redéployez l'image 0.6.1.
+- Les paquets `.phgame` ne peuvent pas encore contenir de plateau.
+
+### Problèmes connus
+- Pas d'export ni d'import de fichier pour un plateau (contrairement aux jeux de cartes) : utilisez la sauvegarde complète.
+- Les cases n'ont pas d'image : seulement un nom, un effet et une valeur.
+- Si le joueur dont c'est le tour est déconnecté et qu'il n'y a pas de limite de temps, la partie attend son retour.
+- Non testé sur de vrais téléphones ni sur une TV.
+
 ## [0.6.1] - 2026-10-14
 
 ### Ajouté

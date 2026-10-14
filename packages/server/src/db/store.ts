@@ -153,7 +153,73 @@ export const MIGRATIONS: Migration[] = [
       `);
     },
   },
+  {
+    version: 3,
+    description: 'Jeux de plateau créés dans l’administration (0.6.2)',
+    up(db) {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS board_games (
+          id         TEXT PRIMARY KEY,
+          definition TEXT NOT NULL,
+          updated_at TEXT NOT NULL
+        );
+      `);
+    },
+  },
+  {
+    version: 4,
+    description: 'Sources GitHub des paquets .phgame (0.6.3)',
+    up(db) {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS package_sources (
+          id                TEXT PRIMARY KEY,
+          repo              TEXT NOT NULL UNIQUE,
+          private           INTEGER NOT NULL DEFAULT 0,
+          auto_update       INTEGER NOT NULL DEFAULT 0,
+          package_id        TEXT,
+          installed_version TEXT,
+          latest_version    TEXT,
+          last_checked_at   TEXT,
+          last_error        TEXT,
+          created_at        TEXT NOT NULL
+        );
+      `);
+    },
+  },
+  {
+    version: 5,
+    description: 'Versions conservées des paquets .phgame (0.7.0)',
+    up(db) {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS package_archives (
+          package_id   TEXT NOT NULL,
+          version      TEXT NOT NULL,
+          name         TEXT NOT NULL,
+          sha256       TEXT NOT NULL,
+          size         INTEGER NOT NULL,
+          manifest     TEXT NOT NULL,
+          installed_at TEXT NOT NULL,
+          updated_at   TEXT NOT NULL,
+          PRIMARY KEY (package_id, version)
+        );
+      `);
+    },
+  },
 ];
+
+/** Source GitHub d'un paquet : un dépôt, sa dernière release et l'état de la dernière vérification. */
+export interface PackageSourceRow {
+  id: string;
+  repo: string;
+  private: number;
+  auto_update: number;
+  package_id: string | null;
+  installed_version: string | null;
+  latest_version: string | null;
+  last_checked_at: string | null;
+  last_error: string | null;
+  created_at: string;
+}
 
 export const LATEST_SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1]!.version;
 
@@ -366,6 +432,28 @@ export class Store {
     this.db.prepare('DELETE FROM notices WHERE game_id = ?').run(id);
   }
 
+  /** Jeux de plateau créés dans l'administration (définition au format JSON). */
+  listBoardGames(): { id: string; definition: string; updatedAt: string }[] {
+    const rows = this.db
+      .prepare('SELECT id, definition, updated_at FROM board_games ORDER BY updated_at')
+      .all() as { id: string; definition: string; updated_at: string }[];
+    return rows.map((r) => ({ id: r.id, definition: r.definition, updatedAt: r.updated_at }));
+  }
+
+  saveBoardGame(id: string, definition: string): void {
+    this.db
+      .prepare(
+        'INSERT INTO board_games (id, definition, updated_at) VALUES (?, ?, ?) ON CONFLICT(id) DO UPDATE SET definition = excluded.definition, updated_at = excluded.updated_at',
+      )
+      .run(id, definition, new Date().toISOString());
+  }
+
+  deleteBoardGame(id: string): void {
+    this.db.prepare('DELETE FROM board_games WHERE id = ?').run(id);
+    this.db.prepare('DELETE FROM game_flags WHERE game_id = ?').run(id);
+    this.db.prepare('DELETE FROM notices WHERE game_id = ?').run(id);
+  }
+
   listPackages(): PackageRow[] {
     return this.db
       .prepare('SELECT id, version, name, sha256, size, manifest, installed_at, updated_at FROM packages ORDER BY installed_at')
@@ -390,10 +478,83 @@ export class Store {
       .run(row);
   }
 
+  /** Versions conservées d'un paquet, hors de la version active. */
+  listPackageArchives(id: string): PackageRow[] {
+    return this.db
+      .prepare(
+        'SELECT package_id AS id, version, name, sha256, size, manifest, installed_at, updated_at FROM package_archives WHERE package_id = ?',
+      )
+      .all(id) as PackageRow[];
+  }
+
+  getPackageArchive(id: string, version: string): PackageRow | undefined {
+    return this.db
+      .prepare(
+        'SELECT package_id AS id, version, name, sha256, size, manifest, installed_at, updated_at FROM package_archives WHERE package_id = ? AND version = ?',
+      )
+      .get(id, version) as PackageRow | undefined;
+  }
+
+  /** Conserve une version inactive. Une version déjà conservée sous le même numéro est remplacée. */
+  saveArchive(row: PackageRow): void {
+    this.db
+      .prepare(
+        `INSERT OR REPLACE INTO package_archives (package_id, version, name, sha256, size, manifest, installed_at, updated_at)
+         VALUES (@id, @version, @name, @sha256, @size, @manifest, @installed_at, @updated_at)`,
+      )
+      .run(row);
+  }
+
+  /**
+   * Fait de `row` la version active. L'ancienne version active devient une archive. Tout se fait
+   * dans une seule transaction : un paquet ne se retrouve jamais sans version active.
+   */
+  activatePackage(row: PackageRow): void {
+    this.db.transaction(() => {
+      const current = this.getPackage(row.id);
+      if (current && current.version !== row.version) this.saveArchive(current);
+      this.db.prepare('DELETE FROM package_archives WHERE package_id = ? AND version = ?').run(row.id, row.version);
+      this.savePackage(row);
+    })();
+  }
+
   deletePackage(id: string, gameId: string): void {
     this.db.prepare('DELETE FROM packages WHERE id = ?').run(id);
+    this.db.prepare('DELETE FROM package_archives WHERE package_id = ?').run(id);
     this.db.prepare('DELETE FROM game_flags WHERE game_id = ?').run(gameId);
     this.db.prepare('DELETE FROM notices WHERE game_id = ?').run(gameId);
+  }
+
+  listPackageSources(): PackageSourceRow[] {
+    return this.db
+      .prepare(
+        'SELECT id, repo, private, auto_update, package_id, installed_version, latest_version, last_checked_at, last_error, created_at FROM package_sources ORDER BY created_at',
+      )
+      .all() as PackageSourceRow[];
+  }
+
+  getPackageSource(id: string): PackageSourceRow | undefined {
+    return this.db
+      .prepare(
+        'SELECT id, repo, private, auto_update, package_id, installed_version, latest_version, last_checked_at, last_error, created_at FROM package_sources WHERE id = ?',
+      )
+      .get(id) as PackageSourceRow | undefined;
+  }
+
+  savePackageSource(row: PackageSourceRow): void {
+    this.db
+      .prepare(
+        `INSERT INTO package_sources (id, repo, private, auto_update, package_id, installed_version, latest_version, last_checked_at, last_error, created_at)
+         VALUES (@id, @repo, @private, @auto_update, @package_id, @installed_version, @latest_version, @last_checked_at, @last_error, @created_at)
+         ON CONFLICT(id) DO UPDATE SET repo = excluded.repo, private = excluded.private, auto_update = excluded.auto_update,
+           package_id = excluded.package_id, installed_version = excluded.installed_version, latest_version = excluded.latest_version,
+           last_checked_at = excluded.last_checked_at, last_error = excluded.last_error`,
+      )
+      .run(row);
+  }
+
+  deletePackageSource(id: string): void {
+    this.db.prepare('DELETE FROM package_sources WHERE id = ?').run(id);
   }
 
   listMediaGames(): { id: string; definition: string; updatedAt: string }[] {

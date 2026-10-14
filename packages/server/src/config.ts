@@ -9,6 +9,13 @@ export interface AppConfig {
   dbFile: string;
   staticDir: string;
   adminPassword?: string;
+  /** Jeton GitHub pour les sources privées et les limites d'appels (GITHUB_TOKEN). Jamais affiché ni sauvegardé. */
+  githubToken?: string;
+  /**
+   * Jeux intégrés sur une installation neuve. `false` (défaut de la production) : ils restent dans le code
+   * mais sont désactivés, l'administrateur les active un par un. Absent : ils restent actifs (tests, usage en bibliothèque).
+   */
+  builtinGames?: boolean;
   logLevel: string;
   secureCookies: boolean;
   /** Proxys de confiance (TRUST_PROXY, syntaxe d'Express). Absent = « loopback ». */
@@ -38,6 +45,14 @@ function intFromEnv(name: string, raw: string | undefined, fallback: number, min
 
 const MB = 1024 * 1024;
 
+/** BUILTIN_GAMES : « on » active les jeux intégrés sur une installation neuve ; « off » (défaut) les désactive. */
+export function builtinGamesFromEnv(raw: string | undefined): boolean {
+  const value = (raw ?? '').trim().toLowerCase();
+  if (value === '' || value === 'off') return false;
+  if (value === 'on') return true;
+  throw new Error(`BUILTIN_GAMES invalide : « ${raw} » (on ou off)`);
+}
+
 /** Lit la configuration depuis l'environnement. Échoue tôt si une valeur est invalide. */
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   const port = Number(env.PORT ?? 8282);
@@ -63,6 +78,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     dbFile: path.join(dataDir, 'partyhub.db'),
     staticDir: env.STATIC_DIR?.trim() || path.resolve(here, '../../web/dist'),
     adminPassword,
+    githubToken: env.GITHUB_TOKEN?.trim() || undefined,
+    builtinGames: builtinGamesFromEnv(env.BUILTIN_GAMES),
     logLevel: env.LOG_LEVEL?.trim() || 'info',
     secureCookies: env.COOKIE_SECURE === 'true',
     trustProxy,

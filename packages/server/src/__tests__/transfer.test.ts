@@ -215,3 +215,65 @@ describe('Sauvegarde complète', () => {
     expect(res.status).toBe(400);
   });
 });
+
+describe('Jeux de plateau', () => {
+  const plateau = (name: string) => ({
+    name,
+    description: 'Un parcours de test jusqu’à l’arrivée.',
+    icon: '🎲',
+    theme: 'nuit',
+    cells: [
+      { label: 'Départ', kind: 'normal', value: 0 },
+      { label: 'Bonus', kind: 'gain', value: 2 },
+      ...Array.from({ length: 6 }, () => ({ label: '', kind: 'normal', value: 0 })),
+      { label: 'Arrivée', kind: 'arrivee', value: 0 },
+    ],
+    rules: { minPlayers: 2, maxPlayers: 4, dice: 2, turnSeconds: 15 },
+    notice: { goal: 'Arriver le premier.', steps: ['Lancez les dés.'], tips: [] },
+  });
+
+  it('crée, copie et liste un plateau, puis refuse une case d’arrivée manquante', async () => {
+    const created = await call('/api/admin/board-games', { method: 'POST', json: plateau('Plateau de test') });
+    expect(created.status).toBe(201);
+    const id: string = created.data.id;
+    expect(id.startsWith('board-')).toBe(true);
+
+    const copy = await call(`/api/admin/board-games/${id}/duplicate`, { method: 'POST' });
+    expect(copy.status).toBe(201);
+
+    const list = await call('/api/admin/board-games');
+    expect(list.data.games.map((g: any) => g.definition.name).sort()).toEqual(
+      ['Plateau de test', 'Plateau de test (copie)'].sort(),
+    );
+
+    const broken = { ...plateau('Sans arrivée'), cells: plateau('x').cells.slice(0, -1).concat({ label: 'Fin', kind: 'normal', value: 0 }) };
+    const refused = await call('/api/admin/board-games', { method: 'POST', json: broken });
+    expect(refused.status).toBe(400);
+    expect(refused.data.error).toBe('La dernière case doit être la case d’arrivée.');
+
+    const missing = await call('/api/admin/board-games/board-absent', { method: 'PUT', json: plateau('Inconnu') });
+    expect(missing.status).toBe(404);
+  });
+
+  it('inclut les plateaux dans la sauvegarde et les restaure', async () => {
+    const backup = await call('/api/admin/backup');
+    expect(backup.data.boardGames.map((d: any) => d.name).sort()).toEqual(
+      ['Plateau de test', 'Plateau de test (copie)'].sort(),
+    );
+
+    const list = await call('/api/admin/board-games');
+    const original = list.data.games.find((g: any) => g.definition.name === 'Plateau de test');
+    await call(`/api/admin/board-games/${original.id}`, { method: 'DELETE' });
+
+    const restored = await call('/api/admin/backup/import', { method: 'POST', json: backup.data });
+    expect(restored.status).toBe(200);
+    expect(restored.data.summary.boardGames).toBe(2);
+  });
+
+  it('accepte une sauvegarde antérieure sans plateaux', async () => {
+    const legacy = { format: 'partyhub-sauvegarde', version: 1, cardGames: [], mediaGames: [], gameDetails: {}, notices: {} };
+    const res = await call('/api/admin/backup/import', { method: 'POST', json: legacy });
+    expect(res.status).toBe(200);
+    expect(res.data.summary.boardGames).toBe(0);
+  });
+});

@@ -1,0 +1,37 @@
+{
+  "mode": "devine",
+  "kind": "film",
+  "name": "Exemple de questions",
+  "description": "Trois extraits à reconnaître. Les liens sont des exemples : remplacez-les avant usage.",
+  "icon": "🎬",
+  "rules": { "questionCount": 3, "answerSeconds": 20, "speedBonus": true },
+  "items": [
+    {
+      "id": "extrait-1",
+      "answer": "Titre du premier film",
+      "aliases": ["Premier film"],
+      "detail": "Année de sortie",
+      "source": { "type": "youtube", "videoId": "exempleVi01" },
+      "startSec": 30,
+      "durationSec": 15
+    },
+    {
+      "id": "extrait-2",
+      "answer": "Titre du deuxième film",
+      "aliases": [],
+      "detail": "Réalisateur",
+      "source": { "type": "youtube", "videoId": "exempleVi02" },
+      "startSec": 0,
+      "durationSec": 12
+    },
+    {
+      "id": "extrait-3",
+      "answer": "Titre du troisième film",
+      "aliases": ["Troisième film"],
+      "detail": "",
+      "source": { "type": "youtube", "videoId": "exempleVi03" },
+      "startSec": 90,
+      "durationSec": 20
+    }
+  ]
+}

@@ -25,6 +25,7 @@ import type { GameClientViews } from './types.js';
 import { ramiViews } from '../rami51/client/index.js';
 import { pokerViews } from '../poker/client/index.js';
 import { tarotViews } from '../tarot/client/index.js';
+import { boardViews } from '../board/client/index.js';
 
 export type { GameClientViews, HostViewProps, PlayerViewProps, SettingsProps } from './types.js';
 export { Avatar } from './ui.js';
@@ -34,6 +35,7 @@ export { useWakeLock, vibrate, canVibrate } from './device.js';
 export { isMuted, setMuted, startMusic, stopMusic, unlockAudio } from './audio.js';
 export { SoundToggle } from './SoundToggle.js';
 export { cardViews } from '../cards/client/index.js';
+export { boardViews } from '../board/client/index.js';
 export { cardGamePresets } from '../cards/presets.js';
 export { validatePlay, rankValue, RANKS, PRESIDENT_DEFINITION } from '../president/rules.js';
 export { CardFace } from '../cards/client/CardFace.js';

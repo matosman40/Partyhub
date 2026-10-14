@@ -1,0 +1,15 @@
+{
+  "format": "phgame",
+  "formatVersion": 2,
+  "id": "exemple-plateau",
+  "name": "Exemple de plateau",
+  "version": "1.0.0",
+  "description": "Jeu de plateau de démonstration : une piste de quatorze cases, des dés et des effets.",
+  "author": "PartyHub contributors",
+  "kind": "declarative",
+  "engine": { "minVersion": "0.7.0", "api": 1 },
+  "requires": { "modules": ["board"] },
+  "entry": "game/definition.json",
+  "licenses": [{ "path": "licenses/LICENCE.txt", "covers": [] }],
+  "files": []
+}

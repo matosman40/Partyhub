@@ -11,9 +11,12 @@ import {
   roomCodeSchema,
 } from '@partyhub/shared';
 import { resolveGame } from '../games-registry.js';
+import type { BoardGameService } from '../boards/service.js';
+import type { PackageSourceService } from '../sources/service.js';
 import type { CardGameService } from '../cards/service.js';
 import type { AssetService } from '../assets/service.js';
 import type { PackageService } from '../packages/service.js';
+import { copyPackageToEditable } from '../packages/copy.js';
 import type { MediaQuizService } from '../media/service.js';
 import { AdminSessions, LoginLimiter, readCookie, verifyPassword } from '../auth.js';
 import { catalog, gameInfo, originOf } from '../catalog.js';
@@ -36,6 +39,10 @@ export interface AppDeps {
   hub: RealtimeHub;
   profiles: ProfileService;
   cardGames: CardGameService;
+  /** Jeux de plateau créés dans l'administration. */
+  boardGames: BoardGameService;
+  /** Sources GitHub des paquets .phgame. */
+  packageSources: PackageSourceService;
   assets: AssetService;
   mediaGames: MediaQuizService;
   /** Paquets .phgame installés (jeux déclaratifs). */
@@ -49,7 +56,7 @@ const ADMIN_COOKIE_PATH = '/api/admin';
 const ADMIN_SESSION_MS = 12 * 60 * 60 * 1000;
 
 export function createApp(deps: AppDeps): express.Express {
-  const { config, logger, store, manager, profiles, cardGames, assets, mediaGames, dbBackups, packages } = deps;
+  const { config, logger, store, manager, profiles, cardGames, boardGames, packageSources, assets, mediaGames, dbBackups, packages } = deps;
   const app = express();
   const sessions = new AdminSessions();
   const limiter = new LoginLimiter();
@@ -445,6 +452,97 @@ export function createApp(deps: AppDeps): express.Express {
     res.status(201).json({ ok: true, id: result.id });
   });
 
+  /** Jeux de plateau personnalisés : liste, création, modification, copie et suppression. */
+  admin.get('/board-games', (_req, res) => {
+    res.json({ games: boardGames.list() });
+  });
+
+  admin.post('/board-games', (req, res) => {
+    const result = boardGames.save(null, req.body);
+    if (!result.ok) {
+      res.status(400).json({ error: result.error });
+      return;
+    }
+    res.status(201).json({ ok: true, id: result.id });
+  });
+
+  admin.put('/board-games/:id', (req, res) => {
+    const id = req.params.id ?? '';
+    const result = boardGames.save(id, req.body);
+    if (!result.ok) {
+      res.status(result.error === 'Jeu inconnu.' ? 404 : 400).json({ error: result.error });
+      return;
+    }
+    res.json({ ok: true, id: result.id });
+  });
+
+  admin.delete('/board-games/:id', (req, res) => {
+    const id = req.params.id ?? '';
+    if (!boardGames.remove(id)) {
+      res.status(404).json({ error: 'Jeu inconnu.' });
+      return;
+    }
+    // Les salles qui jouent ce plateau sont fermées : aucune partie ne reste bloquée.
+    const closed = manager.closeWhere((r) => r.module.manifest.id === id, 'admin');
+    res.json({ ok: true, closedRooms: closed });
+  });
+
+  admin.post('/board-games/:id/duplicate', (req, res) => {
+    const result = boardGames.duplicate(req.params.id ?? '');
+    if (!result.ok) {
+      res.status(result.error === 'Jeu inconnu.' ? 404 : 400).json({ error: result.error });
+      return;
+    }
+    res.status(201).json({ ok: true, id: result.id });
+  });
+
+  /** Sources GitHub : ajout (avec première vérification), réglages, vérification et suppression. */
+  admin.get('/package-sources', (_req, res) => {
+    res.json({ sources: packageSources.list(), tokenConfigured: packageSources.tokenConfigured });
+  });
+
+  admin.post('/package-sources', async (req, res) => {
+    const added = packageSources.add(req.body);
+    if (!added.ok) {
+      res.status(400).json({ error: added.error });
+      return;
+    }
+    const outcome = await packageSources.check(added.id);
+    res.status(201).json({ ok: true, id: added.id, outcome });
+  });
+
+  admin.put('/package-sources/:id', (req, res) => {
+    const result = packageSources.update(req.params.id ?? '', req.body);
+    if (!result.ok) {
+      res.status(result.notFound ? 404 : 400).json({ error: result.error });
+      return;
+    }
+    res.json({ ok: true });
+  });
+
+  admin.post('/package-sources/check-all', async (_req, res) => {
+    const results = await packageSources.checkAll(false);
+    res.json({ results });
+  });
+
+  admin.post('/package-sources/:id/check', async (req, res) => {
+    const id = req.params.id ?? '';
+    const outcome = await packageSources.check(id);
+    if (!outcome.ok && outcome.error === 'Source inconnue.') {
+      res.status(404).json({ error: outcome.error });
+      return;
+    }
+    res.json({ outcome });
+  });
+
+  admin.delete('/package-sources/:id', (req, res) => {
+    if (!packageSources.remove(req.params.id ?? '')) {
+      res.status(404).json({ error: 'Source inconnue.' });
+      return;
+    }
+    res.json({ ok: true });
+  });
+
   /** Paquets .phgame : liste, envoi du fichier brut, activation et suppression. */
   admin.get('/packages', (_req, res) => {
     res.json({ packages: packages.list() });
@@ -491,6 +589,35 @@ export function createApp(deps: AppDeps): express.Express {
     }
     const closed = manager.closeWhere((r) => r.module.manifest.id === record.gameId, 'admin');
     res.json({ ok: true, closedRooms: closed });
+  });
+
+  /** Versions d'un paquet (active et conservées) et retour arrière vers une version conservée. */
+  admin.get('/packages/:id/versions', (req, res) => {
+    const versions = packages.versions(req.params.id ?? '');
+    if (!versions) {
+      res.status(404).json({ error: 'Paquet inconnu.' });
+      return;
+    }
+    res.json({ versions });
+  });
+
+  admin.post('/packages/:id/versions/:version/activate', (req, res) => {
+    const result = packages.activate(req.params.id ?? '', req.params.version ?? '');
+    if (!result.ok) {
+      res.status(result.error === 'Paquet inconnu.' ? 404 : 400).json({ error: result.error });
+      return;
+    }
+    res.json({ ok: true, version: result.version });
+  });
+
+  /** Copie modifiable d'un paquet actif : le paquet reste installé et inchangé. */
+  admin.post('/packages/:id/copy', (req, res) => {
+    const result = copyPackageToEditable(req.params.id ?? '', { packages, cardGames, boardGames, mediaGames });
+    if (!result.ok) {
+      res.status(result.error === 'Paquet inconnu.' ? 404 : 400).json({ error: result.error });
+      return;
+    }
+    res.status(201).json(result);
   });
 
   /** Jeux de questions médias (extraits de vidéos YouTube ou de la médiathèque). */
@@ -626,14 +753,14 @@ export function createApp(deps: AppDeps): express.Express {
 
   /** Sauvegarde complète : jeux personnalisés, textes et notices des jeux intégrés. */
   admin.get('/backup', (_req, res) => {
-    const backup = buildBackup(store, cardGames, mediaGames);
+    const backup = buildBackup(store, cardGames, mediaGames, boardGames);
     const stamp = new Date().toISOString().slice(0, 10);
     res.setHeader('Content-Disposition', `attachment; filename="partyhub-sauvegarde-${stamp}.json"`);
     res.json(backup);
   });
 
   admin.post('/backup/import', (req, res) => {
-    const result = restoreBackup(req.body, store, cardGames, mediaGames);
+    const result = restoreBackup(req.body, store, cardGames, mediaGames, boardGames);
     if (!result.ok) {
       res.status(400).json({ error: result.error });
       return;

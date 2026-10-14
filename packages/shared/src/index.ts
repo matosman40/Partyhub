@@ -4,5 +4,6 @@ export * from './protocol.js';
 export * from './schemas.js';
 export * from './avatars.js';
 export * from './card-games.js';
+export * from './board-games.js';
 export * from './media-quiz.js';
 export * from './transfer.js';

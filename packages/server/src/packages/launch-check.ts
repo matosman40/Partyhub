@@ -1,5 +1,4 @@
-import { createCardGame } from '@partyhub/games';
-import type { CardGameDefinition, GameContext, PlayerRef } from '@partyhub/shared';
+import type { GameContext, GameModule, PlayerRef } from '@partyhub/shared';
 
 export type LaunchCheckResult = { ok: true; actions: number } | { ok: false; error: string };
 
@@ -20,32 +19,31 @@ function seeded(seed: number): () => number {
 }
 
 /**
- * Joue une ou plusieurs parties complètes avec les robots du moteur, sans réseau ni sortie
- * de données. Détecte un jeu qui ne démarre pas, une action refusée, une partie bloquée
- * et une vue qui ne se sérialise pas. Appelé avant chaque installation.
+ * Joue une ou plusieurs parties complètes avec les robots du jeu, sans réseau ni sortie
+ * de données. Fonctionne pour tout module de jeu (cartes, plateau, questions) : les robots
+ * suivent `suggest`, et le nombre de joueurs vient du manifeste du module.
+ * Détecte un jeu qui ne démarre pas, une action refusée, une partie bloquée et une vue
+ * qui ne se sérialise pas. Appelé avant chaque installation.
  */
-export function launchCheck(
-  definition: CardGameDefinition,
-  gameId: string,
-  options: LaunchCheckOptions = {},
-): LaunchCheckResult {
+export function launchCheck(mod: GameModule, options: LaunchCheckOptions = {}): LaunchCheckResult {
   const maxSteps = options.maxSteps ?? 3000;
   const games = options.games ?? 2;
   let actions = 0;
   for (let game = 1; game <= games; game++) {
-    const result = playOne(definition, gameId, game, maxSteps);
+    const result = playOne(mod, game, maxSteps);
     if (!result.ok) return result;
     actions += result.actions;
   }
   return { ok: true, actions };
 }
 
-function playOne(definition: CardGameDefinition, gameId: string, seed: number, maxSteps: number): LaunchCheckResult {
+function playOne(mod: GameModule, seed: number, maxSteps: number): LaunchCheckResult {
   const fail = (reason: string): LaunchCheckResult => ({ ok: false, error: `partie ${seed} : ${reason}` });
   const random = seeded(seed);
   const timers = new Map<string, number>();
   const clock = { t: 1_000_000 };
-  const ids = Array.from({ length: definition.rules.minPlayers }, (_, i) => `bot-${i + 1}`);
+  const count = Math.max(1, mod.manifest.minPlayers);
+  const ids = Array.from({ length: count }, (_, i) => `bot-${i + 1}`);
   const players: PlayerRef[] = ids.map((id, i) => ({ id, name: `Robot ${i + 1}` }));
   const ctx: GameContext = {
     now: () => clock.t,
@@ -56,7 +54,6 @@ function playOne(definition: CardGameDefinition, gameId: string, seed: number, m
   };
 
   try {
-    const mod = createCardGame(definition, { id: gameId });
     const settings = mod.settingsSchema.parse(mod.defaultSettings);
     const started = mod.start(mod.initialize(settings, players, ctx), ctx);
     if (!started.ok) return fail(started.error);

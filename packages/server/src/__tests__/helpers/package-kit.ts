@@ -67,3 +67,23 @@ export function buildPackage(options: PackageOptions = {}): Uint8Array {
     ...Object.entries(contents).map(([name, data]) => ({ name, data })),
   ]);
 }
+
+/** Dossier source d'un exemple du dépôt, par son nom (exemple-plateau, exemple-quiz…). */
+export const examplePath = (name: string): string => path.resolve(here, '../../../../../examples', name);
+
+/** Définition JSON d'un exemple du dépôt. */
+export function readExampleDefinition(name: string): Record<string, unknown> {
+  return JSON.parse(fs.readFileSync(path.join(examplePath(name), 'game/definition.json'), 'utf8')) as Record<string, unknown>;
+}
+
+/** Archive .phgame construite à partir d'un dossier d'exemple, comme `phgame pack`. */
+export function packExample(name: string): Uint8Array {
+  const root = examplePath(name);
+  const manifest = JSON.parse(fs.readFileSync(path.join(root, 'manifest.json'), 'utf8')) as Record<string, unknown>;
+  const entries = ['game/definition.json', 'licenses/LICENCE.txt'].map((file) => ({
+    name: file,
+    data: new Uint8Array(fs.readFileSync(path.join(root, file))),
+  }));
+  manifest.files = entries.map((e) => ({ path: e.name, size: e.data.byteLength, sha256: sha(e.data) }));
+  return writeZip([{ name: 'manifest.json', data: enc(JSON.stringify(manifest)) }, ...entries]);
+}

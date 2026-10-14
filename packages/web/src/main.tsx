@@ -8,6 +8,7 @@ import './styles.css';
 import './styles/rami51.css';
 import './styles/poker.css';
 import './styles/tarot.css';
+import './styles/board.css';
 
 applyTheme(loadTheme());
 

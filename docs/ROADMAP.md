@@ -25,8 +25,9 @@ Légende : **Fait** = dans le dépôt. **À faire** = pas commencé. **En cours*
 | 0.5.0 | Paquets `.phgame` | Format 1 (jeux déclaratifs), import et contrôle dans l'administration, CLI, paquet d'exemple | **Prêt sur `main`** (tag à créer). Cache hors ligne et transfert reportés à 0.7.0 |
 | 0.6.0 | Éditeurs et médiathèque (partie 1) | Dos de carte personnalisé, limites de la médiathèque configurables | **Prêt sur `main`** (tag à créer) |
 | 0.6.1 | Polices de la médiathèque | Polices WOFF2, WOFF, TTF, OTF pour les cartes ; usages vérifiés avant suppression | **Prêt sur `main`** (tag à créer) |
-| 0.6.2 | Éditeur de plateau | Format de plateau déclaré en données, éditeur | À faire (décision de conception requise) |
-| 0.7.0 | Reprise d'écran et contexte hors ligne | Reprise de l'écran principal (WebRTC), application installable (PWA), cache des paquets, transfert entre téléphones | À faire |
+| 0.6.2 | Éditeur de plateau | Format de plateau déclaré en données, éditeur | **Prêt sur `main`** (tag à créer). Paquets `.phgame` de plateau reportés |
+| 0.6.3 | Sources GitHub | Installation et mise à jour des paquets depuis les releases d'un dépôt (publiques ou privées), manuelles ou quotidiennes | **Prêt sur la branche** `version-0.6.3` (pull request à ouvrir) |
+| 0.7.0 | Paquets de plateau et de questions, reprise d'écran et contexte hors ligne | Format 2 (plateau, questions YouTube), reprise de l'écran principal (WebRTC), application installable (PWA), cache des paquets, transfert entre téléphones | **En cours** : format 2 **fait** sur la branche `version-0.7.0` ; le reste est à faire |
 | 0.8.0 | Robustesse des parties | Salles et parties survivant à un redémarrage, sessions d'administration persistantes | À étudier |
 | 0.9.0 | Jeux JavaScript | Code de paquet exécuté dans un bac à sable WebAssembly, limites de temps et de mémoire | À faire (revue de sécurité requise) |
 | 1.0.0 | Première version stable | Critères ci-dessous | À faire |
@@ -72,7 +73,7 @@ Détail du format et des règles : `docs/PHGAME.md`.
 - **Fait** : format 1 pour les jeux déclaratifs (définition de jeu de cartes, ressources graphiques, données, licences).
 - **Fait** : validation stricte (archive ZIP restreinte, chemins, types de fichiers, tailles, empreintes SHA-256, version du moteur, licences, images, définition).
 - **Fait** : lancement de contrôle avant chaque installation (deux parties jouées par des robots).
-- **Fait** : import, activation, désactivation et suppression dans l'administration ; mise à jour avec refus du retour arrière.
+- **Fait** : import, activation, désactivation et suppression dans l'administration ; versions multiples conservées, avec retour arrière par activation d'une version conservée.
 - **Fait** : commande `phgame pack` et `phgame check` ; paquet d'exemple reconstruit à l'identique en intégration continue.
 - **Fait** : migration de schéma 2 (table `packages`), testée depuis une base de version 1.
 - **Reporté à 0.7.0** : cache hors ligne des paquets installés et lancement réseau coupé ; transfert entre téléphones avec
@@ -95,11 +96,17 @@ Détail du format et des règles : `docs/PHGAME.md`.
 - Critère : une police téléversée s'affiche dans un jeu (atteint).
 
 ### 0.6.2 : éditeur de plateau
-- Format de plateau générique déclaré en données (cases, types de cases, règles de déplacement), jouable sans modification du code. Le plateau de Promoteur reste figé.
-- Préalable : décider si le plateau est un nouveau type de jeu (`kind: board`) ou une extension des jeux de cartes.
-- Critère : un plateau créé dans l'éditeur se joue sans modification du code.
+- **Fait** : format de plateau déclaré en données (parcours de 8 à 60 cases, sept types de cases, un ou deux dés, durée de tour), jouable sans modification du code. Le plateau de Promoteur reste figé.
+- **Fait** : décision de conception : un nouveau type de jeu de plateau (catégorie « plateau »), distinct des jeux de cartes.
+- **Fait** : éditeur dans l'administration, sauvegarde et restauration, robots, classement final.
+- **Reporté** : export et import de fichier de plateau, images sur les cases. Les plateaux dans les paquets `.phgame` sont faits en 0.7.0 (format 2).
+- Critère : un plateau créé dans l'éditeur se joue sans modification du code (atteint en test serveur ; à confirmer sur de vrais téléphones).
 
-### 0.7.0 : reprise d'écran et contexte hors ligne
+### 0.7.0 : paquets de plateau et de questions, reprise d'écran et contexte hors ligne
+- **Fait (branche `version-0.7.0`)** : format de paquet 2. Un paquet peut porter un jeu de plateau (module `board`) ou un jeu
+  de questions (module `quiz`, vidéos YouTube seulement). Pas de code exécuté, paquets de quelques Ko. Détail : `docs/PHGAME.md`.
+- **Reste à faire** : jeux de mouvement et temps réel dans un paquet : relèvent du bac à sable JavaScript (0.9.0), ou de
+  modules intégrés au dépôt.
 - Reprise de l'écran principal par un autre appareil, via WebRTC (contrôle de la partie en cours).
 - Application installable (PWA) : cache versionné de l'interface, paquets `.phgame` disponibles hors ligne.
 - Transfert d'un paquet `.phgame` entre téléphones, avec vérification d'intégrité avant installation (reporté depuis 0.5.0).

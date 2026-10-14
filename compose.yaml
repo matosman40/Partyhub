@@ -7,7 +7,7 @@ name: partyhub
 
 services:
   partyhub:
-    image: ghcr.io/matosman40/partyhub:0.6.1
+    image: ghcr.io/matosman40/partyhub:0.7.0
     pull_policy: missing
     container_name: partyhub
     restart: unless-stopped
@@ -20,6 +20,7 @@ services:
       HOST: "0.0.0.0"
       DATA_DIR: /data
       ADMIN_PASSWORD: "${ADMIN_PASSWORD:-}"
+      GITHUB_TOKEN: "${GITHUB_TOKEN:-}"
       LOG_LEVEL: "${LOG_LEVEL:-info}"
       COOKIE_SECURE: "${COOKIE_SECURE:-false}"
       TRUST_PROXY: "${TRUST_PROXY:-loopback}"
