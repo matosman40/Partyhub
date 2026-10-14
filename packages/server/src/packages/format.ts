@@ -191,7 +191,9 @@ function sha256Hex(data: Uint8Array): string {
  * vidéos YouTube : les fichiers de la médiathèque n'existent pas dans un paquet.
  */
 function checkDefinition(module: PackageModule, raw: unknown, entry: string): { issues: string[]; value?: DefinitionValue } {
-  const at = (path: (string | number)[], message: string) => `${entry} (${path.join('.') || 'racine'}) : ${message}`;
+  // zod 4 peut donner des clés de type symbole : seules les chaînes et nombres sont affichés.
+  const at = (path: PropertyKey[], message: string) =>
+    `${entry} (${path.map(String).join('.') || 'racine'}) : ${message}`;
   const fromZod = (error: z.ZodError) => error.issues.map((i) => at(i.path, i.message));
   switch (module) {
     case 'cards': {

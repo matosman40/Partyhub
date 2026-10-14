@@ -24,7 +24,7 @@
   "dependencies": {
     "@partyhub/shared": "0.7.0",
     "react": "19.3.0",
-    "zod": "3.25.76"
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@types/react": "19.3.0",
