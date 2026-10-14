@@ -55,7 +55,9 @@ describe('règles de pli du Président', () => {
 
   it('un 10 ou un carré brûle le pli, quelle que soit la valeur précédente', () => {
     expect(validatePlay(rankValue('A'), 1, [{ label: '10' }]).ok).toBe(true);
-    expect(validatePlay(rankValue('A'), 1, [{ label: '10' }]).ok && validatePlay(rankValue('A'), 1, [{ label: '10' }]).burns).toBe(true);
+    expect(
+      validatePlay(rankValue('A'), 1, [{ label: '10' }]).ok && validatePlay(rankValue('A'), 1, [{ label: '10' }]).burns,
+    ).toBe(true);
   });
 });
 
@@ -64,7 +66,11 @@ describe('moteur du Président', () => {
     const { state } = start([P('a'), P('b'), P('c')]);
     const total = Object.values(state.hands).reduce((n, h) => n + h.length, 0);
     expect(total).toBe(52);
-    expect(Object.values(state.hands).map((h) => h.length).sort()).toEqual([17, 17, 18]);
+    expect(
+      Object.values(state.hands)
+        .map((h) => h.length)
+        .sort(),
+    ).toEqual([17, 17, 18]);
   });
 
   it('refuse de jouer hors de son tour et de passer sur une table vide', () => {

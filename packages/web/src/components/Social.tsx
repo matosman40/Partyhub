@@ -4,13 +4,7 @@ import type { AppSocket } from '../realtime.js';
 import { PlayerAvatar } from './PlayerAvatar.js';
 
 /** Boutons de réaction : un tap envoie l'emoji à toute la salle. */
-export function EmoteBar({
-  onPick,
-  disabled = false,
-}: {
-  onPick: (emoji: string) => void;
-  disabled?: boolean;
-}) {
+export function EmoteBar({ onPick, disabled = false }: { onPick: (emoji: string) => void; disabled?: boolean }) {
   return (
     <div className="emote-bar" role="group" aria-label="Réactions">
       {REACTION_EMOJIS.map((emoji) => (

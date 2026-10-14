@@ -23,7 +23,9 @@ export function PlusOuMoinsHost({ publicState: pub, hostState: host, now }: Host
     const pending: string[] = host?.pending ?? [];
     return (
       <section className="game-host fade-in" key={`b-${pub.round}`}>
-        <div className="round-info">Carte {pub.round + 1} / {pub.total}</div>
+        <div className="round-info">
+          Carte {pub.round + 1} / {pub.total}
+        </div>
         <p className="label">La carte est…</p>
         <div className="card-table">
           <PlayingCard card={pub.current} />
@@ -42,7 +44,9 @@ export function PlusOuMoinsHost({ publicState: pub, hostState: host, now }: Host
   const picks: Pick[] = pub.picks ?? [];
   return (
     <section className="game-host fade-in" key={`r-${pub.round}`}>
-      <div className="round-info">Carte {pub.round + 1} / {pub.total} · Résultat</div>
+      <div className="round-info">
+        Carte {pub.round + 1} / {pub.total} · Résultat
+      </div>
       <div className="card-table duo">
         <PlayingCard card={pub.current} label="Carte de départ" />
         <span className="vs">→</span>

@@ -76,11 +76,26 @@
   border-width: 3px;
 }
 
-.bd-cell.kind-avance .bd-badge { background: #2a9d8f; color: #fff; }
-.bd-cell.kind-recule .bd-badge { background: #e76f51; color: #fff; }
-.bd-cell.kind-gain .bd-badge { background: #2a9d8f; color: #fff; }
-.bd-cell.kind-perte .bd-badge { background: #9d0208; color: #fff; }
-.bd-cell.kind-passe .bd-badge { background: #6c757d; color: #fff; }
+.bd-cell.kind-avance .bd-badge {
+  background: #2a9d8f;
+  color: #fff;
+}
+.bd-cell.kind-recule .bd-badge {
+  background: #e76f51;
+  color: #fff;
+}
+.bd-cell.kind-gain .bd-badge {
+  background: #2a9d8f;
+  color: #fff;
+}
+.bd-cell.kind-perte .bd-badge {
+  background: #9d0208;
+  color: #fff;
+}
+.bd-cell.kind-passe .bd-badge {
+  background: #6c757d;
+  color: #fff;
+}
 
 .bd-index {
   font-size: 0.7rem;

@@ -19,7 +19,12 @@ function MeldView({ meld }: { meld: Meld }) {
       </div>
       <div className="rami-meld-cards">
         {meld.cards.map((c) => (
-          <div key={c.uid} className={`rami-mc${c.entry === 'jk' ? ' is-joker' : ''}`} data-uid={c.uid} data-zone="table">
+          <div
+            key={c.uid}
+            className={`rami-mc${c.entry === 'jk' ? ' is-joker' : ''}`}
+            data-uid={c.uid}
+            data-zone="table"
+          >
             <div data-fly-target>
               <CardFace def={RAMI_DEFINITION} entry={ramiEntry(c.entry)} label={cardName(c.entry)} />
             </div>
@@ -130,7 +135,11 @@ export function RamiHost({ publicState, now }: HostViewProps) {
           <div className="cards-discard" aria-label="Défausse">
             {pub.discardTop && (
               <div className="discard-card" key={pub.discardTop.uid} data-uid={pub.discardTop.uid} data-zone="table">
-                <CardFace def={RAMI_DEFINITION} entry={ramiEntry(pub.discardTop.entry)} label={cardName(pub.discardTop.entry)} />
+                <CardFace
+                  def={RAMI_DEFINITION}
+                  entry={ramiEntry(pub.discardTop.entry)}
+                  label={cardName(pub.discardTop.entry)}
+                />
               </div>
             )}
           </div>

@@ -1,9 +1,5 @@
 import { randomBytes, randomUUID } from 'node:crypto';
-import {
-  type DeviceKind,
-  type ObserverRoomView,
-  type ObserverSummary,
-} from '@partyhub/shared';
+import { type DeviceKind, type ObserverRoomView, type ObserverSummary } from '@partyhub/shared';
 import type {
   AvatarInfo,
   GameInfo,
@@ -123,8 +119,7 @@ export class Room {
       random: () => this.env.random(),
       schedule: (key, ms) => this.schedule(key, ms),
       cancel: (key) => this.cancelTimer(key),
-      connectedPlayerIds: () =>
-        [...this.players.values()].filter((p) => p.bot || p.sockets.size > 0).map((p) => p.id),
+      connectedPlayerIds: () => [...this.players.values()].filter((p) => p.bot || p.sockets.size > 0).map((p) => p.id),
     };
     this.state = module.initialize(this.settings, [], this.ctx);
   }
@@ -139,9 +134,7 @@ export class Room {
 
   get hasSockets(): boolean {
     return (
-      this.hostSockets.size > 0 ||
-      this.observers.size > 0 ||
-      [...this.players.values()].some((p) => p.sockets.size > 0)
+      this.hostSockets.size > 0 || this.observers.size > 0 || [...this.players.values()].some((p) => p.sockets.size > 0)
     );
   }
 
@@ -306,9 +299,7 @@ export class Room {
 
   private nameTaken(name: string, exceptId?: string): boolean {
     const wanted = name.toLocaleLowerCase('fr');
-    return [...this.players.values()].some(
-      (p) => p.id !== exceptId && p.name.toLocaleLowerCase('fr') === wanted,
-    );
+    return [...this.players.values()].some((p) => p.id !== exceptId && p.name.toLocaleLowerCase('fr') === wanted);
   }
 
   /**
@@ -576,12 +567,7 @@ export class Room {
   // Actions des joueurs
   // ---------------------------------------------------------------------------
 
-  handleAction(
-    playerId: string,
-    commandId: string,
-    type: string,
-    payload: unknown,
-  ): Result<{ duplicate: boolean }> {
+  handleAction(playerId: string, commandId: string, type: string, payload: unknown): Result<{ duplicate: boolean }> {
     if (this.status !== 'in_game') return { ok: false, error: 'Aucune partie en cours.' };
     const p = this.players.get(playerId);
     if (!p) return { ok: false, error: 'Joueur inconnu.' };

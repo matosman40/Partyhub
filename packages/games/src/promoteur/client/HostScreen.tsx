@@ -7,9 +7,16 @@ import { Avatar } from '../../client/ui.js';
 import { usePrefersReducedMotion } from '../../client/motion.js';
 import { useSteppedPositions } from './useStepped.js';
 
-
 /** Pions : un avatar par joueur, posé sur sa case et qui avance case par case. */
-function Pawns({ players, current, positions }: { players: PlayerPub[]; current: string | null; positions: Record<string, number> }) {
+function Pawns({
+  players,
+  current,
+  positions,
+}: {
+  players: PlayerPub[];
+  current: string | null;
+  positions: Record<string, number>;
+}) {
   const perTile = new Map<number, number>();
   return (
     <div className="pm-pawns">
@@ -23,7 +30,12 @@ function Pawns({ players, current, positions }: { players: PlayerPub[]; current:
         const y = ((row + 0.62 + dy) / 7) * 100;
         const cls = ['pm-pawn', p.id === current ? 'is-current' : '', p.bankrupt ? 'is-out' : ''].join(' ');
         return (
-          <div key={p.id} className={cls} style={{ left: `${x}%`, top: `${y}%`, zIndex: slot + (p.id === current ? 10 : 1) }} title={p.name}>
+          <div
+            key={p.id}
+            className={cls}
+            style={{ left: `${x}%`, top: `${y}%`, zIndex: slot + (p.id === current ? 10 : 1) }}
+            title={p.name}
+          >
             <span className="pm-pawn-face">
               <Avatar name={p.name} size="sm" highlight={p.id === current} />
             </span>
@@ -33,7 +45,6 @@ function Pawns({ players, current, positions }: { players: PlayerPub[]; current:
     </div>
   );
 }
-
 
 /** Plateau du Promoteur : anneau de cases, pions, propriétaires et maisons. */
 export function PromoteurHost({ publicState, now }: HostViewProps) {
@@ -75,7 +86,11 @@ export function PromoteurHost({ publicState, now }: HostViewProps) {
                   <Avatar name={owner.name} size="sm" />
                 </span>
               )}
-              {tile.houses > 0 && <span className="pm-houses" aria-label={`${tile.houses} maison(s)`}>{'●'.repeat(tile.houses)}</span>}
+              {tile.houses > 0 && (
+                <span className="pm-houses" aria-label={`${tile.houses} maison(s)`}>
+                  {'●'.repeat(tile.houses)}
+                </span>
+              )}
             </div>
           );
         })}
@@ -121,10 +136,21 @@ export function PromoteurHost({ publicState, now }: HostViewProps) {
           </ol>
           {pub.players.some((p) => p.bankrupt) && (
             <p className="muted small">
-              Faillite : {pub.players.filter((p) => p.bankrupt).map((p) => p.name).join(', ')}
+              Faillite :{' '}
+              {pub.players
+                .filter((p) => p.bankrupt)
+                .map((p) => p.name)
+                .join(', ')}
             </p>
           )}
-          <p className="muted small">Couleurs : {Object.entries(GROUP_LABEL).map(([g, l]) => <span key={g} className="pm-legend" style={{ color: GROUP_COLOR[g as Group] }}>{l} </span>)}</p>
+          <p className="muted small">
+            Couleurs :{' '}
+            {Object.entries(GROUP_LABEL).map(([g, l]) => (
+              <span key={g} className="pm-legend" style={{ color: GROUP_COLOR[g as Group] }}>
+                {l}{' '}
+              </span>
+            ))}
+          </p>
         </div>
       </div>
     </section>

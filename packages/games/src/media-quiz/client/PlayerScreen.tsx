@@ -112,7 +112,11 @@ function MediaQuizQuizPlayer({ publicState: pub, playerState: me, now, send }: P
           </button>
         </form>
       )}
-      {error && <p className="error" role="alert">{error}</p>}
+      {error && (
+        <p className="error" role="alert">
+          {error}
+        </p>
+      )}
       {!answered && <p className="muted small">Une seule réponse par extrait. L’article de début est facultatif.</p>}
     </section>
   );

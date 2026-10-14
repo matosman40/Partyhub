@@ -389,9 +389,7 @@ function explode(s: BombesPartyState, startId: string, ctx: GameContext): Bombes
     bombs = bombs.filter((b) => b.id !== id);
     ctx.cancel(bombKey(id));
 
-    const blast = blastFrom(grid, bomb.x, bomb.y, bomb.range, (x, y) =>
-      bombs.some((b) => b.x === x && b.y === y),
-    );
+    const blast = blastFrom(grid, bomb.x, bomb.y, bomb.range, (x, y) => bombs.some((b) => b.x === x && b.y === y));
 
     for (const c of blast.cells) {
       flames.push({ x: c.x, y: c.y, until: now + FIRE_MS });

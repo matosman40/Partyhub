@@ -9,14 +9,7 @@ import {
   type ScoreEntry,
 } from '@partyhub/shared';
 import { directory, fail, ok } from '../common/engine.js';
-import {
-  currentPlayer,
-  logLine,
-  playTurn,
-  ranking,
-  rollDice,
-  type BoardState,
-} from './rules.js';
+import { currentPlayer, logLine, playTurn, ranking, rollDice, type BoardState } from './rules.js';
 
 /**
  * Jeu de plateau de parcours, généré à partir d'une définition (cases, dés, règles).
@@ -240,4 +233,3 @@ export function createBoardGame(
     suggest,
   };
 }
-

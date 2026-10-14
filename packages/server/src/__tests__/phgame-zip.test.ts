@@ -42,7 +42,14 @@ describe('archive ZIP restreinte', () => {
 
   it('refuse une entrée en double', () => {
     const make = () =>
-      readZip(writeZip([{ name: 'a', data: enc('1') }, { name: 'a', data: enc('2') }]), LIMITS, allowAll);
+      readZip(
+        writeZip([
+          { name: 'a', data: enc('1') },
+          { name: 'a', data: enc('2') },
+        ]),
+        LIMITS,
+        allowAll,
+      );
     expect(make).toThrow();
   });
 

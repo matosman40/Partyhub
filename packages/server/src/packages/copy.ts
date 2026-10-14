@@ -18,9 +18,7 @@ export interface CopyServices {
   mediaGames: MediaQuizService;
 }
 
-export type CopyResult =
-  | { ok: true; id: string; module: PackageModule; name: string }
-  | { ok: false; error: string };
+export type CopyResult = { ok: true; id: string; module: PackageModule; name: string } | { ok: false; error: string };
 
 /**
  * Crée un jeu modifiable à partir d'un paquet actif : même définition, enregistrée dans le

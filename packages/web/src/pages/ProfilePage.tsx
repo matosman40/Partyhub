@@ -164,7 +164,9 @@ export function ProfilePage() {
           <h1 id="profile-title" style={{ fontSize: 'clamp(1.8rem, 5vw, 2.6rem)' }}>
             {profile.displayName}
           </h1>
-          <p className="muted small">@{profile.username} · membre depuis le {new Date(profile.createdAt).toLocaleDateString('fr-FR')}</p>
+          <p className="muted small">
+            @{profile.username} · membre depuis le {new Date(profile.createdAt).toLocaleDateString('fr-FR')}
+          </p>
           <button
             type="button"
             className="btn ghost small"
@@ -234,11 +236,12 @@ export function ProfilePage() {
         busy={busy}
         onChange={(patch) =>
           run(
-            () => api<{ profile: ProfileView }>('/api/profiles/me', {
-              method: 'PUT',
-              headers: authHeaders(),
-              body: JSON.stringify(patch),
-            }),
+            () =>
+              api<{ profile: ProfileView }>('/api/profiles/me', {
+                method: 'PUT',
+                headers: authHeaders(),
+                body: JSON.stringify(patch),
+              }),
             () => {
               void reload();
               return 'Avatar enregistré.';
@@ -254,7 +257,12 @@ export function ProfilePage() {
           busy={busy}
           onSave={(displayName) =>
             run(
-              () => api('/api/profiles/me', { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ displayName }) }),
+              () =>
+                api('/api/profiles/me', {
+                  method: 'PUT',
+                  headers: authHeaders(),
+                  body: JSON.stringify({ displayName }),
+                }),
               () => {
                 void reload();
                 return 'Pseudo enregistré.';
@@ -352,7 +360,12 @@ function AuthForm({
       {withName && (
         <label className="field">
           <span>Pseudo affiché</span>
-          <input value={displayName} maxLength={16} autoComplete="nickname" onChange={(e) => setDisplayName(e.target.value)} />
+          <input
+            value={displayName}
+            maxLength={16}
+            autoComplete="nickname"
+            onChange={(e) => setDisplayName(e.target.value)}
+          />
         </label>
       )}
       <label className="field">
@@ -370,7 +383,11 @@ function AuthForm({
           </span>
         )}
       </label>
-      <button type="submit" className="btn primary big" disabled={busy || !username || !password || (withName && !displayName)}>
+      <button
+        type="submit"
+        className="btn primary big"
+        disabled={busy || !username || !password || (withName && !displayName)}
+      >
         {busy ? 'Un instant…' : submitLabel}
       </button>
     </form>
@@ -410,7 +427,12 @@ function AvatarSection({
             <input type="file" accept="image/*" disabled={busy} onChange={(e) => void pickFile(e.target.files?.[0])} />
           </label>
           {profile.avatar.imageUrl && (
-            <button type="button" className="btn ghost small" disabled={busy} onClick={() => onChange({ avatarImage: null })}>
+            <button
+              type="button"
+              className="btn ghost small"
+              disabled={busy}
+              onClick={() => onChange({ avatarImage: null })}
+            >
               Retirer la photo
             </button>
           )}
@@ -514,7 +536,12 @@ function PasswordForm({ busy, onSave }: { busy: boolean; onSave: (current: strin
     >
       <label className="field">
         <span>Mot de passe actuel</span>
-        <input type="password" value={current} autoComplete="current-password" onChange={(e) => setCurrent(e.target.value)} />
+        <input
+          type="password"
+          value={current}
+          autoComplete="current-password"
+          onChange={(e) => setCurrent(e.target.value)}
+        />
       </label>
       <label className="field">
         <span>Nouveau mot de passe</span>

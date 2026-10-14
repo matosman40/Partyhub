@@ -142,8 +142,14 @@ export function imageProblem(data: Uint8Array, ext: string, limits: PackageLimit
   const isPng = data[0] === 0x89 && data[1] === 0x50 && data[2] === 0x4e && data[3] === 0x47;
   const isJpeg = data[0] === 0xff && data[1] === 0xd8 && data[2] === 0xff;
   const isWebp =
-    data[0] === 0x52 && data[1] === 0x49 && data[2] === 0x46 && data[3] === 0x46 &&
-    data[8] === 0x57 && data[9] === 0x45 && data[10] === 0x42 && data[11] === 0x50;
+    data[0] === 0x52 &&
+    data[1] === 0x49 &&
+    data[2] === 0x46 &&
+    data[3] === 0x46 &&
+    data[8] === 0x57 &&
+    data[9] === 0x45 &&
+    data[10] === 0x42 &&
+    data[11] === 0x50;
   if (ext === '.png') {
     if (!isPng) return 'fichier .png invalide';
     const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
@@ -190,7 +196,11 @@ function sha256Hex(data: Uint8Array): string {
  * Vérifie la définition du jeu selon son module. Un jeu de questions ne peut référencer que des
  * vidéos YouTube : les fichiers de la médiathèque n'existent pas dans un paquet.
  */
-function checkDefinition(module: PackageModule, raw: unknown, entry: string): { issues: string[]; value?: DefinitionValue } {
+function checkDefinition(
+  module: PackageModule,
+  raw: unknown,
+  entry: string,
+): { issues: string[]; value?: DefinitionValue } {
   const at = (path: (string | number)[], message: string) => `${entry} (${path.join('.') || 'racine'}) : ${message}`;
   const fromZod = (error: z.ZodError) => error.issues.map((i) => at(i.path, i.message));
   switch (module) {
@@ -216,7 +226,12 @@ function checkDefinition(module: PackageModule, raw: unknown, entry: string): { 
       if (!parsed.success) return { issues: fromZod(parsed.error) };
       const issues = parsed.data.items.flatMap((item, i) =>
         item.source.type === 'asset'
-          ? [at(['items', i, 'source'], 'un paquet ne peut pas utiliser un fichier de la médiathèque : utilisez un lien YouTube.')]
+          ? [
+              at(
+                ['items', i, 'source'],
+                'un paquet ne peut pas utiliser un fichier de la médiathèque : utilisez un lien YouTube.',
+              ),
+            ]
           : [],
       );
       if (issues.length > 0) return { issues };

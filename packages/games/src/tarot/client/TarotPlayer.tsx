@@ -100,7 +100,7 @@ export function TarotPlayer({ publicState, playerState, playerId, now, send }: P
     );
   }
 
-  const name = (id: string | null) => (id ? pub.names[id] ?? '?' : '');
+  const name = (id: string | null) => (id ? (pub.names[id] ?? '?') : '');
   const trickIds = pub.trick.map((p) => p.cardId);
   const isTaker = pub.taker === playerId;
 
@@ -163,7 +163,8 @@ export function TarotPlayer({ publicState, playerState, playerId, now, send }: P
 
   let banner = `Tour de ${name(pub.current)}`;
   if (pub.phase === 'round-over') banner = 'Donne terminée';
-  else if (pub.phase === 'bidding') banner = me.isMyTurn ? 'À vous d’annoncer' : `Enchères : ${name(pub.current)} parle`;
+  else if (pub.phase === 'bidding')
+    banner = me.isMyTurn ? 'À vous d’annoncer' : `Enchères : ${name(pub.current)} parle`;
   else if (pub.phase === 'ecart') banner = me.mustEcart ? 'Faites votre écart' : `${name(pub.taker)} fait son écart`;
   else if (me.isMyTurn) banner = pub.trick.length === 0 ? 'À vous d’entamer' : 'À vous de jouer';
 
@@ -207,7 +208,9 @@ export function TarotPlayer({ publicState, playerState, playerId, now, send }: P
                 return (
                   <li key={id} className={bid?.contract ? 'is-bid' : undefined}>
                     <span className="tarot-bid-name">{id === playerId ? 'Vous' : name(id)}</span>
-                    <span>{bid ? (bid.contract ? CONTRACT_LABEL[bid.contract] : 'Passe') : pub.current === id ? '…' : ''}</span>
+                    <span>
+                      {bid ? (bid.contract ? CONTRACT_LABEL[bid.contract] : 'Passe') : pub.current === id ? '…' : ''}
+                    </span>
                   </li>
                 );
               })}
@@ -302,14 +305,24 @@ export function TarotPlayer({ publicState, playerState, playerId, now, send }: P
                   <small> ×{CONTRACT_COEF[contract]}</small>
                 </button>
               ))}
-              <button type="button" className="btn ghost big" disabled={busy || !me.canPass} onClick={() => void run('pass')}>
+              <button
+                type="button"
+                className="btn ghost big"
+                disabled={busy || !me.canPass}
+                onClick={() => void run('pass')}
+              >
                 Passer
               </button>
             </>
           )}
           {me.mustEcart && (
             <>
-              <button type="button" className="btn ghost big" disabled={busy} onClick={() => setSelected(autoEcart(hand))}>
+              <button
+                type="button"
+                className="btn ghost big"
+                disabled={busy}
+                onClick={() => setSelected(autoEcart(hand))}
+              >
                 Choisir pour moi
               </button>
               <button
@@ -329,7 +342,11 @@ export function TarotPlayer({ publicState, playerState, playerId, now, send }: P
               disabled={busy || !me.isMyTurn || !picked}
               onClick={() => picked && void playCard(picked)}
             >
-              {picked ? `Jouer ${cardName(picked).toLowerCase()}` : me.isMyTurn ? 'Touchez une carte' : 'Attendez votre tour'}
+              {picked
+                ? `Jouer ${cardName(picked).toLowerCase()}`
+                : me.isMyTurn
+                  ? 'Touchez une carte'
+                  : 'Attendez votre tour'}
             </button>
           )}
         </div>

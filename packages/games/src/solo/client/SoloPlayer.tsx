@@ -46,8 +46,7 @@ export function SoloPlayer({ publicState: pub, playerState: me, now, send }: Pla
   return (
     <section className="player-game solo-player fade-in">
       <div className="round-info">
-        {pub.icon} {pub.name} · {me?.percent ?? 0} %
-        {pub.limitMs > 0 && <> · {Math.ceil(remaining / 1000)} s</>}
+        {pub.icon} {pub.name} · {me?.percent ?? 0} %{pub.limitMs > 0 && <> · {Math.ceil(remaining / 1000)} s</>}
       </div>
       {done ? (
         <p className="notice">
@@ -56,7 +55,11 @@ export function SoloPlayer({ publicState: pub, playerState: me, now, send }: Pla
         </p>
       ) : null}
       {Board && board && (
-        <Board board={board} disabled={done || pub.phase !== 'play' || remaining <= 0 && pub.limitMs > 0} send={send} />
+        <Board
+          board={board}
+          disabled={done || pub.phase !== 'play' || (remaining <= 0 && pub.limitMs > 0)}
+          send={send}
+        />
       )}
     </section>
   );

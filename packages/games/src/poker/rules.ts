@@ -117,7 +117,11 @@ export function evaluateFive(cards: Card[]): HandValue {
   if (straightHigh && flush) return make(8, [straightHigh]);
   if (top === 4) return make(7, [byRank[0]!, byRank[1]!]);
   if (top === 3 && second === 2) return make(6, [byRank[0]!, byRank[1]!]);
-  if (flush) return make(5, sorted.map((c) => c.rank));
+  if (flush)
+    return make(
+      5,
+      sorted.map((c) => c.rank),
+    );
   if (straightHigh) return make(4, [straightHigh]);
   if (top === 3) return make(3, byRank);
   if (top === 2 && second === 2) return make(2, byRank);
@@ -194,11 +198,7 @@ export interface PotResult {
  * partagent le pot ; le reste indivisible va au premier joueur après le croupier.
  * `afterDealer` liste les joueurs dans l'ordre de jeu, en commençant après le croupier.
  */
-export function resolvePots(
-  pots: PotPlan[],
-  values: Record<string, HandValue>,
-  afterDealer: string[],
-): PotResult {
+export function resolvePots(pots: PotPlan[], values: Record<string, HandValue>, afterDealer: string[]): PotResult {
   const awards: Record<string, number> = {};
   const hands: Record<string, string> = {};
   for (const pot of pots) {

@@ -67,7 +67,9 @@ export function AssetLibrary({ onChanged }: { onChanged?: () => void }) {
     const kind = kindOf(file);
     const limitBytes = limits?.[kind];
     if (limitBytes !== undefined && file.size > limitBytes) {
-      setError(`« ${file.name} » est trop volumineux (maximum ${Math.round(limitBytes / MB)} Mo pour ce type de fichier).`);
+      setError(
+        `« ${file.name} » est trop volumineux (maximum ${Math.round(limitBytes / MB)} Mo pour ce type de fichier).`,
+      );
       if (input.current) input.current.value = '';
       return;
     }
@@ -109,9 +111,11 @@ export function AssetLibrary({ onChanged }: { onChanged?: () => void }) {
   return (
     <div className="stack">
       <p className="muted">
-        Les fichiers envoyés ici servent aux extraits des jeux de questions et aux dos de carte. Audio : MP3, WAV, OGG, M4A ({sizeOf('audio')}
-        maximum). Vidéo : MP4 ou WebM ({sizeOf('video')} maximum). Image : PNG, JPEG ou WebP ({sizeOf('image')} maximum). Police : WOFF2, WOFF, TTF ou OTF ({sizeOf('font')} maximum). Le format est
-        vérifié sur le contenu du fichier. N’envoyez que des médias dont vous avez le droit d’usage.
+        Les fichiers envoyés ici servent aux extraits des jeux de questions et aux dos de carte. Audio : MP3, WAV, OGG,
+        M4A ({sizeOf('audio')}
+        maximum). Vidéo : MP4 ou WebM ({sizeOf('video')} maximum). Image : PNG, JPEG ou WebP ({sizeOf('image')}{' '}
+        maximum). Police : WOFF2, WOFF, TTF ou OTF ({sizeOf('font')} maximum). Le format est vérifié sur le contenu du
+        fichier. N’envoyez que des médias dont vous avez le droit d’usage.
       </p>
 
       <div className="ed-new">
@@ -129,10 +133,18 @@ export function AssetLibrary({ onChanged }: { onChanged?: () => void }) {
             }}
           />
         </label>
-        {busy && <span className="muted" role="status">{busy}</span>}
+        {busy && (
+          <span className="muted" role="status">
+            {busy}
+          </span>
+        )}
       </div>
 
-      {error && <p className="error" role="alert">{error}</p>}
+      {error && (
+        <p className="error" role="alert">
+          {error}
+        </p>
+      )}
       {assets === null && <p className="muted">Chargement…</p>}
       {assets?.length === 0 && <p className="muted">La médiathèque est vide.</p>}
 
@@ -143,7 +155,11 @@ export function AssetLibrary({ onChanged }: { onChanged?: () => void }) {
               {a.kind === 'audio' && <audio controls preload="metadata" src={`/api/assets/${a.id}`} />}
               {a.kind === 'video' && <video controls preload="metadata" src={`/api/assets/${a.id}`} />}
               {a.kind === 'image' && <img src={`/api/assets/${a.id}`} alt="" loading="lazy" />}
-              {a.kind === 'font' && <span className="asset-font-sample" style={{ fontFamily: `${assetFontFamily(a.id)}, sans-serif` }}>Aa Bb 123</span>}
+              {a.kind === 'font' && (
+                <span className="asset-font-sample" style={{ fontFamily: `${assetFontFamily(a.id)}, sans-serif` }}>
+                  Aa Bb 123
+                </span>
+              )}
             </div>
             <div className="ed-list-body">
               <strong>{a.name}</strong>
@@ -157,7 +173,9 @@ export function AssetLibrary({ onChanged }: { onChanged?: () => void }) {
                 type="button"
                 className="btn ghost small"
                 disabled={a.usedBy.length > 0}
-                title={a.usedBy.length > 0 ? 'Retirez ce fichier des jeux qui l’utilisent avant de le supprimer.' : undefined}
+                title={
+                  a.usedBy.length > 0 ? 'Retirez ce fichier des jeux qui l’utilisent avant de le supprimer.' : undefined
+                }
                 onClick={() => remove(a)}
               >
                 Supprimer

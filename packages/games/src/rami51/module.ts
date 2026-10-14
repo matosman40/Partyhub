@@ -132,7 +132,7 @@ const actionSchemas = {
 };
 
 function who(s: RamiState, id: string | null): string {
-  return id ? s.names[id] ?? '?' : '?';
+  return id ? (s.names[id] ?? '?') : '?';
 }
 
 function currentId(s: RamiState): string {
@@ -258,11 +258,12 @@ function endRound(s: RamiState, ctx: GameContext, winner: string | null): void {
   s.drawSnap = null;
   s.mustUse = [];
 
-  const headline = winner === null
-    ? 'Pioche épuisée : manche terminée sans gagnant.'
-    : ramiSec
-      ? `Rami sec ! ${who(s, winner)} ouvre et termine dans le même tour : pénalités doublées.`
-      : `${who(s, winner)} termine la manche !`;
+  const headline =
+    winner === null
+      ? 'Pioche épuisée : manche terminée sans gagnant.'
+      : ramiSec
+        ? `Rami sec ! ${who(s, winner)} ouvre et termine dans le même tour : pénalités doublées.`
+        : `${who(s, winner)} termine la manche !`;
   const reached = s.order.some((id) => (s.scores[id] ?? 0) >= s.settings.targetScore);
   if (reached) {
     s.phase = 'final';
@@ -405,7 +406,11 @@ function apply(s: RamiState, pid: string, type: string, payload: unknown, ctx: G
     const laid = groups.flat();
     if (laid.length >= hand.length) return KEEP_ONE;
     for (const m of check.melds) if (m.ok) addMeld(s, pid, m.kind, m.cards);
-    removeFromHand(s, pid, laid.map((c) => c.uid));
+    removeFromHand(
+      s,
+      pid,
+      laid.map((c) => c.uid),
+    );
     s.opened[pid] = true;
     s.openedThisTurn = true;
     s.tableActions += 1;
@@ -416,7 +421,12 @@ function apply(s: RamiState, pid: string, type: string, payload: unknown, ctx: G
 
   if (type === 'meld' || type === 'layoff' || type === 'swap') {
     if (!opened) {
-      const what = type === 'meld' ? 'poser une combinaison' : type === 'layoff' ? 'compléter une combinaison' : 'échanger un joker';
+      const what =
+        type === 'meld'
+          ? 'poser une combinaison'
+          : type === 'layoff'
+            ? 'compléter une combinaison'
+            : 'échanger un joker';
       return `Ouvrez d’abord (${s.settings.openingPoints} points avec une tierce franche) pour ${what}.`;
     }
   }
@@ -521,7 +531,8 @@ export function createRamiGame(): GameModule<RamiState, RamiSettings> {
     id: 'rami-51',
     category: 'cartes',
     name: 'Rami 51',
-    description: 'Le rami à la française : ouvrez à 51 avec une tierce franche, posez tout, et gardez le plus petit total.',
+    description:
+      'Le rami à la française : ouvrez à 51 avec une tierce franche, posez tout, et gardez le plus petit total.',
     icon: '♦️',
     version: '1.0.0',
     apiVersion: 1,
@@ -633,7 +644,11 @@ export function createRamiGame(): GameModule<RamiState, RamiSettings> {
 
   /** Classement croissant : le plus petit total est premier (ex æquo au même rang). */
   function calculateScores(state: RamiState): ScoreEntry[] {
-    const rows = state.order.map((id) => ({ playerId: id, name: state.names[id] ?? '?', points: state.scores[id] ?? 0 }));
+    const rows = state.order.map((id) => ({
+      playerId: id,
+      name: state.names[id] ?? '?',
+      points: state.scores[id] ?? 0,
+    }));
     rows.sort((a, b) => a.points - b.points || a.name.localeCompare(b.name, 'fr'));
     return rows.map((r) => ({ ...r, rank: 1 + rows.filter((o) => o.points < r.points).length }));
   }
@@ -661,7 +676,7 @@ export function createRamiGame(): GameModule<RamiState, RamiSettings> {
       order: state.order,
       names: state.names,
       scores: state.scores,
-      dealer: state.started ? state.order[state.dealer] ?? null : null,
+      dealer: state.started ? (state.order[state.dealer] ?? null) : null,
       current: playing ? currentId(state) : null,
       /** Le joueur dont c'est le tour a pioché (et d'où) : visible de tous à la table. */
       drawn: playing ? state.drawn : null,

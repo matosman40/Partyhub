@@ -38,7 +38,7 @@ export function rollDice(count: number, random: () => number): number[] {
 }
 
 export function currentPlayer(state: BoardState): string | null {
-  return state.phase === 'play' ? state.order[state.turn] ?? null : null;
+  return state.phase === 'play' ? (state.order[state.turn] ?? null) : null;
 }
 
 export function logLine(state: BoardState, line: string): void {
@@ -155,7 +155,9 @@ export function ranking(state: BoardState): RankRow[] {
   let previousKey: string | null = null;
   let rank = 0;
   ordered.forEach((id, i) => {
-    const key = state.finished.includes(id) ? `arrive:${i}` : `case:${state.positions[id] ?? 0}:${state.scores[id] ?? 0}`;
+    const key = state.finished.includes(id)
+      ? `arrive:${i}`
+      : `case:${state.positions[id] ?? 0}:${state.scores[id] ?? 0}`;
     if (key !== previousKey) rank = i + 1;
     previousKey = key;
     rows.push({ playerId: id, name: state.names[id] ?? '?', points: state.scores[id] ?? 0, rank });

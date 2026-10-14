@@ -18,6 +18,8 @@
     "test": "npm run build -w @partyhub/shared && npm run build -w @partyhub/games && npm test -w @partyhub/shared && npm test -w @partyhub/games && npm test -w @partyhub/server && npm test -w @partyhub/web",
     "typecheck": "npm run typecheck -w @partyhub/shared && npm run typecheck -w @partyhub/games && npm run typecheck -w @partyhub/server && npm run typecheck -w @partyhub/web",
     "lint": "eslint .",
+    "format": "prettier --write \"packages/*/src/**/*.{ts,tsx,css}\"",
+    "format:check": "prettier --check \"packages/*/src/**/*.{ts,tsx,css}\"",
     "dev:server": "npm run dev -w @partyhub/server",
     "dev:web": "npm run dev -w @partyhub/web",
     "start": "node packages/server/dist/index.js"
@@ -27,6 +29,7 @@
     "eslint": "^10.11.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.13.0",
+    "prettier": "^3.9.9",
     "typescript": "5.8.3",
     "typescript-eslint": "^8.71.2"
   },

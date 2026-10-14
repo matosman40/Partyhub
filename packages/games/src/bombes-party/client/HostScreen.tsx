@@ -57,10 +57,7 @@ export function BombesPartyHost({ publicState: pub, now }: HostViewProps) {
   if (pub.phase === 'final') return <FinalHost ranking={pub.ranking} />;
   if (pub.phase === 'ready') {
     return (
-      <WaitingScreen
-        title="En attente du lancement…"
-        text="Chaque joueur prend son personnage sur son téléphone."
-      />
+      <WaitingScreen title="En attente du lancement…" text="Chaque joueur prend son personnage sur son téléphone." />
     );
   }
 

@@ -205,7 +205,10 @@ beforeAll(async () => {
   server = await createServer({ config, logger: createLogger('silent', true), sweepEveryMs: 0 });
   const port = await server.listen(0, '127.0.0.1');
   base = `http://127.0.0.1:${port}`;
-  const login = await json('/api/admin/login', { method: 'POST', body: JSON.stringify({ password: 'test-password-123' }) });
+  const login = await json('/api/admin/login', {
+    method: 'POST',
+    body: JSON.stringify({ password: 'test-password-123' }),
+  });
   expect(login.status).toBe(200);
   adminCookie = (login.headers.get('set-cookie') ?? '').split(';')[0] ?? '';
 });
@@ -347,7 +350,11 @@ describe('Jeux de questions médias', () => {
     await seen;
 
     const playing = waitFor<HostRoomView>(host, 'room:host', (v) => (v.game?.public as any)?.phase === 'playing');
-    const phonePlaying = waitFor<PlayerRoomView>(player, 'room:player', (v) => (v.game?.public as any)?.phase === 'playing');
+    const phonePlaying = waitFor<PlayerRoomView>(
+      player,
+      'room:player',
+      (v) => (v.game?.public as any)?.phase === 'playing',
+    );
     expect((await call(host, 'host:start')).ok).toBe(true);
     const hostView = await playing;
     const hostMedia = (hostView.game!.host as any).media;
@@ -369,7 +376,11 @@ describe('Jeux de questions médias', () => {
     const isSong = hostMedia.source.type === 'asset';
     const answer = isSong ? 'zq' : 'Violet Comet';
     const revealed = waitFor<PlayerRoomView>(player, 'room:player', (v) => (v.game?.public as any)?.phase === 'reveal');
-    const acked = await call(player, 'player:action', { commandId: `c-${uniq()}`, type: 'answer', payload: { text: answer } });
+    const acked = await call(player, 'player:action', {
+      commandId: `c-${uniq()}`,
+      type: 'answer',
+      payload: { text: answer },
+    });
     expect(acked.ok).toBe(true);
     const view = await revealed;
     const pub = view.game!.public as any;
@@ -380,7 +391,11 @@ describe('Jeux de questions médias', () => {
     expect((view.game!.player as any).points).toBeGreaterThanOrEqual(100);
 
     // Une seule réponse par extrait.
-    const again = await call(player, 'player:action', { commandId: `c-${uniq()}`, type: 'answer', payload: { text: 'autre' } });
+    const again = await call(player, 'player:action', {
+      commandId: `c-${uniq()}`,
+      type: 'answer',
+      payload: { text: 'autre' },
+    });
     expect(again.ok).toBe(false);
 
     host.disconnect();

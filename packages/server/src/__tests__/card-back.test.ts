@@ -50,13 +50,27 @@ describe('dos de carte personnalisé : enregistrement', () => {
   });
 
   it('refuse un fichier audio utilisé comme dos', () => {
-    store.saveAsset({ id: AUDIO_ID, kind: 'audio', mime: 'audio/mpeg', name: 'son.mp3', size: 10, created_at: new Date().toISOString() });
+    store.saveAsset({
+      id: AUDIO_ID,
+      kind: 'audio',
+      mime: 'audio/mpeg',
+      name: 'son.mp3',
+      size: 10,
+      created_at: new Date().toISOString(),
+    });
     const service = new CardGameService(store);
     expect(service.save(null, withBack({ imageAssetId: AUDIO_ID }))).toMatchObject({ ok: false });
   });
 
   it('accepte une image de la médiathèque et la retrouve dans la définition', () => {
-    store.saveAsset({ id: IMAGE_ID, kind: 'image', mime: 'image/png', name: 'dos.png', size: 24, created_at: new Date().toISOString() });
+    store.saveAsset({
+      id: IMAGE_ID,
+      kind: 'image',
+      mime: 'image/png',
+      name: 'dos.png',
+      size: 24,
+      created_at: new Date().toISOString(),
+    });
     const service = new CardGameService(store);
     const saved = service.save(null, withBack({ color: '#123456', imageAssetId: IMAGE_ID }));
     expect(saved.ok).toBe(true);
@@ -67,7 +81,9 @@ describe('dos de carte personnalisé : enregistrement', () => {
 
 describe('dos de carte dans un paquet .phgame', () => {
   it('accepte une couleur et un texte', () => {
-    expect(() => validatePackage(buildPackage({ definition: withBack({ color: '#123456', label: 'Test' }) }))).not.toThrow();
+    expect(() =>
+      validatePackage(buildPackage({ definition: withBack({ color: '#123456', label: 'Test' }) })),
+    ).not.toThrow();
   });
 
   it('refuse une référence à la médiathèque', () => {

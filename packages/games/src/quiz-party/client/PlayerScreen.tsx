@@ -12,8 +12,7 @@ export function QuizPlayer({ publicState: pub, playerState: me, now, send }: Pla
   if (!pub) return null;
 
   const index: number = pub.index;
-  const myChoice: number | null =
-    me?.myChoice ?? (picked && picked.index === index ? picked.choice : null);
+  const myChoice: number | null = me?.myChoice ?? (picked && picked.index === index ? picked.choice : null);
   const answered = myChoice !== null;
 
   async function choose(choice: number) {
@@ -100,7 +99,11 @@ export function QuizPlayer({ publicState: pub, playerState: me, now, send }: Pla
           </button>
         ))}
       </div>
-      {error && <p className="error" role="alert">{error}</p>}
+      {error && (
+        <p className="error" role="alert">
+          {error}
+        </p>
+      )}
       {answered ? (
         <p className="notice">Réponse envoyée ✔ · En attente des autres…</p>
       ) : (

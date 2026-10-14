@@ -73,7 +73,9 @@
 }
 
 .tarot-slot.is-winner {
-  box-shadow: 0 0 0 3px var(--lime), 0 0 18px rgba(182, 255, 92, 0.6);
+  box-shadow:
+    0 0 0 3px var(--lime),
+    0 0 18px rgba(182, 255, 92, 0.6);
 }
 
 .tarot-trick-empty {

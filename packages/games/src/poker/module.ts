@@ -169,7 +169,10 @@ function beginHand(s: PokerState, ctx: GameContext): void {
   const sb = heads ? s.dealer! : nextAfter(s.order, s.dealer, (id) => seated.includes(id))!;
   const bb = nextAfter(s.order, sb, (id) => seated.includes(id))!;
 
-  s.deck = shuffle(POKER_DEFINITION.cards.map((c) => c.id), ctx.random);
+  s.deck = shuffle(
+    POKER_DEFINITION.cards.map((c) => c.id),
+    ctx.random,
+  );
   for (const id of seated) s.holes[id] = [];
   for (let round = 0; round < 2; round++) {
     for (const id of seated) s.holes[id]!.push(s.deck.pop()!);
@@ -212,7 +215,11 @@ function advance(s: PokerState, ctx: GameContext, from: string | null): void {
     return;
   }
   if (s.pending.length > 0) {
-    setTurn(s, ctx, nextAfter(s.order, from, (id) => s.pending.includes(id)));
+    setTurn(
+      s,
+      ctx,
+      nextAfter(s.order, from, (id) => s.pending.includes(id)),
+    );
     return;
   }
   if (s.street !== 'river' && active(s).length >= 2) {
@@ -498,7 +505,7 @@ export function createPokerGame(): GameModule<PokerState, PokerSettings> {
   function getPlayerState(state: PokerState, playerId: string) {
     const inHand = state.inHand.includes(playerId);
     const folded = state.folded.includes(playerId);
-    const hole = inHand && !folded ? state.holes[playerId] ?? [] : [];
+    const hole = inHand && !folded ? (state.holes[playerId] ?? []) : [];
     const myTurn = state.phase === 'play' && state.turn === playerId;
     const need = myTurn ? toCall(state, playerId) : 0;
     const stack = state.stacks[playerId] ?? 0;

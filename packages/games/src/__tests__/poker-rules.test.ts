@@ -1,12 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  buildPots,
-  compareHands,
-  evaluateBest,
-  evaluateFive,
-  parseCard,
-  resolvePots,
-} from '../poker/rules.js';
+import { buildPots, compareHands, evaluateBest, evaluateFive, parseCard, resolvePots } from '../poker/rules.js';
 
 describe('Lecture des cartes du poker', () => {
   it('lit le rang puis la couleur, avec les figures et l’as', () => {

@@ -69,7 +69,11 @@ describe('copie modifiable d’un paquet', () => {
     expect(services.cardGames.list().map((r) => r.id)).toEqual([copy.id]);
 
     // Le paquet d'origine reste installé, sous son identifiant de jeu, avec sa version.
-    expect(services.packages.get('exemple-cartes')).toMatchObject({ status: 'actif', gameId: 'pkg-exemple-cartes', version: '1.0.0' });
+    expect(services.packages.get('exemple-cartes')).toMatchObject({
+      status: 'actif',
+      gameId: 'pkg-exemple-cartes',
+      version: '1.0.0',
+    });
   });
 
   it('copie un jeu de questions dans l’éditeur de questions médias', () => {

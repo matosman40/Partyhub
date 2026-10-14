@@ -223,10 +223,7 @@ export class RealtimeHub {
       ack({ ok: true });
     });
 
-    const hostCommand = (
-      ack: Ack,
-      run: (room: Room) => { ok: true } | { ok: false; error: string },
-    ) => {
+    const hostCommand = (ack: Ack, run: (room: Room) => { ok: true } | { ok: false; error: string }) => {
       const room = this.hostRoomOf(socket);
       if (!room) return invalid(ack, 'Action réservée à l’hôte de la salle.');
       ack(run(room));
@@ -310,7 +307,9 @@ export class RealtimeHub {
       const parsed = reactionSchema.safeParse(p);
       if (!parsed.success) return invalid(ack);
       hostCommand(ack, (room) => {
-        this.io?.to(room.socketIds()).emit('room:reaction', { id: randomUUID(), from: 'Hôte', emoji: parsed.data.emoji });
+        this.io
+          ?.to(room.socketIds())
+          .emit('room:reaction', { id: randomUUID(), from: 'Hôte', emoji: parsed.data.emoji });
         return { ok: true };
       });
     });
@@ -411,14 +410,7 @@ export class RealtimeHub {
       if (!current) return invalid(ack, 'Vous n’êtes pas dans une salle.');
       const parsed = actionSchema.safeParse(p);
       if (!parsed.success) return invalid(ack);
-      ack(
-        current.room.handleAction(
-          current.playerId,
-          parsed.data.commandId,
-          parsed.data.type,
-          parsed.data.payload,
-        ),
-      );
+      ack(current.room.handleAction(current.playerId, parsed.data.commandId, parsed.data.type, parsed.data.payload));
     });
 
     socket.on('player:chat', (p, ack) => {

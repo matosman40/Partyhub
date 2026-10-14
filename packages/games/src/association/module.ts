@@ -1,13 +1,6 @@
 import { z } from 'zod';
 import type { GameContext, GameModule, PlayerRef } from '@partyhub/shared';
-import {
-  directory,
-  everyConnectedDone,
-  fail,
-  ok,
-  rankEntries,
-  shuffle,
-} from '../common/engine.js';
+import { directory, everyConnectedDone, fail, ok, rankEntries, shuffle } from '../common/engine.js';
 import rawPrompts from './prompts.fr.json' with { type: 'json' };
 
 /**
@@ -134,17 +127,14 @@ export const association: GameModule<AssociationState, AssociationSettings> = {
     maxPlayers: 12,
     durationMin: 12,
     notice: {
-      "goal": "Trouver le mot le plus drôle pour une consigne, et recueillir des votes.",
-      "steps": [
+      goal: 'Trouver le mot le plus drôle pour une consigne, et recueillir des votes.',
+      steps: [
         "Lisez le mot de la manche sur l'écran.",
-        "Écrivez sur votre téléphone le premier mot qui vous vient (24 caractères maximum).",
+        'Écrivez sur votre téléphone le premier mot qui vous vient (24 caractères maximum).',
         "Votez pour le mot le plus drôle, sans savoir qui l'a écrit.",
-        "Chaque vote reçu rapporte 100 points à l'auteur du mot."
+        "Chaque vote reçu rapporte 100 points à l'auteur du mot.",
       ],
-      "tips": [
-        "Vous ne pouvez pas voter pour votre propre mot.",
-        "Il faut au moins deux mots pour passer au vote."
-      ]
+      tips: ['Vous ne pouvez pas voter pour votre propre mot.', 'Il faut au moins deux mots pour passer au vote.'],
     },
   },
 
@@ -307,8 +297,7 @@ export const association: GameModule<AssociationState, AssociationSettings> = {
       myWord: s.words[playerId] ?? null,
       myOption: myOption >= 0 ? myOption : null,
       myVote: s.votes[playerId] ?? null,
-      answered:
-        s.phase === 'write' ? playerId in s.words : s.phase === 'vote' ? playerId in s.votes : false,
+      answered: s.phase === 'write' ? playerId in s.words : s.phase === 'vote' ? playerId in s.votes : false,
       gained: s.phase === 'reveal' ? (s.gains[playerId] ?? 0) : null,
     };
   },

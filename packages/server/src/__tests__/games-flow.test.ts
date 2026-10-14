@@ -1,12 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { io as ioClient, type Socket } from 'socket.io-client';
-import type {
-  ClientToServerEvents,
-  HostRoomView,
-  PlayerRoomView,
-  ServerToClientEvents,
-} from '@partyhub/shared';
+import type { ClientToServerEvents, HostRoomView, PlayerRoomView, ServerToClientEvents } from '@partyhub/shared';
 import { createServer, type PartyServer } from '../server.js';
 import { createLogger } from '../logger.js';
 import type { AppConfig } from '../config.js';
@@ -63,10 +58,7 @@ function call(socket: Client, event: string, ...args: unknown[]): Promise<any> {
 }
 
 /** Attend la prochaine vue hôte qui satisfait le prédicat (le listener doit être posé avant l'action). */
-function nextHostView(
-  socket: Client,
-  predicate: (v: HostRoomView) => boolean,
-): Promise<HostRoomView> {
+function nextHostView(socket: Client, predicate: (v: HostRoomView) => boolean): Promise<HostRoomView> {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error('Délai dépassé (vue hôte)')), 3000);
     const handler = (v: HostRoomView) => {
@@ -79,10 +71,7 @@ function nextHostView(
   });
 }
 
-function nextPlayerView(
-  socket: Client,
-  predicate: (v: PlayerRoomView) => boolean,
-): Promise<PlayerRoomView> {
+function nextPlayerView(socket: Client, predicate: (v: PlayerRoomView) => boolean): Promise<PlayerRoomView> {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error('Délai dépassé (vue joueur)')), 3000);
     const handler = (v: PlayerRoomView) => {
@@ -161,10 +150,7 @@ describe('Association express — parcours complet', () => {
     const revealed = await reveal;
 
     expect(revealed.game?.public.results).toHaveLength(3);
-    const total = (revealed.game?.public.ranking as { points: number }[]).reduce(
-      (sum, e) => sum + e.points,
-      0,
-    );
+    const total = (revealed.game?.public.ranking as { points: number }[]).reduce((sum, e) => sum + e.points, 0);
     // Trois votes, 100 points chacun.
     expect(total).toBe(300);
   });

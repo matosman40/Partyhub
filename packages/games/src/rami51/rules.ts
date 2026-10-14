@@ -39,7 +39,21 @@ const SUIT_ORDER: Record<SuitId, number> = { s: 0, h: 1, c: 2, d: 3 };
 const RANK_IDS = ['a', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'j', 'q', 'k'] as const;
 /** Affichage à la française : valet, dame, roi. */
 const RANK_SHORT = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'V', 'D', 'R'] as const;
-const RANK_NAMES = ['as', 'deux', 'trois', 'quatre', 'cinq', 'six', 'sept', 'huit', 'neuf', 'dix', 'valet', 'dame', 'roi'] as const;
+const RANK_NAMES = [
+  'as',
+  'deux',
+  'trois',
+  'quatre',
+  'cinq',
+  'six',
+  'sept',
+  'huit',
+  'neuf',
+  'dix',
+  'valet',
+  'dame',
+  'roi',
+] as const;
 
 export const JOKER = 'jk';
 export const HAND_SIZE = 13;
@@ -171,7 +185,8 @@ export const RAMI_NOTICE: GameNotice = {
 /** Définition du paquet au format commun des jeux de cartes (rendu SVG partagé). */
 export const RAMI_DEFINITION: CardGameDefinition = {
   name: 'Rami 51',
-  description: 'Le rami à la française : ouvrez à 51 avec une tierce franche, posez tout, et gardez le plus petit total.',
+  description:
+    'Le rami à la française : ouvrez à 51 avec une tierce franche, posez tout, et gardez le plus petit total.',
   icon: '♦️',
   theme: 'classique',
   families: SUITS.map((s) => ({ id: s.id, label: s.label, color: s.color })),
@@ -306,7 +321,8 @@ type RunAttempt = { ok: true; cards: MeldCard[]; points: number } | { ok: false;
 function placeRun(naturals: RunItem[], positions: number[], joker: RunItem | null, suit: SuitId): RunAttempt {
   const taken = new Set<number>();
   for (const p of positions) {
-    if (taken.has(p)) return { ok: false, error: `Une suite ne peut pas contenir deux fois le ${placeLabel(p, suit)}.`, missing: 99 };
+    if (taken.has(p))
+      return { ok: false, error: `Une suite ne peut pas contenir deux fois le ${placeLabel(p, suit)}.`, missing: 99 };
     taken.add(p);
   }
   if (joker?.fixed !== undefined) {
@@ -347,7 +363,8 @@ function placeRun(naturals: RunItem[], positions: number[], joker: RunItem | nul
   }
 
   const cards: MeldCard[] = naturals.map((n, i) => ({ uid: n.card.uid, entry: n.card.entry, pos: positions[i]! }));
-  if (joker && jokerPos !== undefined) cards.push({ uid: joker.card.uid, entry: joker.card.entry, pos: jokerPos, stands: [suit] });
+  if (joker && jokerPos !== undefined)
+    cards.push({ uid: joker.card.uid, entry: joker.card.entry, pos: jokerPos, stands: [suit] });
   cards.sort((a, b) => a.pos - b.pos);
   if (cards[0]!.pos === 1 && cards[cards.length - 1]!.pos === 14) {
     return { ok: false, error: 'Une suite compte au plus 13 cartes.', missing: 97 };
@@ -438,7 +455,9 @@ export function checkMeld(cards: readonly RamiCard[]): MeldCheck {
     });
     return solveRun(items, infos[0]!.suit!);
   }
-  return fail('Ces cartes ne forment ni un brelan (même valeur, couleurs différentes) ni une suite (même couleur, valeurs qui se suivent).');
+  return fail(
+    'Ces cartes ne forment ni un brelan (même valeur, couleurs différentes) ni une suite (même couleur, valeurs qui se suivent).',
+  );
 }
 
 /** Valeur d'une combinaison posée (le joker vaut la carte qu'il remplace). */
@@ -481,7 +500,8 @@ export function checkLayoff(meld: Pick<Meld, 'kind' | 'cards'>, added: readonly 
     const naturals: RamiCard[] = [...meld.cards.filter((c) => !isJoker(c)), ...addedNaturals];
     const total = naturals.length + (meldJoker || addedJokers.length ? 1 : 0);
     if (total > 4) {
-      const replacesJoker = meldJoker && addedNaturals.some((c) => meldJoker.stands?.includes(INFO.get(c.entry)!.suit!));
+      const replacesJoker =
+        meldJoker && addedNaturals.some((c) => meldJoker.stands?.includes(INFO.get(c.entry)!.suit!));
       return fail(
         replacesJoker
           ? 'Le joker tient déjà cette place : utilisez « Échanger le joker ».'
@@ -498,14 +518,22 @@ export function checkLayoff(meld: Pick<Meld, 'kind' | 'cards'>, added: readonly 
     if (info.suit !== suit) {
       return fail(`Cette suite est à ${suitInfo(suit)?.glyph} : le ${cardLabel(card.entry)} ne va pas.`);
     }
-    if (meldJoker && (info.rank === meldJoker.pos || (info.rank === 1 && (meldJoker.pos === 1 || meldJoker.pos === 14)))) {
+    if (
+      meldJoker &&
+      (info.rank === meldJoker.pos || (info.rank === 1 && (meldJoker.pos === 1 || meldJoker.pos === 14)))
+    ) {
       return fail(`Le joker remplace déjà le ${placeLabel(meldJoker.pos, suit)} : utilisez « Échanger le joker ».`);
     }
   }
   const items: RunItem[] = [
     ...meld.cards.map((c) => {
       const info = INFO.get(c.entry)!;
-      return { card: { uid: c.uid, entry: c.entry }, joker: info.joker, rank: info.joker ? 0 : info.rank, fixed: c.pos };
+      return {
+        card: { uid: c.uid, entry: c.entry },
+        joker: info.joker,
+        rank: info.joker ? 0 : info.rank,
+        fixed: c.pos,
+      };
     }),
     ...added.map((card) => {
       const info = INFO.get(card.entry)!;
@@ -522,9 +550,7 @@ export function jokerText(card: MeldCard): string {
   return listLabels(stands.map((s) => placeLabel(card.pos, s))).replace(/ et /, ' ou ');
 }
 
-export type SwapCheck =
-  | { ok: true; cards: MeldCard[]; joker: RamiCard }
-  | { ok: false; error: string };
+export type SwapCheck = { ok: true; cards: MeldCard[]; joker: RamiCard } | { ok: false; error: string };
 
 /**
  * Échange de joker : la carte de la main doit être exactement celle que le joker remplace
@@ -548,7 +574,9 @@ export function checkSwap(meld: Pick<Meld, 'kind' | 'cards'>, card: RamiCard): S
       return fail(`Ce joker remplace le ${jokerText(joker)} : il faut l’une de ces cartes.`);
     }
   }
-  const replaced = meld.cards.map((c) => (c.uid === joker.uid ? { uid: card.uid, entry: card.entry, pos: joker.pos } : c));
+  const replaced = meld.cards.map((c) =>
+    c.uid === joker.uid ? { uid: card.uid, entry: card.entry, pos: joker.pos } : c,
+  );
   return {
     ok: true,
     cards: meld.kind === 'set' ? sortSet(replaced) : replaced,

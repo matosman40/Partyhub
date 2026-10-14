@@ -107,7 +107,10 @@ function draftOf(def: MediaQuizDefinition): Draft {
 }
 
 /** Transforme le brouillon en définition, ou renvoie la première erreur à corriger. */
-function definitionOf(draft: Draft, assets: AssetRecord[]): { ok: true; def: MediaQuizDefinition } | { ok: false; error: string } {
+function definitionOf(
+  draft: Draft,
+  assets: AssetRecord[],
+): { ok: true; def: MediaQuizDefinition } | { ok: false; error: string } {
   const items: MediaItem[] = [];
   for (const [i, it] of draft.items.entries()) {
     const label = `Extrait ${i + 1}`;
@@ -120,7 +123,8 @@ function definitionOf(draft: Draft, assets: AssetRecord[]): { ok: true; def: Med
       source = { type: 'youtube', videoId };
     } else {
       const asset = assets.find((a) => a.id === it.assetId);
-      if (!asset || asset.kind === 'image') return { ok: false, error: `${label} : choisissez un fichier audio ou vidéo.` };
+      if (!asset || asset.kind === 'image')
+        return { ok: false, error: `${label} : choisissez un fichier audio ou vidéo.` };
       source = { type: 'asset', assetId: asset.id, mediaKind: asset.kind === 'video' ? 'video' : 'audio' };
     }
     const startSec = parseTimeInput(it.startText);
@@ -226,10 +230,22 @@ function ItemEditor({
           )}
         </strong>
         <div className="ed-card-actions">
-          <button type="button" className="btn ghost small" disabled={index === 0} onClick={() => onMove(-1)} aria-label={`Monter l’extrait ${index + 1}`}>
+          <button
+            type="button"
+            className="btn ghost small"
+            disabled={index === 0}
+            onClick={() => onMove(-1)}
+            aria-label={`Monter l’extrait ${index + 1}`}
+          >
             ↑
           </button>
-          <button type="button" className="btn ghost small" disabled={index === total - 1} onClick={() => onMove(1)} aria-label={`Descendre l’extrait ${index + 1}`}>
+          <button
+            type="button"
+            className="btn ghost small"
+            disabled={index === total - 1}
+            onClick={() => onMove(1)}
+            aria-label={`Descendre l’extrait ${index + 1}`}
+          >
             ↓
           </button>
           <button type="button" className="btn ghost small" onClick={onRemove}>
@@ -290,7 +306,9 @@ function ItemEditor({
               ))}
             </select>
             {missing && <span className="error small">Ce fichier n’est plus dans la médiathèque.</span>}
-            {playable.length === 0 && <span className="muted small">Ajoutez d’abord un fichier dans la médiathèque.</span>}
+            {playable.length === 0 && (
+              <span className="muted small">Ajoutez d’abord un fichier dans la médiathèque.</span>
+            )}
           </label>
         )}
 
@@ -306,7 +324,11 @@ function ItemEditor({
         {mode === 'devine' && (
           <label className="field">
             <span>Autres formulations (séparées par des virgules)</span>
-            <input value={item.aliases} onChange={(e) => onChange({ ...item, aliases: e.target.value })} maxLength={400} />
+            <input
+              value={item.aliases}
+              onChange={(e) => onChange({ ...item, aliases: e.target.value })}
+              maxLength={400}
+            />
           </label>
         )}
         <label className="field">
@@ -421,7 +443,11 @@ export function MediaGameEditor({
   function changeMode(mode: MediaMode) {
     setDraft((d) => {
       const defaultNames = Object.values(MEDIA_KIND_LABEL) as string[];
-      const name = defaultNames.includes(d.name) ? (mode === 'sous-titres' ? `Sous-titres : ${KIND_SHORT_LABEL[d.kind]}` : MEDIA_KIND_LABEL[d.kind]) : d.name;
+      const name = defaultNames.includes(d.name)
+        ? mode === 'sous-titres'
+          ? `Sous-titres : ${KIND_SHORT_LABEL[d.kind]}`
+          : MEDIA_KIND_LABEL[d.kind]
+        : d.name;
       return { ...d, mode, name };
     });
   }
@@ -474,7 +500,11 @@ export function MediaGameEditor({
         </div>
       </div>
 
-      {error && <p className="error" role="alert">{error}</p>}
+      {error && (
+        <p className="error" role="alert">
+          {error}
+        </p>
+      )}
 
       <section className="ed-section">
         <div className="mq-settings">
@@ -551,7 +581,9 @@ export function MediaGameEditor({
 
       <section className="ed-section stack">
         <div className="section-head">
-          <h3>Extraits ({count}/{MAX_ITEMS})</h3>
+          <h3>
+            Extraits ({count}/{MAX_ITEMS})
+          </h3>
           <button
             type="button"
             className="btn ghost small"
@@ -561,7 +593,9 @@ export function MediaGameEditor({
             Ajouter un extrait
           </button>
         </div>
-        {count === 0 && <p className="muted">Aucun extrait. Ajoutez un lien YouTube ou un fichier de la médiathèque.</p>}
+        {count === 0 && (
+          <p className="muted">Aucun extrait. Ajoutez un lien YouTube ou un fichier de la médiathèque.</p>
+        )}
         <ol className="mq-items">
           {draft.items.map((item, i) => (
             <ItemEditor

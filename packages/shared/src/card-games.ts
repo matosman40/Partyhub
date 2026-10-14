@@ -77,7 +77,10 @@ export const cardNoticeSchema = z.object({
 export const cardBackSchema = z.object({
   color: hexColor.optional(),
   label: z.string().trim().max(16).optional(),
-  imageAssetId: z.string().regex(/^[0-9a-f]{32}$/, 'Image du dos invalide.').optional(),
+  imageAssetId: z
+    .string()
+    .regex(/^[0-9a-f]{32}$/, 'Image du dos invalide.')
+    .optional(),
 });
 
 export const cardGameBaseSchema = z.object({
@@ -91,7 +94,10 @@ export const cardGameBaseSchema = z.object({
   notice: cardNoticeSchema,
   back: cardBackSchema.optional(),
   /** Police de la médiathèque utilisée pour les textes des cartes. Absent = police du thème. */
-  fontAssetId: z.string().regex(/^[0-9a-f]{32}$/, 'Police invalide.').optional(),
+  fontAssetId: z
+    .string()
+    .regex(/^[0-9a-f]{32}$/, 'Police invalide.')
+    .optional(),
 });
 
 export const cardGameDefinitionSchema = cardGameBaseSchema.superRefine((def, ctx) => {
@@ -117,7 +123,11 @@ export const cardGameDefinitionSchema = cardGameBaseSchema.superRefine((def, ctx
 
     const isWild = c.family === WILD_FAMILY;
     if (!isWild && !familyIds.has(c.family)) {
-      ctx.addIssue({ code: 'custom', path: ['cards', i, 'family'], message: `Famille inconnue pour « ${c.label || c.symbol} ».` });
+      ctx.addIssue({
+        code: 'custom',
+        path: ['cards', i, 'family'],
+        message: `Famille inconnue pour « ${c.label || c.symbol} ».`,
+      });
     }
     if (isWild !== (c.effect === 'wild' || c.effect === 'draw4')) {
       ctx.addIssue({

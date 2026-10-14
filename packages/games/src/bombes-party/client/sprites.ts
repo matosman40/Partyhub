@@ -31,12 +31,7 @@ const FRONT_IDLE: Grid = [
 ];
 
 /** Même personnage, jambe avant décalée : deuxième image de la marche. */
-const FRONT_STEP: Grid = [
-  ...FRONT_IDLE.slice(0, 11),
-  '..obo.bo...',
-  '..ob...bo..',
-  '..oo...oo..',
-];
+const FRONT_STEP: Grid = [...FRONT_IDLE.slice(0, 11), '..obo.bo...', '..ob...bo..', '..oo...oo..'];
 
 /** Dos : casque plein, pas de visage. */
 const BACK_IDLE: Grid = [

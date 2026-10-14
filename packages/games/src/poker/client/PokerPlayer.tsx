@@ -156,7 +156,9 @@ export function PokerPlayer({ publicState, playerState, playerId, send }: Player
             ))}
           </div>
         ) : (
-          <p className="muted">{eliminated ? 'Plus de jetons : vous suivez la fin de partie.' : 'Pas de cartes pour cette main.'}</p>
+          <p className="muted">
+            {eliminated ? 'Plus de jetons : vous suivez la fin de partie.' : 'Pas de cartes pour cette main.'}
+          </p>
         )}
         {pub.board.length > 0 && (
           <div className="poker-mini-board" aria-label="Cartes communes">
@@ -222,11 +224,21 @@ export function PokerPlayer({ publicState, playerState, playerId, send }: Player
             Se coucher
           </button>
           {me.canCall ? (
-            <button type="button" className="btn primary big" disabled={busy || !myTurn} onClick={() => void run('call')}>
+            <button
+              type="button"
+              className="btn primary big"
+              disabled={busy || !myTurn}
+              onClick={() => void run('call')}
+            >
               {me.callAmount >= me.stack ? `Tapis ${fmt(me.callAmount)}` : `Suivre ${fmt(me.callAmount)}`}
             </button>
           ) : (
-            <button type="button" className="btn primary big" disabled={busy || !myTurn} onClick={() => void run('check')}>
+            <button
+              type="button"
+              className="btn primary big"
+              disabled={busy || !myTurn}
+              onClick={() => void run('check')}
+            >
               Checker
             </button>
           )}

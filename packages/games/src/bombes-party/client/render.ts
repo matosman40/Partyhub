@@ -432,7 +432,12 @@ function paintSprite(g: Ctx, rows: readonly string[], color: string): void {
   });
 }
 
-function unitImage(colorIndex: number, pose: 'front' | 'back', step: number, facing: Dir | undefined): HTMLCanvasElement {
+function unitImage(
+  colorIndex: number,
+  pose: 'front' | 'back',
+  step: number,
+  facing: Dir | undefined,
+): HTMLCanvasElement {
   return image(`unit:${colorIndex}:${pose}:${step}:${facing ?? '-'}`, SPRITE_W, SPRITE_H, (g) => {
     const color = PLAYER_COLORS[colorIndex % PLAYER_COLORS.length] ?? '#ff4f8b';
     const frames = pose === 'back' ? FRAMES.back : FRAMES.front;
@@ -506,15 +511,7 @@ function glide(tr: Trail, now: number, dur: number): { x: number; y: number; t: 
   return { x: tr.fromX + (tr.x - tr.fromX) * e, y: tr.fromY + (tr.y - tr.fromY) * e, t };
 }
 
-function drawUnit(
-  ctx: Ctx,
-  L: Layout,
-  S: number,
-  u: BoardUnitView,
-  now: number,
-  index: number,
-  onBomb: boolean,
-): void {
+function drawUnit(ctx: Ctx, L: Layout, S: number, u: BoardUnitView, now: number, index: number, onBomb: boolean): void {
   const dur = stepMs(u);
   let tr = trails.get(u.playerId);
   if (!tr) {

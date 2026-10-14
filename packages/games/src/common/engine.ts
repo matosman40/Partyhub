@@ -43,10 +43,7 @@ export function normalizeText(text: string): string {
 }
 
 /** Classement en « compétition » : deux ex æquo partagent le même rang. */
-export function rankEntries(
-  names: Record<string, string>,
-  points: Record<string, number>,
-): ScoreEntry[] {
+export function rankEntries(names: Record<string, string>, points: Record<string, number>): ScoreEntry[] {
   const entries = Object.keys(names).map((id) => ({
     playerId: id,
     name: names[id] ?? '?',
@@ -60,11 +57,7 @@ export function rankEntries(
 }
 
 /** Ajoute des points à un joueur, sans modifier l'objet d'origine. */
-export function addPoints(
-  points: Record<string, number>,
-  id: string,
-  delta: number,
-): Record<string, number> {
+export function addPoints(points: Record<string, number>, id: string, delta: number): Record<string, number> {
   return { ...points, [id]: (points[id] ?? 0) + delta };
 }
 
@@ -72,11 +65,7 @@ export function addPoints(
  * Vrai quand chaque joueur CONNECTÉ parmi `expected` a terminé son action.
  * Un joueur déconnecté ne bloque jamais la manche : le minuteur prend le relais.
  */
-export function everyConnectedDone(
-  ctx: GameContext,
-  expected: string[],
-  done: (id: string) => boolean,
-): boolean {
+export function everyConnectedDone(ctx: GameContext, expected: string[], done: (id: string) => boolean): boolean {
   const waiting = ctx.connectedPlayerIds().filter((id) => expected.includes(id));
   return waiting.length > 0 && waiting.every(done);
 }

@@ -138,7 +138,7 @@ const actionSchemas = {
 };
 
 function who(s: TarotState, id: string | null): string {
-  return id ? s.names[id] ?? '?' : '?';
+  return id ? (s.names[id] ?? '?') : '?';
 }
 
 function nextPlayer(s: TarotState, id: string): string {
@@ -372,7 +372,12 @@ function endDeal(s: TarotState, ctx: GameContext): void {
 
 /** Carte jouée d'office (temps écoulé) : la plus petite carte permise. */
 function lowestLegal(s: TarotState, id: string): string {
-  return [...legalCards(s.hands[id] ?? [], s.trick.map((p) => p.cardId))].sort(byLowValue)[0]!;
+  return [
+    ...legalCards(
+      s.hands[id] ?? [],
+      s.trick.map((p) => p.cardId),
+    ),
+  ].sort(byLowValue)[0]!;
 }
 
 /** Action automatique du joueur dont c'est le tour : passe, écart des plus faibles cartes ou plus petite carte permise. */
@@ -505,7 +510,11 @@ export function createTarotGame(): GameModule<TarotState, TarotSettings> {
     if (type === 'play') {
       if (s.phase !== 'play') return fail('Attendez la fin des enchères et de l’écart.');
       const { cardId: card } = payload as { cardId: string };
-      const error = playError(s.hands[pid] ?? [], s.trick.map((p) => p.cardId), card);
+      const error = playError(
+        s.hands[pid] ?? [],
+        s.trick.map((p) => p.cardId),
+        card,
+      );
       if (error) return fail(error);
       applyPlay(s, pid, card, ctx);
       return ok(s);
@@ -591,7 +600,13 @@ export function createTarotGame(): GameModule<TarotState, TarotSettings> {
     const myTurn = state.started && active && state.turn === playerId;
     return {
       hand: hand.map((id) => ({ uid: id, entry: id })),
-      playable: myTurn && state.phase === 'play' ? legalCards(hand, state.trick.map((p) => p.cardId)) : [],
+      playable:
+        myTurn && state.phase === 'play'
+          ? legalCards(
+              hand,
+              state.trick.map((p) => p.cardId),
+            )
+          : [],
       isMyTurn: myTurn,
       bidOptions: myTurn && state.phase === 'bidding' ? contractsAbove(highestBid(state)?.contract ?? null) : [],
       canPass: myTurn && state.phase === 'bidding',

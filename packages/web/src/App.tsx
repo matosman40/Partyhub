@@ -11,7 +11,9 @@ function NotFound() {
   return (
     <main className="page center">
       <h1>Page introuvable</h1>
-      <Link className="btn" to="/">Retour à l’accueil</Link>
+      <Link className="btn" to="/">
+        Retour à l’accueil
+      </Link>
     </main>
   );
 }

@@ -308,7 +308,9 @@ export function playError(hand: readonly string[], trick: readonly string[], car
     return `Vous devez fournir à ${SUIT_NAME[led]}.`;
   }
   if (!isTrump(cardId)) {
-    return led === 't' ? 'Vous devez jouer atout.' : `Vous n’avez pas de ${SUIT_NAME[led as SuitId]} : vous devez couper.`;
+    return led === 't'
+      ? 'Vous devez jouer atout.'
+      : `Vous n’avez pas de ${SUIT_NAME[led as SuitId]} : vous devez couper.`;
   }
   return 'Vous devez monter à l’atout.';
 }
@@ -466,8 +468,7 @@ export function scoreDeal(input: DealInput): DealScore {
   const base = 25 + Math.ceil(Math.abs(diffHalf) / 2);
   const coef = CONTRACT_COEF[input.contract];
   const pab = input.petitAuBout === 'attack' ? 10 : input.petitAuBout === 'defence' ? -10 : 0;
-  const chelem =
-    input.tricks.attack === TRICKS_PER_DEAL ? 200 : input.tricks.defence === TRICKS_PER_DEAL ? -200 : 0;
+  const chelem = input.tricks.attack === TRICKS_PER_DEAL ? 200 : input.tricks.defence === TRICKS_PER_DEAL ? -200 : 0;
   const total = (made ? base : -base) * coef + pab * coef + chelem;
   return { attackHalf, oudlers, needed, diffHalf, made, base, coef, pab, chelem, total };
 }

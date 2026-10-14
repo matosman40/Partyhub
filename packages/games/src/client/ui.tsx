@@ -16,7 +16,17 @@ function hueOf(name: string): number {
 }
 
 /** Visage d'un avatar : photo si elle existe et charge, sinon l'emoji sur sa teinte. */
-function AvatarFace({ info, size, highlight, name }: { info: AvatarData; size: 'sm' | 'md' | 'lg'; highlight: boolean; name: string }) {
+function AvatarFace({
+  info,
+  size,
+  highlight,
+  name,
+}: {
+  info: AvatarData;
+  size: 'sm' | 'md' | 'lg';
+  highlight: boolean;
+  name: string;
+}) {
   const [broken, setBroken] = useState(false);
   const showImage = !!info.imageUrl && !broken;
   return (
@@ -26,11 +36,7 @@ function AvatarFace({ info, size, highlight, name }: { info: AvatarData; size: '
       aria-hidden="true"
       title={name}
     >
-      {showImage ? (
-        <img src={info.imageUrl ?? ''} alt="" loading="lazy" onError={() => setBroken(true)} />
-      ) : (
-        info.emoji
-      )}
+      {showImage ? <img src={info.imageUrl ?? ''} alt="" loading="lazy" onError={() => setBroken(true)} /> : info.emoji}
     </span>
   );
 }

@@ -68,16 +68,18 @@ function MediaQuizQuiz({ publicState: pub, hostState: host, now }: HostViewProps
         <div>
           <h3>Réponses</h3>
           <ul className="results">
-            {pub.results.map((r: { playerId: string; name: string; text: string | null; correct: boolean; gained: number }) => (
-              <li key={r.playerId} className={r.correct ? 'ok' : 'ko'}>
-                <span>{r.correct ? '✔' : '✘'}</span>
-                <span className="name">
-                  {r.name}
-                  {r.text && <span className="muted small"> « {r.text} »</span>}
-                </span>
-                <span className="points">+{r.gained}</span>
-              </li>
-            ))}
+            {pub.results.map(
+              (r: { playerId: string; name: string; text: string | null; correct: boolean; gained: number }) => (
+                <li key={r.playerId} className={r.correct ? 'ok' : 'ko'}>
+                  <span>{r.correct ? '✔' : '✘'}</span>
+                  <span className="name">
+                    {r.name}
+                    {r.text && <span className="muted small"> « {r.text} »</span>}
+                  </span>
+                  <span className="points">+{r.gained}</span>
+                </li>
+              ),
+            )}
           </ul>
         </div>
         <div>

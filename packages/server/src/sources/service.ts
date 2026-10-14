@@ -192,7 +192,9 @@ export class PackageSourceService {
       const { bytes, expectedSha256 } = await downloadArchive(release, github);
       const actual = createHash('sha256').update(bytes).digest('hex');
       if (actual !== expectedSha256) {
-        throw new GitHubError('L’empreinte du fichier ne correspond pas à celle publiée avec la release. Fichier refusé.');
+        throw new GitHubError(
+          'L’empreinte du fichier ne correspond pas à celle publiée avec la release. Fichier refusé.',
+        );
       }
 
       let manifestId: string;

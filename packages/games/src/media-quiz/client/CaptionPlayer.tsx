@@ -113,7 +113,11 @@ export function CaptionPlayer({ publicState: pub, playerState: me, now, send }: 
             })}
           </ul>
         )}
-        {error && <p className="error" role="alert">{error}</p>}
+        {error && (
+          <p className="error" role="alert">
+            {error}
+          </p>
+        )}
       </section>
     );
   }
@@ -155,7 +159,11 @@ export function CaptionPlayer({ publicState: pub, playerState: me, now, send }: 
           </button>
         </form>
       )}
-      {error && <p className="error" role="alert">{error}</p>}
+      {error && (
+        <p className="error" role="alert">
+          {error}
+        </p>
+      )}
     </section>
   );
 }

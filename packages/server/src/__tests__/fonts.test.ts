@@ -58,12 +58,26 @@ describe('police des cartes', () => {
   it('refuse une police absente ou un fichier qui n’est pas une police', () => {
     const service = new CardGameService(store);
     expect(service.save(null, { ...exampleDefinition(), fontAssetId: FONT_ID })).toMatchObject({ ok: false });
-    store.saveAsset({ id: IMAGE_ID, kind: 'image', mime: 'image/png', name: 'x.png', size: 10, created_at: new Date().toISOString() });
+    store.saveAsset({
+      id: IMAGE_ID,
+      kind: 'image',
+      mime: 'image/png',
+      name: 'x.png',
+      size: 10,
+      created_at: new Date().toISOString(),
+    });
     expect(service.save(null, { ...exampleDefinition(), fontAssetId: IMAGE_ID })).toMatchObject({ ok: false });
   });
 
   it('accepte une police de la médiathèque et signale le jeu dans les usages', () => {
-    store.saveAsset({ id: FONT_ID, kind: 'font', mime: 'font/woff2', name: 'titre.woff2', size: 70, created_at: new Date().toISOString() });
+    store.saveAsset({
+      id: FONT_ID,
+      kind: 'font',
+      mime: 'font/woff2',
+      name: 'titre.woff2',
+      size: 70,
+      created_at: new Date().toISOString(),
+    });
     const service = new CardGameService(store);
     const saved = service.save(null, { ...exampleDefinition(), fontAssetId: FONT_ID });
     expect(saved.ok).toBe(true);

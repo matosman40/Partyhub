@@ -103,7 +103,8 @@ export function PackageSourcesAdmin({ onChanged }: { onChanged: () => void }) {
   }
 
   async function remove(source: SourceRecord) {
-    if (!window.confirm(`Supprimer la source ${source.repo} ? Le paquet installé reste en place, sans mise à jour.`)) return;
+    if (!window.confirm(`Supprimer la source ${source.repo} ? Le paquet installé reste en place, sans mise à jour.`))
+      return;
     await run(async () => {
       await api(`/api/admin/package-sources/${encodeURIComponent(source.id)}`, { method: 'DELETE' });
     });
@@ -112,8 +113,8 @@ export function PackageSourcesAdmin({ onChanged }: { onChanged: () => void }) {
   return (
     <div className="stack">
       <p className="muted">
-        Installe et met à jour un jeu depuis la dernière release d’un dépôt GitHub (auteur/nom). La release doit contenir
-        le fichier <code>.phgame</code> et son <code>.sha256</code>. Une seule version par jeu est installée.
+        Installe et met à jour un jeu depuis la dernière release d’un dépôt GitHub (auteur/nom). La release doit
+        contenir le fichier <code>.phgame</code> et son <code>.sha256</code>. Une seule version par jeu est installée.
       </p>
 
       <form className="ed-new" onSubmit={add}>
@@ -131,7 +132,9 @@ export function PackageSourcesAdmin({ onChanged }: { onChanged: () => void }) {
             />{' '}
             Dépôt privé
           </span>
-          {!tokenConfigured && <span className="muted small">Demande GITHUB_TOKEN dans la configuration du serveur.</span>}
+          {!tokenConfigured && (
+            <span className="muted small">Demande GITHUB_TOKEN dans la configuration du serveur.</span>
+          )}
         </label>
         <label className="field">
           <span>
@@ -148,7 +151,11 @@ export function PackageSourcesAdmin({ onChanged }: { onChanged: () => void }) {
       </form>
 
       {message && <p role="status">{message}</p>}
-      {error && <p className="error" role="alert">{error}</p>}
+      {error && (
+        <p className="error" role="alert">
+          {error}
+        </p>
+      )}
       {sources === null && <p className="muted">Chargement…</p>}
       {sources?.length === 0 && <p className="muted">Aucune source GitHub pour l’instant.</p>}
 

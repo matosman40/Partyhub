@@ -244,7 +244,14 @@ function bestPlay(s: PresidentState, id: string): PCard[] | null {
     const size = s.pileCount;
     if (group.length < size) continue;
     const pick = group.slice(0, size);
-    if (validatePlay(s.pileRank, s.pileCount, pick.map((c) => labelOf(c))).ok) return pick;
+    if (
+      validatePlay(
+        s.pileRank,
+        s.pileCount,
+        pick.map((c) => labelOf(c)),
+      ).ok
+    )
+      return pick;
   }
   return null;
 }
@@ -343,7 +350,11 @@ export function createPresidentGame(): GameModule<PresidentState, PresidentSetti
       const cards = cardIds.map((uid) => s.hands[pid]!.find((c) => c.uid === uid));
       if (cards.some((c) => !c)) return fail('Carte absente de votre main.');
       const chosen = cards as PCard[];
-      const check = validatePlay(s.pileRank, s.pileCount, chosen.map((c) => labelOf(c)));
+      const check = validatePlay(
+        s.pileRank,
+        s.pileCount,
+        chosen.map((c) => labelOf(c)),
+      );
       if (!check.ok) return fail(check.error);
 
       s.hands[pid] = s.hands[pid]!.filter((c) => !chosen.includes(c));
@@ -499,7 +510,11 @@ export function createPresidentGame(): GameModule<PresidentState, PresidentSetti
     const play = bestPlay(state, playerId);
     const len = state.hands[playerId]?.length ?? 0;
     if (play) {
-      return { type: 'play', payload: { cardIds: play.map((c) => c.uid) }, key: `play:${play.map((c) => c.uid).join(',')}` };
+      return {
+        type: 'play',
+        payload: { cardIds: play.map((c) => c.uid) },
+        key: `play:${play.map((c) => c.uid).join(',')}`,
+      };
     }
     return { type: 'pass', key: `pass:${state.round}:${state.turn}:${len}:${state.pileCount}` };
   }

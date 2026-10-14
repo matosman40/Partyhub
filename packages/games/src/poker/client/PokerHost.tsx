@@ -64,15 +64,7 @@ export function PokerHost({ publicState, now }: HostViewProps) {
           const inHand = pub.inHand.includes(id);
           const folded = pub.folded.includes(id);
           const allIn = pub.allIn.includes(id);
-          const status = !inHand
-            ? stack === 0
-              ? 'Éliminé'
-              : 'En attente'
-            : folded
-              ? 'Couché'
-              : allIn
-                ? 'Tapis'
-                : '';
+          const status = !inHand ? (stack === 0 ? 'Éliminé' : 'En attente') : folded ? 'Couché' : allIn ? 'Tapis' : '';
           const win = winners.get(id);
           const shown = pub.revealed[id];
           const cls = [

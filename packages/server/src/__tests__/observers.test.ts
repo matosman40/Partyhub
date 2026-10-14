@@ -1,6 +1,12 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { io as ioClient, type Socket } from 'socket.io-client';
-import type { ClientToServerEvents, ObserverRoomView, PlayerRoomView, HostRoomView, ServerToClientEvents } from '@partyhub/shared';
+import type {
+  ClientToServerEvents,
+  ObserverRoomView,
+  PlayerRoomView,
+  HostRoomView,
+  ServerToClientEvents,
+} from '@partyhub/shared';
 import { createServer, type PartyServer } from '../server.js';
 import { createLogger } from '../logger.js';
 import { MAX_OBSERVERS } from '../rooms/room.js';
@@ -191,7 +197,10 @@ describe('Observateurs', () => {
     const joined2 = await call(fromAgent, 'player:join', { code, name: 'Phone' });
     expect(joined2.ok).toBe(true);
 
-    const view = await until(views, (v) => v.lobby.players.length === 2 && v.lobby.players.every((p) => p.devices.length === 1));
+    const view = await until(
+      views,
+      (v) => v.lobby.players.length === 2 && v.lobby.players.every((p) => p.devices.length === 1),
+    );
     const byName = Object.fromEntries(view.lobby.players.map((p) => [p.name, p.devices]));
     expect(byName.Tablette).toEqual(['tablet']);
     expect(byName.Phone).toEqual(['phone']);
@@ -209,7 +218,12 @@ describe('Observateurs', () => {
     expect(joined.ok).toBe(true);
 
     const second = await connect();
-    const again = await call(second, 'player:join', { code, name: 'ignoré', token: joined.token, device: { kind: 'tablet' } });
+    const again = await call(second, 'player:join', {
+      code,
+      name: 'ignoré',
+      token: joined.token,
+      device: { kind: 'tablet' },
+    });
     expect(again.ok).toBe(true);
     expect(again.playerId).toBe(joined.playerId);
 

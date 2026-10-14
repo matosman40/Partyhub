@@ -261,7 +261,13 @@ export function readArchive(bytes: Uint8Array): ParsedArchive {
  */
 export function restoreArchive(
   bytes: Uint8Array,
-  deps: { store: Store; cards: CardGameService; media: MediaQuizService; boards: BoardGameService; assets: AssetService },
+  deps: {
+    store: Store;
+    cards: CardGameService;
+    media: MediaQuizService;
+    boards: BoardGameService;
+    assets: AssetService;
+  },
   options: RestoreOptions,
 ): { ok: true; summary: RestoreSummary } | { ok: false; error: string } {
   let parsed: ParsedArchive;

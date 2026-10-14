@@ -36,7 +36,9 @@ export function ImposteurHost({ publicState: pub, hostState: host, now }: HostVi
     const isClues = pub.phase === 'clues';
     return (
       <section className="game-host fade-in" key={`${pub.phase}-${pub.round}`}>
-        <div className="round-info">Manche {pub.round + 1} / {pub.total}</div>
+        <div className="round-info">
+          Manche {pub.round + 1} / {pub.total}
+        </div>
         <p className="label">Catégorie</p>
         <h2 className="huge-word small">{pub.category}</h2>
         <p className="muted">
@@ -47,7 +49,9 @@ export function ImposteurHost({ publicState: pub, hostState: host, now }: HostVi
         <ClueList clues={clues} />
         <TimerBar remaining={remaining} total={pub.durationMs} />
         <p className="muted">
-          {isClues ? `${pub.clueCount} / ${pub.playerCount} indice(s)` : `${pub.voteCount} / ${pub.playerCount} vote(s)`}
+          {isClues
+            ? `${pub.clueCount} / ${pub.playerCount} indice(s)`
+            : `${pub.voteCount} / ${pub.playerCount} vote(s)`}
           {pending.length > 0 && <> · En attente : {pending.join(', ')}</>}
         </p>
       </section>
@@ -57,7 +61,9 @@ export function ImposteurHost({ publicState: pub, hostState: host, now }: HostVi
   if (pub.phase === 'guess') {
     return (
       <section className="game-host fade-in" key={`g-${pub.round}`}>
-        <div className="round-info">Manche {pub.round + 1} / {pub.total}</div>
+        <div className="round-info">
+          Manche {pub.round + 1} / {pub.total}
+        </div>
         <h2 className="huge-word small">{pub.accusedName} est démasqué !</h2>
         <p className="muted">
           {host?.guessing
@@ -72,7 +78,9 @@ export function ImposteurHost({ publicState: pub, hostState: host, now }: HostVi
   // reveal
   return (
     <section className="game-host fade-in" key={`r-${pub.round}`}>
-      <div className="round-info">Manche {pub.round + 1} / {pub.total} · Révélation</div>
+      <div className="round-info">
+        Manche {pub.round + 1} / {pub.total} · Révélation
+      </div>
       <p className="label">Le mot était</p>
       <h2 className="huge-word small">{pub.word}</h2>
       <p className={`verdict-host ${pub.caught ? 'ok' : 'ko'}`}>

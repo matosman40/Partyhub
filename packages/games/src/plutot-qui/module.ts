@@ -1,14 +1,6 @@
 import { z } from 'zod';
 import type { GameContext, GameModule, PlayerRef } from '@partyhub/shared';
-import {
-  addPoints,
-  directory,
-  everyConnectedDone,
-  fail,
-  ok,
-  rankEntries,
-  shuffle,
-} from '../common/engine.js';
+import { addPoints, directory, everyConnectedDone, fail, ok, rankEntries, shuffle } from '../common/engine.js';
 import rawPrompts from './prompts.fr.json' with { type: 'json' };
 
 /**
@@ -112,17 +104,17 @@ export const plutotQui: GameModule<PlutotQuiState, PlutotQuiSettings> = {
     maxPlayers: 12,
     durationMin: 10,
     notice: {
-      "goal": "Voter comme la majorité, sur des questions du type « Qui… ? ».",
-      "steps": [
+      goal: 'Voter comme la majorité, sur des questions du type « Qui… ? ».',
+      steps: [
         "Une question « Qui… ? » s'affiche sur l'écran.",
-        "Votez en secret pour la personne qui correspond le mieux (vous pouvez vous désigner).",
-        "Les votants qui ont choisi la personne la plus désignée gagnent 100 points.",
-        "En cas d'égalité, chaque personne en tête compte."
+        'Votez en secret pour la personne qui correspond le mieux (vous pouvez vous désigner).',
+        'Les votants qui ont choisi la personne la plus désignée gagnent 100 points.',
+        "En cas d'égalité, chaque personne en tête compte.",
       ],
-      "tips": [
+      tips: [
         "Les votes restent cachés jusqu'à la révélation.",
-        "Fonctionne à deux, mais s'anime vraiment à partir de quatre joueurs."
-      ]
+        "Fonctionne à deux, mais s'anime vraiment à partir de quatre joueurs.",
+      ],
     },
   },
 
@@ -257,10 +249,7 @@ export const plutotQui: GameModule<PlutotQuiState, PlutotQuiSettings> = {
   },
 
   getHostState(s) {
-    const pending =
-      s.phase === 'vote'
-        ? Object.keys(s.players).filter((id) => !(id in s.votes))
-        : [];
+    const pending = s.phase === 'vote' ? Object.keys(s.players).filter((id) => !(id in s.votes)) : [];
     return { pending: pending.map((id) => s.players[id] ?? '?') };
   },
 

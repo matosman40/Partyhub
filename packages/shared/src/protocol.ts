@@ -133,8 +133,7 @@ export interface ProfileView {
 }
 
 /** Réponse à une commande. Toujours `ok` + éventuelle erreur lisible. */
-export type Ack<T extends object = object> =
-  | ((res: ({ ok: true } & T) | { ok: false; error: string }) => void);
+export type Ack<T extends object = object> = (res: ({ ok: true } & T) | { ok: false; error: string }) => void;
 
 export interface ClientToServerEvents {
   // Hôte (écran principal) — réservé au socket qui a présenté le jeton d'hôte

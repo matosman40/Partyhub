@@ -51,7 +51,11 @@ export function BoardPlayer({ publicState, playerState, playerId, now, send }: P
       {me?.skipped && <p className="muted">Vous passerez votre prochain tour.</p>}
       {pub.turnEndsAt && <TimerBar remaining={remaining} total={pub.turnSeconds} />}
       {pub.lastRoll && <p className="bd-last">{pub.lastRoll.event}</p>}
-      {error && <p className="error" role="alert">{error}</p>}
+      {error && (
+        <p className="error" role="alert">
+          {error}
+        </p>
+      )}
     </section>
   );
 }

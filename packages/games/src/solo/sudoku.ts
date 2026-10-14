@@ -109,7 +109,10 @@ export function generateSudoku(seed: number, difficulty: Difficulty): { puzzle: 
   const solution = fullGrid(random);
   const puzzle = [...solution];
   let givens = 81;
-  for (const i of shuffleWith(Array.from({ length: 81 }, (_, k) => k), random)) {
+  for (const i of shuffleWith(
+    Array.from({ length: 81 }, (_, k) => k),
+    random,
+  )) {
     if (givens <= GIVENS[difficulty]) break;
     const keep = puzzle[i];
     puzzle[i] = 0;

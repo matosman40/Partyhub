@@ -228,8 +228,7 @@ export function createMediaQuiz(
     questionCount: z.number().int().min(1).max(30).default(defaultCount),
     answerSeconds: z.number().int().min(10).max(90).default(def.rules.answerSeconds),
   });
-  const description =
-    def.description || `${MEDIA_KIND_LABEL[def.kind]} : tapez le titre avant la fin du temps.`;
+  const description = def.description || `${MEDIA_KIND_LABEL[def.kind]} : tapez le titre avant la fin du temps.`;
 
   return {
     manifest: {

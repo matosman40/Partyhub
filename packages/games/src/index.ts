@@ -94,9 +94,25 @@ export type { RamiCard, Meld, MeldCard, MeldCheck, OpeningCheck, SwapCheck } fro
 export { planOpening, planMeld, planLayoff, planDiscard, meldCandidates } from './rami51/bot.js';
 export { poker, createPokerGame } from './poker/module.js';
 export type { PokerState, PokerSettings, PokerWinner } from './poker/module.js';
-export { POKER_DEFINITION, evaluateBest, evaluateFive, compareHands, buildPots, resolvePots, parseCard } from './poker/rules.js';
+export {
+  POKER_DEFINITION,
+  evaluateBest,
+  evaluateFive,
+  compareHands,
+  buildPots,
+  resolvePots,
+  parseCard,
+} from './poker/rules.js';
 export { tarot, createTarotGame, tarotSettingsSchema } from './tarot/module.js';
-export type { TarotState, TarotSettings, TarotPhase, TarotBid, TarotTrick, TarotSummary, PlayedCard } from './tarot/module.js';
+export type {
+  TarotState,
+  TarotSettings,
+  TarotPhase,
+  TarotBid,
+  TarotTrick,
+  TarotSummary,
+  PlayedCard,
+} from './tarot/module.js';
 export {
   TAROT_DEFINITION,
   TAROT_DECK,
@@ -133,4 +149,9 @@ export { botBid, botEcart, botPlay, handStrength } from './tarot/bot.js';
 
 export { createBoardGame, boardSettingsSchema } from './board/module.js';
 export type { BoardState, BoardSettings } from './board/module.js';
-export { playTurn as playBoardTurn, ranking as boardRanking, rollDice as boardRollDice, currentPlayer as boardCurrentPlayer } from './board/rules.js';
+export {
+  playTurn as playBoardTurn,
+  ranking as boardRanking,
+  rollDice as boardRollDice,
+  currentPlayer as boardCurrentPlayer,
+} from './board/rules.js';

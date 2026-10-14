@@ -14,7 +14,9 @@ function RoleCard({ me }: { me: { role?: string; category?: string; word?: strin
     return (
       <div className="role-card impostor">
         <p className="role-title">Vous êtes l’IMPOSTEUR 🕵️</p>
-        <p>Catégorie : <strong>{me.category}</strong></p>
+        <p>
+          Catégorie : <strong>{me.category}</strong>
+        </p>
         <p className="muted">Vous ne connaissez pas le mot. Donnez un indice crédible !</p>
       </div>
     );
@@ -79,18 +81,17 @@ export function ImposteurPlayer({ publicState: pub, playerState: me, playerId, n
         <form className="stack" onSubmit={submit}>
           <label className="field big-field">
             <span>Votre indice (un mot ou une courte phrase)</span>
-            <input
-              value={text}
-              maxLength={24}
-              autoComplete="off"
-              onChange={(e) => setText(e.target.value)}
-            />
+            <input value={text} maxLength={24} autoComplete="off" onChange={(e) => setText(e.target.value)} />
           </label>
           <button type="submit" className="btn primary big" disabled={busy || !text.trim() || remaining <= 0}>
             Envoyer l’indice
           </button>
         </form>
-        {error && <p className="error" role="alert">{error}</p>}
+        {error && (
+          <p className="error" role="alert">
+            {error}
+          </p>
+        )}
       </section>
     );
   }
@@ -115,12 +116,19 @@ export function ImposteurPlayer({ publicState: pub, playerState: me, playerId, n
                 onClick={() => run('vote', { target: c.id })}
               >
                 <Avatar name={c.name} />
-                <span>{c.name}{isMe ? ' (vous)' : ''}</span>
+                <span>
+                  {c.name}
+                  {isMe ? ' (vous)' : ''}
+                </span>
               </button>
             );
           })}
         </div>
-        {error && <p className="error" role="alert">{error}</p>}
+        {error && (
+          <p className="error" role="alert">
+            {error}
+          </p>
+        )}
         {me?.answered && <p className="notice">Vote enregistré ✔</p>}
       </section>
     );
@@ -147,7 +155,11 @@ export function ImposteurPlayer({ publicState: pub, playerState: me, playerId, n
               Proposer
             </button>
           </form>
-          {error && <p className="error" role="alert">{error}</p>}
+          {error && (
+            <p className="error" role="alert">
+              {error}
+            </p>
+          )}
           <Countdown remaining={remaining} />
         </section>
       );
@@ -169,7 +181,9 @@ export function ImposteurPlayer({ publicState: pub, playerState: me, playerId, n
         {gained > 0 ? 'Point(s) marqué(s) !' : 'Aucun point cette manche'}
       </p>
       {gained > 0 && <p className="big-number">+{gained}</p>}
-      <p>Total : {me?.points ?? 0} pts · {me?.rank ? `${me.rank}ᵉ` : ''}</p>
+      <p>
+        Total : {me?.points ?? 0} pts · {me?.rank ? `${me.rank}ᵉ` : ''}
+      </p>
     </section>
   );
 }

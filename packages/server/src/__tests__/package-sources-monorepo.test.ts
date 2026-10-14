@@ -119,7 +119,11 @@ describe('dépôt commun', () => {
 
     expect(await service.check(id)).toEqual({ ok: true, status: 'installé', version: '1.10.0' });
     expect(packages.get('frontieres')).toMatchObject({ version: '1.10.0', gameId: 'pkg-frontieres' });
-    expect(service.list()[0]).toMatchObject({ repo: 'auteur/jeux/frontieres', packageId: 'frontieres', installedVersion: '1.10.0' });
+    expect(service.list()[0]).toMatchObject({
+      repo: 'auteur/jeux/frontieres',
+      packageId: 'frontieres',
+      installedVersion: '1.10.0',
+    });
   });
 
   it('gère plusieurs jeux du même dépôt indépendamment', async () => {
@@ -133,7 +137,12 @@ describe('dépôt commun', () => {
 
     expect((await service.check(a)).ok).toBe(true);
     expect((await service.check(b)).ok).toBe(true);
-    expect(packages.list().map((p) => p.id).sort()).toEqual(['frontieres', 'tresor']);
+    expect(
+      packages
+        .list()
+        .map((p) => p.id)
+        .sort(),
+    ).toEqual(['frontieres', 'tresor']);
   });
 
   it('ignore les tags d’un autre jeu dont le nom commence par le même texte', async () => {

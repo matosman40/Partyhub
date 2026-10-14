@@ -47,7 +47,9 @@ export function LoupsHostScreen({ publicState, hostState, now }: HostViewProps) 
   if (!pub) return null;
 
   if (pub.phase === 'ready') {
-    return <WaitingScreen title="Les Loups du village : en attente du lancement…" text={`${pub.players.length} joueur(s)`} />;
+    return (
+      <WaitingScreen title="Les Loups du village : en attente du lancement…" text={`${pub.players.length} joueur(s)`} />
+    );
   }
 
   if (pub.phase === 'final') {
@@ -58,7 +60,9 @@ export function LoupsHostScreen({ publicState, hostState, now }: HostViewProps) 
         <ul className="lv-final">
           {(pub.finalRoles ?? []).map((p) => (
             <li key={p.id}>
-              <span className="lv-icon" aria-hidden="true">{ROLE_INFO[p.role].icon}</span>
+              <span className="lv-icon" aria-hidden="true">
+                {ROLE_INFO[p.role].icon}
+              </span>
               <span className="name">{p.name}</span>
               <span className="muted">{ROLE_INFO[p.role].label}</span>
             </li>
@@ -145,7 +149,9 @@ export function LoupsHostScreen({ publicState, hostState, now }: HostViewProps) 
       <div className="round-info">Jour {pub.round} · vote</div>
       <h2 className="huge-word small">Votez pour éliminer un suspect</h2>
       <Roster pub={pub} />
-      <p className="muted">{pub.voteCount} / {pub.aliveCount} vote(s)</p>
+      <p className="muted">
+        {pub.voteCount} / {pub.aliveCount} vote(s)
+      </p>
       <TimerBar remaining={remaining} total={pub.durationMs} />
     </section>
   );

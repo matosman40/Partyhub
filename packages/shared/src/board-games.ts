@@ -65,7 +65,11 @@ export const boardGameDefinitionSchema = boardGameBaseSchema.superRefine((def, c
   }
   const last = def.cells.length - 1;
   if (def.cells[0]?.kind !== 'normal') {
-    ctx.addIssue({ code: 'custom', path: ['cells', 0, 'kind'], message: 'La première case (départ) doit être une case normale.' });
+    ctx.addIssue({
+      code: 'custom',
+      path: ['cells', 0, 'kind'],
+      message: 'La première case (départ) doit être une case normale.',
+    });
   }
   if (def.cells[last]?.kind !== 'arrivee') {
     ctx.addIssue({ code: 'custom', path: ['cells', last], message: 'La dernière case doit être la case d’arrivée.' });
@@ -75,7 +79,11 @@ export const boardGameDefinitionSchema = boardGameBaseSchema.superRefine((def, c
       ctx.addIssue({ code: 'custom', path: ['cells', i, 'kind'], message: 'La case d’arrivée doit être la dernière.' });
     }
     if (BOARD_VALUED_KINDS.includes(cell.kind) && cell.value < 1) {
-      ctx.addIssue({ code: 'custom', path: ['cells', i, 'value'], message: `Valeur requise pour « ${BOARD_CELL_LABELS[cell.kind]} ».` });
+      ctx.addIssue({
+        code: 'custom',
+        path: ['cells', i, 'value'],
+        message: `Valeur requise pour « ${BOARD_CELL_LABELS[cell.kind]} ».`,
+      });
     }
   });
 });

@@ -89,7 +89,10 @@ describe('Le Promoteur', () => {
     // Dés 1 et 2 (somme 3) : la case 3 (Allée des Pins) est libre.
     const seq = [0, 0.2];
     let i = 0;
-    const res = promoteur.handleAction(s, P('a'), 'roll', undefined, { ...h.ctx, random: () => seq[i++ % seq.length]! });
+    const res = promoteur.handleAction(s, P('a'), 'roll', undefined, {
+      ...h.ctx,
+      random: () => seq[i++ % seq.length]!,
+    });
     if (!res.ok) throw new Error(res.error);
     expect(res.state.phase).toBe('decide');
     expect(res.state.pending).toBe(3);
@@ -109,7 +112,10 @@ describe('Le Promoteur', () => {
     // Dés 1 et 2 : arrivée sur la case 3, propriété de b. Loyer de base : 4 €.
     const seq = [0, 0.2];
     let i = 0;
-    const res = promoteur.handleAction(s, P('a'), 'roll', undefined, { ...h.ctx, random: () => seq[i++ % seq.length]! });
+    const res = promoteur.handleAction(s, P('a'), 'roll', undefined, {
+      ...h.ctx,
+      random: () => seq[i++ % seq.length]!,
+    });
     if (!res.ok) throw new Error(res.error);
     expect(res.state.cash.a).toBe(996);
     expect(res.state.cash.b).toBe(1004);
@@ -161,7 +167,15 @@ describe('Les Loups du village', () => {
   it('une cible protégée par la gardienne survit à l’attaque des loups', () => {
     const h = boot(loupsVillage, [P('a'), P('b'), P('c'), P('d'), P('e'), P('f'), P('g')], {});
     const base = h.state as LoupsState;
-    const roles = { a: 'loup', b: 'villageois', c: 'villageois', d: 'villageois', e: 'voyante', f: 'gardienne', g: 'villageois' } as const;
+    const roles = {
+      a: 'loup',
+      b: 'villageois',
+      c: 'villageois',
+      d: 'villageois',
+      e: 'voyante',
+      f: 'gardienne',
+      g: 'villageois',
+    } as const;
     const s: LoupsState = {
       ...base,
       phase: 'night',

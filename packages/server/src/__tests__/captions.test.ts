@@ -23,8 +23,24 @@ const definition = mediaQuizDefinitionSchema.parse({
   name: 'Film étranger',
   rules: { questionCount: 2, answerSeconds: 30, speedBonus: false },
   items: [
-    { id: 'scene-1', answer: 'Je suis en retard', aliases: [], detail: 'Japonais', source: { type: 'asset', assetId: ASSET, mediaKind: 'video' }, startSec: 3, durationSec: 8 },
-    { id: 'scene-2', answer: '', aliases: [], detail: '', source: { type: 'youtube', videoId: 'abcdefghijk' }, startSec: 0, durationSec: 6 },
+    {
+      id: 'scene-1',
+      answer: 'Je suis en retard',
+      aliases: [],
+      detail: 'Japonais',
+      source: { type: 'asset', assetId: ASSET, mediaKind: 'video' },
+      startSec: 3,
+      durationSec: 8,
+    },
+    {
+      id: 'scene-2',
+      answer: '',
+      aliases: [],
+      detail: '',
+      source: { type: 'youtube', videoId: 'abcdefghijk' },
+      startSec: 0,
+      durationSec: 6,
+    },
   ],
 });
 

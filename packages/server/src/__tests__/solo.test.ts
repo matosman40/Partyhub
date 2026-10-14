@@ -72,7 +72,7 @@ describe('Sudoku', () => {
 
     const emptyIndex = state.boards.a!.puzzle.findIndex((v: number) => v === 0);
     const wrong = state.boards.a!.solution[emptyIndex] === 1 ? 2 : 1;
-    const sameRowIndex = Math.floor(emptyIndex / 9) * 9 + ((emptyIndex % 9) === 0 ? 1 : 0);
+    const sameRowIndex = Math.floor(emptyIndex / 9) * 9 + (emptyIndex % 9 === 0 ? 1 : 0);
     const withConflict = module.handleAction(state, players[0]!, 'play', { index: emptyIndex, value: wrong }, ctx);
     expect(withConflict.ok).toBe(true);
     void sameRowIndex;
@@ -192,7 +192,7 @@ describe('Mots croisés', () => {
       const g = generateCrossword(seed);
       expect(g.clues.across.length + g.clues.down.length).toBeGreaterThanOrEqual(8);
       const at = (r: number, c: number) =>
-        r >= 0 && c >= 0 && r < g.rows && c < g.cols ? g.solution[r * g.cols + c] ?? null : null;
+        r >= 0 && c >= 0 && r < g.rows && c < g.cols ? (g.solution[r * g.cols + c] ?? null) : null;
       // Chaque suite horizontale et verticale d'au moins deux lettres doit être une définition.
       for (let r = 0; r < g.rows; r++) {
         let run = '';
@@ -242,14 +242,26 @@ describe('Mots croisés', () => {
     const grid = generateCrossword(started.state.seed);
     const cell = grid.solution.findIndex((v) => v !== null);
     const wrong = grid.solution[cell] === 'A' ? 'B' : 'A';
-    const typed = motsCroises.handleAction(started.state, players[0]!, 'play', { type: 'letter', index: cell, letter: wrong }, ctx);
+    const typed = motsCroises.handleAction(
+      started.state,
+      players[0]!,
+      'play',
+      { type: 'letter', index: cell, letter: wrong },
+      ctx,
+    );
     expect(typed.ok).toBe(true);
     if (!typed.ok) return;
     const checked = motsCroises.handleAction(typed.state, players[0]!, 'play', { type: 'check' }, ctx);
     expect(checked.ok && checked.state.boards.a!.errors).toEqual([cell]);
     const black = grid.solution.findIndex((v) => v === null);
     if (black >= 0) {
-      const refused = motsCroises.handleAction(typed.state, players[0]!, 'play', { type: 'letter', index: black, letter: 'A' }, ctx);
+      const refused = motsCroises.handleAction(
+        typed.state,
+        players[0]!,
+        'play',
+        { type: 'letter', index: black, letter: 'A' },
+        ctx,
+      );
       expect(refused.ok).toBe(false);
     }
   });

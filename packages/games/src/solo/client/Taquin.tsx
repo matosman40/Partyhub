@@ -53,7 +53,11 @@ export function TaquinView({ board, disabled, send }: SoloBoardProps) {
           );
         })}
       </div>
-      {error && <p className="error small" role="alert">{error}</p>}
+      {error && (
+        <p className="error small" role="alert">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

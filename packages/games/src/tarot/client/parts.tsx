@@ -58,7 +58,18 @@ interface HandRowsProps {
 }
 
 /** La main sur plusieurs rangées d'éventails : atouts d'abord, puis les couleurs. */
-export function HandRows({ ids, mode, waiting, disabled, onTap, playable, selected, locked, fromChien, pendingUid }: HandRowsProps) {
+export function HandRows({
+  ids,
+  mode,
+  waiting,
+  disabled,
+  onTap,
+  playable,
+  selected,
+  locked,
+  fromChien,
+  pendingUid,
+}: HandRowsProps) {
   const rows = handRows(ids);
   return (
     <div className="tarot-hand">
@@ -72,11 +83,7 @@ export function HandRows({ ids, mode, waiting, disabled, onTap, playable, select
           onTap={onTap}
           pendingUid={pendingUid}
           items={row.map((id) => {
-            const classes = [
-              'tarot-face',
-              locked?.has(id) ? 'is-locked' : '',
-              fromChien?.has(id) ? 'is-chien' : '',
-            ]
+            const classes = ['tarot-face', locked?.has(id) ? 'is-locked' : '', fromChien?.has(id) ? 'is-chien' : '']
               .filter(Boolean)
               .join(' ');
             return {
@@ -119,8 +126,10 @@ export function SummaryPanel({ pub, compact = false, playerId }: SummaryProps) {
   if (sm.excuseTransfer !== 0) {
     lines.splice(1, 0, ['Excuse échangée', `${signedHalf(sm.excuseTransfer)} pour le preneur`]);
   }
-  if (sm.pab !== 0) lines.push(['Petit au bout', `${signed(sm.pab)} × ${sm.coef} pour ${sm.pab > 0 ? 'le preneur' : 'la défense'}`]);
-  if (sm.chelem !== 0) lines.push(['Chelem', `${signed(sm.chelem)} pour ${sm.chelem > 0 ? 'le preneur' : 'la défense'}`]);
+  if (sm.pab !== 0)
+    lines.push(['Petit au bout', `${signed(sm.pab)} × ${sm.coef} pour ${sm.pab > 0 ? 'le preneur' : 'la défense'}`]);
+  if (sm.chelem !== 0)
+    lines.push(['Chelem', `${signed(sm.chelem)} pour ${sm.chelem > 0 ? 'le preneur' : 'la défense'}`]);
   lines.push(['Résultat par défenseur', signed(-sm.total), sm.total >= 0 ? 'is-ko' : 'is-ok']);
 
   return (
@@ -139,9 +148,7 @@ export function SummaryPanel({ pub, compact = false, playerId }: SummaryProps) {
             ))}
           </dl>
           <div className="tarot-summary-chien">
-            <span className="muted small">
-              Le chien, compté pour {side === 'attack' ? 'le preneur' : 'la défense'}
-            </span>
+            <span className="muted small">Le chien, compté pour {side === 'attack' ? 'le preneur' : 'la défense'}</span>
             <MiniRow ids={sm.chien} label="Le chien" />
             <span className="muted small">
               Plis : preneur {sm.tricks.attack}, défense {sm.tricks.defence}

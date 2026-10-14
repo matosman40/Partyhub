@@ -129,8 +129,7 @@ function resolveVote(s: ImposteurState, ctx: GameContext): ImposteurState {
   const caught = accused !== null && accused === s.impostorId;
 
   const withAccused = { ...s, accused };
-  const impostorConnected =
-    s.impostorId !== null && ctx.connectedPlayerIds().includes(s.impostorId);
+  const impostorConnected = s.impostorId !== null && ctx.connectedPlayerIds().includes(s.impostorId);
 
   if (caught && impostorConnected) {
     const ms = GUESS_SECONDS * 1000;
@@ -196,17 +195,17 @@ export const imposteur: GameModule<ImposteurState, ImposteurSettings> = {
     maxPlayers: 10,
     durationMin: 15,
     notice: {
-      "goal": "Démasquer l'imposteur, qui ne connaît pas le mot secret.",
-      "steps": [
-        "Chacun reçoit son rôle sur son téléphone : le mot secret, ou « imposteur » avec la catégorie.",
-        "Donnez un indice court, en 24 caractères maximum.",
+      goal: "Démasquer l'imposteur, qui ne connaît pas le mot secret.",
+      steps: [
+        'Chacun reçoit son rôle sur son téléphone : le mot secret, ou « imposteur » avec la catégorie.',
+        'Donnez un indice court, en 24 caractères maximum.',
         "Votez pour désigner l'imposteur.",
-        "Si l'imposteur est démasqué, il peut tenter de deviner le mot secret."
+        "Si l'imposteur est démasqué, il peut tenter de deviner le mot secret.",
       ],
-      "tips": [
+      tips: [
         "Si l'imposteur n'est pas démasqué, il gagne 300 points.",
-        "Les membres de l'équipe gagnent 100 points chacun quand ils désignent le bon joueur."
-      ]
+        "Les membres de l'équipe gagnent 100 points chacun quand ils désignent le bon joueur.",
+      ],
     },
   },
 
@@ -295,8 +294,7 @@ export const imposteur: GameModule<ImposteurState, ImposteurSettings> = {
       const parsed = guessSchema.safeParse(payload);
       if (!parsed.success) return fail('Proposition invalide');
       const secret = current(s);
-      const guessed =
-        secret !== undefined && normalizeText(parsed.data.word) === normalizeText(secret.word);
+      const guessed = secret !== undefined && normalizeText(parsed.data.word) === normalizeText(secret.word);
       return ok(reveal({ ...s, guess: parsed.data.word, guessed }, ctx));
     }
 

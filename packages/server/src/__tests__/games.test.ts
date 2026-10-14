@@ -1,12 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  association,
-  imposteur,
-  plusOuMoins,
-  plutotQui,
-  reflexe,
-  type ImposteurState,
-} from '@partyhub/games';
+import { association, imposteur, plusOuMoins, plutotQui, reflexe, type ImposteurState } from '@partyhub/games';
 import type { GameContext, GameModule, PlayerRef } from '@partyhub/shared';
 
 /**
@@ -33,11 +26,7 @@ const B: PlayerRef = { id: 'b', name: 'Bob' };
 const C: PlayerRef = { id: 'c', name: 'Carl' };
 
 /** Crée une partie et la lance. Renvoie l'état et le contexte. */
-function launch<S>(
-  mod: GameModule<S>,
-  players: PlayerRef[],
-  settings: Record<string, unknown> = {},
-) {
+function launch<S>(mod: GameModule<S>, players: PlayerRef[], settings: Record<string, unknown> = {}) {
   const ids = players.map((p) => p.id);
   const h = makeCtx(ids);
   const init = mod.initialize(
@@ -50,14 +39,7 @@ function launch<S>(
   return { state: res.state, ...h };
 }
 
-function act<S>(
-  mod: GameModule<S>,
-  state: S,
-  player: PlayerRef,
-  type: string,
-  payload: unknown,
-  ctx: GameContext,
-): S {
+function act<S>(mod: GameModule<S>, state: S, player: PlayerRef, type: string, payload: unknown, ctx: GameContext): S {
   const res = mod.handleAction(state, player, type, payload, ctx);
   if (!res.ok) throw new Error(res.error);
   return res.state;

@@ -304,7 +304,10 @@ a:hover {
     inset 0 -2px 0 rgba(0, 0, 0, 0.25),
     0 6px 0 var(--shade),
     0 16px 26px -10px var(--btn-glow);
-  transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.2s ease;
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease,
+    filter 0.2s ease;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
   text-align: center;
@@ -360,7 +363,9 @@ a:hover {
 
 :root[data-theme='light'] .btn.ghost {
   background: linear-gradient(180deg, #ffffff, #efeaff);
-  box-shadow: 0 6px 0 #c9bfef, 0 0 0 1px var(--line-strong);
+  box-shadow:
+    0 6px 0 #c9bfef,
+    0 0 0 1px var(--line-strong);
 }
 
 .btn.big {
@@ -417,7 +422,11 @@ a:hover {
   padding: 0.5rem 1rem;
   border-radius: 999px;
   cursor: pointer;
-  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.15s ease;
 }
 
 .chip:hover {
@@ -471,7 +480,9 @@ a:hover {
 
 .dot.on {
   background: var(--lime);
-  box-shadow: 0 0 0 3px rgba(182, 255, 92, 0.25), 0 0 12px var(--lime);
+  box-shadow:
+    0 0 0 3px rgba(182, 255, 92, 0.25),
+    0 0 12px var(--lime);
 }
 
 .dot.off {
@@ -482,9 +493,7 @@ a:hover {
 
 .card {
   position: relative;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.085), rgba(255, 255, 255, 0.015)),
-    rgba(18, 13, 49, 0.72);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.085), rgba(255, 255, 255, 0.015)), rgba(18, 13, 49, 0.72);
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
   padding: clamp(1rem, 2.4vw, 1.5rem);
@@ -524,7 +533,10 @@ select {
   padding: 0.75rem 0.95rem;
   min-height: 48px;
   width: 100%;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
 }
 
 :root[data-theme='light'] input,
@@ -820,13 +832,15 @@ input[type='checkbox'] {
   background:
     radial-gradient(120% 75% at 100% 0%, color-mix(in srgb, var(--g1) 30%, transparent), transparent 60%),
     radial-gradient(90% 60% at 0% 100%, color-mix(in srgb, var(--g2) 16%, transparent), transparent 65%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.015)),
-    rgba(14, 10, 40, 0.85);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.015)), rgba(14, 10, 40, 0.85);
   border: 1px solid var(--line);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.08),
     0 30px 60px -38px rgba(0, 0, 0, 0.8);
-  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), border-color 0.25s ease, box-shadow 0.25s ease;
+  transition:
+    transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1),
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
 }
 
 .game-card:hover {
@@ -968,8 +982,7 @@ input[type='checkbox'] {
   border-radius: var(--r-xl);
   background:
     radial-gradient(90% 120% at 0% 0%, rgba(255, 61, 139, 0.35), transparent 60%),
-    radial-gradient(80% 120% at 100% 100%, rgba(63, 245, 224, 0.2), transparent 60%),
-    rgba(14, 10, 40, 0.85);
+    radial-gradient(80% 120% at 100% 100%, rgba(63, 245, 224, 0.2), transparent 60%), rgba(14, 10, 40, 0.85);
   border: 1px solid var(--line-strong);
   box-shadow: 0 40px 80px -40px rgba(139, 92, 255, 0.6);
 }
@@ -1104,7 +1117,9 @@ input[type='checkbox'] {
   background: #fff;
   padding: 14px;
   border-radius: 24px;
-  box-shadow: 0 30px 60px -20px rgba(139, 92, 255, 0.7), 0 0 0 6px rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 30px 60px -20px rgba(139, 92, 255, 0.7),
+    0 0 0 6px rgba(255, 255, 255, 0.08);
 }
 
 .qr-placeholder {
@@ -1126,7 +1141,9 @@ input[type='checkbox'] {
 }
 
 .avatar-picker .avatar[aria-pressed='true'] {
-  box-shadow: 0 0 0 3px var(--bg0), 0 0 0 6px var(--cyan);
+  box-shadow:
+    0 0 0 3px var(--bg0),
+    0 0 0 6px var(--cyan);
 }
 
 /* ==========================================================================
@@ -1219,8 +1236,7 @@ input[type='checkbox'] {
   text-align: center;
   background:
     radial-gradient(90% 100% at 50% 0%, rgba(255, 200, 61, 0.18), transparent 60%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.015)),
-    rgba(14, 10, 40, 0.85);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.015)), rgba(14, 10, 40, 0.85);
   padding: clamp(1.25rem, 3vw, 2.25rem);
 }
 
@@ -1557,7 +1573,9 @@ input[type='checkbox'] {
   font-size: clamp(1.25rem, 4.6vw, 1.6rem);
   line-height: 1;
   cursor: pointer;
-  transition: transform 0.15s cubic-bezier(0.2, 0.9, 0.3, 1.5), background 0.15s ease;
+  transition:
+    transform 0.15s cubic-bezier(0.2, 0.9, 0.3, 1.5),
+    background 0.15s ease;
   padding: 0;
 }
 
@@ -1704,7 +1722,9 @@ input[type='checkbox'] {
   font-size: clamp(5rem, 22vw, 14rem);
   line-height: 1;
   color: var(--sun);
-  text-shadow: 0 10px 0 var(--magenta), 0 0 60px rgba(255, 200, 61, 0.4);
+  text-shadow:
+    0 10px 0 var(--magenta),
+    0 0 60px rgba(255, 200, 61, 0.4);
   font-variant-numeric: tabular-nums;
   animation: count-pop 1s cubic-bezier(0.2, 0.9, 0.3, 1.4) infinite;
 }
@@ -1775,7 +1795,10 @@ button.choice,
 button.option-card,
 button.bet {
   cursor: pointer;
-  transition: transform 0.12s ease, background 0.2s ease, border-color 0.2s ease;
+  transition:
+    transform 0.12s ease,
+    background 0.2s ease,
+    border-color 0.2s ease;
 }
 
 button.choice:hover:not(:disabled),
@@ -1879,7 +1902,9 @@ button.bet:active:not(:disabled) {
 .option-card.selected,
 .choice.selected {
   border-color: var(--sun);
-  box-shadow: 0 0 0 3px rgba(255, 200, 61, 0.3), 0 6px 0 rgba(0, 0, 0, 0.3);
+  box-shadow:
+    0 0 0 3px rgba(255, 200, 61, 0.3),
+    0 6px 0 rgba(0, 0, 0, 0.3);
 }
 
 .choice:disabled,
@@ -1956,8 +1981,12 @@ button.bet:active:not(:disabled) {
     radial-gradient(120% 90% at 50% 0%, rgba(255, 255, 255, 0.2), transparent 60%),
     linear-gradient(160deg, #3b2fa8, #1a1450);
   border: 1px solid var(--line-strong);
-  box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.3), 0 30px 60px -30px rgba(139, 92, 255, 0.6);
-  transition: background 0.25s ease, box-shadow 0.25s ease;
+  box-shadow:
+    inset 0 0 80px rgba(0, 0, 0, 0.3),
+    0 30px 60px -30px rgba(139, 92, 255, 0.6);
+  transition:
+    background 0.25s ease,
+    box-shadow 0.25s ease;
 }
 
 .reflex-screen.green {
@@ -1995,7 +2024,9 @@ button.bet:active:not(:disabled) {
   font-size: 1.6rem;
   color: #0b0822;
   background: linear-gradient(180deg, var(--sun-2), var(--sun));
-  box-shadow: 0 10px 0 #b8741a, 0 24px 40px -16px rgba(255, 200, 61, 0.6);
+  box-shadow:
+    0 10px 0 #b8741a,
+    0 24px 40px -16px rgba(255, 200, 61, 0.6);
   cursor: pointer;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
@@ -2033,7 +2064,9 @@ button.bet:active:not(:disabled) {
   place-items: center;
   font-family: var(--display);
   font-size: clamp(3.4rem, 14vw, 6rem);
-  box-shadow: 0 24px 50px -18px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.6) inset;
+  box-shadow:
+    0 24px 50px -18px rgba(0, 0, 0, 0.7),
+    0 0 0 1px rgba(255, 255, 255, 0.6) inset;
   transform: rotate(-2deg);
   animation: card-in 0.6s cubic-bezier(0.2, 0.9, 0.3, 1.2) backwards;
 }
@@ -2103,9 +2136,7 @@ button.bet:active:not(:disabled) {
 .secret-word {
   padding: clamp(1.25rem, 4vw, 2rem);
   border-radius: var(--r-xl);
-  background:
-    radial-gradient(100% 100% at 50% 0%, rgba(255, 61, 139, 0.3), transparent 65%),
-    rgba(14, 10, 40, 0.9);
+  background: radial-gradient(100% 100% at 50% 0%, rgba(255, 61, 139, 0.3), transparent 65%), rgba(14, 10, 40, 0.9);
   border: 1px solid var(--line-strong);
   text-align: center;
 }
@@ -2192,7 +2223,9 @@ button.bet:active:not(:disabled) {
 .arena.arena-player {
   max-width: 100%;
   border-radius: 24px;
-  box-shadow: 0 0 0 4px rgba(139, 92, 255, 0.15), 0 24px 50px -24px rgba(139, 92, 255, 0.6);
+  box-shadow:
+    0 0 0 4px rgba(139, 92, 255, 0.15),
+    0 24px 50px -24px rgba(139, 92, 255, 0.6);
 }
 
 .arena.arena-player .board-canvas {
@@ -2243,7 +2276,9 @@ button.bet:active:not(:disabled) {
   font-family: var(--display);
   font-size: clamp(3rem, 13vw, 7rem);
   color: var(--sun);
-  text-shadow: 0 6px 0 var(--magenta), 0 0 60px rgba(255, 200, 61, 0.5);
+  text-shadow:
+    0 6px 0 var(--magenta),
+    0 0 60px rgba(255, 200, 61, 0.5);
   background: radial-gradient(circle at center, rgba(8, 6, 26, 0.2), rgba(8, 6, 26, 0.55));
   animation: intro-pop 900ms ease-out both;
 }
@@ -2279,7 +2314,9 @@ button.bet:active:not(:disabled) {
   border-radius: 18px;
   background: rgba(14, 10, 40, 0.92);
   border: 1px solid rgba(255, 200, 61, 0.7);
-  box-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.6), 0 0 40px -6px rgba(255, 200, 61, 0.5);
+  box-shadow:
+    0 16px 40px -10px rgba(0, 0, 0, 0.6),
+    0 0 40px -6px rgba(255, 200, 61, 0.5);
   animation: banner-in 420ms cubic-bezier(0.2, 1.4, 0.4, 1) both;
 }
 
@@ -2374,12 +2411,16 @@ button.bet:active:not(:disabled) {
   color: var(--text);
   font-size: 1.5rem;
   font-weight: 900;
-  box-shadow: 0 7px 0 #0a0820, 0 14px 22px -10px rgba(139, 92, 255, 0.6);
+  box-shadow:
+    0 7px 0 #0a0820,
+    0 14px 22px -10px rgba(139, 92, 255, 0.6);
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
   cursor: pointer;
-  transition: transform 0.08s ease, box-shadow 0.08s ease;
+  transition:
+    transform 0.08s ease,
+    box-shadow 0.08s ease;
 }
 
 .dpad-key.is-held,
@@ -2393,12 +2434,13 @@ button.bet:active:not(:disabled) {
   height: min(22vw, 80px);
   border-radius: 50%;
   border: 1px solid rgba(255, 255, 255, 0.35);
-  background:
-    radial-gradient(circle at 35% 28%, #ffd0e3, var(--magenta) 52%, #b3154f);
+  background: radial-gradient(circle at 35% 28%, #ffd0e3, var(--magenta) 52%, #b3154f);
   color: #fff;
   font-family: var(--display);
   font-size: 1.7rem;
-  box-shadow: 0 9px 0 #6e0c35, 0 16px 26px -10px rgba(255, 61, 139, 0.8);
+  box-shadow:
+    0 9px 0 #6e0c35,
+    0 16px 26px -10px rgba(255, 61, 139, 0.8);
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
@@ -2692,7 +2734,7 @@ html {
 
 .quiz-host::before,
 .player-game:has(.choice-btn)::before {
-  content: "";
+  content: '';
   position: absolute;
   inset: -1.5rem -1rem auto;
   height: 75%;
@@ -2768,7 +2810,10 @@ html {
     0 7px 0 var(--tile-shade),
     0 18px 32px -14px var(--tile);
   cursor: pointer;
-  transition: transform 0.12s ease, box-shadow 0.12s ease, opacity 0.3s ease;
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease,
+    opacity 0.3s ease;
   -webkit-tap-highlight-color: transparent;
   overflow: hidden;
 }
@@ -2826,12 +2871,16 @@ html {
 /* Interaction : la tuile s'enfonce comme une vraie touche */
 .choice-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 9px 0 var(--tile-shade), 0 22px 36px -14px var(--tile);
+  box-shadow:
+    0 9px 0 var(--tile-shade),
+    0 22px 36px -14px var(--tile);
 }
 
 .choice-btn:active:not(:disabled) {
   transform: translateY(5px);
-  box-shadow: 0 2px 0 var(--tile-shade), 0 6px 14px -8px var(--tile);
+  box-shadow:
+    0 2px 0 var(--tile-shade),
+    0 6px 14px -8px var(--tile);
 }
 
 .choice-btn:focus-visible {
@@ -2841,7 +2890,10 @@ html {
 
 .choice-btn.selected {
   transform: translateY(5px);
-  box-shadow: 0 2px 0 var(--tile-shade), 0 0 0 4px #ffffff, 0 0 40px -6px var(--tile);
+  box-shadow:
+    0 2px 0 var(--tile-shade),
+    0 0 0 4px #ffffff,
+    0 0 40px -6px var(--tile);
 }
 
 .choice-btn:disabled:not(.selected):not(.correct) {
@@ -2853,7 +2905,10 @@ html {
   background: linear-gradient(180deg, #d8ff8a 0%, var(--lime) 100%);
   color: #0b1a02;
   text-shadow: none;
-  box-shadow: 0 7px 0 #5a8a1c, 0 0 0 4px #ffffff, 0 0 44px -4px var(--lime);
+  box-shadow:
+    0 7px 0 #5a8a1c,
+    0 0 0 4px #ffffff,
+    0 0 44px -4px var(--lime);
 }
 
 .choice-btn.wrong,
@@ -2993,12 +3048,17 @@ html {
   background: var(--glass);
   border: 2px solid var(--line);
   text-align: left;
-  transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+  transition:
+    border-color 0.25s ease,
+    box-shadow 0.25s ease,
+    transform 0.25s ease;
 }
 
 .seat-card.is-turn {
   border-color: var(--sun);
-  box-shadow: 0 0 0 4px rgba(255, 200, 61, 0.22), 0 14px 30px -12px rgba(255, 200, 61, 0.6);
+  box-shadow:
+    0 0 0 4px rgba(255, 200, 61, 0.22),
+    0 14px 30px -12px rgba(255, 200, 61, 0.6);
   transform: translateY(-3px);
 }
 
@@ -3073,10 +3133,7 @@ html {
 
 .pile-back {
   width: 100%;
-  filter:
-    drop-shadow(3px 4px 0 #0c0a24)
-    drop-shadow(6px 8px 0 #0c0a24)
-    drop-shadow(0 18px 24px rgba(0, 0, 0, 0.5));
+  filter: drop-shadow(3px 4px 0 #0c0a24) drop-shadow(6px 8px 0 #0c0a24) drop-shadow(0 18px 24px rgba(0, 0, 0, 0.5));
 }
 
 .pile-count {
@@ -3241,7 +3298,9 @@ html {
   font-size: 1.15rem;
   box-shadow: 0 7px 0 color-mix(in srgb, var(--fam) 50%, #000000);
   cursor: pointer;
-  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease;
 }
 
 .family-pick:active:not(:disabled) {
@@ -3644,7 +3703,6 @@ body {
   gap: 0.5rem;
 }
 
-
 /* ==========================================================================
    Tapis de jeu et éventail de cartes (tous les jeux de cartes)
    Le tapis prend la couleur du thème du jeu (attribut data-mat sur la section).
@@ -3837,7 +3895,9 @@ body {
 .hand-card-face {
   display: block;
   transform-origin: 50% 100%;
-  transition: transform 0.18s ease, filter 0.25s ease;
+  transition:
+    transform 0.18s ease,
+    filter 0.25s ease;
   animation: deal-in 0.62s cubic-bezier(0.2, 0.85, 0.25, 1) backwards;
   /* Délai calculé par le composant : seules les cartes qui arrivent s'animent, en file */
   animation-delay: var(--d, 0ms);
@@ -4361,7 +4421,9 @@ html.is-tv #root > .tv {
   background: linear-gradient(160deg, var(--glass), transparent);
 }
 .pm-tile.is-pending {
-  box-shadow: 0 0 0 2px var(--accent), 0 0 24px -4px var(--accent);
+  box-shadow:
+    0 0 0 2px var(--accent),
+    0 0 24px -4px var(--accent);
 }
 .pm-band {
   position: absolute;
@@ -4642,7 +4704,10 @@ html.is-tv #root > .tv {
   width: calc(100% / 7 * 0.66);
   aspect-ratio: 1;
   transform: translate(-50%, -50%);
-  transition: left 170ms linear, top 170ms linear, opacity 0.4s ease;
+  transition:
+    left 170ms linear,
+    top 170ms linear,
+    opacity 0.4s ease;
   filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.45));
 }
 .pm-pawn-face {
@@ -4650,7 +4715,9 @@ html.is-tv #root > .tv {
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  box-shadow: 0 0 0 3px var(--bg0), 0 0 0 4px rgba(255, 255, 255, 0.35);
+  box-shadow:
+    0 0 0 3px var(--bg0),
+    0 0 0 4px rgba(255, 255, 255, 0.35);
 }
 .pm-pawn .avatar {
   width: 100%;
@@ -4659,7 +4726,10 @@ html.is-tv #root > .tv {
 }
 .pm-pawn.is-current .pm-pawn-face {
   animation: pm-bob 1.1s ease-in-out infinite;
-  box-shadow: 0 0 0 3px var(--bg0), 0 0 0 6px var(--accent), 0 0 22px 2px var(--accent);
+  box-shadow:
+    0 0 0 3px var(--bg0),
+    0 0 0 6px var(--accent),
+    0 0 22px 2px var(--accent);
 }
 .pm-pawn.is-out {
   opacity: 0.25;
@@ -4738,9 +4808,7 @@ html.is-tv #root > .tv {
   inset: 0;
   border-radius: clamp(14px, 2vw, 28px);
   overflow: hidden;
-  background:
-    radial-gradient(60% 55% at 50% 42%, rgba(124, 92, 255, 0.22), transparent 70%),
-    rgba(8, 6, 26, 0.35);
+  background: radial-gradient(60% 55% at 50% 42%, rgba(124, 92, 255, 0.22), transparent 70%), rgba(8, 6, 26, 0.35);
 }
 .pm3d canvas {
   display: block;
@@ -4832,9 +4900,7 @@ html.is-tv #root > .tv {
   overflow: hidden;
   border-radius: var(--r-lg);
   border: 1px solid var(--line-strong);
-  background:
-    radial-gradient(ellipse at 50% 0%, rgba(139, 92, 255, 0.38), transparent 62%),
-    #07051a;
+  background: radial-gradient(ellipse at 50% 0%, rgba(139, 92, 255, 0.38), transparent 62%), #07051a;
   box-shadow: 0 24px 60px -32px rgba(139, 92, 255, 0.7);
 }
 .mq-stage-empty {
@@ -5748,11 +5814,7 @@ html {
 
 /* Encoche et barres système : le contenu reste hors des zones masquées. */
 html:not(.is-tv) body {
-  padding:
-    env(safe-area-inset-top)
-    env(safe-area-inset-right)
-    env(safe-area-inset-bottom)
-    env(safe-area-inset-left);
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
 
 /* Écran tactile : cibles d'au moins 44 px (recommandation d'accessibilité). */

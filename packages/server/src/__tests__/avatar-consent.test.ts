@@ -107,7 +107,9 @@ describe('Photo de profil et consentement', () => {
   it('ne montre la photo aux autres joueurs qu’après consentement, et la retire aussitôt sur retrait', async () => {
     const { token, auth } = await registerWithPhoto('Iris');
 
-    const created = await (await json('/api/rooms', { method: 'POST', body: JSON.stringify({ gameId: 'quiz-party' }) })).json();
+    const created = await (
+      await json('/api/rooms', { method: 'POST', body: JSON.stringify({ gameId: 'quiz-party' }) })
+    ).json();
     const host = await connect();
     expect((await call(host, 'host:connect', { code: created.code, hostToken: created.hostToken })).ok).toBe(true);
 
@@ -126,14 +128,22 @@ describe('Photo de profil et consentement', () => {
 
     // 2. Consentement donné : la salle reçoit la photo immédiatement.
     const shared = waitForView(host, (v) => !!v.lobby.players.find((p) => p.name === 'Iris')?.avatar.imageUrl);
-    const on = await json('/api/profiles/me', { method: 'PUT', headers: auth, body: JSON.stringify({ avatarShared: true }) });
+    const on = await json('/api/profiles/me', {
+      method: 'PUT',
+      headers: auth,
+      body: JSON.stringify({ avatarShared: true }),
+    });
     expect(on.status).toBe(200);
     const withPhoto = (await shared).lobby.players.find((p) => p.name === 'Iris');
     expect(withPhoto?.avatar.imageUrl).toMatch(/^\/api\/avatars\/.+\?v=/);
 
     // 3. Consentement retiré en pleine partie : la photo disparaît de la salle sans attendre une nouvelle entrée.
     const hidden = waitForView(host, (v) => !v.lobby.players.find((p) => p.name === 'Iris')?.avatar.imageUrl);
-    const off = await json('/api/profiles/me', { method: 'PUT', headers: auth, body: JSON.stringify({ avatarShared: false }) });
+    const off = await json('/api/profiles/me', {
+      method: 'PUT',
+      headers: auth,
+      body: JSON.stringify({ avatarShared: false }),
+    });
     expect(off.status).toBe(200);
     expect((await hidden).lobby.players.find((p) => p.name === 'Iris')?.avatar.imageUrl).toBeNull();
 

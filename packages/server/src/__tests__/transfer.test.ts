@@ -248,7 +248,10 @@ describe('Jeux de plateau', () => {
       ['Plateau de test', 'Plateau de test (copie)'].sort(),
     );
 
-    const broken = { ...plateau('Sans arrivée'), cells: plateau('x').cells.slice(0, -1).concat({ label: 'Fin', kind: 'normal', value: 0 }) };
+    const broken = {
+      ...plateau('Sans arrivée'),
+      cells: plateau('x').cells.slice(0, -1).concat({ label: 'Fin', kind: 'normal', value: 0 }),
+    };
     const refused = await call('/api/admin/board-games', { method: 'POST', json: broken });
     expect(refused.status).toBe(400);
     expect(refused.data.error).toBe('La dernière case doit être la case d’arrivée.');
@@ -276,7 +279,14 @@ describe('Jeux de plateau', () => {
   });
 
   it('accepte une sauvegarde antérieure sans plateaux', async () => {
-    const legacy = { format: 'partyhub-sauvegarde', version: 1, cardGames: [], mediaGames: [], gameDetails: {}, notices: {} };
+    const legacy = {
+      format: 'partyhub-sauvegarde',
+      version: 1,
+      cardGames: [],
+      mediaGames: [],
+      gameDetails: {},
+      notices: {},
+    };
     const res = await call('/api/admin/backup/import', { method: 'POST', json: legacy });
     expect(res.status).toBe(200);
     expect(res.data.summary.boardGames).toBe(0);

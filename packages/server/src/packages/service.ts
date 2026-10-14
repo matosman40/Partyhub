@@ -179,7 +179,8 @@ export class PackageService {
       }
     }
 
-    const known = current?.version === manifest.version ? current : this.store.getPackageArchive(manifest.id, manifest.version);
+    const known =
+      current?.version === manifest.version ? current : this.store.getPackageArchive(manifest.id, manifest.version);
     if (known) {
       if (known.sha256 === pkg.sha256) {
         return {
@@ -287,7 +288,8 @@ export class PackageService {
     }
     try {
       const bytes = fs.readFileSync(this.archivePath(id, entry.record.version));
-      if (sha256Of(bytes) !== entry.record.sha256) throw new Error('l’archive ne correspond plus à l’empreinte enregistrée');
+      if (sha256Of(bytes) !== entry.record.sha256)
+        throw new Error('l’archive ne correspond plus à l’empreinte enregistrée');
       return { ok: true, pkg: validatePackage(bytes, this.limits) };
     } catch (err) {
       return { ok: false, error: errorMessage(err) };

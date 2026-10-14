@@ -239,12 +239,7 @@ export function PlayerSeat({
         ) : (
           <label className="field big-field">
             <span>Votre pseudo</span>
-            <input
-              value={name}
-              maxLength={16}
-              autoComplete="nickname"
-              onChange={(e) => setName(e.target.value)}
-            />
+            <input value={name} maxLength={16} autoComplete="nickname" onChange={(e) => setName(e.target.value)} />
           </label>
         )}
         <button type="submit" className="btn primary big" disabled={busy}>
@@ -273,7 +268,12 @@ export function PlayerSeat({
         <span className="muted small">Salle {lobby.code}</span>
       </div>
 
-      <button type="button" className="link-btn small" aria-expanded={shareOpen} onClick={() => setShareOpen((v) => !v)}>
+      <button
+        type="button"
+        className="link-btn small"
+        aria-expanded={shareOpen}
+        onClick={() => setShareOpen((v) => !v)}
+      >
         {shareOpen ? 'Fermer le partage' : 'Jouer ce joueur sur un autre appareil'}
       </button>
       {shareOpen && <SeatShare code={code} seatId={seatId} />}
@@ -372,14 +372,14 @@ function SeatShare({ code, seatId }: { code: string; seatId: string }) {
 
   return (
     <section className="card stack seat-share" aria-label="Partager cette place">
-      <p>
-        Ouvrez ce lien ou scannez le QR code sur un autre appareil : vous y jouerez avec la même place.
-      </p>
+      <p>Ouvrez ce lien ou scannez le QR code sur un autre appareil : vous y jouerez avec la même place.</p>
       <Qr value={url} size={200} />
       <button type="button" className="btn small" onClick={copy}>
         {copied ? 'Lien copié' : 'Copier le lien'}
       </button>
-      <p className="muted small">Ne partagez ce lien qu’avec une personne de confiance : il donne la main sur cette place.</p>
+      <p className="muted small">
+        Ne partagez ce lien qu’avec une personne de confiance : il donne la main sur cette place.
+      </p>
     </section>
   );
 }

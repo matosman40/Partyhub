@@ -167,9 +167,15 @@ export function KlondikeView({ board, disabled, send }: SoloBoardProps) {
       </div>
 
       <p className="muted small solo-hint">
-        {selection ? 'Touchez l’emplacement d’arrivée (colonne ou fondation).' : 'Touchez une carte, puis son emplacement.'}
+        {selection
+          ? 'Touchez l’emplacement d’arrivée (colonne ou fondation).'
+          : 'Touchez une carte, puis son emplacement.'}
       </p>
-      {error && <p className="error small" role="alert">{error}</p>}
+      {error && (
+        <p className="error small" role="alert">
+          {error}
+        </p>
+      )}
     </div>
   );
 }
