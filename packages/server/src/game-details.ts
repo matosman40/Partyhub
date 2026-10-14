@@ -51,7 +51,7 @@ export function settingsOverride(store: Store, module: GameModule): Record<strin
 /** Présentation par défaut, telle que définie dans le code du jeu. */
 export function defaultDetails(module: GameModule): GameDetails {
   const m = module.manifest;
-  return { name: m.name, icon: m.icon, description: m.description };
+  return { name: m.name, icon: m.icon, description: m.description, durationMin: m.durationMin };
 }
 
 /**
@@ -68,11 +68,12 @@ export function withOverrides(module: GameModule, store: Store): GameModule {
   const name = details?.name ?? module.manifest.name;
   const icon = details?.icon ?? module.manifest.icon;
   const description = details?.description ?? module.manifest.description;
+  const durationMin = details?.durationMin ?? module.manifest.durationMin;
   const initialize = module.initialize;
 
   return {
     ...module,
-    manifest: { ...module.manifest, name, icon, description, notice },
+    manifest: { ...module.manifest, name, icon, description, notice, durationMin },
     defaultSettings: (defaults ?? module.defaultSettings) as typeof module.defaultSettings,
     initialize(settings, players, ctx) {
       const state = initialize.call(module, settings, players, ctx) as unknown;

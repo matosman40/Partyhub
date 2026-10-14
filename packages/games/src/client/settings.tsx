@@ -14,18 +14,22 @@ export interface SettingField {
  * revalidée par le serveur (la source de vérité reste le serveur).
  */
 export function fieldSettings(fields: SettingField[]): ComponentType<SettingsProps> {
-  return function FieldSettings({ settings, disabled, onChange }: SettingsProps) {
+  return function FieldSettings({ settings, disabled, onChange, bounds }: SettingsProps) {
     return (
       <div className="settings">
-        {fields.map((f) => (
-          <NumberField
-            key={f.key}
-            field={f}
-            value={Number(settings[f.key] ?? f.min)}
-            disabled={disabled}
-            onCommit={(n) => onChange({ ...settings, [f.key]: n })}
-          />
-        ))}
+        {fields.map((f) => {
+          const exact = bounds?.[f.key];
+          const field = exact ? { ...f, min: exact.min, max: exact.max } : f;
+          return (
+            <NumberField
+              key={f.key}
+              field={field}
+              value={Number(settings[f.key] ?? field.min)}
+              disabled={disabled}
+              onCommit={(n) => onChange({ ...settings, [f.key]: n })}
+            />
+          );
+        })}
       </div>
     );
   };

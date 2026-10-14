@@ -5,6 +5,12 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 ## Non publié
 
 ### Ajouté
+- Durée estimée d'un jeu modifiable dans la présentation (affichée au catalogue et au salon). Le nombre de joueurs
+  reste fixé par le code.
+- Le formulaire de réglages reçoit les bornes exactes du serveur : une valeur valide n'est jamais ramenée d'office.
+- Un refus de réglage nomme le réglage et la limite, en français (« Réglage « rounds » : au plus 15 attendu. »).
+- Des réglages enregistrés qui ne respectent plus le schéma d'un jeu (après une mise à jour de paquet) sont signalés
+  à l'administrateur, puis ignorés ; « Revenir aux réglages d’origine » les efface.
 - Réglages par défaut administrables pour tous les jeux (intégrés, cartes, médias, plateau et paquets importés) :
   section « Réglages par défaut des parties ». Le formulaire est celui de l'hôte ; une valeur hors limites est refusée,
   « Revenir aux réglages d’origine » rétablit ceux du jeu. Les nouvelles salles partent de ces valeurs ; une salle déjà
@@ -44,7 +50,12 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 - Contrôle navigateur `scripts/lobby-browser.py` : pour chacun des 22 jeux, les réglages du salon TV et la page du
   téléphone s'affichent sans erreur. Il tourne en intégration continue.
 
+### Retiré
+- Le poker est retiré du catalogue pour le moment. Son code reste dans l'historique git.
+
 ### Corrigé
+- Les captures d'écran de `scripts/devices-browser.py` vont dans un dossier temporaire ; `SHOTS_DIR=devices-shots`
+  pour mettre à jour celles du dépôt.
 - Les jeux de plateau et les paquets importés étaient classés « intégrés » dans l'administration : l'origine d'un jeu
   est désormais lue dans la table qui le porte (intégré, cartes, médias, plateau ou paquet).
 - Supprimer un jeu efface aussi sa présentation et ses réglages modifiés (auparavant, la présentation restait en base).

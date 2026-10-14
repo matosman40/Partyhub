@@ -13,7 +13,6 @@ import { promoteur } from './promoteur/module.js';
 import { loupsVillage } from './loups-village/module.js';
 import { sudoku, solitaire, taquin, motsCroises } from './solo/index.js';
 import { rami51 } from './rami51/module.js';
-import { poker } from './poker/module.js';
 import { tarot } from './tarot/module.js';
 
 /**
@@ -39,7 +38,6 @@ export const gameRegistry: GameModule[] = [
   taquin,
   motsCroises,
   rami51,
-  poker,
   tarot,
 ];
 
@@ -92,9 +90,6 @@ export {
 } from './rami51/rules.js';
 export type { RamiCard, Meld, MeldCard, MeldCheck, OpeningCheck, SwapCheck } from './rami51/rules.js';
 export { planOpening, planMeld, planLayoff, planDiscard, meldCandidates } from './rami51/bot.js';
-export { poker, createPokerGame } from './poker/module.js';
-export type { PokerState, PokerSettings, PokerWinner } from './poker/module.js';
-export { POKER_DEFINITION, evaluateBest, evaluateFive, compareHands, buildPots, resolvePots, parseCard } from './poker/rules.js';
 export { tarot, createTarotGame, tarotSettingsSchema } from './tarot/module.js';
 export type { TarotState, TarotSettings, TarotPhase, TarotBid, TarotTrick, TarotSummary, PlayedCard } from './tarot/module.js';
 export {

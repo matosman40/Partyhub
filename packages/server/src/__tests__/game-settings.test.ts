@@ -68,9 +68,19 @@ function adminCall(method: string, route: string, body?: unknown) {
   });
 }
 
-async function catalogEntry(id: string) {
+interface CatalogTestEntry {
+  id: string;
+  settings: Record<string, unknown>;
+  customSettings: boolean;
+  settingsStale: boolean;
+  durationMin: number;
+  defaultDetails: { durationMin: number };
+  settingsBounds: Record<string, { min: number; max: number }>;
+}
+
+async function catalogEntry(id: string): Promise<CatalogTestEntry | undefined> {
   const res = await fetch(`${base}/api/catalog`);
-  const { games } = (await res.json()) as { games: { id: string; settings: Record<string, unknown>; customSettings: boolean }[] };
+  const { games } = (await res.json()) as { games: CatalogTestEntry[] };
   return games.find((g) => g.id === id);
 }
 
@@ -132,6 +142,45 @@ describe('Réglages par défaut administrables', () => {
     const entry = await catalogEntry('reflexe');
     expect(entry?.settings).toEqual({ rounds: 5 });
     expect(entry?.customSettings).toBe(false);
+  });
+});
+
+describe('Durée estimée, bornes et réglages devenus invalides', () => {
+  it('la durée estimée se change depuis la présentation, puis revient à celle du code', async () => {
+    const before = await catalogEntry('reflexe');
+    const res = await fetch(`${base}/api/admin/game-details/reflexe`, {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json', cookie },
+      body: JSON.stringify({ name: 'Réflexe', icon: '⚡', description: 'Test de durée.', durationMin: 12 }),
+    });
+    expect(res.status).toBe(200);
+    expect((await catalogEntry('reflexe'))?.durationMin).toBe(12);
+    const back = await fetch(`${base}/api/admin/game-details/reflexe`, { method: 'DELETE', headers: { cookie } });
+    expect(back.status).toBe(200);
+    expect((await catalogEntry('reflexe'))?.durationMin).toBe(before?.defaultDetails?.durationMin);
+  });
+
+  it('le catalogue donne les bornes exactes des réglages', async () => {
+    const res = await fetch(`${base}/api/catalog`);
+    const { games } = (await res.json()) as { games: { id: string; settingsBounds: unknown }[] };
+    expect(games.find((g) => g.id === 'reflexe')?.settingsBounds).toEqual({ rounds: { min: 1, max: 15 } });
+  });
+
+  it('un refus explique le réglage concerné et la limite, en français', async () => {
+    const res = await adminCall('PUT', 'reflexe/settings', { settings: { rounds: 99 } });
+    const body = (await res.json()) as { error: string };
+    expect(body.error).toBe('Réglage « rounds » : au plus 15 attendu.');
+  });
+
+  it('des réglages enregistrés qui ne respectent plus le schéma sont signalés, puis ignorés', async () => {
+    server.store.setSettingsOverride('reflexe', JSON.stringify({ rounds: 99 }));
+    const entry = await catalogEntry('reflexe');
+    expect(entry?.settingsStale).toBe(true);
+    expect(entry?.customSettings).toBe(true);
+    expect(entry?.settings).toEqual({ rounds: 5 });
+    const restored = await adminCall('DELETE', 'reflexe/settings');
+    expect(restored.status).toBe(200);
+    expect((await catalogEntry('reflexe'))?.settingsStale).toBe(false);
   });
 });
 

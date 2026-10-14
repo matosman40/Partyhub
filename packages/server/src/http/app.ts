@@ -30,7 +30,7 @@ import {
   restoreBackup,
   type ConflictMode,
 } from '../backup.js';
-import { gameDetailsSchema } from '@partyhub/shared';
+import { gameDetailsSchema, settingsIssueMessage } from '@partyhub/shared';
 import type { AppConfig } from '../config.js';
 import { adminSettingsSchema, type Store } from '../db/store.js';
 import type { Logger } from '../logger.js';
@@ -444,7 +444,7 @@ export function createApp(deps: AppDeps): express.Express {
     }
     const parsed = game.settingsSchema.safeParse(raw);
     if (!parsed.success) {
-      res.status(400).json({ error: parsed.error.issues[0]?.message ?? 'Réglages invalides.' });
+      res.status(400).json({ error: settingsIssueMessage(parsed.error) });
       return;
     }
     store.setSettingsOverride(id, JSON.stringify(parsed.data));

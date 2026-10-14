@@ -1,5 +1,5 @@
 import { allGames, sourceOf, type CustomSource } from './games-registry.js';
-import type { CatalogGame, GameInfo, GameModule, GameOrigin } from '@partyhub/shared';
+import { settingsBounds, type CatalogGame, type GameInfo, type GameModule, type GameOrigin } from '@partyhub/shared';
 import type { Store } from './db/store.js';
 import { defaultDetails, detailsOverride, settingsOverride, withOverrides } from './game-details.js';
 
@@ -18,6 +18,7 @@ export function gameInfo(module: GameModule): GameInfo {
     maxPlayers: m.maxPlayers,
     durationMin: m.durationMin,
     notice: m.notice,
+    settingsBounds: settingsBounds(module.settingsSchema),
   };
 }
 
@@ -40,6 +41,7 @@ export function catalog(store: Store, includeDisabled: boolean): CatalogGame[] {
     .map((original) => {
       const module = withOverrides(original, store);
       const notice = module.manifest.notice;
+      const stored = store.getSettingsOverride(original.manifest.id) !== undefined;
       return {
         ...gameInfo(module),
         origin: originOf(original.manifest.id),
@@ -50,7 +52,8 @@ export function catalog(store: Store, includeDisabled: boolean): CatalogGame[] {
         customDetails: detailsOverride(store, original.manifest.id) !== undefined,
         settings: module.defaultSettings as Record<string, unknown>,
         defaultSettings: original.defaultSettings as Record<string, unknown>,
-        customSettings: settingsOverride(store, original) !== undefined,
+        customSettings: stored,
+        settingsStale: stored && settingsOverride(store, original) === undefined,
         enabled: store.isGameEnabled(original.manifest.id),
       };
     })

@@ -316,7 +316,7 @@ export function TvPage() {
 
             {views && (
               <Suspense fallback={<p className="muted">Chargement des réglages…</p>}>
-                <views.Settings settings={lobby.gameSettings} disabled={false} onChange={configure} />
+                <views.Settings settings={lobby.gameSettings} disabled={false} onChange={configure} bounds={lobby.game.settingsBounds} />
               </Suspense>
             )}
 

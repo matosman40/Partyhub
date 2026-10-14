@@ -22,7 +22,6 @@ SHOTS = os.environ.get("SHOTS_DIR", "/tmp")
 
 # Jeu, identifiant, mot attendu sur l'écran TV une fois la partie lancée, et joueur téléphone possible.
 GAMES = [
-    {"id": "poker", "name": "Poker", "expect": re.compile(r"pot|mise|croupier", re.I), "phone": True},
     {"id": "rami-51", "name": "Rami 51", "expect": re.compile(r"pioche|rami|défausse", re.I), "phone": True},
     # Tarot exige 4 joueurs : les 3 robots et un téléphone. Il n'a donc pas de passage TV seul.
     {"id": "tarot", "name": "Tarot", "expect": re.compile(r"enchère|chien|pli|contrat", re.I), "phone": True, "tv_alone": False},

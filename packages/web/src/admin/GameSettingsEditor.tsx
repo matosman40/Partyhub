@@ -57,14 +57,21 @@ export function GameSettingsEditor({ game, onSaved }: { game: CatalogGame; onSav
       <summary>
         <span aria-hidden="true">{game.icon}</span> {game.name}{' '}
         {game.customSettings && <span className="badge">réglages modifiés</span>}
+        {game.settingsStale && <span className="badge">réglages ignorés</span>}
       </summary>
       <div className="stack" style={{ marginTop: '1rem' }}>
-        <Settings settings={draft} disabled={busy} onChange={setDraft} />
+        {game.settingsStale && (
+          <p className="error" role="alert">
+            Les réglages enregistrés ne correspondent plus à cette version du jeu : ils sont ignorés et le jeu utilise
+            ses réglages d’origine. Enregistrez de nouvelles valeurs, ou revenez aux réglages d’origine.
+          </p>
+        )}
+        <Settings settings={draft} disabled={busy} onChange={setDraft} bounds={game.settingsBounds} />
         <div className="section-head">
           <button type="button" className="btn primary" disabled={busy || !dirty} onClick={save}>
             Enregistrer les réglages
           </button>
-          {game.customSettings && (
+          {(game.customSettings || game.settingsStale) && (
             <button type="button" className="btn ghost" disabled={busy} onClick={restore}>
               Revenir aux réglages d’origine
             </button>

@@ -430,8 +430,8 @@ export function AdminPage() {
       <section className="card stack">
         <h2>Présentation des jeux intégrés et importés</h2>
         <p className="muted">
-          Nom, icône et description s’affichent partout dans l’application. Les règles de chaque jeu ne se modifient
-          pas ici ; seule la présentation change. Les jeux de cartes, de plateau et de questions médias se modifient
+          Nom, icône, description et durée estimée s’affichent partout dans l’application. Les règles et le nombre de
+          joueurs de chaque jeu ne se modifient pas ici ; seule la présentation change. Les jeux de cartes, de plateau et de questions médias se modifient
           dans leur propre éditeur.
         </p>
         {overview.games

@@ -1,4 +1,5 @@
 import type { ComponentType } from 'react';
+import type { SettingsBounds } from '@partyhub/shared';
 
 /**
  * Contrat d'affichage d'un jeu côté navigateur.
@@ -16,6 +17,8 @@ export interface SettingsProps {
   settings: Record<string, unknown>;
   disabled: boolean;
   onChange: (settings: Record<string, unknown>) => void;
+  /** Bornes exactes données par le serveur ; à défaut, celles du formulaire. */
+  bounds?: SettingsBounds;
 }
 
 export interface HostViewProps {

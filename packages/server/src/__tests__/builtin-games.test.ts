@@ -42,7 +42,7 @@ describe('jeux intégrés sur une installation neuve', () => {
   it('désactive les jeux intégrés quand BUILTIN_GAMES=off', async () => {
     const server = await start({ builtinGames: false });
     expect(server.store.isGameEnabled('quiz-party')).toBe(false);
-    expect(server.store.isGameEnabled('poker')).toBe(false);
+    expect(server.store.isGameEnabled('reflexe')).toBe(false);
     expect(server.store.isGameEnabled('tarot')).toBe(false);
   });
 
@@ -53,19 +53,19 @@ describe('jeux intégrés sur une installation neuve', () => {
 
   it('laisse l’administrateur activer un jeu intégré', async () => {
     const server = await start({ builtinGames: false });
-    server.store.setGameEnabled('poker', true);
-    expect(server.store.isGameEnabled('poker')).toBe(true);
+    server.store.setGameEnabled('reflexe', true);
+    expect(server.store.isGameEnabled('reflexe')).toBe(true);
   });
 
   it('ne modifie pas une installation existante au redémarrage', async () => {
     const first = await start({ builtinGames: false });
-    first.store.setGameEnabled('poker', true);
+    first.store.setGameEnabled('reflexe', true);
     await first.close();
     servers.splice(servers.indexOf(first), 1);
 
     // Deuxième démarrage : le mot de passe administrateur existe, donc l'installation n'est plus « neuve ».
     const second = await start({ builtinGames: false });
-    expect(second.store.isGameEnabled('poker')).toBe(true);
+    expect(second.store.isGameEnabled('reflexe')).toBe(true);
     expect(second.store.isGameEnabled('quiz-party')).toBe(false);
   });
 

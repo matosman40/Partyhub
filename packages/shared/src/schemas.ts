@@ -108,6 +108,8 @@ export const gameDetailsSchema = z.object({
   name: z.string().trim().min(3, 'Le nom doit compter au moins 3 caractères.').max(40),
   icon: z.string().trim().min(1).max(8),
   description: z.string().trim().min(1).max(200),
+  /** Durée estimée affichée dans le catalogue, en minutes. Absente : celle du code. */
+  durationMin: z.number().int().min(1).max(240).optional(),
 });
 
 export type GameDetails = z.infer<typeof gameDetailsSchema>;

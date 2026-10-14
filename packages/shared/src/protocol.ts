@@ -1,6 +1,7 @@
 import type { GameCategory, GameNotice, ScoreEntry } from './game-types.js';
 import type { GameDetails } from './schemas.js';
 import type { DeviceInfo, DeviceKind } from './devices.js';
+import type { SettingsBounds } from './settings-form.js';
 
 export type { DeviceInfo, DeviceKind };
 
@@ -19,6 +20,8 @@ export interface GameInfo {
   minPlayers: number;
   maxPlayers: number;
   durationMin: number;
+  /** Bornes des réglages numériques : le formulaire les affiche telles quelles. */
+  settingsBounds: SettingsBounds;
 }
 
 /** Apparence d'un joueur : image de profil si elle existe, sinon emoji sur une teinte. */
@@ -117,8 +120,10 @@ export interface CatalogGame extends GameInfo {
   settings: Record<string, unknown>;
   /** Réglages par défaut du code du jeu, pour pouvoir les restaurer. */
   defaultSettings: Record<string, unknown>;
-  /** Vrai si l'administrateur a remplacé les réglages par défaut du jeu. */
+  /** Vrai si l'administrateur a enregistré des réglages par défaut pour ce jeu. */
   customSettings: boolean;
+  /** Vrai si des réglages enregistrés ne correspondent plus au schéma du jeu : ils sont ignorés. */
+  settingsStale: boolean;
 }
 
 export interface ProfileStats {

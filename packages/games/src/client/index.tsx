@@ -155,7 +155,6 @@ export const clientViews: Record<string, GameClientViews> = {
   taquin: soloViews('taquin'),
   'mots-croises': soloViews('mots-croises'),
   'rami-51': lazyViews(() => import('../rami51/client/index.js').then((m) => m.ramiViews)),
-  poker: lazyViews(() => import('../poker/client/index.js').then((m) => m.pokerViews)),
   tarot: lazyViews(() => import('../tarot/client/index.js').then((m) => m.tarotViews)),
 };
 

@@ -7,7 +7,6 @@ import '@fontsource/dela-gothic-one/latin-400.css';
 import '@fontsource-variable/outfit';
 import './styles.css';
 import './styles/rami51.css';
-import './styles/poker.css';
 import './styles/tarot.css';
 import './styles/board.css';
 

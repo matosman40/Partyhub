@@ -7,14 +7,17 @@ Dans de vrais navigateurs (téléphone, tablette, ordinateur, téléviseur 4K) :
 - le choix manuel « Affichage » l'emporte sur la détection ;
 - un téléphone rejoint la salle, l'écran TV affiche son icône, un spectateur le compte ;
 - un second appareil ouvre la place du premier avec le lien « #place= » ;
-- les captures d'écran sont écrites dans SHOTS_DIR pour être relues.
+- les captures d'écran sont écrites dans SHOTS_DIR pour être relues. Sans SHOTS_DIR, elles vont
+  dans un dossier temporaire : les captures suivies dans devices-shots/ ne changent pas par accident.
+  Pour mettre à jour les captures du dépôt : SHOTS_DIR=devices-shots.
 
-Usage : BASE_URL=http://127.0.0.1:8282 SHOTS_DIR=/chemin python3 scripts/devices-browser.py
+Usage : BASE_URL=http://127.0.0.1:8282 python3 scripts/devices-browser.py
 Option : CHROMIUM_PATH=/chemin/vers/chrome pour utiliser un Chromium existant.
 """
 import json
 import os
 import sys
+import tempfile
 import urllib.request
 from pathlib import Path
 
@@ -22,7 +25,7 @@ from playwright.sync_api import sync_playwright
 
 BASE_URL = os.environ.get("BASE_URL", "http://127.0.0.1:8282").rstrip("/")
 CHROMIUM_PATH = os.environ.get("CHROMIUM_PATH") or None
-SHOTS_DIR = Path(os.environ.get("SHOTS_DIR", "devices-shots"))
+SHOTS_DIR = Path(os.environ["SHOTS_DIR"]) if os.environ.get("SHOTS_DIR") else Path(tempfile.mkdtemp(prefix="devices-shots-"))
 SHOTS_DIR.mkdir(parents=True, exist_ok=True)
 
 IPHONE_UA = (

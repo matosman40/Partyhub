@@ -15,7 +15,6 @@ Sur une installation neuve, les jeux intégrés sont désactivés : l'administra
 | 🕵️ **L'Imposteur** | Soirée | Un imposteur ignore le mot secret : donnez des indices, puis démasquez-le. |
 | 🃏 **Plus ou moins** | Cartes | Un paquet de 52 cartes : la suivante sera-t-elle plus haute ou plus basse ? |
 | ⚡ **Réflexe** | Adresse | Attendez le vert, puis touchez le plus vite possible. |
-| ♠️ **Poker** | Cartes | Texas hold’em : mises, bluff et meilleure main de cinq cartes. |
 | 🃏 **Rami 51** | Cartes | Ouvrez à 51 points, posez vos combinaisons, videz votre main le premier. |
 | 🎴 **Tarot** | Cartes | Enchères, chien, écart et plis à quatre joueurs. |
 
@@ -153,8 +152,9 @@ la bonne réponse n'apparaît qu'à la révélation, et les réponses privées r
 Réglages modifiables depuis l'administration (sans redémarrage) : joueurs maximum par salle, délai de
 reconnexion, délai d'inactivité, durée maximale d'une salle. Pour chaque jeu (intégré, cartes, médias, plateau ou
 paquet importé), l'administration permet aussi de modifier les réglages par défaut (durées, manches, etc.), la
-présentation (nom, icône, description), la notice, et d'activer ou désactiver le jeu. Les règles du jeu restent
-celles du code ou du paquet : un paquet se transforme en copie modifiable.
+présentation (nom, icône, description, durée estimée), la notice, et d'activer ou désactiver le jeu. Le nombre de
+joueurs reste fixé par le code du jeu. La structure du jeu (cartes, cases, questions) d'un paquet ne change pas : il
+se transforme en copie modifiable.
 
 ## Ajouter un jeu (paquets `.phgame`)
 

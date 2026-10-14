@@ -1,5 +1,6 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import {
+  settingsIssueMessage,
   type DeviceKind,
   type ObserverRoomView,
   type ObserverSummary,
@@ -525,7 +526,7 @@ export class Room {
     if (!this.inLobby) return { ok: false, error: 'Les réglages sont verrouillés pendant la partie.' };
     const parsed = this.module.settingsSchema.safeParse(settings);
     if (!parsed.success) {
-      return { ok: false, error: parsed.error.issues[0]?.message ?? 'Réglages invalides.' };
+      return { ok: false, error: settingsIssueMessage(parsed.error) };
     }
     this.settings = parsed.data as Record<string, unknown>;
     this.state = this.module.initialize(this.settings, this.playerRefs(), this.ctx);
