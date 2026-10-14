@@ -37,6 +37,7 @@ export { cardViews } from '../cards/client/index.js';
 export { cardGamePresets } from '../cards/presets.js';
 export { validatePlay, rankValue, RANKS, PRESIDENT_DEFINITION } from '../president/rules.js';
 export { CardFace } from '../cards/client/CardFace.js';
+export { assetFontFamily } from '../cards/client/fonts.js';
 export { entryOf, familyOf, rankingOf } from '../cards/client/common.js';
 export type { CardsPublic, CardsPlayerState } from '../cards/client/common.js';
 

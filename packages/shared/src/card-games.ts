@@ -90,6 +90,8 @@ export const cardGameBaseSchema = z.object({
   rules: cardRulesSchema,
   notice: cardNoticeSchema,
   back: cardBackSchema.optional(),
+  /** Police de la médiathèque utilisée pour les textes des cartes. Absent = police du thème. */
+  fontAssetId: z.string().regex(/^[0-9a-f]{32}$/, 'Police invalide.').optional(),
 });
 
 export const cardGameDefinitionSchema = cardGameBaseSchema.superRefine((def, ctx) => {

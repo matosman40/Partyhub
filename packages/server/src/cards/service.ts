@@ -72,12 +72,26 @@ export class CardGameService {
         return { ok: false, error: 'L’image du dos n’existe pas dans la médiathèque.' };
       }
     }
+    const fontAsset = parsed.data.fontAssetId;
+    if (fontAsset) {
+      const asset = this.store.getAsset(fontAsset);
+      if (!asset || asset.kind !== 'font') {
+        return { ok: false, error: 'La police n’existe pas dans la médiathèque.' };
+      }
+    }
     if (id !== null && !this.exists(id)) return { ok: false, error: 'Jeu inconnu.' };
     const gameId = id ?? `${CUSTOM_GAME_PREFIX}${randomBytes(4).toString('hex')}`;
     this.store.saveCardGame(gameId, JSON.stringify(parsed.data));
     this.store.setGameEnabled(gameId, true);
     this.reload();
     return { ok: true, id: gameId };
+  }
+
+  /** Jeux de cartes qui utilisent une ressource de la médiathèque (image de dos ou police). */
+  usersOfAsset(assetId: string): string[] {
+    return this.list()
+      .filter((r) => r.definition.back?.imageAssetId === assetId || r.definition.fontAssetId === assetId)
+      .map((r) => `${r.definition.name} (cartes)`);
   }
 
   remove(id: string): boolean {

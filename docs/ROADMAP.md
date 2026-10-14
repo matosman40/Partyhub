@@ -24,7 +24,8 @@ Légende : **Fait** = dans le dépôt. **À faire** = pas commencé. **En cours*
 | 0.4.0 | Jeux de cartes | Poker, Rami 51 et Tarot intégrés, tests serveur et navigateur | **Prêt sur `main`** (tag à créer) |
 | 0.5.0 | Paquets `.phgame` | Format 1 (jeux déclaratifs), import et contrôle dans l'administration, CLI, paquet d'exemple | **Prêt sur `main`** (tag à créer). Cache hors ligne et transfert reportés à 0.7.0 |
 | 0.6.0 | Éditeurs et médiathèque (partie 1) | Dos de carte personnalisé, limites de la médiathèque configurables | **Prêt sur `main`** (tag à créer) |
-| 0.6.1 | Éditeurs et médiathèque (partie 2) | Éditeur de plateau, polices dans la médiathèque | À faire |
+| 0.6.1 | Polices de la médiathèque | Polices WOFF2, WOFF, TTF, OTF pour les cartes ; usages vérifiés avant suppression | **Prêt sur `main`** (tag à créer) |
+| 0.6.2 | Éditeur de plateau | Format de plateau déclaré en données, éditeur | À faire (décision de conception requise) |
 | 0.7.0 | Reprise d'écran et contexte hors ligne | Reprise de l'écran principal (WebRTC), application installable (PWA), cache des paquets, transfert entre téléphones | À faire |
 | 0.8.0 | Robustesse des parties | Salles et parties survivant à un redémarrage, sessions d'administration persistantes | À étudier |
 | 0.9.0 | Jeux JavaScript | Code de paquet exécuté dans un bac à sable WebAssembly, limites de temps et de mémoire | À faire (revue de sécurité requise) |
@@ -84,14 +85,19 @@ Détail du format et des règles : `docs/PHGAME.md`.
 - **Fait** : dos de carte personnalisé (couleur, texte, image de la médiathèque), avec aperçu dans l'éditeur. Les paquets `.phgame` ne peuvent pas référencer la médiathèque.
 - **Fait** : limites de taille de la médiathèque configurables (`ASSET_MAX_AUDIO_MB`, `ASSET_MAX_VIDEO_MB`, `ASSET_MAX_IMAGE_MB`). L'interface affiche les limites réellement appliquées.
 - **Déjà présent** : éditeur de cartes (familles, valeurs, règles, notice) et médiathèque partagée pour les jeux de questions (audio, vidéo, image).
-- **Reporté à 0.6.1** : éditeur de plateau et polices.
+- **Reporté** : polices à 0.6.1, éditeur de plateau à 0.6.2.
 - Critère : un jeu de cartes créé dans l'éditeur se lance sans modification du code (atteint).
 
-### 0.6.1 : éditeurs et médiathèque (partie 2)
-- Éditeur de plateau : un format de plateau générique (cases, types de cases, règles de déplacement) déclaré en données, jouable sans modification du code. Le plateau de Promoteur reste figé et n'est pas concerné.
-- Polices dans la médiathèque (formats WOFF2, TTF, OTF), utilisables dans les jeux de cartes. Vérification du format sur le contenu du fichier, comme pour les autres médias.
-- Critère : un plateau créé dans l'éditeur se joue sans modification du code ; une police téléversée s'affiche dans un jeu.
+### 0.6.1 : polices de la médiathèque
+- **Fait** : polices WOFF2, WOFF, TTF et OTF dans la médiathèque. Format vérifié sur le contenu du fichier ; limite `ASSET_MAX_FONT_MB` (2 Mo par défaut).
+- **Fait** : police choisie par jeu de cartes, chargée par le navigateur et appliquée aux cartes (testé dans un navigateur).
+- **Fait (correction de 0.6.0)** : une image de dos ou une police utilisée par un jeu ne peut plus être supprimée de la médiathèque.
+- Critère : une police téléversée s'affiche dans un jeu (atteint).
+
+### 0.6.2 : éditeur de plateau
+- Format de plateau générique déclaré en données (cases, types de cases, règles de déplacement), jouable sans modification du code. Le plateau de Promoteur reste figé.
 - Préalable : décider si le plateau est un nouveau type de jeu (`kind: board`) ou une extension des jeux de cartes.
+- Critère : un plateau créé dans l'éditeur se joue sans modification du code.
 
 ### 0.7.0 : reprise d'écran et contexte hors ligne
 - Reprise de l'écran principal par un autre appareil, via WebRTC (contrôle de la partie en cours).

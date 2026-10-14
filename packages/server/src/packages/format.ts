@@ -276,8 +276,8 @@ export function validatePackage(bytes: Uint8Array, limits: PackageLimits = DEFAU
         const def = cardGameDefinitionSchema.safeParse(JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(rawDefinition)));
         if (def.success) {
           definition = def.data;
-          if (definition.back?.imageAssetId) {
-            issues.push(`${manifest.entry} (back.imageAssetId) : un paquet ne peut pas utiliser une image de la médiathèque pour le dos de carte.`);
+          if (definition.back?.imageAssetId || definition.fontAssetId) {
+            issues.push(`${manifest.entry} (back.imageAssetId, fontAssetId) : un paquet ne peut pas utiliser une ressource de la médiathèque (image du dos ou police).`);
           }
         }
         else for (const i of def.error.issues) issues.push(`${manifest.entry} (${i.path.join('.') || 'racine'}) : ${i.message}`);

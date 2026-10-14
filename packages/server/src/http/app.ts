@@ -642,9 +642,12 @@ export function createApp(deps: AppDeps): express.Express {
   });
 
   /** Médiathèque : fichiers audio, vidéo et images réutilisables par les jeux. */
+  /** Jeux qui utilisent une ressource de la médiathèque : questions médias et cartes (dos, police). */
+  const usersOf = (assetId: string): string[] => [...mediaGames.usersOfAsset(assetId), ...cardGames.usersOfAsset(assetId)];
+
   admin.get('/assets', (_req, res) => {
     res.json({
-      assets: assets.list().map((a) => ({ ...a, usedBy: mediaGames.usersOfAsset(a.id) })),
+      assets: assets.list().map((a) => ({ ...a, usedBy: usersOf(a.id) })),
       limits: assets.limitsByKind,
     });
   });
@@ -684,7 +687,7 @@ export function createApp(deps: AppDeps): express.Express {
       res.status(404).json({ error: 'Fichier introuvable.' });
       return;
     }
-    const users = mediaGames.usersOfAsset(id);
+    const users = usersOf(id);
     if (users.length > 0) {
       res.status(409).json({
         error: `Ce fichier sert encore dans : ${users.join(', ')}. Retirez-le de ces jeux avant de le supprimer.`,

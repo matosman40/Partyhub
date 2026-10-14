@@ -2,6 +2,28 @@
 
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [0.6.1] - 2026-10-14
+
+### Ajouté
+- Polices dans la médiathèque : WOFF2, WOFF, TTF et OTF. Le format est vérifié sur le contenu du fichier.
+- Police choisie par jeu de cartes (« Police des cartes »). Le navigateur la charge et l'applique aux cartes.
+- Limite de taille des polices configurable : `ASSET_MAX_FONT_MB` (2 Mo par défaut).
+- 7 tests nouveaux (détection des polices, validation de la police, limites), 320 au total.
+
+### Corrigé
+- Une image de dos de carte ou une police utilisée par un jeu de cartes peut de nouveau être vérifiée avant suppression :
+  la médiathèque refuse la suppression tant qu'un jeu l'utilise (c'était une limite connue de 0.6.0).
+
+### Modifié
+- Les messages d'erreur de la médiathèque citent les formats de police acceptés.
+
+### Migration et compatibilité
+- Aucune action. Aucun changement de base de données. Les paquets `.phgame` ne peuvent pas utiliser de police de la médiathèque.
+
+### Problèmes connus
+- Éditeur de plateau : reporté à 0.6.2, en attente d'une décision de conception.
+- Non testé sur de vrais téléphones ni sur une TV.
+
 ## [0.6.0] - 2026-10-14
 
 ### Ajouté

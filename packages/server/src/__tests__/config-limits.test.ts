@@ -16,8 +16,9 @@ describe('limites de taille de la médiathèque', () => {
       ASSET_MAX_AUDIO_MB: '2',
       ASSET_MAX_VIDEO_MB: '100',
       ASSET_MAX_IMAGE_MB: '1',
+      ASSET_MAX_FONT_MB: '3',
     }).assetLimits;
-    expect(limits).toEqual({ audio: 2 * MB, video: 100 * MB, image: 1 * MB });
+    expect(limits).toEqual({ audio: 2 * MB, video: 100 * MB, image: 1 * MB, font: 3 * MB });
   });
 
   it('refuse une valeur hors bornes ou non numérique', () => {

@@ -253,13 +253,16 @@ function CardGameEditor({
   onSaved: () => void | Promise<void>;
 }) {
   const [draft, setDraft] = useState<CardGameDefinition>(initial);
-  const [images, setImages] = useState<{ id: string; name: string }[]>([]);
+  const [library, setLibrary] = useState<{ id: string; name: string; kind: string }[]>([]);
 
   useEffect(() => {
     api<{ assets: { id: string; name: string; kind: string }[] }>('/api/admin/assets')
-      .then((res) => setImages(res.assets.filter((a) => a.kind === 'image').map((a) => ({ id: a.id, name: a.name }))))
-      .catch(() => setImages([]));
+      .then((res) => setLibrary(res.assets))
+      .catch(() => setLibrary([]));
   }, []);
+
+  const images = library.filter((a) => a.kind === 'image');
+  const fonts = library.filter((a) => a.kind === 'font');
 
   function patchBack(fields: Partial<NonNullable<CardGameDefinition['back']>>) {
     setDraft((d) => {
@@ -393,6 +396,17 @@ function CardGameEditor({
         <label className="field">
           <span>Description</span>
           <input value={draft.description} maxLength={160} onChange={(e) => patch({ description: e.target.value })} />
+        </label>
+        <label className="field">
+          <span>Police des cartes (médiathèque)</span>
+          <select value={draft.fontAssetId ?? ''} onChange={(e) => patch({ fontAssetId: e.target.value || undefined })}>
+            <option value="">Police du thème</option>
+            {fonts.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.name}
+              </option>
+            ))}
+          </select>
         </label>
         <div className="ed-themes" role="radiogroup" aria-label="Thème graphique">
           {CARD_THEMES.map((t) => (

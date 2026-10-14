@@ -1,5 +1,6 @@
 import { useId } from 'react';
 import { WILD_FAMILY, type CardBack, type CardEntry, type CardGameDefinition, type CardTheme } from '@partyhub/shared';
+import { assetFontFamily } from './fonts.js';
 
 /**
  * Rendu vectoriel des cartes. Tout est dessiné en SVG (aucune image externe) :
@@ -49,6 +50,7 @@ export function CardFace({ def, entry, back, label }: CardFaceProps) {
     <svg
       className={`pcard pcard-${theme}${showBack ? ' is-back' : ''}`}
       viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
+      style={def.fontAssetId ? { fontFamily: `${assetFontFamily(def.fontAssetId)}, sans-serif` } : undefined}
       role="img"
       aria-label={showBack ? 'Dos de carte' : label ?? entry?.label ?? 'Carte'}
     >

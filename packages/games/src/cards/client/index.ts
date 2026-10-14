@@ -14,3 +14,4 @@ export const cardViews: GameClientViews = {
 };
 
 export { CardFace } from './CardFace.js';
+export { assetFontFamily } from './fonts.js';

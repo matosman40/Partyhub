@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../api.js';
+import { assetFontFamily } from '@partyhub/games/client';
 
 /** Médiathèque : fichiers audio, vidéo et images réutilisables par les jeux de questions. */
 
 export interface AssetRecord {
   id: string;
-  kind: 'audio' | 'video' | 'image';
+  kind: 'audio' | 'video' | 'image' | 'font';
   mime: string;
   name: string;
   size: number;
@@ -21,7 +22,16 @@ const KIND_LABEL: Record<AssetRecord['kind'], string> = {
   audio: 'Son',
   video: 'Vidéo',
   image: 'Image',
+  font: 'Police',
 };
+
+/** Type de fichier déduit du type MIME ou de l'extension (le serveur contrôle le contenu réel). */
+function kindOf(file: File): AssetRecord['kind'] {
+  if (file.type.startsWith('audio/')) return 'audio';
+  if (file.type.startsWith('image/')) return 'image';
+  if (file.type.startsWith('font/') || /\.(woff2?|ttf|otf)$/i.test(file.name)) return 'font';
+  return 'video';
+}
 
 export function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} o`;
@@ -54,7 +64,7 @@ export function AssetLibrary({ onChanged }: { onChanged?: () => void }) {
   async function upload(file: File) {
     setError(null);
     // Contrôle indicatif avant envoi, d'après le type déclaré. Le serveur reste seul juge.
-    const kind = file.type.startsWith('audio/') ? 'audio' : file.type.startsWith('image/') ? 'image' : 'video';
+    const kind = kindOf(file);
     const limitBytes = limits?.[kind];
     if (limitBytes !== undefined && file.size > limitBytes) {
       setError(`« ${file.name} » est trop volumineux (maximum ${Math.round(limitBytes / MB)} Mo pour ce type de fichier).`);
@@ -100,7 +110,7 @@ export function AssetLibrary({ onChanged }: { onChanged?: () => void }) {
     <div className="stack">
       <p className="muted">
         Les fichiers envoyés ici servent aux extraits des jeux de questions et aux dos de carte. Audio : MP3, WAV, OGG, M4A ({sizeOf('audio')}
-        maximum). Vidéo : MP4 ou WebM ({sizeOf('video')} maximum). Image : PNG, JPEG ou WebP ({sizeOf('image')} maximum). Le format est
+        maximum). Vidéo : MP4 ou WebM ({sizeOf('video')} maximum). Image : PNG, JPEG ou WebP ({sizeOf('image')} maximum). Police : WOFF2, WOFF, TTF ou OTF ({sizeOf('font')} maximum). Le format est
         vérifié sur le contenu du fichier. N’envoyez que des médias dont vous avez le droit d’usage.
       </p>
 
@@ -110,7 +120,7 @@ export function AssetLibrary({ onChanged }: { onChanged?: () => void }) {
           <input
             ref={input}
             type="file"
-            accept="audio/*,video/*,image/*"
+            accept="audio/*,video/*,image/*,.woff2,.woff,.ttf,.otf"
             className="sr-only"
             disabled={busy !== null}
             onChange={(e) => {
@@ -133,6 +143,7 @@ export function AssetLibrary({ onChanged }: { onChanged?: () => void }) {
               {a.kind === 'audio' && <audio controls preload="metadata" src={`/api/assets/${a.id}`} />}
               {a.kind === 'video' && <video controls preload="metadata" src={`/api/assets/${a.id}`} />}
               {a.kind === 'image' && <img src={`/api/assets/${a.id}`} alt="" loading="lazy" />}
+              {a.kind === 'font' && <span className="asset-font-sample" style={{ fontFamily: `${assetFontFamily(a.id)}, sans-serif` }}>Aa Bb 123</span>}
             </div>
             <div className="ed-list-body">
               <strong>{a.name}</strong>

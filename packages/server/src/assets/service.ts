@@ -10,12 +10,13 @@ import type { Store, AssetRow } from '../db/store.js';
  * ni de l'en-tête envoyé par le navigateur.
  */
 
-export type AssetKind = 'audio' | 'video' | 'image';
+export type AssetKind = 'audio' | 'video' | 'image' | 'font';
 
 export const ASSET_LIMIT_BYTES: Record<AssetKind, number> = {
   audio: 15 * 1024 * 1024,
   video: 80 * 1024 * 1024,
   image: 5 * 1024 * 1024,
+  font: 2 * 1024 * 1024,
 };
 
 export interface SniffedMedia {
@@ -55,6 +56,16 @@ export function sniffMedia(buf: Buffer): SniffedMedia | null {
   }
   if (buf[0] === 0x89 && startsWith(buf, 1, 'PNG')) return { kind: 'image', mime: 'image/png' };
   if (buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return { kind: 'image', mime: 'image/jpeg' };
+  // Polices : WOFF2, WOFF, OpenType (CFF) et TrueType.
+  if (startsWith(buf, 0, 'wOF2')) return { kind: 'font', mime: 'font/woff2' };
+  if (startsWith(buf, 0, 'wOFF')) return { kind: 'font', mime: 'font/woff' };
+  if (startsWith(buf, 0, 'OTTO')) return { kind: 'font', mime: 'font/otf' };
+  if (buf[0] === 0x00 && buf[1] === 0x01 && buf[2] === 0x00 && buf[3] === 0x00) return { kind: 'font', mime: 'font/ttf' };
+  // Polices : WOFF2, WOFF, OpenType (CFF) et TrueType.
+  if (startsWith(buf, 0, 'wOF2')) return { kind: 'font', mime: 'font/woff2' };
+  if (startsWith(buf, 0, 'wOFF')) return { kind: 'font', mime: 'font/woff' };
+  if (startsWith(buf, 0, 'OTTO')) return { kind: 'font', mime: 'font/otf' };
+  if (buf[0] === 0x00 && buf[1] === 0x01 && buf[2] === 0x00 && buf[3] === 0x00) return { kind: 'font', mime: 'font/ttf' };
   return null;
 }
 
@@ -89,7 +100,7 @@ export function cleanFileName(raw: string): string {
 const TEMP_PREFIX = '.upload-';
 /** Octets lus avant de reconnaître le format (le plus long des en-têtes utilisés tient en 12). */
 const SNIFF_BYTES = 16;
-const FORMAT_ERROR = 'Format non accepté. Utilisez MP3, WAV, OGG, M4A, MP4, WebM, PNG, JPEG ou WebP.';
+const FORMAT_ERROR = 'Format non accepté. Utilisez MP3, WAV, OGG, M4A, MP4, WebM, PNG, JPEG, WebP, WOFF2, WOFF, TTF ou OTF.';
 const INTERRUPTED = 'Envoi interrompu avant la fin.';
 
 export type ReceiveResult =

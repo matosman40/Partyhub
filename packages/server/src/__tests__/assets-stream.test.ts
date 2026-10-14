@@ -133,6 +133,7 @@ describe('Réception en flux', () => {
       audio: 15 * 1024 * 1024,
       video: 80 * 1024 * 1024,
       image: 5 * 1024 * 1024,
+      font: 2 * 1024 * 1024,
     });
     expect(new AssetService(store, dataDir).maxBytes).toBe(80 * 1024 * 1024);
   });
