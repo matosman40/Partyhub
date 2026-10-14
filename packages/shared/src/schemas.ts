@@ -1,3 +1,4 @@
+import { deviceInfoSchema } from './devices.js';
 import { z } from 'zod';
 import { ROOM_CODE_ALPHABET, ROOM_CODE_LENGTH } from './room-codes.js';
 import { AVATAR_EMOJIS } from './avatars.js';
@@ -36,6 +37,12 @@ export const joinSchema = z.object({
   name: playerNameSchema,
   token: tokenSchema.optional(),
   profileToken: tokenSchema.optional(),
+  device: deviceInfoSchema.optional(),
+});
+
+export const observerJoinSchema = z.object({
+  code: roomCodeSchema,
+  device: deviceInfoSchema.optional(),
 });
 
 export const chatSchema = z.object({

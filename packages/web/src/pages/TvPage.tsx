@@ -1,6 +1,7 @@
 import { Suspense, lazy, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import type { ChatMessage, HostRoomView } from '@partyhub/shared';
+import { DEVICE_KIND_ICONS, DEVICE_KIND_LABELS } from '@partyhub/shared';
 import { getSocket } from '../realtime.js';
 import { viewsFor } from '../games.js';
 import { Qr } from '../components/Qr.js';
@@ -114,6 +115,7 @@ export function TvPage() {
   const inLobby = lobby.status === 'waiting' || lobby.status === 'full';
   const canStart = lobby.players.filter((p) => p.connected).length >= lobby.game.minPlayers;
   const joinUrl = `${window.location.origin}/j/${lobby.code}`;
+  const spectateUrl = `${window.location.origin}/spectate/${lobby.code}`;
   const socket = getSocket();
   // Avatars de la salle par pseudo : les jeux affichent photo ou emoji sans rien transmettre de plus.
   const avatars = Object.fromEntries(lobby.players.map((p) => [p.name, p.avatar]));
@@ -245,6 +247,9 @@ export function TvPage() {
               <p className="join-url">{joinUrl}</p>
               <p className="label">ou entrez le code</p>
               <p className="code-big">{lobby.code}</p>
+              <p className="muted small">
+                Pour regarder sans jouer : <span className="join-url">{spectateUrl}</span>
+              </p>
             </div>
 
             <div className="card lobby-panel">
@@ -253,12 +258,29 @@ export function TvPage() {
             </h2>
             <p className="muted">
               {lobby.readyCount} prêt(s) · minimum {lobby.game.minPlayers}
+              {lobby.observers.count > 0 && (
+                <>
+                  {' '}· {lobby.observers.count} spectateur(s)
+                  {lobby.observers.devices.length > 0 && (
+                    <span className="device-icons" aria-hidden="true"> {lobby.observers.devices.map((d) => DEVICE_KIND_ICONS[d]).join(' ')}</span>
+                  )}
+                </>
+              )}
             </p>
             <ul className="players">
               {lobby.players.map((p) => (
                 <li key={p.id} className={p.connected ? undefined : 'offline'}>
                   <PlayerAvatar avatar={p.avatar} name={p.name} size="sm" />
                   <span className="name">{p.name}</span>
+                  {p.devices.length > 0 && (
+                    <span
+                      className="device-icons"
+                      aria-label={p.devices.map((d) => DEVICE_KIND_LABELS[d]).join(', ')}
+                      title={p.devices.map((d) => DEVICE_KIND_LABELS[d]).join(', ')}
+                    >
+                      {p.devices.map((d) => DEVICE_KIND_ICONS[d]).join(' ')}
+                    </span>
+                  )}
                   {p.bot ? (
                     <span className="badge bot-tag">robot</span>
                   ) : (

@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api } from '../api.js';
-import { PlayerSeat, readSeat, removeSeat } from '../seat/PlayerSeat.js';
+import { PlayerSeat, readSeat, removeSeat, sharedPlaceToken, writeSeat } from '../seat/PlayerSeat.js';
 import { readProfileToken, clearProfileToken, authHeaders } from '../profile/session.js';
 
 /** Nombre maximal de joueurs qu'un même téléphone peut tenir. */
-const MAX_SEATS = 4;
+const MAX_SEATS = 6;
 
 const seatListKey = (code: string) => `ph:seats:${code}`;
 
@@ -58,6 +58,21 @@ export function PlayerPage() {
   }, []);
 
   useEffect(() => {
+    // Lien « jouer sur un autre appareil » : cette page reçoit la place d'un autre téléphone.
+    const token = sharedPlaceToken(window.location.hash);
+    if (token) {
+      const current = readSeatList(code);
+      if (current.length < MAX_SEATS) {
+        const id = `seat-${Date.now().toString(36)}`;
+        writeSeat(code, id, { token, name: 'Joueur' });
+        const next = [...current, id];
+        writeSeatList(code, next);
+        setSeats(next);
+        setActive(id);
+      }
+      // Le jeton ne reste pas dans l'adresse (historique, copie d'écran).
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    }
     // Les sièges déjà joués sur cet appareil retrouvent leur place sans rien demander.
     for (const id of seats) {
       if (readSeat(code, id) && !labels[id]) {

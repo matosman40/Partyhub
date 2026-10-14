@@ -1,4 +1,9 @@
 import { randomBytes, randomUUID } from 'node:crypto';
+import {
+  type DeviceKind,
+  type ObserverRoomView,
+  type ObserverSummary,
+} from '@partyhub/shared';
 import type {
   AvatarInfo,
   GameInfo,
@@ -66,6 +71,8 @@ export interface RoomOptions {
 }
 
 const MAX_SEEN_COMMANDS = 200;
+/** Nombre maximal d'observateurs par salle : ils regardent, sans peser sur la partie. */
+export const MAX_OBSERVERS = 20;
 const BOT_NAMES = ['Robo', 'Bip', 'Clic', 'Zed', 'Pixel', 'Ouistiti'];
 const BOT_MIN_DELAY_MS = 700;
 const BOT_JITTER_MS = 1300;
@@ -88,6 +95,10 @@ export class Room {
   status: RoomStatus = 'waiting';
   readonly players = new Map<string, RoomPlayer>();
   readonly hostSockets = new Set<string>();
+  /** Observateurs : socket -> type d'appareil. Ils ne jouent pas et ne comptent pas dans la partie. */
+  readonly observers = new Map<string, DeviceKind>();
+  /** Type d'appareil déclaré par chaque socket (hôte, joueur ou observateur). */
+  private readonly socketDevice = new Map<string, DeviceKind>();
 
   private settings: Record<string, unknown>;
   private state: unknown;
@@ -127,7 +138,21 @@ export class Room {
   }
 
   get hasSockets(): boolean {
-    return this.hostSockets.size > 0 || [...this.players.values()].some((p) => p.sockets.size > 0);
+    return (
+      this.hostSockets.size > 0 ||
+      this.observers.size > 0 ||
+      [...this.players.values()].some((p) => p.sockets.size > 0)
+    );
+  }
+
+  /** Observateurs présents, par type d'appareil. */
+  observerSummary(): ObserverSummary {
+    return { count: this.observers.size, devices: [...this.observers.values()] };
+  }
+
+  /** Types d'appareils connectés, pour une place donnée. */
+  private devicesOf(p: RoomPlayer): DeviceKind[] {
+    return [...p.sockets].map((sid) => this.socketDevice.get(sid) ?? 'unknown');
   }
 
   get effectiveMaxPlayers(): number {
@@ -154,6 +179,8 @@ export class Room {
   }
 
   summary() {
+    const devices: Record<DeviceKind, number> = { phone: 0, tablet: 0, tv: 0, desktop: 0, unknown: 0 };
+    for (const kind of this.socketDevice.values()) devices[kind]++;
     return {
       code: this.code,
       gameId: this.module.manifest.id,
@@ -163,15 +190,17 @@ export class Room {
       bots: [...this.players.values()].filter((p) => p.bot).length,
       connected: [...this.players.values()].filter((p) => p.bot || p.sockets.size > 0).length,
       hostConnected: this.hostSockets.size > 0,
+      observers: this.observers.size,
+      devices,
       practice: this.practice,
       createdAt: new Date(this.createdAt).toISOString(),
       lastActivity: new Date(this.lastActivity).toISOString(),
     };
   }
 
-  /** Identifiants de toutes les sockets de la salle (hôte et joueurs), pour le relais de messages. */
+  /** Identifiants de toutes les sockets de la salle (hôte, joueurs et observateurs), pour le relais de messages. */
   socketIds(): string[] {
-    const ids = [...this.hostSockets];
+    const ids = [...this.hostSockets, ...this.observers.keys()];
     for (const p of this.players.values()) ids.push(...p.sockets);
     return ids;
   }
@@ -180,6 +209,13 @@ export class Room {
   senderOf(playerId: string): { name: string; avatar: AvatarInfo } | null {
     const p = this.players.get(playerId);
     return p ? { name: p.name, avatar: p.avatar } : null;
+  }
+
+  /** Nom affiché d'un observateur dans la discussion (« Observateur 2 »), ou null s'il est parti. */
+  observerName(socketId: string): string | null {
+    if (!this.observers.has(socketId)) return null;
+    const index = [...this.observers.keys()].indexOf(socketId);
+    return `Observateur ${index + 1}`;
   }
 
   /** Scores finaux (classement en compétition), utilisés pour les statistiques des profils. */
@@ -200,6 +236,7 @@ export class Room {
       bot: p.bot,
       profile: p.profileId !== null,
       avatar: p.avatar,
+      devices: this.devicesOf(p),
     }));
     const game: GameInfo = { ...gameInfo(this.module), notice: this.env.notice(this.module.manifest.id) };
     return {
@@ -211,6 +248,7 @@ export class Room {
       maxPlayers: this.effectiveMaxPlayers,
       players,
       readyCount: players.filter((p) => p.ready).length,
+      observers: this.observerSummary(),
     };
   }
 
@@ -224,6 +262,15 @@ export class Room {
             public: this.module.getPublicState(this.state),
             host: this.module.getHostState(this.state),
           },
+    };
+  }
+
+  /** Vue d'un observateur : salon et état public uniquement (jamais l'état réservé à l'hôte). */
+  observerView(): ObserverRoomView {
+    return {
+      now: this.env.now(),
+      lobby: this.lobbyView(),
+      game: this.inLobby ? null : { public: this.module.getPublicState(this.state) },
     };
   }
 
@@ -275,7 +322,9 @@ export class Room {
     token: string | undefined,
     socketId: string,
     profile?: JoinProfile,
+    kind: DeviceKind = 'unknown',
   ): Result<{ playerId: string; token: string }> {
+    this.socketDevice.set(socketId, kind);
     if (token) {
       const existing = [...this.players.values()].find((p) => p.token === token);
       if (existing) return this.attach(existing, socketId);
@@ -324,23 +373,49 @@ export class Room {
     return { ok: true, playerId: p.id, token: p.token };
   }
 
-  /** Retire un socket (hôte ou joueur). Une absence n'efface jamais un joueur tout de suite. */
+  /** Retire un socket (hôte, joueur ou observateur). Une absence n'efface jamais un joueur tout de suite. */
   removeSocket(socketId: string): void {
     let changed = this.hostSockets.delete(socketId);
+    changed = this.observers.delete(socketId) || changed;
     for (const p of this.players.values()) {
       if (p.sockets.delete(socketId)) {
         changed = true;
         if (p.sockets.size === 0) this.scheduleAbsence(p);
       }
     }
+    this.socketDevice.delete(socketId);
     if (changed) {
       this.touch();
       this.hooks.onChange(this);
     }
   }
 
-  attachHost(socketId: string): void {
+  attachHost(socketId: string, kind: DeviceKind = 'unknown'): void {
     this.hostSockets.add(socketId);
+    this.socketDevice.set(socketId, kind);
+    this.touch();
+    this.hooks.onChange(this);
+  }
+
+  /**
+   * Un observateur rejoint la salle : il voit le plateau et la discussion, sans jouer.
+   * Le nombre d'observateurs est limité pour éviter qu'une salle publique ne serve de diffusion.
+   */
+  joinObserver(socketId: string, kind: DeviceKind = 'unknown'): Outcome {
+    if (this.observers.has(socketId)) return { ok: true };
+    if (this.observers.size >= MAX_OBSERVERS) {
+      return { ok: false, error: 'Trop d’observateurs dans cette salle pour le moment.' };
+    }
+    this.observers.set(socketId, kind);
+    this.socketDevice.set(socketId, kind);
+    this.touch();
+    this.hooks.onChange(this);
+    return { ok: true };
+  }
+
+  leaveObserver(socketId: string): void {
+    if (!this.observers.delete(socketId)) return;
+    this.socketDevice.delete(socketId);
     this.touch();
     this.hooks.onChange(this);
   }

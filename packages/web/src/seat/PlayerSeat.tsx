@@ -7,6 +7,8 @@ import { AvatarsContext } from '@partyhub/games/client';
 import { PlayerAvatar } from '../components/PlayerAvatar.js';
 import { ChatPanel, EmoteBar } from '../components/Social.js';
 import { NoticeDialog } from '../components/NoticeDialog.js';
+import { Qr } from '../components/Qr.js';
+import { getDevice } from '../device/device.js';
 
 /**
  * Un siège : un joueur avec sa propre connexion, son jeton et sa place dans la salle.
@@ -15,7 +17,7 @@ import { NoticeDialog } from '../components/NoticeDialog.js';
  * Le siège se reconnecte tout seul après une coupure grâce au jeton gardé sur l'appareil.
  */
 
-interface Stored {
+export interface Stored {
   token: string;
   name: string;
 }
@@ -32,7 +34,8 @@ export function readSeat(code: string, seatId: string): Stored | null {
   }
 }
 
-function writeSeat(code: string, seatId: string, value: Stored): void {
+/** Enregistre la place (jeton et pseudo) sur cet appareil. */
+export function writeSeat(code: string, seatId: string, value: Stored): void {
   try {
     localStorage.setItem(seatStorageKey(code, seatId), JSON.stringify(value));
   } catch {
@@ -81,12 +84,13 @@ export function PlayerSeat({
   const [chat, setChat] = useState<ChatMessage[]>([]);
   const [name, setName] = useState(() => readSeat(code, seatId)?.name ?? '');
   const [noticeOpen, setNoticeOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
 
   useEffect(() => {
     const rejoin = () => {
       const stored = readSeat(code, seatId);
       if (!stored) return;
-      socket.emit('player:join', { code, name: stored.name, token: stored.token }, (res) => {
+      socket.emit('player:join', { code, name: stored.name, token: stored.token, device: getDevice() }, (res) => {
         if (res.ok) {
           setJoined(true);
           setError(null);
@@ -147,7 +151,7 @@ export function PlayerSeat({
     setError(null);
     socket.emit(
       'player:join',
-      { code, name: pseudo || 'Joueur', profileToken: profileToken ?? undefined },
+      { code, name: pseudo || 'Joueur', profileToken: profileToken ?? undefined, device: getDevice() },
       (res) => {
         setBusy(false);
         if (!res.ok) {
@@ -268,6 +272,11 @@ export function PlayerSeat({
         <span className="muted small">Salle {lobby.code}</span>
       </div>
 
+      <button type="button" className="link-btn small" aria-expanded={shareOpen} onClick={() => setShareOpen((v) => !v)}>
+        {shareOpen ? 'Fermer le partage' : 'Jouer ce joueur sur un autre appareil'}
+      </button>
+      {shareOpen && <SeatShare code={code} seatId={seatId} />}
+
       {error && (
         <p className="error" role="alert" onClick={() => setError(null)}>
           {error}
@@ -338,5 +347,45 @@ export function PlayerSeat({
 
       {noticeOpen && <NoticeDialog game={lobby.game} onClose={() => setNoticeOpen(false)} />}
     </AvatarsContext.Provider>,
+  );
+}
+
+/**
+ * Lien et QR code pour ouvrir la même place sur un deuxième appareil (tablette, téléphone d'un proche).
+ * Le jeton est dans le fragment de l'adresse (#place=…) : il n'est jamais envoyé au serveur.
+ */
+export const SHARED_PLACE_PARAM = 'place';
+
+export function sharedPlaceToken(hash: string): string | null {
+  const match = new RegExp(`[#&]${SHARED_PLACE_PARAM}=([A-Za-z0-9_-]{8,200})`).exec(hash);
+  return match ? match[1] : null;
+}
+
+function SeatShare({ code, seatId }: { code: string; seatId: string }) {
+  const token = readSeat(code, seatId)?.token ?? null;
+  const [copied, setCopied] = useState(false);
+  if (!token) return null;
+  const url = `${window.location.origin}/j/${code}#${SHARED_PLACE_PARAM}=${token}`;
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+    } catch {
+      setCopied(false);
+    }
+  }
+
+  return (
+    <section className="card stack seat-share" aria-label="Partager cette place">
+      <p>
+        Ouvrez ce lien ou scannez le QR code sur un autre appareil : vous y jouerez avec la même place.
+      </p>
+      <Qr value={url} size={200} />
+      <button type="button" className="btn small" onClick={copy}>
+        {copied ? 'Lien copié' : 'Copier le lien'}
+      </button>
+      <p className="muted small">Ne partagez ce lien qu’avec une personne de confiance : il donne la main sur cette place.</p>
+    </section>
   );
 }

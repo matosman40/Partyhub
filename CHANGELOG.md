@@ -5,6 +5,22 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 ## Non publié
 
 ### Ajouté
+- Spectateurs : `/spectate/CODE` permet de regarder une salle sans jouer. Le spectateur voit le salon et le plateau
+  (jamais l'état réservé à l'hôte), peut discuter et réagir, et n'a aucune action de jeu. Le salon TV affiche le
+  nombre de spectateurs et le lien à partager. Limite : 20 spectateurs par salle.
+- Plusieurs appareils sur une même place : « Jouer ce joueur sur un autre appareil » affiche un lien et un QR code
+  (le jeton reste dans le fragment de l'adresse, jamais envoyé au serveur) ; l'autre appareil ouvre la même place.
+- Jouer et regarder à la fois : sur tablette, ordinateur ou TV, la page spectateur propose « Je joue aussi », avec une
+  manette à côté du plateau.
+- Détection du type d'appareil (téléphone, tablette, TV, ordinateur). Le serveur s'appuie sur l'identifiant du
+  navigateur ; le navigateur ajoute la taille de la fenêtre et le type de pointeur. Le réglage « Affichage » de
+  l'accueil corrige un choix erroné et reste gardé sur l'appareil.
+- Affichage adapté : la taille de l'interface augmente avec la résolution (grands écrans, téléviseurs), les cibles
+  tactiles font au moins 44 px, et les zones d'encoche sont respectées.
+- Jusqu'à 6 joueurs sur un même téléphone (au lieu de 4).
+- Les types d'appareil des joueurs et des spectateurs apparaissent dans le salon TV (icônes).
+- Tests : classification des appareils (`packages/shared`), observateurs (`observers.test.ts`), et contrôle navigateur
+  `scripts/devices-browser.py` (téléphone, tablette, ordinateur, TV 4K ; choix manuel ; spectateur ; place partagée).
 - Lint du code avec ESLint (`npm run lint`), exécuté en intégration continue avant le typecheck.
 - Sessions d'administration stockées dans la base (migration 6, table `admin_sessions`, jeton haché) : elles survivent à
   un redémarrage et expirent après 12 heures. Une restauration de sauvegarde rétablit aussi les sessions qu'elle contient.

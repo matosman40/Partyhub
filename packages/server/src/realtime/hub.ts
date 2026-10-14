@@ -4,12 +4,16 @@ import {
   actionSchema,
   chatSchema,
   configureSchema,
+  deviceKindFromUserAgent,
   hostConnectSchema,
   joinSchema,
   kickSchema,
   normalizeRoomCode,
+  observerJoinSchema,
   readySchema,
   reactionSchema,
+  type DeviceInfo,
+  type DeviceKind,
   type Ack,
   type AvatarInfo,
   type ChatMessage,
@@ -25,7 +29,7 @@ import type { CloseReason, RoomManager } from '../rooms/manager.js';
 import type { Room } from '../rooms/room.js';
 
 export interface SocketData {
-  role?: 'host' | 'player';
+  role?: 'host' | 'player' | 'observer';
   roomId?: string;
   playerId?: string;
 }
@@ -59,6 +63,7 @@ const CHAT_WINDOW_MS = 10_000;
 const REACTIONS_PER_WINDOW = 12;
 
 const HOST_AVATAR: AvatarInfo = { hue: 42, emoji: '🎤', imageUrl: null };
+const OBSERVER_AVATAR: AvatarInfo = { hue: 210, emoji: '👀', imageUrl: null };
 
 /**
  * Pont entre le registre des salles et Socket.IO.
@@ -108,6 +113,10 @@ export class RealtimeHub {
       if (!view) continue;
       for (const sid of p.sockets) io.to(sid).emit('room:player', view);
     }
+    if (room.observers.size > 0) {
+      const observerView = room.observerView();
+      for (const sid of room.observers.keys()) io.to(sid).emit('room:observer', observerView);
+    }
   }
 
   onRoomClosed(room: Room, reason: CloseReason): void {
@@ -115,6 +124,7 @@ export class RealtimeHub {
     if (!io) return;
     const clientReason = reason === 'closed' || reason === 'admin' ? 'closed' : 'inactive';
     for (const sid of room.hostSockets) io.to(sid).emit('room:closed', { reason: clientReason });
+    for (const sid of room.observers.keys()) io.to(sid).emit('room:closed', { reason: clientReason });
     for (const p of room.players.values()) {
       for (const sid of p.sockets) io.to(sid).emit('room:closed', { reason: clientReason });
     }
@@ -133,6 +143,20 @@ export class RealtimeHub {
   private hostRoomOf(socket: TypedSocket): Room | undefined {
     if (socket.data.role !== 'host' || !socket.data.roomId) return undefined;
     return this.mgr.getById(socket.data.roomId);
+  }
+
+  private observerRoomOf(socket: TypedSocket): Room | undefined {
+    if (socket.data.role !== 'observer' || !socket.data.roomId) return undefined;
+    return this.mgr.getById(socket.data.roomId);
+  }
+
+  /**
+   * Type d'appareil d'une connexion : celui qu'elle déclare (taille de fenêtre, pointeur),
+   * sinon celui que suggère son identifiant navigateur. Le serveur ne voit pas l'écran.
+   */
+  private kindOf(socket: TypedSocket, declared?: DeviceInfo): DeviceKind {
+    if (declared) return declared.kind;
+    return deviceKindFromUserAgent(socket.handshake.headers['user-agent']);
   }
 
   private playerRoomOf(socket: TypedSocket): { room: Room; playerId: string } | undefined {
@@ -164,6 +188,25 @@ export class RealtimeHub {
     };
     const invalid = (ack: Ack, error = 'Données invalides.') => ack({ ok: false, error });
 
+    /**
+     * Retrouve la salle d'un code saisi par une personne. Code inconnu : réponse ralentie si cette
+     * adresse en essaie beaucoup d'autres ; les salles valides ne sont jamais concernées.
+     */
+    const roomOrRefuse = (rawCode: string, ack: Ack): Room | undefined => {
+      const found = this.mgr.getByCode(rawCode);
+      if (found) return found;
+      const unknown = 'Code de salle inconnu. Vérifiez le code affiché sur l’écran.';
+      const reservation = this.joinThrottle.reserve(ip, normalizeRoomCode(rawCode));
+      if ('refused' in reservation) {
+        this.logger?.warn({ ip }, 'Trop de codes de salle inconnus : tentative refusée');
+        invalid(ack, 'Trop de codes incorrects depuis cette connexion. Patientez quelques instants.');
+        return undefined;
+      }
+      if (reservation.wait === 0) invalid(ack, unknown);
+      else setTimeout(() => invalid(ack, unknown), reservation.wait);
+      return undefined;
+    };
+
     // --- Hôte -------------------------------------------------------------
 
     socket.on('host:connect', (p, ack) => {
@@ -176,7 +219,7 @@ export class RealtimeHub {
       }
       this.leave(socket);
       socket.data = { role: 'host', roomId: room.id };
-      room.attachHost(socket.id);
+      room.attachHost(socket.id, this.kindOf(socket));
       ack({ ok: true });
     });
 
@@ -278,20 +321,8 @@ export class RealtimeHub {
       if (limited(ack)) return;
       const parsed = joinSchema.safeParse(p);
       if (!parsed.success) return invalid(ack, parsed.error.issues[0]?.message);
-      const room = this.mgr.getByCode(parsed.data.code);
-      if (!room) {
-        // Code inconnu : réponse ralentie si cette adresse en essaie beaucoup d'autres. Les salles
-        // valides ne sont jamais concernées.
-        const unknown = 'Code de salle inconnu. Vérifiez le code affiché sur l’écran.';
-        const reservation = this.joinThrottle.reserve(ip, normalizeRoomCode(parsed.data.code));
-        if ('refused' in reservation) {
-          this.logger?.warn({ ip }, 'Trop de codes de salle inconnus : tentative refusée');
-          return invalid(ack, 'Trop de codes incorrects depuis cette connexion. Patientez quelques instants.');
-        }
-        if (reservation.wait === 0) return invalid(ack, unknown);
-        setTimeout(() => invalid(ack, unknown), reservation.wait);
-        return;
-      }
+      const room = roomOrRefuse(parsed.data.code, ack);
+      if (!room) return;
 
       let profile;
       if (parsed.data.profileToken) {
@@ -303,10 +334,66 @@ export class RealtimeHub {
       }
 
       this.leave(socket);
-      const res = room.join(parsed.data.name, parsed.data.token, socket.id, profile);
+      const res = room.join(
+        parsed.data.name,
+        parsed.data.token,
+        socket.id,
+        profile,
+        this.kindOf(socket, parsed.data.device),
+      );
       if (!res.ok) return invalid(ack, res.error);
       socket.data = { role: 'player', roomId: room.id, playerId: res.playerId };
       ack({ ok: true, playerId: res.playerId, token: res.token });
+    });
+
+    // --- Observateurs -----------------------------------------------------
+
+    socket.on('observer:join', (p, ack) => {
+      if (limited(ack)) return;
+      const parsed = observerJoinSchema.safeParse(p);
+      if (!parsed.success) return invalid(ack);
+      const room = roomOrRefuse(parsed.data.code, ack);
+      if (!room) return;
+      this.leave(socket);
+      const res = room.joinObserver(socket.id, this.kindOf(socket, parsed.data.device));
+      if (!res.ok) return ack(res);
+      socket.data = { role: 'observer', roomId: room.id };
+      ack({ ok: true });
+    });
+
+    socket.on('observer:chat', (p, ack) => {
+      if (limited(ack)) return;
+      const room = this.observerRoomOf(socket);
+      if (!room) return invalid(ack, 'Vous ne regardez aucune salle.');
+      if (!chatLimiter.take()) return ack({ ok: false, error: 'Doucement : un message toutes les quelques secondes.' });
+      const parsed = chatSchema.safeParse(p);
+      if (!parsed.success) return invalid(ack, 'Message invalide (120 caractères maximum).');
+      const name = room.observerName(socket.id);
+      if (!name) return invalid(ack, 'Vous ne regardez plus la salle.');
+      this.broadcastChat(room, name, OBSERVER_AVATAR, parsed.data.text);
+      ack({ ok: true });
+    });
+
+    socket.on('observer:reaction', (p, ack) => {
+      if (limited(ack)) return;
+      const room = this.observerRoomOf(socket);
+      if (!room) return invalid(ack, 'Vous ne regardez aucune salle.');
+      if (!reactionLimiter.take()) return ack({ ok: false, error: 'Doucement avec les réactions.' });
+      const parsed = reactionSchema.safeParse(p);
+      if (!parsed.success) return invalid(ack);
+      this.io?.to(room.socketIds()).emit('room:reaction', {
+        id: randomUUID(),
+        from: room.observerName(socket.id) ?? 'Observateur',
+        emoji: parsed.data.emoji,
+      });
+      ack({ ok: true });
+    });
+
+    socket.on('observer:leave', (ack) => {
+      if (limited(ack)) return;
+      const room = this.observerRoomOf(socket);
+      if (room) this.leave(socket);
+      ack({ ok: true });
     });
 
     socket.on('player:ready', (p, ack) => {

@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import type { CatalogGame, GameCategory } from '@partyhub/shared';
 import { api } from '../api.js';
 import { ThemeToggle } from '../components/ThemeToggle.js';
+import { DeviceChoice } from '../components/DeviceChoice.js';
 import { NoticeDialog } from '../components/NoticeDialog.js';
 
 const CATEGORY_LABEL: Record<GameCategory, string> = {
@@ -68,7 +69,10 @@ export function HomePage() {
           <Link to="/profil">Mon profil</Link>
           <Link to="/admin">Admin</Link>
         </nav>
-        <ThemeToggle />
+        <div className="home-tools">
+          <DeviceChoice />
+          <ThemeToggle />
+        </div>
       </div>
 
       <header className="hero">

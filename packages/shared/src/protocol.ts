@@ -1,5 +1,8 @@
 import type { GameCategory, GameNotice, ScoreEntry } from './game-types.js';
 import type { GameDetails } from './schemas.js';
+import type { DeviceInfo, DeviceKind } from './devices.js';
+
+export type { DeviceInfo, DeviceKind };
 
 export type { ScoreEntry, GameCategory, GameNotice };
 
@@ -34,6 +37,14 @@ export interface PublicPlayer {
   /** Vrai si le joueur est connecté à un profil enregistré. */
   profile: boolean;
   avatar: AvatarInfo;
+  /** Types des appareils connectés à cette place (un par socket). Vide pour un robot ou une place absente. */
+  devices: DeviceKind[];
+}
+
+/** Nombre et types des observateurs (personnes qui regardent sans jouer). */
+export interface ObserverSummary {
+  count: number;
+  devices: DeviceKind[];
 }
 
 /** Message de discussion ou réaction, relayé à toute la salle (rien n'est conservé côté serveur). */
@@ -60,6 +71,7 @@ export interface LobbyView {
   maxPlayers: number;
   players: PublicPlayer[];
   readyCount: number;
+  observers: ObserverSummary;
 }
 
 export interface HostRoomView {
@@ -73,6 +85,16 @@ export interface PlayerRoomView {
   lobby: LobbyView;
   you: { id: string; name: string; ready: boolean; avatar: AvatarInfo; profile: boolean };
   game: { public: unknown; player: unknown } | null;
+}
+
+/**
+ * Vue d'un observateur : le salon et l'état public de la partie, jamais l'état réservé à
+ * l'hôte (bonnes réponses, rôles secrets, mains cachées).
+ */
+export interface ObserverRoomView {
+  now: number;
+  lobby: LobbyView;
+  game: { public: unknown } | null;
 }
 
 export type GameOrigin = 'builtin' | 'cards' | 'media';
@@ -131,7 +153,7 @@ export interface ClientToServerEvents {
 
   // Joueurs (smartphones)
   'player:join': (
-    p: { code: string; name: string; token?: string; profileToken?: string },
+    p: { code: string; name: string; token?: string; profileToken?: string; device?: DeviceInfo },
     ack: Ack<{ playerId: string; token: string }>,
   ) => void;
   'player:ready': (p: { ready: boolean }, ack: Ack) => void;
@@ -142,11 +164,18 @@ export interface ClientToServerEvents {
   'player:leave': (ack: Ack) => void;
   'player:chat': (p: { text: string }, ack: Ack) => void;
   'player:reaction': (p: { emoji: string }, ack: Ack) => void;
+
+  // Observateurs (regardent le plateau sans jouer ; aucune action de jeu)
+  'observer:join': (p: { code: string; device?: DeviceInfo }, ack: Ack) => void;
+  'observer:chat': (p: { text: string }, ack: Ack) => void;
+  'observer:reaction': (p: { emoji: string }, ack: Ack) => void;
+  'observer:leave': (ack: Ack) => void;
 }
 
 export interface ServerToClientEvents {
   'room:host': (view: HostRoomView) => void;
   'room:player': (view: PlayerRoomView) => void;
+  'room:observer': (view: ObserverRoomView) => void;
   'room:closed': (p: { reason: 'closed' | 'kicked' | 'inactive' }) => void;
   'room:chat': (m: ChatMessage) => void;
   'room:reaction': (r: ReactionEvent) => void;
