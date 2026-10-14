@@ -9,21 +9,18 @@ export interface SettingBounds {
 /** Bornes des réglages numériques d'un jeu, par nom de réglage. */
 export type SettingsBounds = Record<string, SettingBounds>;
 
-type Def = { typeName?: string; innerType?: z.ZodTypeAny; schema?: z.ZodTypeAny; shape?: () => Record<string, z.ZodTypeAny>; checks?: { kind: string; value?: number }[] };
-
-/** Retire les enveloppes (valeur par défaut, optionnel, transformation) pour atteindre le type réel. */
+/** Retire les enveloppes (valeur par défaut, optionnel, nul) pour atteindre le type réel. */
 function unwrap(field: z.ZodTypeAny): z.ZodTypeAny {
   let current = field;
   for (;;) {
-    const def = current._def as Def;
-    if ((def.typeName === 'ZodDefault' || def.typeName === 'ZodOptional' || def.typeName === 'ZodNullable') && def.innerType) {
-      current = def.innerType;
-    } else if (def.typeName === 'ZodEffects' && def.schema) {
-      current = def.schema;
-    } else {
-      return current;
-    }
+    if (current instanceof z.ZodDefault) current = current.removeDefault() as z.ZodTypeAny;
+    else if (current instanceof z.ZodOptional || current instanceof z.ZodNullable) current = current.unwrap() as z.ZodTypeAny;
+    else return current;
   }
+}
+
+function isRealBound(value: number | null): value is number {
+  return value !== null && Number.isFinite(value) && Math.abs(value) < Number.MAX_SAFE_INTEGER;
 }
 
 /**
@@ -31,20 +28,15 @@ function unwrap(field: z.ZodTypeAny): z.ZodTypeAny {
  * une valeur valide n'est jamais ramenée d'office à une borne différente.
  */
 export function settingsBounds(schema: z.ZodTypeAny): SettingsBounds {
-  const def = schema._def as Def;
-  if (def.typeName !== 'ZodObject' || !def.shape) return {};
+  if (!(schema instanceof z.ZodObject)) return {};
   const bounds: SettingsBounds = {};
-  for (const [key, field] of Object.entries(def.shape())) {
+  for (const [key, field] of Object.entries(schema.shape as Record<string, z.ZodTypeAny>)) {
     const inner = unwrap(field);
-    const innerDef = inner._def as Def;
-    if (innerDef.typeName !== 'ZodNumber') continue;
-    let min = -Infinity;
-    let max = Infinity;
-    for (const check of innerDef.checks ?? []) {
-      if (check.kind === 'min' && check.value !== undefined) min = Math.max(min, check.value);
-      if (check.kind === 'max' && check.value !== undefined) max = Math.min(max, check.value);
-    }
-    if (Number.isFinite(min) && Number.isFinite(max)) bounds[key] = { min, max };
+    if (!(inner instanceof z.ZodNumber)) continue;
+    const min = inner.minValue;
+    const max = inner.maxValue;
+    // zod 4 signale une borne absente par une valeur sentinelle : seule une borne réelle compte.
+    if (isRealBound(min) && isRealBound(max)) bounds[key] = { min, max };
   }
   return bounds;
 }
@@ -58,6 +50,6 @@ export function settingsIssueMessage(error: z.ZodError): string {
   if (issue.code === 'too_small') return `${label}au moins ${String(issue.minimum)} attendu.`;
   if (issue.code === 'too_big') return `${label}au plus ${String(issue.maximum)} attendu.`;
   if (issue.code === 'invalid_type') return `${label}valeur de type incorrect.`;
-  if (issue.code === 'invalid_enum_value' || issue.code === 'invalid_union') return `${label}choix non reconnu.`;
+  if (issue.code === 'invalid_value' || issue.code === 'invalid_union') return `${label}choix non reconnu.`;
   return key ? `${label}valeur invalide.` : 'Réglages invalides.';
 }
