@@ -1,10 +1,13 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import type { CatalogGame, GameCategory } from '@partyhub/shared';
 import { api } from '../api.js';
 import { ThemeToggle } from '../components/ThemeToggle.js';
 import { DeviceChoice } from '../components/DeviceChoice.js';
 import { NoticeDialog } from '../components/NoticeDialog.js';
+import { CornerMenu, DrawerSection } from '../components/CornerMenu.js';
+import { GameLogo } from '../components/GameLogo.js';
+import { logoFor } from '../components/gameLogos.js';
 
 const CATEGORY_LABEL: Record<GameCategory, string> = {
   cartes: 'Cartes',
@@ -23,6 +26,12 @@ const CATEGORY_CLASS: Record<GameCategory, string> = {
   solo: 'solo',
 };
 
+/** Couleurs de la « affiche » d'un jeu : celles de son identité visuelle. */
+function artStyle(id: string, name: string): CSSProperties {
+  const [a, b] = logoFor(id, name).sky;
+  return { '--sky-a': a, '--sky-b': b } as CSSProperties;
+}
+
 export function HomePage() {
   const navigate = useNavigate();
   const [games, setGames] = useState<CatalogGame[] | null>(null);
@@ -30,6 +39,7 @@ export function HomePage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [filter, setFilter] = useState<GameCategory | 'all'>('all');
   const [notice, setNotice] = useState<CatalogGame | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     api<{ games: CatalogGame[] }>('/api/catalog')
@@ -63,17 +73,25 @@ export function HomePage() {
 
   return (
     <main className="page home fade-in">
-      <div className="home-top">
-        <nav className="page-nav" aria-label="Navigation">
-          <Link to="/join">Rejoindre</Link>
-          <Link to="/profil">Mon profil</Link>
-          <Link to="/admin">Admin</Link>
-        </nav>
-        <div className="home-tools">
+      <CornerMenu open={menuOpen} onOpen={() => setMenuOpen(true)} onClose={() => setMenuOpen(false)}>
+        <DrawerSection title="Aller à">
+          <nav className="corner-links" aria-label="Navigation">
+            <Link to="/join" onClick={() => setMenuOpen(false)}>
+              Rejoindre une salle
+            </Link>
+            <Link to="/profil" onClick={() => setMenuOpen(false)}>
+              Mon profil
+            </Link>
+            <Link to="/admin" onClick={() => setMenuOpen(false)}>
+              Administration
+            </Link>
+          </nav>
+        </DrawerSection>
+        <DrawerSection title="Préférences">
           <DeviceChoice />
           <ThemeToggle />
-        </div>
-      </div>
+        </DrawerSection>
+      </CornerMenu>
 
       <header className="hero">
         <h1 className="brand-title register-in" data-text="PartyHub">
@@ -131,13 +149,11 @@ export function HomePage() {
       <section className="game-grid">
         {visible.map((g) => (
           <article key={g.id} className={`game-card cat-${CATEGORY_CLASS[g.category] ?? 'party'}`}>
-            <div className="game-head">
-              <span className="game-icon" aria-hidden="true">
-                {g.icon}
-              </span>
+            <div className="game-art" style={artStyle(g.id, g.name)}>
               <span className="cat-badge">{CATEGORY_LABEL[g.category] ?? g.category}</span>
+              <GameLogo gameId={g.id} name={g.name} className="game-art-logo" />
             </div>
-            <h2>{g.name}</h2>
+            <h2 className="sr-only">{g.name}</h2>
             <p>{g.description}</p>
             <p className="meta muted">
               {g.minPlayers === g.maxPlayers ? g.minPlayers : `${g.minPlayers} à ${g.maxPlayers}`} joueurs · environ{' '}

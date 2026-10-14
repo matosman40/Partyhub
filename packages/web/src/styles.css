@@ -1,3 +1,36 @@
+/* Polices livrées avec l'application (licence SIL OFL 1.1), sans appel à un service externe. */
+@font-face {
+  font-family: 'Luckiest Guy';
+  src: url('/fonts/luckiest-guy-latin-400-normal.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Fredoka';
+  src: url('/fonts/fredoka-latin-400-normal.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Fredoka';
+  src: url('/fonts/fredoka-latin-600-normal.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Fredoka';
+  src: url('/fonts/fredoka-latin-700-normal.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* ==========================================================================
    PartyHub — « Lounge arcade »
    Une salle de jeu nocturne : lumière néon sur verre sombre, reliefs de
@@ -41,8 +74,8 @@
   --r-md: 16px;
   --r-sm: 11px;
 
-  --display: 'Dela Gothic One', 'Arial Black', 'Helvetica Neue', sans-serif;
-  --ui: 'Outfit', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --display: 'Luckiest Guy', 'Arial Black', 'Helvetica Neue', sans-serif;
+  --ui: 'Fredoka', system-ui, -apple-system, 'Segoe UI', sans-serif;
 
   --focus: var(--cyan);
   --ok: var(--lime);
@@ -6118,4 +6151,516 @@ html[data-device='tablet'] .observer-page {
 .answer-roster .avatar-md {
   width: 84px;
   height: 84px;
+}
+
+/* ==========================================================================
+   Écran principal : scène épurée (salon et partie)
+   Le logo du jeu et le jeu occupent l'écran. Le code, les commandes et le menu sont
+   discrets : ils apparaissent au moindre mouvement, puis s'effacent.
+   ========================================================================== */
+
+html.is-tv #root > .stage {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+}
+
+.stage {
+  position: relative;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(0.8rem, 2.4vh, 1.6rem);
+  padding: clamp(1rem, 3vh, 2rem) clamp(1rem, 3vw, 3rem);
+  color: #fff;
+  background:
+    radial-gradient(60% 50% at 50% 0%, rgba(255, 255, 255, 0.1), transparent 70%),
+    radial-gradient(70% 60% at 50% 120%, rgba(0, 0, 0, 0.45), transparent 70%),
+    linear-gradient(180deg, var(--sky-a, #2a1466), var(--sky-b, #0b0630));
+  transition: background 0.8s ease;
+}
+
+/* ---- Salon ---- */
+
+.stage-lobby {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(0.8rem, 2.4vh, 1.6rem);
+  width: 100%;
+  max-width: 1100px;
+  text-align: center;
+}
+
+.stage-logo {
+  width: min(62vw, 560px);
+  height: auto;
+  display: block;
+  filter: drop-shadow(0 10px 0 rgba(0, 0, 0, 0.22));
+}
+
+.stage-join {
+  display: flex;
+  align-items: center;
+  gap: clamp(1.2rem, 3vw, 2.6rem);
+  padding: clamp(0.8rem, 2vh, 1.2rem) clamp(1rem, 2vw, 1.6rem);
+  border-radius: 28px;
+  background: rgba(8, 6, 26, 0.42);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(6px);
+}
+
+.stage-qr {
+  background: #fff;
+  padding: 0.7rem;
+  border-radius: 18px;
+  line-height: 0;
+}
+
+.stage-qr img.qr {
+  width: clamp(150px, 27vh, 270px);
+  height: auto;
+}
+
+.stage-code {
+  display: grid;
+  justify-items: start;
+  text-align: left;
+  gap: 0.25rem;
+}
+
+.stage-label,
+.stage-hint {
+  margin: 0;
+  font-size: 0.95rem;
+  opacity: 0.72;
+}
+
+.stage-code-big {
+  margin: 0;
+  font-family: var(--display);
+  font-size: clamp(3rem, 9.5vh, 6.5rem);
+  line-height: 1;
+  letter-spacing: 0.06em;
+  color: var(--sun, #ffd23f);
+  text-shadow: 0 6px 0 rgba(0, 0, 0, 0.35);
+}
+
+.stage-players {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: clamp(0.8rem, 2vw, 1.6rem);
+  min-height: 150px;
+}
+
+.stage-player {
+  display: grid;
+  justify-items: center;
+  gap: 0.35rem;
+  width: clamp(96px, 11vw, 140px);
+}
+
+.stage-player .avatar-lg {
+  width: clamp(84px, 9vw, 122px);
+  height: clamp(84px, 9vw, 122px);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.35),
+    0 10px 22px -8px rgba(0, 0, 0, 0.6);
+}
+
+.stage-player.is-away {
+  opacity: 0.4;
+}
+
+.stage-player-name {
+  font-family: var(--display);
+  font-size: 1rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.stage-player-tag {
+  font-size: 0.72rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.stage-player-tag.is-ready {
+  background: var(--lime, #b8f56b);
+  color: #0b2a12;
+}
+
+.stage-empty {
+  opacity: 0.6;
+  font-size: 1.1rem;
+}
+
+.stage-start {
+  display: grid;
+  justify-items: center;
+  gap: 0.5rem;
+}
+
+.stage-note {
+  margin: 0;
+  font-size: 0.95rem;
+  opacity: 0.8;
+}
+
+/* ---- Partie ---- */
+
+/* La zone de jeu laisse la place au logo (haut) et à la barre de commandes (bas) : FitStage mesure
+   exactement cette zone, sans marge intérieure qui fausserait le calcul de réduction. */
+.stage-game {
+  position: absolute;
+  top: clamp(3.4rem, 9vh, 4.6rem);
+  bottom: clamp(3.6rem, 10vh, 4.8rem);
+  left: clamp(1rem, 3vw, 3rem);
+  right: clamp(1rem, 3vw, 3rem);
+}
+
+.stage-game > .fit-stage {
+  position: absolute;
+  inset: 0;
+}
+
+.stage-mini {
+  position: absolute;
+  top: clamp(0.6rem, 2vh, 1.2rem);
+  left: clamp(0.6rem, 2vw, 1.2rem);
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  opacity: 0.35;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+
+.stage-mini.is-visible {
+  opacity: 1;
+}
+
+.stage-mini-logo {
+  width: clamp(120px, 13vw, 190px);
+  height: auto;
+}
+
+.stage-mini span {
+  font-size: 0.82rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(8, 6, 26, 0.5);
+}
+
+.stage-bar {
+  position: absolute;
+  bottom: clamp(0.8rem, 3vh, 1.6rem);
+  left: 50%;
+  z-index: 3;
+  display: flex;
+  gap: 0.6rem;
+  padding: 0.45rem;
+  border-radius: 999px;
+  background: rgba(8, 6, 26, 0.55);
+  backdrop-filter: blur(8px);
+  opacity: 0;
+  transform: translate(-50%, 12px);
+  pointer-events: none;
+  transition:
+    opacity 0.35s ease,
+    transform 0.35s ease;
+}
+
+.stage-bar.is-visible,
+.stage-bar:focus-within {
+  opacity: 1;
+  transform: translate(-50%, 0);
+  pointer-events: auto;
+}
+
+/* ---- Menu discret et tiroir ---- */
+
+.corner-button {
+  position: absolute;
+  top: clamp(0.6rem, 2vh, 1.2rem);
+  right: clamp(0.6rem, 2vw, 1.2rem);
+  z-index: 6;
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-content: center;
+  gap: 4px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(8, 6, 26, 0.45);
+  cursor: pointer;
+  opacity: 0.3;
+  transition:
+    opacity 0.35s ease,
+    background 0.2s ease;
+}
+
+.corner-button.is-visible,
+.corner-button:hover,
+.corner-button:focus-visible,
+.corner-button[aria-expanded='true'] {
+  opacity: 1;
+}
+
+.corner-button span {
+  display: block;
+  width: 18px;
+  height: 2px;
+  border-radius: 2px;
+  background: #fff;
+}
+
+.corner-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  border: 0;
+  padding: 0;
+  background: rgba(4, 2, 14, 0.35);
+  cursor: default;
+}
+
+.corner-drawer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 5;
+  width: min(440px, 92vw);
+  display: flex;
+  flex-direction: column;
+  background: rgba(12, 9, 34, 0.97);
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: -20px 0 40px rgba(0, 0, 0, 0.4);
+  animation: corner-slide 0.25s ease-out;
+  text-align: left;
+}
+
+@keyframes corner-slide {
+  from {
+    transform: translateX(100%);
+  }
+}
+
+.corner-drawer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.9rem 1.2rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.corner-drawer-head p {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 1.1rem;
+}
+
+.corner-drawer-body {
+  overflow: auto;
+  display: grid;
+  align-content: start;
+  gap: 1.4rem;
+  padding: 1rem 1.2rem 2rem;
+}
+
+.corner-section h2 {
+  margin: 0 0 0.5rem;
+  font-family: var(--display);
+  font-size: 1rem;
+  font-weight: 400;
+}
+
+.corner-line {
+  margin: 0.2rem 0;
+  word-break: break-all;
+}
+
+.corner-players {
+  list-style: none;
+  margin: 0 0 0.7rem;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.corner-players li {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.corner-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.corner-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.stage-toast {
+  position: absolute;
+  top: clamp(0.6rem, 2vh, 1.2rem);
+  left: 50%;
+  z-index: 7;
+  transform: translateX(-50%);
+  margin: 0;
+  max-width: 90vw;
+  padding: 0.6rem 1rem;
+  border-radius: 14px;
+  background: var(--danger, #ff5d6c);
+  color: #fff;
+  cursor: pointer;
+}
+
+/* Tiroir ouvert : son propre bouton « Fermer » suffit, le bouton ☰ s'efface pour ne pas le recouvrir. */
+.corner-button[aria-expanded='true'] {
+  display: none;
+}
+
+/* Catalogue : chaque jeu se présente par son logo, sur les couleurs de son identité. */
+.game-art {
+  position: relative;
+  display: grid;
+  place-items: center;
+  margin: calc(-1 * clamp(1rem, 2.2vw, 1.35rem)) calc(-1 * clamp(1rem, 2.2vw, 1.35rem)) 0;
+  padding: 2.2rem clamp(1rem, 2.2vw, 1.35rem) 0.8rem;
+  min-height: 170px;
+  background: linear-gradient(180deg, var(--sky-a, #2a1466), var(--sky-b, #0b0630));
+}
+
+.game-art .cat-badge {
+  position: absolute;
+  top: 0.7rem;
+  left: 0.9rem;
+  z-index: 1;
+}
+
+.game-art-logo {
+  width: 100%;
+  max-width: 300px;
+  height: auto;
+  filter: drop-shadow(0 6px 0 rgba(0, 0, 0, 0.25));
+  transition: transform 0.25s ease;
+}
+
+.game-card:hover .game-art-logo {
+  transform: scale(1.03) rotate(-1deg);
+}
+
+/* ---- Menu discret dans un coin (écran TV et accueil) ---- */
+.corner-button {
+  position: fixed;
+  top: clamp(0.6rem, 2vh, 1.2rem);
+  right: clamp(0.6rem, 2vw, 1.2rem);
+  z-index: 40;
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-content: center;
+  gap: 4px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--line-strong, rgba(255, 255, 255, 0.2));
+  background: rgba(8, 6, 26, 0.45);
+  color: #fff;
+  cursor: pointer;
+  opacity: 0.55;
+  transition:
+    opacity 0.35s ease,
+    background 0.2s ease;
+}
+
+.corner-button.is-visible,
+.corner-button:hover,
+.corner-button:focus-visible {
+  opacity: 1;
+}
+
+.corner-button span {
+  display: block;
+  width: 18px;
+  height: 2px;
+  border-radius: 2px;
+  background: currentColor;
+}
+
+.corner-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 41;
+  border: 0;
+  padding: 0;
+  background: rgba(4, 2, 14, 0.4);
+  cursor: default;
+}
+
+.corner-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 42;
+  width: min(440px, 92vw);
+  display: flex;
+  flex-direction: column;
+  background: rgba(12, 9, 34, 0.97);
+  color: #fff;
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: -20px 0 40px rgba(0, 0, 0, 0.4);
+  animation: corner-slide 0.25s ease-out;
+  text-align: left;
+}
+
+@keyframes corner-slide {
+  from {
+    transform: translateX(100%);
+  }
+}
+
+html:not([data-theme='dark']) .corner-drawer {
+  background: rgba(252, 250, 255, 0.98);
+  color: #1a1030;
+}
+
+.corner-links {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.corner-links a {
+  padding: 0.5rem 0.8rem;
+  border-radius: 12px;
+  color: inherit;
+  text-decoration: none;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.corner-links a:hover,
+.corner-links a:focus-visible {
+  background: rgba(255, 255, 255, 0.14);
 }

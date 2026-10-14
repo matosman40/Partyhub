@@ -5,6 +5,13 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 ## Non publié
 
 ### Ajouté
+- Identité visuelle : chaque jeu a son logo (titre en Luckiest Guy, couleurs et motif propres). Les jeux sans logo
+  dessiné reçoivent un logo généré de façon stable à partir de leur identifiant. Polices auto-hébergées (SIL OFL 1.1).
+- Écran TV épuré : le salon ne montre que le logo, le code, les joueurs et le bouton de lancement. Réglages, joueurs,
+  discussion, 3D, « Comment jouer » et retour au catalogue sont dans un tiroir discret en coin, ouvert à la demande.
+  En partie, les commandes se masquent après 3,5 s sans activité.
+- Accueil : la navigation (rejoindre une salle, profil, administration, préférences) passe par le même tiroir d'angle.
+- Catalogue : chaque affiche de jeu porte son logo.
 - Personnages : chaque profil crée le sien (couleur du corps, teint, coiffure, couleur des cheveux, accessoire) dans
   « Mon personnage », avec un aperçu animé. Un invité reçoit un personnage généré à partir de son pseudo. Migration 9
   (colonne `profiles.avatar_character`, vide = personnage généré). La photo, si elle est partagée, reste prioritaire.

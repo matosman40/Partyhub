@@ -1,0 +1,162 @@
+import { hashText } from '@partyhub/shared';
+
+/**
+ * Identité visuelle des jeux : titre, couleurs de la scène et marque graphique propre à chaque jeu.
+ * Les jeux intégrés ont une spécification dessinée à la main ; les autres (paquets, cartes, plateau,
+ * solo) reçoivent une identité stable, dérivée de leur identifiant.
+ */
+
+/** Motif graphique posé autour du titre. */
+export type LogoMark =
+  'bubble' | 'fuse' | 'lens' | 'moon' | 'arrows' | 'crown' | 'skyline' | 'deck' | 'bolt' | 'star' | 'duo' | 'frame';
+
+export interface LogoSpec {
+  /** Une ou deux lignes ; la seconde est plus petite. */
+  lines: [string] | [string, string];
+  /** Couleur du titre. */
+  fill: string;
+  /** Liseré et formes de la marque. */
+  edge: string;
+  /** Contour et relief du titre. */
+  ink: string;
+  /** Couleurs du fond de scène (dégradé du haut vers le bas). */
+  sky: [string, string];
+  mark: LogoMark;
+  /** Inclinaison du titre, en degrés. */
+  tilt: number;
+}
+
+export const GAME_LOGOS: Record<string, LogoSpec> = {
+  'quiz-party': {
+    lines: ['Quiz', 'Party'],
+    fill: '#ffd23f',
+    edge: '#ff3d8b',
+    ink: '#1a1030',
+    sky: ['#3a1670', '#0b0630'],
+    mark: 'bubble',
+    tilt: -4,
+  },
+  'bombes-party': {
+    lines: ['Bombes', 'party'],
+    fill: '#ff8a3d',
+    edge: '#ffe27a',
+    ink: '#140805',
+    sky: ['#4a0f12', '#0c0303'],
+    mark: 'fuse',
+    tilt: -2,
+  },
+  imposteur: {
+    lines: ['L’Imposteur'],
+    fill: '#3ff5e0',
+    edge: '#ff6b9a',
+    ink: '#041822',
+    sky: ['#0d3b52', '#03131c'],
+    mark: 'lens',
+    tilt: 0,
+  },
+  'loups-village': {
+    lines: ['Les Loups', 'du village'],
+    fill: '#f4d35e',
+    edge: '#b9a6ff',
+    ink: '#080a1c',
+    sky: ['#1a2c63', '#050814'],
+    mark: 'moon',
+    tilt: -3,
+  },
+  'plus-ou-moins': {
+    lines: ['Plus', 'ou moins'],
+    fill: '#b8f56b',
+    edge: '#ff9f43',
+    ink: '#0d2412',
+    sky: ['#14603f', '#041a12'],
+    mark: 'arrows',
+    tilt: -2,
+  },
+  'plutot-qui': {
+    lines: ['Plutôt', 'qui ?'],
+    fill: '#fff3b0',
+    edge: '#ff6fa8',
+    ink: '#3a1030',
+    sky: ['#ffc2e2', '#b9a6ff'],
+    mark: 'duo',
+    tilt: 2,
+  },
+  president: {
+    lines: ['Président'],
+    fill: '#ffd166',
+    edge: '#06d6a0',
+    ink: '#03241a',
+    sky: ['#0d6248', '#02150f'],
+    mark: 'crown',
+    tilt: -1,
+  },
+  promoteur: {
+    lines: ['Le', 'Promoteur'],
+    fill: '#7fdcff',
+    edge: '#ff7a3d',
+    ink: '#0a1a33',
+    sky: ['#24457a', '#0a1430'],
+    mark: 'skyline',
+    tilt: -2,
+  },
+  'rami-51': {
+    lines: ['Rami', '51'],
+    fill: '#ffe066',
+    edge: '#e63946',
+    ink: '#0a2a18',
+    sky: ['#1f7a4a', '#082a18'],
+    mark: 'deck',
+    tilt: -3,
+  },
+  reflexe: {
+    lines: ['Réflexe'],
+    fill: '#fff200',
+    edge: '#ffffff',
+    ink: '#000000',
+    sky: ['#1a1a1a', '#000000'],
+    mark: 'bolt',
+    tilt: -8,
+  },
+  tarot: {
+    lines: ['Tarot'],
+    fill: '#f5d68a',
+    edge: '#7c3aed',
+    ink: '#1e1036',
+    sky: ['#3b1d7a', '#120729'],
+    mark: 'star',
+    tilt: 0,
+  },
+  association: {
+    lines: ['Association', 'express'],
+    fill: '#ff6f61',
+    edge: '#fff4f0',
+    ink: '#2a1b3d',
+    sky: ['#17a39a', '#0b5f5a'],
+    mark: 'duo',
+    tilt: -2,
+  },
+};
+
+/** Identité de repli : déterministe, à partir de l'identifiant et du nom du jeu. */
+export function fallbackLogo(id: string, name: string): LogoSpec {
+  const h = hashText(id);
+  const hue = h % 360;
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  const lines: LogoSpec['lines'] = words.length <= 1 ? [words[0] ?? id] : [words[0] ?? '', words.slice(1).join(' ')];
+  const marks: LogoMark[] = ['frame', 'star', 'duo', 'bubble', 'lens'];
+  return {
+    lines,
+    fill: `hsl(${hue} 95% 68%)`,
+    edge: `hsl(${(hue + 150) % 360} 90% 62%)`,
+    ink: `hsl(${hue} 60% 8%)`,
+    sky: [`hsl(${hue} 55% 24%)`, `hsl(${hue} 60% 9%)`],
+    mark: marks[(h >>> 9) % marks.length] ?? 'frame',
+    tilt: ((h >>> 12) % 7) - 3,
+  };
+}
+
+/** Identité d'un jeu : la sienne si elle est dessinée, sinon celle de repli. */
+export function logoFor(id: string, name: string): LogoSpec {
+  const spec = GAME_LOGOS[id];
+  return spec ?? fallbackLogo(id, name);
+}

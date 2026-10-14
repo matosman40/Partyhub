@@ -1,11 +1,12 @@
-import { Suspense, lazy, useEffect, useState } from 'react';
+import { Suspense, lazy, useEffect, useState, type CSSProperties } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import type { ChatMessage, HostRoomView } from '@partyhub/shared';
 import { DEVICE_KIND_ICONS, DEVICE_KIND_LABELS } from '@partyhub/shared';
 import { getSocket } from '../realtime.js';
 import { viewsFor } from '../games.js';
-import { Qr } from '../components/Qr.js';
 import { PlayerAvatar } from '../components/PlayerAvatar.js';
+import { GameLogo } from '../components/GameLogo.js';
+import { logoFor } from '../components/gameLogos.js';
 import { useArrivalMoods } from '../components/useArrivalMoods.js';
 import { ChatPanel, EmoteBar, ReactionLayer } from '../components/Social.js';
 import { NoticeDialog } from '../components/NoticeDialog.js';
@@ -14,6 +15,9 @@ import { FitStage } from '../components/FitStage.js';
 import { Boundary } from '../components/Boundary.js';
 import { read3DPreference, supportsWebGL, write3DPreference } from '../three/prefs.js';
 import { AvatarsContext, MoodsContext, useWakeLock, type PromoteurPub } from '@partyhub/games/client';
+import { TvLobby } from './tv/TvLobby.js';
+import { CornerMenu, DrawerSection } from '../components/CornerMenu.js';
+import { useActivity } from './tv/useActivity.js';
 
 /** Plateau 3D du Promoteur : chargé seulement quand il est affiché (Three.js reste hors du premier chargement). */
 const PromoteurStage = lazy(() => import('../three/PromoteurStage.js'));
@@ -38,6 +42,10 @@ export function TvPage() {
   const [board3dFailed, setBoard3dFailed] = useState(false);
   // Personnages qui viennent d'arriver saluent ; un jeu qui fournit ses propres humeurs les remplace.
   const arrivals = useArrivalMoods(view ? view.lobby.players.map((p) => p.name) : []);
+  // Menu discret et commandes de partie : elles reviennent au moindre mouvement, puis s'effacent.
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [barFocused, setBarFocused] = useState(false);
+  const active = useActivity(menuOpen || barFocused);
 
   // Mise en page « console » : l'écran tient exactement dans la fenêtre (voir styles.css).
   useEffect(() => {
@@ -130,6 +138,8 @@ export function TvPage() {
       )}
     </FitStage>
   );
+  const sky = logoFor(lobby.game.id, lobby.game.name).sky;
+  const skyStyle = { '--sky-a': sky[0], '--sky-b': sky[1] } as CSSProperties;
 
   function emitAck(event: 'host:start' | 'host:next' | 'host:end' | 'host:replay') {
     const done = (res: { ok: true } | { ok: false; error: string }) => setError(res.ok ? null : res.error);
@@ -190,174 +200,140 @@ export function TvPage() {
     });
   }
 
-  const side = (
-    <aside className="tv-side" aria-label="Discussion et manette">
-      <section className="stack" aria-label="Jouer depuis cet écran">
-        <h2>Je joue aussi</h2>
-        <p className="tv-note">Prenez une manette sur cet écran pour jouer avec les autres.</p>
-        <PlayerSeat code={lobby.code} seatId="tv" compact />
-      </section>
-      <section className="card stack">
-        <h2>Discussion</h2>
+  function closeMenu() {
+    setMenuOpen(false);
+  }
+
+  const menu = (
+    <>
+      <DrawerSection title="Salle">
+        <p className="corner-line">
+          Code <strong>{lobby.code}</strong>
+        </p>
+        <p className="corner-line muted small">Joueurs : {joinUrl}</p>
+        <p className="corner-line muted small">Spectateurs : {spectateUrl}</p>
+      </DrawerSection>
+
+      {inLobby && (
+        <DrawerSection title={`Joueurs (${lobby.players.length}/${lobby.maxPlayers})`}>
+          <p className="muted small">
+            {lobby.readyCount} prêt(s) · minimum {lobby.game.minPlayers}
+            {lobby.observers.count > 0 && <> · {lobby.observers.count} spectateur(s)</>}
+          </p>
+          <ul className="corner-players">
+            {lobby.players.map((p) => (
+              <li key={p.id}>
+                <PlayerAvatar avatar={p.avatar} name={p.name} size="sm" />
+                <span className="corner-name">{p.name}</span>
+                {p.devices.length > 0 && (
+                  <span className="device-icons" title={p.devices.map((d) => DEVICE_KIND_LABELS[d]).join(', ')}>
+                    {p.devices.map((d) => DEVICE_KIND_ICONS[d]).join(' ')}
+                  </span>
+                )}
+                {p.bot ? (
+                  <button
+                    type="button"
+                    className="link-btn"
+                    onClick={() => removeBot(p.id)}
+                    aria-label={`Retirer le robot ${p.name}`}
+                  >
+                    Retirer
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="link-btn"
+                    onClick={() => kick(p.id)}
+                    aria-label={`Retirer ${p.name}`}
+                  >
+                    Retirer
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+          <button
+            type="button"
+            className="btn small"
+            onClick={addBot}
+            disabled={lobby.players.length >= lobby.maxPlayers}
+          >
+            Ajouter un robot
+          </button>
+        </DrawerSection>
+      )}
+
+      {inLobby && views && (
+        <DrawerSection title="Réglages du jeu">
+          <Suspense fallback={<p className="muted">Chargement des réglages…</p>}>
+            <views.Settings
+              settings={lobby.gameSettings}
+              disabled={false}
+              onChange={configure}
+              bounds={lobby.game.settingsBounds}
+            />
+          </Suspense>
+        </DrawerSection>
+      )}
+
+      {can3d && game && (
+        <DrawerSection title="Affichage">
+          <button type="button" className="btn ghost small" onClick={toggle3d} aria-pressed={board3d}>
+            {board3d ? 'Passer en vue 2D' : 'Passer en vue 3D'}
+          </button>
+        </DrawerSection>
+      )}
+
+      <DrawerSection title="Discussion">
         <ChatPanel messages={chat} onSend={sendChat} error={chatError} />
         <EmoteBar onPick={sendReaction} />
-      </section>
-    </aside>
+      </DrawerSection>
+
+      <DrawerSection title="Jouer depuis cet écran">
+        <p className="muted small">Prenez une manette sur cet écran pour jouer avec les autres.</p>
+        <PlayerSeat code={lobby.code} seatId="tv" compact />
+      </DrawerSection>
+
+      <div className="corner-actions">
+        <button
+          type="button"
+          className="btn ghost small"
+          onClick={() => {
+            closeMenu();
+            setNoticeOpen(true);
+          }}
+        >
+          Comment jouer
+        </button>
+        <button type="button" className="btn ghost small" onClick={backToCatalog}>
+          Retour au catalogue
+        </button>
+      </div>
+    </>
   );
 
   return (
     <AvatarsContext.Provider value={avatars}>
       <MoodsContext.Provider value={arrivals}>
-        <main className="tv fade-in">
+        <main className={`stage ${inLobby ? 'is-lobby' : 'is-game'}`} style={skyStyle}>
           <ReactionLayer socket={socket} />
 
-          <header className="tv-top">
-            <div className="brand">
-              <span aria-hidden="true">{lobby.game.icon}</span> {lobby.game.name}
-            </div>
-            <div className="room-code">
-              Salle <strong>{lobby.code}</strong>
-            </div>
-            <div className="page-nav">
-              <button type="button" className="btn ghost" onClick={() => setNoticeOpen(true)}>
-                Comment jouer
-              </button>
-              <button type="button" className="btn ghost" onClick={backToCatalog}>
-                Catalogue
-              </button>
-            </div>
-          </header>
-
           {error && (
-            <p className="error" role="alert" onClick={() => setError(null)}>
+            <p className="stage-toast" role="alert" onClick={() => setError(null)}>
               {error}
             </p>
           )}
 
-          {lobby.practice && (
-            <p className="notice">
-              Entraînement : les robots jouent avec vous. Rien n’est enregistré dans les statistiques.
-            </p>
-          )}
-
           {inLobby ? (
-            <section className="tv-lobby with-side">
-              <div className="tv-stage">
-                <div className="card join-panel">
-                  <p className="label">Rejoignez avec votre téléphone</p>
-                  <Qr value={joinUrl} size={480} />
-                  <p className="join-url">{joinUrl}</p>
-                  <p className="label">ou entrez le code</p>
-                  <p className="code-big">{lobby.code}</p>
-                  <p className="muted small">
-                    Pour regarder sans jouer : <span className="join-url">{spectateUrl}</span>
-                  </p>
-                </div>
-
-                <div className="card lobby-panel">
-                  <h2>
-                    Joueurs ({lobby.players.length}/{lobby.maxPlayers})
-                  </h2>
-                  <p className="muted">
-                    {lobby.readyCount} prêt(s) · minimum {lobby.game.minPlayers}
-                    {lobby.observers.count > 0 && (
-                      <>
-                        {' '}
-                        · {lobby.observers.count} spectateur(s)
-                        {lobby.observers.devices.length > 0 && (
-                          <span className="device-icons" aria-hidden="true">
-                            {' '}
-                            {lobby.observers.devices.map((d) => DEVICE_KIND_ICONS[d]).join(' ')}
-                          </span>
-                        )}
-                      </>
-                    )}
-                  </p>
-                  <ul className="players">
-                    {lobby.players.map((p) => (
-                      <li key={p.id} className={p.connected ? undefined : 'offline'}>
-                        <PlayerAvatar avatar={p.avatar} name={p.name} size="sm" />
-                        <span className="name">{p.name}</span>
-                        {p.devices.length > 0 && (
-                          <span
-                            className="device-icons"
-                            aria-label={p.devices.map((d) => DEVICE_KIND_LABELS[d]).join(', ')}
-                            title={p.devices.map((d) => DEVICE_KIND_LABELS[d]).join(', ')}
-                          >
-                            {p.devices.map((d) => DEVICE_KIND_ICONS[d]).join(' ')}
-                          </span>
-                        )}
-                        {p.bot ? (
-                          <span className="badge bot-tag">robot</span>
-                        ) : (
-                          <span className={`dot ${p.connected ? 'on' : 'off'}`} aria-hidden="true" />
-                        )}
-                        {p.ready && <span className="badge ready">Prêt</span>}
-                        {!p.bot && !p.connected && <span className="badge">absent</span>}
-                        {p.bot ? (
-                          <button
-                            type="button"
-                            className="link-btn"
-                            onClick={() => removeBot(p.id)}
-                            aria-label={`Retirer le robot ${p.name}`}
-                          >
-                            Retirer
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            className="link-btn"
-                            onClick={() => kick(p.id)}
-                            aria-label={`Retirer ${p.name}`}
-                          >
-                            Retirer
-                          </button>
-                        )}
-                      </li>
-                    ))}
-                    {lobby.players.length === 0 && <li className="muted">En attente des premiers joueurs…</li>}
-                  </ul>
-
-                  <div className="bot-list-actions">
-                    <button
-                      type="button"
-                      className="btn small"
-                      onClick={addBot}
-                      disabled={lobby.players.length >= lobby.maxPlayers}
-                    >
-                      Ajouter un robot
-                    </button>
-                    <span className="muted small">Pour compléter une partie ou s’entraîner seul.</span>
-                  </div>
-
-                  {views && (
-                    <Suspense fallback={<p className="muted">Chargement des réglages…</p>}>
-                      <views.Settings
-                        settings={lobby.gameSettings}
-                        disabled={false}
-                        onChange={configure}
-                        bounds={lobby.game.settingsBounds}
-                      />
-                    </Suspense>
-                  )}
-
-                  <button
-                    type="button"
-                    className="btn primary big"
-                    disabled={!canStart}
-                    onClick={() => emitAck('host:start')}
-                  >
-                    Lancer la partie
-                  </button>
-                  {!canStart && <p className="muted">En attente d’au moins {lobby.game.minPlayers} joueur(s).</p>}
-                </div>
+            <TvLobby lobby={lobby} joinUrl={joinUrl} canStart={canStart} onStart={() => emitAck('host:start')} />
+          ) : (
+            <>
+              <div className={`stage-mini${active ? ' is-visible' : ''}`} aria-hidden={!active}>
+                <GameLogo gameId={lobby.game.id} name={lobby.game.name} className="stage-mini-logo" />
+                <span>Salle {lobby.code}</span>
               </div>
 
-              {side}
-            </section>
-          ) : (
-            <section className="tv-game with-side">
-              <div className="tv-stage is-game">
+              <div className="stage-game">
                 {use3d && game?.public ? (
                   <Boundary fallback={flat} onError={() => setBoard3dFailed(true)}>
                     <Suspense fallback={flat}>
@@ -367,37 +343,40 @@ export function TvPage() {
                 ) : (
                   flat
                 )}
-                <div className="host-controls">
-                  {can3d && game && (
-                    <button type="button" className="btn ghost" onClick={toggle3d} aria-pressed={board3d}>
-                      {board3d ? 'Vue 2D' : 'Vue 3D'}
-                    </button>
-                  )}
-                  {lobby.status === 'in_game' && (
-                    <>
-                      <button type="button" className="btn primary" onClick={() => emitAck('host:next')}>
-                        Étape suivante
-                      </button>
-                      <button type="button" className="btn ghost" onClick={() => emitAck('host:end')}>
-                        Arrêter la partie
-                      </button>
-                    </>
-                  )}
-                  {lobby.status === 'ended' && (
-                    <>
-                      <button type="button" className="btn primary" onClick={() => emitAck('host:replay')}>
-                        Rejouer avec les mêmes joueurs
-                      </button>
-                      <button type="button" className="btn ghost" onClick={backToCatalog}>
-                        Retour au catalogue
-                      </button>
-                    </>
-                  )}
-                </div>
               </div>
-              {side}
-            </section>
+
+              <div
+                className={`stage-bar${active ? ' is-visible' : ''}`}
+                onFocus={() => setBarFocused(true)}
+                onBlur={() => setBarFocused(false)}
+              >
+                {lobby.status === 'in_game' && (
+                  <>
+                    <button type="button" className="btn primary" onClick={() => emitAck('host:next')}>
+                      Étape suivante
+                    </button>
+                    <button type="button" className="btn ghost" onClick={() => emitAck('host:end')}>
+                      Arrêter la partie
+                    </button>
+                  </>
+                )}
+                {lobby.status === 'ended' && (
+                  <>
+                    <button type="button" className="btn primary" onClick={() => emitAck('host:replay')}>
+                      Rejouer avec les mêmes joueurs
+                    </button>
+                    <button type="button" className="btn ghost" onClick={backToCatalog}>
+                      Retour au catalogue
+                    </button>
+                  </>
+                )}
+              </div>
+            </>
           )}
+
+          <CornerMenu open={menuOpen} visible={active} onOpen={() => setMenuOpen(true)} onClose={closeMenu}>
+            {menu}
+          </CornerMenu>
 
           {noticeOpen && <NoticeDialog game={lobby.game} onClose={() => setNoticeOpen(false)} />}
         </main>
