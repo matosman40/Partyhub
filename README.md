@@ -25,18 +25,52 @@ Jeux fournis (architecture modulaire, un dossier par jeu, voir [docs/ADDING-A-GA
 - Persistance SQLite (réglages, jeux activés, statistiques) dans un volume Docker.
 - Aucun service externe, aucune clé API : tout fonctionne sur le réseau local.
 
-## Démarrage rapide (Docker Compose)
+## Installation (Docker Compose, CasaOS)
+
+Prérequis : Docker avec le plugin Compose (`docker compose version`), et un terminal sur le serveur
+(sur CasaOS : application Terminal, ou SSH).
 
 ```bash
-cp .env.example .env          # puis adapter si besoin (ADMIN_PASSWORD notamment)
-docker compose up -d --build
+# 1. Télécharger PartyHub
+sudo mkdir -p /DATA/AppData && cd /DATA/AppData
+sudo git clone https://github.com/matosman40/Partyhub.git partyhub
+cd partyhub
+
+# 2. Configurer (adapter ADMIN_PASSWORD, et PARTYHUB_PORT si 8282 est déjà utilisé)
+sudo cp .env.example .env
+sudo nano .env
+
+# 3. Construire et démarrer
+sudo docker compose up -d --build
+
+# 4. Vérifier : le service doit afficher « healthy » après quelques secondes
+sudo docker compose ps
+sudo docker compose logs -f     # Ctrl+C pour quitter
 ```
 
 Ouvrir `http://<adresse-du-serveur>:8282` sur l'écran principal, puis `http://<adresse-du-serveur>:8282/join`
-sur les téléphones. Pour CasaOS, voir [docs/CASAOS.md](docs/CASAOS.md).
+sur les téléphones (ou scanner le QR code). Le détail pour CasaOS est dans [docs/CASAOS.md](docs/CASAOS.md).
 
-Mot de passe administrateur : si `ADMIN_PASSWORD` est vide, un mot de passe aléatoire est écrit une seule fois
-dans le volume (`/data/admin-password.txt`). Lisez-le, puis supprimez le fichier.
+**Mise à jour** (les données du volume `partyhub-data` sont conservées) :
+
+```bash
+cd /DATA/AppData/partyhub
+sudo git pull
+sudo docker compose up -d --build
+```
+
+Ne jamais lancer `docker compose down -v` : l'option `-v` supprime les données.
+
+**Mot de passe administrateur** : si `ADMIN_PASSWORD` est vide, un mot de passe aléatoire est écrit une seule fois
+dans le volume (`/data/admin-password.txt`). Lisez-le, puis supprimez le fichier :
+
+```bash
+sudo docker compose exec partyhub cat /data/admin-password.txt
+sudo docker compose exec partyhub rm /data/admin-password.txt
+```
+
+**Installation prévue sans compilation** : une image publiée sur GHCR permettra d'installer PartyHub sans
+`--build`. Ce n'est pas encore disponible ; voir [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Développement local
 
