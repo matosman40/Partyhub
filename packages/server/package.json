@@ -15,7 +15,7 @@
   "dependencies": {
     "@partyhub/games": "0.7.0",
     "@partyhub/shared": "0.7.0",
-    "better-sqlite3": "12.2.0",
+    "better-sqlite3": "^13.0.3",
     "express": "5.1.0",
     "pino": "^10.3.1",
     "proxy-addr": "2.0.8",
