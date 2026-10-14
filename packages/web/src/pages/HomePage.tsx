@@ -7,6 +7,7 @@ import { DeviceChoice } from '../components/DeviceChoice.js';
 import { NoticeDialog } from '../components/NoticeDialog.js';
 import { CornerMenu, DrawerSection } from '../components/CornerMenu.js';
 import { GameLogo } from '../components/GameLogo.js';
+import { GameScene } from '../components/GameScene.js';
 import { logoFor } from '../components/gameLogos.js';
 
 const CATEGORY_LABEL: Record<GameCategory, string> = {
@@ -150,6 +151,7 @@ export function HomePage() {
         {visible.map((g) => (
           <article key={g.id} className={`game-card cat-${CATEGORY_CLASS[g.category] ?? 'party'}`}>
             <div className="game-art" style={artStyle(g.id, g.name)}>
+              <GameScene gameId={g.id} name={g.name} className="game-art-scene" />
               <span className="cat-badge">{CATEGORY_LABEL[g.category] ?? g.category}</span>
               <GameLogo gameId={g.id} name={g.name} className="game-art-logo" />
             </div>

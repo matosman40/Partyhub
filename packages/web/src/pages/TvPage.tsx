@@ -6,6 +6,7 @@ import { getSocket } from '../realtime.js';
 import { viewsFor } from '../games.js';
 import { PlayerAvatar } from '../components/PlayerAvatar.js';
 import { GameLogo } from '../components/GameLogo.js';
+import { GameScene } from '../components/GameScene.js';
 import { logoFor } from '../components/gameLogos.js';
 import { useArrivalMoods } from '../components/useArrivalMoods.js';
 import { ChatPanel, EmoteBar, ReactionLayer } from '../components/Social.js';
@@ -316,6 +317,11 @@ export function TvPage() {
     <AvatarsContext.Provider value={avatars}>
       <MoodsContext.Provider value={arrivals}>
         <main className={`stage ${inLobby ? 'is-lobby' : 'is-game'}`} style={skyStyle}>
+          <GameScene
+            gameId={lobby.game.id}
+            name={lobby.game.name}
+            className={`stage-scene${inLobby ? '' : ' is-quiet'}`}
+          />
           <ReactionLayer socket={socket} />
 
           {error && (

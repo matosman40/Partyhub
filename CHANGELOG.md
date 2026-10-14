@@ -11,6 +11,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
   discussion, 3D, « Comment jouer » et retour au catalogue sont dans un tiroir discret en coin, ouvert à la demande.
   En partie, les commandes se masquent après 3,5 s sans activité.
 - Accueil : la navigation (rejoindre une salle, profil, administration, préférences) passe par le même tiroir d'angle.
+- Décor original par jeu (SVG, sans éléments de jeux existants) : écran TV, affiches du catalogue et décor
+  de repli pour les jeux sans décor dessiné. Le salon prend un menu titre : option « Lancer la partie » avec curseur ▸.
 - Catalogue : chaque affiche de jeu porte son logo.
 - Personnages : chaque profil crée le sien (couleur du corps, teint, coiffure, couleur des cheveux, accessoire) dans
   « Mon personnage », avec un aperçu animé. Un invité reçoit un personnage généré à partir de son pseudo. Migration 9

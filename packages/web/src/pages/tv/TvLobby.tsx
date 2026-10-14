@@ -51,7 +51,10 @@ export function TvLobby({
       </ol>
 
       <div className="stage-start">
-        <button type="button" className="btn primary big" disabled={!canStart} onClick={onStart}>
+        <button type="button" className="title-option" disabled={!canStart} onClick={onStart}>
+          <span className="title-cursor" aria-hidden="true">
+            ▸
+          </span>
           Lancer la partie
         </button>
         {!canStart && <p className="stage-hint">Il faut au moins {lobby.game.minPlayers} joueur(s) connecté(s).</p>}
