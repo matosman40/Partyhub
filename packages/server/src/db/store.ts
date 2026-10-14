@@ -531,6 +531,11 @@ export class Store {
     })();
   }
 
+  /** Supprime une version conservée (jamais la version active : le service le vérifie avant). */
+  deletePackageArchive(id: string, version: string): void {
+    this.db.prepare('DELETE FROM package_archives WHERE package_id = ? AND version = ?').run(id, version);
+  }
+
   deletePackage(id: string, gameId: string): void {
     this.db.prepare('DELETE FROM packages WHERE id = ?').run(id);
     this.db.prepare('DELETE FROM package_archives WHERE package_id = ?').run(id);

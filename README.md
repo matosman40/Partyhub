@@ -212,6 +212,19 @@ sudo docker compose start partyhub
 Remplacez `partyhub-AAAAMMJJ-HHMMSS.db` par le nom voulu (date en UTC, affichée dans l'administration). Les fichiers
 de la médiathèque (dossier `assets`) ne sont pas dans la sauvegarde : copiez-les à part.
 
+## Sauvegarde complète des jeux et de la médiathèque
+
+Dans l'administration, « Sauvegarde » propose deux formats :
+
+- **ZIP complet** : jeux de cartes, de questions médias et de plateau, textes et notices modifiés, et les fichiers de
+  la médiathèque avec leurs identifiants (les jeux les référencent par ces identifiants). Limite : 512 Mio de médias.
+  Au-delà, copiez le dossier `assets` à part.
+- **JSON** : les définitions seules, sans les fichiers, pour une copie légère ou une relecture.
+
+À la restauration, rien n'est écrasé par défaut : une définition identique à une existante est ignorée (doublon), et
+un fichier déjà présent n'est pas remplacé. Cochez « Remplacer les jeux de même nom » pour mettre à jour un jeu au lieu
+d'en ajouter une copie. Le résumé indique ce qui a été ajouté, ignoré ou remplacé.
+
 ## Limites de la première version
 
 - Les salles et leurs parties sont en mémoire : un redémarrage du serveur interrompt les parties en cours.

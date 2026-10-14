@@ -112,6 +112,21 @@ describe('service des paquets installés', () => {
     expect(service.get('exemple-cartes')?.version).toBe('1.1.0');
   });
 
+  it('supprime une version conservée, jamais la version active', () => {
+    const service = new PackageService(store, dir);
+    service.install(buildPackage());
+    service.install(buildPackage({ version: '1.1.0' }));
+
+    expect(service.removeArchivedVersion('exemple-cartes', '1.1.0')).toMatchObject({ ok: false });
+    expect(service.removeArchivedVersion('exemple-cartes', '0.9.0')).toMatchObject({ ok: false });
+    expect(service.removeArchivedVersion('inconnu', '1.0.0')).toEqual({ ok: false, error: 'Paquet inconnu.' });
+
+    expect(service.removeArchivedVersion('exemple-cartes', '1.0.0')).toEqual({ ok: true, version: '1.0.0' });
+    expect(fs.existsSync(path.join(dir, 'games', 'exemple-cartes', '1.0.0'))).toBe(false);
+    expect(service.versions('exemple-cartes')?.map((v) => v.version)).toEqual(['1.1.0']);
+    expect(service.get('exemple-cartes')).toMatchObject({ version: '1.1.0', status: 'actif' });
+  });
+
   it('refuse d’activer une version inconnue ou une archive altérée', () => {
     const service = new PackageService(store, dir);
     service.install(buildPackage());

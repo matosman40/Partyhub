@@ -302,6 +302,24 @@ export class PackageService {
     return true;
   }
 
+  /**
+   * Supprime une version conservée, pour libérer de la place. La version active ne se supprime
+   * pas : il faut d'abord activer une autre version (sinon le paquet n'aurait plus de jeu).
+   */
+  removeArchivedVersion(id: string, version: string): { ok: true; version: string } | { ok: false; error: string } {
+    const current = this.store.getPackage(id);
+    if (!current) return { ok: false, error: 'Paquet inconnu.' };
+    if (current.version === version) {
+      return { ok: false, error: 'Cette version est active. Activez d’abord une autre version, puis supprimez celle-ci.' };
+    }
+    const archive = this.store.getPackageArchive(id, version);
+    if (!archive) return { ok: false, error: `La version ${version} n’est pas conservée pour ce paquet.` };
+    this.store.deletePackageArchive(id, archive.version);
+    // Chemin construit à partir de la version enregistrée, jamais de la saisie.
+    fs.rmSync(path.join(this.dataDir, 'games', id, archive.version), { recursive: true, force: true });
+    return { ok: true, version: archive.version };
+  }
+
   remove(id: string): boolean {
     const entry = this.loaded.get(id);
     if (!entry) return false;

@@ -147,6 +147,23 @@ export function PackagesAdmin({ onChanged }: { onChanged: () => void }) {
     }
   }
 
+  async function removeVersion(record: PackageRecord, version: string) {
+    if (!window.confirm(`Supprimer la version ${version} conservée de « ${record.name} » ? Elle ne pourra plus être rejouée sans réimport.`)) {
+      return;
+    }
+    setError(null);
+    setNotice(null);
+    try {
+      await api(`/api/admin/packages/${encodeURIComponent(record.id)}/versions/${encodeURIComponent(version)}`, {
+        method: 'DELETE',
+      });
+      setNotice(`Version ${version} supprimée.`);
+      await loadVersions(record.id);
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  }
+
   async function copy(record: PackageRecord) {
     setError(null);
     setNotice(null);
@@ -238,9 +255,19 @@ export function PackagesAdmin({ onChanged }: { onChanged: () => void }) {
                         {new Date(v.installedAt).toLocaleDateString('fr-FR')}
                       </span>
                       {!v.active && (
-                        <button type="button" className="btn ghost small" onClick={() => activate(r, v.version)}>
-                          Jouer cette version
-                        </button>
+                        <>
+                          <button type="button" className="btn ghost small" onClick={() => activate(r, v.version)}>
+                            Jouer cette version
+                          </button>
+                          <button
+                            type="button"
+                            className="link-btn small"
+                            onClick={() => removeVersion(r, v.version)}
+                            aria-label={`Supprimer la version ${v.version} de ${r.name}`}
+                          >
+                            Supprimer
+                          </button>
+                        </>
                       )}
                     </div>
                   ))}

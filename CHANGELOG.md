@@ -5,6 +5,16 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 ## Non publié
 
 ### Ajouté
+- Sauvegarde complète en ZIP (jeux, notices et fichiers de la médiathèque avec leurs identifiants). Restauration
+  additive : une définition identique n'est pas recréée ; l'option « remplacer » met à jour un jeu de même nom.
+  Limite : 512 Mio de médias.
+- Suppression d'une version conservée d'un paquet `.phgame` (jamais la version active).
+- Administration : colonnes appareils et spectateurs dans le tableau des salles.
+- Modification d'un jeu intégré : l'administration indique combien de salles ouvertes gardent l'ancienne version.
+- Contrôle d'accessibilité `scripts/a11y-browser.py` (axe-core, WCAG 2 niveaux A et AA) sur sept pages, dont
+  l'administration connectée. Aucune violation grave ou critique.
+- Tests unitaires de `web` (`npm test -w @partyhub/web`), ajoutés à `npm test`.
+- Contrôle de secrets `scripts/secret-scan.py`, lancé en CI.
 - Spectateurs : `/spectate/CODE` permet de regarder une salle sans jouer. Le spectateur voit le salon et le plateau
   (jamais l'état réservé à l'hôte), peut discuter et réagir, et n'a aucune action de jeu. Le salon TV affiche le
   nombre de spectateurs et le lien à partager. Limite : 20 spectateurs par salle.
