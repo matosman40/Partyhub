@@ -5,6 +5,11 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 ## Non publié
 
 ### Ajouté
+- Réglages par défaut administrables pour tous les jeux (intégrés, cartes, médias, plateau et paquets importés) :
+  section « Réglages par défaut des parties ». Le formulaire est celui de l'hôte ; une valeur hors limites est refusée,
+  « Revenir aux réglages d’origine » rétablit ceux du jeu. Les nouvelles salles partent de ces valeurs ; une salle déjà
+  ouverte garde les siennes. Migration 7 de la base (table `game_settings`).
+- Nom, icône et description des paquets importés se modifient aussi dans la section « Présentation ».
 - Sauvegarde complète en ZIP (jeux, notices et fichiers de la médiathèque avec leurs identifiants). Restauration
   additive : une définition identique n'est pas recréée ; l'option « remplacer » met à jour un jeu de même nom.
   Limite : 512 Mio de médias.
@@ -38,6 +43,13 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
   et pots du poker). `npm test` les lance avant le serveur.
 - Contrôle navigateur `scripts/lobby-browser.py` : pour chacun des 22 jeux, les réglages du salon TV et la page du
   téléphone s'affichent sans erreur. Il tourne en intégration continue.
+
+### Corrigé
+- Les jeux de plateau et les paquets importés étaient classés « intégrés » dans l'administration : l'origine d'un jeu
+  est désormais lue dans la table qui le porte (intégré, cartes, médias, plateau ou paquet).
+- Supprimer un jeu efface aussi sa présentation et ses réglages modifiés (auparavant, la présentation restait en base).
+- Les jeux de sous-titres ne ramènent plus silencieusement à 90 s un temps de réponse valide jusqu'à 120 s : le
+  formulaire des questions médias accepte 10 à 120 s, et le serveur refuse une valeur hors limites de chaque jeu.
 
 ### Modifié
 - Découpage du bundle par jeu : chaque jeu est chargé à la demande (`lazyViews`). Le fichier principal passe de

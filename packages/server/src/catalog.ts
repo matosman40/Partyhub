@@ -1,9 +1,7 @@
-import { allGames } from './games-registry.js';
+import { allGames, sourceOf, type CustomSource } from './games-registry.js';
 import type { CatalogGame, GameInfo, GameModule, GameOrigin } from '@partyhub/shared';
 import type { Store } from './db/store.js';
-import { CUSTOM_GAME_PREFIX } from './cards/service.js';
-import { MEDIA_GAME_PREFIX } from './media/service.js';
-import { defaultDetails, detailsOverride, withOverrides } from './game-details.js';
+import { defaultDetails, detailsOverride, settingsOverride, withOverrides } from './game-details.js';
 
 export { effectiveNotice } from './game-details.js';
 
@@ -23,11 +21,17 @@ export function gameInfo(module: GameModule): GameInfo {
   };
 }
 
-/** Origine d'un jeu, déduite de son identifiant (les jeux créés dans l'administration ont un préfixe). */
+const ORIGIN_OF_SOURCE: Record<CustomSource | 'builtin', GameOrigin> = {
+  builtin: 'builtin',
+  cards: 'cards',
+  media: 'media',
+  boards: 'board',
+  packages: 'package',
+};
+
+/** Origine d'un jeu, lue dans la table qui le porte (code, cartes, médias, plateau ou paquet). */
 export function originOf(id: string): GameOrigin {
-  if (id.startsWith(CUSTOM_GAME_PREFIX)) return 'cards';
-  if (id.startsWith(MEDIA_GAME_PREFIX)) return 'media';
-  return 'builtin';
+  return ORIGIN_OF_SOURCE[sourceOf(id) ?? 'builtin'];
 }
 
 /** Catalogue public (jeux activés) ou complet pour l'administration. */
@@ -44,6 +48,9 @@ export function catalog(store: Store, includeDisabled: boolean): CatalogGame[] {
         customNotice: notice !== original.manifest.notice,
         defaultDetails: defaultDetails(original),
         customDetails: detailsOverride(store, original.manifest.id) !== undefined,
+        settings: module.defaultSettings as Record<string, unknown>,
+        defaultSettings: original.defaultSettings as Record<string, unknown>,
+        customSettings: settingsOverride(store, original) !== undefined,
         enabled: store.isGameEnabled(original.manifest.id),
       };
     })

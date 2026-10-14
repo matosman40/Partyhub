@@ -4,7 +4,7 @@ import { api } from '../api.js';
 import { openRoomsText } from './messages.js';
 
 /**
- * Nom, icône et description d'un jeu intégré. Les règles du jeu ne se modifient pas :
+ * Nom, icône et description d'un jeu intégré ou importé. Les règles du jeu ne se modifient pas :
  * seule sa présentation change, partout où le jeu apparaît.
  */
 export function GameDetailsEditor({ game, onSaved }: { game: CatalogGame; onSaved: () => void }) {

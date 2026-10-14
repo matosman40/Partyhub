@@ -10,6 +10,8 @@ import { PackageSourcesAdmin } from '../admin/PackageSourcesAdmin.js';
 import { AssetLibrary } from '../admin/AssetLibrary.js';
 import { MediaGamesAdmin } from '../admin/MediaGamesAdmin.js';
 import { GameDetailsEditor } from '../admin/GameDetailsEditor.js';
+import { GameSettingsEditor } from '../admin/GameSettingsEditor.js';
+import { viewsFor } from '../games.js';
 import { BackupPanel } from '../admin/BackupPanel.js';
 import { DbBackups } from '../admin/DbBackups.js';
 
@@ -17,6 +19,8 @@ const ORIGIN_LABEL: Record<CatalogGame['origin'], string | null> = {
   builtin: null,
   cards: 'Cartes',
   media: 'Questions médias',
+  board: 'Plateau',
+  package: 'Paquet importé',
 };
 
 interface AdminSettings {
@@ -424,15 +428,29 @@ export function AdminPage() {
       </section>
 
       <section className="card stack">
-        <h2>Modifier les jeux intégrés</h2>
+        <h2>Présentation des jeux intégrés et importés</h2>
         <p className="muted">
-          Nom, icône et description s’affichent partout dans l’application. Les règles de chaque jeu restent celles
-          du code ; seule la présentation change.
+          Nom, icône et description s’affichent partout dans l’application. Les règles de chaque jeu ne se modifient
+          pas ici ; seule la présentation change. Les jeux de cartes, de plateau et de questions médias se modifient
+          dans leur propre éditeur.
         </p>
         {overview.games
-          .filter((g) => g.origin === 'builtin')
+          .filter((g) => g.origin === 'builtin' || g.origin === 'package')
           .map((g) => (
             <GameDetailsEditor key={g.id} game={g} onSaved={load} />
+          ))}
+      </section>
+
+      <section className="card stack">
+        <h2>Réglages par défaut des parties</h2>
+        <p className="muted">
+          Durées, nombre de manches et autres options proposées à l’hôte quand il crée une salle. Une salle déjà
+          ouverte garde ses réglages. Pour revenir au réglage du jeu, utilisez « Revenir aux réglages d’origine ».
+        </p>
+        {overview.games
+          .filter((g) => viewsFor(g.id)?.Settings)
+          .map((g) => (
+            <GameSettingsEditor key={g.id} game={g} onSaved={load} />
           ))}
       </section>
 

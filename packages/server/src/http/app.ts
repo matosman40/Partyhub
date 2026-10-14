@@ -404,8 +404,11 @@ export function createApp(deps: AppDeps): express.Express {
   admin.put('/game-details/:id', (req, res) => {
     const id = req.params.id ?? '';
     const game = resolveGame(id);
-    if (!game || originOf(id) !== 'builtin') {
-      res.status(404).json({ error: 'Seuls les jeux intégrés se modifient ici. Les autres se modifient dans leur éditeur.' });
+    const origin = originOf(id);
+    if (!game || (origin !== 'builtin' && origin !== 'package')) {
+      res.status(404).json({
+        error: 'Nom, icône et description se modifient ici pour les jeux intégrés et les paquets importés. Les autres se modifient dans leur éditeur.',
+      });
       return;
     }
     const parsed = gameDetailsSchema.safeParse(req.body);
@@ -421,6 +424,43 @@ export function createApp(deps: AppDeps): express.Express {
   admin.delete('/game-details/:id', (req, res) => {
     store.clearDetailsOverride(req.params.id ?? '');
     res.json({ ok: true });
+  });
+
+  /**
+   * Réglages par défaut d'un jeu, quelle que soit son origine. Ils valent pour les nouvelles
+   * salles ; les salles déjà ouvertes gardent leurs réglages.
+   */
+  admin.put('/games/:id/settings', (req, res) => {
+    const id = req.params.id ?? '';
+    const game = resolveGame(id);
+    if (!game) {
+      res.status(404).json({ error: 'Jeu inconnu.' });
+      return;
+    }
+    const raw = req.body?.settings;
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+      res.status(400).json({ error: 'Réglages attendus : un objet « settings ».' });
+      return;
+    }
+    const parsed = game.settingsSchema.safeParse(raw);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.issues[0]?.message ?? 'Réglages invalides.' });
+      return;
+    }
+    store.setSettingsOverride(id, JSON.stringify(parsed.data));
+    res.json({ ok: true, settings: parsed.data });
+  });
+
+  /** Retour aux réglages par défaut définis dans le code du jeu (ou la version importée). */
+  admin.delete('/games/:id/settings', (req, res) => {
+    const id = req.params.id ?? '';
+    const game = resolveGame(id);
+    if (!game) {
+      res.status(404).json({ error: 'Jeu inconnu.' });
+      return;
+    }
+    store.clearSettingsOverride(id);
+    res.json({ ok: true, settings: game.defaultSettings });
   });
 
   /** Retour à la notice d'origine, définie dans le code du jeu. */

@@ -218,6 +218,19 @@ export const MIGRATIONS: Migration[] = [
       `);
     },
   },
+  {
+    version: 7,
+    description: 'Réglages par défaut des jeux remplaçables par l’administration (version non publiée)',
+    up(db) {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS game_settings (
+          game_id    TEXT PRIMARY KEY,
+          content    TEXT NOT NULL,
+          updated_at TEXT NOT NULL
+        );
+      `);
+    },
+  },
 ];
 
 /** Source GitHub d'un paquet : un dépôt, sa dernière release et l'état de la dernière vérification. */
@@ -423,6 +436,33 @@ export class Store {
     this.db.prepare('DELETE FROM game_details WHERE game_id = ?').run(gameId);
   }
 
+  /** Réglages par défaut remplacés par l'administrateur (JSON validé), ou undefined. */
+  getSettingsOverride(gameId: string): string | undefined {
+    const row = this.db.prepare('SELECT content FROM game_settings WHERE game_id = ?').get(gameId) as
+      | { content: string }
+      | undefined;
+    return row?.content;
+  }
+
+  setSettingsOverride(gameId: string, content: string): void {
+    this.db
+      .prepare(
+        'INSERT INTO game_settings (game_id, content, updated_at) VALUES (?, ?, ?) ON CONFLICT(game_id) DO UPDATE SET content = excluded.content, updated_at = excluded.updated_at',
+      )
+      .run(gameId, content, new Date().toISOString());
+  }
+
+  clearSettingsOverride(gameId: string): void {
+    this.db.prepare('DELETE FROM game_settings WHERE game_id = ?').run(gameId);
+  }
+
+  /** Efface tout ce que l'administration a ajouté à un jeu supprimé (notice, présentation, réglages). */
+  clearGameOverrides(gameId: string): void {
+    this.db.prepare('DELETE FROM notices WHERE game_id = ?').run(gameId);
+    this.db.prepare('DELETE FROM game_details WHERE game_id = ?').run(gameId);
+    this.db.prepare('DELETE FROM game_settings WHERE game_id = ?').run(gameId);
+  }
+
   /** Jeux de cartes créés dans l'administration (définition au format JSON). */
   listCardGames(): { id: string; definition: string; updatedAt: string }[] {
     const rows = this.db
@@ -442,7 +482,7 @@ export class Store {
   deleteCardGame(id: string): void {
     this.db.prepare('DELETE FROM card_games WHERE id = ?').run(id);
     this.db.prepare('DELETE FROM game_flags WHERE game_id = ?').run(id);
-    this.db.prepare('DELETE FROM notices WHERE game_id = ?').run(id);
+    this.clearGameOverrides(id);
   }
 
   /** Jeux de plateau créés dans l'administration (définition au format JSON). */
@@ -464,7 +504,7 @@ export class Store {
   deleteBoardGame(id: string): void {
     this.db.prepare('DELETE FROM board_games WHERE id = ?').run(id);
     this.db.prepare('DELETE FROM game_flags WHERE game_id = ?').run(id);
-    this.db.prepare('DELETE FROM notices WHERE game_id = ?').run(id);
+    this.clearGameOverrides(id);
   }
 
   listPackages(): PackageRow[] {
@@ -540,7 +580,7 @@ export class Store {
     this.db.prepare('DELETE FROM packages WHERE id = ?').run(id);
     this.db.prepare('DELETE FROM package_archives WHERE package_id = ?').run(id);
     this.db.prepare('DELETE FROM game_flags WHERE game_id = ?').run(gameId);
-    this.db.prepare('DELETE FROM notices WHERE game_id = ?').run(gameId);
+    this.clearGameOverrides(gameId);
   }
 
   listPackageSources(): PackageSourceRow[] {
@@ -593,7 +633,7 @@ export class Store {
   deleteMediaGame(id: string): void {
     this.db.prepare('DELETE FROM media_games WHERE id = ?').run(id);
     this.db.prepare('DELETE FROM game_flags WHERE game_id = ?').run(id);
-    this.db.prepare('DELETE FROM notices WHERE game_id = ?').run(id);
+    this.clearGameOverrides(id);
   }
 
   listAssets(): AssetRow[] {

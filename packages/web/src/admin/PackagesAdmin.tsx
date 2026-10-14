@@ -199,8 +199,9 @@ export function PackagesAdmin({ onChanged }: { onChanged: () => void }) {
       <p className="muted">
         Un paquet .phgame contient un jeu complet dans un seul fichier. Il est vérifié avant installation : une archive
         altérée ou un fichier non déclaré est refusé. Une version plus récente remplace la version jouée ; une version plus
-        ancienne est conservée sans être jouée, et vous la choisissez dans « Versions ». Pour changer le nom, la
-        description, les cartes, les cases ou les questions d’un paquet, créez une copie modifiable.
+        ancienne est conservée sans être jouée, et vous la choisissez dans « Versions ». Le nom, l’icône, la description
+        et les réglages par défaut d’un paquet se modifient dans les sections « Présentation » et « Réglages par défaut ».
+        Son contenu (cartes, cases, questions) ne change pas : créez une copie modifiable pour le transformer.
       </p>
       <div className="stack">
         <label className="btn primary">

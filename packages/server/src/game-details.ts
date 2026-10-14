@@ -2,10 +2,12 @@ import { gameDetailsSchema, type GameDetails, type GameModule, type GameNotice }
 import type { Store } from './db/store.js';
 
 /**
- * Surcharges d'administration pour les jeux intégrés : nom, icône, description et notice.
- * Le code du jeu (règles, nombre de joueurs, réglages) ne change jamais ; seule la
- * présentation est modifiable. Une surcharge est appliquée au catalogue, au salon, à la
- * salle et aux titres affichés pendant la partie (les états de jeu gardent nom et icône).
+ * Surcharges d'administration, pour tous les jeux (intégrés, cartes, médias, plateau et
+ * paquets importés) : nom, icône, description, notice et réglages par défaut.
+ * Les règles et le nombre de joueurs du jeu ne changent jamais. Une présentation surchargée
+ * est appliquée au catalogue, au salon, à la salle et aux titres affichés pendant la partie
+ * (les états de jeu gardent nom et icône). Les réglages surchargés deviennent les valeurs
+ * par défaut des nouvelles salles ; une salle déjà ouverte garde ses réglages.
  */
 
 /** Notice effective : surcharge de l'administration si elle existe, sinon celle du code. */
@@ -31,6 +33,21 @@ export function detailsOverride(store: Store, gameId: string): GameDetails | und
   }
 }
 
+/**
+ * Réglages par défaut remplacés par l'administrateur, validés contre le schéma du jeu.
+ * Un réglage invalide (par exemple après une mise à jour du paquet) est ignoré.
+ */
+export function settingsOverride(store: Store, module: GameModule): Record<string, unknown> | undefined {
+  const raw = store.getSettingsOverride(module.manifest.id);
+  if (!raw) return undefined;
+  try {
+    const parsed = module.settingsSchema.safeParse(JSON.parse(raw));
+    return parsed.success ? (parsed.data as Record<string, unknown>) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 /** Présentation par défaut, telle que définie dans le code du jeu. */
 export function defaultDetails(module: GameModule): GameDetails {
   const m = module.manifest;
@@ -45,7 +62,8 @@ export function defaultDetails(module: GameModule): GameDetails {
 export function withOverrides(module: GameModule, store: Store): GameModule {
   const details = detailsOverride(store, module.manifest.id);
   const notice = effectiveNotice(store, module.manifest.id, module.manifest.notice);
-  if (!details && notice === module.manifest.notice) return module;
+  const defaults = settingsOverride(store, module);
+  if (!details && notice === module.manifest.notice && !defaults) return module;
 
   const name = details?.name ?? module.manifest.name;
   const icon = details?.icon ?? module.manifest.icon;
@@ -55,6 +73,7 @@ export function withOverrides(module: GameModule, store: Store): GameModule {
   return {
     ...module,
     manifest: { ...module.manifest, name, icon, description, notice },
+    defaultSettings: (defaults ?? module.defaultSettings) as typeof module.defaultSettings,
     initialize(settings, players, ctx) {
       const state = initialize.call(module, settings, players, ctx) as unknown;
       if (!details || !state || typeof state !== 'object') return state as ReturnType<typeof initialize>;

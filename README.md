@@ -151,7 +151,10 @@ la bonne réponse n'apparaît qu'à la révélation, et les réponses privées r
 | `PORT`, `HOST` | `8282`, `0.0.0.0` | Écoute du serveur dans le conteneur |
 
 Réglages modifiables depuis l'administration (sans redémarrage) : joueurs maximum par salle, délai de
-reconnexion, délai d'inactivité, durée maximale d'une salle.
+reconnexion, délai d'inactivité, durée maximale d'une salle. Pour chaque jeu (intégré, cartes, médias, plateau ou
+paquet importé), l'administration permet aussi de modifier les réglages par défaut (durées, manches, etc.), la
+présentation (nom, icône, description), la notice, et d'activer ou désactiver le jeu. Les règles du jeu restent
+celles du code ou du paquet : un paquet se transforme en copie modifiable.
 
 ## Ajouter un jeu (paquets `.phgame`)
 

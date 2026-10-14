@@ -97,7 +97,8 @@ export interface ObserverRoomView {
   game: { public: unknown } | null;
 }
 
-export type GameOrigin = 'builtin' | 'cards' | 'media';
+/** D'où vient le jeu : code de l'application, jeu de cartes, questions médias, plateau ou paquet importé. */
+export type GameOrigin = 'builtin' | 'cards' | 'media' | 'board' | 'package';
 
 export interface CatalogGame extends GameInfo {
   enabled: boolean;
@@ -112,6 +113,12 @@ export interface CatalogGame extends GameInfo {
   defaultDetails: GameDetails;
   /** Vrai si l'administrateur a modifié le nom, l'icône ou la description. */
   customDetails: boolean;
+  /** Réglages effectifs : ceux de l'administration s'ils existent, sinon ceux du jeu. */
+  settings: Record<string, unknown>;
+  /** Réglages par défaut du code du jeu, pour pouvoir les restaurer. */
+  defaultSettings: Record<string, unknown>;
+  /** Vrai si l'administrateur a remplacé les réglages par défaut du jeu. */
+  customSettings: boolean;
 }
 
 export interface ProfileStats {

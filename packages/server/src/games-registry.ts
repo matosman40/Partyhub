@@ -27,6 +27,15 @@ export function resolveGame(id: string): GameModule | undefined {
   return undefined;
 }
 
+/** Table qui porte un jeu : code de l'application (« builtin ») ou source administrée. */
+export function sourceOf(id: string): CustomSource | 'builtin' | undefined {
+  if (findGame(id)) return 'builtin';
+  for (const [source, games] of customBySource) {
+    if (games.has(id)) return source;
+  }
+  return undefined;
+}
+
 export function allGames(): GameModule[] {
   return [...gameRegistry, ...customGames()];
 }
