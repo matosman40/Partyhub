@@ -37,11 +37,15 @@ export function BoumHost({ publicState: pub, hostState: host, now }: HostViewPro
           ? `${pub.found} trouvée(s) · ${pub.written} réponse(s)`
           : kind === 'mime'
             ? `${pub.found} trouvé(s)`
-            : kind === 'chiffre'
-              ? `${pub.guessed} estimation(s)`
-              : kind === 'carte_vote'
-                ? `${pub.played} carte(s) jouée(s)`
-                : `${pub.written} texte(s) envoyé(s)`;
+            : kind === 'chanson'
+              ? pub.clip
+                ? `${pub.found} trouvé(s)`
+                : 'Extrait en attente'
+              : kind === 'chiffre'
+                ? `${pub.guessed} estimation(s)`
+                : kind === 'carte_vote'
+                  ? `${pub.played} carte(s) jouée(s)`
+                  : `${pub.written} texte(s) envoyé(s)`;
     return (
       <section className="game-host boum-host fade-in" key={key} style={style} data-effects={pub.effects}>
         <div className="round-info">
@@ -51,6 +55,14 @@ export function BoumHost({ publicState: pub, hostState: host, now }: HostViewPro
         {pub.prompt && <h2 className="huge-word small">{pub.prompt.text}</h2>}
         {kind === 'carte_vote' && <p className="muted">Chacun joue une carte sur son téléphone.</p>}
         {kind === 'detecteur' && pub.pleader && <p className="muted">{pub.pleader} se défend.</p>}
+        {kind === 'chanson' && pub.pleader && !pub.clip && (
+          <>
+            <p className="label">{pub.pleader} chante</p>
+            <h2 className="huge-word small">Écoutez son extrait</h2>
+            <p className="muted">Il enregistre 3 secondes sur son téléphone, sans musique.</p>
+          </>
+        )}
+        {kind === 'chanson' && pub.clip && <audio className="boum-clip" src={pub.clip} controls autoPlay />}
         {kind === 'mime' && pub.pleader && (
           <>
             <p className="label">Mime le métier</p>
@@ -163,6 +175,26 @@ export function BoumHost({ publicState: pub, hostState: host, now }: HostViewPro
             )}
           </ol>
           {reveal.misses.length > 0 && <p className="muted">Pas choisi : {reveal.misses.join(', ')}</p>}
+        </>
+      )}
+      {reveal?.kind === 'chanson' && (
+        <>
+          <p className="label">L’artiste ou le film était</p>
+          <h3 className="reveal-answer">{reveal.answer}</h3>
+          <p className="muted">
+            « {reveal.title} » chantée par {reveal.singer ?? '?'}, +{reveal.gainedSinger}
+          </p>
+          <ol className="ranking">
+            {reveal.order.map((r: { name: string; gained: number }, i: number) => (
+              <li key={r.name}>
+                <span className="rank">{i + 1}</span>
+                <Avatar name={r.name} size="sm" />
+                <span className="name">{r.name}</span>
+                <span className="points">+{r.gained}</span>
+              </li>
+            ))}
+          </ol>
+          {reveal.misses.length > 0 && <p className="muted">Pas trouvé : {reveal.misses.join(', ')}</p>}
         </>
       )}
       {reveal?.kind === 'mime' && (

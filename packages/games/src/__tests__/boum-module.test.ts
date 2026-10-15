@@ -325,3 +325,82 @@ describe('BOUM ! : Où est-ce ?', () => {
     expect(s.points.c).toBe(0);
   });
 });
+
+describe('BOUM ! : Devine la chanson', () => {
+  const CLIP = 'data:audio/webm;base64,AAAA';
+
+  it('ne montre le titre qu’au chanteur, et jamais l’artiste ou le film avant la révélation', () => {
+    const h = started(['devine_chanson']);
+    const s = h.state;
+    const title = s.round!.prompt!.text;
+    const answer = s.round!.prompt!.answer!;
+    const pleader = s.round!.pleader!;
+    const publicJson = JSON.stringify(h.game.getPublicState(s));
+    expect(publicJson).not.toContain(title);
+    expect(publicJson).not.toContain(answer);
+    expect(JSON.stringify(h.game.getHostState(s))).not.toContain(answer);
+    expect((h.game.getPlayerState(s, pleader) as { secretWord: string | null }).secretWord).toBe(title);
+    for (const id of ['a', 'b', 'c'].filter((id) => id !== pleader)) {
+      expect((h.game.getPlayerState(s, id) as { secretWord: string | null }).secretWord).toBeNull();
+    }
+  });
+
+  it('attend l’extrait du chanteur : pas de réponse avant, chanteur sans saisie', () => {
+    const h = started(['devine_chanson']);
+    const s = h.state;
+    const pleader = s.round!.pleader!;
+    const guesser = ['a', 'b', 'c'].find((id) => id !== pleader)!;
+    const answer = s.round!.prompt!.answer!;
+    expect(h.game.handleAction(s, { id: guesser, name: guesser }, 'answer', { text: answer }, h.ctx).ok).toBe(false);
+    expect(h.game.handleAction(s, { id: pleader, name: 'x' }, 'answer', { text: answer }, h.ctx).ok).toBe(false);
+    expect((h.game.getPlayerState(s, pleader) as { mustAct: boolean }).mustAct).toBe(true);
+    expect((h.game.getPlayerState(s, guesser) as { mustAct: boolean }).mustAct).toBe(false);
+  });
+
+  it('refuse un extrait qui n’est ni audio ni envoyé par le chanteur', () => {
+    const h = started(['devine_chanson']);
+    const s = h.state;
+    const pleader = s.round!.pleader!;
+    const guesser = ['a', 'b', 'c'].find((id) => id !== pleader)!;
+    expect(
+      h.game.handleAction(s, { id: pleader, name: 'x' }, 'clip', { dataUrl: 'https://x.test/a.mp3' }, h.ctx).ok,
+    ).toBe(false);
+    expect(h.game.handleAction(s, { id: guesser, name: 'x' }, 'clip', { dataUrl: CLIP }, h.ctx).ok).toBe(false);
+    expect(h.game.handleAction(s, { id: pleader, name: 'x' }, 'clip', { dataUrl: CLIP }, h.ctx).ok).toBe(true);
+  });
+
+  it('accepte une des bonnes réponses séparées par « / », et donne 100 puis 70, 50 par trouveur au chanteur', () => {
+    const snapshot = bank();
+    snapshot.entries = snapshot.entries.map((e) => (e.type === 'chanson' ? { ...e, answer: 'Alpha / Beta' } : e));
+    const h = harness([A, B, C], 7, snapshot);
+    let s = ok(h.game.start(h.initial, h.ctx));
+    s = h.game.onTimer({ ...s, modes: ['devine_chanson'], index: 0 }, 'boum-announce', h.ctx);
+    const pleader = s.round!.pleader!;
+    const [first, second] = ['a', 'b', 'c'].filter((id) => id !== pleader);
+    const at = (id: string) => ({ id, name: id });
+    s = ok(h.game.handleAction(s, at(pleader), 'clip', { dataUrl: CLIP }, h.ctx));
+    s = ok(h.game.handleAction(s, at(first!), 'answer', { text: 'beta' }, h.ctx));
+    expect(s.phase).toBe('write');
+    s = ok(h.game.handleAction(s, at(second!), 'answer', { text: 'Alpha' }, h.ctx));
+    expect(s.phase).toBe('reveal');
+    expect(s.points[first!]).toBe(100);
+    expect(s.points[second!]).toBe(70);
+    expect(s.points[pleader]).toBe(100);
+  });
+
+  it('refuse qu’un devineur réponde deux fois, et révèle l’artiste seulement à la fin', () => {
+    const h = started(['devine_chanson']);
+    let s = h.state;
+    const pleader = s.round!.pleader!;
+    const answer = s.round!.prompt!.answer!;
+    const [first, second] = ['a', 'b', 'c'].filter((id) => id !== pleader);
+    const at = (id: string) => ({ id, name: id });
+    s = ok(h.game.handleAction(s, at(pleader), 'clip', { dataUrl: CLIP }, h.ctx));
+    s = ok(h.game.handleAction(s, at(first!), 'answer', { text: answer }, h.ctx));
+    expect(h.game.handleAction(s, at(first!), 'answer', { text: answer }, h.ctx).ok).toBe(false);
+    expect(JSON.stringify(h.game.getPublicState(s))).not.toContain(answer);
+    s = ok(h.game.handleAction(s, at(second!), 'answer', { text: 'mauvaise réponse' }, h.ctx));
+    expect(s.phase).toBe('write');
+    expect(JSON.stringify(h.game.getPublicState(s))).not.toContain(answer);
+  });
+});

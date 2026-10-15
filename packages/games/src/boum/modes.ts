@@ -37,7 +37,8 @@ export const FAMILY_COLORS: Record<Family | 'noir', string> = {
  * - `vrai_ou_faux` : chacun écrit une affirmation, puis tout le monde vote pour la vraie ;
  * - `detecteur` : un plaideur se défend, les autres le notent ;
  * - `mime` : un joueur mime un métier sans parler, les autres tapent le nom du métier ;
- * - `pays` : chacun choisit un pays sur la carte, selon la distance au bon pays.
+ * - `pays` : chacun choisit un pays sur la carte, selon la distance au bon pays ;
+ * - `chanson` : un joueur chante un court extrait sans musique, les autres trouvent l'artiste ou le film.
  */
 export type ModeKind =
   | 'reponse'
@@ -48,7 +49,8 @@ export type ModeKind =
   | 'vrai_ou_faux'
   | 'detecteur'
   | 'mime'
-  | 'pays';
+  | 'pays'
+  | 'chanson';
 
 /** Durée du mime, en secondes (spécification : le mimeur a 60 secondes). */
 export const MIME_SECONDS = 60;
@@ -65,7 +67,8 @@ export type ModeId =
   | 'le_plus_probable'
   | 'detecteur'
   | 'mime_metier'
-  | 'ou_est_ce';
+  | 'ou_est_ce'
+  | 'devine_chanson';
 
 export interface ModeNeed {
   type: BankType;
@@ -209,6 +212,16 @@ export const MODES: readonly ModeDef[] = [
     pack: false,
     minPlayers: 2,
     needs: [{ type: 'pays_indice', minValid: 5 }],
+  },
+  {
+    id: 'devine_chanson',
+    title: 'Devine la chanson',
+    brief: 'Un joueur chante un extrait, sans musique. Les autres trouvent l’artiste ou le film.',
+    family: 'son',
+    kind: 'chanson',
+    pack: false,
+    minPlayers: 3,
+    needs: [{ type: 'chanson', minValid: 5 }],
   },
 ];
 

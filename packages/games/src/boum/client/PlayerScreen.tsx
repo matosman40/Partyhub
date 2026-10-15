@@ -4,6 +4,7 @@ import { useRemaining } from '../../client/hooks.js';
 import { Countdown, FinalScreen, WaitingScreen } from '../../client/ui.js';
 import { COUNTRY_CODES } from '../bank/countries.js';
 import { COUNTRY_NAMES_FR } from '../geo/countries-data.js';
+import { SoundRecorder } from '../../imite-moi/client/Capture.js';
 
 /** Pays proposés au téléphone, triés par nom français. */
 const COUNTRY_OPTIONS: [string, string][] = COUNTRY_CODES.map(
@@ -49,6 +50,26 @@ export function BoumPlayer({ publicState: pub, playerState: me, playerId, now, s
   }
 
   if (pub.phase === 'write') {
+    if (kind === 'chanson' && me?.secretWord) {
+      return (
+        <section className="player-game fade-in">
+          <div className="round-info">
+            {title} · <Countdown remaining={remaining} />
+          </div>
+          <p className="label">Chantez cet extrait, sans musique</p>
+          <h2 className="question-small">{me.secretWord}</h2>
+          {pub.clip ? (
+            <p className="muted">Extrait envoyé. Les autres cherchent l’artiste ou le film.</p>
+          ) : (
+            <SoundRecorder busy={busy} onSubmit={(dataUrl) => void run('clip', { dataUrl })} />
+          )}
+          {notice}
+        </section>
+      );
+    }
+    if (kind === 'chanson' && !me?.secretWord && !pub.clip) {
+      return <WaitingScreen title="Écoutez" text="Le chanteur prépare son extrait. Regardez l’écran principal." />;
+    }
     if (kind === 'mime' && me?.secretWord) {
       return (
         <section className="player-game fade-in">
@@ -102,14 +123,18 @@ export function BoumPlayer({ publicState: pub, playerState: me, playerId, now, s
       );
     }
 
-    if (kind === 'reponse' || kind === 'mime') {
+    if (kind === 'reponse' || kind === 'mime' || kind === 'chanson') {
       return (
         <section className="player-game fade-in">
           <div className="round-info">
             {title} · <Countdown remaining={remaining} />
           </div>
           <h2 className="question-small">
-            {kind === 'mime' ? `${pub.pleader ?? 'Quelqu’un'} mime le métier` : promptText}
+            {kind === 'mime'
+              ? `${pub.pleader ?? 'Quelqu’un'} mime le métier`
+              : kind === 'chanson'
+                ? `${pub.pleader ?? 'Quelqu’un'} chante : artiste ou film ?`
+                : promptText}
           </h2>
           <form
             className="stack"

@@ -63,8 +63,8 @@ export function countryPoints(
   return points;
 }
 
-/** Mime le métier : le mimeur gagne ce montant par joueur qui trouve (même barème que Devine la chanson). */
-export const MIME_POINTS_PER_FINDER = 50;
+/** Mime le métier et Devine la chanson : le joueur qui mime ou chante gagne ce montant par joueur qui trouve. */
+export const PERFORMER_POINTS_PER_FINDER = 50;
 
 /**
  * Combien ? : le plus proche de la réponse gagne 100, le second 50, le troisième 25.
