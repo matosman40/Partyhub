@@ -4,6 +4,12 @@
 # Le certificat est signé par l'autorité interne de Caddy : son certificat racine doit être installé sur les
 # téléphones et tablettes (voir docs/HTTPS-LAN.md).
 
+{
+	# Un téléphone qui se connecte par adresse IP n'envoie pas de nom (SNI) pendant la poignée de main TLS.
+	# Sans ce réglage, Caddy ne sait pas quel certificat présenter et coupe : « alert internal error ».
+	default_sni {$PARTYHUB_HOST}
+}
+
 https://{$PARTYHUB_HOST} {
 	tls internal
 	encode zstd gzip
