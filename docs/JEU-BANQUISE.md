@@ -108,10 +108,10 @@ plus haut, avec son ombre au sol, plus petite. Éliminé, il disparaît dans l'e
 
 ## Écrans
 
-- **Plan** : une vue de trois quarts, légèrement écrasée. Chaque plaque de glace a un dessus clair au biseau asymétrique
-  (lumière en haut à gauche, ombre en bas à droite) et une face avant plus sombre, visible dans l'écart qui sépare
-  deux rangées. Les trous sont des cases creuses, avec leur paroi du fond dans l'ombre. La mer entoure la banquise,
-  avec des reflets qui glissent et des trous de pions dans ses rangées extérieures.
+- **Plan** : une vue de trois quarts. Chaque plaque de glace est un cube bleu : un dessus clair, une face avant épaisse
+  et translucide, visible dans l'écart qui sépare deux rangées. Certaines plaques ont une neige sur le dessus. Les
+  trous sont des eaux noires avec leur paroi du fond dans l'ombre. La mer est profonde, avec des reflets qui dérivent,
+  et des morceaux de banquise enneigés flottent autour du plan.
 - **Écran principal** : le plan, les personnages avec leur nom, le numéro du niveau et son titre, l'annonce du vent et
   ses traînées, le temps avant la fonte, les éliminés et le classement.
 - **Téléphone** : le même plan en plus petit, votre personnage mis en évidence (« Vous »), les commandes en bas, et
