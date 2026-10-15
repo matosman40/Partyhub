@@ -98,7 +98,7 @@ client : la position est calculée toutes les 50 ms.
 
 ## Personnages
 
-Le plan et les personnages suivent le plateau de Bomberman : pixel art, vue de dessus, mêmes sprites de couleur.
+Le plan et les personnages suivent les niveaux 3D de Bomberman : pixel art, vue de trois quarts, mêmes sprites de couleur.
 Chaque joueur a son sprite (sa couleur). Un personnage **importé avec des planches** (voir
 `docs/PERSONNAGES-PACK.md`) remplace ce sprite : on affiche sa case « repos » (corps entier, face au joueur), comme sur
 le plateau de Bomberman.
@@ -108,9 +108,10 @@ plus haut, avec son ombre au sol, plus petite. Éliminé, il disparaît dans l'e
 
 ## Écrans
 
-- **Plan** : une vue de dessus. La banquise est faite de tuiles de glace au biseau asymétrique (lumière en haut à
-  gauche, ombre en bas à droite), avec une écume au bord de l'eau. Les trous sont de l'eau à reflets. La mer entoure
-  la banquise.
+- **Plan** : une vue de trois quarts, légèrement écrasée. Chaque plaque de glace a un dessus clair au biseau asymétrique
+  (lumière en haut à gauche, ombre en bas à droite) et une face avant plus sombre, visible dans l'écart qui sépare
+  deux rangées. Les trous sont des cases creuses, avec leur paroi du fond dans l'ombre. La mer entoure la banquise,
+  avec des reflets qui glissent et des trous de pions dans ses rangées extérieures.
 - **Écran principal** : le plan, les personnages avec leur nom, le numéro du niveau et son titre, l'annonce du vent et
   ses traînées, le temps avant la fonte, les éliminés et le classement.
 - **Téléphone** : le même plan en plus petit, votre personnage mis en évidence (« Vous »), les commandes en bas, et

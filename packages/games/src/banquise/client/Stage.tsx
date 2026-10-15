@@ -7,8 +7,8 @@ import { actorLeft, boardLayout, drawBoard, drawShadow, drawSpriteActor, groundY
 
 /**
  * Scène de la banquise, commune à l'écran principal et au téléphone. Le plan est dessiné sur canvas
- * comme le plateau de Bomberman (vue de dessus, mêmes tuiles, même biseau). Les personnages sont
- * les sprites de couleur de Bomberman, ou le personnage importé quand le joueur en a choisi un.
+ * comme les niveaux 3D de Bomberman (vue de trois quarts, plaques avec leur face avant). Les personnages
+ * sont les sprites de couleur de Bomberman, ou le personnage importé quand le joueur en a choisi un.
  * Les noms et l'éclaboussure restent en HTML, posés aux mêmes coordonnées que le canvas.
  */
 

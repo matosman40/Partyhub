@@ -3,10 +3,12 @@ import { hash, unitImage } from '../../bombes-party/client/render.js';
 import { SPRITE_H, SPRITE_W } from '../../bombes-party/client/sprites.js';
 
 /**
- * Plan de la banquise, sur une grille carrée comme le plateau de Bomberman. Chaque case de glace est une
- * plaque carrée en relief : son dessus est clair, avec un biseau de pixels (lumière en haut à gauche, ombre
- * en bas à droite), et son côté, plus sombre, dépasse vers le bas. Les trous sont des cases creuses, posées
- * sur une mer bleue percée de trous. Une colonne de la physique vaut une case.
+ * Plan de la banquise, vu de trois quarts comme les niveaux 3D de Bomberman. La grille est écrasée
+ * verticalement : le dessus de chaque case est un carré aplati, et chaque plaque de glace montre sa face
+ * avant, plus sombre, qui lui donne de l'épaisseur. Entre deux rangées, un écart de l'épaisseur d'une
+ * plaque laisse voir cette face avant : sans lui, la rangée de devant cacherait tout. Les trous sont des
+ * cases creuses. Les personnages sont debout sur la rangée centrale, avec leur ombre au sol.
+ * Une colonne de la physique vaut une case.
  */
 
 export const COLS = WIDTH;
@@ -17,15 +19,22 @@ export const FLOE_LAST = 3;
 /** Rangée des personnages : la rangée centrale de la banquise. */
 export const ACTOR_ROW = 2;
 
+/** Écrasement vertical du dessus : la hauteur d'une case vue de trois quarts, en part de sa largeur. */
+const SQUASH = 0.7;
+/** Épaisseur de la face avant d'une plaque, en part de sa largeur. */
+const THICK = 0.5;
+
 export interface BoardLayout {
-  /** Côté d'une case, donc d'une colonne (px CSS). Un saut se mesure en multiples de cette valeur. */
+  /** Largeur d'une case, donc d'une colonne (px CSS). Un saut se mesure en multiples de cette valeur. */
   T: number;
   /** Pixel logique : un seizième de case, comme un pixel de Bomberman. */
   S: number;
   /** Marge horizontale : une demi-case de chaque côté. */
   pad: number;
   padY: number;
-  /** Épaisseur visible d'une plaque, sous son dessus. */
+  /** Hauteur d'une case vue de trois quarts (le dessus). */
+  rowH: number;
+  /** Épaisseur de la face avant d'une plaque. */
   thick: number;
   width: number;
   height: number;
@@ -34,22 +43,24 @@ export interface BoardLayout {
 export function boardLayout(cssWidth: number): BoardLayout {
   // Vingt-deux demi-cases : vingt et une colonnes, plus une demi-case de marge de chaque côté.
   const T = cssWidth / (COLS + 1);
-  const padY = T * 0.35;
-  const thick = T * 0.2;
+  const rowH = T * SQUASH;
+  const thick = T * THICK;
+  const padY = T * 0.4;
   return {
     T,
     S: T / 16,
     pad: T / 2,
     padY,
+    rowH,
     thick,
     width: cssWidth,
-    height: padY * 2 + ROWS * T + thick,
+    height: padY * 2 + ROWS * (rowH + thick),
   };
 }
 
-/** Ordonnée du centre d'une rangée, en pixels. */
-export function rowCenterY(L: BoardLayout, row: number): number {
-  return L.padY + L.T / 2 + row * L.T;
+/** Ordonnée du haut du dessus d'une rangée, en pixels. Chaque rangée occupe son dessus plus l'écart. */
+export function rowTopY(L: BoardLayout, row: number): number {
+  return L.padY + row * (L.rowH + L.thick);
 }
 
 /** Abscisse, en pixels, d'un personnage placé en `x` (colonnes). */
@@ -57,42 +68,35 @@ export function actorLeft(L: BoardLayout, x: number): number {
   return L.pad + x * L.T;
 }
 
-/** Ligne de sol, en pixels : les pieds des personnages posés sur la rangée centrale. */
+/** Ligne de sol, en pixels : les pieds des personnages, posés dans la partie basse de leur case. */
 export function groundY(L: BoardLayout): number {
-  return rowCenterY(L, ACTOR_ROW) + L.T * 0.25;
+  return rowTopY(L, ACTOR_ROW) + L.rowH * 0.8;
 }
 
-// Palette : mer bleue, glace claire avec un biseau, côté plus sombre, trous creux.
+// Palette : mer bleue, glace claire, faces avant plus sombres, trous creux.
 const SEA_TOP = '#3f97d6';
 const SEA_BOTTOM = '#1b5d99';
 const SEA_FOAM = '#8fd0f2';
 const PEG = '#0a3560';
 const PEG_RIM = '#7cc0ec';
-const HOLE = '#082a4d';
-const HOLE_SHADE = '#041a30';
-const SIDE = '#4c8fc0';
-const SIDE_LO = '#2a6291';
+const HOLE = '#06223f';
+const HOLE_WALL = '#020f1e';
+const FRONT = '#3a7bb0';
+const FRONT_LO = '#245c8a';
+const FRONT_LINE = '#6fa9d6';
 const TOP_HI = '#ffffff';
 const TOP_LO = '#cfeefa';
 const BEVEL_LO = '#5c9fcb';
 const CRACK = '#9ed2ee';
 
-/** Case creuse : un trou dans la mer ou dans la banquise, avec son bord. */
-function drawPit(
-  g: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  L: BoardLayout,
-  color: string,
-  shade: string,
-): void {
-  const side = L.T;
-  g.fillStyle = shade;
-  g.fillRect(x, y, side, side);
-  g.fillStyle = color;
-  g.fillRect(x, y + L.S, side, side - L.S * 2);
+/** Case creuse vue de trois quarts : le fond sombre et le mur du fond, qui fait ombre en haut. */
+function drawPit(g: CanvasRenderingContext2D, x: number, y: number, L: BoardLayout, floor: string): void {
+  g.fillStyle = floor;
+  g.fillRect(x, y, L.T, L.rowH);
+  g.fillStyle = HOLE_WALL;
+  g.fillRect(x, y, L.T, L.rowH * 0.3);
   g.fillStyle = PEG_RIM;
-  g.fillRect(x, y + side - L.S, side, L.S);
+  g.fillRect(x, y + L.rowH - L.S, L.T, L.S);
 }
 
 /** Mer : dégradé, reflets qui glissent lentement, trous du cadre comme ceux d'un plateau à pions. */
@@ -119,68 +123,65 @@ function drawSea(g: CanvasRenderingContext2D, L: BoardLayout, now: number): void
   // Trous du cadre : une case creuse sur deux, au-dessus et au-dessous de la banquise.
   for (const row of [0, ROWS - 1]) {
     for (let c = 0; c < COLS; c += 2) {
-      const x = L.pad + c * L.T + L.T * 0.2;
-      const y = rowCenterY(L, row) - L.T / 2 + L.T * 0.2;
-      drawPit(g, x, y, { ...L, T: L.T * 0.6 }, PEG, '#0a2b4f');
+      drawPit(g, L.pad + c * L.T + L.T * 0.2, rowTopY(L, row) + L.rowH * 0.2, { ...L, T: L.T * 0.6, rowH: L.rowH * 0.6 }, PEG);
     }
   }
 }
 
-/** Plaque de glace : côté sombre qui dépasse, dessus clair avec biseau de pixels et fissures. */
-function drawPlate(g: CanvasRenderingContext2D, L: BoardLayout, c: number, row: number): void {
-  const x = L.pad + c * L.T;
-  const y = rowCenterY(L, row) - L.T / 2;
-  const b = Math.max(1, L.S * 1.2);
+/** Face avant d'une plaque : sombre, avec des lignes de strates, sous son dessus. */
+function drawFront(g: CanvasRenderingContext2D, L: BoardLayout, x: number, y: number): void {
+  const grad = g.createLinearGradient(0, y, 0, y + L.thick);
+  grad.addColorStop(0, FRONT);
+  grad.addColorStop(1, FRONT_LO);
+  g.fillStyle = grad;
+  g.fillRect(x, y, L.T, L.thick);
+  g.fillStyle = FRONT_LINE;
+  g.fillRect(x, y + L.thick * 0.35, L.T, Math.max(1, L.S * 0.8));
+}
 
-  // Côté : la plaque est épaisse, son côté dépasse sous le dessus.
-  g.fillStyle = SIDE_LO;
-  g.fillRect(x, y, L.T, L.T + L.thick);
-  g.fillStyle = SIDE;
-  g.fillRect(x, y + L.T - L.S * 2, L.T, L.S * 2);
-
-  // Dessus : dégradé clair.
-  const grad = g.createLinearGradient(0, y, 0, y + L.T);
+/** Dessus d'une plaque : dégradé clair, biseau de pixels comme les blocs de Bomberman, fissures. */
+function drawTop(g: CanvasRenderingContext2D, L: BoardLayout, c: number, row: number, x: number, y: number): void {
+  const grad = g.createLinearGradient(0, y, 0, y + L.rowH);
   grad.addColorStop(0, TOP_HI);
   grad.addColorStop(1, TOP_LO);
   g.fillStyle = grad;
-  g.fillRect(x, y, L.T, L.T);
+  g.fillRect(x, y, L.T, L.rowH);
 
-  // Biseau, comme les blocs de Bomberman : clair en haut et à gauche, sombre en bas et à droite.
+  const b = Math.max(1, L.S * 1.2);
   g.fillStyle = TOP_HI;
   g.fillRect(x, y, L.T, b);
-  g.fillRect(x, y, b, L.T);
+  g.fillRect(x, y, b, L.rowH);
   g.fillStyle = BEVEL_LO;
-  g.fillRect(x, y + L.T - b, L.T, b);
-  g.fillRect(x + L.T - b, y, b, L.T);
+  g.fillRect(x, y + L.rowH - b, L.T, b);
+  g.fillRect(x + L.T - b, y, b, L.rowH);
 
   // Fissures : deux traits courts, placés de façon fixe pour chaque case.
   const seed = row * 31 + c;
   const px = Math.round(hash(seed, 3) * 6) * L.S + L.T * 0.2;
-  const py = Math.round(hash(seed, 4) * 6) * L.S + L.T * 0.25;
+  const py = Math.round(hash(seed, 4) * 3) * L.S + L.rowH * 0.25;
   g.fillStyle = CRACK;
   g.fillRect(x + px, y + py, L.T * 0.28, Math.max(1, L.S));
   g.fillRect(x + px + L.T * 0.2, y + py + L.S, L.T * 0.18, Math.max(1, L.S));
-  g.fillRect(x + L.T * 0.55, y + L.T * 0.6, L.T * 0.2, Math.max(1, L.S));
+  g.fillRect(x + L.T * 0.55, y + L.rowH * 0.6, L.T * 0.2, Math.max(1, L.S));
 }
 
-/** Plan complet : mer, trous, plaques de glace en relief. Les personnages sont dessinés ensuite. */
+/** Plan complet : mer, trous, plaques de glace avec leur face avant. Les personnages sont dessinés ensuite. */
 export function drawBoard(g: CanvasRenderingContext2D, L: BoardLayout, ice: string, now: number, dpr: number): void {
   g.setTransform(dpr, 0, 0, dpr, 0, 0);
   g.clearRect(0, 0, L.width, L.height);
   drawSea(g, L, now);
 
-  // Trous d'abord, puis les côtés, puis les dessus : une plaque recouvre le côté de celle du dessus.
+  // Rangée par rangée, du fond vers l'avant : la face avant d'une rangée tombe dans l'écart qui la sépare de la suivante.
   for (let row = FLOE_FIRST; row <= FLOE_LAST; row++) {
+    const y = rowTopY(L, row);
     for (let c = 0; c < COLS; c++) {
-      if (ice[c] === ICE) continue;
       const x = L.pad + c * L.T;
-      const y = rowCenterY(L, row) - L.T / 2;
-      drawPit(g, x, y, L, HOLE, HOLE_SHADE);
+      if (ice[c] === ICE) drawFront(g, L, x, y + L.rowH);
     }
-  }
-  for (let row = FLOE_FIRST; row <= FLOE_LAST; row++) {
     for (let c = 0; c < COLS; c++) {
-      if (ice[c] === ICE) drawPlate(g, L, c, row);
+      const x = L.pad + c * L.T;
+      if (ice[c] === ICE) drawTop(g, L, c, row, x, y);
+      else drawPit(g, x, y, L, HOLE);
     }
   }
 }
@@ -207,7 +208,7 @@ export function drawShadow(g: CanvasRenderingContext2D, L: BoardLayout, a: Actor
   g.restore();
 }
 
-/** Sprite de couleur, posé sur ses pieds. Un pas le fait rebondir d'un pixel. */
+/** Sprite de couleur, debout sur ses pieds. Un pas le fait rebondir d'un pixel. */
 export function drawSpriteActor(g: CanvasRenderingContext2D, L: BoardLayout, a: ActorDraw): void {
   const bounce = a.walking && a.step ? L.S : 0;
   const top = groundY(L) - a.lift * L.T - bounce - SPRITE_H * L.S;
