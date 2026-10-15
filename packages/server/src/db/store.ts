@@ -298,20 +298,29 @@ export const MIGRATIONS: Migration[] = [
   },
   {
     version: 10,
-    description: 'Packs de personnages (sprites importés en zip) : métadonnées et fichiers PNG/JSON',
+    description: 'Personnages illustrés (sprites importés en zip) : personnages, looks et fichiers PNG/JSON',
     up(db) {
       db.exec(`
         CREATE TABLE IF NOT EXISTS character_packs (
           id         TEXT PRIMARY KEY,
           name       TEXT NOT NULL,
-          meta       TEXT NOT NULL,
           created_at TEXT NOT NULL
         );
-        CREATE TABLE IF NOT EXISTS character_pack_files (
-          pack_id TEXT NOT NULL REFERENCES character_packs(id) ON DELETE CASCADE,
+        CREATE TABLE IF NOT EXISTS character_looks (
+          pack_id    TEXT NOT NULL REFERENCES character_packs(id) ON DELETE CASCADE,
+          id         TEXT NOT NULL,
+          name       TEXT NOT NULL,
+          meta       TEXT NOT NULL,
+          created_at TEXT NOT NULL,
+          PRIMARY KEY (pack_id, id)
+        );
+        CREATE TABLE IF NOT EXISTS character_look_files (
+          pack_id TEXT NOT NULL,
+          look_id TEXT NOT NULL,
           atlas   TEXT NOT NULL,
           data    BLOB NOT NULL,
-          PRIMARY KEY (pack_id, atlas)
+          PRIMARY KEY (pack_id, look_id, atlas),
+          FOREIGN KEY (pack_id, look_id) REFERENCES character_looks(pack_id, id) ON DELETE CASCADE
         );
       `);
     },

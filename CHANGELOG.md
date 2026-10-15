@@ -5,9 +5,11 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 ## Non publié
 
 ### Ajouté
-- Personnages illustrés : un pack de sprites (zip avec planches PNG et JSON) s'importe dans l'administration, avec un
-  accord obligatoire de la personne représentée. Il se choisit dans le profil, à la place du personnage dessiné, et
-  s'affiche dans les avatars, la salle et l'éditeur. Format et procédure : `docs/PERSONNAGES-PACK.md`.
+- Personnages illustrés : un zip de sprites (planches PNG et JSON) s'importe dans l'administration, avec un accord
+  obligatoire de la personne représentée. Il se choisit dans le profil, à la place du personnage dessiné, et s'affiche
+  dans les avatars, la salle et l'éditeur.
+- Looks : un personnage illustré peut avoir plusieurs looks. L'administration ajoute un look à un personnage existant
+  et retire un look ; le profil permet de choisir le look. Format et procédure : `docs/PERSONNAGES-PACK.md`.
 
 ### Corrigé
 - Image Docker : le serveur ne démarrait pas (« Cannot find package 'pino' ») et CasaOS affichait « container partyhub

@@ -1,5 +1,5 @@
 import { useId } from 'react';
-import { characterColors, type CharacterMood, type CharacterSpec } from '@partyhub/shared';
+import { characterColors, resolveLook, type CharacterMood, type CharacterSpec } from '@partyhub/shared';
 import { usePackInfo } from './character-packs.js';
 import { PackFigure } from './character-pack-figure.js';
 
@@ -596,10 +596,12 @@ function shade(hex: string, factor: number): string {
  */
 export function Character(props: CharacterProps) {
   const pack = usePackInfo(props.spec.pack);
-  if (pack) {
+  const look = pack ? resolveLook(pack, props.spec.look) : null;
+  if (pack && look) {
     return (
       <PackFigure
         pack={pack}
+        look={look}
         mood={props.mood}
         framing={props.framing}
         label={props.label}

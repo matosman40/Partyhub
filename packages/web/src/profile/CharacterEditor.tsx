@@ -10,6 +10,7 @@ import {
   type CharacterMood,
   type CharacterSpec,
   type HairStyle,
+  resolveLook,
 } from '@partyhub/shared';
 import { Character, PackFigure, useCharacterPacks } from '@partyhub/games/client';
 
@@ -90,7 +91,9 @@ export function CharacterEditor({
   const [mood, setMood] = useState<CharacterMood>('idle');
   const packs = useCharacterPacks();
   // Un pack supprimé depuis ne s'affiche plus : le personnage dessiné reprend la main.
-  const activePack = !!spec.pack && packs.packs.some((pack) => pack.id === spec.pack);
+  const activePackInfo = spec.pack ? (packs.packs.find((pack) => pack.id === spec.pack) ?? null) : null;
+  const activePack = !!activePackInfo;
+  const activeLook = activePackInfo ? resolveLook(activePackInfo, spec.look) : null;
   const pick = (patch: Partial<CharacterSpec>) => onChange({ ...spec, ...patch });
 
   return (
@@ -119,25 +122,49 @@ export function CharacterEditor({
           >
             Personnage dessiné
           </button>
-          {packs.packs.map((pack) => (
-            <button
-              key={pack.id}
-              type="button"
-              className="chip chip-pack"
-              aria-pressed={spec.pack === pack.id}
-              disabled={busy}
-              onClick={() => pick({ pack: pack.id })}
-            >
-              <span className="chara-pack-thumb">
-                <PackFigure pack={pack} framing="bust" />
-              </span>
-              {pack.name}
-            </button>
-          ))}
+          {packs.packs.map((pack) => {
+            const first = pack.looks[0];
+            return (
+              <button
+                key={pack.id}
+                type="button"
+                className="chip chip-pack"
+                aria-pressed={spec.pack === pack.id}
+                disabled={busy || !first}
+                onClick={() => pick({ pack: pack.id, look: first?.id ?? null })}
+              >
+                {first && (
+                  <span className="chara-pack-thumb">
+                    <PackFigure pack={pack} look={first} framing="bust" />
+                  </span>
+                )}
+                {pack.name}
+              </button>
+            );
+          })}
           {packs.status === 'error' && packs.packs.length === 0 && (
             <p className="muted small">Les personnages illustrés ne sont pas disponibles pour le moment.</p>
           )}
         </Group>
+        {activePackInfo && activePackInfo.looks.length > 1 && (
+          <Group label="Look">
+            {activePackInfo.looks.map((look) => (
+              <button
+                key={look.id}
+                type="button"
+                className="chip chip-pack"
+                aria-pressed={activeLook?.id === look.id}
+                disabled={busy}
+                onClick={() => pick({ look: look.id })}
+              >
+                <span className="chara-pack-thumb">
+                  <PackFigure pack={activePackInfo} look={look} framing="bust" />
+                </span>
+                {look.name}
+              </button>
+            ))}
+          </Group>
+        )}
         {!activePack && (
           <>
             <Group label="Couleur du corps">

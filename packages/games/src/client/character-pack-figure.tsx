@@ -1,7 +1,7 @@
-import type { CharacterMood, CharacterPackAtlasName, CharacterPackInfo } from '@partyhub/shared';
+import type { CharacterMood, CharacterPackAtlasName, CharacterPackInfo, CharacterPackLook } from '@partyhub/shared';
 
 /**
- * Affichage d'un pack de sprites. La case de la planche est découpée par un viewBox SVG : le dessin
+ * Affichage d'un look de pack de sprites. La case de la planche est découpée par un viewBox SVG : le dessin
  * se redimensionne comme le personnage dessiné (même balise racine, même ratio).
  *
  * Correspondance attitude → case, selon les noms proposés dans le pack (voir docs/PERSONNAGES-PACK.md).
@@ -28,33 +28,34 @@ export const PACK_FULL_POSE: Record<CharacterMood, string> = {
 
 const DEFAULT_CASE: Record<CharacterPackAtlasName, string> = { visages: 'neutre', poses: 'repos', marche: 'face1' };
 
-/** Adresse PNG d'une planche de pack. Les planches changent peu : le navigateur revalide à chaque affichage. */
-export function packAtlasUrl(id: string, atlas: CharacterPackAtlasName): string {
-  return `/api/character-packs/${encodeURIComponent(id)}/atlas/${atlas}.png`;
+/** Adresse PNG d'une planche d'un look. Revalidée à chaque affichage : un look peut être remplacé. */
+export function packAtlasUrl(packId: string, lookId: string, atlas: CharacterPackAtlasName): string {
+  return `/api/character-packs/${encodeURIComponent(packId)}/looks/${encodeURIComponent(lookId)}/atlas/${atlas}.png`;
 }
 
 export interface PackFigureProps {
   pack: CharacterPackInfo;
+  look: CharacterPackLook;
   mood?: CharacterMood;
   framing?: 'full' | 'bust';
   label?: string;
   className?: string;
 }
 
-export function PackFigure({ pack, mood = 'idle', framing = 'full', label, className }: PackFigureProps) {
+export function PackFigure({ pack, look, mood = 'idle', framing = 'full', label, className }: PackFigureProps) {
   const wantsBust = framing === 'bust';
   const atlasName: CharacterPackAtlasName | null = wantsBust
-    ? pack.atlases.visages
+    ? look.atlases.visages
       ? 'visages'
-      : pack.atlases.poses
+      : look.atlases.poses
         ? 'poses'
         : null
-    : pack.atlases.poses
+    : look.atlases.poses
       ? 'poses'
-      : pack.atlases.visages
+      : look.atlases.visages
         ? 'visages'
         : null;
-  const atlas = atlasName ? pack.atlases[atlasName] : undefined;
+  const atlas = atlasName ? look.atlases[atlasName] : undefined;
   if (!atlasName || !atlas) return null;
 
   const wanted = atlasName === 'visages' ? PACK_BUST_FACE[mood] : PACK_FULL_POSE[mood];
@@ -74,8 +75,9 @@ export function PackFigure({ pack, mood = 'idle', framing = 'full', label, class
       aria-hidden={label ? undefined : true}
       focusable="false"
       data-pack={pack.id}
+      data-look={look.id}
     >
-      <image href={packAtlasUrl(pack.id, atlasName)} x={0} y={0} width={atlas.width} height={atlas.height} />
+      <image href={packAtlasUrl(pack.id, look.id, atlasName)} x={0} y={0} width={atlas.width} height={atlas.height} />
     </svg>
   );
 }

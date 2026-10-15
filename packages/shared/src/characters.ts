@@ -51,10 +51,14 @@ export interface CharacterSpec {
    * dessiné ci-dessus est utilisé. Un pack supprimé retombe sur le personnage dessiné.
    */
   pack?: string | null;
+  /** Look du pack (une même personne peut avoir plusieurs looks). Absent : le premier look du pack. */
+  look?: string | null;
 }
 
 /** Identifiant d'un pack : minuscules, chiffres et tirets (le même que dans l'URL). */
 export const CHARACTER_PACK_ID = /^[a-z0-9][a-z0-9-]{1,47}$/;
+/** Identifiant d'un look dans son pack. */
+export const CHARACTER_LOOK_ID = /^[a-z0-9][a-z0-9-]{0,47}$/;
 
 /** Planches reconnues dans un pack : visages (portraits), poses (corps entier), marche (4 images par direction). */
 export const CHARACTER_PACK_ATLASES = ['visages', 'poses', 'marche'] as const;
@@ -78,12 +82,24 @@ export interface CharacterPackAtlas {
   images: CharacterPackImage[];
 }
 
-/** Pack de personnage tel que le reçoivent les pages (sans les fichiers, servis à part). */
+/** Un look d'un personnage : ses planches (sans les fichiers, servis à part). */
+export interface CharacterPackLook {
+  id: string;
+  name: string;
+  atlases: Partial<Record<CharacterPackAtlasName, CharacterPackAtlas>>;
+}
+
+/** Personnage illustré tel que le reçoivent les pages : son nom et ses looks. */
 export interface CharacterPackInfo {
   id: string;
   name: string;
   createdAt: string;
-  atlases: Partial<Record<CharacterPackAtlasName, CharacterPackAtlas>>;
+  looks: CharacterPackLook[];
+}
+
+/** Look à utiliser pour un personnage : celui demandé s'il existe, sinon le premier. */
+export function resolveLook(pack: CharacterPackInfo, lookId: string | null | undefined): CharacterPackLook | null {
+  return pack.looks.find((look) => look.id === lookId) ?? pack.looks[0] ?? null;
 }
 
 const index = (max: number) =>
@@ -100,6 +116,7 @@ export const characterSchema = z.object({
   hairColor: index(CHARACTER_HAIR_COLORS.length),
   accessory: index(CHARACTER_ACCESSORIES.length),
   pack: z.string().regex(CHARACTER_PACK_ID).nullable().optional(),
+  look: z.string().regex(CHARACTER_LOOK_ID).nullable().optional(),
 });
 
 /** Personnage généré pour un texte donné (pseudo) : même pseudo, même personnage partout. */

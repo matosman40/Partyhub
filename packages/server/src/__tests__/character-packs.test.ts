@@ -235,24 +235,29 @@ describe('import par l’administration', () => {
     expect(res.status).toBe(401);
   });
 
-  it('importe, liste et sert les planches, puis supprime', async () => {
+  it('crée un personnage avec son look Standard, le liste, sert les planches, puis le supprime', async () => {
     const name = `Dewi Sri ${uniq()}`;
     const id = packIdFromName(name);
     const res = await adminImport(zipOf(packEntries()), `nom=${encodeURIComponent(name)}&confirme=1`);
     expect(res.status).toBe(201);
-    const body = (await res.json()) as { pack: { id: string; atlases: Record<string, { width: number }> } };
+    const body = (await res.json()) as {
+      pack: { id: string; looks: { id: string; name: string; atlases: Record<string, { width: number }> }[] };
+      createdPack: boolean;
+    };
     expect(body.pack.id).toBe(id);
-    expect(body.pack.atlases.poses?.width).toBe(220);
+    expect(body.createdPack).toBe(true);
+    expect(body.pack.looks.map((l) => l.id)).toEqual(['standard']);
+    expect(body.pack.looks[0]?.atlases.poses?.width).toBe(220);
 
     const list = (await (await fetch(`${base}/api/character-packs`)).json()) as { packs: { id: string }[] };
     expect(list.packs.map((p) => p.id)).toContain(id);
 
-    const png = await fetch(`${base}/api/character-packs/${id}/atlas/visages.png`);
+    const png = await fetch(`${base}/api/character-packs/${id}/looks/standard/atlas/visages.png`);
     expect(png.status).toBe(200);
     expect(png.headers.get('content-type')).toBe('image/png');
     expect(new Uint8Array(await png.arrayBuffer()).slice(1, 4)).toEqual(new Uint8Array([0x50, 0x4e, 0x47]));
 
-    const missing = await fetch(`${base}/api/character-packs/${id}/atlas/../../secret.png`);
+    const missing = await fetch(`${base}/api/character-packs/${id}/looks/standard/atlas/../../secret.png`);
     expect(missing.status).not.toBe(200);
 
     const again = await adminImport(zipOf(packEntries()), `nom=${encodeURIComponent(name)}&confirme=1`);
@@ -260,8 +265,53 @@ describe('import par l’administration', () => {
 
     const del = await fetch(`${base}/api/admin/character-packs/${id}`, { method: 'DELETE', headers: { cookie } });
     expect(del.status).toBe(200);
-    const gone = await fetch(`${base}/api/character-packs/${id}/atlas/visages.png`);
+    const gone = await fetch(`${base}/api/character-packs/${id}/looks/standard/atlas/visages.png`);
     expect(gone.status).toBe(404);
+  });
+
+  it('ajoute un look à un personnage existant, puis retire les looks un à un', async () => {
+    const name = `Look ${uniq()}`;
+    const id = packIdFromName(name);
+    const first = await adminImport(zipOf(packEntries()), `nom=${encodeURIComponent(name)}&confirme=1`);
+    expect(first.status).toBe(201);
+
+    const second = await adminImport(
+      zipOf(packEntries()),
+      `pack=${encodeURIComponent(id)}&look=${encodeURIComponent('Fête')}&confirme=1`,
+    );
+    expect(second.status).toBe(201);
+    const added = (await second.json()) as {
+      createdPack: boolean;
+      look: { id: string; name: string };
+      pack: { looks: { id: string }[] };
+    };
+    expect(added.createdPack).toBe(false);
+    expect(added.look).toMatchObject({ id: 'fete', name: 'Fête' });
+    expect(added.pack.looks.map((l) => l.id)).toEqual(['standard', 'fete']);
+
+    const png = await fetch(`${base}/api/character-packs/${id}/looks/fete/atlas/poses.png`);
+    expect(png.status).toBe(200);
+
+    const dup = await adminImport(zipOf(packEntries()), `pack=${encodeURIComponent(id)}&look=Fete&confirme=1`);
+    expect(dup.status).toBe(409);
+
+    const unknownPack = await adminImport(zipOf(packEntries()), `pack=inconnu-xyz&look=Autre&confirme=1`);
+    expect(unknownPack.status).toBe(404);
+
+    const removeFete = await fetch(`${base}/api/admin/character-packs/${id}/looks/fete`, {
+      method: 'DELETE',
+      headers: { cookie },
+    });
+    expect(removeFete.status).toBe(200);
+    expect(((await removeFete.json()) as { removedPack: boolean }).removedPack).toBe(false);
+
+    const removeStandard = await fetch(`${base}/api/admin/character-packs/${id}/looks/standard`, {
+      method: 'DELETE',
+      headers: { cookie },
+    });
+    expect(((await removeStandard.json()) as { removedPack: boolean }).removedPack).toBe(true);
+    const list = (await (await fetch(`${base}/api/character-packs`)).json()) as { packs: { id: string }[] };
+    expect(list.packs.map((p) => p.id)).not.toContain(id);
   });
 
   it('renvoie les problèmes de validation sans rien enregistrer', async () => {
@@ -273,10 +323,12 @@ describe('import par l’administration', () => {
     expect(res.status).toBe(400);
     const body = (await res.json()) as { issues: string[] };
     expect(body.issues.length).toBeGreaterThan(0);
+    const list = (await (await fetch(`${base}/api/character-packs`)).json()) as { packs: { id: string }[] };
+    expect(list.packs.map((p) => p.id)).not.toContain(packIdFromName(name));
   });
 });
 
-describe('choix du personnage dans le profil', () => {
+describe('choix du personnage et de son look dans le profil', () => {
   async function registerAndToken() {
     const username = `pack${uniq()}`.slice(0, 20);
     const reg = await fetch(`${base}/api/profiles/register`, {
@@ -288,36 +340,30 @@ describe('choix du personnage dans le profil', () => {
     return { authorization: `Bearer ${token}`, 'content-type': 'application/json' };
   }
 
-  it('accepte un pack existant et refuse un pack inconnu', async () => {
+  it('accepte un personnage et un look existants, et refuse les autres', async () => {
     const name = `Léa ${uniq()}`;
     const id = packIdFromName(name);
     const imported = await adminImport(zipOf(packEntries()), `nom=${encodeURIComponent(name)}&confirme=1`);
     expect(imported.status).toBe(201);
+    await adminImport(zipOf(packEntries()), `pack=${id}&look=Fete&confirme=1`);
     const headers = await registerAndToken();
     const character = { body: 1, skin: 0, hair: 0, hairColor: 0, accessory: 0 };
+    const put = (body: Record<string, unknown>) =>
+      fetch(`${base}/api/profiles/me`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({ avatarCharacter: { ...character, ...body } }),
+      });
 
-    const ok = await fetch(`${base}/api/profiles/me`, {
-      method: 'PUT',
-      headers,
-      body: JSON.stringify({ avatarCharacter: { ...character, pack: id } }),
-    });
+    const ok = await put({ pack: id, look: 'fete' });
     expect(ok.status).toBe(200);
-    const profile = (await ok.json()) as { profile: { avatar: { character: { pack?: string } } } };
-    expect(profile.profile.avatar.character.pack).toBe(id);
+    const profile = (await ok.json()) as { profile: { avatar: { character: { pack?: string; look?: string } } } };
+    expect(profile.profile.avatar.character).toMatchObject({ pack: id, look: 'fete' });
 
-    const unknown = await fetch(`${base}/api/profiles/me`, {
-      method: 'PUT',
-      headers,
-      body: JSON.stringify({ avatarCharacter: { ...character, pack: 'nexiste-pas' } }),
-    });
-    expect(unknown.status).toBe(400);
-
-    const plain = await fetch(`${base}/api/profiles/me`, {
-      method: 'PUT',
-      headers,
-      body: JSON.stringify({ avatarCharacter: character }),
-    });
-    expect(plain.status).toBe(200);
+    expect((await put({ pack: id, look: 'inconnu' })).status).toBe(400);
+    expect((await put({ pack: null, look: 'fete' })).status).toBe(400);
+    expect((await put({ pack: 'nexiste-pas' })).status).toBe(400);
+    expect((await put({})).status).toBe(200);
 
     await fetch(`${base}/api/admin/character-packs/${id}`, { method: 'DELETE', headers: { cookie } });
   });

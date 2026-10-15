@@ -283,6 +283,13 @@ export function createApp(deps: AppDeps): express.Express {
       res.status(400).json({ error: 'Ce personnage n’existe plus. Choisissez-en un autre.' });
       return;
     }
+    if (
+      avatarCharacter?.look &&
+      (!avatarCharacter.pack || !characterPacks.lookExists(avatarCharacter.pack, avatarCharacter.look))
+    ) {
+      res.status(400).json({ error: 'Ce look n’existe plus. Choisissez-en un autre.' });
+      return;
+    }
     const profileId = profileOf(req);
     const profile = profiles.update(profileId, {
       displayName,
@@ -325,9 +332,9 @@ export function createApp(deps: AppDeps): express.Express {
     res.json({ packs: characterPacks.list() });
   });
 
-  api.get('/character-packs/:id/atlas/:file', (req, res) => {
+  api.get('/character-packs/:id/looks/:look/atlas/:file', (req, res) => {
     const match = /^(visages|poses|marche)\.png$/.exec(req.params.file ?? '');
-    const data = match ? characterPacks.atlasFile(req.params.id ?? '', match[1] ?? '') : null;
+    const data = match ? characterPacks.atlasFile(req.params.id ?? '', req.params.look ?? '', match[1] ?? '') : null;
     if (!data) {
       res.status(404).json({ error: 'Planche introuvable.' });
       return;
@@ -663,14 +670,29 @@ export function createApp(deps: AppDeps): express.Express {
       res.status(400).json({ error: 'Aucun fichier reçu.' });
       return;
     }
-    const name = typeof req.query.nom === 'string' ? req.query.nom : '';
-    const consent = req.query.confirme === '1';
-    const result = characterPacks.install(body, { name, consent });
+    const query = req.query as Record<string, unknown>;
+    const text = (value: unknown) => (typeof value === 'string' ? value : '');
+    const packId = text(query.pack).trim();
+    const result = characterPacks.install(body, {
+      name: text(query.nom),
+      packId: packId || null,
+      lookName: text(query.look),
+      consent: query.confirme === '1',
+    });
     if (!result.ok) {
       res.status(result.status).json({ error: result.error, issues: result.issues ?? [] });
       return;
     }
-    res.status(201).json({ ok: true, pack: result.pack });
+    res.status(201).json({ ok: true, pack: result.pack, look: result.look, createdPack: result.createdPack });
+  });
+
+  admin.delete('/character-packs/:id/looks/:look', (req, res) => {
+    const result = characterPacks.removeLook(req.params.id ?? '', req.params.look ?? '');
+    if (!result.ok) {
+      res.status(404).json({ error: 'Look inconnu.' });
+      return;
+    }
+    res.json({ ok: true, removedPack: result.removedPack });
   });
 
   admin.delete('/character-packs/:id', (req, res) => {

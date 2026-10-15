@@ -18,26 +18,39 @@ export function suggestPackName(fileName: string): string {
 }
 
 /**
- * Personnages illustrés : import d'un zip de sprites (json/ et atlas/), liste et suppression.
- * Le zip ne sert qu'à construire le pack ; seules les planches PNG et leurs cases sont conservées.
+ * Personnages illustrés : un personnage peut avoir plusieurs looks (une planche complète chacun).
+ * L'import crée un personnage, ou ajoute un look à un personnage existant ; les looks se retirent un à un.
  */
 export function CharacterPacksAdmin({ onChanged }: { onChanged?: () => void }) {
   const { packs, status } = useCharacterPacks();
+  const [target, setTarget] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [fileKey, setFileKey] = useState(0);
   const [name, setName] = useState('');
+  const [lookName, setLookName] = useState('');
   const [consent, setConsent] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [issues, setIssues] = useState<string[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
 
+  const adding = target !== '';
+  const targetPack = packs.find((pack) => pack.id === target) ?? null;
+
   function chooseFile(next: File | null) {
     setFile(next);
     setError(null);
     setIssues([]);
     setNotice(null);
-    if (next && !name.trim()) setName(suggestPackName(next.name));
+    if (next && !adding && !name.trim()) setName(suggestPackName(next.name));
+  }
+
+  function resetForm() {
+    setFile(null);
+    setFileKey((k) => k + 1);
+    setName('');
+    setLookName('');
+    setConsent(false);
   }
 
   async function importPack() {
@@ -45,12 +58,18 @@ export function CharacterPacksAdmin({ onChanged }: { onChanged?: () => void }) {
       setError('Choisissez un fichier .zip.');
       return;
     }
+    if (adding && !lookName.trim()) {
+      setError('Donnez un nom au look (par exemple : Fête).');
+      return;
+    }
     setBusy(true);
     setError(null);
     setIssues([]);
     setNotice(null);
     try {
-      const params = new URLSearchParams({ nom: name.trim(), confirme: consent ? '1' : '0' });
+      const params = new URLSearchParams({ confirme: consent ? '1' : '0', look: lookName.trim() });
+      if (adding) params.set('pack', target);
+      else params.set('nom', name.trim());
       const res = await fetch(`/api/admin/character-packs?${params.toString()}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/zip' },
@@ -60,17 +79,19 @@ export function CharacterPacksAdmin({ onChanged }: { onChanged?: () => void }) {
         error?: string;
         issues?: string[];
         pack?: { name: string };
+        look?: { name: string };
       };
-      if (!res.ok || !data.pack) {
+      if (!res.ok || !data.pack || !data.look) {
         setError(data.error ?? 'Import impossible.');
         setIssues(data.issues ?? []);
         return;
       }
-      setNotice(`« ${data.pack.name} » est ajouté. Il apparaît dans le choix du personnage du profil.`);
-      setFile(null);
-      setFileKey((k) => k + 1);
-      setName('');
-      setConsent(false);
+      setNotice(
+        adding
+          ? `Le look « ${data.look.name} » est ajouté à ${data.pack.name}. Il se choisit dans le profil.`
+          : `« ${data.pack.name} » est ajouté. Il apparaît dans le choix du personnage du profil.`,
+      );
+      resetForm();
       await refreshCharacterPacks();
       onChanged?.();
     } catch {
@@ -80,10 +101,26 @@ export function CharacterPacksAdmin({ onChanged }: { onChanged?: () => void }) {
     }
   }
 
-  async function remove(id: string, label: string) {
+  async function removeLook(packId: string, packName: string, lookId: string, lookLabel: string, lastLook: boolean) {
+    const message = lastLook
+      ? `Retirer le dernier look « ${lookLabel} » supprime aussi le personnage « ${packName} ». Continuer ?`
+      : `Retirer le look « ${lookLabel} » de « ${packName} » ?`;
+    if (!window.confirm(message)) return;
+    try {
+      await api(`/api/admin/character-packs/${encodeURIComponent(packId)}/looks/${encodeURIComponent(lookId)}`, {
+        method: 'DELETE',
+      });
+      await refreshCharacterPacks();
+      onChanged?.();
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  }
+
+  async function removePack(id: string, label: string) {
     if (
       !window.confirm(
-        `Supprimer le personnage « ${label} » ? Les joueurs qui l'ont choisi retrouvent le personnage dessiné.`,
+        `Supprimer le personnage « ${label} » et tous ses looks ? Les joueurs qui l'ont choisi retrouvent le personnage dessiné.`,
       )
     ) {
       return;
@@ -107,6 +144,17 @@ export function CharacterPacksAdmin({ onChanged }: { onChanged?: () => void }) {
 
       <div className="stack pack-admin-form">
         <label className="field">
+          <span>Ajouter à</span>
+          <select value={target} disabled={busy} onChange={(e) => setTarget(e.target.value)}>
+            <option value="">Un nouveau personnage</option>
+            {packs.map((pack) => (
+              <option key={pack.id} value={pack.id}>
+                Un look de {pack.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="field">
           <span>Fichier .zip</span>
           <input
             key={fileKey}
@@ -116,15 +164,32 @@ export function CharacterPacksAdmin({ onChanged }: { onChanged?: () => void }) {
             onChange={(e) => chooseFile(e.target.files?.[0] ?? null)}
           />
         </label>
+        {adding ? (
+          <p className="muted small">
+            Le look sera ajouté à <strong>{targetPack?.name ?? 'ce personnage'}</strong>.
+          </p>
+        ) : (
+          <label className="field">
+            <span>Nom du personnage</span>
+            <input
+              type="text"
+              value={name}
+              maxLength={60}
+              disabled={busy}
+              placeholder="Par exemple : Dewi Sri"
+              onChange={(e) => setName(e.target.value)}
+            />
+          </label>
+        )}
         <label className="field">
-          <span>Nom affiché</span>
+          <span>Nom du look</span>
           <input
             type="text"
-            value={name}
-            maxLength={60}
+            value={lookName}
+            maxLength={40}
             disabled={busy}
-            placeholder="Par exemple : Dewi Sri"
-            onChange={(e) => setName(e.target.value)}
+            placeholder={adding ? 'Par exemple : Fête' : 'Standard'}
+            onChange={(e) => setLookName(e.target.value)}
           />
         </label>
         <label className="pack-admin-consent">
@@ -141,7 +206,7 @@ export function CharacterPacksAdmin({ onChanged }: { onChanged?: () => void }) {
             disabled={busy || !file || !consent}
             onClick={() => void importPack()}
           >
-            {busy ? 'Import en cours…' : 'Importer le personnage'}
+            {busy ? 'Import en cours…' : adding ? 'Ajouter le look' : 'Importer le personnage'}
           </button>
         </div>
         {notice && <p className="notice">{notice}</p>}
@@ -166,19 +231,39 @@ export function CharacterPacksAdmin({ onChanged }: { onChanged?: () => void }) {
       )}
       <ul className="pack-admin-list">
         {packs.map((pack) => (
-          <li key={pack.id} className="pack-admin-item">
-            <span className="pack-admin-thumb">
-              <PackFigure pack={pack} framing="bust" />
-            </span>
-            <span className="pack-admin-name">
-              <strong>{pack.name}</strong>
-              <span className="muted small">
-                {Object.keys(pack.atlases).join(', ')} · identifiant {pack.id}
+          <li key={pack.id} className="pack-admin-item pack-admin-character">
+            <div className="pack-admin-head">
+              <span className="pack-admin-name">
+                <strong>{pack.name}</strong>
+                <span className="muted small">identifiant {pack.id}</span>
               </span>
-            </span>
-            <button type="button" className="btn ghost" disabled={busy} onClick={() => void remove(pack.id, pack.name)}>
-              Supprimer
-            </button>
+              <button
+                type="button"
+                className="btn ghost"
+                disabled={busy}
+                onClick={() => void removePack(pack.id, pack.name)}
+              >
+                Supprimer le personnage
+              </button>
+            </div>
+            <ul className="pack-admin-looks">
+              {pack.looks.map((look) => (
+                <li key={look.id} className="pack-admin-look">
+                  <span className="pack-admin-thumb">
+                    <PackFigure pack={pack} look={look} framing="bust" />
+                  </span>
+                  <span className="muted small">{look.name}</span>
+                  <button
+                    type="button"
+                    className="btn ghost"
+                    disabled={busy}
+                    onClick={() => void removeLook(pack.id, pack.name, look.id, look.name, pack.looks.length === 1)}
+                  >
+                    Retirer ce look
+                  </button>
+                </li>
+              ))}
+            </ul>
           </li>
         ))}
       </ul>

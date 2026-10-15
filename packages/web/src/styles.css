@@ -6637,3 +6637,26 @@ html:not([data-theme='dark']) .corner-drawer {
   margin-top: 0.25rem;
   flex: none;
 }
+.pack-admin-character {
+  flex-direction: column;
+  align-items: stretch;
+}
+.pack-admin-head {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+.pack-admin-looks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.4rem;
+}
+.pack-admin-look {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
