@@ -4,6 +4,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 
 ## Non publié
 
+## [0.8.0] - 2026-10-15
+
 ### Modifié
 - Écrans téléphone épurés : le nom, le bouton « Je suis prêt » ou le jeu restent en avant. Les options de l'appareil,
   « Comment jouer », le partage d'une place, la discussion et « Quitter la salle » sont dans le tiroir d'angle.
