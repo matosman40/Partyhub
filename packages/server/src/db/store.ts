@@ -326,7 +326,75 @@ export const MIGRATIONS: Migration[] = [
       `);
     },
   },
+  {
+    version: 11,
+    description:
+      'Banques de contenu de BOUM ! : entrées, statuts et auteurs (anonymisables à la suppression d’un compte)',
+    up(db) {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS boum_entries (
+          id          TEXT PRIMARY KEY,
+          type        TEXT NOT NULL,
+          level       TEXT NOT NULL,
+          text        TEXT NOT NULL,
+          answer      TEXT,
+          status      TEXT NOT NULL,
+          reason      TEXT,
+          author_id   TEXT,
+          author_name TEXT NOT NULL,
+          created_at  TEXT NOT NULL,
+          updated_at  TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS boum_entries_status ON boum_entries (status, type, level);
+      `);
+    },
+  },
 ];
+
+/** Entrée d'une banque BOUM ! telle qu'elle est stockée. */
+export interface BoumEntryRow {
+  id: string;
+  type: string;
+  level: string;
+  text: string;
+  answer: string | null;
+  status: string;
+  reason: string | null;
+  authorId: string | null;
+  authorName: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface BoumEntryDbRow {
+  id: string;
+  type: string;
+  level: string;
+  text: string;
+  answer: string | null;
+  status: string;
+  reason: string | null;
+  author_id: string | null;
+  author_name: string;
+  created_at: string;
+  updated_at: string;
+}
+
+function toBoumEntry(row: BoumEntryDbRow): BoumEntryRow {
+  return {
+    id: row.id,
+    type: row.type,
+    level: row.level,
+    text: row.text,
+    answer: row.answer,
+    status: row.status,
+    reason: row.reason,
+    authorId: row.author_id,
+    authorName: row.author_name,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
 
 /** Source GitHub d'un paquet : un dépôt, sa dernière release et l'état de la dernière vérification. */
 export interface PackageSourceRow {
@@ -587,6 +655,89 @@ export class Store {
         row.copiedHash,
         row.createdAt ?? new Date().toISOString(),
       );
+  }
+
+  /* Banques BOUM ! */
+
+  listBoumEntries(filter: { type?: string; level?: string; status?: string; q?: string } = {}): BoumEntryRow[] {
+    const where: string[] = [];
+    const params: string[] = [];
+    if (filter.type) {
+      where.push('type = ?');
+      params.push(filter.type);
+    }
+    if (filter.level) {
+      where.push('level = ?');
+      params.push(filter.level);
+    }
+    if (filter.status) {
+      where.push('status = ?');
+      params.push(filter.status);
+    }
+    if (filter.q) {
+      where.push("text LIKE ? ESCAPE '\\'");
+      params.push(`%${filter.q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`);
+    }
+    const clause = where.length > 0 ? `WHERE ${where.join(' AND ')}` : '';
+    const rows = this.db
+      .prepare(`SELECT * FROM boum_entries ${clause} ORDER BY created_at, id`)
+      .all(...params) as BoumEntryDbRow[];
+    return rows.map(toBoumEntry);
+  }
+
+  getBoumEntry(id: string): BoumEntryRow | undefined {
+    const row = this.db.prepare('SELECT * FROM boum_entries WHERE id = ?').get(id) as BoumEntryDbRow | undefined;
+    return row ? toBoumEntry(row) : undefined;
+  }
+
+  insertBoumEntries(rows: BoumEntryRow[]): void {
+    const insert = this.db.prepare(
+      `INSERT INTO boum_entries (id, type, level, text, answer, status, reason, author_id, author_name, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    );
+    this.db.transaction((items: BoumEntryRow[]) => {
+      for (const r of items) {
+        insert.run(
+          r.id,
+          r.type,
+          r.level,
+          r.text,
+          r.answer,
+          r.status,
+          r.reason,
+          r.authorId,
+          r.authorName,
+          r.createdAt,
+          r.updatedAt,
+        );
+      }
+    })(rows);
+  }
+
+  updateBoumEntry(row: BoumEntryRow): void {
+    this.db
+      .prepare(
+        `UPDATE boum_entries SET type = ?, level = ?, text = ?, answer = ?, status = ?, reason = ?, updated_at = ?
+         WHERE id = ?`,
+      )
+      .run(row.type, row.level, row.text, row.answer, row.status, row.reason, row.updatedAt, row.id);
+  }
+
+  setBoumStatus(ids: string[], status: string, reason: string | null, at: string): number {
+    const update = this.db.prepare('UPDATE boum_entries SET status = ?, reason = ?, updated_at = ? WHERE id = ?');
+    let changed = 0;
+    this.db.transaction((list: string[]) => {
+      for (const id of list) changed += update.run(status, reason, at, id).changes;
+    })(ids);
+    return changed;
+  }
+
+  boumCounts(): { type: string; status: string; count: number }[] {
+    return this.db.prepare('SELECT type, status, COUNT(*) AS count FROM boum_entries GROUP BY type, status').all() as {
+      type: string;
+      status: string;
+      count: number;
+    }[];
   }
 
   /** Jeux de cartes créés dans l'administration (définition au format JSON). */

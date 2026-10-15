@@ -37,7 +37,8 @@ export const FAMILY_COLORS: Record<Family | 'noir', string> = {
  * - `vrai_ou_faux` : chacun écrit une affirmation, puis tout le monde vote pour la vraie ;
  * - `detecteur` : un plaideur se défend, les autres le notent.
  */
-export type ModeKind = 'reponse' | 'chiffre' | 'ecriture_vote' | 'carte_vote' | 'vote_joueur' | 'vrai_ou_faux' | 'detecteur';
+export type ModeKind =
+  'reponse' | 'chiffre' | 'ecriture_vote' | 'carte_vote' | 'vote_joueur' | 'vrai_ou_faux' | 'detecteur';
 
 export type ModeId =
   | 'reponse_rapide'

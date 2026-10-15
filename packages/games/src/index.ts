@@ -16,6 +16,7 @@ import { rami51 } from './rami51/module.js';
 import { tarot } from './tarot/module.js';
 import { imiteMoi } from './imite-moi/module.js';
 import { banquise } from './banquise/module.js';
+import { boum } from './boum/module.js';
 
 /**
  * Registre explicite des jeux disponibles.
@@ -43,6 +44,7 @@ export const gameRegistry: GameModule[] = [
   tarot,
   imiteMoi,
   banquise,
+  boum,
 ];
 
 export function findGame(id: string): GameModule | undefined {
@@ -59,6 +61,35 @@ export { reflexe } from './reflexe/module.js';
 export { bombesParty } from './bombes-party/module.js';
 export { banquise, LEVEL_RULES as BANQUISE_LEVELS, LEVEL_COUNT as BANQUISE_LEVEL_COUNT } from './banquise/module.js';
 export type { BanquiseState, BanquiseSettings } from './banquise/module.js';
+export { boum, createBoum } from './boum/module.js';
+export type { BoumState, BoumSettings } from './boum/module.js';
+export { setBoumBank, currentBoumBank } from './boum/bank/registry.js';
+export type { BankSnapshot, BankSnapshotEntry } from './boum/bank/registry.js';
+export {
+  ANSWER_MAX_LENGTH,
+  BANK_TYPES,
+  BANK_TYPE_INFO,
+  LEVELS,
+  LEVEL_LABELS,
+  STATUSES,
+  STATUS_LABELS,
+  isBankType,
+  isLevel,
+  isStatus,
+} from './boum/bank/types.js';
+export type { BankType, EntryStatus, Level } from './boum/bank/types.js';
+export {
+  IMPORT_MAX_BYTES,
+  IMPORT_MAX_LINES,
+  duplicateKey,
+  forbiddenReason,
+  normalizeText,
+  parseBankText,
+  serializeBankEntries,
+  validateEntry,
+} from './boum/bank/validate.js';
+export type { ImportPreview, ValidEntry, ValidationResult, CandidateInput } from './boum/bank/validate.js';
+export { SEED_TEXT } from './boum/bank/seed.js';
 export {
   COLS as BANQUISE_COLS,
   ROWS as BANQUISE_ROWS,

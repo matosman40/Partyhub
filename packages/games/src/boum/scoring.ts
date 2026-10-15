@@ -27,7 +27,10 @@ export function quickPoints(orderOfCorrect: readonly string[]): Record<string, n
  * Combien ? : le plus proche de la réponse gagne 100, le second 50, le troisième 25.
  * Les égalités partagent les places occupées, et chacun reçoit le plus haut score de ces places.
  */
-export function closestPoints(guesses: readonly { id: string; value: number }[], answer: number): Record<string, number> {
+export function closestPoints(
+  guesses: readonly { id: string; value: number }[],
+  answer: number,
+): Record<string, number> {
   const points: Record<string, number> = {};
   const sorted = guesses
     .map((g) => ({ id: g.id, distance: Math.abs(g.value - answer) }))
@@ -76,10 +79,7 @@ export interface Standing {
  */
 export function rankStandings(standings: readonly Standing[]): (Standing & { rank: number })[] {
   const sorted = [...standings].sort(
-    (a, b) =>
-      b.points - a.points ||
-      b.fiveStars - a.fiveStars ||
-      a.name.localeCompare(b.name, 'fr'),
+    (a, b) => b.points - a.points || b.fiveStars - a.fiveStars || a.name.localeCompare(b.name, 'fr'),
   );
   const ranked: (Standing & { rank: number })[] = [];
   sorted.forEach((entry, index) => {

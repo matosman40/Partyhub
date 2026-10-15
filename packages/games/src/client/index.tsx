@@ -159,6 +159,14 @@ export const clientViews: Record<string, GameClientViews> = {
     ]);
     return { Settings: BanquiseSettings, Host: BanquiseHost, Player: BanquisePlayer };
   }),
+  boum: lazyViews(async () => {
+    const [{ BoumHost }, { BoumPlayer }, { BoumSettings }] = await Promise.all([
+      import('../boum/client/HostScreen.js'),
+      import('../boum/client/PlayerScreen.js'),
+      import('../boum/client/Settings.js'),
+    ]);
+    return { Settings: BoumSettings, Host: BoumHost, Player: BoumPlayer };
+  }),
   'cartes-couleurs': cardViews,
   'cartes-coco': cardViews,
   president: lazyViews(() => import('../president/client/index.js').then((m) => m.presidentViews)),

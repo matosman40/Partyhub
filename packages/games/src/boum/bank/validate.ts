@@ -87,6 +87,8 @@ export interface ValidEntry {
 
 export type ValidationResult = { ok: true; entry: ValidEntry } | { ok: false; reason: string };
 
+// Caractères de contrôle interdits dans un texte stocké : la classe de contrôle est voulue ici.
+// eslint-disable-next-line no-control-regex
 const CONTROL_CHARS = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/;
 const HTML_CHARS = /[<>]/;
 

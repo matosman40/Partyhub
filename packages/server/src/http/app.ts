@@ -14,6 +14,9 @@ import { resolveGame } from '../games-registry.js';
 import type { BoardGameService } from '../boards/service.js';
 import type { PackageSourceService } from '../sources/service.js';
 import type { CardGameService } from '../cards/service.js';
+import type { BoumBankService } from '../boum/service.js';
+import { IMPORT_MAX_BYTES, isBankType } from '@partyhub/games';
+import { z } from 'zod';
 import type { AssetService } from '../assets/service.js';
 import type { PackageService } from '../packages/service.js';
 import {
@@ -59,6 +62,8 @@ export interface AppDeps {
   hub: RealtimeHub;
   profiles: ProfileService;
   cardGames: CardGameService;
+  /** Banques de contenu de BOUM !. */
+  boumBank: BoumBankService;
   /** Jeux de plateau créés dans l'administration. */
   boardGames: BoardGameService;
   /** Sources GitHub des paquets .phgame. */
@@ -85,6 +90,7 @@ export function createApp(deps: AppDeps): express.Express {
     manager,
     profiles,
     cardGames,
+    boumBank,
     boardGames,
     packageSources,
     assets,
@@ -1125,6 +1131,112 @@ export function createApp(deps: AppDeps): express.Express {
     }
     store.saveScreenBackgrounds(parsed.data);
     res.json({ backgrounds: parsed.data });
+  });
+
+  /* Banques de contenu de BOUM ! : édition, statuts, import (aperçu puis confirmation) et export. */
+
+  const boumEntryBody = z.object({
+    type: z.string().max(40),
+    level: z.string().max(10),
+    text: z.string().max(400),
+    answer: z.string().max(200).nullable().optional(),
+  });
+  const boumStatusBody = z.object({
+    ids: z.array(z.string().min(1).max(64)).min(1).max(500),
+    status: z.enum(['valide', 'a_valider', 'retire']),
+    reason: z.string().max(200).nullable().optional(),
+  });
+  const boumTextBody = z.object({ text: z.string().max(IMPORT_MAX_BYTES) });
+  const boumImportBody = boumTextBody.extend({ validateNow: z.boolean().optional() });
+  const queryText = (value: unknown): string | undefined =>
+    typeof value === 'string' && value !== '' ? value.slice(0, 200) : undefined;
+
+  admin.get('/boum/entries', (req, res) => {
+    res.json({
+      entries: boumBank.list({
+        type: queryText(req.query.type),
+        level: queryText(req.query.level),
+        status: queryText(req.query.status),
+        q: queryText(req.query.q),
+      }),
+    });
+  });
+
+  admin.get('/boum/counts', (_req, res) => {
+    res.json(boumBank.counts());
+  });
+
+  admin.post('/boum/entries', (req, res) => {
+    const parsed = boumEntryBody.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      res.status(400).json({ error: 'Entrée invalide.' });
+      return;
+    }
+    const result = boumBank.create(parsed.data);
+    if (!result.ok) {
+      res.status(400).json({ error: result.error });
+      return;
+    }
+    res.status(201).json({ entry: result.value });
+  });
+
+  admin.put('/boum/entries/:id', (req, res) => {
+    const parsed = boumEntryBody.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      res.status(400).json({ error: 'Entrée invalide.' });
+      return;
+    }
+    const result = boumBank.update(req.params.id ?? '', parsed.data);
+    if (!result.ok) {
+      res.status(400).json({ error: result.error });
+      return;
+    }
+    res.json({ entry: result.value });
+  });
+
+  admin.post('/boum/entries/status', (req, res) => {
+    const parsed = boumStatusBody.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      res.status(400).json({ error: 'Sélection ou statut invalide.' });
+      return;
+    }
+    const result = boumBank.setStatus(parsed.data.ids, parsed.data.status, parsed.data.reason ?? null);
+    if (!result.ok) {
+      res.status(400).json({ error: result.error });
+      return;
+    }
+    res.json({ changed: result.value, counts: boumBank.counts() });
+  });
+
+  admin.post('/boum/import/preview', (req, res) => {
+    const parsed = boumTextBody.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      res.status(400).json({ error: 'Fichier trop volumineux (300 Ko maximum).' });
+      return;
+    }
+    res.json({ preview: boumBank.previewImport(parsed.data.text) });
+  });
+
+  admin.post('/boum/import', (req, res) => {
+    const parsed = boumImportBody.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      res.status(400).json({ error: 'Fichier trop volumineux (300 Ko maximum).' });
+      return;
+    }
+    const result = boumBank.commitImport(parsed.data.text, parsed.data.validateNow === true);
+    if (!result.ok) {
+      res.status(400).json({ error: result.error });
+      return;
+    }
+    res.json({ summary: result.value });
+  });
+
+  admin.get('/boum/export', (req, res) => {
+    const types = (queryText(req.query.types) ?? '').split(',').filter(isBankType);
+    const ids = (queryText(req.query.ids) ?? '').split(',').filter((id) => id !== '');
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="boum-banques.txt"');
+    res.send(boumBank.exportText({ types, ids }));
   });
 
   admin.put('/settings', (req, res) => {

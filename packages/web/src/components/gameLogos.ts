@@ -72,6 +72,15 @@ export const GAME_LOGOS: Record<string, LogoSpec> = {
     mark: 'arrows',
     tilt: -2,
   },
+  boum: {
+    lines: ['BOUM !'],
+    fill: '#ffe14d',
+    edge: '#ff3b1f',
+    ink: '#2a0a05',
+    sky: ['#ff7a1a', '#7a0c1e'],
+    mark: 'star',
+    tilt: -4,
+  },
   banquise: {
     lines: ['Banquise'],
     fill: '#eaf8ff',

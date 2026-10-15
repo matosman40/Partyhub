@@ -8,6 +8,7 @@ import type { ClientToServerEvents, ServerToClientEvents } from '@partyhub/share
 import { gameRegistry } from '@partyhub/games';
 import { resolveGame } from './games-registry.js';
 import { CardGameService } from './cards/service.js';
+import { BoumBankService } from './boum/service.js';
 import { BoardGameService } from './boards/service.js';
 import { PackageSourceService } from './sources/service.js';
 import { AssetService } from './assets/service.js';
@@ -85,6 +86,7 @@ export async function createServer(opts: ServerOptions): Promise<PartyServer> {
 
   const profiles = new ProfileService(store);
   const cardGames = new CardGameService(store);
+  const boumBank = new BoumBankService(store);
   const boardGames = new BoardGameService(store);
   const assets = new AssetService(store, config.dataDir, config.assetLimits);
   const mediaGames = new MediaQuizService(store, assets);
@@ -138,6 +140,7 @@ export async function createServer(opts: ServerOptions): Promise<PartyServer> {
     hub,
     profiles,
     cardGames,
+    boumBank,
     boardGames,
     packageSources,
     assets,

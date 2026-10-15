@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { MODES, MODE_BY_ID, type ModeId } from '../boum/modes.js';
-import { drawModes, eligibleModes, familiesOf, type CountValid } from '../boum/pool.js';
+import { drawModes, eligibleModes, type CountValid } from '../boum/pool.js';
 import { closestPoints, detectorPoints, quickPoints, rankStandings } from '../boum/scoring.js';
 
 /** Générateur déterministe (mulberry32) : mêmes tirages à chaque exécution. */
@@ -45,7 +45,9 @@ describe('Éligibilité', () => {
 
   it('exige 8 cartes réponse validées pour Main sale', () => {
     const fewCards: CountValid = (type) => (type === 'carte_reponse' ? 7 : 50);
-    expect(eligibleModes({ players: 4, pack: true, corse: false }, fewCards).map((m) => m.id)).not.toContain('main_sale');
+    expect(eligibleModes({ players: 4, pack: true, corse: false }, fewCards).map((m) => m.id)).not.toContain(
+      'main_sale',
+    );
   });
 
   it('compte les niveaux corsé et limite selon la salle', () => {

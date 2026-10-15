@@ -84,7 +84,8 @@ describe('Règles d’une entrée', () => {
   });
 
   it('exige un code pays de la liste pour les indices de pays', () => {
-    const p = (answer: string) => validateEntry({ type: 'pays_indice', level: 'doux', text: 'Sa capitale est Rome.', answer });
+    const p = (answer: string) =>
+      validateEntry({ type: 'pays_indice', level: 'doux', text: 'Sa capitale est Rome.', answer });
     expect(p('it').ok).toBe(true);
     expect(p('ZZ').ok).toBe(false);
   });
@@ -166,9 +167,20 @@ describe('Import d’un fichier texte', () => {
 describe('Types de banque', () => {
   it('connaît les types de la spécification', () => {
     const expected: BankType[] = [
-      'phrase_trous', 'carte_reponse', 'situation', 'sujet_epitaphe', 'situation_conseil', 'citation',
-      'question', 'question_chiffre', 'pays_indice', 'mot_secret', 'consigne_photo', 'theme_galerie',
-      'chanson', 'metier',
+      'phrase_trous',
+      'carte_reponse',
+      'situation',
+      'sujet_epitaphe',
+      'situation_conseil',
+      'citation',
+      'question',
+      'question_chiffre',
+      'pays_indice',
+      'mot_secret',
+      'consigne_photo',
+      'theme_galerie',
+      'chanson',
+      'metier',
     ];
     expect([...BANK_TYPES].sort()).toEqual([...expected].sort());
   });
