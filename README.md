@@ -133,6 +133,7 @@ la bonne réponse n'apparaît qu'à la révélation, et les réponses privées r
 | Variable | Défaut | Rôle |
 |---|---|---|
 | `PARTYHUB_PORT` | `8282` | Port publié sur la machine hôte (Compose) |
+| `PARTYHUB_HOST` | vide | Adresse du serveur pour le HTTPS du réseau local (surcouche `deploy/https`, voir [docs/HTTPS-LAN.md](docs/HTTPS-LAN.md)) |
 | `ADMIN_PASSWORD` | généré | Mot de passe de l'administration, prioritaire s'il est défini |
 | `LOG_LEVEL` | `info` | `fatal`, `error`, `warn`, `info`, `debug`, `trace` |
 | `COOKIE_SECURE` | `false` | `true` uniquement derrière un proxy HTTPS |

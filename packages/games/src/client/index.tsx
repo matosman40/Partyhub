@@ -20,6 +20,7 @@ export {
   useMediaPrefs,
   videoConstraints,
   EMPTY_MEDIA_PREFS,
+  MEDIA_PREFS_EVENT,
   MEDIA_PREFS_KEY,
 } from './media.js';
 export type { MediaPrefs } from './media.js';

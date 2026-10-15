@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   audioConstraints,
+  MEDIA_PREFS_EVENT,
   MEDIA_PREFS_KEY,
   parseMediaPrefs,
   readMediaPrefs,
@@ -74,7 +75,7 @@ describe('stockage des réglages', () => {
     expect(readMediaPrefs()).toEqual({ microphoneId: 'mic-9', cameraId: null });
   });
 
-  it('ne plante pas quand le stockage est refusé (navigation privée, données bloquées)', () => {
+  it('ne plante pas quand le stockage est refusé et garde le choix pour la page', () => {
     stubStorage({
       getItem: () => {
         throw new Error('SecurityError');
@@ -83,7 +84,17 @@ describe('stockage des réglages', () => {
         throw new Error('QuotaExceededError');
       },
     });
-    expect(readMediaPrefs()).toEqual({ microphoneId: null, cameraId: null });
     expect(() => saveMediaPrefs({ microphoneId: 'mic-1', cameraId: 'cam-1' })).not.toThrow();
+    expect(readMediaPrefs()).toEqual({ microphoneId: 'mic-1', cameraId: 'cam-1' });
+  });
+
+  it('diffuse chaque écriture dans la page pour que les composants restent d’accord', () => {
+    const target = new EventTarget();
+    vi.stubGlobal('window', target);
+    vi.stubGlobal('localStorage', { getItem: () => null, setItem: () => undefined });
+    const received: unknown[] = [];
+    target.addEventListener(MEDIA_PREFS_EVENT, (e) => received.push((e as CustomEvent).detail));
+    saveMediaPrefs({ microphoneId: 'mic-2', cameraId: null });
+    expect(received).toEqual([{ microphoneId: 'mic-2', cameraId: null }]);
   });
 });

@@ -29,20 +29,30 @@ export function parseMediaPrefs(raw: string | null): MediaPrefs {
   }
 }
 
+/** Dernière valeur connue : sert si le stockage est refusé (navigation privée, données bloquées). */
+let lastKnown: MediaPrefs = EMPTY_MEDIA_PREFS;
+
+/** Diffusé dans la page à chaque écriture, pour que tous les composants restent d'accord. */
+export const MEDIA_PREFS_EVENT = 'ph:media-prefs';
+
 export function readMediaPrefs(): MediaPrefs {
   try {
-    return parseMediaPrefs(localStorage.getItem(MEDIA_PREFS_KEY));
+    lastKnown = parseMediaPrefs(localStorage.getItem(MEDIA_PREFS_KEY));
   } catch {
-    // Stockage refusé (navigation privée, données bloquées) : appareil par défaut.
-    return EMPTY_MEDIA_PREFS;
+    // Stockage refusé : on garde la dernière valeur connue de cette page.
   }
+  return lastKnown;
 }
 
 export function saveMediaPrefs(prefs: MediaPrefs): void {
+  lastKnown = prefs;
   try {
     localStorage.setItem(MEDIA_PREFS_KEY, JSON.stringify(prefs));
   } catch {
     // Le choix vaut alors pour cette page seulement.
+  }
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent<MediaPrefs>(MEDIA_PREFS_EVENT, { detail: prefs }));
   }
 }
 
@@ -87,20 +97,22 @@ export function useMediaPrefs(): [MediaPrefs, (patch: Partial<MediaPrefs>) => vo
   const [prefs, setPrefs] = useState<MediaPrefs>(readMediaPrefs);
 
   useEffect(() => {
+    // Changement dans la page (autre composant) ou dans un autre onglet.
+    const onLocal = (event: Event) => setPrefs((event as CustomEvent<MediaPrefs>).detail);
     const onStorage = (event: StorageEvent) => {
       if (event.key === MEDIA_PREFS_KEY) setPrefs(parseMediaPrefs(event.newValue));
     };
+    window.addEventListener(MEDIA_PREFS_EVENT, onLocal);
     window.addEventListener('storage', onStorage);
-    return () => window.removeEventListener('storage', onStorage);
+    return () => {
+      window.removeEventListener(MEDIA_PREFS_EVENT, onLocal);
+      window.removeEventListener('storage', onStorage);
+    };
   }, []);
 
+  // Part de la valeur enregistrée (et non de l'état local) : aucun choix précédent n'est écrasé.
   const update = useCallback((patch: Partial<MediaPrefs>) => {
-    setPrefs((previous) => {
-      // L'enregistrement est idempotent : sans effet de bord visible si React rejoue ce calcul.
-      const next = { ...previous, ...patch };
-      saveMediaPrefs(next);
-      return next;
-    });
+    saveMediaPrefs({ ...readMediaPrefs(), ...patch });
   }, []);
 
   return [prefs, update];
