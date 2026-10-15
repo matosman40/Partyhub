@@ -4,6 +4,11 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 
 ## Non publié
 
+### Ajouté
+- Personnages illustrés : un pack de sprites (zip avec planches PNG et JSON) s'importe dans l'administration, avec un
+  accord obligatoire de la personne représentée. Il se choisit dans le profil, à la place du personnage dessiné, et
+  s'affiche dans les avatars, la salle et l'éditeur. Format et procédure : `docs/PERSONNAGES-PACK.md`.
+
 ### Corrigé
 - Image Docker : le serveur ne démarrait pas (« Cannot find package 'pino' ») et CasaOS affichait « container partyhub
   is unhealthy ». Le Dockerfile copie maintenant les dépendances propres aux paquets `shared`, `games` et `server`.

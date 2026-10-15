@@ -7,6 +7,7 @@ import { CardGamesAdmin } from '../admin/CardGamesAdmin.js';
 import { BoardGamesAdmin } from '../admin/BoardGamesAdmin.js';
 import { PackagesAdmin } from '../admin/PackagesAdmin.js';
 import { PackageSourcesAdmin } from '../admin/PackageSourcesAdmin.js';
+import { CharacterPacksAdmin } from '../admin/CharacterPacksAdmin.js';
 import { AssetLibrary } from '../admin/AssetLibrary.js';
 import { MediaGamesAdmin } from '../admin/MediaGamesAdmin.js';
 import { GameDetailsEditor } from '../admin/GameDetailsEditor.js';
@@ -449,6 +450,11 @@ export function AdminPage() {
         <PackagesAdmin onChanged={load} />
         <h3>Sources GitHub</h3>
         <PackageSourcesAdmin onChanged={load} />
+      </section>
+
+      <section className="card stack">
+        <h2>Personnages illustrés (zip)</h2>
+        <CharacterPacksAdmin onChanged={load} />
       </section>
 
       <section className="card stack">

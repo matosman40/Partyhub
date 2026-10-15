@@ -1,5 +1,7 @@
 import { useId } from 'react';
 import { characterColors, type CharacterMood, type CharacterSpec } from '@partyhub/shared';
+import { usePackInfo } from './character-packs.js';
+import { PackFigure } from './character-pack-figure.js';
 
 /**
  * Personnage dessiné en SVG, d'après le rig validé : un corps articulé (bras, jambes, tête)
@@ -408,7 +410,8 @@ const FRAMES = {
   bust: { viewBox: '10 -46 200 200', ratio: 1 },
 } as const;
 
-export function Character({ spec, mood = 'idle', framing = 'full', label, className }: CharacterProps) {
+/** Personnage dessiné (listes fermées). Le point d'entrée public est `Character`, qui gère aussi les packs. */
+function DrawnCharacter({ spec, mood = 'idle', framing = 'full', label, className }: CharacterProps) {
   const uid = useId().replace(/[^a-zA-Z0-9]/g, '');
   const c = characterColors(spec);
   const P = POSES[mood];
@@ -585,4 +588,24 @@ function shade(hex: string, factor: number): string {
   const h = hex.replace('#', '');
   const c = (i: number) => Math.max(0, Math.min(255, Math.round(parseInt(h.slice(i, i + 2), 16) * factor)));
   return `#${[c(0), c(2), c(4)].map((v) => v.toString(16).padStart(2, '0')).join('')}`;
+}
+
+/**
+ * Personnage affiché partout (avatars, éditeur, vues de jeu). Si le joueur a choisi un pack de sprites
+ * déjà chargé, son sprite est montré ; sinon le personnage dessiné.
+ */
+export function Character(props: CharacterProps) {
+  const pack = usePackInfo(props.spec.pack);
+  if (pack) {
+    return (
+      <PackFigure
+        pack={pack}
+        mood={props.mood}
+        framing={props.framing}
+        label={props.label}
+        className={props.className}
+      />
+    );
+  }
+  return <DrawnCharacter {...props} />;
 }

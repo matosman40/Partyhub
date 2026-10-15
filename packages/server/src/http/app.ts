@@ -43,6 +43,7 @@ import type { RoomManager } from '../rooms/manager.js';
 import type { RealtimeHub } from '../realtime/hub.js';
 import { ProfileError, type ProfileService } from '../profiles/service.js';
 import { type DbBackupScheduler, listDbBackups } from '../db/backup.js';
+import type { CharacterPackService } from '../characters/packs.js';
 
 export interface AppDeps {
   config: AppConfig;
@@ -60,6 +61,8 @@ export interface AppDeps {
   mediaGames: MediaQuizService;
   /** Paquets .phgame installés (jeux déclaratifs). */
   packages: PackageService;
+  /** Packs de personnages (sprites) importés dans l'administration. */
+  characterPacks: CharacterPackService;
   /** Sauvegardes automatiques de la base. Absent = fonction non configurée. */
   dbBackups?: DbBackupScheduler;
 }
@@ -82,6 +85,7 @@ export function createApp(deps: AppDeps): express.Express {
     mediaGames,
     dbBackups,
     packages,
+    characterPacks,
   } = deps;
   const app = express();
   // Sessions d'administration stockées en base : elles survivent à un redémarrage.
@@ -275,6 +279,10 @@ export function createApp(deps: AppDeps): express.Express {
       return;
     }
     const { displayName, avatarHue, avatarEmoji, avatarImage, avatarShared, avatarCharacter } = parsed.data;
+    if (avatarCharacter?.pack && !characterPacks.exists(avatarCharacter.pack)) {
+      res.status(400).json({ error: 'Ce personnage n’existe plus. Choisissez-en un autre.' });
+      return;
+    }
     const profileId = profileOf(req);
     const profile = profiles.update(profileId, {
       displayName,
@@ -311,6 +319,23 @@ export function createApp(deps: AppDeps): express.Express {
   });
 
   api.use('/profiles', profileRoutes);
+
+  /** Packs de personnages (sprites) : liste publique et planches PNG. Revalidées à chaque chargement. */
+  api.get('/character-packs', (_req, res) => {
+    res.json({ packs: characterPacks.list() });
+  });
+
+  api.get('/character-packs/:id/atlas/:file', (req, res) => {
+    const match = /^(visages|poses|marche)\.png$/.exec(req.params.file ?? '');
+    const data = match ? characterPacks.atlasFile(req.params.id ?? '', match[1] ?? '') : null;
+    if (!data) {
+      res.status(404).json({ error: 'Planche introuvable.' });
+      return;
+    }
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.send(data);
+  });
 
   /** Image de profil : servie à part pour ne pas alourdir les vues de salle. */
   /** Fichiers de la médiathèque (audio, vidéo, image). Identifiants aléatoires : contenu immuable. */
@@ -629,6 +654,31 @@ export function createApp(deps: AppDeps): express.Express {
   /** Paquets .phgame : liste, envoi du fichier brut, activation et suppression. */
   admin.get('/packages', (_req, res) => {
     res.json({ packages: packages.list() });
+  });
+
+  /** Packs de personnages : import d'un zip (accord de la personne représentée obligatoire) et suppression. */
+  admin.post('/character-packs', express.raw({ type: () => true, limit: '9mb' }), (req, res) => {
+    const body = req.body as unknown;
+    if (!Buffer.isBuffer(body) || body.length === 0) {
+      res.status(400).json({ error: 'Aucun fichier reçu.' });
+      return;
+    }
+    const name = typeof req.query.nom === 'string' ? req.query.nom : '';
+    const consent = req.query.confirme === '1';
+    const result = characterPacks.install(body, { name, consent });
+    if (!result.ok) {
+      res.status(result.status).json({ error: result.error, issues: result.issues ?? [] });
+      return;
+    }
+    res.status(201).json({ ok: true, pack: result.pack });
+  });
+
+  admin.delete('/character-packs/:id', (req, res) => {
+    if (!characterPacks.remove(req.params.id ?? '')) {
+      res.status(404).json({ error: 'Personnage inconnu.' });
+      return;
+    }
+    res.json({ ok: true });
   });
 
   admin.post('/packages', express.raw({ type: () => true, limit: '16mb' }), (req, res) => {

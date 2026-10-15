@@ -6580,3 +6580,60 @@ html:not([data-theme='dark']) .corner-drawer {
     transition: none;
   }
 }
+
+/* Personnages illustrés (packs de sprites) */
+.chara-pack {
+  /* La planche entière est chargée : seule la case doit rester visible, et ne pas capter les clics. */
+  overflow: hidden;
+  pointer-events: none;
+}
+.chip-pack {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.chara-pack-thumb {
+  display: inline-block;
+  width: 2.2rem;
+  height: 2.2rem;
+  flex: none;
+}
+.chara-pack-thumb svg {
+  height: 100%;
+  width: auto;
+}
+.pack-admin-form {
+  max-width: 36rem;
+}
+.pack-admin-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.6rem;
+}
+.pack-admin-item {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+.pack-admin-thumb {
+  width: 3.5rem;
+  flex: none;
+}
+.pack-admin-name {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 10rem;
+}
+.pack-admin-consent {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+}
+.pack-admin-consent input {
+  margin-top: 0.25rem;
+  flex: none;
+}

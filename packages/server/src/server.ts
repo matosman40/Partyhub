@@ -1,3 +1,4 @@
+import { CharacterPackService } from './characters/packs.js';
 import { randomBytes } from 'node:crypto';
 import { writeFileSync } from 'node:fs';
 import { createServer as createHttpServer, type Server as HttpServer } from 'node:http';
@@ -89,6 +90,7 @@ export async function createServer(opts: ServerOptions): Promise<PartyServer> {
   const mediaGames = new MediaQuizService(store, assets);
   const packages = new PackageService(store, config.dataDir);
   const packageSources = new PackageSourceService(store, packages, { token: config.githubToken });
+  const characterPacks = new CharacterPackService(store.db);
   const hub = new RealtimeHub(compileTrustProxy(config.trustProxy ?? 'loopback'), opts.joinThrottle);
   const manager = new RoomManager(
     {
@@ -141,6 +143,7 @@ export async function createServer(opts: ServerOptions): Promise<PartyServer> {
     assets,
     mediaGames,
     packages,
+    characterPacks,
     dbBackups,
   });
   dbBackups?.start();

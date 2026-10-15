@@ -8,6 +8,10 @@ export { AvatarsContext, MoodsContext } from './avatar-context.js';
 export type { AvatarData } from './avatar-context.js';
 export { Character } from './character.js';
 export type { CharacterProps } from './character.js';
+export { PackFigure, packAtlasUrl, PACK_BUST_FACE, PACK_FULL_POSE } from './character-pack-figure.js';
+export type { PackFigureProps } from './character-pack-figure.js';
+export { refreshCharacterPacks, useCharacterPacks, usePackInfo } from './character-packs.js';
+export type { CharacterPackState } from './character-packs.js';
 export { useWakeLock, vibrate, canVibrate } from './device.js';
 export {
   audioConstraints,

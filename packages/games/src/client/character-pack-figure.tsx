@@ -1,0 +1,81 @@
+import type { CharacterMood, CharacterPackAtlasName, CharacterPackInfo } from '@partyhub/shared';
+
+/**
+ * Affichage d'un pack de sprites. La case de la planche est découpée par un viewBox SVG : le dessin
+ * se redimensionne comme le personnage dessiné (même balise racine, même ratio).
+ *
+ * Correspondance attitude → case, selon les noms proposés dans le pack (voir docs/PERSONNAGES-PACK.md).
+ * Une case absente retombe sur la case par défaut de la planche.
+ */
+
+/** Portrait (avatars) : planche « visages ». */
+export const PACK_BUST_FACE: Record<CharacterMood, string> = {
+  idle: 'neutre',
+  joy: 'tres_joyeuse',
+  sad: 'triste',
+  wave: 'clin_doeil',
+  dance: 'contente',
+};
+
+/** Corps entier : planche « poses ». */
+export const PACK_FULL_POSE: Record<CharacterMood, string> = {
+  idle: 'repos',
+  joy: 'joie',
+  sad: 'triste',
+  wave: 'coucou',
+  dance: 'victoire',
+};
+
+const DEFAULT_CASE: Record<CharacterPackAtlasName, string> = { visages: 'neutre', poses: 'repos', marche: 'face1' };
+
+/** Adresse PNG d'une planche de pack. Les planches changent peu : le navigateur revalide à chaque affichage. */
+export function packAtlasUrl(id: string, atlas: CharacterPackAtlasName): string {
+  return `/api/character-packs/${encodeURIComponent(id)}/atlas/${atlas}.png`;
+}
+
+export interface PackFigureProps {
+  pack: CharacterPackInfo;
+  mood?: CharacterMood;
+  framing?: 'full' | 'bust';
+  label?: string;
+  className?: string;
+}
+
+export function PackFigure({ pack, mood = 'idle', framing = 'full', label, className }: PackFigureProps) {
+  const wantsBust = framing === 'bust';
+  const atlasName: CharacterPackAtlasName | null = wantsBust
+    ? pack.atlases.visages
+      ? 'visages'
+      : pack.atlases.poses
+        ? 'poses'
+        : null
+    : pack.atlases.poses
+      ? 'poses'
+      : pack.atlases.visages
+        ? 'visages'
+        : null;
+  const atlas = atlasName ? pack.atlases[atlasName] : undefined;
+  if (!atlasName || !atlas) return null;
+
+  const wanted = atlasName === 'visages' ? PACK_BUST_FACE[mood] : PACK_FULL_POSE[mood];
+  const image =
+    atlas.images.find((img) => img.name === wanted) ??
+    atlas.images.find((img) => img.name === DEFAULT_CASE[atlasName]) ??
+    atlas.images[0];
+  if (!image) return null;
+
+  return (
+    <svg
+      className={`chara chara--${mood} chara-pack${className ? ` ${className}` : ''}`}
+      viewBox={`${image.x} ${image.y} ${image.w} ${image.h}`}
+      style={{ width: '100%', height: 'auto', display: 'block', aspectRatio: `${image.w} / ${image.h}` }}
+      role={label ? 'img' : undefined}
+      aria-label={label}
+      aria-hidden={label ? undefined : true}
+      focusable="false"
+      data-pack={pack.id}
+    >
+      <image href={packAtlasUrl(pack.id, atlasName)} x={0} y={0} width={atlas.width} height={atlas.height} />
+    </svg>
+  );
+}

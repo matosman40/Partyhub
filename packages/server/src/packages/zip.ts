@@ -22,6 +22,11 @@ export interface ZipReadLimits {
   /** Rapport maximal taille décompressée / compressée, vérifié au-delà de `ratioCheckBytes`. */
   maxRatio: number;
   ratioCheckBytes: number;
+  /**
+   * Accepte les entrées de dossier (« dossier/ ») que créent Finder et l'Explorateur. Refusé par défaut
+   * (paquets de jeux) ; les dossiers sont alors simplement ignorés par l'appelant.
+   */
+  allowDirectories?: boolean;
 }
 
 const SIG_EOCD = 0x06054b50;
@@ -114,12 +119,13 @@ export function readZip(
     if (method !== 0 && method !== 8) throw new ZipError(`« ${name} » utilise une compression non prise en charge.`);
     if (csize === 0xffffffff || usize === 0xffffffff)
       throw new ZipError('Les archives ZIP64 ne sont pas prises en charge.');
-    if (name.endsWith('/'))
+    if (name.endsWith('/') && !limits.allowDirectories)
       throw new ZipError(`Dossier « ${name} » : les dossiers ne sont pas autorisés dans un paquet.`);
     const mode = externalAttr >>> 16;
     if (mode !== 0 && (mode & MODE_TYPE_MASK) === MODE_SYMLINK)
       throw new ZipError(`« ${name} » est un lien symbolique : refusé.`);
-    if (mode !== 0 && (mode & MODE_TYPE_MASK) !== 0 && (mode & MODE_TYPE_MASK) !== MODE_REGULAR) {
+    const isDirectory = name.endsWith('/') && !!limits.allowDirectories;
+    if (!isDirectory && mode !== 0 && (mode & MODE_TYPE_MASK) !== 0 && (mode & MODE_TYPE_MASK) !== MODE_REGULAR) {
       throw new ZipError(`« ${name} » n’est pas un fichier ordinaire.`);
     }
     validateName(name);

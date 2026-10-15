@@ -296,6 +296,26 @@ export const MIGRATIONS: Migration[] = [
       }
     },
   },
+  {
+    version: 10,
+    description: 'Packs de personnages (sprites importés en zip) : métadonnées et fichiers PNG/JSON',
+    up(db) {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS character_packs (
+          id         TEXT PRIMARY KEY,
+          name       TEXT NOT NULL,
+          meta       TEXT NOT NULL,
+          created_at TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS character_pack_files (
+          pack_id TEXT NOT NULL REFERENCES character_packs(id) ON DELETE CASCADE,
+          atlas   TEXT NOT NULL,
+          data    BLOB NOT NULL,
+          PRIMARY KEY (pack_id, atlas)
+        );
+      `);
+    },
+  },
 ];
 
 /** Source GitHub d'un paquet : un dépôt, sa dernière release et l'état de la dernière vérification. */

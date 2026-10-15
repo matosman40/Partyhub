@@ -46,6 +46,44 @@ export interface CharacterSpec {
   hair: number;
   hairColor: number;
   accessory: number;
+  /**
+   * Identifiant d'un pack de sprites importé dans l'administration. Absent ou vide : le personnage
+   * dessiné ci-dessus est utilisé. Un pack supprimé retombe sur le personnage dessiné.
+   */
+  pack?: string | null;
+}
+
+/** Identifiant d'un pack : minuscules, chiffres et tirets (le même que dans l'URL). */
+export const CHARACTER_PACK_ID = /^[a-z0-9][a-z0-9-]{1,47}$/;
+
+/** Planches reconnues dans un pack : visages (portraits), poses (corps entier), marche (4 images par direction). */
+export const CHARACTER_PACK_ATLASES = ['visages', 'poses', 'marche'] as const;
+export type CharacterPackAtlasName = (typeof CHARACTER_PACK_ATLASES)[number];
+
+export interface CharacterPackImage {
+  name: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  pivot: { x: number; y: number };
+}
+
+export interface CharacterPackAtlas {
+  width: number;
+  height: number;
+  cell: { w: number; h: number };
+  columns: number;
+  rows: number;
+  images: CharacterPackImage[];
+}
+
+/** Pack de personnage tel que le reçoivent les pages (sans les fichiers, servis à part). */
+export interface CharacterPackInfo {
+  id: string;
+  name: string;
+  createdAt: string;
+  atlases: Partial<Record<CharacterPackAtlasName, CharacterPackAtlas>>;
 }
 
 const index = (max: number) =>
@@ -61,6 +99,7 @@ export const characterSchema = z.object({
   hair: index(CHARACTER_HAIR_STYLES.length),
   hairColor: index(CHARACTER_HAIR_COLORS.length),
   accessory: index(CHARACTER_ACCESSORIES.length),
+  pack: z.string().regex(CHARACTER_PACK_ID).nullable().optional(),
 });
 
 /** Personnage généré pour un texte donné (pseudo) : même pseudo, même personnage partout. */

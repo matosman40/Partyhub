@@ -11,7 +11,7 @@ import {
   type CharacterSpec,
   type HairStyle,
 } from '@partyhub/shared';
-import { Character } from '@partyhub/games/client';
+import { Character, PackFigure, useCharacterPacks } from '@partyhub/games/client';
 
 /** Noms affichés pour chaque choix. Les clés sont les valeurs de la liste partagée. */
 const BODY_NAMES: Record<string, string> = {
@@ -88,6 +88,9 @@ export function CharacterEditor({
   onChange: (spec: CharacterSpec) => void;
 }) {
   const [mood, setMood] = useState<CharacterMood>('idle');
+  const packs = useCharacterPacks();
+  // Un pack supprimé depuis ne s'affiche plus : le personnage dessiné reprend la main.
+  const activePack = !!spec.pack && packs.packs.some((pack) => pack.id === spec.pack);
   const pick = (patch: Partial<CharacterSpec>) => onChange({ ...spec, ...patch });
 
   return (
@@ -106,79 +109,112 @@ export function CharacterEditor({
       </div>
 
       <div className="chara-options">
-        <Group label="Couleur du corps">
-          {CHARACTER_BODY_COLORS.map((color, i) => (
+        <Group label="Personnage">
+          <button
+            type="button"
+            className="chip"
+            aria-pressed={!activePack}
+            disabled={busy}
+            onClick={() => pick({ pack: null })}
+          >
+            Personnage dessiné
+          </button>
+          {packs.packs.map((pack) => (
             <button
-              key={color}
+              key={pack.id}
               type="button"
-              className="swatch"
-              style={{ background: color }}
-              aria-pressed={spec.body === i}
-              aria-label={BODY_NAMES[color] ?? color}
-              title={BODY_NAMES[color]}
+              className="chip chip-pack"
+              aria-pressed={spec.pack === pack.id}
               disabled={busy}
-              onClick={() => pick({ body: i })}
-            />
-          ))}
-        </Group>
-        <Group label="Teint">
-          {CHARACTER_SKIN_TONES.map((color, i) => (
-            <button
-              key={color}
-              type="button"
-              className="swatch"
-              style={{ background: color }}
-              aria-pressed={spec.skin === i}
-              aria-label={SKIN_NAMES[color] ?? color}
-              title={SKIN_NAMES[color]}
-              disabled={busy}
-              onClick={() => pick({ skin: i })}
-            />
-          ))}
-        </Group>
-        <Group label="Coiffure">
-          {CHARACTER_HAIR_STYLES.map((style, i) => (
-            <button
-              key={style}
-              type="button"
-              className="chip"
-              aria-pressed={spec.hair === i}
-              disabled={busy}
-              onClick={() => pick({ hair: i })}
+              onClick={() => pick({ pack: pack.id })}
             >
-              {HAIR_NAMES[style]}
+              <span className="chara-pack-thumb">
+                <PackFigure pack={pack} framing="bust" />
+              </span>
+              {pack.name}
             </button>
           ))}
+          {packs.status === 'error' && packs.packs.length === 0 && (
+            <p className="muted small">Les personnages illustrés ne sont pas disponibles pour le moment.</p>
+          )}
         </Group>
-        <Group label="Couleur des cheveux">
-          {CHARACTER_HAIR_COLORS.map((color, i) => (
-            <button
-              key={color}
-              type="button"
-              className="swatch"
-              style={{ background: color }}
-              aria-pressed={spec.hairColor === i}
-              aria-label={HAIR_COLOR_NAMES[color] ?? color}
-              title={HAIR_COLOR_NAMES[color]}
-              disabled={busy}
-              onClick={() => pick({ hairColor: i })}
-            />
-          ))}
-        </Group>
-        <Group label="Accessoire">
-          {CHARACTER_ACCESSORIES.map((acc, i) => (
-            <button
-              key={acc}
-              type="button"
-              className="chip"
-              aria-pressed={spec.accessory === i}
-              disabled={busy}
-              onClick={() => pick({ accessory: i })}
-            >
-              {ACCESSORY_NAMES[acc]}
-            </button>
-          ))}
-        </Group>
+        {!activePack && (
+          <>
+            <Group label="Couleur du corps">
+              {CHARACTER_BODY_COLORS.map((color, i) => (
+                <button
+                  key={color}
+                  type="button"
+                  className="swatch"
+                  style={{ background: color }}
+                  aria-pressed={spec.body === i}
+                  aria-label={BODY_NAMES[color] ?? color}
+                  title={BODY_NAMES[color]}
+                  disabled={busy}
+                  onClick={() => pick({ body: i })}
+                />
+              ))}
+            </Group>
+            <Group label="Teint">
+              {CHARACTER_SKIN_TONES.map((color, i) => (
+                <button
+                  key={color}
+                  type="button"
+                  className="swatch"
+                  style={{ background: color }}
+                  aria-pressed={spec.skin === i}
+                  aria-label={SKIN_NAMES[color] ?? color}
+                  title={SKIN_NAMES[color]}
+                  disabled={busy}
+                  onClick={() => pick({ skin: i })}
+                />
+              ))}
+            </Group>
+            <Group label="Coiffure">
+              {CHARACTER_HAIR_STYLES.map((style, i) => (
+                <button
+                  key={style}
+                  type="button"
+                  className="chip"
+                  aria-pressed={spec.hair === i}
+                  disabled={busy}
+                  onClick={() => pick({ hair: i })}
+                >
+                  {HAIR_NAMES[style]}
+                </button>
+              ))}
+            </Group>
+            <Group label="Couleur des cheveux">
+              {CHARACTER_HAIR_COLORS.map((color, i) => (
+                <button
+                  key={color}
+                  type="button"
+                  className="swatch"
+                  style={{ background: color }}
+                  aria-pressed={spec.hairColor === i}
+                  aria-label={HAIR_COLOR_NAMES[color] ?? color}
+                  title={HAIR_COLOR_NAMES[color]}
+                  disabled={busy}
+                  onClick={() => pick({ hairColor: i })}
+                />
+              ))}
+            </Group>
+            <Group label="Accessoire">
+              {CHARACTER_ACCESSORIES.map((acc, i) => (
+                <button
+                  key={acc}
+                  type="button"
+                  className="chip"
+                  aria-pressed={spec.accessory === i}
+                  disabled={busy}
+                  onClick={() => pick({ accessory: i })}
+                >
+                  {ACCESSORY_NAMES[acc]}
+                </button>
+              ))}
+            </Group>
+          </>
+        )}
       </div>
     </div>
   );
