@@ -36,10 +36,19 @@ export const FAMILY_COLORS: Record<Family | 'noir', string> = {
  * - `vote_joueur` : tout le monde vote pour un joueur ;
  * - `vrai_ou_faux` : chacun écrit une affirmation, puis tout le monde vote pour la vraie ;
  * - `detecteur` : un plaideur se défend, les autres le notent ;
- * - `mime` : un joueur mime un métier sans parler, les autres tapent le nom du métier.
+ * - `mime` : un joueur mime un métier sans parler, les autres tapent le nom du métier ;
+ * - `pays` : chacun choisit un pays sur la carte, selon la distance au bon pays.
  */
 export type ModeKind =
-  'reponse' | 'chiffre' | 'ecriture_vote' | 'carte_vote' | 'vote_joueur' | 'vrai_ou_faux' | 'detecteur' | 'mime';
+  | 'reponse'
+  | 'chiffre'
+  | 'ecriture_vote'
+  | 'carte_vote'
+  | 'vote_joueur'
+  | 'vrai_ou_faux'
+  | 'detecteur'
+  | 'mime'
+  | 'pays';
 
 /** Durée du mime, en secondes (spécification : le mimeur a 60 secondes). */
 export const MIME_SECONDS = 60;
@@ -55,7 +64,8 @@ export type ModeId =
   | 'pire_conseil'
   | 'le_plus_probable'
   | 'detecteur'
-  | 'mime_metier';
+  | 'mime_metier'
+  | 'ou_est_ce';
 
 export interface ModeNeed {
   type: BankType;
@@ -189,6 +199,16 @@ export const MODES: readonly ModeDef[] = [
     pack: false,
     minPlayers: 3,
     needs: [{ type: 'metier', minValid: 5 }],
+  },
+  {
+    id: 'ou_est_ce',
+    title: 'Où est-ce ?',
+    brief: 'Indice donné : choisissez le pays sur la liste. Plus vous êtes près, plus vous gagnez.',
+    family: 'carte',
+    kind: 'pays',
+    pack: false,
+    minPlayers: 2,
+    needs: [{ type: 'pays_indice', minValid: 5 }],
   },
 ];
 

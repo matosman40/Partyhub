@@ -13,7 +13,8 @@ Identifiant `boum`, catégorie quiz, de 2 à 12 joueurs.
 | Banques de contenu (table, amorce, validation, import et export `.txt`, routes d'administration) | fait |
 | Onglet « Banques BOUM » de l'administration (compteurs, filtres, édition, validation en lot, import avec aperçu, export), file « Propositions », « Proposer une carte » dans le profil avec quotas | fait |
 | Mime le métier (téléphone : le mimeur voit le métier sur son seul téléphone, les autres tapent le nom ; 60 secondes ; barème de Devine la chanson) | fait |
-| Modes photo, son et téléphone restants (Où est-ce ?, Devine la chanson, Le mot secret, Photo-défi, Grimace, Galerie du thème, Son mystère, Imite le cri, Le plus fort, Qui fait ce bruit ?, Rythme) | à faire |
+| Où est-ce ? (carte du monde, choix du pays dans une liste, barème par distance jusqu'à 2 000 km ; données générées par `scripts/boum/generate-countries.mjs`, voir NOTICE.md) | fait |
+| Modes restants : Devine la chanson, Le mot secret, Photo-défi, Grimace, Galerie du thème, Rythme, Son mystère, Imite le cri, Le plus fort, Qui fait ce bruit ? | à faire |
 | Formats (équipes, championnat) et super-pouvoirs | à faire |
 | Effets de mise en scène de l'écran principal | à faire |
 

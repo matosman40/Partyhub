@@ -7019,3 +7019,27 @@ html:not([data-theme='dark']) .corner-drawer {
   border-bottom: 2px solid #ffd23f;
   color: #ffd23f;
 }
+
+/* Où est-ce ? : carte du monde */
+.country-map {
+  width: 100%;
+  max-height: 52vh;
+  height: auto;
+  display: block;
+  margin: 8px 0;
+}
+.country-land {
+  fill: #2a2a3a;
+  stroke: #3d3d52;
+  stroke-width: 0.6;
+}
+.country-answer {
+  fill: #ff4d2e;
+  stroke: #ffd23f;
+  stroke-width: 1;
+}
+.country-pick {
+  fill: #ffd23f;
+  stroke: #0d0d12;
+  stroke-width: 1.5;
+}

@@ -2,6 +2,7 @@ import type { CSSProperties } from 'react';
 import type { HostViewProps } from '../../client/types.js';
 import { useRemaining } from '../../client/hooks.js';
 import { Avatar, FinalHost, LETTERS, Ranking, TimerBar, WaitingScreen } from '../../client/ui.js';
+import { CountryMap } from './CountryMap.js';
 
 /** Écran principal de BOUM ! : annonce, saisie, vote, notation et révélation de chaque manche. */
 export function BoumHost({ publicState: pub, hostState: host, now }: HostViewProps) {
@@ -30,15 +31,17 @@ export function BoumHost({ publicState: pub, hostState: host, now }: HostViewPro
   if (pub.phase === 'write') {
     const kind = mode?.kind;
     const counter =
-      kind === 'reponse'
-        ? `${pub.found} trouvée(s) · ${pub.written} réponse(s)`
-        : kind === 'mime'
-          ? `${pub.found} trouvé(s)`
-          : kind === 'chiffre'
-            ? `${pub.guessed} estimation(s)`
-            : kind === 'carte_vote'
-              ? `${pub.played} carte(s) jouée(s)`
-              : `${pub.written} texte(s) envoyé(s)`;
+      kind === 'pays'
+        ? `${pub.picked} choix`
+        : kind === 'reponse'
+          ? `${pub.found} trouvée(s) · ${pub.written} réponse(s)`
+          : kind === 'mime'
+            ? `${pub.found} trouvé(s)`
+            : kind === 'chiffre'
+              ? `${pub.guessed} estimation(s)`
+              : kind === 'carte_vote'
+                ? `${pub.played} carte(s) jouée(s)`
+                : `${pub.written} texte(s) envoyé(s)`;
     return (
       <section className="game-host boum-host fade-in" key={key} style={style} data-effects={pub.effects}>
         <div className="round-info">
@@ -131,6 +134,35 @@ export function BoumHost({ publicState: pub, hostState: host, now }: HostViewPro
             ))}
           </ol>
           {reveal.misses.length > 0 && <p className="muted">Pas trouvé : {reveal.misses.join(', ')}</p>}
+        </>
+      )}
+      {reveal?.kind === 'pays' && (
+        <>
+          <p className="label">Le pays était</p>
+          <h3 className="reveal-answer">{reveal.answerName}</h3>
+          <CountryMap
+            answer={reveal.answer}
+            picks={reveal.guesses.map((g: { code: string; countryName: string }) => ({
+              code: g.code,
+              name: g.countryName,
+            }))}
+          />
+          <ol className="ranking">
+            {reveal.guesses.map(
+              (g: { name: string; countryName: string; km: number | null; gained: number }, i: number) => (
+                <li key={g.name}>
+                  <span className="rank">{i + 1}</span>
+                  <Avatar name={g.name} size="sm" />
+                  <span className="name">
+                    {g.name} : {g.countryName}
+                    {g.km !== null && <span className="muted small"> · {g.km} km</span>}
+                  </span>
+                  <span className="points">+{g.gained}</span>
+                </li>
+              ),
+            )}
+          </ol>
+          {reveal.misses.length > 0 && <p className="muted">Pas choisi : {reveal.misses.join(', ')}</p>}
         </>
       )}
       {reveal?.kind === 'mime' && (

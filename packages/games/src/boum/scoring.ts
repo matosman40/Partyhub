@@ -23,6 +23,46 @@ export function quickPoints(orderOfCorrect: readonly string[]): Record<string, n
   return points;
 }
 
+/** Où est-ce ? : le bon pays vaut 100 ; les points baissent linéairement jusqu'à 0 à cette distance (km). */
+export const COUNTRY_ZERO_KM = 2000;
+
+/** Distance orthodromique (km) entre deux points [latitude, longitude] en degrés. */
+export function haversineKm(a: readonly [number, number], b: readonly [number, number]): number {
+  const rad = Math.PI / 180;
+  const dLat = (b[0] - a[0]) * rad;
+  const dLon = (b[1] - a[1]) * rad;
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(a[0] * rad) * Math.cos(b[0] * rad) * Math.sin(dLon / 2) ** 2;
+  return 2 * 6371 * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+
+/**
+ * Où est-ce ? : `picks` associe chaque joueur à un code pays. Le bon pays vaut 100 ; sinon les points
+ * baissent linéairement avec la distance entre les centres, jusqu'à 0 à COUNTRY_ZERO_KM. Sans centre connu,
+ * un mauvais pays ne rapporte rien.
+ */
+export function countryPoints(
+  picks: Record<string, string>,
+  answer: string,
+  centres: Readonly<Record<string, readonly [number, number]>>,
+): Record<string, number> {
+  const points: Record<string, number> = {};
+  const target = centres[answer];
+  for (const [id, code] of Object.entries(picks)) {
+    if (code === answer) {
+      points[id] = 100;
+      continue;
+    }
+    const centre = centres[code];
+    if (!target || !centre) {
+      points[id] = 0;
+      continue;
+    }
+    const km = haversineKm(centre, target);
+    points[id] = Math.max(0, Math.round(100 * (1 - km / COUNTRY_ZERO_KM)));
+  }
+  return points;
+}
+
 /** Mime le métier : le mimeur gagne ce montant par joueur qui trouve (même barème que Devine la chanson). */
 export const MIME_POINTS_PER_FINDER = 50;
 

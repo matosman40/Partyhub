@@ -23,7 +23,7 @@ const none: CountValid = () => 0;
 describe('Éligibilité', () => {
   it('exclut le pack Humour noir quand il n’est pas activé', () => {
     const ids = eligibleModes({ players: 4, pack: false, corse: false }, plenty).map((m) => m.id);
-    expect(ids.sort()).toEqual(['combien', 'mime_metier', 'reponse_rapide']);
+    expect(ids.sort()).toEqual(['combien', 'mime_metier', 'ou_est_ce', 'reponse_rapide']);
   });
 
   it('exclut un mode dont la banque validée est insuffisante ou vide', () => {

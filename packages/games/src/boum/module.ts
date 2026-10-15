@@ -4,9 +4,13 @@ import { fail, ok, shuffle } from '../common/engine.js';
 import { matchAnswer } from '../media-quiz/answer.js';
 import { MODE_BY_ID, FAMILY_COLORS, MIME_SECONDS, type ModeDef, type ModeId } from './modes.js';
 import { drawModes, eligibleModes, type RoomRules } from './pool.js';
+import { COUNTRY_CENTROIDS, COUNTRY_NAMES_FR } from './geo/countries-data.js';
+import { COUNTRY_CODES } from './bank/countries.js';
 import {
   closestPoints,
+  countryPoints,
   detectorPoints,
+  haversineKm,
   MIME_POINTS_PER_FINDER,
   PROBABLE_POINTS,
   quickPoints,
@@ -66,6 +70,8 @@ export interface BoumRound {
   hands: Record<string, string[]>;
   /** Carte jouée : index dans la main. */
   played: Record<string, number>;
+  /** Où est-ce ? : pays choisi par chaque joueur (code ISO). */
+  picks: Record<string, string>;
   /** Options de vote : identifiants des auteurs (ou des joueurs visés), dans un ordre aléatoire. */
   options: string[];
   votes: Record<string, number | string>;
@@ -98,6 +104,7 @@ const voteSchema = z.object({
   player: z.string().min(1).max(64).optional(),
 });
 const rateSchema = z.object({ stars: z.number().int().min(1).max(5) });
+const countrySchema = z.object({ code: z.string().length(2) });
 
 export const boumActions = {
   answer: answerSchema,
@@ -105,6 +112,7 @@ export const boumActions = {
   pick: pickSchema,
   vote: voteSchema,
   rate: rateSchema,
+  country: countrySchema,
 };
 
 const CARD_HAND = 4;
@@ -162,6 +170,7 @@ function emptyRound(mode: ModeId, endsAt: number, durationMs: number): BoumRound
     correct: [],
     hands: {},
     played: {},
+    picks: {},
     options: [],
     votes: {},
     ratings: {},
@@ -263,6 +272,12 @@ function openRound(state: BoumState, ctx: GameContext): BoumState {
       round.pleader = sorted[s.index % sorted.length] ?? null;
       break;
     }
+    case 'pays': {
+      const { items, queues } = take(s, mode.needs[0]!.type, 1, ctx);
+      s = { ...s, queues };
+      round.prompt = items[0] ?? null;
+      break;
+    }
     case 'mime': {
       const { items, queues } = take(s, mode.needs[0]!.type, 1, ctx);
       s = { ...s, queues };
@@ -326,6 +341,11 @@ function reveal(state: BoumState, ctx: GameContext): BoumState {
   switch (mode.kind) {
     case 'reponse': {
       for (const [id, pts] of Object.entries(quickPoints(round.correct))) add(id, pts);
+      break;
+    }
+    case 'pays': {
+      const answer = round.prompt?.answer ?? '';
+      for (const [id, pts] of Object.entries(countryPoints(round.picks, answer, COUNTRY_CENTROIDS))) add(id, pts);
       break;
     }
     case 'mime': {
@@ -429,6 +449,8 @@ function afterWrite(state: BoumState, ctx: GameContext): BoumState {
       return connected.every((id) => id in round.writings) ? toVote(state, ctx) : state;
     case 'detecteur':
       return toRate(state, ctx);
+    case 'pays':
+      return connected.every((id) => id in round.picks) ? reveal(state, ctx) : state;
     default:
       return state;
   }
@@ -545,6 +567,15 @@ export function createBoum(getBank: () => BankSnapshot = currentBoumBank): GameM
           return ok(afterWrite({ ...state, round: { ...round, writings: { ...round.writings, [pid]: text } } }, ctx));
         }
         return fail('Pas de texte à écrire pour cette manche');
+      }
+
+      if (type === 'country') {
+        if (mode.kind !== 'pays') return fail('Pas de pays à choisir pour cette manche');
+        if (state.phase !== 'write') return fail('Le temps est écoulé');
+        if (pid in round.picks) return fail('Vous avez déjà choisi un pays');
+        const { code } = payload as { code: string };
+        if (!(COUNTRY_CODES as readonly string[]).includes(code)) return fail('Pays inconnu');
+        return ok(afterWrite({ ...state, round: { ...round, picks: { ...round.picks, [pid]: code } } }, ctx));
       }
 
       if (type === 'guess') {
@@ -690,6 +721,7 @@ export function createBoum(getBank: () => BankSnapshot = currentBoumBank): GameM
           prompt,
           pleader,
           written: Object.keys(round.writings).length,
+          picked: Object.keys(round.picks).length,
           found: round.correct.length,
           guessed: Object.keys(round.guesses).length,
           played: Object.keys(round.played).length,
@@ -731,6 +763,7 @@ export function createBoum(getBank: () => BankSnapshot = currentBoumBank): GameM
       const mustAct =
         (state.phase === 'write' &&
           ((mode.kind === 'reponse' && !round.correct.includes(playerId)) ||
+            (mode.kind === 'pays' && !(playerId in round.picks)) ||
             (mode.kind === 'mime' && playerId !== round.pleader && !round.correct.includes(playerId)) ||
             (mode.kind === 'chiffre' && !(playerId in round.guesses)) ||
             (mode.kind === 'ecriture_vote' && !(playerId in round.writings)) ||
@@ -770,6 +803,7 @@ export function createBoum(getBank: () => BankSnapshot = currentBoumBank): GameM
           const mode = currentMode(state);
           if (mode?.kind === 'chiffre') return connected.filter((id) => !(id in round.guesses));
           if (mode?.kind === 'reponse') return connected.filter((id) => !round.correct.includes(id));
+          if (mode?.kind === 'pays') return connected.filter((id) => !(id in round.picks));
           if (mode?.kind === 'mime')
             return connected.filter((id) => id !== round.pleader && !round.correct.includes(id));
           if (mode?.kind === 'carte_vote') return connected.filter((id) => !(id in round.played));
@@ -794,6 +828,30 @@ function revealView(state: BoumState, round: BoumRound, mode: ModeDef) {
   const name = (id: string) => state.players[id] ?? '?';
   const answer = round.prompt?.answer ?? null;
   switch (mode.kind) {
+    case 'pays': {
+      const target = answer ? COUNTRY_CENTROIDS[answer] : undefined;
+      const points = countryPoints(round.picks, answer ?? '', COUNTRY_CENTROIDS);
+      return {
+        kind: 'pays' as const,
+        answer,
+        answerName: answer ? (COUNTRY_NAMES_FR[answer] ?? answer) : '',
+        guesses: Object.entries(round.picks)
+          .map(([id, code]) => {
+            const centre = COUNTRY_CENTROIDS[code];
+            return {
+              name: name(id),
+              code,
+              countryName: COUNTRY_NAMES_FR[code] ?? code,
+              km: target && centre ? Math.round(haversineKm(centre, target)) : null,
+              gained: points[id] ?? 0,
+            };
+          })
+          .sort((a, b) => b.gained - a.gained || a.name.localeCompare(b.name, 'fr')),
+        misses: Object.keys(state.players)
+          .filter((id) => !(id in round.picks))
+          .map(name),
+      };
+    }
     case 'mime':
       return {
         kind: 'mime' as const,

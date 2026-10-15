@@ -2,12 +2,20 @@ import { useState, type FormEvent } from 'react';
 import type { PlayerViewProps } from '../../client/types.js';
 import { useRemaining } from '../../client/hooks.js';
 import { Countdown, FinalScreen, WaitingScreen } from '../../client/ui.js';
+import { COUNTRY_CODES } from '../bank/countries.js';
+import { COUNTRY_NAMES_FR } from '../geo/countries-data.js';
+
+/** Pays proposés au téléphone, triés par nom français. */
+const COUNTRY_OPTIONS: [string, string][] = COUNTRY_CODES.map(
+  (code) => [code, COUNTRY_NAMES_FR[code] ?? code] as [string, string],
+).sort((a, b) => a[1].localeCompare(b[1], 'fr'));
 
 /** Téléphone de BOUM ! : une seule action attendue par manche, selon le mode. */
 export function BoumPlayer({ publicState: pub, playerState: me, playerId, now, send }: PlayerViewProps) {
   const remaining = useRemaining(pub?.endsAt, now);
   const [text, setText] = useState('');
   const [number, setNumber] = useState('');
+  const [country, setCountry] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -58,6 +66,41 @@ export function BoumPlayer({ publicState: pub, playerState: me, playerId, now, s
     }
 
     const promptText = pub.prompt?.text ?? '';
+
+    if (kind === 'pays') {
+      return (
+        <section className="player-game fade-in">
+          <div className="round-info">
+            {title} · <Countdown remaining={remaining} />
+          </div>
+          <h2 className="question-small">{promptText}</h2>
+          <form
+            className="stack"
+            onSubmit={(e: FormEvent) => {
+              e.preventDefault();
+              if (!country) return;
+              void run('country', { code: country });
+            }}
+          >
+            <label className="field big-field">
+              <span>Votre pays</span>
+              <select value={country} onChange={(e) => setCountry(e.target.value)} autoFocus>
+                <option value="">Choisissez un pays</option>
+                {COUNTRY_OPTIONS.map(([code, name]) => (
+                  <option key={code} value={code}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button type="submit" className="btn primary big" disabled={busy || !country || remaining <= 0}>
+              Valider ce pays
+            </button>
+          </form>
+          {notice}
+        </section>
+      );
+    }
 
     if (kind === 'reponse' || kind === 'mime') {
       return (

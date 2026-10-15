@@ -292,3 +292,36 @@ describe('BOUM ! : Mime le métier', () => {
     expect(JSON.stringify(h.game.getPublicState(s))).not.toContain(word);
   });
 });
+
+describe('BOUM ! : Où est-ce ?', () => {
+  it('ne montre pas le code du bon pays dans les vues publiques et de l’écran', () => {
+    const h = started(['ou_est_ce']);
+    const pub = h.game.getPublicState(h.state) as { prompt: Record<string, unknown> | null };
+    expect(pub.prompt).not.toBeNull();
+    expect(Object.keys(pub.prompt!)).not.toContain('answer');
+    expect(JSON.stringify(h.game.getHostState(h.state))).not.toContain('"answer"');
+  });
+
+  it('refuse un code pays inconnu et un second choix du même joueur', () => {
+    const h = started(['ou_est_ce']);
+    expect(h.game.handleAction(h.state, A, 'country', { code: 'ZZ' }, h.ctx).ok).toBe(false);
+    const once = ok(h.game.handleAction(h.state, A, 'country', { code: 'BE' }, h.ctx));
+    expect(h.game.handleAction(once, A, 'country', { code: 'FR' }, h.ctx).ok).toBe(false);
+  });
+
+  it('révèle quand tous ont choisi : 100 au bon pays, des points proches, 0 au loin', () => {
+    const h = started(['ou_est_ce']);
+    let s = h.state;
+    const answer = s.round!.prompt!.answer!;
+    expect(answer).toBe('FR');
+    s = ok(h.game.handleAction(s, A, 'country', { code: 'FR' }, h.ctx));
+    expect(s.phase).toBe('write');
+    s = ok(h.game.handleAction(s, B, 'country', { code: 'BE' }, h.ctx));
+    s = ok(h.game.handleAction(s, C, 'country', { code: 'JP' }, h.ctx));
+    expect(s.phase).toBe('reveal');
+    expect(s.points.a).toBe(100);
+    expect(s.points.b).toBeGreaterThan(50);
+    expect(s.points.b).toBeLessThan(100);
+    expect(s.points.c).toBe(0);
+  });
+});
