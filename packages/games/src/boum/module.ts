@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { GameContext, GameModule, GameResult, PlayerRef, ScoreEntry } from '@partyhub/shared';
 import { fail, ok, shuffle } from '../common/engine.js';
-import { matchAnswer } from '../media-quiz/answer.js';
+import { matchAnswer, normalizeAnswer } from '../media-quiz/answer.js';
 import { MODE_BY_ID, FAMILY_COLORS, MIME_SECONDS, type ModeDef, type ModeId } from './modes.js';
 import { drawModes, eligibleModes, type RoomRules } from './pool.js';
 import { COUNTRY_CENTROIDS, COUNTRY_NAMES_FR } from './geo/countries-data.js';
@@ -121,6 +121,19 @@ export const boumActions = {
   country: countrySchema,
   clip: clipSchema,
 };
+
+/** Indice du mot secret : un seul mot, qui ne reprend ni le mot à deviner ni l'un de ses mots longs. */
+function clueProblem(clue: string, word: string): string | null {
+  const trimmed = clue.trim();
+  if (/\s/.test(trimmed)) return 'L’indice doit être un seul mot';
+  const folded = normalizeAnswer(trimmed);
+  const target = normalizeAnswer(word);
+  const tokens = target.split(' ').filter((t) => t.length >= 4);
+  if (folded === target || tokens.some((t) => folded.includes(t) || (folded.length >= 4 && t.includes(folded)))) {
+    return 'L’indice ne doit pas reprendre le mot à deviner';
+  }
+  return null;
+}
 
 const CARD_HAND = 4;
 
@@ -287,7 +300,8 @@ function openRound(state: BoumState, ctx: GameContext): BoumState {
       break;
     }
     case 'chanson':
-    case 'mime': {
+    case 'mime':
+    case 'mot_secret': {
       const { items, queues } = take(s, mode.needs[0]!.type, 1, ctx);
       s = { ...s, queues };
       round.prompt = items[0] ?? null;
@@ -302,7 +316,7 @@ function openRound(state: BoumState, ctx: GameContext): BoumState {
   const seconds =
     mode.kind === 'vote_joueur'
       ? s.settings.voteSeconds
-      : mode.kind === 'mime' || mode.kind === 'chanson'
+      : mode.kind === 'mime' || mode.kind === 'chanson' || mode.kind === 'mot_secret'
         ? MIME_SECONDS
         : s.settings.writeSeconds;
   const durationMs = seconds * 1000;
@@ -355,6 +369,14 @@ function reveal(state: BoumState, ctx: GameContext): BoumState {
     case 'pays': {
       const answer = round.prompt?.answer ?? '';
       for (const [id, pts] of Object.entries(countryPoints(round.picks, answer, COUNTRY_CENTROIDS))) add(id, pts);
+      break;
+    }
+    case 'mot_secret': {
+      // Le mot trouvé rapporte 100 au joueur désigné, et 50 à chaque auteur d'indice.
+      if (round.pleader && round.correct.includes(round.pleader)) {
+        add(round.pleader, 100);
+        for (const id of Object.keys(round.writings)) add(id, 50);
+      }
       break;
     }
     case 'chanson':
@@ -557,6 +579,19 @@ export function createBoum(getBank: () => BankSnapshot = currentBoumBank): GameM
 
       if (type === 'answer') {
         const { text } = payload as { text: string };
+        if (mode.kind === 'mot_secret') {
+          if (state.phase !== 'write') return fail('Le temps est écoulé');
+          const word = round.prompt?.text ?? '';
+          if (pid === round.pleader) {
+            // Le joueur désigné devine : une bonne réponse termine la manche.
+            if (!matchAnswer(text, { answer: word, aliases: [] })) return fail('Ce n’est pas le mot');
+            return ok(reveal({ ...state, round: { ...round, correct: [pid] } }, ctx));
+          }
+          if (pid in round.writings) return fail('Vous avez déjà donné votre indice');
+          const problem = clueProblem(text, word);
+          if (problem) return fail(problem);
+          return ok({ ...state, round: { ...round, writings: { ...round.writings, [pid]: text.trim() } } });
+        }
         if (mode.kind === 'reponse' || mode.kind === 'mime' || mode.kind === 'chanson') {
           if (state.phase !== 'write') return fail('Le temps est écoulé');
           if (mode.kind === 'mime' && pid === round.pleader) return fail('Vous mimez : vous ne tapez pas le métier');
@@ -733,7 +768,7 @@ export function createBoum(getBank: () => BankSnapshot = currentBoumBank): GameM
 
       // Le métier du mime ne sort jamais de la vue du mimeur : l'écran et les autres téléphones ne le voient pas.
       const prompt =
-        round.prompt && mode.kind !== 'mime' && mode.kind !== 'chanson'
+        round.prompt && mode.kind !== 'mime' && mode.kind !== 'chanson' && mode.kind !== 'mot_secret'
           ? {
               type: round.prompt.type,
               text: round.prompt.text,
@@ -754,6 +789,8 @@ export function createBoum(getBank: () => BankSnapshot = currentBoumBank): GameM
           written: Object.keys(round.writings).length,
           picked: Object.keys(round.picks).length,
           clip: mode.kind === 'chanson' ? round.clip : null,
+          clues:
+            mode.kind === 'mot_secret' ? Object.values(round.writings).sort((a, b) => a.localeCompare(b, 'fr')) : null,
           found: round.correct.length,
           guessed: Object.keys(round.guesses).length,
           played: Object.keys(round.played).length,
@@ -801,6 +838,8 @@ export function createBoum(getBank: () => BankSnapshot = currentBoumBank): GameM
               playerId !== round.pleader &&
               round.clip !== null &&
               !round.correct.includes(playerId)) ||
+            (mode.kind === 'mot_secret' &&
+              (playerId === round.pleader ? !round.correct.includes(playerId) : !(playerId in round.writings))) ||
             (mode.kind === 'mime' && playerId !== round.pleader && !round.correct.includes(playerId)) ||
             (mode.kind === 'chiffre' && !(playerId in round.guesses)) ||
             (mode.kind === 'ecriture_vote' && !(playerId in round.writings)) ||
@@ -814,7 +853,9 @@ export function createBoum(getBank: () => BankSnapshot = currentBoumBank): GameM
         isPleader: playerId === round.pleader,
         // Le mimeur seul voit le métier, pendant la manche.
         secretWord:
-          (mode.kind === 'mime' || mode.kind === 'chanson') && state.phase === 'write' && playerId === round.pleader
+          (mode.kind === 'mime' || mode.kind === 'chanson' || mode.kind === 'mot_secret') &&
+          state.phase === 'write' &&
+          playerId === round.pleader
             ? (round.prompt?.text ?? null)
             : null,
         mustAct,
@@ -845,6 +886,10 @@ export function createBoum(getBank: () => BankSnapshot = currentBoumBank): GameM
             if (!round.clip) return round.pleader ? [round.pleader] : [];
             return connected.filter((id) => id !== round.pleader && !round.correct.includes(id));
           }
+          if (mode?.kind === 'mot_secret')
+            return connected.filter((id) =>
+              id === round.pleader ? !round.correct.includes(id) : !(id in round.writings),
+            );
           if (mode?.kind === 'mime')
             return connected.filter((id) => id !== round.pleader && !round.correct.includes(id));
           if (mode?.kind === 'carte_vote') return connected.filter((id) => !(id in round.played));
@@ -903,6 +948,22 @@ function revealView(state: BoumState, round: BoumRound, mode: ModeDef) {
         gainedSinger: round.pleader ? (round.gains[round.pleader] ?? 0) : 0,
         misses: Object.keys(state.players)
           .filter((id) => id !== round.pleader && !round.correct.includes(id))
+          .map(name),
+      };
+    case 'mot_secret':
+      return {
+        kind: 'mot_secret' as const,
+        word: round.prompt?.text ?? null,
+        guesser: round.pleader ? name(round.pleader) : null,
+        found: round.pleader ? round.correct.includes(round.pleader) : false,
+        gainedGuesser: round.pleader ? (round.gains[round.pleader] ?? 0) : 0,
+        clues: Object.entries(round.writings).map(([id, text]) => ({
+          name: name(id),
+          text,
+          gained: round.gains[id] ?? 0,
+        })),
+        misses: Object.keys(state.players)
+          .filter((id) => id !== round.pleader && !(id in round.writings))
           .map(name),
       };
     case 'mime':

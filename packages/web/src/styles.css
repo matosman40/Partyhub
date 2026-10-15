@@ -6969,6 +6969,14 @@ html:not([data-theme='dark']) .corner-drawer {
   flex: 1 1 auto;
   min-width: 0;
 }
+.boum-clues {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
 .boum-list {
   list-style: none;
   margin: 0;

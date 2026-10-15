@@ -50,6 +50,50 @@ export function BoumPlayer({ publicState: pub, playerState: me, playerId, now, s
   }
 
   if (pub.phase === 'write') {
+    if (kind === 'mot_secret' && me?.isPleader) {
+      const clues: string[] = pub.clues ?? [];
+      return (
+        <section className="player-game fade-in">
+          <div className="round-info">
+            {title} · <Countdown remaining={remaining} />
+          </div>
+          <p className="label">Votre mot secret : faites-le deviner</p>
+          <h2 className="question-small">{me.secretWord}</h2>
+          {clues.length > 0 && (
+            <ul className="boum-clues">
+              {clues.map((clue, i) => (
+                <li key={i}>{clue}</li>
+              ))}
+            </ul>
+          )}
+          <form
+            className="stack"
+            onSubmit={(e: FormEvent) => {
+              e.preventDefault();
+              const value = text.trim();
+              if (!value) return;
+              setText('');
+              void run('answer', { text: value });
+            }}
+          >
+            <label className="field big-field">
+              <span>Votre proposition</span>
+              <input
+                value={text}
+                maxLength={25}
+                autoComplete="off"
+                autoFocus
+                onChange={(e) => setText(e.target.value)}
+              />
+            </label>
+            <button type="submit" className="btn primary big" disabled={busy || !text.trim() || remaining <= 0}>
+              Deviner
+            </button>
+          </form>
+          {notice}
+        </section>
+      );
+    }
     if (kind === 'chanson' && me?.secretWord) {
       return (
         <section className="player-game fade-in">
@@ -123,18 +167,20 @@ export function BoumPlayer({ publicState: pub, playerState: me, playerId, now, s
       );
     }
 
-    if (kind === 'reponse' || kind === 'mime' || kind === 'chanson') {
+    if (kind === 'reponse' || kind === 'mime' || kind === 'chanson' || kind === 'mot_secret') {
       return (
         <section className="player-game fade-in">
           <div className="round-info">
             {title} · <Countdown remaining={remaining} />
           </div>
           <h2 className="question-small">
-            {kind === 'mime'
-              ? `${pub.pleader ?? 'Quelqu’un'} mime le métier`
-              : kind === 'chanson'
-                ? `${pub.pleader ?? 'Quelqu’un'} chante : artiste ou film ?`
-                : promptText}
+            {kind === 'mot_secret'
+              ? 'Donnez un indice d’un seul mot, sans dire le mot'
+              : kind === 'mime'
+                ? `${pub.pleader ?? 'Quelqu’un'} mime le métier`
+                : kind === 'chanson'
+                  ? `${pub.pleader ?? 'Quelqu’un'} chante : artiste ou film ?`
+                  : promptText}
           </h2>
           <form
             className="stack"
@@ -147,7 +193,7 @@ export function BoumPlayer({ publicState: pub, playerState: me, playerId, now, s
             }}
           >
             <label className="field big-field">
-              <span>Votre réponse</span>
+              <span>{kind === 'mot_secret' ? 'Votre indice' : 'Votre réponse'}</span>
               <input
                 value={text}
                 maxLength={25}

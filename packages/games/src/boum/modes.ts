@@ -50,7 +50,8 @@ export type ModeKind =
   | 'detecteur'
   | 'mime'
   | 'pays'
-  | 'chanson';
+  | 'chanson'
+  | 'mot_secret';
 
 /** Durée du mime, en secondes (spécification : le mimeur a 60 secondes). */
 export const MIME_SECONDS = 60;
@@ -68,7 +69,8 @@ export type ModeId =
   | 'detecteur'
   | 'mime_metier'
   | 'ou_est_ce'
-  | 'devine_chanson';
+  | 'devine_chanson'
+  | 'le_mot_secret';
 
 export interface ModeNeed {
   type: BankType;
@@ -222,6 +224,16 @@ export const MODES: readonly ModeDef[] = [
     pack: false,
     minPlayers: 3,
     needs: [{ type: 'chanson', minValid: 5 }],
+  },
+  {
+    id: 'le_mot_secret',
+    title: 'Le mot secret',
+    brief: 'Un joueur voit le mot. Les autres donnent un indice d’un seul mot. Il doit deviner avant la fin du temps.',
+    family: 'telephone',
+    kind: 'mot_secret',
+    pack: false,
+    minPlayers: 3,
+    needs: [{ type: 'mot_secret', minValid: 5 }],
   },
 ];
 

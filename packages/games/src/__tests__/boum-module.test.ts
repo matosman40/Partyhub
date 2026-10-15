@@ -404,3 +404,63 @@ describe('BOUM ! : Devine la chanson', () => {
     expect(JSON.stringify(h.game.getPublicState(s))).not.toContain(answer);
   });
 });
+
+describe('BOUM ! : Le mot secret', () => {
+  const secretOf = (h: ReturnType<typeof started>, s: BoumState, id: string) =>
+    (h.game.getPlayerState(s, id) as { secretWord: string | null }).secretWord;
+  const at = (id: string) => ({ id, name: id });
+
+  it('ne montre le mot qu’au joueur désigné, jamais à l’écran ni aux autres téléphones', () => {
+    const h = started(['le_mot_secret']);
+    const s = h.state;
+    const word = s.round!.prompt!.text;
+    const pleader = s.round!.pleader!;
+    expect(JSON.stringify(h.game.getPublicState(s))).not.toContain(word);
+    expect(JSON.stringify(h.game.getHostState(s))).not.toContain(word);
+    for (const id of ['a', 'b', 'c'].filter((id) => id !== pleader)) expect(secretOf(h, s, id)).toBeNull();
+    expect(secretOf(h, s, pleader)).toBe(word);
+  });
+
+  it('refuse un indice de plusieurs mots, un indice qui reprend le mot, puis un second indice', () => {
+    const h = started(['le_mot_secret']);
+    let s = h.state;
+    const pleader = s.round!.pleader!;
+    const writer = ['a', 'b', 'c'].find((id) => id !== pleader)!;
+    // Mots de la banque de test : « mot_secret N », dont le mot long est « secret ».
+    expect(h.game.handleAction(s, at(writer), 'answer', { text: 'deux mots' }, h.ctx).ok).toBe(false);
+    expect(h.game.handleAction(s, at(writer), 'answer', { text: 'secrets' }, h.ctx).ok).toBe(false);
+    s = ok(h.game.handleAction(s, at(writer), 'answer', { text: 'indice' }, h.ctx));
+    expect((h.game.getPublicState(s) as { clues: string[] }).clues).toEqual(['indice']);
+    expect((h.game.getPlayerState(s, writer) as { mustAct: boolean }).mustAct).toBe(false);
+    expect(h.game.handleAction(s, at(writer), 'answer', { text: 'autre' }, h.ctx).ok).toBe(false);
+  });
+
+  it('donne 100 au joueur qui devine et 50 à chaque auteur d’indice, puis révèle', () => {
+    const h = started(['le_mot_secret']);
+    let s = h.state;
+    const word = s.round!.prompt!.text;
+    const pleader = s.round!.pleader!;
+    const [w1, w2] = ['a', 'b', 'c'].filter((id) => id !== pleader);
+    s = ok(h.game.handleAction(s, at(w1!), 'answer', { text: 'indice' }, h.ctx));
+    s = ok(h.game.handleAction(s, at(w2!), 'answer', { text: 'signe' }, h.ctx));
+    expect(h.game.handleAction(s, at(pleader), 'answer', { text: 'pas le bon' }, h.ctx).ok).toBe(false);
+    expect(s.phase).toBe('write');
+    s = ok(h.game.handleAction(s, at(pleader), 'answer', { text: word }, h.ctx));
+    expect(s.phase).toBe('reveal');
+    expect(s.points[pleader]).toBe(100);
+    expect(s.points[w1!]).toBe(50);
+    expect(s.points[w2!]).toBe(50);
+  });
+
+  it('ne donne aucun point quand le temps est écoulé sans mot trouvé', () => {
+    const h = started(['le_mot_secret']);
+    let s = h.state;
+    const pleader = s.round!.pleader!;
+    const writer = ['a', 'b', 'c'].find((id) => id !== pleader)!;
+    s = ok(h.game.handleAction(s, at(writer), 'answer', { text: 'indice' }, h.ctx));
+    s = h.game.onTimer(s, 'boum-timer', h.ctx);
+    expect(s.phase).toBe('reveal');
+    expect(s.points[pleader] ?? 0).toBe(0);
+    expect(s.points[writer] ?? 0).toBe(0);
+  });
+});

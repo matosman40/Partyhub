@@ -45,7 +45,9 @@ export function BoumHost({ publicState: pub, hostState: host, now }: HostViewPro
                 ? `${pub.guessed} estimation(s)`
                 : kind === 'carte_vote'
                   ? `${pub.played} carte(s) jouée(s)`
-                  : `${pub.written} texte(s) envoyé(s)`;
+                  : kind === 'mot_secret'
+                    ? `${pub.written} indice(s)`
+                    : `${pub.written} texte(s) envoyé(s)`;
     return (
       <section className="game-host boum-host fade-in" key={key} style={style} data-effects={pub.effects}>
         <div className="round-info">
@@ -55,6 +57,18 @@ export function BoumHost({ publicState: pub, hostState: host, now }: HostViewPro
         {pub.prompt && <h2 className="huge-word small">{pub.prompt.text}</h2>}
         {kind === 'carte_vote' && <p className="muted">Chacun joue une carte sur son téléphone.</p>}
         {kind === 'detecteur' && pub.pleader && <p className="muted">{pub.pleader} se défend.</p>}
+        {kind === 'mot_secret' && pub.pleader && (
+          <>
+            <p className="label">{pub.pleader} devine le mot</p>
+            <ul className="boum-clues">
+              {(pub.clues ?? []).map((clue: string, i: number) => (
+                <li key={i} className="huge-word small">
+                  {clue}
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
         {kind === 'chanson' && pub.pleader && !pub.clip && (
           <>
             <p className="label">{pub.pleader} chante</p>
@@ -175,6 +189,30 @@ export function BoumHost({ publicState: pub, hostState: host, now }: HostViewPro
             )}
           </ol>
           {reveal.misses.length > 0 && <p className="muted">Pas choisi : {reveal.misses.join(', ')}</p>}
+        </>
+      )}
+      {reveal?.kind === 'mot_secret' && (
+        <>
+          <p className="label">Le mot était</p>
+          <h3 className="reveal-answer">{reveal.word}</h3>
+          <p className="muted">
+            {reveal.found
+              ? `Trouvé par ${reveal.guesser}, +${reveal.gainedGuesser}`
+              : `${reveal.guesser ?? '?'} n’a pas trouvé`}
+          </p>
+          <ol className="ranking">
+            {reveal.clues.map((c: { name: string; text: string; gained: number }, i: number) => (
+              <li key={i}>
+                <span className="rank">{i + 1}</span>
+                <Avatar name={c.name} size="sm" />
+                <span className="name">
+                  {c.name} : « {c.text} »
+                </span>
+                <span className="points">+{c.gained}</span>
+              </li>
+            ))}
+          </ol>
+          {reveal.misses.length > 0 && <p className="muted">Pas d’indice : {reveal.misses.join(', ')}</p>}
         </>
       )}
       {reveal?.kind === 'chanson' && (
