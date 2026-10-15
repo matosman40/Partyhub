@@ -25,7 +25,8 @@ Après le niveau 3, le classement final s'affiche.
 
 ### Niveau 1 : La fonte
 
-- Un îlot plein, arrondi, de 79 cases (une grille de 11 × 9, dont les coins sont vides), sans trou.
+- Un îlot plein et arrondi, de 81 cases hexagonales (une grille de 11 × 9 cases, dont le contour est tronqué pour
+  faire un îlot rond), sans trou.
 - Trois secondes après le départ, la banquise commence à fondre : une case du bord disparaît toutes les 1,6 seconde,
   choisie au hasard parmi les cases du contour. Les joueurs posés sur la case qui disparaît tombent.
 - Quand une case disparaît et coupe l'îlot en deux, le morceau détaché fond aussi : il ne reste jamais qu'un seul
@@ -39,6 +40,8 @@ Après le niveau 3, le classement final s'affiche.
   côte à côte. Les trous restent dans la partie centrale, loin du bord.
 - Un trou qui couperait l'îlot en deux n'est pas gardé : l'îlot reste d'un seul tenant.
 - On peut sauter au-dessus d'un trou de deux cases, ou le contourner.
+- Les cases sont des hexagones à pointe en haut : chaque case a six voisins. Une case de glace reliée à ses voisins
+  forme le morceau de l'île ; c'est sur ces voisinages que se mesurent la fonte et la continuité de l'île.
 - Les joueurs tombent s'ils marchent dans un trou ou s'ils sont poussés dedans.
 - La fonte commence après 45 secondes, puis une case disparaît toutes les 1,6 seconde. Elle empêche une manche de
   traîner sans fin.
@@ -69,7 +72,8 @@ Après le niveau 3, le classement final s'affiche.
 | Sauter                | bouton « Saut »                      | Espace                                        |
 | Pousser               | bouton « Pousser »                   | E, Entrée ou X                                |
 
-- Marche dans les quatre directions. En diagonale, la vitesse reste la même que tout droit.
+- Marche dans les quatre directions de l'écran (gauche, droite, haut, bas). En diagonale, la vitesse reste la même que
+  tout droit ; le personnage glisse librement sur les hexagones.
 - Une touche maintenue garde la direction. Relâcher la touche arrête le personnage (la glace glisse un peu, donc
   il continue sur quelques dizaines de centimètres).
 - **Saut** : seulement au sol. Un saut dure environ 0,76 seconde, s'élève de 1,4 case et porte à environ 3,2 cases à
@@ -85,7 +89,8 @@ client : la position est calculée toutes les 50 ms.
 
 | Constante          | Valeur                           | Rôle                                                                       |
 | ------------------ | -------------------------------- | -------------------------------------------------------------------------- |
-| `COLS` × `ROWS`    | 11 × 9 cases                     | taille de la grille ; l'îlot est une ellipse dedans                        |
+| `COLS` × `ROWS`    | 11 × 9 cases                     | taille de la grille hexagonale ; l'îlot est une ellipse dedans            |
+| `ROW_H`            | √3/2 case                        | écart entre deux lignes d'hexagones ; une ligne sur deux est décalée d'une demi-case |
 | `TICK_MS`          | 50 ms                            | pas de la simulation                                                       |
 | `WALK_SPEED`       | 4,2 case/s                       | vitesse de marche (en diagonale, répartie entre les deux axes)             |
 | `ICE_ACCEL`        | 13 case/s²                       | accélération sur la glace                                                  |
@@ -115,8 +120,8 @@ son ombre au sol, plus petite. Éliminé, il disparaît dans l'eau (éclaboussur
 
 ## Écrans
 
-- **Plan** : une vue de trois quarts. L'îlot est arrondi. Chaque case de glace est un cube bleu : un dessus clair, une
-  face avant épaisse et translucide, visible dans l'écart qui sépare deux rangées. Certaines cases ont une neige sur le
+- **Plan** : une vue de trois quarts. L'îlot est une grille d'hexagones à pointe en haut. Chaque case de glace est un
+  cube bleu : un dessus clair, une face avant à deux pans sous ses arêtes basses. Certaines cases ont une neige sur le
   dessus. Les trous sont des eaux noires avec leur paroi du fond dans l'ombre. La mer est profonde, avec des reflets
   qui dérivent, et des morceaux de banquise enneigés flottent autour du plan.
 - **Écran principal** : le plan, les personnages avec leur nom, le numéro du niveau et son titre, l'annonce du vent et
@@ -135,7 +140,7 @@ mais ils finissent toujours une partie, car la fonte garantit la fin de chaque n
 `packages/server/src/__tests__/banquise.test.ts` vérifie :
 
 - l'île de chaque niveau : sans trou au niveau 1 ; au niveau 2 et 3, des trous au centre, et l'île reste d'un seul
-  tenant ;
+  tenant (voisinage hexagonal) ;
 - les points de départ, en anneau, tous sur la glace et distincts ;
 - l'érosion : une case de moins à chaque fonte, et un seul morceau de glace après ;
 - qu'un personnage qui court sur la ligne du milieu saute deux trous de deux cases et atteint le bord opposé ;

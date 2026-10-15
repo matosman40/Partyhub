@@ -62,6 +62,9 @@ export type { BanquiseState, BanquiseSettings } from './banquise/module.js';
 export {
   COLS as BANQUISE_COLS,
   ROWS as BANQUISE_ROWS,
+  ROW_H as BANQUISE_ROW_H,
+  banquiseNeighbors,
+  cellCenter as banquiseCellCenter,
   holeCount,
   iceAt as banquiseIceAt,
   makeIce,

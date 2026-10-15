@@ -1,15 +1,18 @@
 /**
- * Banquise : physique en deux dimensions, en fonctions pures et déterministes.
+ * Banquise : physique en deux dimensions sur une grille hexagonale, en fonctions pures et déterministes.
  *
- * Unités : une case de glace vaut 1. Un personnage est en (x, z) sur le plan : la case (col, row) a son centre
- * en (col + 0.5, row + 0.5). `y` est sa hauteur au-dessus de la surface de la glace. Tout ce qui est aléatoire
- * passe par le générateur injecté, et tout ce qui dépend du temps par `now` : rien ici ne lit l'horloge réelle.
- * Les valeurs sont celles de docs/JEU-BANQUISE.md.
+ * Unités : une case vaut 1 de large (d'un côté plat à l'autre). Les cases sont des hexagones à pointe en haut ;
+ * une ligne sur deux est décalée d'une demi-case. Le centre de la case (col, row) est en
+ * (col + moitié si row impaire, row × √3/2). Un personnage est en (x, z) sur le plan, `y` étant sa hauteur au-dessus
+ * de la surface de la glace. Tout ce qui est aléatoire passe par le générateur injecté, et tout ce qui dépend du
+ * temps par `now` : rien ici ne lit l'horloge réelle. Les valeurs sont celles de docs/JEU-BANQUISE.md.
  */
 
-/** Taille de la grille : l'îlot tient dedans, avec des coins vides (contour arrondi). */
+/** Taille de la grille : l'îlot tient dedans, avec des bords arrondis (une ellipse de cases). */
 export const COLS = 11;
 export const ROWS = 9;
+/** Hauteur d'une ligne d'hexagones : √3/2 de case. */
+export const ROW_H = Math.sqrt(3) / 2;
 export const TICK_MS = 50;
 
 export const GRAVITY = 20;
@@ -86,21 +89,52 @@ export function newBody(x: number, z: number, facing: -1 | 1): Body {
   };
 }
 
-const NEIGHBORS: Array<[number, number]> = [
-  [1, 0],
+/** Centre de la case (col, row), en unités de case. Les lignes impaires sont décalées d'une demi-case. */
+export function cellCenter(col: number, row: number): { x: number; z: number } {
+  return { x: col + (row & 1) * 0.5, z: row * ROW_H };
+}
+
+/**
+ * Voisins d'une case en grille hexagonale (décalage « impair »). Une ligne paire et une ligne impaire n'ont pas
+ * les mêmes voisins en diagonale.
+ */
+const NEIGHBORS_EVEN: Array<[number, number]> = [
   [-1, 0],
-  [0, 1],
+  [1, 0],
+  [-1, -1],
   [0, -1],
+  [-1, 1],
+  [0, 1],
 ];
+const NEIGHBORS_ODD: Array<[number, number]> = [
+  [-1, 0],
+  [1, 0],
+  [0, -1],
+  [1, -1],
+  [0, 1],
+  [1, 1],
+];
+
+/** Décalages (colonne, ligne) des six voisins d'une case de cette ligne. */
+export function banquiseNeighbors(row: number): Array<[number, number]> {
+  return (row & 1) === 0 ? NEIGHBORS_EVEN : NEIGHBORS_ODD;
+}
+
+/** Centre de l'îlot, en unités de case. */
+const CX = (COLS - 1) / 2 + 0.25;
+const CZ = ((ROWS - 1) * ROW_H) / 2;
+const RX = COLS / 2;
+const RZ = CZ + 0.6;
 
 /** Carré du rayon normalisé du centre de l'îlot : 0 au centre, 1 sur le contour. */
 function radius2(col: number, row: number): number {
-  const nx = (col + 0.5 - COLS / 2) / (COLS / 2);
-  const nz = (row + 0.5 - ROWS / 2) / (ROWS / 2);
+  const c = cellCenter(col, row);
+  const nx = (c.x - CX) / RX;
+  const nz = (c.z - CZ) / RZ;
   return nx * nx + nz * nz;
 }
 
-/** Vrai si la case (col, row) fait partie de l'îlot : une ellipse, donc un contour arrondi. */
+/** Vrai si la case (col, row) fait partie de l'îlot : une ellipse de cases, donc un contour arrondi. */
 export function inMask(col: number, row: number): boolean {
   return radius2(col, row) <= 1;
 }
@@ -110,10 +144,31 @@ function isInner(col: number, row: number): boolean {
   return radius2(col, row) <= 0.5;
 }
 
+/**
+ * Case dont le centre est le plus proche du point (x, z) : c'est la case qui contient ce point, car les
+ * hexagones sont la zone la plus proche de leur centre. Peut être hors de la grille.
+ */
+export function nearestCell(x: number, z: number): { col: number; row: number } {
+  const row0 = Math.round(z / ROW_H);
+  let best = { col: 0, row: row0 };
+  let bestD = Infinity;
+  for (let row = row0 - 1; row <= row0 + 1; row++) {
+    const c0 = Math.round(x - (row & 1) * 0.5);
+    for (let col = c0 - 1; col <= c0 + 1; col++) {
+      const c = cellCenter(col, row);
+      const d = (c.x - x) ** 2 + (c.z - z) ** 2;
+      if (d < bestD) {
+        bestD = d;
+        best = { col, row };
+      }
+    }
+  }
+  return best;
+}
+
 /** Glace sous le point (x, z) : hors de la grille, c'est de l'eau. */
 export function iceAt(ice: string, x: number, z: number): boolean {
-  const col = Math.floor(x);
-  const row = Math.floor(z);
+  const { col, row } = nearestCell(x, z);
   if (col < 0 || col >= COLS || row < 0 || row >= ROWS) return false;
   return ice[row * COLS + col] === ICE;
 }
@@ -297,9 +352,11 @@ export function makeIce(withHoles: boolean, random: () => number): string {
       const idx = inner[Math.floor(random() * inner.length)]!;
       const before = cells.join('');
       cells[idx] = WATER;
-      // Une fois sur deux, le trou fait deux cases de large.
-      const next = idx + 1;
-      if (random() < 0.5 && inner.includes(next) && cells[next] === ICE) cells[next] = WATER;
+      // Une fois sur deux, le trou fait deux cases : celle qui est voisine dans la même ligne.
+      const row = Math.floor(idx / COLS);
+      const col = idx % COLS;
+      const twin = row * COLS + col + 1;
+      if (random() < 0.5 && col + 1 < COLS && inner.includes(twin) && cells[twin] === ICE) cells[twin] = WATER;
       // Un trou qui couperait l'îlot en deux n'est pas gardé : il reste un seul morceau de glace.
       if (keepMainIsland(cells.join('')) !== cells.join('')) {
         for (let i = 0; i < cells.length; i++) cells[i] = before[i]!;
@@ -332,7 +389,10 @@ export function spawnCells(ice: string, n: number): number[] {
     if (r2 >= 0.2 && r2 <= 0.75) ring.push(i);
   }
   const pool = ring.length >= n ? ring : all;
-  const angle = (i: number) => Math.atan2(Math.floor(i / COLS) + 0.5 - ROWS / 2, (i % COLS) + 0.5 - COLS / 2);
+  const angle = (i: number) => {
+    const c = cellCenter(i % COLS, Math.floor(i / COLS));
+    return Math.atan2(c.z - CZ, c.x - CX);
+  };
   pool.sort((a, b) => angle(a) - angle(b));
   if (n <= 1) return pool.slice(0, 1);
   const step = pool.length / n;
@@ -353,7 +413,7 @@ export function keepMainIsland(ice: string): string {
       comp.push(cur);
       const col = cur % COLS;
       const row = Math.floor(cur / COLS);
-      for (const [dc, dr] of NEIGHBORS) {
+      for (const [dc, dr] of banquiseNeighbors(row)) {
         const c = col + dc;
         const r = row + dr;
         if (c < 0 || c >= COLS || r < 0 || r >= ROWS) continue;
@@ -374,7 +434,7 @@ export function keepMainIsland(ice: string): string {
 
 /** Vrai si la case est au bord de la glace : une case vide ou la sortie de la grille est voisine. */
 function isRim(ice: string, col: number, row: number): boolean {
-  return NEIGHBORS.some(([dc, dr]) => {
+  return banquiseNeighbors(row).some(([dc, dr]) => {
     const c = col + dc;
     const r = row + dr;
     return c < 0 || c >= COLS || r < 0 || r >= ROWS || ice[r * COLS + c] !== ICE;

@@ -7,7 +7,7 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 ### Ajouté
 - Bomberman : les joueurs au personnage importé sont dessinés avec leur planche (pose de repos, rebond à chaque pas, retournée selon le sens). Les autres gardent leur sprite.
 - Jeu « Banquise » (catégorie plateau, 2 à 8 joueurs) : chaque personnage, importé ou dessiné, marche sur un îlot de
-  glace arrondi dans les quatre directions et saute par-dessus les trous. Trois niveaux : la fonte par les bords, les
+  glace arrondi, en cases hexagonales, dans les quatre directions et saute par-dessus les trous. Trois niveaux : la fonte par les bords, les
   crevasses, puis les crevasses avec le vent. Le dernier joueur resté sur la glace gagne le niveau (100 points) ; on
   peut se pousser. Commandes sur le téléphone (croix ▲ ◀ ▶ ▼, Saut, Pousser) ou au clavier. Détails :
   `docs/JEU-BANQUISE.md`.

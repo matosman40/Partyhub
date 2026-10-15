@@ -11,6 +11,8 @@ import {
   banquiseSpawnCells,
   banquiseStepBody,
   banquiseSupported,
+  banquiseCellCenter,
+  banquiseNeighbors,
   BANQUISE_COLS,
   BANQUISE_LEVELS,
   BANQUISE_ROWS,
@@ -30,6 +32,9 @@ import type { GameContext, PlayerRef } from '@partyhub/shared';
  */
 
 const TICK = 50;
+/** Centre de la case (5, 4) : une case au milieu de l'île, sur une ligne paire. */
+const X0 = banquiseCellCenter(5, 4).x;
+const ZC = banquiseCellCenter(5, 4).z;
 const A: PlayerRef = { id: 'a', name: 'Alice' };
 const B: PlayerRef = { id: 'b', name: 'Bob' };
 const C: PlayerRef = { id: 'c', name: 'Chloé' };
@@ -113,7 +118,7 @@ function islandCells(): number {
   return n;
 }
 
-/** Vrai si toutes les cases de glace forment un seul morceau. */
+/** Vrai si toutes les cases de glace forment un seul morceau (voisinage hexagonal). */
 function connected(ice: string): boolean {
   const cells: number[] = [];
   for (let i = 0; i < ice.length; i++) if (ice[i] === 'i') cells.push(i);
@@ -124,12 +129,7 @@ function connected(ice: string): boolean {
     const cur = stack.pop()!;
     const col = cur % BANQUISE_COLS;
     const row = Math.floor(cur / BANQUISE_COLS);
-    for (const [dc, dr] of [
-      [1, 0],
-      [-1, 0],
-      [0, 1],
-      [0, -1],
-    ] as const) {
+    for (const [dc, dr] of banquiseNeighbors(row)) {
       const c = col + dc;
       const r = row + dr;
       if (c < 0 || c >= BANQUISE_COLS || r < 0 || r >= BANQUISE_ROWS) continue;
@@ -175,8 +175,6 @@ describe('Banquise : banquise de chaque niveau', () => {
     const bodies = Object.values(state.bodies);
     expect(bodies).toHaveLength(8);
     for (const b of bodies) expect(banquiseSupported(state.ice, b.x, b.z)).toBe(true);
-    const spots = new Set(bodies.map((b) => `${Math.floor(b.x)},${Math.floor(b.z)}`));
-    expect(spots.size).toBe(8);
     // Les personnages sont espacés : pas deux sur la même case, ni côte à côte.
     for (let i = 0; i < bodies.length; i++) {
       for (let j = i + 1; j < bodies.length; j++) {
@@ -217,14 +215,15 @@ describe('Banquise : physique du personnage', () => {
     const cells = island().split('');
     for (const col of [3, 4, 7, 8]) cells[4 * BANQUISE_COLS + col] = '.';
     const ice = cells.join('');
-    let b: BanquiseBody = newBody(0.5, 4.5, 1);
+    const row = banquiseCellCenter(0, 4);
+    let b: BanquiseBody = newBody(row.x, row.z, 1);
     let reached = false;
     for (let t = 0; t < 2400 && b.alive; t++) {
       // Le robot de référence saute dès qu'un trou est à une case devant lui.
       if (b.grounded && !banquiseIceAt(ice, b.x + 1, b.z)) b = banquiseJump(b);
       b = banquiseSetInput(b, 1, 0);
       b = banquiseStepBody(b, ice, 0, TICK / 1000, 0);
-      if (b.x > BANQUISE_COLS - 1) {
+      if (b.x >= BANQUISE_COLS - 2) {
         reached = true;
         break;
       }
@@ -234,8 +233,8 @@ describe('Banquise : physique du personnage', () => {
 
   it('en diagonale, la vitesse de croisière est la même que tout droit', () => {
     const ice = island();
-    let straight = banquiseSetInput(newBody(5.5, 4.5, 1), 1, 0);
-    let diagonal = banquiseSetInput(newBody(5.5, 4.5, 1), 1, 1);
+    let straight = banquiseSetInput(newBody(X0, ZC, 1), 1, 0);
+    let diagonal = banquiseSetInput(newBody(X0, ZC, 1), 1, 1);
     // Trois quarts de seconde, assez pour atteindre la vitesse de croisière, sans sortir de l'îlot.
     for (let t = 0; t < 15; t++) {
       straight = banquiseStepBody(straight, ice, 0, TICK / 1000, 0);
@@ -258,7 +257,7 @@ describe('Banquise : physique du personnage', () => {
   it('un personnage qui marche hors de l’îlot tombe, puis disparaît sous la surface', () => {
     const ice = island();
     // Le bord gauche de la ligne du milieu : au-delà, il n'y a plus de glace.
-    let b = banquiseSetInput(newBody(0.5, 4.5, -1), -1, 0);
+    let b = banquiseSetInput(newBody(0, ZC, -1), -1, 0);
     let diedTick: number | null = null;
     for (let t = 0; t < 200; t++) {
       b = banquiseStepBody(b, ice, t * TICK, TICK / 1000, 0);
@@ -274,30 +273,30 @@ describe('Banquise : physique du personnage', () => {
 
   it('une rafale fait glisser un personnage immobile sur l’axe x seulement ; sans rafale, il reste en place', () => {
     const ice = island();
-    let calm = newBody(5.5, 4.5, 1);
-    let gust = newBody(5.5, 4.5, 1);
+    let calm = newBody(X0, ZC, 1);
+    let gust = newBody(X0, ZC, 1);
     for (let t = 0; t < 40; t++) {
       calm = banquiseStepBody(calm, ice, 0, TICK / 1000, 0);
       gust = banquiseStepBody(gust, ice, 0, TICK / 1000, 5);
     }
-    expect(Math.abs(calm.x - 5.5)).toBeLessThan(0.01);
-    expect(gust.x - 5.5).toBeGreaterThan(1);
-    expect(Math.abs(gust.z - 4.5)).toBeLessThan(0.01);
+    expect(Math.abs(calm.x - X0)).toBeLessThan(0.01);
+    expect(gust.x - X0).toBeGreaterThan(1);
+    expect(Math.abs(gust.z - ZC)).toBeLessThan(0.01);
   });
 
   it('un personnage qui marche contre le vent avance malgré la rafale', () => {
     const ice = island();
-    let walker = banquiseSetInput(newBody(5.5, 4.5, 1), -1, 0);
+    let walker = banquiseSetInput(newBody(X0, ZC, 1), -1, 0);
     for (let t = 0; t < 40; t++) walker = banquiseStepBody(walker, ice, 0, TICK / 1000, 5);
-    expect(walker.x).toBeLessThan(5.5);
+    expect(walker.x).toBeLessThan(X0);
   });
 });
 
 describe('Banquise : poussée et collisions', () => {
   it('pousse le personnage placé devant, dans le sens du dernier mouvement, avec un délai entre deux poussées', () => {
     const now = 10_000;
-    const pusher = setDir(newBody(5.5, 4.5, 1), 1, 0);
-    const target = newBody(6.1, 4.5, 1);
+    const pusher = setDir(newBody(X0, ZC, 1), 1, 0);
+    const target = newBody(X0 + 0.6, ZC, 1);
     const first = banquisePush(pusher, target, now);
     expect(first).not.toBeNull();
     expect(first!.target.vx).toBeGreaterThan(0);
@@ -306,8 +305,8 @@ describe('Banquise : poussée et collisions', () => {
   });
 
   it('pousse vers le bas (z) quand le dernier mouvement était vers le bas', () => {
-    const pusher = setDir(newBody(5.5, 3.5, 1), 0, 1);
-    const target = newBody(5.5, 4.1, 1);
+    const pusher = setDir(newBody(X0, ZC - 0.5, 1), 0, 1);
+    const target = newBody(X0, ZC + 0.1, 1);
     const res = banquisePush(pusher, target, 0);
     expect(res).not.toBeNull();
     expect(res!.target.vz).toBeGreaterThan(0);
@@ -315,16 +314,16 @@ describe('Banquise : poussée et collisions', () => {
   });
 
   it('ne pousse ni derrière soi, ni trop loin, ni trop sur le côté', () => {
-    const pusher = setDir(newBody(5.5, 4.5, 1), 1, 0);
-    expect(banquisePush(pusher, newBody(5.0, 4.5, 1), 10_000)).toBeNull();
-    expect(banquisePush(pusher, newBody(6.8, 4.5, 1), 10_000)).toBeNull();
+    const pusher = setDir(newBody(X0, ZC, 1), 1, 0);
+    expect(banquisePush(pusher, newBody(X0 - 0.5, ZC, 1), 10_000)).toBeNull();
+    expect(banquisePush(pusher, newBody(X0 + 1.3, ZC, 1), 10_000)).toBeNull();
     // Cible à côté, décalée de 0,7 case : hors du couloir de poussée.
-    expect(banquisePush(pusher, newBody(6.0, 5.2, 1), 10_000)).toBeNull();
+    expect(banquisePush(pusher, newBody(X0 + 0.5, ZC + 0.7, 1), 10_000)).toBeNull();
   });
 
   it('une poussée en diagonale touche une cible placée dans la bonne diagonale', () => {
-    const pusher = setDir(newBody(5.5, 4.5, 1), 1, 1);
-    expect(banquisePush(pusher, newBody(6.0, 5.0, 1), 0)).not.toBeNull();
+    const pusher = setDir(newBody(X0, ZC, 1), 1, 1);
+    expect(banquisePush(pusher, newBody(X0 + 0.5, ZC + 0.5, 1), 0)).not.toBeNull();
   });
 
   it('une poussée au bord fait tomber le personnage', () => {
@@ -332,7 +331,7 @@ describe('Banquise : poussée et collisions', () => {
     const ice = Array.from({ length: BANQUISE_COLS * BANQUISE_ROWS }, (_, i) =>
       i % BANQUISE_COLS <= 9 && banquiseInMask(i % BANQUISE_COLS, Math.floor(i / BANQUISE_COLS)) ? 'i' : '.',
     ).join('');
-    const res = banquisePush(setDir(newBody(8.5, 4.5, 1), 1, 0), newBody(9.3, 4.5, 1), 0)!;
+    const res = banquisePush(setDir(newBody(9 - 0.6, ZC, 1), 1, 0), newBody(9, ZC, 1), 0)!;
     let target = res.target;
     for (let t = 0; t < 200 && target.alive; t++) {
       target = banquiseStepBody(target, ice, t * TICK, TICK / 1000, 0);
@@ -341,16 +340,16 @@ describe('Banquise : poussée et collisions', () => {
   });
 
   it('deux personnages qui se heurtent se séparent et partagent leur vitesse', () => {
-    const a = { ...newBody(5.5, 4.5, 1), vx: 0 };
-    const b = { ...newBody(5.8, 4.5, 1), vx: -2 };
+    const a = { ...newBody(X0, ZC, 1), vx: 0 };
+    const b = { ...newBody(X0 + 0.3, ZC, 1), vx: -2 };
     const [sa, sb] = banquiseSeparate([a, b]) as [BanquiseBody, BanquiseBody];
     expect(Math.hypot(sb!.x - sa!.x, sb!.z - sa!.z)).toBeGreaterThanOrEqual(0.7 - 1e-9);
     expect(sa!.vx).toBeCloseTo(sb!.vx, 6);
   });
 
   it('deux personnages qui se heurtent de côté se séparent aussi en profondeur', () => {
-    const a = newBody(5.5, 4.5, 1);
-    const b = newBody(5.5, 4.8, 1);
+    const a = newBody(X0, ZC, 1);
+    const b = newBody(X0, ZC + 0.3, 1);
     const [sa, sb] = banquiseSeparate([a, b]) as [BanquiseBody, BanquiseBody];
     expect(Math.hypot(sb!.x - sa!.x, sb!.z - sa!.z)).toBeGreaterThanOrEqual(0.7 - 1e-9);
   });
@@ -374,8 +373,8 @@ describe('Banquise : règles de partie', () => {
     const { h, state } = begin([A, B], 5);
     // A est hors de l'îlot : il tombe au premier pas. B reste au centre.
     let s = place(state, island(), {
-      [A.id]: { x: -1.5, z: 4.5, facing: 1 },
-      [B.id]: { x: 5.5, z: 4.5, facing: -1 },
+      [A.id]: { x: -1.5, z: ZC, facing: 1 },
+      [B.id]: { x: X0, z: ZC, facing: -1 },
     });
     s = toPlay(h, s);
     expect(s.phase).toBe('play');
@@ -449,15 +448,15 @@ describe('Banquise : règles de partie', () => {
   it('la poussée se refuse sans personne devant, et se recharge après un coup', () => {
     const { h, state } = begin([A, B], 4);
     const s = place(toPlay(h, state), island(), {
-      [A.id]: { x: 5.5, z: 4.5, facing: 1 },
-      [B.id]: { x: 9.5, z: 4.5, facing: -1 },
+      [A.id]: { x: X0, z: ZC, facing: 1 },
+      [B.id]: { x: X0 + 4.5, z: ZC, facing: -1 },
     });
     const none = banquise.handleAction(s, A, 'push', undefined, h.ctx);
     expect(none.ok).toBe(false);
 
     const close = place(s, s.ice, {
-      [A.id]: { x: 5.5, z: 4.5, facing: 1 },
-      [B.id]: { x: 6.1, z: 4.5, facing: -1 },
+      [A.id]: { x: X0, z: ZC, facing: 1 },
+      [B.id]: { x: X0 + 0.6, z: ZC, facing: -1 },
     });
     const withDir = { ...close, bodies: { ...close.bodies, [A.id]: setDir(close.bodies[A.id]!, 1, 0) } };
     const first = banquise.handleAction(withDir, A, 'push', undefined, h.ctx);

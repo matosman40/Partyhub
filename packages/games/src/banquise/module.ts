@@ -6,6 +6,7 @@ import {
   COLS,
   ROWS,
   ICE,
+  cellCenter,
   erode,
   holeCount,
   iceAt,
@@ -124,9 +125,8 @@ function beginLevel(s: BanquiseState, level: number, ctx: GameContext): Banquise
   const bodies: Record<string, Body> = {};
   ids.forEach((id, i) => {
     const idx = cells[i] ?? 0;
-    const x = (idx % COLS) + 0.5;
-    const z = Math.floor(idx / COLS) + 0.5;
-    bodies[id] = newBody(x, z, x < COLS / 2 ? 1 : -1);
+    const c = cellCenter(idx % COLS, Math.floor(idx / COLS));
+    bodies[id] = newBody(c.x, c.z, c.x < COLS / 2 ? 1 : -1);
   });
   return {
     ...s,
@@ -284,15 +284,16 @@ function waterAhead(ice: string, b: Body): boolean {
   return !iceAt(ice, b.x + b.dirX, b.z + b.dirZ);
 }
 
-/** Centre de l'îlot : moyenne des cases de glace. */
+/** Centre de l'îlot : moyenne des centres des cases de glace. */
 function iceCenter(ice: string): { cx: number; cz: number } | null {
   let sx = 0;
   let sz = 0;
   let n = 0;
   for (let i = 0; i < ice.length; i++) {
     if (ice[i] !== ICE) continue;
-    sx += (i % COLS) + 0.5;
-    sz += Math.floor(i / COLS) + 0.5;
+    const c = cellCenter(i % COLS, Math.floor(i / COLS));
+    sx += c.x;
+    sz += c.z;
     n++;
   }
   return n === 0 ? null : { cx: sx / n, cz: sz / n };

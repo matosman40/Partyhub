@@ -1,27 +1,31 @@
-import { COLS, ICE, ROWS, inMask } from '../physics.js';
+import { COLS, ICE, ROWS, ROW_H, cellCenter, inMask } from '../physics.js';
 import { hash, unitImage } from '../../bombes-party/client/render.js';
 import { SPRITE_H, SPRITE_W } from '../../bombes-party/client/sprites.js';
 
 /**
- * Plan de la banquise, vu de trois quarts, dans le style des plateaux de Bomberman enneigés : un îlot arrondi
- * de cubes de glace bleue, chacun avec sa face avant, posé sur une mer profonde. Certaines plaques ont une neige
- * sur le dessus, les trous sont des eaux noires, et des morceaux de banquise flottent autour. Entre deux rangées,
- * l'écart d'une plaque laisse voir sa face avant. Une case de la physique vaut une case du plan.
+ * Plan de la banquise, vu de trois quarts : une grille hexagonale de cubes de glace bleue, chacun avec sa face
+ * avant épaisse, posés sur une mer profonde. Certaines cases ont une neige sur le dessus, les trous sont des eaux
+ * noires, et des morceaux de banquise flottent autour. Une case de la physique est un hexagone à pointe en haut ;
+ * une ligne sur deux est décalée d'une demi-case.
  *
  * Positions : (x, z) sur le plan, comme dans la physique. Un personnage plus loin en z (plus haut sur l'écran)
  * est dessiné avant les autres, pour que les premiers plans le recouvrent.
  */
 
 /** Marge de mer à gauche et à droite, en cases. */
-const SIDE_MARGIN = 1.1;
+const SIDE_MARGIN = 1;
 /** Marge de mer au-dessus et au-dessous, en cases. */
-const TOP_MARGIN = 0.9;
-/** Écrasement vertical du dessus : la hauteur d'une case vue de trois quarts, en part de sa largeur. */
-const SQUASH = 0.6;
-/** Épaisseur de la face avant d'un cube (et de l'écart entre rangées), en part de sa largeur. */
-const THICK = 0.55;
+const TOP_MARGIN = 0.8;
+/** Écrasement vertical : la vue de trois quarts raccourcit la hauteur des hexagones. */
+const SQUASH = 0.8;
+/** Écart entre deux hexagones voisins, en part de leur taille : un joint sombre apparaît entre eux. */
+const INSET = 0.92;
+/** Hauteur de la face avant d'un cube, en part de la largeur d'une case. */
+const THICK = 0.5;
 /** Taille maximale d'une case (px CSS) : au-delà, le plan reste centré dans son cadre. */
 const MAX_T = 48;
+/** Rayon d'un hexagone à pointe en haut, en cases : 1 / √3. */
+const HEX_R = 1 / Math.sqrt(3);
 /** Nombre de morceaux de banquise flottants dans la mer. */
 const CHUNK_COUNT = 16;
 
@@ -36,9 +40,12 @@ export interface BoardLayout {
   padY: number;
   /** Décalage horizontal du plan dans le cadre, pour le centrer (px). */
   ox: number;
-  /** Hauteur d'une case vue de trois quarts (le dessus). */
-  rowH: number;
-  /** Épaisseur de la face avant d'un cube. */
+  /** Pas vertical entre deux lignes d'hexagones (px). */
+  rowStep: number;
+  /** Demi-largeur et demi-hauteur d'un dessus d'hexagone (px). */
+  hexW: number;
+  hexH: number;
+  /** Hauteur de la face avant d'un cube (px). */
   thick: number;
   width: number;
   height: number;
@@ -46,36 +53,40 @@ export interface BoardLayout {
 
 export function boardLayout(cssWidth: number): BoardLayout {
   const T = Math.min(cssWidth / (COLS + 2 * SIDE_MARGIN), MAX_T);
-  const rowH = T * SQUASH;
-  const thick = T * THICK;
+  const pad = T * SIDE_MARGIN;
   const padY = T * TOP_MARGIN;
-  const boardW = T * (COLS + 2 * SIDE_MARGIN);
+  const rowStep = ROW_H * SQUASH * T;
+  const hexW = 0.5 * T * INSET;
+  const hexH = HEX_R * SQUASH * T * INSET;
+  const thick = T * THICK;
   return {
     T,
     S: T / 16,
-    pad: T * SIDE_MARGIN,
+    pad,
     padY,
-    ox: (cssWidth - boardW) / 2,
-    rowH,
+    ox: (cssWidth - (COLS * T + 2 * pad)) / 2,
+    rowStep,
+    hexW,
+    hexH,
     thick,
     width: cssWidth,
-    height: padY * 2 + ROWS * (rowH + thick),
+    height: padY * 2 + (ROWS - 1) * rowStep + 2 * hexH + thick,
   };
 }
 
-/** Ordonnée du haut d'une rangée (z entier), ou d'une position z continue, en pixels. */
-export function rowTopY(L: BoardLayout, z: number): number {
-  return L.padY + z * (L.rowH + L.thick);
+/** Ordonnée, dans le plan, du centre d'une position z (en cases). */
+function planY(L: BoardLayout, z: number): number {
+  return L.padY + L.hexH + (z / ROW_H) * L.rowStep;
 }
 
 /** Abscisse, en pixels, d'un personnage en `x` (cases). */
 export function actorLeft(L: BoardLayout, x: number): number {
-  return L.ox + L.pad + x * L.T;
+  return L.ox + L.pad + (x + 0.5) * L.T;
 }
 
 /** Ligne de sol, en pixels, d'un personnage en `z` : ses pieds, dans la partie basse de sa case. */
 export function groundY(L: BoardLayout, z: number): number {
-  return rowTopY(L, z) + L.rowH * 0.8;
+  return planY(L, z) + L.hexH * 0.35;
 }
 
 // Palette : mer profonde, glace bleue translucide, neige blanche, trous noirs.
@@ -90,13 +101,24 @@ const TOP_HI = '#e2f6ff';
 const TOP_LO = '#8ccff3';
 const TOP_EDGE = '#4f9fe0';
 const SNOW = '#ffffff';
-const SNOW_SHADE = '#cfe6f5';
-const FRONT_HI = '#3d8fdc';
-const FRONT_LO = '#1a4aa0';
-const FRONT_LINE = '#9adcff';
+const FACE_LEFT_HI = '#4f9fe0';
+const FACE_LEFT_LO = '#2a6cb8';
+const FACE_RIGHT_HI = '#2f7fcc';
+const FACE_RIGHT_LO = '#1a4aa0';
 const HOLE = '#0a1f55';
-const HOLE_WALL = '#03102e';
 const HOLE_RIM = '#4aa8f0';
+
+/** Chemin d'un hexagone à pointe en haut, centré en (cx, cy). */
+function hexPath(g: CanvasRenderingContext2D, cx: number, cy: number, hw: number, hh: number): void {
+  g.beginPath();
+  g.moveTo(cx, cy - hh);
+  g.lineTo(cx + hw, cy - hh / 2);
+  g.lineTo(cx + hw, cy + hh / 2);
+  g.lineTo(cx, cy + hh);
+  g.lineTo(cx - hw, cy + hh / 2);
+  g.lineTo(cx - hw, cy - hh / 2);
+  g.closePath();
+}
 
 /** Dessine un morceau de banquise : un polygone irrégulier, son côté sombre sous le dessus. */
 function chunkPath(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number): void {
@@ -172,57 +194,74 @@ function drawSea(g: CanvasRenderingContext2D, L: BoardLayout, now: number): void
   }
 }
 
-/** Trou : eau noire, paroi du fond dans l'ombre, bord clair sur le devant. */
-function drawPit(g: CanvasRenderingContext2D, L: BoardLayout, x: number, y: number): void {
-  g.fillStyle = HOLE;
-  g.fillRect(x, y, L.T, L.rowH);
-  g.fillStyle = HOLE_WALL;
-  g.fillRect(x, y, L.T, L.rowH * 0.3);
-  const b = Math.max(1, L.S);
-  g.fillStyle = HOLE_RIM;
-  g.fillRect(x, y + L.rowH - b, L.T, b);
-  g.fillRect(x, y + L.rowH * 0.3, b, L.rowH * 0.7);
-  g.fillRect(x + L.T - b, y + L.rowH * 0.3, b, L.rowH * 0.7);
+/** Centre, dans le plan (sans le décalage du cadre), d'une case. */
+function cellPos(L: BoardLayout, col: number, row: number): { x: number; y: number } {
+  const c = cellCenter(col, row);
+  return { x: L.pad + (c.x + 0.5) * L.T, y: planY(L, c.z) };
 }
 
-/** Face avant d'un cube : bleue et translucide, avec une arête claire en haut. */
-function drawFront(g: CanvasRenderingContext2D, L: BoardLayout, x: number, y: number): void {
-  const grad = g.createLinearGradient(0, y, 0, y + L.thick);
-  grad.addColorStop(0, FRONT_HI);
-  grad.addColorStop(1, FRONT_LO);
-  g.fillStyle = grad;
-  g.fillRect(x, y, L.T, L.thick);
-  g.fillStyle = FRONT_LINE;
-  g.fillRect(x, y, L.T, Math.max(1, L.S * 1.2));
+/**
+ * Face avant d'un cube : deux pans sous les arêtes basses de l'hexagone, prolongés vers le bas.
+ * Le pan gauche est plus clair, le droit plus sombre, comme la lumière des niveaux de Bomberman.
+ */
+function drawSkirt(g: CanvasRenderingContext2D, L: BoardLayout, cx: number, cy: number): void {
+  const { hexW: hw, hexH: hh, thick: t } = L;
+  const midY = cy + hh / 2;
+  const leftGrad = g.createLinearGradient(0, midY, 0, midY + t);
+  leftGrad.addColorStop(0, FACE_LEFT_HI);
+  leftGrad.addColorStop(1, FACE_LEFT_LO);
+  g.fillStyle = leftGrad;
+  g.beginPath();
+  g.moveTo(cx - hw, midY);
+  g.lineTo(cx, cy + hh);
+  g.lineTo(cx, cy + hh + t);
+  g.lineTo(cx - hw, midY + t);
+  g.closePath();
+  g.fill();
+
+  const rightGrad = g.createLinearGradient(0, midY, 0, midY + t);
+  rightGrad.addColorStop(0, FACE_RIGHT_HI);
+  rightGrad.addColorStop(1, FACE_RIGHT_LO);
+  g.fillStyle = rightGrad;
+  g.beginPath();
+  g.moveTo(cx, cy + hh);
+  g.lineTo(cx + hw, midY);
+  g.lineTo(cx + hw, midY + t);
+  g.lineTo(cx, cy + hh + t);
+  g.closePath();
+  g.fill();
 }
 
-/** Dessus d'un cube : glace claire, arête sombre sur le bord, neige sur certaines plaques. */
-function drawTop(g: CanvasRenderingContext2D, L: BoardLayout, c: number, row: number, x: number, y: number): void {
-  const grad = g.createLinearGradient(0, y, 0, y + L.rowH);
+/** Dessus d'un cube : glace claire, liseré sombre sur le bord, neige sur certaines cases. */
+function drawTop(g: CanvasRenderingContext2D, L: BoardLayout, col: number, row: number, cx: number, cy: number): void {
+  const { hexW: hw, hexH: hh } = L;
+  const grad = g.createLinearGradient(0, cy - hh, 0, cy + hh);
   grad.addColorStop(0, TOP_HI);
   grad.addColorStop(1, TOP_LO);
+  hexPath(g, cx, cy, hw, hh);
   g.fillStyle = grad;
-  g.fillRect(x, y, L.T, L.rowH);
+  g.fill();
+  g.strokeStyle = TOP_EDGE;
+  g.lineWidth = Math.max(1, L.S);
+  g.stroke();
 
-  const b = Math.max(1, L.S * 1.2);
-  g.fillStyle = TOP_EDGE;
-  g.fillRect(x, y + L.rowH - b, L.T, b);
-  g.fillRect(x + L.T - b, y, b, L.rowH);
-
-  const seed = row * 31 + c;
+  const seed = row * 31 + col;
   if (hash(seed, 9) < 0.35) {
-    // Neige posée sur le dessus, avec deux pointes qui coulent vers le bas.
-    const sx = x + b;
-    const sw = L.T - 2 * b;
-    const sh = L.rowH * (0.3 + 0.2 * hash(seed, 10));
+    // Neige posée sur le dessus, en un hexagone plus petit au bord haut de la case.
+    hexPath(g, cx, cy - hh * 0.2, hw * 0.7, hh * 0.6);
     g.fillStyle = SNOW;
-    g.fillRect(sx, y + b, sw, sh);
-    g.fillStyle = SNOW_SHADE;
-    g.fillRect(sx, y + b + sh, sw, b);
-    g.fillStyle = SNOW;
-    g.fillRect(sx + sw * 0.15, y + b + sh, sw * 0.12, b * 2);
-    g.fillRect(sx + sw * 0.6, y + b + sh, sw * 0.12, b * 1.5);
+    g.fill();
   }
+}
+
+/** Trou : eau noire dans un hexagone, avec un liseré clair. */
+function drawHole(g: CanvasRenderingContext2D, L: BoardLayout, cx: number, cy: number): void {
+  hexPath(g, cx, cy, L.hexW, L.hexH);
+  g.fillStyle = HOLE;
+  g.fill();
+  g.strokeStyle = HOLE_RIM;
+  g.lineWidth = Math.max(1, L.S);
+  g.stroke();
 }
 
 /** Personnage posé sur la glace. `lift` : hauteur du saut, en cases (négatif quand il coule). */
@@ -237,8 +276,8 @@ export interface ActorDraw {
 }
 
 /**
- * Dessine le plan : mer, puis l'îlot rangée par rangée, du fond vers l'avant. Les cases hors de l'îlot restent
- * de la mer ; les cases d'eau à l'intérieur sont des trous. Les personnages sont dessinés ensuite.
+ * Dessine le plan : mer, puis l'îlot ligne par ligne, du fond vers l'avant. Une case de glace a sa face avant ;
+ * une case d'eau à l'intérieur de l'îlot est un trou ; une case hors de l'îlot reste de la mer.
  */
 export function drawBoard(g: CanvasRenderingContext2D, L: BoardLayout, ice: string, now: number, dpr: number): void {
   g.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -248,15 +287,15 @@ export function drawBoard(g: CanvasRenderingContext2D, L: BoardLayout, ice: stri
   g.save();
   g.translate(L.ox, 0);
   for (let row = 0; row < ROWS; row++) {
-    const y = rowTopY(L, row);
-    for (let c = 0; c < COLS; c++) {
-      if (ice[row * COLS + c] !== ICE) continue;
-      drawFront(g, L, L.pad + c * L.T, y + L.rowH);
+    for (let col = 0; col < COLS; col++) {
+      if (ice[row * COLS + col] !== ICE) continue;
+      const p = cellPos(L, col, row);
+      drawSkirt(g, L, p.x, p.y);
     }
-    for (let c = 0; c < COLS; c++) {
-      const x = L.pad + c * L.T;
-      if (ice[row * COLS + c] === ICE) drawTop(g, L, c, row, x, y);
-      else if (inMask(c, row)) drawPit(g, L, x, y);
+    for (let col = 0; col < COLS; col++) {
+      const p = cellPos(L, col, row);
+      if (ice[row * COLS + col] === ICE) drawTop(g, L, col, row, p.x, p.y);
+      else if (inMask(col, row)) drawHole(g, L, p.x, p.y);
     }
   }
   g.restore();
