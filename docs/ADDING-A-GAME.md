@@ -244,6 +244,20 @@ Le jeu apparaît automatiquement dans le catalogue de l'accueil. Il est **activ�
 
 Pour une mise en production : `docker compose up -d --build`, puis vérifier la carte du nouveau jeu sur l'accueil.
 
+## Micro et caméra
+
+Un jeu peut utiliser le micro ou la caméra du téléphone, à condition de le demander au joueur au moment où il en a
+besoin. Le SDK `@partyhub/games/client` fournit :
+
+- `useMediaPrefs()` : le micro et la caméra choisis sur cet appareil (dans le profil ou le tiroir d'angle), avec
+  `null` pour l'appareil par défaut ;
+- `requestMicrophone(prefs)` et `requestCamera(prefs, facing?)` : demandent l'accès à l'appareil choisi. Elles
+  rejettent si l'autorisation est refusée ou si la page n'est pas en HTTPS ; prévoyez ce cas.
+- `canUseMedia()` : vrai si le navigateur sait demander le micro ou la caméra.
+
+Le flux obtenu appartient au jeu : arrêtez les pistes (`track.stop()`) dès que la vue se ferme. Aucun flux n'est
+envoyé au serveur par défaut ; un jeu qui enregistre quoi que ce soit doit le dire dans ses règles.
+
 ## Ce qu'un jeu ne peut pas faire
 
 - Charger du code depuis un fichier de configuration ou depuis un dossier utilisateur : les jeux sont déclarés dans le code.

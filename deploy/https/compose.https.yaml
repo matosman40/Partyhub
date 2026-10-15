@@ -1,0 +1,43 @@
+# Surcouche HTTPS pour le réseau local : Caddy sert PartyHub en https avec un certificat interne.
+# Le micro et la caméra des téléphones et tablettes n'existent qu'en HTTPS.
+#
+# Lancement, depuis le dossier de PartyHub (où se trouve compose.yaml) :
+#   docker compose -f compose.yaml -f deploy/https/compose.https.yaml up -d
+#
+# Réglez d'abord PARTYHUB_HOST dans .env (adresse du serveur, par exemple 192.168.1.156).
+# Puis installez le certificat racine sur les appareils : voir docs/HTTPS-LAN.md.
+# Nécessite Docker Compose 2.24.4 ou plus récent (balise !reset).
+
+services:
+  partyhub:
+    environment:
+      # Cookies de session envoyés seulement en HTTPS. Le proxy est Caddy, sur le réseau Docker.
+      COOKIE_SECURE: "true"
+      TRUST_PROXY: "172.16.0.0/12"
+    # Plus de port HTTP direct : une connexion en clair ne recevrait pas les cookies de session.
+    ports: !reset []
+
+  caddy:
+    image: caddy:2.10-alpine
+    pull_policy: missing
+    container_name: partyhub-caddy
+    restart: unless-stopped
+    depends_on:
+      - partyhub
+    environment:
+      PARTYHUB_HOST: "${PARTYHUB_HOST:-localhost}"
+    ports:
+      - "${PARTYHUB_HTTPS_PORT:-443}:443"
+    volumes:
+      - ./deploy/https/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  # Le dossier caddy-data contient l'autorité interne : le supprimer oblige à réinstaller le certificat racine.
+  caddy-data:
+    name: partyhub-caddy-data
+  caddy-config:
+    name: partyhub-caddy-config

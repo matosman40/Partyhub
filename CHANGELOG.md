@@ -11,11 +11,15 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 - CSS : règles mortes retirées (classes sans usage dans le code, anciennes mises en page de l'accueil et du TV).
 
 ### Ajouté
+- Micro et caméra par appareil : le choix du micro et de la caméra se fait dans le profil et dans le tiroir d'angle
+  du téléphone. Il est gardé dans le navigateur de cet appareil et s'applique à tous les jeux (SDK : `useMediaPrefs`,
+  `requestMicrophone`, `requestCamera`). Un test du micro (niveau) et de la caméra est proposé à côté.
+- HTTPS sur le réseau local : surcouche `deploy/https/compose.https.yaml` (Caddy, certificat interne) et notice
+  `docs/HTTPS-LAN.md`, indispensable pour que le micro et la caméra fonctionnent sur les téléphones.
 - Page de test des appareils (`/test-appareils`, lien « Tester micro, caméra, image » dans le menu de l'accueil) :
   niveau du micro et enregistrement de 3 s, aperçu de la caméra avant ou arrière, ouverture d'une image de l'appareil.
   Le navigateur demande l'autorisation au premier essai. Rien n'est envoyé au serveur. Sur une page en HTTP, le
   micro et la caméra sont bloqués par le navigateur : la page l'indique.
-### Ajouté
 - Tests de la minuterie d'inactivité des commandes (délai de 3,5 s, repoussé à chaque action).
 
 ## [0.7.1] - 2026-10-14

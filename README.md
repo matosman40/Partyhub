@@ -187,6 +187,9 @@ par jeu est installée. Le modèle de publication pour les dépôts de jeux est 
 Pour un accès depuis Internet, voir [docs/REMOTE-ACCESS.md](docs/REMOTE-ACCESS.md) : HTTPS obligatoire, administration
 bloquée depuis l'extérieur, de préférence via un VPN.
 
+Pour que le micro et la caméra des téléphones fonctionnent sur le réseau local, PartyHub doit être servi en HTTPS :
+voir [docs/HTTPS-LAN.md](docs/HTTPS-LAN.md) (surcouche Caddy avec certificat interne).
+
 ## Sauvegarde et restauration de la base
 
 PartyHub sauvegarde sa base (profils, statistiques, réglages, jeux) chaque jour, dans le dossier `backups` du

@@ -5,6 +5,7 @@ import { PlayerSeat, readSeat, removeSeat, writeSeat } from '../seat/PlayerSeat.
 import { sharedPlaceToken } from '../seat/share.js';
 import { readProfileToken, clearProfileToken, authHeaders } from '../profile/session.js';
 import { DrawerSection } from '../components/CornerMenu.js';
+import { DeviceChooser } from '../device/DeviceChooser.js';
 
 /** Nombre maximal de joueurs qu'un même téléphone peut tenir. */
 const MAX_SEATS = 6;
@@ -131,6 +132,9 @@ export function PlayerPage() {
             Retirer ce joueur de l’appareil
           </button>
         )}
+      </DrawerSection>
+      <DrawerSection title="Micro et caméra">
+        <DeviceChooser compact />
       </DrawerSection>
       {!profileToken && (
         <DrawerSection title="Compte">

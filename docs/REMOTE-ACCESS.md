@@ -3,6 +3,8 @@
 PartyHub est conçu pour le réseau local. Ouvrir le port 8282 directement sur Internet est déconseillé :
 le trafic serait en clair et l'administration serait exposée.
 
+Pour le seul réseau local, avec micro et caméra sur les téléphones, voir [HTTPS-LAN.md](HTTPS-LAN.md).
+
 Deux options, par ordre de préférence.
 
 ## Option A (recommandée) : VPN

@@ -1,0 +1,11 @@
+# Caddy : HTTPS sur le réseau local avec un certificat interne.
+#
+# L'adresse du serveur est lue dans PARTYHUB_HOST (fichier .env à côté de compose.yaml), par exemple 192.168.1.156.
+# Le certificat est signé par l'autorité interne de Caddy : son certificat racine doit être installé sur les
+# téléphones et tablettes (voir docs/HTTPS-LAN.md).
+
+https://{$PARTYHUB_HOST} {
+	tls internal
+	encode zstd gzip
+	reverse_proxy partyhub:8282
+}

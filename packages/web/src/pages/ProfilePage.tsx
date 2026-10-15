@@ -6,6 +6,7 @@ import { PlayerAvatar } from '../components/PlayerAvatar.js';
 import { authHeaders, clearProfileToken, readProfileToken, saveProfileToken } from '../profile/session.js';
 import { fileToAvatarDataUrl } from '../profile/avatarImage.js';
 import { CharacterEditor } from '../profile/CharacterEditor.js';
+import { DeviceChooser } from '../device/DeviceChooser.js';
 
 /**
  * Profil : compte réutilisable d'un appareil à l'autre. Le profil garde le pseudo,
@@ -271,6 +272,15 @@ export function ProfilePage() {
             )
           }
         />
+      </section>
+
+      <section className="card stack" aria-labelledby="devices-title">
+        <h2 id="devices-title">Micro et caméra</h2>
+        <p className="muted small">
+          Ce choix vaut pour cet appareil, pas pour le compte : il s’applique à tous les jeux qui utilisent le micro ou
+          la caméra.
+        </p>
+        <DeviceChooser />
       </section>
 
       <section className="card stack" aria-labelledby="password-title">

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { readMediaPrefs, requestCamera, requestMicrophone } from '@partyhub/games/client';
 import {
   describeMediaError,
   formatBytes,
@@ -71,7 +72,7 @@ function MicPanel() {
       return null;
     }
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await requestMicrophone(readMediaPrefs());
       streamRef.current = stream;
       setError(null);
       refreshPermission();
@@ -191,7 +192,7 @@ function CameraPanel() {
       return;
     }
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: mode }, audio: false });
+      const stream = await requestCamera(readMediaPrefs(), mode);
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
@@ -294,7 +295,8 @@ export function DeviceTestPage() {
         <h1>Test des appareils</h1>
         <p className="muted">
           Vérifiez que le micro, la caméra et les images fonctionnent sur cet appareil. Au premier essai, le navigateur
-          demande l’autorisation : acceptez-la pour continuer.
+          demande l’autorisation : acceptez-la pour continuer. Le micro et la caméra choisis dans le profil sont
+          utilisés.
         </p>
       </header>
       <Warning />

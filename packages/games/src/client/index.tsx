@@ -9,6 +9,20 @@ export type { AvatarData } from './avatar-context.js';
 export { Character } from './character.js';
 export type { CharacterProps } from './character.js';
 export { useWakeLock, vibrate, canVibrate } from './device.js';
+export {
+  audioConstraints,
+  canUseMedia,
+  parseMediaPrefs,
+  readMediaPrefs,
+  requestCamera,
+  requestMicrophone,
+  saveMediaPrefs,
+  useMediaPrefs,
+  videoConstraints,
+  EMPTY_MEDIA_PREFS,
+  MEDIA_PREFS_KEY,
+} from './media.js';
+export type { MediaPrefs } from './media.js';
 export { isMuted, setMuted, startMusic, stopMusic, unlockAudio } from './audio.js';
 export { SoundToggle } from './SoundToggle.js';
 export { cardGamePresets } from '../cards/presets.js';
