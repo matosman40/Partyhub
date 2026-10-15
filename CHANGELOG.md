@@ -7,6 +7,9 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 ### Corrigé
 - Image Docker : le serveur ne démarrait pas (« Cannot find package 'pino' ») et CasaOS affichait « container partyhub
   is unhealthy ». Le Dockerfile copie maintenant les dépendances propres aux paquets `shared`, `games` et `server`.
+- HTTPS sur le réseau local : Caddy répond aux connexions par adresse IP (`default_sni`), sans « alert internal error ».
+- Micro et aperçus d'image : la politique de sécurité bloquait les fichiers créés sur l'appareil (`blob:`). Le lecteur
+  du test micro, l'aperçu d'image du test et la photo de profil fonctionnent à nouveau.
 
 ## [0.8.0] - 2026-10-15
 

@@ -111,9 +111,11 @@ export function createApp(deps: AppDeps): express.Express {
     // iframe du lecteur, oEmbed de l'administration). Tout le reste reste limité à ce site.
     res.setHeader(
       'Content-Security-Policy',
-      "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; " +
+      // blob: : aperçus créés par la page elle-même (image du test, enregistrement du micro, photo de profil).
+      // Une URL blob ne peut être créée que par ce site ; elle n'autorise pas de script ni de contenu externe.
+      "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; " +
         "script-src 'self' https://www.youtube.com; frame-src https://www.youtube.com https://www.youtube-nocookie.com; " +
-        "media-src 'self' data:; connect-src 'self' ws: wss: https://www.youtube.com; object-src 'none'; " +
+        "media-src 'self' data: blob:; connect-src 'self' ws: wss: https://www.youtube.com; object-src 'none'; " +
         "base-uri 'self'; frame-ancestors 'self'",
     );
     next();
