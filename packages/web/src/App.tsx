@@ -5,6 +5,7 @@ import { JoinPage } from './pages/JoinPage.js';
 import { ObserverPage } from './pages/ObserverPage.js';
 import { PlayerPage } from './pages/PlayerPage.js';
 import { ProfilePage } from './pages/ProfilePage.js';
+import { DeviceTestPage } from './pages/DeviceTestPage.js';
 import { TvPage } from './pages/TvPage.js';
 
 function NotFound() {
@@ -29,6 +30,7 @@ export function App() {
         <Route path="/spectate/:code" element={<ObserverPage />} />
         <Route path="/profil" element={<ProfilePage />} />
         <Route path="/admin" element={<AdminPage />} />
+        <Route path="/test-appareils" element={<DeviceTestPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>

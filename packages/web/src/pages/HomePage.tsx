@@ -86,6 +86,9 @@ export function HomePage() {
             <Link to="/admin" onClick={() => setMenuOpen(false)}>
               Administration
             </Link>
+            <Link to="/test-appareils" onClick={() => setMenuOpen(false)}>
+              Tester micro, caméra, image
+            </Link>
           </nav>
         </DrawerSection>
         <DrawerSection title="Préférences">

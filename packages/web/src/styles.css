@@ -6304,3 +6304,86 @@ html:not([data-theme='dark']) .corner-drawer {
     transition: none;
   }
 }
+
+/* ---- Page de test des appareils ---- */
+
+.devtest-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  align-items: start;
+}
+
+.devtest-card h2 {
+  margin: 0;
+}
+
+.devtest-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.devtest-meter {
+  height: 14px;
+  border-radius: 999px;
+  background: var(--glass-2, rgba(255, 255, 255, 0.08));
+  overflow: hidden;
+}
+
+.devtest-meter span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--lime, #b8f56b), var(--sun, #ffd23f), var(--magenta, #ff3d8b));
+  transition: width 0.08s linear;
+}
+
+.devtest-preview {
+  aspect-ratio: 4 / 3;
+  border-radius: 14px;
+  background: #050312;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.devtest-preview video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.devtest-file {
+  position: relative;
+  overflow: hidden;
+  width: fit-content;
+}
+
+.devtest-file input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.devtest-image {
+  margin: 0;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.devtest-image img {
+  width: 100%;
+  height: auto;
+  border-radius: 14px;
+  display: block;
+}
+
+.devtest-warning {
+  border-color: var(--sun, #ffd23f);
+  margin: 0;
+}
+
+.devtest-audio {
+  width: 100%;
+}
