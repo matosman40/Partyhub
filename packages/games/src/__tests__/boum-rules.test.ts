@@ -33,17 +33,19 @@ describe('Éligibilité', () => {
       'ou_est_ce',
       'photo_defi',
       'reponse_rapide',
+      'rythme',
     ]);
   });
 
   it('exclut un mode dont la banque validée est insuffisante ou vide', () => {
     const onlyQuestions: CountValid = (type) => (type === 'question' ? 50 : 0);
-    // « Vrai ou faux » n'a pas de banque : les joueurs écrivent, il reste tirable.
-    expect(eligibleModes({ players: 4, pack: true, corse: false }, onlyQuestions).map((m) => m.id)).toEqual([
-      'reponse_rapide',
-      'vrai_ou_faux',
-    ]);
-    expect(eligibleModes({ players: 4, pack: true, corse: false }, none).map((m) => m.id)).toEqual(['vrai_ou_faux']);
+    // « Vrai ou faux » et « Rythme » n'ont pas de banque : ils restent tirables.
+    const ids = (countValid: CountValid) =>
+      eligibleModes({ players: 4, pack: true, corse: false }, countValid)
+        .map((m) => m.id)
+        .sort();
+    expect(ids(onlyQuestions)).toEqual(['reponse_rapide', 'rythme', 'vrai_ou_faux']);
+    expect(ids(none)).toEqual(['rythme', 'vrai_ou_faux']);
   });
 
   it('exige au moins 3 joueurs pour le détecteur de mauvaise foi', () => {

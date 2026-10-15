@@ -6983,6 +6983,57 @@ html:not([data-theme='dark']) .corner-drawer {
   margin: 0 auto;
 }
 
+.rhythm-track {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  margin: 1.5rem 0;
+}
+
+.rhythm-dot {
+  width: 1.4rem;
+  height: 1.4rem;
+  border-radius: 50%;
+  border: 2px solid var(--cyan);
+  background: var(--glass-2);
+}
+
+.rhythm-dot.lit {
+  background: var(--cyan);
+}
+
+@keyframes rhythm-pulse {
+  0% {
+    transform: scale(0.6);
+  }
+  40% {
+    transform: scale(1.25);
+    background: var(--cyan);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.rhythm-dot:not(.lit) {
+  animation: rhythm-pulse 0.5s ease-out 1 both;
+}
+
+.rhythm-pad {
+  width: 100%;
+  min-height: 40vh;
+  touch-action: manipulation;
+  user-select: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rhythm-dot:not(.lit) {
+    animation: none;
+  }
+}
+
 .boum-clues {
   list-style: none;
   margin: 0;

@@ -19,7 +19,8 @@ Identifiant `boum`, catégorie quiz, de 2 à 12 joueurs.
 | Photo-défi (chacun envoie une photo à la consigne, depuis la caméra ou la galerie ; vote anonyme sur les photos ; 100 par vote reçu) | fait |
 | Grimace (un joueur fait la grimace demandée, en photo, avec le mode grimace de la caméra ; les autres la notent de 1 à 5 étoiles ; barème du Détecteur ; consignes de la banque « Consigne photo ») | fait |
 | Galerie du thème (photo du thème tiré de la banque « Thème de galerie », vote anonyme sur les photos, 100 par vote reçu) | fait |
-| Modes restants : Rythme, Son mystère, Imite le cri, Le plus fort, Qui fait ce bruit ? | à faire |
+| Rythme (tactile : le modèle, de 3 à 5 intervalles, s’affiche sur l’écran ; chacun le reproduit en tapant sur son téléphone ; 100 points à un écart moyen nul, 0 à 300 ms ou plus ; sans banque, donc toujours tirable à 2 joueurs ou plus) | fait |
+| Modes restants : Son mystère, Imite le cri, Le plus fort, Qui fait ce bruit ? | à faire |
 | Formats (équipes, championnat) et super-pouvoirs | à faire |
 | Effets de mise en scène de l'écran principal | à faire |
 

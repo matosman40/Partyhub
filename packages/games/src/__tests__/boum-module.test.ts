@@ -3,7 +3,7 @@ import type { GameContext, PlayerRef } from '@partyhub/shared';
 import { createBoum, type BoumState } from '../boum/module.js';
 import type { BankSnapshot, BankSnapshotEntry } from '../boum/bank/registry.js';
 import { BANK_TYPES, BANK_TYPE_INFO } from '../boum/bank/types.js';
-import { detectorPoints } from '../boum/scoring.js';
+import { detectorPoints, rhythmPoints } from '../boum/scoring.js';
 
 /** Générateur déterministe (mulberry32). */
 function mulberry32(seed: number): () => number {
@@ -79,10 +79,13 @@ describe('BOUM ! : démarrage', () => {
     expect(result.ok).toBe(false);
   });
 
-  it('refuse de démarrer quand aucun mode n’est jouable', () => {
+  it('sans aucune banque prête, ne démarre qu’avec Rythme, qui n’a besoin d’aucun contenu', () => {
     const h = harness([A, B, C], 7, { entries: [] });
     const result = h.game.start(h.initial, h.ctx);
-    expect(result.ok).toBe(false);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.state.modes.length).toBeGreaterThan(0);
+    expect(result.state.modes.every((m) => m === 'rythme')).toBe(true);
   });
 
   it('démarre en annonce, puis ouvre la première manche à l’échéance', () => {
@@ -546,5 +549,39 @@ describe('BOUM ! : Galerie du thème', () => {
     expect(s.phase).toBe('write');
     s = ok(h.game.handleAction(s, at('c'), 'photo', { dataUrl: photo('C') }, h.ctx));
     expect(s.phase).toBe('vote');
+  });
+});
+
+describe('BOUM ! : barème du rythme', () => {
+  it('donne 100 pour un rythme exact, 50 pour 150 ms d’écart moyen, 0 à 300 ms ou plus', () => {
+    expect(rhythmPoints([300, 500], [300, 500])).toBe(100);
+    expect(rhythmPoints([600, 500], [300, 500])).toBe(50);
+    expect(rhythmPoints([1000, 500], [300, 500])).toBe(0);
+  });
+
+  it('ne marque rien quand le nombre de coups ne correspond pas', () => {
+    expect(rhythmPoints([300], [300, 500])).toBe(0);
+  });
+});
+
+describe('BOUM ! : Rythme', () => {
+  const at = (id: string) => ({ id, name: id });
+
+  it('refuse un rythme incomplet, puis marque 100 à ceux qui reproduisent le modèle exactement', () => {
+    const h = started(['rythme']);
+    let s = h.state;
+    const pattern = s.round!.rhythm;
+    expect(pattern.length).toBeGreaterThanOrEqual(3);
+    expect(h.game.handleAction(s, at('a'), 'tap', { intervals: [300] }, h.ctx).ok).toBe(false);
+    expect((h.game.getPublicState(s) as { rhythm: number[] }).rhythm).toEqual(pattern);
+    s = ok(h.game.handleAction(s, at('a'), 'tap', { intervals: pattern }, h.ctx));
+    expect(h.game.handleAction(s, at('a'), 'tap', { intervals: pattern }, h.ctx).ok).toBe(false);
+    expect(s.phase).toBe('write');
+    s = ok(h.game.handleAction(s, at('b'), 'tap', { intervals: pattern }, h.ctx));
+    s = ok(h.game.handleAction(s, at('c'), 'tap', { intervals: pattern }, h.ctx));
+    expect(s.phase).toBe('reveal');
+    expect(s.points.a).toBe(100);
+    expect(s.points.b).toBe(100);
+    expect(s.points.c).toBe(100);
   });
 });

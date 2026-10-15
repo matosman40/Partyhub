@@ -4,6 +4,13 @@ import { useRemaining } from '../../client/hooks.js';
 import { Avatar, FinalHost, LETTERS, Ranking, TimerBar, WaitingScreen } from '../../client/ui.js';
 import { CountryMap } from './CountryMap.js';
 
+/** Position, en millisecondes depuis le premier coup, de chaque coup d'un rythme. */
+function beatOffsets(intervals: readonly number[]): number[] {
+  const offsets = [0];
+  for (const gap of intervals) offsets.push(offsets[offsets.length - 1]! + gap);
+  return offsets;
+}
+
 /** Écran principal de BOUM ! : annonce, saisie, vote, notation et révélation de chaque manche. */
 export function BoumHost({ publicState: pub, hostState: host, now }: HostViewProps) {
   const remaining = useRemaining(pub?.endsAt, now);
@@ -47,9 +54,11 @@ export function BoumHost({ publicState: pub, hostState: host, now }: HostViewPro
                   ? `${pub.played} carte(s) jouée(s)`
                   : kind === 'mot_secret'
                     ? `${pub.written} indice(s)`
-                    : kind === 'photo'
-                      ? `${pub.written} photo(s)`
-                      : `${pub.written} texte(s) envoyé(s)`;
+                    : kind === 'rythme'
+                      ? `${pub.tapped} joueur(s) ont tapé`
+                      : kind === 'photo'
+                        ? `${pub.written} photo(s)`
+                        : `${pub.written} texte(s) envoyé(s)`;
     return (
       <section className="game-host boum-host fade-in" key={key} style={style} data-effects={pub.effects}>
         <div className="round-info">
@@ -59,6 +68,17 @@ export function BoumHost({ publicState: pub, hostState: host, now }: HostViewPro
         {pub.prompt && <h2 className="huge-word small">{pub.prompt.text}</h2>}
         {kind === 'carte_vote' && <p className="muted">Chacun joue une carte sur son téléphone.</p>}
         {kind === 'detecteur' && pub.pleader && <p className="muted">{pub.pleader} se défend.</p>}
+        {kind === 'rythme' && pub.rhythm && (
+          <>
+            <p className="label">Retenez le rythme</p>
+            <div className="rhythm-track" aria-hidden="true">
+              {beatOffsets(pub.rhythm).map((offset, i) => (
+                <span key={i} className="rhythm-dot" style={{ animationDelay: `${offset}ms` }} />
+              ))}
+            </div>
+            <p className="muted">Tapez-le sur votre téléphone, coup pour coup.</p>
+          </>
+        )}
         {kind === 'mot_secret' && pub.pleader && (
           <>
             <p className="label">{pub.pleader} devine le mot</p>
@@ -295,6 +315,32 @@ export function BoumHost({ publicState: pub, hostState: host, now }: HostViewPro
             </li>
           ))}
         </ol>
+      )}
+      {reveal?.kind === 'rythme' && (
+        <>
+          <p className="label">Le rythme était</p>
+          <div className="rhythm-track" aria-hidden="true">
+            {beatOffsets(reveal.pattern).map((_: number, i: number) => (
+              <span key={i} className="rhythm-dot lit" />
+            ))}
+          </div>
+          <ol className="ranking">
+            {reveal.results.map((r: { name: string; error: number | null; gained: number }, i: number) => (
+              <li key={r.name}>
+                <span className="rank">{i + 1}</span>
+                <Avatar name={r.name} size="sm" />
+                <span className="name">
+                  {r.name}
+                  <span className="muted small">
+                    {' '}
+                    · {r.error === null ? 'pas tapé' : `écart ${Math.round(r.error)} ms`}
+                  </span>
+                </span>
+                <span className="points">+{r.gained}</span>
+              </li>
+            ))}
+          </ol>
+        </>
       )}
       {reveal?.kind === 'grimace' && (
         <>

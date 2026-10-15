@@ -16,6 +16,8 @@ import {
   quickPoints,
   rankStandings,
   VOTE_POINTS,
+  rhythmError,
+  rhythmPoints,
 } from './scoring.js';
 import { currentBoumBank, type BankSnapshot } from './bank/registry.js';
 import { BANK_TYPE_INFO, type BankType, type Level } from './bank/types.js';
@@ -59,6 +61,10 @@ export interface Prompt {
 export interface BoumRound {
   mode: ModeId;
   prompt: Prompt | null;
+  /** Rythme : intervalles entre les coups du modèle (ms). */
+  rhythm: number[];
+  /** Rythme : intervalles tapés par chaque joueur (ms). */
+  taps: Record<string, number[]>;
   /** Joueur qui se défend (détecteur). */
   pleader: string | null;
   /** Dernier texte écrit ou carte jouée, par joueur. Jamais montré avant le vote. */
@@ -116,6 +122,8 @@ const PHOTO_MAX_CHARS = 60_000;
 const PHOTO_URL = /^data:image\/jpeg;base64,[A-Za-z0-9+/]+={0,2}$/;
 const photoSchema = z.object({ dataUrl: z.string().max(PHOTO_MAX_CHARS).regex(PHOTO_URL, 'Photo invalide') });
 
+const tapSchema = z.object({ intervals: z.array(z.number().int().min(0).max(10_000)).min(1).max(8) });
+
 export const boumActions = {
   answer: answerSchema,
   guess: guessSchema,
@@ -125,6 +133,7 @@ export const boumActions = {
   country: countrySchema,
   clip: clipSchema,
   photo: photoSchema,
+  tap: tapSchema,
 };
 
 /** Indice du mot secret : un seul mot, qui ne reprend ni le mot à deviner ni l'un de ses mots longs. */
@@ -190,6 +199,8 @@ function emptyRound(mode: ModeId, endsAt: number, durationMs: number): BoumRound
     mode,
     prompt: null,
     pleader: null,
+    rhythm: [],
+    taps: {},
     writings: {},
     guesses: {},
     correct: [],
@@ -316,6 +327,12 @@ function openRound(state: BoumState, ctx: GameContext): BoumState {
       round.pleader = sorted[s.index % sorted.length] ?? null;
       break;
     }
+    case 'rythme': {
+      // Le modèle : 3 à 5 intervalles, de 300 à 800 ms, tirés au hasard.
+      const count = 3 + Math.floor(ctx.random() * 3);
+      round.rhythm = Array.from({ length: count }, () => 300 + Math.floor(ctx.random() * 501));
+      break;
+    }
     case 'vrai_ou_faux':
       break;
   }
@@ -414,6 +431,10 @@ function reveal(state: BoumState, ctx: GameContext): BoumState {
       for (const target of Object.values(round.votes)) add(String(target), PROBABLE_POINTS);
       break;
     }
+    case 'rythme': {
+      for (const [id, intervals] of Object.entries(round.taps)) add(id, rhythmPoints(intervals, round.rhythm));
+      break;
+    }
     case 'detecteur':
     case 'grimace': {
       const pleader = round.pleader;
@@ -489,6 +510,8 @@ function afterWrite(state: BoumState, ctx: GameContext): BoumState {
     case 'vrai_ou_faux':
     case 'carte_vote':
       return connected.every((id) => id in round.writings) ? toVote(state, ctx) : state;
+    case 'rythme':
+      return connected.every((id) => id in round.taps) ? reveal(state, ctx) : state;
     case 'detecteur':
     case 'grimace':
       return toRate(state, ctx);
@@ -587,6 +610,17 @@ export function createBoum(getBank: () => BankSnapshot = currentBoumBank): GameM
       const mode = currentMode(state);
       if (!round || !mode) return fail('Aucune manche en cours');
       const pid = player.id;
+
+      if (type === 'tap') {
+        if (mode.kind !== 'rythme') return fail('Pas de rythme à taper pour cette manche');
+        if (state.phase !== 'write') return fail('Le temps est écoulé');
+        if (pid in round.taps) return fail('Vous avez déjà tapé');
+        const parsed = tapSchema.safeParse(payload);
+        if (!parsed.success) return fail('Rythme invalide');
+        if (parsed.data.intervals.length !== round.rhythm.length) return fail('Tapez le rythme en entier');
+        const next = { ...round, taps: { ...round.taps, [pid]: parsed.data.intervals } };
+        return ok(afterWrite({ ...state, round: next }, ctx));
+      }
 
       if (type === 'photo') {
         if (mode.kind !== 'photo' && mode.kind !== 'grimace') return fail('Pas de photo à envoyer pour cette manche');
@@ -816,6 +850,8 @@ export function createBoum(getBank: () => BankSnapshot = currentBoumBank): GameM
           clip: mode.kind === 'chanson' ? round.clip : null,
           clues:
             mode.kind === 'mot_secret' ? Object.values(round.writings).sort((a, b) => a.localeCompare(b, 'fr')) : null,
+          rhythm: mode.kind === 'rythme' ? round.rhythm : null,
+          tapped: Object.keys(round.taps).length,
           found: round.correct.length,
           guessed: Object.keys(round.guesses).length,
           played: Object.keys(round.played).length,
@@ -873,6 +909,7 @@ export function createBoum(getBank: () => BankSnapshot = currentBoumBank): GameM
             (mode.kind === 'mime' && playerId !== round.pleader && !round.correct.includes(playerId)) ||
             (mode.kind === 'chiffre' && !(playerId in round.guesses)) ||
             (mode.kind === 'photo' && !(playerId in round.writings)) ||
+            (mode.kind === 'rythme' && !(playerId in round.taps)) ||
             (mode.kind === 'grimace' && playerId === round.pleader && !(playerId in round.writings)) ||
             (mode.kind === 'ecriture_vote' && !(playerId in round.writings)) ||
             (mode.kind === 'vrai_ou_faux' && !(playerId in round.writings)) ||
@@ -925,6 +962,7 @@ export function createBoum(getBank: () => BankSnapshot = currentBoumBank): GameM
           if (mode?.kind === 'mime')
             return connected.filter((id) => id !== round.pleader && !round.correct.includes(id));
           if (mode?.kind === 'carte_vote') return connected.filter((id) => !(id in round.played));
+          if (mode?.kind === 'rythme') return connected.filter((id) => !(id in round.taps));
           if (mode?.kind === 'detecteur' || mode?.kind === 'grimace')
             return round.pleader ? [round.pleader].filter((id) => !(id in round.writings)) : [];
           return connected.filter((id) => !(id in round.writings));
@@ -1045,6 +1083,16 @@ function revealView(state: BoumState, round: BoumRound, mode: ModeDef) {
           .map((id) => ({ name: name(id), votes: counts[id] ?? 0, gained: round.gains[id] ?? 0 }))
           .sort((a, b) => b.votes - a.votes || a.name.localeCompare(b.name, 'fr')),
       };
+    }
+    case 'rythme': {
+      const results = Object.keys(state.players)
+        .map((id) => ({
+          name: name(id),
+          error: round.taps[id] ? rhythmError(round.taps[id], round.rhythm) : null,
+          gained: round.gains[id] ?? 0,
+        }))
+        .sort((a, b) => b.gained - a.gained || a.name.localeCompare(b.name, 'fr'));
+      return { kind: 'rythme' as const, pattern: round.rhythm, results };
     }
     case 'grimace': {
       const stars = Object.values(round.ratings);

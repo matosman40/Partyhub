@@ -108,6 +108,24 @@ export function detectorPoints(ratings: readonly number[]): number {
   return Math.round(average * 20);
 }
 
+/**
+ * Rythme : écart moyen, en millisecondes, entre les intervalles tapés et ceux du modèle.
+ * Un nombre de coups différent ne marque rien : null.
+ */
+export function rhythmError(taps: readonly number[], pattern: readonly number[]): number | null {
+  if (pattern.length === 0 || taps.length !== pattern.length) return null;
+  return pattern.reduce((sum, p, i) => sum + Math.abs((taps[i] ?? 0) - p), 0) / pattern.length;
+}
+
+/** Écart moyen de 0 ms = 100 points ; 300 ms ou plus = 0 point. */
+export const RHYTHM_TOLERANCE_MS = 300;
+
+export function rhythmPoints(taps: readonly number[], pattern: readonly number[]): number {
+  const error = rhythmError(taps, pattern);
+  if (error === null) return 0;
+  return Math.max(0, Math.round(100 * (1 - error / RHYTHM_TOLERANCE_MS)));
+}
+
 export interface Standing {
   id: string;
   name: string;

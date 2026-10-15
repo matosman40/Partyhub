@@ -53,7 +53,8 @@ export type ModeKind =
   | 'chanson'
   | 'mot_secret'
   | 'photo'
-  | 'grimace';
+  | 'grimace'
+  | 'rythme';
 
 /** Durée du mime, en secondes (spécification : le mimeur a 60 secondes). */
 export const MIME_SECONDS = 60;
@@ -75,7 +76,8 @@ export type ModeId =
   | 'le_mot_secret'
   | 'photo_defi'
   | 'grimace'
-  | 'galerie_theme';
+  | 'galerie_theme'
+  | 'rythme';
 
 export interface ModeNeed {
   type: BankType;
@@ -269,6 +271,16 @@ export const MODES: readonly ModeDef[] = [
     pack: false,
     minPlayers: 3,
     needs: [{ type: 'theme_galerie', minValid: 5 }],
+  },
+  {
+    id: 'rythme',
+    title: 'Rythme',
+    brief: 'Retenez le rythme affiché sur l’écran, puis reproduisez-le en tapant sur votre téléphone.',
+    family: 'tactile',
+    kind: 'rythme',
+    pack: false,
+    minPlayers: 2,
+    needs: [],
   },
 ];
 

@@ -17,6 +17,8 @@ export function BoumPlayer({ publicState: pub, playerState: me, playerId, now, s
   const [text, setText] = useState('');
   const [number, setNumber] = useState('');
   const [country, setCountry] = useState('');
+  // Rythme : instants des coups déjà tapés, pour la manche affichée.
+  const [beats, setBeats] = useState<{ round: number; at: number[] }>({ round: -1, at: [] });
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -135,6 +137,49 @@ export function BoumPlayer({ publicState: pub, playerState: me, playerId, now, s
 
     const promptText = pub.prompt?.text ?? '';
 
+    if (kind === 'rythme') {
+      if (me?.mustAct === false) {
+        return <WaitingScreen title="Envoyé ✔" text="En attente des autres… Regardez l’écran principal." />;
+      }
+      const rhythm: number[] = pub.rhythm ?? [];
+      const stamps = beats.round === pub.index ? beats.at : [];
+      const tap = () => {
+        if (busy || remaining <= 0) return;
+        const next = [...stamps, performance.now()];
+        if (next.length === rhythm.length + 1) {
+          setBeats({ round: pub.index, at: [] });
+          void run('tap', { intervals: next.slice(1).map((t, i) => Math.round(t - next[i]!)) });
+        } else {
+          setBeats({ round: pub.index, at: next });
+        }
+      };
+      return (
+        <section className="player-game fade-in">
+          <div className="round-info">
+            {title} · <Countdown remaining={remaining} />
+          </div>
+          <h2 className="question-small">Reproduisez le rythme affiché sur l’écran</h2>
+          <p className="muted">
+            {stamps.length} / {rhythm.length + 1} coups
+          </p>
+          <button
+            type="button"
+            className="btn primary big rhythm-pad"
+            disabled={busy || remaining <= 0}
+            onPointerDown={tap}
+            onKeyDown={(e) => {
+              if ((e.key === 'Enter' || e.key === ' ') && !e.repeat) {
+                e.preventDefault();
+                tap();
+              }
+            }}
+          >
+            Tapez ici
+          </button>
+          {notice}
+        </section>
+      );
+    }
     if ((kind === 'photo' || kind === 'grimace') && me?.mustAct) {
       return (
         <section className="player-game fade-in">
