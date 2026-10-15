@@ -34,6 +34,10 @@ WORKDIR /app
 
 COPY --from=build --chown=root:root /app/package.json ./
 COPY --from=build /app/node_modules ./node_modules
+# npm place certaines dépendances (pino, better-sqlite3, socket.io…) dans le dossier propre à chaque
+# paquet, pas à la racine : il faut les copier aussi, sinon le serveur ne démarre pas.
+COPY --from=build /app/packages/games/node_modules ./packages/games/node_modules
+COPY --from=build /app/packages/server/node_modules ./packages/server/node_modules
 COPY --from=build /app/packages/shared/package.json ./packages/shared/
 COPY --from=build /app/packages/shared/dist ./packages/shared/dist
 COPY --from=build /app/packages/games/package.json ./packages/games/
