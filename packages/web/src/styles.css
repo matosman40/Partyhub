@@ -6395,3 +6395,188 @@ html:not([data-theme='dark']) .corner-drawer {
 .devtest-audio {
   width: 100%;
 }
+
+/* Imite-moi : consignes, réponses anonymes et capture sur le téléphone. */
+.imite-host,
+.imite-play {
+  display: grid;
+  gap: 16px;
+  justify-items: center;
+  text-align: center;
+}
+
+.imite-scene {
+  width: min(360px, 70vw);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  font-size: 96px;
+}
+
+.imite-scene img,
+.imite-art {
+  width: 100%;
+  height: auto;
+  border-radius: 24px;
+}
+
+.imite-art {
+  width: min(220px, 60vw);
+}
+
+.imite-title {
+  margin: 0;
+}
+
+.imite-title.small {
+  font-size: 1.2rem;
+}
+
+.imite-instruction {
+  font-size: 1.2rem;
+  margin: 0;
+}
+
+.imite-timer {
+  width: min(480px, 90%);
+  height: 10px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.12);
+  overflow: hidden;
+}
+
+.imite-timer span {
+  display: block;
+  height: 100%;
+  background: currentColor;
+  transition: width 250ms linear;
+}
+
+.imite-grid {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.imite-entry {
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+  padding: 10px;
+  border-radius: 18px;
+  background: rgb(255 255 255 / 0.06);
+}
+
+.imite-photo {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 14px;
+}
+
+.imite-label {
+  font-weight: 700;
+}
+
+.imite-audio {
+  width: 100%;
+}
+
+.imite-ranking {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  width: min(420px, 90%);
+  display: grid;
+  gap: 8px;
+}
+
+.imite-ranking li {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 14px;
+  border-radius: 12px;
+  background: rgb(255 255 255 / 0.06);
+}
+
+.imite-prompt {
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+}
+
+.imite-prompt h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.imite-capture {
+  width: 100%;
+  justify-items: center;
+}
+
+.imite-live {
+  position: relative;
+  width: 100%;
+  max-width: 320px;
+  aspect-ratio: 3 / 4;
+  border-radius: 18px;
+  background: #050312;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+}
+
+.imite-live[hidden] {
+  display: none;
+}
+
+.imite-live video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.imite-countdown {
+  position: absolute;
+  font-size: 96px;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 4px 24px rgb(0 0 0 / 0.6);
+}
+
+.imite-preview {
+  width: min(320px, 100%);
+  border-radius: 18px;
+}
+
+.imite-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+
+.imite-file {
+  position: relative;
+  overflow: hidden;
+}
+
+.imite-file input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .imite-timer span {
+    transition: none;
+  }
+}

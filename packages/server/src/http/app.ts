@@ -113,7 +113,7 @@ export function createApp(deps: AppDeps): express.Express {
       'Content-Security-Policy',
       "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; " +
         "script-src 'self' https://www.youtube.com; frame-src https://www.youtube.com https://www.youtube-nocookie.com; " +
-        "media-src 'self'; connect-src 'self' ws: wss: https://www.youtube.com; object-src 'none'; " +
+        "media-src 'self' data:; connect-src 'self' ws: wss: https://www.youtube.com; object-src 'none'; " +
         "base-uri 'self'; frame-ancestors 'self'",
     );
     next();

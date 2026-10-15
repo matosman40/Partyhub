@@ -14,6 +14,7 @@ import { loupsVillage } from './loups-village/module.js';
 import { sudoku, solitaire, taquin, motsCroises } from './solo/index.js';
 import { rami51 } from './rami51/module.js';
 import { tarot } from './tarot/module.js';
+import { imiteMoi } from './imite-moi/module.js';
 
 /**
  * Registre explicite des jeux disponibles.
@@ -39,6 +40,7 @@ export const gameRegistry: GameModule[] = [
   motsCroises,
   rami51,
   tarot,
+  imiteMoi,
 ];
 
 export function findGame(id: string): GameModule | undefined {
@@ -69,6 +71,8 @@ export { createMediaQuiz, mediaRanking, type MediaQuizSettings, type MediaQuizSt
 export { createMediaGame } from './media-game.js';
 export * from './solo/index.js';
 export { createCaptionGame, type CaptionState, type CaptionSettings } from './captions/module.js';
+export { imiteMoi, imiteSettingsSchema, LEVELS as IMITE_LEVELS, MEDIA_MAX_CHARS } from './imite-moi/module.js';
+export type { ImiteState, ImiteSettings, ImitePhase, Level as ImiteLevel } from './imite-moi/module.js';
 export { matchAnswer, normalizeAnswer, editDistance } from './media-quiz/answer.js';
 export { rami51, createRamiGame, ramiSettingsSchema } from './rami51/module.js';
 export type { RamiState, RamiSettings, RamiPhase, RamiRoundResult } from './rami51/module.js';

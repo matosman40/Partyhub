@@ -11,8 +11,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 - CSS : règles mortes retirées (classes sans usage dans le code, anciennes mises en page de l'accueil et du TV).
 
 ### Ajouté
-- Micro et caméra par appareil : le choix du micro et de la caméra se fait dans le profil et dans le tiroir d'angle
-  du téléphone. Il est gardé dans le navigateur de cet appareil et s'applique à tous les jeux (SDK : `useMediaPrefs`,
+- Jeu « Imite-moi ! » (catégorie quiz) : une consigne apparaît sur l'écran principal, avec une illustration à imiter ou un son. Chaque joueur répond depuis son téléphone : une photo de la galerie, une photo prise avec la caméra (compte à rebours), ou 3 secondes au micro. Les réponses sont votées anonymement, 100 points par vote reçu. Quatre niveaux : galerie, grimace, cri, ou mélange des trois. Photos et sons restent en mémoire pendant la partie seulement.
+- Micro et caméra par appareil : le choix du micro et de la caméra se fait dans le profil et dans le tiroir d'angle du téléphone. Il est gardé dans le navigateur de cet appareil et s'applique à tous les jeux (SDK : `useMediaPrefs`,
   `requestMicrophone`, `requestCamera`). Un test du micro (niveau) et de la caméra est proposé à côté.
 - HTTPS sur le réseau local : surcouche `deploy/https/compose.https.yaml` (Caddy, certificat interne) et notice
   `docs/HTTPS-LAN.md`, indispensable pour que le micro et la caméra fonctionnent sur les téléphones.

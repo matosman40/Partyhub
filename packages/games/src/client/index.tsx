@@ -128,6 +128,14 @@ export const clientViews: Record<string, GameClientViews> = {
       Player: ReflexePlayer,
     };
   }),
+  'imite-moi': lazyViews(async () => {
+    const [{ ImiteHost }, { ImitePlayer }, { ImiteSettings }] = await Promise.all([
+      import('../imite-moi/client/HostScreen.js'),
+      import('../imite-moi/client/PlayerScreen.js'),
+      import('../imite-moi/client/Settings.js'),
+    ]);
+    return { Settings: ImiteSettings, Host: ImiteHost, Player: ImitePlayer };
+  }),
   'bombes-party': lazyViews(async () => {
     const [{ BombesPartyHost }, { BombesPartyPlayer }] = await Promise.all([
       import('../bombes-party/client/HostScreen.js'),
