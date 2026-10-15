@@ -111,10 +111,13 @@ Attitudes utilisées :
 
 ## Écrans
 
-- **Écran principal** : la banquise (glace claire, eau animée), les personnages avec leur nom, le numéro du niveau
-  et son titre, l'annonce du vent, le temps avant la fonte, les éliminés et le classement.
-- **Téléphone** : la même banquise en plus petit, votre personnage mis en évidence, les commandes en bas, et « Vous
-  êtes tombé » après l'élimination.
+- **Vue** : une vue en plongée, légèrement de face. La banquise est une surface vue d'en haut, avec sa falaise de
+  face et ses trous d'eau. Les personnages restent debout et projettent une ombre au sol : l'ombre rétrécit quand ils
+  sautent. Le jeu ne bouge qu'en largeur ; la profondeur n'est qu'un effet visuel, identique pour tous.
+- **Écran principal** : la banquise, la mer et les icebergs à l'horizon, les personnages avec leur nom, le numéro du
+  niveau et son titre, l'annonce du vent et ses traînées, le temps avant la fonte, les éliminés et le classement.
+- **Téléphone** : la même scène en plus petit, votre personnage mis en évidence (« Vous »), les commandes en bas, et
+  « Tombé à l'eau » après l'élimination.
 
 ## Robots (mode test)
 
