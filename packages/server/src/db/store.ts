@@ -4,6 +4,7 @@ import Database from 'better-sqlite3';
 import { z } from 'zod';
 import { ROOM_CODE_DEFAULT_LENGTH, ROOM_CODE_MAX_LENGTH, ROOM_CODE_MIN_LENGTH } from '@partyhub/shared';
 import { parseScreenBackgrounds, type ScreenBackgrounds } from '../screen-backgrounds.js';
+import { parseSoundSettings, type SoundSettings } from '@partyhub/shared';
 
 /** Fichier de la médiathèque (les octets sont sur le disque, pas en base). */
 export interface AssetRow {
@@ -538,6 +539,15 @@ export class Store {
 
   saveScreenBackgrounds(backgrounds: ScreenBackgrounds): void {
     this.setKv('screen_backgrounds', JSON.stringify(backgrounds));
+  }
+
+  /** Musiques de menu et bruitages : un fichier de la médiathèque par emplacement, ou aucun. */
+  getSoundSettings(): SoundSettings {
+    return parseSoundSettings(this.getKv('sound_settings'));
+  }
+
+  saveSoundSettings(settings: SoundSettings): void {
+    this.setKv('sound_settings', JSON.stringify(settings));
   }
 
   /** Un jeu est activé par défaut tant qu'aucun réglage ne le désactive. */

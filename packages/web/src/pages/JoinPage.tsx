@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { api } from '../api.js';
 import { isValidRoomCode, ROOM_CODE_MAX_LENGTH } from '@partyhub/shared';
 import { QrScanner, canScanQr } from '../components/QrScanner.js';
+import { useMusicSlot } from '../sounds.js';
 
 /** Extrait le code de salle d'un QR code (lien /j/CODE) ou d'un code saisi à la main. */
 export function codeFromScan(value: string): string | null {
@@ -14,6 +15,7 @@ export function codeFromScan(value: string): string | null {
 
 export function JoinPage() {
   const navigate = useNavigate();
+  useMusicSlot('menus');
   const [params] = useSearchParams();
   const [code, setCode] = useState((params.get('code') ?? '').replace(/\D/g, '').slice(0, ROOM_CODE_MAX_LENGTH));
   const [error, setError] = useState<string | null>(null);

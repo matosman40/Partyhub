@@ -7,6 +7,7 @@ import { authHeaders, clearProfileToken, readProfileToken, saveProfileToken } fr
 import { fileToAvatarDataUrl } from '../profile/avatarImage.js';
 import { CharacterEditor } from '../profile/CharacterEditor.js';
 import { DeviceChooser } from '../device/DeviceChooser.js';
+import { useMusicSlot } from '../sounds.js';
 
 /**
  * Profil : compte réutilisable d'un appareil à l'autre. Le profil garde le pseudo,
@@ -20,6 +21,7 @@ interface Session {
 }
 
 export function ProfilePage() {
+  useMusicSlot('menus');
   const [session, setSession] = useState<Session | null>(null);
   const [checking, setChecking] = useState(readProfileToken() !== null);
   const [mode, setMode] = useState<Mode>('login');

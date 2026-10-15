@@ -9,6 +9,7 @@ import {
   type Level,
 } from './types.js';
 import { COUNTRY_CODES } from './countries.js';
+import { HARD_TERMS } from './hard-terms.js';
 
 /**
  * Validation des entrées de banque, commune à l'import, à l'édition et aux propositions.
@@ -30,8 +31,7 @@ export const FORBIDDEN_NAMES = [
   'Cards Against Humanity',
 ] as const;
 
-/** Insultes dures : liste à compléter par l'administrateur (voir docs/BOUM.md). Vide par défaut. */
-export const HARD_TERMS: readonly string[] = [];
+export { HARD_TERMS };
 
 export const IMPORT_MAX_BYTES = 300 * 1024;
 export const IMPORT_MAX_LINES = 2000;

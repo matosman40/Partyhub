@@ -38,7 +38,14 @@ import {
   restoreBackup,
   type ConflictMode,
 } from '../backup.js';
-import { gameDetailsSchema, settingsIssueMessage } from '@partyhub/shared';
+import {
+  gameDetailsSchema,
+  MUSIC_SLOTS,
+  SFX_NAMES,
+  settingsIssueMessage,
+  soundSettingsSchema,
+  type SoundSettings,
+} from '@partyhub/shared';
 import type { AppConfig } from '../config.js';
 import { adminSettingsSchema, type Store } from '../db/store.js';
 import {
@@ -375,6 +382,12 @@ export function createApp(deps: AppDeps): express.Express {
   api.get('/screen-backgrounds', (_req, res) => {
     res.setHeader('Cache-Control', 'no-cache');
     res.json({ backgrounds: resolveBackgrounds(store.getScreenBackgrounds()) });
+  });
+
+  /** Musiques de menu et bruitages : adresses publiques des seuls fichiers audio encore présents. */
+  api.get('/sound-settings', (_req, res) => {
+    res.setHeader('Cache-Control', 'no-cache');
+    res.json({ sounds: resolveSounds(store.getSoundSettings()) });
   });
 
   api.get('/avatars/:id', (req, res) => {
@@ -1029,7 +1042,25 @@ export function createApp(deps: AppDeps): express.Express {
     ...mediaGames.usersOfAsset(assetId),
     ...cardGames.usersOfAsset(assetId),
     ...(Object.values(store.getScreenBackgrounds()).includes(assetId) ? ['Fonds d’écran'] : []),
+    ...(soundsUse(assetId) ? ['Sons'] : []),
   ];
+
+  const soundsUse = (assetId: string): boolean => {
+    const sounds = store.getSoundSettings();
+    return Object.values(sounds.music).includes(assetId) || Object.values(sounds.sfx).includes(assetId);
+  };
+
+  /** Sons : seuls les fichiers audio encore présents sont rendus publics. */
+  const resolveSounds = (stored: SoundSettings) => {
+    const url = (id: string | null): string | null => {
+      const asset = id ? assets.get(id) : undefined;
+      return asset && asset.kind === 'audio' ? `/api/assets/${asset.id}` : null;
+    };
+    return {
+      music: Object.fromEntries(MUSIC_SLOTS.map((slot) => [slot, url(stored.music[slot])])),
+      sfx: Object.fromEntries(SFX_NAMES.map((name) => [name, url(stored.sfx[name])])),
+    };
+  };
 
   /** Fonds d'écran : seuls les identifiants d'images encore présentes sont rendus publics. */
   const resolveBackgrounds = (stored: ScreenBackgrounds): Record<string, string | null> =>
@@ -1237,6 +1268,29 @@ export function createApp(deps: AppDeps): express.Express {
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
     res.setHeader('Content-Disposition', 'attachment; filename="boum-banques.txt"');
     res.send(boumBank.exportText({ types, ids }));
+  });
+
+  admin.get('/sound-settings', (_req, res) => {
+    res.json({ sounds: store.getSoundSettings() });
+  });
+
+  admin.put('/sound-settings', (req, res) => {
+    const parsed = soundSettingsSchema.safeParse(req.body?.sounds);
+    if (!parsed.success) {
+      res.status(400).json({ error: 'Réglages de son invalides.' });
+      return;
+    }
+    const ids = [...Object.values(parsed.data.music), ...Object.values(parsed.data.sfx)];
+    for (const id of ids) {
+      if (id === null) continue;
+      const asset = assets.get(id);
+      if (!asset || asset.kind !== 'audio') {
+        res.status(400).json({ error: 'Choisissez un fichier audio de la médiathèque.' });
+        return;
+      }
+    }
+    store.saveSoundSettings(parsed.data as SoundSettings);
+    res.json({ sounds: parsed.data });
   });
 
   admin.put('/settings', (req, res) => {

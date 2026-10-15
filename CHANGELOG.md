@@ -5,6 +5,7 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 ## Non publié
 
 ### Ajouté
+- Sons : l’administration choisit une musique de fond pour l’accueil, les menus (rejoindre, profil, salon avant la partie) et la fin de partie, et un fichier audio pour chaque bruitage des jeux. Les fichiers viennent de la médiathèque (mp3, ogg, wav, flac, m4a). Par défaut, la musique est coupée et les bruitages restent ceux d’origine. Le bouton muet coupe aussi la musique.
 - BOUM ! (catégorie quiz, 2 à 12 joueurs, branche `boum`, en cours) : manches tirées au hasard dans un pool de modes. Phase 1 : Réponse rapide, Combien ?, Trous noirs, Main sale, Vrai ou faux, Qui a dit ça ?, Épitaphe, Le pire conseil, Le plus probable et Détecteur de mauvaise foi, avec le pack Humour noir activable par salle. Banques de contenu en base (amorce de 340 entrées à valider), import et export `.txt` avec aperçu, et routes d’administration `/api/admin/boum/*`. L’onglet d’administration, les propositions depuis le profil et les phases 2 et 3 ne sont pas encore livrés.
 - Fonds d’écran : l’administration choisit une image de la médiathèque pour chaque écran (accueil, rejoindre, écran
   principal, téléphone et tablette, spectateur, profil), ou « Appliquer à tous les écrans ». Une image encore utilisée

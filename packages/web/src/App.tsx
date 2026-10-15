@@ -8,6 +8,7 @@ import { ProfilePage } from './pages/ProfilePage.js';
 import { DeviceTestPage } from './pages/DeviceTestPage.js';
 import { TvPage } from './pages/TvPage.js';
 import { ScreenBackdrop } from './components/ScreenBackdrop.js';
+import { MusicPlayer } from './components/MusicPlayer.js';
 
 function NotFound() {
   return (
@@ -24,6 +25,7 @@ export function App() {
   return (
     <BrowserRouter>
       <ScreenBackdrop />
+      <MusicPlayer />
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/tv/:code" element={<TvPage />} />

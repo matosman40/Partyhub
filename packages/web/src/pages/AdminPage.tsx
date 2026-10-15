@@ -10,6 +10,7 @@ import { PackageSourcesAdmin } from '../admin/PackageSourcesAdmin.js';
 import { CharacterPacksAdmin } from '../admin/CharacterPacksAdmin.js';
 import { AssetLibrary } from '../admin/AssetLibrary.js';
 import { ScreenBackgroundsAdmin } from '../admin/ScreenBackgroundsAdmin.js';
+import { SoundSettingsAdmin } from '../admin/SoundSettingsAdmin.js';
 import { MediaGamesAdmin } from '../admin/MediaGamesAdmin.js';
 import { GameDetailsEditor } from '../admin/GameDetailsEditor.js';
 import { GameSettingsEditor } from '../admin/GameSettingsEditor.js';
@@ -475,6 +476,14 @@ export function AdminPage() {
           Une image de la médiathèque par écran. Le voile sombre reste par-dessus pour garder le texte lisible.
         </p>
         <ScreenBackgroundsAdmin libraryVersion={libraryVersion} />
+      </section>
+
+      <section className="card stack">
+        <h2>Musiques et bruitages</h2>
+        <p className="muted small">
+          Musique de fond pour les menus, l’accueil et la fin de partie, et un fichier pour chaque bruitage des jeux.
+        </p>
+        <SoundSettingsAdmin libraryVersion={libraryVersion} />
       </section>
 
       <section className="card stack">

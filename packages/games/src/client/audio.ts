@@ -1,25 +1,13 @@
 /**
- * Son sans fichier : effets et musique synthétisés avec la Web Audio API.
- * Rien n'est téléchargé. Le contexte audio ne démarre qu'après un geste de
- * l'utilisateur (règle des navigateurs) : tant qu'il n'est pas débloqué, les
- * appels sont simplement ignorés. Le choix muet/son est gardé sur l'appareil.
+ * Son sans fichier par défaut : effets et musique synthétisés avec la Web Audio API. L'administration
+ * peut remplacer un bruitage par un fichier de la médiathèque (voir setSfxFiles). Le contexte audio ne
+ * démarre qu'après un geste de l'utilisateur (règle des navigateurs) : tant qu'il n'est pas débloqué,
+ * les appels sont simplement ignorés. Le choix muet/son est gardé sur l'appareil.
  */
 
-export type Sfx =
-  | 'place'
-  | 'explode'
-  | 'crate'
-  | 'pickup'
-  | 'die'
-  | 'hit'
-  | 'start'
-  | 'win'
-  | 'final'
-  | 'click'
-  | 'card'
-  | 'draw'
-  | 'turn'
-  | 'chip';
+import type { SfxName } from '@partyhub/shared';
+
+export type Sfx = SfxName;
 
 const MUTE_KEY = 'ph:muted';
 const BPM = 128;
@@ -95,10 +83,64 @@ export function isMuted(): boolean {
   return muted;
 }
 
+const muteListeners = new Set<(value: boolean) => void>();
+
+/** Prévient quand le bouton muet change (la musique de menu s'arrête ou reprend avec lui). */
+export function onMuteChange(listener: (value: boolean) => void): () => void {
+  muteListeners.add(listener);
+  return () => {
+    muteListeners.delete(listener);
+  };
+}
+
 export function setMuted(value: boolean): void {
   muted = value;
   saveMuted(value);
   if (master && ctx) master.gain.setTargetAtTime(value ? 0 : 0.85, ctx.currentTime, 0.03);
+  for (const listener of muteListeners) listener(value);
+}
+
+// Bruitages remplacés par un fichier : adresse par effet, et tampon décodé une fois par adresse.
+let sfxUrls: Partial<Record<Sfx, string>> = {};
+const sfxBuffers = new Map<string, AudioBuffer>();
+const sfxPending = new Set<string>();
+
+/**
+ * Règle les fichiers de bruitage (adresses publiques, ou null pour le son d'origine). Un fichier
+ * encore en chargement laisse jouer le son d'origine, sans bloquer l'effet.
+ */
+export function setSfxFiles(files: Partial<Record<Sfx, string | null>>): void {
+  const next: Partial<Record<Sfx, string>> = {};
+  for (const [name, url] of Object.entries(files) as [Sfx, string | null | undefined][]) {
+    if (url) next[name] = url;
+  }
+  sfxUrls = next;
+}
+
+function loadSfxFile(c: AudioContext, url: string): void {
+  if (sfxBuffers.has(url) || sfxPending.has(url)) return;
+  sfxPending.add(url);
+  fetch(url)
+    .then((res) => (res.ok ? res.arrayBuffer() : Promise.reject(new Error(String(res.status)))))
+    .then((bytes) => c.decodeAudioData(bytes))
+    .then((buffer) => sfxBuffers.set(url, buffer))
+    .catch(() => {
+      /* fichier illisible : le son d'origine reste joué */
+    })
+    .finally(() => sfxPending.delete(url));
+}
+
+function playSfxFile(c: AudioContext, bus: GainNode, url: string): boolean {
+  const buffer = sfxBuffers.get(url);
+  if (!buffer) {
+    loadSfxFile(c, url);
+    return false;
+  }
+  const src = c.createBufferSource();
+  src.buffer = buffer;
+  src.connect(bus);
+  src.start(c.currentTime + 0.005);
+  return true;
 }
 
 function tone(
@@ -166,6 +208,8 @@ export function play(name: Sfx): void {
   if (!c || !sfxBus) return;
   const t = c.currentTime + 0.005;
   const bus = sfxBus;
+  const file = sfxUrls[name];
+  if (file && playSfxFile(c, bus, file)) return;
   switch (name) {
     case 'place':
       tone(c, bus, 'sine', 620, t, 0.14, 0.35, 300);

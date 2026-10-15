@@ -6952,3 +6952,11 @@ html:not([data-theme='dark']) .corner-drawer {
   border-radius: 8px;
   border: 1px solid var(--line);
 }
+
+/* Bouton muet de la musique de fond, visible dès qu'une piste peut jouer. */
+.music-toggle {
+  position: fixed;
+  left: 12px;
+  bottom: 12px;
+  z-index: 60;
+}

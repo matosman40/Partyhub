@@ -28,7 +28,7 @@ export {
   MEDIA_PREFS_KEY,
 } from './media.js';
 export type { MediaPrefs } from './media.js';
-export { isMuted, setMuted, startMusic, stopMusic, unlockAudio } from './audio.js';
+export { isMuted, onMuteChange, setMuted, setSfxFiles, startMusic, stopMusic, unlockAudio } from './audio.js';
 export { SoundToggle } from './SoundToggle.js';
 export { cardGamePresets } from '../cards/presets.js';
 export { validatePlay, rankValue, RANKS, PRESIDENT_DEFINITION } from '../president/rules.js';

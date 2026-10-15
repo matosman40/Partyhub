@@ -19,6 +19,7 @@ import { AvatarsContext, MoodsContext, useWakeLock, type PromoteurPub } from '@p
 import { TvLobby } from './tv/TvLobby.js';
 import { CornerMenu, DrawerSection } from '../components/CornerMenu.js';
 import { useActivity } from './tv/useActivity.js';
+import { musicForLobby, useMusicSlot } from '../sounds.js';
 
 /** Plateau 3D du Promoteur : chargé seulement quand il est affiché (Three.js reste hors du premier chargement). */
 const PromoteurStage = lazy(() => import('../three/PromoteurStage.js'));
@@ -86,6 +87,9 @@ export function TvPage() {
       socket.off('connect', onConnect);
     };
   }, [code, hostToken]);
+
+  // Musique de la salle : menus avant la partie, fin de partie aux résultats, silence pendant le jeu.
+  useMusicSlot(musicForLobby(view?.lobby.status));
 
   if (!hostToken) {
     return (

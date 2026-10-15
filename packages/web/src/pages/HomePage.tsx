@@ -9,6 +9,7 @@ import { CornerMenu, DrawerSection } from '../components/CornerMenu.js';
 import { GameLogo } from '../components/GameLogo.js';
 import { GameScene } from '../components/GameScene.js';
 import { logoFor } from '../components/gameLogos.js';
+import { useMusicSlot } from '../sounds.js';
 
 const CATEGORY_LABEL: Record<GameCategory, string> = {
   cartes: 'Cartes',
@@ -35,6 +36,7 @@ function artStyle(id: string, name: string): CSSProperties {
 
 export function HomePage() {
   const navigate = useNavigate();
+  useMusicSlot('accueil');
   const [games, setGames] = useState<CatalogGame[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
