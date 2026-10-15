@@ -1,43 +1,41 @@
-import { ICE, WIDTH } from '../physics.js';
+import { COLS, ICE, ROWS, inMask } from '../physics.js';
 import { hash, unitImage } from '../../bombes-party/client/render.js';
 import { SPRITE_H, SPRITE_W } from '../../bombes-party/client/sprites.js';
 
 /**
- * Plan de la banquise, vu de trois quarts : des cubes de glace bleue, chacun avec sa face avant épaisse, posés
- * sur une mer profonde. Certaines plaques ont une neige sur le dessus, les trous sont des eaux noires, et des
- * morceaux de banquise enneigés flottent autour du plan. Entre deux rangées, l'écart d'une plaque laisse voir la
- * face avant de la rangée du fond. Les personnages sont debout sur la rangée centrale, avec leur ombre au sol.
- * Une colonne de la physique vaut une case.
+ * Plan de la banquise, vu de trois quarts, dans le style des plateaux de Bomberman enneigés : un îlot arrondi
+ * de cubes de glace bleue, chacun avec sa face avant, posé sur une mer profonde. Certaines plaques ont une neige
+ * sur le dessus, les trous sont des eaux noires, et des morceaux de banquise flottent autour. Entre deux rangées,
+ * l'écart d'une plaque laisse voir sa face avant. Une case de la physique vaut une case du plan.
+ *
+ * Positions : (x, z) sur le plan, comme dans la physique. Un personnage plus loin en z (plus haut sur l'écran)
+ * est dessiné avant les autres, pour que les premiers plans le recouvrent.
  */
 
-export const COLS = WIDTH;
-/** Rangées dessinées : la première et la dernière sont de la mer, les trois du milieu sont la banquise. */
-export const ROWS = 5;
-export const FLOE_FIRST = 1;
-export const FLOE_LAST = 3;
-/** Rangée des personnages : la rangée centrale de la banquise. */
-export const ACTOR_ROW = 2;
-
 /** Marge de mer à gauche et à droite, en cases. */
-const SIDE_MARGIN = 1.6;
+const SIDE_MARGIN = 1.1;
 /** Marge de mer au-dessus et au-dessous, en cases. */
-const TOP_MARGIN = 1;
+const TOP_MARGIN = 0.9;
 /** Écrasement vertical du dessus : la hauteur d'une case vue de trois quarts, en part de sa largeur. */
-const SQUASH = 0.72;
+const SQUASH = 0.6;
 /** Épaisseur de la face avant d'un cube (et de l'écart entre rangées), en part de sa largeur. */
-const THICK = 0.7;
+const THICK = 0.55;
+/** Taille maximale d'une case (px CSS) : au-delà, le plan reste centré dans son cadre. */
+const MAX_T = 48;
 /** Nombre de morceaux de banquise flottants dans la mer. */
 const CHUNK_COUNT = 16;
 
 export interface BoardLayout {
-  /** Largeur d'une case, donc d'une colonne (px CSS). Un saut se mesure en multiples de cette valeur. */
+  /** Largeur d'une case (px CSS). Un saut se mesure en multiples de cette valeur. */
   T: number;
   /** Pixel logique : un seizième de case, comme un pixel de Bomberman. */
   S: number;
-  /** Marge horizontale de mer, à gauche (et à droite). */
+  /** Marge de mer à gauche du plan, dans le plan (px). */
   pad: number;
-  /** Marge verticale de mer, au-dessus (et au-dessous). */
+  /** Marge de mer au-dessus du plan (px). */
   padY: number;
+  /** Décalage horizontal du plan dans le cadre, pour le centrer (px). */
+  ox: number;
   /** Hauteur d'une case vue de trois quarts (le dessus). */
   rowH: number;
   /** Épaisseur de la face avant d'un cube. */
@@ -47,15 +45,17 @@ export interface BoardLayout {
 }
 
 export function boardLayout(cssWidth: number): BoardLayout {
-  const T = cssWidth / (COLS + 2 * SIDE_MARGIN);
+  const T = Math.min(cssWidth / (COLS + 2 * SIDE_MARGIN), MAX_T);
   const rowH = T * SQUASH;
   const thick = T * THICK;
   const padY = T * TOP_MARGIN;
+  const boardW = T * (COLS + 2 * SIDE_MARGIN);
   return {
     T,
     S: T / 16,
     pad: T * SIDE_MARGIN,
     padY,
+    ox: (cssWidth - boardW) / 2,
     rowH,
     thick,
     width: cssWidth,
@@ -63,19 +63,19 @@ export function boardLayout(cssWidth: number): BoardLayout {
   };
 }
 
-/** Ordonnée du haut du dessus d'une rangée, en pixels. Chaque rangée occupe son dessus plus l'écart. */
-export function rowTopY(L: BoardLayout, row: number): number {
-  return L.padY + row * (L.rowH + L.thick);
+/** Ordonnée du haut d'une rangée (z entier), ou d'une position z continue, en pixels. */
+export function rowTopY(L: BoardLayout, z: number): number {
+  return L.padY + z * (L.rowH + L.thick);
 }
 
-/** Abscisse, en pixels, d'un personnage placé en `x` (colonnes). */
+/** Abscisse, en pixels, d'un personnage en `x` (cases). */
 export function actorLeft(L: BoardLayout, x: number): number {
-  return L.pad + x * L.T;
+  return L.ox + L.pad + x * L.T;
 }
 
-/** Ligne de sol, en pixels : les pieds des personnages, posés dans la partie basse de leur case. */
-export function groundY(L: BoardLayout): number {
-  return rowTopY(L, ACTOR_ROW) + L.rowH * 0.8;
+/** Ligne de sol, en pixels, d'un personnage en `z` : ses pieds, dans la partie basse de sa case. */
+export function groundY(L: BoardLayout, z: number): number {
+  return rowTopY(L, z) + L.rowH * 0.8;
 }
 
 // Palette : mer profonde, glace bleue translucide, neige blanche, trous noirs.
@@ -151,11 +151,11 @@ function drawSea(g: CanvasRenderingContext2D, L: BoardLayout, now: number): void
     let cy: number;
     switch (i % 4) {
       case 0:
-        cx = L.pad * (0.1 + 0.8 * hash(i, 31));
+        cx = (L.ox + L.pad) * (0.1 + 0.8 * hash(i, 31));
         cy = L.height * hash(i, 32);
         break;
       case 1:
-        cx = L.width - L.pad * (0.1 + 0.8 * hash(i, 31));
+        cx = L.width - (L.ox + L.pad) * (0.1 + 0.8 * hash(i, 31));
         cy = L.height * hash(i, 32);
         break;
       case 2:
@@ -225,9 +225,10 @@ function drawTop(g: CanvasRenderingContext2D, L: BoardLayout, c: number, row: nu
   }
 }
 
-/** Personnage posé sur la glace. `lift` : hauteur du saut, en colonnes (négatif quand il coule). */
+/** Personnage posé sur la glace. `lift` : hauteur du saut, en cases (négatif quand il coule). */
 export interface ActorDraw {
   x: number;
+  z: number;
   lift: number;
   colorIndex: number;
   facing: -1 | 1;
@@ -235,25 +236,30 @@ export interface ActorDraw {
   step: number;
 }
 
-/** Dessine le plan complet : mer, trous, cubes de glace avec leur face avant, sans personnages. */
+/**
+ * Dessine le plan : mer, puis l'îlot rangée par rangée, du fond vers l'avant. Les cases hors de l'îlot restent
+ * de la mer ; les cases d'eau à l'intérieur sont des trous. Les personnages sont dessinés ensuite.
+ */
 export function drawBoard(g: CanvasRenderingContext2D, L: BoardLayout, ice: string, now: number, dpr: number): void {
   g.setTransform(dpr, 0, 0, dpr, 0, 0);
   g.clearRect(0, 0, L.width, L.height);
   drawSea(g, L, now);
 
-  // Rangée par rangée, du fond vers l'avant : la face avant d'une rangée tombe dans l'écart qui la sépare de la suivante.
-  for (let row = FLOE_FIRST; row <= FLOE_LAST; row++) {
+  g.save();
+  g.translate(L.ox, 0);
+  for (let row = 0; row < ROWS; row++) {
     const y = rowTopY(L, row);
     for (let c = 0; c < COLS; c++) {
-      if (ice[c] !== ICE) continue;
+      if (ice[row * COLS + c] !== ICE) continue;
       drawFront(g, L, L.pad + c * L.T, y + L.rowH);
     }
     for (let c = 0; c < COLS; c++) {
       const x = L.pad + c * L.T;
-      if (ice[c] === ICE) drawTop(g, L, c, row, x, y);
-      else drawPit(g, L, x, y);
+      if (ice[row * COLS + c] === ICE) drawTop(g, L, c, row, x, y);
+      else if (inMask(c, row)) drawPit(g, L, x, y);
     }
   }
+  g.restore();
 }
 
 /** Ombre au sol : plus petite et plus pâle quand le personnage saute. */
@@ -263,7 +269,7 @@ export function drawShadow(g: CanvasRenderingContext2D, L: BoardLayout, a: Actor
   g.globalAlpha = Math.max(0.2, 0.4 - a.lift * 0.15);
   g.fillStyle = '#06203a';
   g.beginPath();
-  g.ellipse(actorLeft(L, a.x), groundY(L), 5 * L.S * scale, 1.5 * L.S * scale, 0, 0, Math.PI * 2);
+  g.ellipse(actorLeft(L, a.x), groundY(L, a.z), 5 * L.S * scale, 1.5 * L.S * scale, 0, 0, Math.PI * 2);
   g.fill();
   g.restore();
 }
@@ -271,7 +277,7 @@ export function drawShadow(g: CanvasRenderingContext2D, L: BoardLayout, a: Actor
 /** Sprite de couleur, debout sur ses pieds. Un pas le fait rebondir d'un pixel. */
 export function drawSpriteActor(g: CanvasRenderingContext2D, L: BoardLayout, a: ActorDraw): void {
   const bounce = a.walking && a.step ? L.S : 0;
-  const top = groundY(L) - a.lift * L.T - bounce - SPRITE_H * L.S;
+  const top = groundY(L, a.z) - a.lift * L.T - bounce - SPRITE_H * L.S;
   const facing = a.facing < 0 ? 'left' : 'right';
   g.imageSmoothingEnabled = false;
   g.drawImage(

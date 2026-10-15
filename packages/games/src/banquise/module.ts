@@ -3,18 +3,19 @@ import type { GameContext, GameModule, GameResult, PlayerRef } from '@partyhub/s
 import { addPoints, fail, ok, rankEntries } from '../common/engine.js';
 import {
   TICK_MS,
-  WIDTH,
+  COLS,
+  ROWS,
   ICE,
   erode,
-  holeWidths,
-  isIce,
+  holeCount,
+  iceAt,
   jump,
   makeIce,
   newBody,
   push,
   separate,
   setInput,
-  spawnColumns,
+  spawnCells,
   stepBody,
   windAccel,
   type Body,
@@ -24,8 +25,8 @@ import {
 } from './physics.js';
 
 /**
- * Banquise : trois niveaux sur une banquise qui fond. Chaque joueur contrôle son personnage
- * (saut, marche, poussée). Le dernier resté sur la glace gagne le niveau. Règles et valeurs :
+ * Banquise : trois niveaux sur un îlot de glace qui fond. Chaque joueur contrôle son personnage
+ * (marche dans les quatre directions, saut, poussée). Le dernier resté sur la glace gagne le niveau. Règles et valeurs :
  * docs/JEU-BANQUISE.md. Toute la logique est sur le serveur ; le navigateur n'envoie que des intentions.
  */
 
@@ -60,7 +61,7 @@ export const LEVEL_RULES: LevelRule[] = [
   },
   {
     name: 'Les crevasses',
-    hint: 'Des trous dans la glace : sautez-les sans tomber.',
+    hint: 'Des trous dans la glace : sautez-les ou contournez-les.',
     holes: true,
     wind: false,
     erodeDelayMs: 45_000,
@@ -105,7 +106,7 @@ export interface BanquiseState {
 }
 
 const DIR_SCHEMA = z.union([z.literal(-1), z.literal(0), z.literal(1)]);
-const inputSchema = z.object({ dir: DIR_SCHEMA });
+const inputSchema = z.object({ dx: DIR_SCHEMA, dz: DIR_SCHEMA });
 
 function alivePlayers(s: BanquiseState): string[] {
   return Object.keys(s.bodies)
@@ -119,11 +120,13 @@ function beginLevel(s: BanquiseState, level: number, ctx: GameContext): Banquise
   const now = ctx.now();
   const ice = makeIce(rule.holes, ctx.random);
   const ids = Object.keys(s.names);
-  const cols = spawnColumns(ice, ids.length);
+  const cells = spawnCells(ice, ids.length);
   const bodies: Record<string, Body> = {};
   ids.forEach((id, i) => {
-    const x = (cols[i] ?? 0) + 0.5;
-    bodies[id] = newBody(x, x < WIDTH / 2 ? 1 : -1);
+    const idx = cells[i] ?? 0;
+    const x = (idx % COLS) + 0.5;
+    const z = Math.floor(idx / COLS) + 0.5;
+    bodies[id] = newBody(x, z, x < COLS / 2 ? 1 : -1);
   });
   return {
     ...s,
@@ -154,7 +157,7 @@ function endLevel(s: BanquiseState, now: number, winners: string[]): BanquiseSta
   const bodies = { ...s.bodies };
   // Les personnages encore en l'air finissent leur saut sur la glace, sans commande, vent ni fonte.
   for (const id of Object.keys(bodies)) {
-    let b = { ...bodies[id]!, dir: 0 as Dir };
+    let b = { ...bodies[id]!, dirX: 0 as Dir, dirZ: 0 as Dir };
     for (let i = 0; i < 20 && b.alive && !b.grounded; i++) b = stepBody(b, s.ice, now, TICK_MS / 1000, 0);
     bodies[id] = b;
   }
@@ -275,9 +278,24 @@ function eliminate(s: BanquiseState, id: string, ctx: GameContext): BanquiseStat
 }
 
 /** Vrai si de l'eau se trouve juste devant le personnage, dans le sens de son mouvement. */
-function waterAhead(ice: string, x: number, dir: -1 | 1): boolean {
-  // À une colonne devant soi : le moment où un saut au-dessus d'un trou de 2 colonnes réussit.
-  return !isIce(ice, Math.floor(x + dir));
+function waterAhead(ice: string, b: Body): boolean {
+  if (b.dirX === 0 && b.dirZ === 0) return false;
+  // À une case devant soi : le moment où un saut au-dessus d'un trou de deux cases réussit.
+  return !iceAt(ice, b.x + b.dirX, b.z + b.dirZ);
+}
+
+/** Centre de l'îlot : moyenne des cases de glace. */
+function iceCenter(ice: string): { cx: number; cz: number } | null {
+  let sx = 0;
+  let sz = 0;
+  let n = 0;
+  for (let i = 0; i < ice.length; i++) {
+    if (ice[i] !== ICE) continue;
+    sx += (i % COLS) + 0.5;
+    sz += Math.floor(i / COLS) + 0.5;
+    n++;
+  }
+  return n === 0 ? null : { cx: sx / n, cz: sz / n };
 }
 
 export const banquise: GameModule<BanquiseState, BanquiseSettings> = {
@@ -296,11 +314,12 @@ export const banquise: GameModule<BanquiseState, BanquiseSettings> = {
       goal: 'Ne tombez pas à l’eau. Le dernier joueur resté sur la glace gagne chaque niveau.',
       steps: [
         'Niveau 1, La fonte : la banquise fond par les bords. Restez loin des bords.',
-        'Niveau 2, Les crevasses : sautez au-dessus des trous, en courant.',
+        'Niveau 2, Les crevasses : sautez au-dessus des trous ou contournez-les.',
         'Niveau 3, La tempête : des rafales de vent vous poussent, avec une flèche qui annonce la direction.',
         'Poussez un adversaire devant vous pour le faire glisser vers l’eau.',
       ],
       tips: [
+        'Vous marchez dans les quatre directions. La poussée part du côté où vous alliez en dernier.',
         'Une glace qui glisse : relâcher la touche ne vous arrête pas tout de suite.',
         'Un saut ne peut pas être annulé en l’air. Visez l’autre côté avant de sauter.',
         'Un pied sur la glace suffit à tenir : un bord partiellement solide reste sûr.',
@@ -375,8 +394,9 @@ export const banquise: GameModule<BanquiseState, BanquiseSettings> = {
     if (type === 'input') {
       const parsed = inputSchema.safeParse(payload);
       if (!parsed.success) return fail('Direction invalide');
-      const dir = parsed.data.dir as Dir;
-      return ok({ ...s, bodies: { ...s.bodies, [p.id]: setInput(me, dir) } });
+      const dx = parsed.data.dx as Dir;
+      const dz = parsed.data.dz as Dir;
+      return ok({ ...s, bodies: { ...s.bodies, [p.id]: setInput(me, dx, dz) } });
     }
 
     if (type === 'jump') {
@@ -441,6 +461,7 @@ export const banquise: GameModule<BanquiseState, BanquiseSettings> = {
         name: nameOf(id),
         color: i,
         x: b?.x ?? null,
+        z: b?.z ?? null,
         y: b?.y ?? 0,
         alive: b?.alive ?? false,
         grounded: b?.grounded ?? true,
@@ -456,9 +477,10 @@ export const banquise: GameModule<BanquiseState, BanquiseSettings> = {
       levelCount: LEVEL_COUNT,
       levelName: rule?.name ?? '',
       levelHint: rule?.hint ?? '',
-      width: WIDTH,
+      width: COLS,
+      height: ROWS,
       ice: s.ice,
-      holes: holeWidths(s.ice).length,
+      holes: holeCount(s.ice),
       bodies,
       fallen: s.fallen.map((id) => ({ playerId: id, name: nameOf(id) })),
       winners: s.winners.map((id) => ({ playerId: id, name: nameOf(id) })),
@@ -526,17 +548,15 @@ export const banquise: GameModule<BanquiseState, BanquiseSettings> = {
     }
 
     // 2. Sauter au-dessus d'un trou qui vient, dans le sens de la marche.
-    const travel: -1 | 1 = me.dir !== 0 ? me.dir : me.facing;
-    if (me.grounded && waterAhead(s.ice, me.x, travel)) {
+    if (me.grounded && waterAhead(s.ice, me)) {
       return { type: 'jump', key: `jump:${s.seq}` };
     }
 
     // 3. Revenir vers le centre de la glace, à l'écart des bords.
-    const first = s.ice.indexOf(ICE);
-    const last = s.ice.lastIndexOf(ICE);
-    if (first === -1) return null;
-    const center = (first + last + 1) / 2;
-    const dir: Dir = Math.abs(me.x - center) < 0.5 ? 0 : me.x < center ? 1 : -1;
-    return { type: 'input', payload: { dir }, key: `input:${dir}` };
+    const center = iceCenter(s.ice);
+    if (!center) return null;
+    const dx: Dir = Math.abs(me.x - center.cx) < 0.5 ? 0 : me.x < center.cx ? 1 : -1;
+    const dz: Dir = Math.abs(me.z - center.cz) < 0.5 ? 0 : me.z < center.cz ? 1 : -1;
+    return { type: 'input', payload: { dx, dz }, key: `input:${dx}${dz}` };
   },
 };

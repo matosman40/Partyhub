@@ -4,11 +4,28 @@ import { unlockAudio } from '../../client/audio.js';
 import { SoundToggle } from '../../client/SoundToggle.js';
 import { FinalScreen, WaitingScreen } from '../../client/ui.js';
 import { BanquiseStage, type BanquiseView } from './Stage.js';
-import { BanquiseControls } from './Controls.js';
+import { BanquiseControls, type Side } from './Controls.js';
 
-const LEFT_KEYS = new Set(['ArrowLeft', 'a', 'A', 'q', 'Q']);
-const RIGHT_KEYS = new Set(['ArrowRight', 'd', 'D']);
-const JUMP_KEYS = new Set([' ', 'ArrowUp', 'w', 'W', 'z', 'Z']);
+/** Clavier : flèches, WASD et ZQSD pour marcher ; Espace pour sauter ; E, X ou Entrée pour pousser. */
+const KEY_SIDE: Record<string, Side> = {
+  ArrowLeft: 'left',
+  a: 'left',
+  A: 'left',
+  q: 'left',
+  Q: 'left',
+  ArrowRight: 'right',
+  d: 'right',
+  D: 'right',
+  ArrowUp: 'up',
+  w: 'up',
+  W: 'up',
+  z: 'up',
+  Z: 'up',
+  ArrowDown: 'down',
+  s: 'down',
+  S: 'down',
+};
+const JUMP_KEYS = new Set([' ']);
 const PUSH_KEYS = new Set(['e', 'E', 'Enter', 'x', 'X']);
 
 function isTyping(target: EventTarget | null): boolean {
@@ -37,21 +54,23 @@ export function BanquisePlayer({ publicState, playerState, playerId, send }: Pla
   const rootRef = useRef<HTMLElement>(null);
 
   // Direction demandée : seules les variations sont envoyées au serveur.
-  const held = useRef({ left: false, right: false });
-  const sentDir = useRef(0);
+  const held = useRef<Record<Side, boolean>>({ left: false, right: false, up: false, down: false });
+  const sentDir = useRef('0,0');
   const sendRef = useRef(send);
   sendRef.current = send;
   const canControlRef = useRef(canControl);
   canControlRef.current = canControl;
 
   const syncDir = () => {
-    const dir = (held.current.right ? 1 : 0) - (held.current.left ? 1 : 0);
-    if (dir === sentDir.current) return;
-    sentDir.current = dir;
-    void sendRef.current('input', { dir });
+    const dx = (held.current.right ? 1 : 0) - (held.current.left ? 1 : 0);
+    const dz = (held.current.down ? 1 : 0) - (held.current.up ? 1 : 0);
+    const key = `${dx},${dz}`;
+    if (key === sentDir.current) return;
+    sentDir.current = key;
+    void sendRef.current('input', { dx, dz });
   };
 
-  const setSide = (side: 'left' | 'right', down: boolean) => {
+  const setSide = (side: Side, down: boolean) => {
     if (down && !canControlRef.current) return;
     held.current[side] = down;
     syncDir();
@@ -75,23 +94,21 @@ export function BanquisePlayer({ publicState, playerState, playerId, send }: Pla
   // Hors d'une manche, plus aucune direction maintenue.
   useEffect(() => {
     if (canControl) return;
-    held.current = { left: false, right: false };
+    held.current = { left: false, right: false, up: false, down: false };
     syncDir();
   }, [canControl]);
 
-  // Clavier : flèches ou A/D pour marcher, Espace ou W pour sauter, E ou Entrée pour pousser.
+  // Clavier : flèches ou WASD pour marcher, Espace pour sauter, E ou Entrée pour pousser.
   const keysRef = useRef({ setSide, jump, push });
   keysRef.current = { setSide, jump, push };
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (isTyping(e.target) || e.ctrlKey || e.metaKey || e.altKey) return;
       if (rootRef.current?.offsetParent === null) return;
-      if (LEFT_KEYS.has(e.key)) {
+      const side = KEY_SIDE[e.key];
+      if (side) {
         e.preventDefault();
-        if (!e.repeat) keysRef.current.setSide('left', true);
-      } else if (RIGHT_KEYS.has(e.key)) {
-        e.preventDefault();
-        if (!e.repeat) keysRef.current.setSide('right', true);
+        if (!e.repeat) keysRef.current.setSide(side, true);
       } else if (JUMP_KEYS.has(e.key)) {
         e.preventDefault();
         if (!e.repeat) keysRef.current.jump();
@@ -101,12 +118,11 @@ export function BanquisePlayer({ publicState, playerState, playerId, send }: Pla
       }
     };
     const up = (e: KeyboardEvent) => {
-      if (LEFT_KEYS.has(e.key)) keysRef.current.setSide('left', false);
-      else if (RIGHT_KEYS.has(e.key)) keysRef.current.setSide('right', false);
+      const side = KEY_SIDE[e.key];
+      if (side) keysRef.current.setSide(side, false);
     };
     const blur = () => {
-      keysRef.current.setSide('left', false);
-      keysRef.current.setSide('right', false);
+      for (const side of ['left', 'right', 'up', 'down'] as Side[]) keysRef.current.setSide(side, false);
     };
     window.addEventListener('keydown', down);
     window.addEventListener('keyup', up);

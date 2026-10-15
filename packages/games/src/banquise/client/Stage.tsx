@@ -8,7 +8,8 @@ import { actorLeft, boardLayout, drawBoard, drawShadow, drawSpriteActor, groundY
 /**
  * Scène de la banquise, commune à l'écran principal et au téléphone. Le plan est dessiné sur canvas
  * comme les niveaux 3D de Bomberman (vue de trois quarts, plaques avec leur face avant). Les personnages
- * sont les sprites de couleur de Bomberman, ou le personnage importé quand le joueur en a choisi un.
+ * marchent sur le plan dans les quatre directions ; ils sont dessinés du fond vers l'avant. Ce sont les sprites
+ * de couleur de Bomberman, ou le personnage importé quand le joueur en a choisi un.
  * Les noms et l'éclaboussure restent en HTML, posés aux mêmes coordonnées que le canvas.
  */
 
@@ -17,6 +18,7 @@ export interface BanquiseBodyView {
   name: string;
   color: number;
   x: number | null;
+  z: number | null;
   y: number;
   alive: boolean;
   grounded: boolean;
@@ -33,6 +35,7 @@ export interface BanquiseView {
   levelName: string;
   levelHint: string;
   width: number;
+  height: number;
   ice: string;
   bodies: BanquiseBodyView[];
   wind: { phase: 'calm' | 'warning' | 'gust'; dir: -1 | 1; strength: number; until: number } | null;
@@ -67,6 +70,7 @@ function windText(wind: NonNullable<BanquiseView['wind']>): string {
 
 interface Shown {
   x: number;
+  z: number;
   y: number;
   walkUntil: number;
 }
@@ -133,25 +137,31 @@ export function BanquiseStage({ view, youId, label }: { view: BanquiseView; youI
       last = now;
       if (ctx) {
         drawBoard(ctx, LL, v.ice, reduced ? 0 : now, dpr);
-        const alive = v.bodies.filter((b) => b.x !== null && b.alive);
+        const alive = v.bodies.filter((b) => b.x !== null && b.z !== null && b.alive);
         const placed: Array<{ b: BanquiseBodyView; s: Shown; walking: boolean; step: number }> = [];
         for (const b of alive) {
-          const target = b.x as number;
+          const targetX = b.x as number;
+          const targetZ = b.z as number;
           let s = shown.current.get(b.playerId);
           if (!s) {
-            s = { x: target, y: b.y, walkUntil: 0 };
+            s = { x: targetX, z: targetZ, y: b.y, walkUntil: 0 };
             shown.current.set(b.playerId, s);
           }
           const k = reduced ? 1 : 1 - Math.exp(-dt * 22);
           const prevX = s.x;
-          s.x += (target - s.x) * k;
+          const prevZ = s.z;
+          s.x += (targetX - s.x) * k;
+          s.z += (targetZ - s.z) * k;
           s.y += (b.y - s.y) * k;
-          if (Math.abs(s.x - prevX) > 0.002) s.walkUntil = now + 160;
+          if (Math.abs(s.x - prevX) + Math.abs(s.z - prevZ) > 0.002) s.walkUntil = now + 160;
           placed.push({ b, s, walking: now < s.walkUntil, step: Math.floor(now / 140) % 2 });
         }
+        // Du fond vers l'avant : un personnage plus bas sur l'écran recouvre ceux qui sont derrière.
+        placed.sort((p, q) => p.s.z - q.s.z);
         for (const p of placed) {
           drawShadow(ctx, LL, {
             x: p.s.x,
+            z: p.s.z,
             lift: Math.max(0, p.s.y),
             colorIndex: p.b.color,
             facing: p.b.facing,
@@ -163,6 +173,7 @@ export function BanquiseStage({ view, youId, label }: { view: BanquiseView; youI
           const skin = skinsRef.current.get(p.b.playerId);
           const a = {
             x: p.s.x,
+            z: p.s.z,
             lift: p.s.y,
             colorIndex: p.b.color,
             facing: p.b.facing,
@@ -171,7 +182,7 @@ export function BanquiseStage({ view, youId, label }: { view: BanquiseView; youI
           };
           if (skin && skinReady(skin)) {
             const bounce = p.walking && p.step ? LL.S : 0;
-            const bottom = groundY(LL) - p.s.y * LL.T - bounce;
+            const bottom = groundY(LL, p.s.z) - p.s.y * LL.T - bounce;
             drawSkin(ctx, skin, actorLeft(LL, p.s.x), bottom, (SPRITE_H + 1) * LL.S, p.b.facing < 0);
           } else {
             drawSpriteActor(ctx, LL, a);
@@ -179,7 +190,7 @@ export function BanquiseStage({ view, youId, label }: { view: BanquiseView; youI
           const el = markers.current.get(p.b.playerId);
           if (el) {
             el.style.left = `${actorLeft(LL, p.s.x)}px`;
-            el.style.top = `${groundY(LL) - p.s.y * LL.T}px`;
+            el.style.top = `${groundY(LL, p.s.z) - p.s.y * LL.T}px`;
           }
         }
       }
@@ -191,7 +202,6 @@ export function BanquiseStage({ view, youId, label }: { view: BanquiseView; youI
 
   const wind = view.wind && view.wind.phase !== 'calm' ? view.wind : null;
   const cls = ['ban-stage', `is-${view.phase}`, wind ? `wind-${wind.phase}` : ''].filter(Boolean).join(' ');
-  const groundPx = groundY(L);
 
   return (
     <div
@@ -208,14 +218,14 @@ export function BanquiseStage({ view, youId, label }: { view: BanquiseView; youI
       <canvas ref={canvasRef} className="ban-canvas" style={{ width: L.width, height: L.height }} aria-hidden="true" />
 
       {view.bodies.map((b) => {
-        if (b.x === null) return null;
+        if (b.x === null || b.z === null) return null;
         if (!b.alive) {
           return (
             <span
               key={`splash-${b.playerId}`}
               className="ban-splash"
               aria-hidden="true"
-              style={{ left: actorLeft(L, b.x), top: groundPx }}
+              style={{ left: actorLeft(L, b.x), top: groundY(L, b.z) }}
             />
           );
         }

@@ -60,15 +60,21 @@ export { bombesParty } from './bombes-party/module.js';
 export { banquise, LEVEL_RULES as BANQUISE_LEVELS, LEVEL_COUNT as BANQUISE_LEVEL_COUNT } from './banquise/module.js';
 export type { BanquiseState, BanquiseSettings } from './banquise/module.js';
 export {
-  WIDTH as BANQUISE_WIDTH,
-  holeWidths,
+  COLS as BANQUISE_COLS,
+  ROWS as BANQUISE_ROWS,
+  holeCount,
+  iceAt as banquiseIceAt,
   makeIce,
   newBody,
   jump as banquiseJump,
   push as banquisePush,
   setInput as banquiseSetInput,
+  separate as banquiseSeparate,
   stepBody as banquiseStepBody,
   supported as banquiseSupported,
+  spawnCells as banquiseSpawnCells,
+  erode as banquiseErode,
+  inMask as banquiseInMask,
 } from './banquise/physics.js';
 export type { Body as BanquiseBody } from './banquise/physics.js';
 export type { BombesPartyState, BombesPartySettings } from './bombes-party/module.js';

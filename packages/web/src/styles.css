@@ -6832,6 +6832,21 @@ html:not([data-theme='dark']) .corner-drawer {
   gap: 10px;
 }
 
+/* Croix de déplacement : ▲ au-dessus, ◀ ▶ au milieu, ▼ en dessous ; le centre reste vide.
+   Plus petite que les boutons d'action, pour laisser la place à Saut et Pousser sur un téléphone étroit. */
+.ban-move--cross {
+  display: grid;
+  grid-template-columns: repeat(3, min(15vw, 56px));
+  grid-template-rows: repeat(3, min(15vw, 56px));
+  gap: 4px;
+}
+
+.ban-move--cross .ban-key {
+  width: min(15vw, 56px);
+  height: min(15vw, 56px);
+  font-size: 1.05rem;
+}
+
 .ban-key {
   width: min(19vw, 68px);
   height: min(19vw, 68px);

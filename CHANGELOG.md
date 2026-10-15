@@ -6,10 +6,11 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 
 ### Ajouté
 - Bomberman : les joueurs au personnage importé sont dessinés avec leur planche (pose de repos, rebond à chaque pas, retournée selon le sens). Les autres gardent leur sprite.
-- Jeu « Banquise » (catégorie plateau, 2 à 8 joueurs) : chaque personnage, importé ou dessiné, se déplace sur une
-  banquise et saute par-dessus les trous. Trois niveaux : la fonte par les bords, les crevasses, puis les crevasses
-  avec le vent. Le dernier joueur resté sur la glace gagne le niveau (100 points) ; on peut se pousser. Commandes sur
-  le téléphone (◀ ▶, Saut, Pousser) ou au clavier. Détails : `docs/JEU-BANQUISE.md`.
+- Jeu « Banquise » (catégorie plateau, 2 à 8 joueurs) : chaque personnage, importé ou dessiné, marche sur un îlot de
+  glace arrondi dans les quatre directions et saute par-dessus les trous. Trois niveaux : la fonte par les bords, les
+  crevasses, puis les crevasses avec le vent. Le dernier joueur resté sur la glace gagne le niveau (100 points) ; on
+  peut se pousser. Commandes sur le téléphone (croix ▲ ◀ ▶ ▼, Saut, Pousser) ou au clavier. Détails :
+  `docs/JEU-BANQUISE.md`.
 - Personnages illustrés : un zip de sprites (planches PNG et JSON) s'importe dans l'administration, avec un accord
   obligatoire de la personne représentée. Il se choisit dans le profil, à la place du personnage dessiné, et s'affiche
   dans les avatars, la salle et l'éditeur.

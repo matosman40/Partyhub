@@ -1,8 +1,8 @@
 # Banquise
 
-Un jeu d'adresse en trois niveaux, sur une banquise qui fond. Chaque joueur contrôle son personnage depuis son
-téléphone (ou un clavier, sur ordinateur). Le téléphone est la manette ; l'écran principal montre la banquise,
-les personnages et le vent.
+Un jeu d'adresse en trois niveaux, sur un îlot de glace qui fond. Chaque joueur contrôle son personnage depuis son
+téléphone (ou un clavier, sur ordinateur). Le téléphone est la manette ; l'écran principal montre l'îlot, les
+personnages et le vent.
 
 Identifiant : `banquise` · catégorie : plateau · 2 à 8 joueurs · environ 4 minutes · version 1.0.0.
 
@@ -16,9 +16,8 @@ vainqueur.
 
 Une partie enchaîne trois niveaux. Chaque niveau suit le même cycle :
 
-1. **Compte à rebours** (3 secondes). Les personnages sont placés sur la glace, répartis sur la partie centrale
-   (jamais à moins de 3 colonnes d'un bord, que la fonte emporte en premier). Les commandes sont ignorées pendant le
-   compte.
+1. **Compte à rebours** (3 secondes). Les personnages sont placés sur la glace, en anneau autour du centre de l'îlot
+   (jamais sur le bord, que la fonte emporte en premier). Les commandes sont ignorées pendant le compte.
 2. **Jeu.** Le niveau s'arrête dès qu'il ne reste qu'un joueur sur la glace.
 3. **Résultat** (4 secondes). L'écran principal annonce le gagnant et affiche l'ordre des éliminations.
 
@@ -26,26 +25,29 @@ Après le niveau 3, le classement final s'affiche.
 
 ### Niveau 1 : La fonte
 
-- Une banquise pleine de 21 colonnes, sans trou.
-- Trois secondes après le départ, la banquise commence à fondre : une colonne de glace disparaît toutes les
-  1,6 seconde, du bord gauche ou du bord droit (au hasard). Les joueurs posés sur la colonne qui disparaît tombent.
+- Un îlot plein, arrondi, de 79 cases (une grille de 11 × 9, dont les coins sont vides), sans trou.
+- Trois secondes après le départ, la banquise commence à fondre : une case du bord disparaît toutes les 1,6 seconde,
+  choisie au hasard parmi les cases du contour. Les joueurs posés sur la case qui disparaît tombent.
+- Quand une case disparaît et coupe l'îlot en deux, le morceau détaché fond aussi : il ne reste jamais qu'un seul
+  morceau de glace.
 - Le niveau finit quand la glace est épuisée au point de ne laisser qu'un joueur, ou plus de glace.
 - Rester au centre ne suffit pas : la fonte finit par atteindre tout le monde.
 
 ### Niveau 2 : Les crevasses
 
-- La banquise a entre 3 et 5 trous. Chaque trou fait 1 ou 2 colonnes.
-- Entre deux trous, il reste au moins 2 colonnes de glace. Les trois colonnes des deux bords sont toujours pleines.
-- Un trou de 2 colonnes se franchit en sautant en courant. Un trou de 3 colonnes serait trop large : le jeu n'en
-  fabrique pas.
+- L'îlot a entre 1 et 12 cases d'eau à l'intérieur, en général 4 à 6 trous. Chaque trou fait une case, ou deux cases
+  côte à côte. Les trous restent dans la partie centrale, loin du bord.
+- Un trou qui couperait l'îlot en deux n'est pas gardé : l'îlot reste d'un seul tenant.
+- On peut sauter au-dessus d'un trou de deux cases, ou le contourner.
 - Les joueurs tombent s'ils marchent dans un trou ou s'ils sont poussés dedans.
-- La fonte commence après 45 secondes, puis une colonne disparaît toutes les 1,6 seconde. Elle empêche une
-  manche de traîner sans fin.
+- La fonte commence après 45 secondes, puis une case disparaît toutes les 1,6 seconde. Elle empêche une manche de
+  traîner sans fin.
 
 ### Niveau 3 : La tempête
 
-- Même banquise que le niveau 2 (trous, fonte à 45 secondes).
-- Des rafales de vent soufflent par intervalles, à gauche ou à droite, avec une intensité variable.
+- Même île que le niveau 2 (trous, fonte à 45 secondes).
+- Des rafales de vent soufflent par intervalles, à gauche ou à droite, avec une intensité variable. Le vent ne souffle
+  que de gauche à droite (sur l'axe horizontal).
   - Calme de 3 à 5 secondes.
   - **Annonce** de 1,4 seconde : une flèche indique la direction de la prochaine rafale.
   - **Rafale** de 1,8 à 2,6 secondes, d'une force de 60 à 100 %.
@@ -61,17 +63,20 @@ Après le niveau 3, le classement final s'affiche.
 
 ## Commandes
 
-| Action                    | Téléphone (tactile)         | Clavier                |
-| ------------------------- | --------------------------- | ---------------------- |
-| Aller à gauche / à droite | touches ◀ et ▶ (maintenues) | flèches, ou A et D     |
-| Sauter                    | bouton « Saut »             | Espace, flèche haut, W |
-| Pousser                   | bouton « Pousser »          | E, Entrée ou X         |
+| Action                | Téléphone (tactile)                  | Clavier                                       |
+| --------------------- | ------------------------------------ | --------------------------------------------- |
+| Marcher               | croix ▲ ◀ ▶ ▼ (maintenues)           | flèches, ou WASD (ZQSD sur clavier français)  |
+| Sauter                | bouton « Saut »                      | Espace                                        |
+| Pousser               | bouton « Pousser »                   | E, Entrée ou X                                |
 
+- Marche dans les quatre directions. En diagonale, la vitesse reste la même que tout droit.
 - Une touche maintenue garde la direction. Relâcher la touche arrête le personnage (la glace glisse un peu, donc
   il continue sur quelques dizaines de centimètres).
-- **Saut** : seulement au sol. Un saut dure environ 0,76 seconde, s'élève de 1,4 colonne et porte à environ 3,2 colonnes à pleine vitesse. Il faut donc partir entre 1,5 et 0,3 colonne avant un trou de 2 colonnes.
-- **Pousser** : frappe le joueur qui est devant vous (dans le sens où vous regardez), à moins d'une colonne. Il glisse
-  vers l'arrière. Délai de 1,2 seconde entre deux poussées.
+- **Saut** : seulement au sol. Un saut dure environ 0,76 seconde, s'élève de 1,4 case et porte à environ 3,2 cases à
+  pleine vitesse. Il faut donc partir environ une case avant un trou de deux cases.
+- **Pousser** : frappe le joueur qui est devant vous, dans le sens de votre dernier mouvement, à moins d'une case
+  et à moins de 0,6 case de l'axe de la poussée. Il glisse dans ce sens. Délai de 1,2 seconde entre deux poussées.
+  Si vous êtes resté immobile, la poussée part du dernier sens de marche.
 
 ## Physique (valeurs exactes)
 
@@ -80,21 +85,22 @@ client : la position est calculée toutes les 50 ms.
 
 | Constante          | Valeur                           | Rôle                                                                       |
 | ------------------ | -------------------------------- | -------------------------------------------------------------------------- |
-| `WIDTH`            | 21 colonnes                      | largeur de la banquise                                                     |
+| `COLS` × `ROWS`    | 11 × 9 cases                     | taille de la grille ; l'îlot est une ellipse dedans                        |
 | `TICK_MS`          | 50 ms                            | pas de la simulation                                                       |
-| `WALK_SPEED`       | 4,2 col/s                        | vitesse de marche                                                          |
-| `ICE_ACCEL`        | 13 col/s²                        | accélération sur la glace                                                  |
+| `WALK_SPEED`       | 4,2 case/s                       | vitesse de marche (en diagonale, répartie entre les deux axes)             |
+| `ICE_ACCEL`        | 13 case/s²                       | accélération sur la glace                                                  |
 | `ICE_DRAG`         | 2,0 /s                           | freinage quand on ne marche plus (glisse)                                  |
-| `AIR_ACCEL`        | 6 col/s²                         | contrôle en l'air                                                          |
-| `GRAVITY`          | 20 col/s²                        | pesanteur                                                                  |
-| `JUMP_SPEED`       | 7,6 col/s                        | vitesse verticale au saut                                                  |
-| `WIND_ACCEL`       | 5 col/s² × force (0,6 à 1)       | effet du vent                                                              |
-| `PUSH_SPEED`       | 4,8 col/s                        | vitesse donnée au joueur poussé                                            |
-| `PUSH_RANGE`       | 0,95 col devant, 0,7 de dénivelé | portée d'une poussée                                                       |
+| `AIR_ACCEL`        | 6 case/s²                        | contrôle en l'air                                                          |
+| `GRAVITY`          | 20 case/s²                       | pesanteur                                                                  |
+| `JUMP_SPEED`       | 7,6 case/s                       | vitesse verticale au saut                                                  |
+| `WIND_ACCEL`       | 5 case/s² × force (0,6 à 1)      | effet du vent, sur l'axe horizontal                                        |
+| `PUSH_SPEED`       | 4,8 case/s                       | vitesse donnée au joueur poussé                                            |
+| `PUSH_RANGE`       | 0,95 case devant, 0,7 de dénivelé | portée d'une poussée                                                      |
+| `PUSH_LATERAL`     | 0,6 case                         | écart maximal perpendiculaire à la poussée                                 |
 | `PUSH_COOLDOWN_MS` | 1 200 ms                         | délai entre deux poussées                                                  |
-| `BODY_HALF`        | 0,35 col                         | demi-largeur d'un personnage (ils ne se traversent pas)                    |
-| `FOOT`             | 0,3 col                          | écart des pieds : un personnage reste sur la glace si l'un des pieds l'est |
-| `SINK_DEPTH`       | 0,6 col                          | profondeur à partir de laquelle le personnage est éliminé                  |
+| `BODY_HALF`        | 0,35 case                        | rayon d'un personnage (ils ne se traversent pas, dans les deux sens)       |
+| `FOOT`             | 0,3 case                         | écart des pieds : un personnage reste sur la glace si l'un des pieds l'est |
+| `SINK_DEPTH`       | 0,6 case                         | profondeur à partir de laquelle le personnage est éliminé                  |
 
 ## Personnages
 
@@ -103,41 +109,46 @@ Chaque joueur a son sprite (sa couleur). Un personnage **importé avec des planc
 `docs/PERSONNAGES-PACK.md`) remplace ce sprite : on affiche sa case « repos » (corps entier, face au joueur), comme sur
 le plateau de Bomberman.
 
-Le sprite suit le sens du regard (à gauche ou à droite) et rebondit d'un pixel à chaque pas. En l'air, il est dessiné
-plus haut, avec son ombre au sol, plus petite. Éliminé, il disparaît dans l'eau (éclaboussure).
+Le sprite suit le sens du regard (à gauche ou à droite) et rebondit d'un pixel à chaque pas. Les personnages sont
+dessinés du fond vers l'avant : celui qui est plus bas à l'écran passe devant. En l'air, il est dessiné plus haut, avec
+son ombre au sol, plus petite. Éliminé, il disparaît dans l'eau (éclaboussure).
 
 ## Écrans
 
-- **Plan** : une vue de trois quarts. Chaque plaque de glace est un cube bleu : un dessus clair, une face avant épaisse
-  et translucide, visible dans l'écart qui sépare deux rangées. Certaines plaques ont une neige sur le dessus. Les
-  trous sont des eaux noires avec leur paroi du fond dans l'ombre. La mer est profonde, avec des reflets qui dérivent,
-  et des morceaux de banquise enneigés flottent autour du plan.
+- **Plan** : une vue de trois quarts. L'îlot est arrondi. Chaque case de glace est un cube bleu : un dessus clair, une
+  face avant épaisse et translucide, visible dans l'écart qui sépare deux rangées. Certaines cases ont une neige sur le
+  dessus. Les trous sont des eaux noires avec leur paroi du fond dans l'ombre. La mer est profonde, avec des reflets
+  qui dérivent, et des morceaux de banquise enneigés flottent autour du plan.
 - **Écran principal** : le plan, les personnages avec leur nom, le numéro du niveau et son titre, l'annonce du vent et
   ses traînées, le temps avant la fonte, les éliminés et le classement.
-- **Téléphone** : le même plan en plus petit, votre personnage mis en évidence (« Vous »), les commandes en bas, et
-  « Tombé à l'eau » après l'élimination.
+- **Téléphone** : le même plan en plus petit, votre personnage mis en évidence (« Vous »), la croix de déplacement, Saut
+  et Pousser en bas, et « Tombé à l'eau » après l'élimination.
 
 ## Robots (mode test)
 
-Les robots suivent des règles simples : rester vers le centre, sauter avant un trou, pousser un adversaire placé
-devant, et fuir le bord. Ils ne jouent pas bien (leur délai de réaction dépasse un saut), mais ils finissent
-toujours une partie, car la fonte garantit la fin de chaque niveau.
+Les robots suivent des règles simples : aller vers le centre de l'îlot, sauter avant un trou qui est devant eux,
+pousser un adversaire placé devant, et fuir le bord. Ils ne jouent pas bien (leur délai de réaction dépasse un saut),
+mais ils finissent toujours une partie, car la fonte garantit la fin de chaque niveau.
 
 ## Tests
 
 `packages/server/src/__tests__/banquise.test.ts` vérifie :
 
-- la banquise de chaque niveau : sans trou au niveau 1 ; trous de 1 ou 2 colonnes, séparés par au moins 2 colonnes
-  de glace, bords pleins au niveau 2 et 3 ;
-- qu'un joueur qui court et saute franchit chaque trou généré, avec une marge de décollage d'au moins une colonne ;
-- le saut seulement au sol, la poussée à portée et avec son délai ;
-- la chute dans l'eau et l'élimination ;
-- le vent : une rafale fait glisser un joueur immobile, le calme non ;
+- l'île de chaque niveau : sans trou au niveau 1 ; au niveau 2 et 3, des trous au centre, et l'île reste d'un seul
+  tenant ;
+- les points de départ, en anneau, tous sur la glace et distincts ;
+- l'érosion : une case de moins à chaque fonte, et un seul morceau de glace après ;
+- qu'un personnage qui court sur la ligne du milieu saute deux trous de deux cases et atteint le bord opposé ;
+- la vitesse de croisière en diagonale égale celle de la marche droite ;
+- le saut seulement au sol, la chute hors de l'île et l'élimination ;
+- le vent : une rafale fait glisser un joueur immobile sur l'axe horizontal, le calme non ;
+- la poussée dans le sens du dernier mouvement, avec son délai, et refusée derrière soi ou sur le côté ;
+- la séparation des personnages dans les deux directions ;
 - la fin de niveau (dernier joueur, ou égalité au même tick), les points et le passage au niveau suivant ;
 - une partie complète jouée par des robots, sur plusieurs graines, qui se termine.
 
 ## Ce qui reste à valider sur de vrais appareils
 
-- la sensation des commandes sur un téléphone (les boutons doivent répondre sans délai perceptible) ;
+- la sensation de la croix de déplacement sur un téléphone (les boutons doivent répondre sans délai perceptible) ;
 - la lisibilité de la vue sur un petit écran en paysage et en portrait ;
-- le réglage du vent et de la fonte après quelques parties réelles, à partir des constantes ci-dessus.
+- le réglage de la taille de l'île, du vent et de la fonte après quelques parties réelles, à partir des constantes ci-dessus.
