@@ -15,6 +15,7 @@ import { sudoku, solitaire, taquin, motsCroises } from './solo/index.js';
 import { rami51 } from './rami51/module.js';
 import { tarot } from './tarot/module.js';
 import { imiteMoi } from './imite-moi/module.js';
+import { banquise } from './banquise/module.js';
 
 /**
  * Registre explicite des jeux disponibles.
@@ -41,6 +42,7 @@ export const gameRegistry: GameModule[] = [
   rami51,
   tarot,
   imiteMoi,
+  banquise,
 ];
 
 export function findGame(id: string): GameModule | undefined {
@@ -55,6 +57,20 @@ export { imposteur } from './imposteur/module.js';
 export { plusOuMoins } from './plus-ou-moins/module.js';
 export { reflexe } from './reflexe/module.js';
 export { bombesParty } from './bombes-party/module.js';
+export { banquise, LEVEL_RULES as BANQUISE_LEVELS, LEVEL_COUNT as BANQUISE_LEVEL_COUNT } from './banquise/module.js';
+export type { BanquiseState, BanquiseSettings } from './banquise/module.js';
+export {
+  WIDTH as BANQUISE_WIDTH,
+  holeWidths,
+  makeIce,
+  newBody,
+  jump as banquiseJump,
+  push as banquisePush,
+  setInput as banquiseSetInput,
+  stepBody as banquiseStepBody,
+  supported as banquiseSupported,
+} from './banquise/physics.js';
+export type { Body as BanquiseBody } from './banquise/physics.js';
 export type { BombesPartyState, BombesPartySettings } from './bombes-party/module.js';
 export { createCardGame, canPlayCard } from './cards/engine.js';
 export type { CardGameState, CardInstance, CardPhase } from './cards/engine.js';

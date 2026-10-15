@@ -151,6 +151,14 @@ export const clientViews: Record<string, GameClientViews> = {
       Player: BombesPartyPlayer,
     };
   }),
+  banquise: lazyViews(async () => {
+    const [{ BanquiseHost }, { BanquisePlayer }, { BanquiseSettings }] = await Promise.all([
+      import('../banquise/client/HostScreen.js'),
+      import('../banquise/client/PlayerScreen.js'),
+      import('../banquise/client/Settings.js'),
+    ]);
+    return { Settings: BanquiseSettings, Host: BanquiseHost, Player: BanquisePlayer };
+  }),
   'cartes-couleurs': cardViews,
   'cartes-coco': cardViews,
   president: lazyViews(() => import('../president/client/index.js').then((m) => m.presidentViews)),

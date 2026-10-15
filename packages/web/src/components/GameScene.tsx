@@ -580,12 +580,64 @@ const association: Scene = (c) => (
   </>
 );
 
+/** Banquise : mer froide, banquise en plaques et quelques flocons. */
+const banquise: Scene = (c) => {
+  const floes = Array.from({ length: 6 }, (_, i) => {
+    const x = 60 + i * 260 + span(c.r, -40, 40);
+    const w = span(c.r, 170, 280);
+    const y = span(c.r, 700, 735);
+    const lift = span(c.r, 22, 40);
+    return (
+      <path
+        key={i}
+        d={`M${x} ${y} L${x + w * 0.14} ${y - lift} L${x + w * 0.78} ${y - lift - 6} L${x + w} ${y} Z`}
+        fill="#eaf8ff"
+        stroke={c.edge}
+        strokeWidth={4}
+        strokeLinejoin="round"
+      />
+    );
+  });
+  return (
+    <>
+      <Stars c={c} count={40} maxY={420} />
+      <Ridge c={c} base={640} amp={60} color="#bfe6ff" opacity={0.55} />
+      <rect x={0} y={700} width={W} height={H - 700} fill="#0d4f78" />
+      <path
+        d="M0 728 Q100 712 200 728 T400 728 T600 728 T800 728 T1000 728 T1200 728 T1400 728 T1600 728 V770 H0 Z"
+        fill="#1d6f9c"
+        opacity={0.7}
+      />
+      {floes}
+      {Array.from({ length: 14 }, (_, i) => (
+        <circle
+          key={i}
+          cx={span(c.r, 0, W)}
+          cy={span(c.r, 80, 600)}
+          r={span(c.r, 2, 5)}
+          fill="#ffffff"
+          opacity={0.85}
+        />
+      ))}
+      {Array.from({ length: 4 }, (_, i) => (
+        <path
+          key={i}
+          d={sparkle(span(c.r, 120, 1480), span(c.r, 90, 380), span(c.r, 14, 24))}
+          fill="#ffffff"
+          opacity={0.8}
+        />
+      ))}
+    </>
+  );
+};
+
 /** Décors génériques, pour les jeux sans décor dessiné (paquets, cartes, plateau, solo). */
 const FALLBACK: Scene[] = [plutotQui, tarot, association, promoteur];
 
 const SCENES: Record<string, Scene> = {
   'quiz-party': quizParty,
   'bombes-party': bombes,
+  banquise,
   imposteur,
   'loups-village': loups,
   'plus-ou-moins': plusOuMoins,

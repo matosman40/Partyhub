@@ -72,6 +72,15 @@ export const GAME_LOGOS: Record<string, LogoSpec> = {
     mark: 'arrows',
     tilt: -2,
   },
+  banquise: {
+    lines: ['Banquise'],
+    fill: '#eaf8ff',
+    edge: '#7fdcff',
+    ink: '#082a44',
+    sky: ['#1b4f7a', '#06192e'],
+    mark: 'frame',
+    tilt: -2,
+  },
   'plutot-qui': {
     lines: ['Plutôt', 'qui ?'],
     fill: '#fff3b0',
