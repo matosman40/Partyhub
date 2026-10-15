@@ -5,6 +5,9 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 ## Non publié
 
 ### Ajouté
+- Fonds d’écran : l’administration choisit une image de la médiathèque pour chaque écran (accueil, rejoindre, écran
+  principal, téléphone et tablette, spectateur, profil), ou « Appliquer à tous les écrans ». Une image encore utilisée
+  comme fond ne peut pas être supprimée. Un voile sombre reste par-dessus pour garder le texte lisible.
 - Bomberman : les joueurs au personnage importé sont dessinés avec leur planche (pose de repos, rebond à chaque pas, retournée selon le sens). Les autres gardent leur sprite.
 - Jeu « Banquise » (catégorie plateau, 2 à 8 joueurs) : chaque personnage, importé ou dessiné, marche sur un îlot de
   glace arrondi, en cases hexagonales, dans les quatre directions et saute par-dessus les trous. Trois niveaux : la fonte par les bords, les

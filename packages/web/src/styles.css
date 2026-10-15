@@ -162,6 +162,41 @@ body::before {
   z-index: 1;
 }
 
+/* Fond d'écran choisi dans l'administration : une image par écran, sous le contenu et sous le voile. */
+.screen-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-color: var(--bg0);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+/* `#root > *` remet position: relative sur les enfants directs : le calque le redevient fixe ici. */
+#root > .screen-backdrop {
+  position: fixed;
+  z-index: -1;
+}
+
+/* Voile léger pour garder le texte lisible sur n'importe quelle image. */
+.screen-backdrop::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(5, 3, 18, 0.28);
+}
+
+/* Avec une image, l'écran principal montre cette image : son dégradé et son décor de jeu s'effacent. */
+html.has-screen-bg .stage {
+  background: none;
+}
+
+html.has-screen-bg .stage-scene {
+  display: none;
+}
+
 img,
 svg,
 video,
@@ -6895,4 +6930,25 @@ html:not([data-theme='dark']) .corner-drawer {
   .ban-actor {
     transition: none;
   }
+}
+
+/* Fonds d'écran (administration) : un choix par ligne, avec un aperçu de l'image. */
+.screen-bg-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.screen-bg-row .field {
+  flex: 1 1 260px;
+  min-width: 0;
+}
+
+.screen-bg-thumb {
+  width: 96px;
+  height: 54px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--line);
 }

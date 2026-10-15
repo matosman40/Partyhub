@@ -9,6 +9,7 @@ import { PackagesAdmin } from '../admin/PackagesAdmin.js';
 import { PackageSourcesAdmin } from '../admin/PackageSourcesAdmin.js';
 import { CharacterPacksAdmin } from '../admin/CharacterPacksAdmin.js';
 import { AssetLibrary } from '../admin/AssetLibrary.js';
+import { ScreenBackgroundsAdmin } from '../admin/ScreenBackgroundsAdmin.js';
 import { MediaGamesAdmin } from '../admin/MediaGamesAdmin.js';
 import { GameDetailsEditor } from '../admin/GameDetailsEditor.js';
 import { GameSettingsEditor } from '../admin/GameSettingsEditor.js';
@@ -250,6 +251,7 @@ function SettingsForm({ settings, onSaved }: { settings: AdminSettings; onSaved:
 export function AdminPage() {
   const [authenticated, setAuthenticated] = useState<boolean | null>(null);
   const [overview, setOverview] = useState<Overview | null>(null);
+  const [libraryVersion, setLibraryVersion] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -459,7 +461,20 @@ export function AdminPage() {
 
       <section className="card stack">
         <h2>Médiathèque</h2>
-        <AssetLibrary onChanged={load} />
+        <AssetLibrary
+          onChanged={() => {
+            void load();
+            setLibraryVersion((v) => v + 1);
+          }}
+        />
+      </section>
+
+      <section className="card stack">
+        <h2>Fonds d’écran</h2>
+        <p className="muted small">
+          Une image de la médiathèque par écran. Le voile sombre reste par-dessus pour garder le texte lisible.
+        </p>
+        <ScreenBackgroundsAdmin libraryVersion={libraryVersion} />
       </section>
 
       <section className="card stack">

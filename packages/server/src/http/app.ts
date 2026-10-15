@@ -38,6 +38,12 @@ import {
 import { gameDetailsSchema, settingsIssueMessage } from '@partyhub/shared';
 import type { AppConfig } from '../config.js';
 import { adminSettingsSchema, type Store } from '../db/store.js';
+import {
+  screenBackgroundsSchema,
+  screenBackgroundUrl,
+  SCREEN_KEYS,
+  type ScreenBackgrounds,
+} from '../screen-backgrounds.js';
 import type { Logger } from '../logger.js';
 import type { RoomManager } from '../rooms/manager.js';
 import type { RealtimeHub } from '../realtime/hub.js';
@@ -357,6 +363,12 @@ export function createApp(deps: AppDeps): express.Express {
     res.sendFile(assets.filePath(asset.id), (err) => {
       if (err && !res.headersSent) res.status(404).json({ error: 'Fichier introuvable.' });
     });
+  });
+
+  /** Fonds d'écran affichés sur chaque écran (adresses des images de la médiathèque, ou null). */
+  api.get('/screen-backgrounds', (_req, res) => {
+    res.setHeader('Cache-Control', 'no-cache');
+    res.json({ backgrounds: resolveBackgrounds(store.getScreenBackgrounds()) });
   });
 
   api.get('/avatars/:id', (req, res) => {
@@ -1010,7 +1022,18 @@ export function createApp(deps: AppDeps): express.Express {
   const usersOf = (assetId: string): string[] => [
     ...mediaGames.usersOfAsset(assetId),
     ...cardGames.usersOfAsset(assetId),
+    ...(Object.values(store.getScreenBackgrounds()).includes(assetId) ? ['Fonds d’écran'] : []),
   ];
+
+  /** Fonds d'écran : seuls les identifiants d'images encore présentes sont rendus publics. */
+  const resolveBackgrounds = (stored: ScreenBackgrounds): Record<string, string | null> =>
+    Object.fromEntries(
+      SCREEN_KEYS.map((key) => {
+        const id = stored[key];
+        const asset = id ? assets.get(id) : undefined;
+        return [key, asset && asset.kind === 'image' ? screenBackgroundUrl(asset.id) : null];
+      }),
+    );
 
   admin.get('/assets', (_req, res) => {
     res.json({
@@ -1080,6 +1103,28 @@ export function createApp(deps: AppDeps): express.Express {
     // Désactiver un jeu ferme les salles qui le jouent : aucune partie ne reste bloquée.
     const closed = enabled ? 0 : manager.closeWhere((r) => r.module.manifest.id === id, 'admin');
     res.json({ ok: true, closedRooms: closed });
+  });
+
+  admin.get('/screen-backgrounds', (_req, res) => {
+    res.json({ backgrounds: store.getScreenBackgrounds() });
+  });
+
+  admin.put('/screen-backgrounds', (req, res) => {
+    const parsed = screenBackgroundsSchema.safeParse(req.body?.backgrounds);
+    if (!parsed.success) {
+      res.status(400).json({ error: 'Fonds d’écran invalides.' });
+      return;
+    }
+    for (const id of Object.values(parsed.data)) {
+      if (id === null) continue;
+      const asset = assets.get(id);
+      if (!asset || asset.kind !== 'image') {
+        res.status(400).json({ error: 'Choisissez une image de la médiathèque.' });
+        return;
+      }
+    }
+    store.saveScreenBackgrounds(parsed.data);
+    res.json({ backgrounds: parsed.data });
   });
 
   admin.put('/settings', (req, res) => {

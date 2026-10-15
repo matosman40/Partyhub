@@ -3,6 +3,7 @@ import path from 'node:path';
 import Database from 'better-sqlite3';
 import { z } from 'zod';
 import { ROOM_CODE_DEFAULT_LENGTH, ROOM_CODE_MAX_LENGTH, ROOM_CODE_MIN_LENGTH } from '@partyhub/shared';
+import { parseScreenBackgrounds, type ScreenBackgrounds } from '../screen-backgrounds.js';
 
 /** Fichier de la médiathèque (les octets sont sur le disque, pas en base). */
 export interface AssetRow {
@@ -460,6 +461,15 @@ export class Store {
 
   saveSettings(settings: AdminSettings): void {
     this.setKv('admin_settings', JSON.stringify(settings));
+  }
+
+  /** Fond d'écran choisi pour chaque écran (identifiants de médiathèque). */
+  getScreenBackgrounds(): ScreenBackgrounds {
+    return parseScreenBackgrounds(this.getKv('screen_backgrounds'));
+  }
+
+  saveScreenBackgrounds(backgrounds: ScreenBackgrounds): void {
+    this.setKv('screen_backgrounds', JSON.stringify(backgrounds));
   }
 
   /** Un jeu est activé par défaut tant qu'aucun réglage ne le désactive. */
