@@ -464,3 +464,39 @@ describe('BOUM ! : Le mot secret', () => {
     expect(s.points[writer] ?? 0).toBe(0);
   });
 });
+
+describe('BOUM ! : Photo-défi', () => {
+  const photo = (letter: string) => `data:image/jpeg;base64,${letter.repeat(8)}`;
+  const at = (id: string) => ({ id, name: id });
+
+  it('refuse une photo qui n’est pas un JPEG, puis accepte une photo et la cache aux autres', () => {
+    const h = started(['photo_defi']);
+    let s = h.state;
+    expect(h.game.handleAction(s, at('a'), 'photo', { dataUrl: 'data:image/png;base64,QUFB' }, h.ctx).ok).toBe(false);
+    s = ok(h.game.handleAction(s, at('a'), 'photo', { dataUrl: photo('B') }, h.ctx));
+    expect(JSON.stringify(h.game.getPublicState(s))).not.toContain(photo('B'));
+    expect(JSON.stringify(h.game.getHostState(s))).not.toContain(photo('B'));
+    expect((h.game.getPlayerState(s, 'a') as { myText: string | null }).myText).toBeNull();
+    expect(h.game.handleAction(s, at('a'), 'photo', { dataUrl: photo('C') }, h.ctx).ok).toBe(false);
+  });
+
+  it('ouvre le vote avec les photos, puis donne 100 par vote reçu à l’auteur', () => {
+    const h = started(['photo_defi']);
+    let s = h.state;
+    s = ok(h.game.handleAction(s, at('a'), 'photo', { dataUrl: photo('A') }, h.ctx));
+    s = ok(h.game.handleAction(s, at('b'), 'photo', { dataUrl: photo('B') }, h.ctx));
+    s = ok(h.game.handleAction(s, at('c'), 'photo', { dataUrl: photo('C') }, h.ctx));
+    expect(s.phase).toBe('vote');
+    const options = (h.game.getPublicState(s) as { options: { image: string | null }[] }).options;
+    expect(options.map((o) => o.image).sort()).toEqual([photo('A'), photo('B'), photo('C')].sort());
+    const idxB = s.round!.options.indexOf('b');
+    const idxA = s.round!.options.indexOf('a');
+    s = ok(h.game.handleAction(s, at('a'), 'vote', { option: idxB }, h.ctx));
+    s = ok(h.game.handleAction(s, at('c'), 'vote', { option: idxB }, h.ctx));
+    s = ok(h.game.handleAction(s, at('b'), 'vote', { option: idxA }, h.ctx));
+    expect(s.phase).toBe('reveal');
+    expect(s.points.b).toBe(200);
+    expect(s.points.a).toBe(100);
+    expect(s.points.c ?? 0).toBe(0);
+  });
+});

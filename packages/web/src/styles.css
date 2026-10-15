@@ -6969,6 +6969,13 @@ html:not([data-theme='dark']) .corner-drawer {
   flex: 1 1 auto;
   min-width: 0;
 }
+.photo-option {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+}
+
 .boum-clues {
   list-style: none;
   margin: 0;

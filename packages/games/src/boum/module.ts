@@ -111,6 +111,10 @@ const countrySchema = z.object({ code: z.string().length(2) });
 const CLIP_MAX_CHARS = 60_000;
 const CLIP_URL = /^data:audio\/(webm|ogg|mp4)(;codecs=[A-Za-z0-9.,-]+)?;base64,[A-Za-z0-9+/]+={0,2}$/;
 const clipSchema = z.object({ dataUrl: z.string().max(CLIP_MAX_CHARS).regex(CLIP_URL, 'Extrait invalide') });
+/** Photo-défi : une photo JPEG réduite, comme celles d'Imite-moi (moins de 60 000 caractères). */
+const PHOTO_MAX_CHARS = 60_000;
+const PHOTO_URL = /^data:image\/jpeg;base64,[A-Za-z0-9+/]+={0,2}$/;
+const photoSchema = z.object({ dataUrl: z.string().max(PHOTO_MAX_CHARS).regex(PHOTO_URL, 'Photo invalide') });
 
 export const boumActions = {
   answer: answerSchema,
@@ -120,6 +124,7 @@ export const boumActions = {
   rate: rateSchema,
   country: countrySchema,
   clip: clipSchema,
+  photo: photoSchema,
 };
 
 /** Indice du mot secret : un seul mot, qui ne reprend ni le mot à deviner ni l'un de ses mots longs. */
@@ -260,7 +265,8 @@ function openRound(state: BoumState, ctx: GameContext): BoumState {
       round.prompt = items[0] ?? null;
       break;
     }
-    case 'ecriture_vote': {
+    case 'ecriture_vote':
+    case 'photo': {
       const { items, queues } = take(s, mode.needs[0]!.type, 1, ctx);
       s = { ...s, queues };
       round.prompt = items[0] ?? null;
@@ -394,6 +400,7 @@ function reveal(state: BoumState, ctx: GameContext): BoumState {
       break;
     }
     case 'ecriture_vote':
+    case 'photo':
     case 'carte_vote':
     case 'vrai_ou_faux': {
       for (const option of Object.values(round.votes)) {
@@ -476,6 +483,7 @@ function afterWrite(state: BoumState, ctx: GameContext): BoumState {
     case 'chiffre':
       return connected.every((id) => id in round.guesses) ? reveal(state, ctx) : state;
     case 'ecriture_vote':
+    case 'photo':
     case 'vrai_ou_faux':
     case 'carte_vote':
       return connected.every((id) => id in round.writings) ? toVote(state, ctx) : state;
@@ -576,6 +584,16 @@ export function createBoum(getBank: () => BankSnapshot = currentBoumBank): GameM
       const mode = currentMode(state);
       if (!round || !mode) return fail('Aucune manche en cours');
       const pid = player.id;
+
+      if (type === 'photo') {
+        if (mode.kind !== 'photo') return fail('Pas de photo à envoyer pour cette manche');
+        if (state.phase !== 'write') return fail('Le temps est écoulé');
+        if (pid in round.writings) return fail('Vous avez déjà envoyé votre photo');
+        const parsed = photoSchema.safeParse(payload);
+        if (!parsed.success) return fail('Photo invalide');
+        const next = { ...round, writings: { ...round.writings, [pid]: parsed.data.dataUrl } };
+        return ok(afterWrite({ ...state, round: next }, ctx));
+      }
 
       if (type === 'answer') {
         const { text } = payload as { text: string };
@@ -715,7 +733,8 @@ export function createBoum(getBank: () => BankSnapshot = currentBoumBank): GameM
           }
           return toVote({ ...state, round }, ctx);
         }
-        if (mode.kind === 'ecriture_vote' || mode.kind === 'vrai_ou_faux') return toVote(state, ctx);
+        if (mode.kind === 'ecriture_vote' || mode.kind === 'vrai_ou_faux' || mode.kind === 'photo')
+          return toVote(state, ctx);
         if (mode.kind === 'detecteur') return toRate(state, ctx);
         return reveal(state, ctx);
       }
@@ -801,7 +820,11 @@ export function createBoum(getBank: () => BankSnapshot = currentBoumBank): GameM
         const options =
           mode.kind === 'vote_joueur'
             ? round.options.map((id) => ({ id, label: state.players[id] ?? '?' }))
-            : round.options.map((id, i) => ({ id: String(i), label: round.writings[id] ?? '' }));
+            : round.options.map((id, i) => ({
+                id: String(i),
+                label: mode?.kind === 'photo' ? '' : (round.writings[id] ?? ''),
+                image: mode?.kind === 'photo' ? (round.writings[id] ?? null) : null,
+              }));
         return { ...base, ...timed, prompt, pleader, options, voted: Object.keys(round.votes).length };
       }
 
@@ -842,6 +865,7 @@ export function createBoum(getBank: () => BankSnapshot = currentBoumBank): GameM
               (playerId === round.pleader ? !round.correct.includes(playerId) : !(playerId in round.writings))) ||
             (mode.kind === 'mime' && playerId !== round.pleader && !round.correct.includes(playerId)) ||
             (mode.kind === 'chiffre' && !(playerId in round.guesses)) ||
+            (mode.kind === 'photo' && !(playerId in round.writings)) ||
             (mode.kind === 'ecriture_vote' && !(playerId in round.writings)) ||
             (mode.kind === 'vrai_ou_faux' && !(playerId in round.writings)) ||
             (mode.kind === 'carte_vote' && !(playerId in round.played)) ||
@@ -861,7 +885,7 @@ export function createBoum(getBank: () => BankSnapshot = currentBoumBank): GameM
         mustAct,
         hand: mode.kind === 'carte_vote' ? hand : [],
         played: round.played[playerId] ?? null,
-        myText: round.writings[playerId] ?? null,
+        myText: mode.kind === 'photo' ? null : (round.writings[playerId] ?? null),
         found: round.correct.includes(playerId),
         myVote,
         ownOption: ownOption >= 0 ? ownOption : null,
@@ -1035,7 +1059,8 @@ function revealView(state: BoumState, round: BoumRound, mode: ModeDef) {
         answer,
         results: round.options
           .map((id, i) => ({
-            text: round.writings[id] ?? '',
+            text: mode.kind === 'photo' ? '' : (round.writings[id] ?? ''),
+            image: mode.kind === 'photo' ? (round.writings[id] ?? null) : null,
             author: name(id),
             votes: counts[i] ?? 0,
             gained: round.gains[id] ?? 0,

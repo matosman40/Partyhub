@@ -47,7 +47,9 @@ export function BoumHost({ publicState: pub, hostState: host, now }: HostViewPro
                   ? `${pub.played} carte(s) jouée(s)`
                   : kind === 'mot_secret'
                     ? `${pub.written} indice(s)`
-                    : `${pub.written} texte(s) envoyé(s)`;
+                    : kind === 'photo'
+                      ? `${pub.written} photo(s)`
+                      : `${pub.written} texte(s) envoyé(s)`;
     return (
       <section className="game-host boum-host fade-in" key={key} style={style} data-effects={pub.effects}>
         <div className="round-info">
@@ -105,10 +107,12 @@ export function BoumHost({ publicState: pub, hostState: host, now }: HostViewPro
           {isPlayerVote ? 'Votez pour le joueur le plus probable' : 'Votez pour la meilleure réponse'}
         </p>
         <ol className="option-grid">
-          {pub.options.map((o: { id: string; label: string }, i: number) => (
+          {pub.options.map((o: { id: string; label: string; image?: string | null }, i: number) => (
             <li key={o.id} className="option-card">
               <span className="letter">{LETTERS[i]}</span>
-              <span className="option-word">{o.label}</span>
+              <span className="option-word">
+                {o.image ? <img src={o.image} alt={`Photo n°${i + 1}`} className="photo-option" /> : o.label}
+              </span>
             </li>
           ))}
         </ol>
@@ -295,18 +299,22 @@ export function BoumHost({ publicState: pub, hostState: host, now }: HostViewPro
       )}
       {reveal?.kind === 'texte' && (
         <ol className="option-grid revealed">
-          {reveal.results.map((r: { text: string; author: string; votes: number; gained: number }, i: number) => (
-            <li key={i} className={`option-card${r.votes > 0 && r.votes === reveal.results[0]?.votes ? ' top' : ''}`}>
-              <span className="option-word">{r.text}</span>
-              <span className="author">
-                <Avatar name={r.author} size="sm" />
-                {r.author}
-              </span>
-              <span className="option-score">
-                {r.votes} vote(s) · +{r.gained}
-              </span>
-            </li>
-          ))}
+          {reveal.results.map(
+            (r: { text: string; image: string | null; author: string; votes: number; gained: number }, i: number) => (
+              <li key={i} className={`option-card${r.votes > 0 && r.votes === reveal.results[0]?.votes ? ' top' : ''}`}>
+                <span className="option-word">
+                  {r.image ? <img src={r.image} alt={`Photo n°${i + 1}`} className="photo-option" /> : r.text}
+                </span>
+                <span className="author">
+                  <Avatar name={r.author} size="sm" />
+                  {r.author}
+                </span>
+                <span className="option-score">
+                  {r.votes} vote(s) · +{r.gained}
+                </span>
+              </li>
+            ),
+          )}
         </ol>
       )}
       <h3>Classement</h3>

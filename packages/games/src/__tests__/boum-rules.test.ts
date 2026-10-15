@@ -29,6 +29,7 @@ describe('Éligibilité', () => {
       'le_mot_secret',
       'mime_metier',
       'ou_est_ce',
+      'photo_defi',
       'reponse_rapide',
     ]);
   });

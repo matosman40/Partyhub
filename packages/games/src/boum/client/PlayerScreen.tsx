@@ -4,7 +4,7 @@ import { useRemaining } from '../../client/hooks.js';
 import { Countdown, FinalScreen, WaitingScreen } from '../../client/ui.js';
 import { COUNTRY_CODES } from '../bank/countries.js';
 import { COUNTRY_NAMES_FR } from '../geo/countries-data.js';
-import { SoundRecorder } from '../../imite-moi/client/Capture.js';
+import { PhotoCapture, SoundRecorder } from '../../imite-moi/client/Capture.js';
 
 /** Pays proposés au téléphone, triés par nom français. */
 const COUNTRY_OPTIONS: [string, string][] = COUNTRY_CODES.map(
@@ -131,6 +131,19 @@ export function BoumPlayer({ publicState: pub, playerState: me, playerId, now, s
     }
 
     const promptText = pub.prompt?.text ?? '';
+
+    if (kind === 'photo' && me?.mustAct) {
+      return (
+        <section className="player-game fade-in">
+          <div className="round-info">
+            {title} · <Countdown remaining={remaining} />
+          </div>
+          <h2 className="question-small">{promptText}</h2>
+          <PhotoCapture mode="galerie" busy={busy} onSubmit={(dataUrl) => void run('photo', { dataUrl })} />
+          {notice}
+        </section>
+      );
+    }
 
     if (kind === 'pays') {
       return (
@@ -318,14 +331,21 @@ export function BoumPlayer({ publicState: pub, playerState: me, playerId, now, s
       return <WaitingScreen title="Vote envoyé ✔" text="En attente des autres…" />;
     }
     const isPlayerVote = kind === 'vote_joueur';
+    const isPhoto = kind === 'photo';
     return (
       <section className="player-game fade-in">
         <div className="round-info">
           Vote · <Countdown remaining={remaining} />
         </div>
-        <h2 className="question-small">{isPlayerVote ? pub.prompt?.text : 'Quelle réponse est la meilleure ?'}</h2>
+        <h2 className="question-small">
+          {isPlayerVote
+            ? pub.prompt?.text
+            : isPhoto
+              ? 'Quelle photo est la meilleure ?'
+              : 'Quelle réponse est la meilleure ?'}
+        </h2>
         <ol className="choices-stack">
-          {pub.options.map((o: { id: string; label: string }, i: number) => {
+          {pub.options.map((o: { id: string; label: string; image?: string | null }, i: number) => {
             const isOwn = isPlayerVote ? o.id === playerId : String(me?.ownOption) === String(i);
             if (isOwn) return null;
             return (
@@ -336,7 +356,7 @@ export function BoumPlayer({ publicState: pub, playerState: me, playerId, now, s
                   disabled={busy || remaining <= 0}
                   onClick={() => run('vote', isPlayerVote ? { player: o.id } : { option: i })}
                 >
-                  {o.label}
+                  {o.image ? <img src={o.image} alt={`Photo n°${i + 1}`} className="photo-option" /> : o.label}
                 </button>
               </li>
             );

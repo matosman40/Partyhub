@@ -16,7 +16,8 @@ Identifiant `boum`, catégorie quiz, de 2 à 12 joueurs.
 | Où est-ce ? (carte du monde, choix du pays dans une liste, barème par distance jusqu'à 2 000 km ; données générées par `scripts/boum/generate-countries.mjs`, voir NOTICE.md) | fait |
 | Devine la chanson (le chanteur enregistre 3 secondes sur son téléphone, sans musique ; le titre n’est visible que de lui ; les autres tapent l’artiste ou le film, « / » sépare les bonnes réponses ; barème de Mime le métier) | fait |
 | Le mot secret (téléphone : le joueur désigné voit le mot seul ; les autres donnent un indice d’un seul mot, visible sur l’écran principal, sans reprendre le mot ; il devine, 100 pour lui, 50 par auteur d’indice ; 60 secondes) | fait |
-| Modes restants : Photo-défi, Grimace, Galerie du thème, Rythme, Son mystère, Imite le cri, Le plus fort, Qui fait ce bruit ? | à faire |
+| Photo-défi (chacun envoie une photo à la consigne, depuis la caméra ou la galerie ; vote anonyme sur les photos ; 100 par vote reçu) | fait |
+| Modes restants : Grimace, Galerie du thème, Rythme, Son mystère, Imite le cri, Le plus fort, Qui fait ce bruit ? | à faire |
 | Formats (équipes, championnat) et super-pouvoirs | à faire |
 | Effets de mise en scène de l'écran principal | à faire |
 

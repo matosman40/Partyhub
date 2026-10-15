@@ -51,7 +51,8 @@ export type ModeKind =
   | 'mime'
   | 'pays'
   | 'chanson'
-  | 'mot_secret';
+  | 'mot_secret'
+  | 'photo';
 
 /** Durée du mime, en secondes (spécification : le mimeur a 60 secondes). */
 export const MIME_SECONDS = 60;
@@ -70,7 +71,8 @@ export type ModeId =
   | 'mime_metier'
   | 'ou_est_ce'
   | 'devine_chanson'
-  | 'le_mot_secret';
+  | 'le_mot_secret'
+  | 'photo_defi';
 
 export interface ModeNeed {
   type: BankType;
@@ -234,6 +236,16 @@ export const MODES: readonly ModeDef[] = [
     pack: false,
     minPlayers: 3,
     needs: [{ type: 'mot_secret', minValid: 5 }],
+  },
+  {
+    id: 'photo_defi',
+    title: 'Photo-défi',
+    brief: 'Chacun prend une photo qui répond à la consigne. Les autres votent pour la meilleure.',
+    family: 'image',
+    kind: 'photo',
+    pack: false,
+    minPlayers: 3,
+    needs: [{ type: 'consigne_photo', minValid: 5 }],
   },
 ];
 
