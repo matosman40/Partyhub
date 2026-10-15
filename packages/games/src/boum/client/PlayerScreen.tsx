@@ -126,20 +126,27 @@ export function BoumPlayer({ publicState: pub, playerState: me, playerId, now, s
         </section>
       );
     }
+    if (kind === 'grimace' && !me?.isPleader) {
+      return <WaitingScreen title="Regardez l’écran" text="Un joueur fait sa grimace." />;
+    }
     if (me?.mustAct === false) {
       return <WaitingScreen title="Envoyé ✔" text="En attente des autres… Regardez l’écran principal." />;
     }
 
     const promptText = pub.prompt?.text ?? '';
 
-    if (kind === 'photo' && me?.mustAct) {
+    if ((kind === 'photo' || kind === 'grimace') && me?.mustAct) {
       return (
         <section className="player-game fade-in">
           <div className="round-info">
             {title} · <Countdown remaining={remaining} />
           </div>
           <h2 className="question-small">{promptText}</h2>
-          <PhotoCapture mode="galerie" busy={busy} onSubmit={(dataUrl) => void run('photo', { dataUrl })} />
+          <PhotoCapture
+            mode={kind === 'grimace' ? 'grimace' : 'galerie'}
+            busy={busy}
+            onSubmit={(dataUrl) => void run('photo', { dataUrl })}
+          />
           {notice}
         </section>
       );
@@ -368,16 +375,24 @@ export function BoumPlayer({ publicState: pub, playerState: me, playerId, now, s
   }
 
   if (pub.phase === 'rate') {
-    if (me?.isPleader) return <WaitingScreen title="Votre défense est notée" text="Regardez l’écran principal." />;
+    if (me?.isPleader)
+      return (
+        <WaitingScreen
+          title={kind === 'grimace' ? 'Votre grimace est notée' : 'Votre défense est notée'}
+          text="Regardez l’écran principal."
+        />
+      );
     if (me?.myRating !== null && me?.myRating !== undefined) {
       return <WaitingScreen title={`Note envoyée : ${me.myRating} ★`} text="En attente des autres…" />;
     }
     return (
       <section className="player-game fade-in">
         <div className="round-info">
-          Mauvaise foi · <Countdown remaining={remaining} />
+          {kind === 'grimace' ? 'Grimace' : 'Mauvaise foi'} · <Countdown remaining={remaining} />
         </div>
-        <h2 className="question-small">Cette défense est-elle crédible ?</h2>
+        <h2 className="question-small">
+          {kind === 'grimace' ? 'Cette grimace est-elle réussie ?' : 'Cette défense est-elle crédible ?'}
+        </h2>
         <div className="choices-stack" role="group" aria-label="Note de 1 à 5 étoiles">
           {[1, 2, 3, 4, 5].map((stars) => (
             <button

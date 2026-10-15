@@ -128,9 +128,17 @@ export function BoumHost({ publicState: pub, hostState: host, now }: HostViewPro
   if (pub.phase === 'rate') {
     return (
       <section className="game-host boum-host fade-in" key={key} style={style} data-effects={pub.effects}>
-        <div className="round-info">{header} · Mauvaise foi</div>
-        <p className="label">{pub.pleader} affirme :</p>
-        <h2 className="huge-word small">« {pub.excuse} »</h2>
+        <div className="round-info">
+          {header} · {mode?.kind === 'grimace' ? 'Grimace' : 'Mauvaise foi'}
+        </div>
+        <p className="label">
+          {mode?.kind === 'grimace' ? `${pub.pleader} fait la grimace` : `${pub.pleader} affirme :`}
+        </p>
+        {mode?.kind === 'grimace' ? (
+          <img className="photo-option big-photo" src={pub.photo} alt="Grimace de la manche" />
+        ) : (
+          <h2 className="huge-word small">« {pub.excuse} »</h2>
+        )}
         <p className="muted">Notez la défense de 1 à 5 étoiles sur votre téléphone.</p>
         <TimerBar remaining={remaining} total={pub.durationMs} />
         <p className="muted">
@@ -287,6 +295,15 @@ export function BoumHost({ publicState: pub, hostState: host, now }: HostViewPro
             </li>
           ))}
         </ol>
+      )}
+      {reveal?.kind === 'grimace' && (
+        <>
+          <p className="label">{reveal.pleader} a fait la grimace</p>
+          {reveal.photo && <img className="photo-option big-photo" src={reveal.photo} alt="Grimace de la manche" />}
+          <p className="muted">
+            {reveal.average === null ? 'Personne n’a noté.' : `Note moyenne : ${reveal.average} / 5`} · +{reveal.gained}
+          </p>
+        </>
       )}
       {reveal?.kind === 'detecteur' && (
         <>

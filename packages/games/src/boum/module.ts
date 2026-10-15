@@ -307,7 +307,8 @@ function openRound(state: BoumState, ctx: GameContext): BoumState {
     }
     case 'chanson':
     case 'mime':
-    case 'mot_secret': {
+    case 'mot_secret':
+    case 'grimace': {
       const { items, queues } = take(s, mode.needs[0]!.type, 1, ctx);
       s = { ...s, queues };
       round.prompt = items[0] ?? null;
@@ -322,7 +323,7 @@ function openRound(state: BoumState, ctx: GameContext): BoumState {
   const seconds =
     mode.kind === 'vote_joueur'
       ? s.settings.voteSeconds
-      : mode.kind === 'mime' || mode.kind === 'chanson' || mode.kind === 'mot_secret'
+      : mode.kind === 'mime' || mode.kind === 'chanson' || mode.kind === 'mot_secret' || mode.kind === 'grimace'
         ? MIME_SECONDS
         : s.settings.writeSeconds;
   const durationMs = seconds * 1000;
@@ -413,7 +414,8 @@ function reveal(state: BoumState, ctx: GameContext): BoumState {
       for (const target of Object.values(round.votes)) add(String(target), PROBABLE_POINTS);
       break;
     }
-    case 'detecteur': {
+    case 'detecteur':
+    case 'grimace': {
       const pleader = round.pleader;
       if (pleader && round.writings[pleader]) {
         const stars = Object.values(round.ratings);
@@ -488,6 +490,7 @@ function afterWrite(state: BoumState, ctx: GameContext): BoumState {
     case 'carte_vote':
       return connected.every((id) => id in round.writings) ? toVote(state, ctx) : state;
     case 'detecteur':
+    case 'grimace':
       return toRate(state, ctx);
     case 'pays':
       return connected.every((id) => id in round.picks) ? reveal(state, ctx) : state;
@@ -586,7 +589,10 @@ export function createBoum(getBank: () => BankSnapshot = currentBoumBank): GameM
       const pid = player.id;
 
       if (type === 'photo') {
-        if (mode.kind !== 'photo') return fail('Pas de photo à envoyer pour cette manche');
+        if (mode.kind !== 'photo' && mode.kind !== 'grimace') return fail('Pas de photo à envoyer pour cette manche');
+        if (mode.kind === 'grimace' && pid !== round.pleader) {
+          return fail('Seul le joueur qui fait la grimace envoie sa photo');
+        }
         if (state.phase !== 'write') return fail('Le temps est écoulé');
         if (pid in round.writings) return fail('Vous avez déjà envoyé votre photo');
         const parsed = photoSchema.safeParse(payload);
@@ -834,7 +840,8 @@ export function createBoum(getBank: () => BankSnapshot = currentBoumBank): GameM
           ...timed,
           prompt,
           pleader,
-          excuse: round.writings[round.pleader ?? ''] ?? '',
+          excuse: mode?.kind === 'grimace' ? '' : (round.writings[round.pleader ?? ''] ?? ''),
+          photo: mode?.kind === 'grimace' ? (round.writings[round.pleader ?? ''] ?? null) : null,
           rated: Object.keys(round.ratings).length,
         };
       }
@@ -866,6 +873,7 @@ export function createBoum(getBank: () => BankSnapshot = currentBoumBank): GameM
             (mode.kind === 'mime' && playerId !== round.pleader && !round.correct.includes(playerId)) ||
             (mode.kind === 'chiffre' && !(playerId in round.guesses)) ||
             (mode.kind === 'photo' && !(playerId in round.writings)) ||
+            (mode.kind === 'grimace' && playerId === round.pleader && !(playerId in round.writings)) ||
             (mode.kind === 'ecriture_vote' && !(playerId in round.writings)) ||
             (mode.kind === 'vrai_ou_faux' && !(playerId in round.writings)) ||
             (mode.kind === 'carte_vote' && !(playerId in round.played)) ||
@@ -885,7 +893,7 @@ export function createBoum(getBank: () => BankSnapshot = currentBoumBank): GameM
         mustAct,
         hand: mode.kind === 'carte_vote' ? hand : [],
         played: round.played[playerId] ?? null,
-        myText: mode.kind === 'photo' ? null : (round.writings[playerId] ?? null),
+        myText: mode.kind === 'photo' || mode.kind === 'grimace' ? null : (round.writings[playerId] ?? null),
         found: round.correct.includes(playerId),
         myVote,
         ownOption: ownOption >= 0 ? ownOption : null,
@@ -917,7 +925,7 @@ export function createBoum(getBank: () => BankSnapshot = currentBoumBank): GameM
           if (mode?.kind === 'mime')
             return connected.filter((id) => id !== round.pleader && !round.correct.includes(id));
           if (mode?.kind === 'carte_vote') return connected.filter((id) => !(id in round.played));
-          if (mode?.kind === 'detecteur')
+          if (mode?.kind === 'detecteur' || mode?.kind === 'grimace')
             return round.pleader ? [round.pleader].filter((id) => !(id in round.writings)) : [];
           return connected.filter((id) => !(id in round.writings));
         }
@@ -1036,6 +1044,17 @@ function revealView(state: BoumState, round: BoumRound, mode: ModeDef) {
         results: Object.keys(state.players)
           .map((id) => ({ name: name(id), votes: counts[id] ?? 0, gained: round.gains[id] ?? 0 }))
           .sort((a, b) => b.votes - a.votes || a.name.localeCompare(b.name, 'fr')),
+      };
+    }
+    case 'grimace': {
+      const stars = Object.values(round.ratings);
+      return {
+        kind: 'grimace' as const,
+        pleader: round.pleader ? name(round.pleader) : null,
+        prompt: round.prompt?.text ?? null,
+        photo: round.writings[round.pleader ?? ''] ?? null,
+        average: stars.length ? Math.round((stars.reduce((s, r) => s + r, 0) / stars.length) * 10) / 10 : null,
+        gained: round.pleader ? (round.gains[round.pleader] ?? 0) : 0,
       };
     }
     case 'detecteur': {

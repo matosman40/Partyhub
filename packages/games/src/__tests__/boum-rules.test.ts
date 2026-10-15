@@ -26,6 +26,7 @@ describe('Éligibilité', () => {
     expect(ids.sort()).toEqual([
       'combien',
       'devine_chanson',
+      'grimace',
       'le_mot_secret',
       'mime_metier',
       'ou_est_ce',

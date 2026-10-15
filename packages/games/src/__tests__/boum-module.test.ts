@@ -3,6 +3,7 @@ import type { GameContext, PlayerRef } from '@partyhub/shared';
 import { createBoum, type BoumState } from '../boum/module.js';
 import type { BankSnapshot, BankSnapshotEntry } from '../boum/bank/registry.js';
 import { BANK_TYPES, BANK_TYPE_INFO } from '../boum/bank/types.js';
+import { detectorPoints } from '../boum/scoring.js';
 
 /** Générateur déterministe (mulberry32). */
 function mulberry32(seed: number): () => number {
@@ -498,5 +499,36 @@ describe('BOUM ! : Photo-défi', () => {
     expect(s.points.b).toBe(200);
     expect(s.points.a).toBe(100);
     expect(s.points.c ?? 0).toBe(0);
+  });
+});
+
+describe('BOUM ! : Grimace', () => {
+  const photo = (letter: string) => `data:image/jpeg;base64,${letter.repeat(8)}`;
+  const at = (id: string) => ({ id, name: id });
+
+  it('refuse la photo d’un autre joueur, cache la photo pendant la saisie, puis la montre à la notation', () => {
+    const h = started(['grimace']);
+    let s = h.state;
+    const pleader = s.round!.pleader!;
+    const other = ['a', 'b', 'c'].find((id) => id !== pleader)!;
+    expect(h.game.handleAction(s, at(other), 'photo', { dataUrl: photo('B') }, h.ctx).ok).toBe(false);
+    expect(JSON.stringify(h.game.getPublicState(s))).not.toContain(photo('B'));
+    s = ok(h.game.handleAction(s, at(pleader), 'photo', { dataUrl: photo('B') }, h.ctx));
+    expect(s.phase).toBe('rate');
+    expect(JSON.stringify(h.game.getPublicState(s))).toContain(photo('B'));
+  });
+
+  it('refuse qu’on se note soi-même, puis attribue la note du détecteur à celui qui fait la grimace', () => {
+    const h = started(['grimace']);
+    let s = h.state;
+    const pleader = s.round!.pleader!;
+    const [j1, j2] = ['a', 'b', 'c'].filter((id) => id !== pleader);
+    s = ok(h.game.handleAction(s, at(pleader), 'photo', { dataUrl: photo('C') }, h.ctx));
+    expect(h.game.handleAction(s, at(pleader), 'rate', { stars: 5 }, h.ctx).ok).toBe(false);
+    s = ok(h.game.handleAction(s, at(j1!), 'rate', { stars: 4 }, h.ctx));
+    expect(s.phase).toBe('rate');
+    s = ok(h.game.handleAction(s, at(j2!), 'rate', { stars: 2 }, h.ctx));
+    expect(s.phase).toBe('reveal');
+    expect(s.points[pleader]).toBe(detectorPoints([4, 2]));
   });
 });

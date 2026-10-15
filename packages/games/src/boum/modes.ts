@@ -52,7 +52,8 @@ export type ModeKind =
   | 'pays'
   | 'chanson'
   | 'mot_secret'
-  | 'photo';
+  | 'photo'
+  | 'grimace';
 
 /** Durée du mime, en secondes (spécification : le mimeur a 60 secondes). */
 export const MIME_SECONDS = 60;
@@ -72,7 +73,8 @@ export type ModeId =
   | 'ou_est_ce'
   | 'devine_chanson'
   | 'le_mot_secret'
-  | 'photo_defi';
+  | 'photo_defi'
+  | 'grimace';
 
 export interface ModeNeed {
   type: BankType;
@@ -243,6 +245,16 @@ export const MODES: readonly ModeDef[] = [
     brief: 'Chacun prend une photo qui répond à la consigne. Les autres votent pour la meilleure.',
     family: 'image',
     kind: 'photo',
+    pack: false,
+    minPlayers: 3,
+    needs: [{ type: 'consigne_photo', minValid: 5 }],
+  },
+  {
+    id: 'grimace',
+    title: 'Grimace',
+    brief: 'Un joueur fait la grimace demandée, en photo. Les autres la notent de 1 à 5 étoiles.',
+    family: 'image',
+    kind: 'grimace',
     pack: false,
     minPlayers: 3,
     needs: [{ type: 'consigne_photo', minValid: 5 }],
