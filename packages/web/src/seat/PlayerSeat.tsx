@@ -1,11 +1,13 @@
 import { Suspense, useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react';
-import type { ChatMessage, PlayerRoomView } from '@partyhub/shared';
+import type { ChatMessage, LobbyMood, LobbyPosition, PlayerRoomView } from '@partyhub/shared';
 import { createSocket, type AppSocket } from '../realtime.js';
 import { newId } from '../api.js';
 import { viewsFor } from '../games.js';
 import { AvatarsContext } from '@partyhub/games/client';
 import { PlayerAvatar } from '../components/PlayerAvatar.js';
 import { ChatPanel, EmoteBar } from '../components/Social.js';
+import { LobbyArena, LobbyMoodBar } from '../components/LobbyArena.js';
+import { useLobbyMoods } from '../components/useLobbyMoods.js';
 import { NoticeDialog } from '../components/NoticeDialog.js';
 import { Qr } from '../components/Qr.js';
 import { CornerMenu, DrawerSection } from '../components/CornerMenu.js';
@@ -80,6 +82,7 @@ export function PlayerSeat({
   onProfileRejected,
 }: PlayerSeatProps) {
   const [socket] = useState<AppSocket>(() => createSocket());
+  const moods = useLobbyMoods(socket);
   const [joined, setJoined] = useState(false);
   const [view, setView] = useState<PlayerRoomView | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -209,6 +212,18 @@ export function PlayerSeat({
     });
   }
 
+  function sendLobbyMove(position: LobbyPosition) {
+    // Les refus de déplacement (débit, fin du salon) ne sont pas affichés : la place revient d'elle-même.
+    socket.emit('player:lobby-move', position, () => undefined);
+  }
+
+  function sendLobbyMood(mood: LobbyMood) {
+    setSocialError(null);
+    socket.emit('player:lobby-mood', { mood }, (res) => {
+      if (!res.ok) setSocialError(res.error);
+    });
+  }
+
   function sendReaction(emoji: string) {
     setSocialError(null);
     socket.emit('player:reaction', { emoji }, (res) => {
@@ -333,16 +348,8 @@ export function PlayerSeat({
             {you.ready ? 'Prêt ! Annuler' : 'Je suis prêt'}
           </button>
           <p className="muted small">L’hôte lance la partie depuis l’écran principal.</p>
-          {!compact && (
-            <ul className="chips" aria-label="Joueurs de la salle">
-              {lobby.players.map((p) => (
-                <li key={p.id} className={p.ready ? 'chip ready' : 'chip'}>
-                  <PlayerAvatar avatar={p.avatar} name={p.name} size="sm" />
-                  {p.name}
-                </li>
-              ))}
-            </ul>
-          )}
+          {!compact && <LobbyArena players={lobby.players} moods={moods} me={you.id} onMove={sendLobbyMove} />}
+          {!compact && <LobbyMoodBar onPick={sendLobbyMood} />}
           <EmoteBar onPick={sendReaction} />
         </section>
       ) : (

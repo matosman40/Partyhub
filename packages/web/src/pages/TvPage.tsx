@@ -9,6 +9,7 @@ import { GameLogo } from '../components/GameLogo.js';
 import { GameScene } from '../components/GameScene.js';
 import { logoFor } from '../components/gameLogos.js';
 import { useArrivalMoods } from '../components/useArrivalMoods.js';
+import { useLobbyMoods } from '../components/useLobbyMoods.js';
 import { ChatPanel, EmoteBar, ReactionLayer } from '../components/Social.js';
 import { NoticeDialog } from '../components/NoticeDialog.js';
 import { PlayerSeat } from '../seat/PlayerSeat.js';
@@ -44,6 +45,17 @@ export function TvPage() {
   const [board3dFailed, setBoard3dFailed] = useState(false);
   // Personnages qui viennent d'arriver saluent ; un jeu qui fournit ses propres humeurs les remplace.
   const arrivals = useArrivalMoods(view ? view.lobby.players.map((p) => p.name) : []);
+  // Émotions du salon (par identifiant) et saluts d'arrivée (par pseudo) réunis par identifiant.
+  const emoteMoods = useLobbyMoods(getSocket());
+  const lobbyMoods = {
+    ...emoteMoods,
+    ...Object.fromEntries(
+      Object.entries(arrivals).flatMap(([name, mood]) => {
+        const id = view?.lobby.players.find((p) => p.name === name)?.id;
+        return id ? [[id, mood]] : [];
+      }),
+    ),
+  };
   // Menu discret et commandes de partie : elles reviennent au moindre mouvement, puis s'effacent.
   const [menuOpen, setMenuOpen] = useState(false);
   const [barFocused, setBarFocused] = useState(false);
@@ -335,7 +347,13 @@ export function TvPage() {
           )}
 
           {inLobby ? (
-            <TvLobby lobby={lobby} joinUrl={joinUrl} canStart={canStart} onStart={() => emitAck('host:start')} />
+            <TvLobby
+              lobby={lobby}
+              joinUrl={joinUrl}
+              canStart={canStart}
+              moods={lobbyMoods}
+              onStart={() => emitAck('host:start')}
+            />
           ) : (
             <>
               <div className={`stage-mini${active ? ' is-visible' : ''}`} aria-hidden={!active}>

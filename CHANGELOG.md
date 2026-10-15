@@ -5,6 +5,7 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 ## Non publié
 
 ### Ajouté
+
 - Sons : l’administration choisit une musique de fond pour l’accueil, les menus (rejoindre, profil, salon avant la partie) et la fin de partie, et un fichier audio pour chaque bruitage des jeux. Les fichiers viennent de la médiathèque (mp3, ogg, wav, flac, m4a). Les musiques bouclent sans fin, et leur volume se règle pour chacune (0 à 100 %). Par défaut, la musique est coupée et les bruitages restent ceux d’origine. Le bouton muet coupe aussi la musique.
 - BOUM ! (catégorie quiz, 2 à 12 joueurs, branche `boum`, en cours) : manches tirées au hasard dans un pool de modes. Phase 1 : Réponse rapide, Combien ?, Trous noirs, Main sale, Vrai ou faux, Qui a dit ça ?, Épitaphe, Le pire conseil, Le plus probable et Détecteur de mauvaise foi, avec le pack Humour noir activable par salle. Banques de contenu en base (amorce de 340 entrées à valider), import et export `.txt` avec aperçu, et routes d’administration `/api/admin/boum/*`. L’onglet d’administration « Banques BOUM ! », la file des propositions et « Proposer une carte » dans le profil (quotas inclus) sont livrés. Le mode Mime le métier est livré (le métier n’est visible que du mimeur). Le mode Où est-ce ? est livré (carte du monde, barème par distance). Le mode Devine la chanson est livré (extrait chanté sur le téléphone du chanteur). Le mode Le mot secret est livré (indices d’un seul mot, visibles sur l’écran principal). Le mode Photo-défi est livré (photos à la consigne, vote anonyme sur les photos). Le mode Grimace est livré (photo notée de 1 à 5 étoiles). Le mode Galerie du thème est livré (même mécanique que Photo-défi, sur le thème tiré de la banque). Le mode Rythme est livré (reproduire un rythme en tapant ; sans banque, il reste tirable même sans contenu validé). Les autres modes photo, son et téléphone, les formats, les super-pouvoirs et les effets de l’écran principal ne sont pas encore livrés.
 - Fonds d’écran : l’administration choisit une image de la médiathèque pour chaque écran (accueil, rejoindre, écran
@@ -21,8 +22,10 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
   dans les avatars, la salle et l'éditeur.
 - Looks : un personnage illustré peut avoir plusieurs looks. L'administration ajoute un look à un personnage existant
   et retire un look ; le profil permet de choisir le look. Format et procédure : `docs/PERSONNAGES-PACK.md`.
+- Salon : chaque joueur déplace son personnage dans le salon (souris, doigt ou flèches) et envoie une émotion (joie, danse, salut, tristesse). Les positions et les émotions sont visibles par toute la salle, sur l’écran principal et sur les téléphones. Les émotions sont limitées en fréquence, et les positions se règlent au bord du salon.
 
 ### Corrigé
+
 - Image Docker : le serveur ne démarrait pas (« Cannot find package 'pino' ») et CasaOS affichait « container partyhub
   is unhealthy ». Le Dockerfile copie maintenant les dépendances propres aux paquets `shared`, `games` et `server`.
 - HTTPS sur le réseau local : Caddy répond aux connexions par adresse IP (`default_sni`), sans « alert internal error ».
@@ -32,12 +35,14 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 ## [0.8.0] - 2026-10-15
 
 ### Modifié
+
 - Écrans téléphone épurés : le nom, le bouton « Je suis prêt » ou le jeu restent en avant. Les options de l'appareil,
   « Comment jouer », le partage d'une place, la discussion et « Quitter la salle » sont dans le tiroir d'angle.
 - Le tiroir d'angle s'affiche au-dessus de toute la page (portail) et son fond est plein.
 - CSS : règles mortes retirées (classes sans usage dans le code, anciennes mises en page de l'accueil et du TV).
 
 ### Ajouté
+
 - Jeu « Imite-moi ! » (catégorie quiz) : une consigne apparaît sur l'écran principal, avec une illustration à imiter ou un son. Chaque joueur répond depuis son téléphone : une photo de la galerie, une photo prise avec la caméra (compte à rebours), ou 3 secondes au micro. Les réponses sont votées anonymement, 100 points par vote reçu. Quatre niveaux : galerie, grimace, cri, ou mélange des trois. Photos et sons restent en mémoire pendant la partie seulement.
 - Micro et caméra par appareil : le choix du micro et de la caméra se fait dans le profil et dans le tiroir d'angle du téléphone. Il est gardé dans le navigateur de cet appareil et s'applique à tous les jeux (SDK : `useMediaPrefs`,
   `requestMicrophone`, `requestCamera`). Un test du micro (niveau) et de la caméra est proposé à côté.
@@ -52,6 +57,7 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 ## [0.7.1] - 2026-10-14
 
 ### Ajouté
+
 - Identité visuelle : chaque jeu a son logo (titre en Luckiest Guy, couleurs et motif propres). Les jeux sans logo
   dessiné reçoivent un logo généré de façon stable à partir de leur identifiant. Polices auto-hébergées (SIL OFL 1.1).
 - Écran TV épuré : le salon ne montre que le logo, le code, les joueurs et le bouton de lancement. Réglages, joueurs,
@@ -117,9 +123,11 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
   téléphone s'affichent sans erreur. Il tourne en intégration continue.
 
 ### Retiré
+
 - Le poker est retiré du catalogue pour le moment. Son code reste dans l'historique git.
 
 ### Corrigé
+
 - Les captures d'écran de `scripts/devices-browser.py` vont dans un dossier temporaire ; `SHOTS_DIR=devices-shots`
   pour mettre à jour celles du dépôt.
 - Les jeux de plateau et les paquets importés étaient classés « intégrés » dans l'administration : l'origine d'un jeu
@@ -129,6 +137,7 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
   formulaire des questions médias accepte 10 à 120 s, et le serveur refuse une valeur hors limites de chaque jeu.
 
 ### Modifié
+
 - Le profil ne choisit plus d’emoji : l’avatar est le personnage (ou la photo, si elle est partagée). Les
   anciens profils gardent leur emoji dans les données, sans l’afficher.
 - Codes de salle en chiffres (0 à 9) au lieu de lettres : plus de confusion entre 0/O ou 1/I/L. Les salles ouvertes
@@ -145,12 +154,14 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 - Les tests ne sont plus compilés dans `dist` des packages `shared` et `games`.
 
 ### Non modifié (volontairement)
+
 - `express` 5.3.0 n'est pas encore adopté : publié il y a quelques jours seulement.
 - Les versions majeures (zod 4, vite 8, vitest 5, pino 10, better-sqlite3 13, TypeScript 7) restent à traiter à part.
 
 ## [0.7.0] - 2026-10-14
 
 ### Ajouté
+
 - Format de paquet 2 : les jeux de plateau et les jeux de questions peuvent être livrés dans un `.phgame`. Un paquet
   porte exactement un module : `cards`, `board` ou `quiz`.
 - Jeux de questions en paquet : vidéos YouTube seulement (identifiant et plage de lecture). Les fichiers de la
@@ -168,15 +179,18 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 - Tests : 12 nouveaux pour le format 2, 5 pour la copie, 9 pour les versions et les sources.
 
 ### Corrigé
+
 - Docker Compose : `GITHUB_TOKEN` est maintenant transmis au conteneur (`compose.yaml` et `compose.dev.yaml`). Auparavant,
   la variable documentée dans `.env.example` n'avait aucun effet, et les dépôts privés de jeux étaient inaccessibles.
   Un test vérifie désormais la cohérence entre les fichiers de déploiement et `.env.example`.
 
 ### Ajouté (déploiement)
+
 - `CONTRIBUTING.md` : mise en place, règles du code, contenu attendu d'une pull request.
 - `.gitattributes` : fins de ligne LF pour le code, fichiers binaires marqués comme tels.
 
 ### Modifié
+
 - Moteur déclaré en 0.7.0, avec les modules `cards`, `board` et `quiz`. Versions des paquets portées à 0.7.0.
 - Identifiants des jeux issus de paquets : `pkg-` pour les cartes (inchangé), `pkgb-` pour les plateaux, `pkgq-` pour
   les questions.
@@ -186,6 +200,7 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 - Le modèle de publication (`docs/PUBLIER-UN-JEU.md`) utilise la version 0.7.0 du moteur.
 
 ### Migration et compatibilité
+
 - Une migration de base de données (schéma 5) ajoute la table `package_archives` pour les versions conservées. Elle ne
   modifie aucune ligne existante, et une copie de sécurité de la base est faite avant. Les paquets de cartes déjà
   installés restent valides et gardent leur identifiant.
@@ -194,6 +209,7 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 - Un paquet de format 2 ne s'installe pas sur une version antérieure à 0.7.0.
 
 ### Problèmes connus
+
 - Hors paquet : les jeux en temps réel (type Bomberman) et les jeux de mouvement (type Just Dance). Un paquet ne porte que
   des données ; ces mécaniques restent du code intégré, ou demanderont le bac à sable JavaScript de la version 0.9.0.
 - Les vidéos et les sons de la médiathèque ne peuvent pas être embarqués dans un paquet.
@@ -204,6 +220,7 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 ## [0.6.3] - 2026-10-14
 
 ### Ajouté
+
 - Sources GitHub pour les paquets `.phgame` : un dépôt `auteur/nom` dont la dernière release contient le paquet et son
   fichier `.sha256`. Installation et mise à jour depuis l'administration, à la demande ou une fois par jour.
 - Dépôts privés avec la variable `GITHUB_TOKEN`. Le jeton n'est jamais affiché, journalisé ni sauvegardé.
@@ -214,9 +231,11 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 - Réglage `BUILTIN_GAMES` (`off` par défaut) : sur une installation neuve, les jeux intégrés restent dans le code mais sont désactivés. L'administrateur les active un par un.
 
 ### Modifié
+
 - Base de données : version de schéma 4 (table `package_sources`). Migration automatique au premier démarrage, avec copie de sécurité.
 
 ### Migration et compatibilité
+
 - Action automatique au premier démarrage : une copie de la base est créée dans `/data/migrations/`.
 - Retour arrière vers 0.6.2 : la version 0.6.2 refuse une base de version 4. Restaurez la copie faite à la mise à jour,
   puis redéployez l'image 0.6.2.
@@ -224,6 +243,7 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 - Installation neuve : les jeux intégrés sont désactivés. Une installation existante (mot de passe administrateur déjà créé) n'est pas modifiée.
 
 ### Problèmes connus
+
 - Les sources ne sont pas incluses dans la sauvegarde JSON de l'administration ; elles sont dans la copie de la base.
 - Un seul fichier `.phgame` par release, et une seule version active par jeu.
 - Le modèle de publication pour les dépôts de jeux n'a pas encore été exécuté sur GitHub.
@@ -232,6 +252,7 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 ## [0.6.2] - 2026-10-14
 
 ### Ajouté
+
 - Jeux de plateau : un nouveau type de jeu, défini par des données. Un parcours de 8 à 60 cases, avec sept types de cases :
   normale, avance, recule, gain de points, perte de points, passe le prochain tour, et arrivée (toujours la dernière case).
 - Éditeur de plateaux dans l'administration (section « Jeux de plateau ») : nom, icône, thème, règles, tableau des cases
@@ -242,9 +263,11 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 - 34 tests nouveaux (règles de jeu, validation, service, API, sauvegarde, migration), 354 au total.
 
 ### Modifié
+
 - Base de données : version de schéma 3 (table `board_games`). Migration automatique au premier démarrage, avec copie de sécurité.
 
 ### Migration et compatibilité
+
 - Action automatique au premier démarrage : une copie de la base est créée dans `/data/migrations/`. Conservez-la jusqu'à
   avoir vérifié le bon fonctionnement de la version.
 - Retour arrière vers 0.6.1 : la version 0.6.1 refuse une base de version 3. Restaurez la copie faite à la mise à jour,
@@ -252,6 +275,7 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 - Les paquets `.phgame` ne peuvent pas encore contenir de plateau.
 
 ### Problèmes connus
+
 - Pas d'export ni d'import de fichier pour un plateau (contrairement aux jeux de cartes) : utilisez la sauvegarde complète.
 - Les cases n'ont pas d'image : seulement un nom, un effet et une valeur.
 - Si le joueur dont c'est le tour est déconnecté et qu'il n'y a pas de limite de temps, la partie attend son retour.
@@ -260,28 +284,34 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 ## [0.6.1] - 2026-10-14
 
 ### Ajouté
+
 - Polices dans la médiathèque : WOFF2, WOFF, TTF et OTF. Le format est vérifié sur le contenu du fichier.
 - Police choisie par jeu de cartes (« Police des cartes »). Le navigateur la charge et l'applique aux cartes.
 - Limite de taille des polices configurable : `ASSET_MAX_FONT_MB` (2 Mo par défaut).
 - 7 tests nouveaux (détection des polices, validation de la police, limites), 320 au total.
 
 ### Corrigé
+
 - Une image de dos de carte ou une police utilisée par un jeu de cartes peut de nouveau être vérifiée avant suppression :
   la médiathèque refuse la suppression tant qu'un jeu l'utilise (c'était une limite connue de 0.6.0).
 
 ### Modifié
+
 - Les messages d'erreur de la médiathèque citent les formats de police acceptés.
 
 ### Migration et compatibilité
+
 - Aucune action. Aucun changement de base de données. Les paquets `.phgame` ne peuvent pas utiliser de police de la médiathèque.
 
 ### Problèmes connus
+
 - Éditeur de plateau : reporté à 0.6.2, en attente d'une décision de conception.
 - Non testé sur de vrais téléphones ni sur une TV.
 
 ## [0.6.0] - 2026-10-14
 
 ### Ajouté
+
 - Dos de carte personnalisé dans l'éditeur de jeux de cartes : couleur de fond, texte centré (16 caractères maximum) et
   image de la médiathèque. Sans réglage, le dos suit le thème graphique. Aperçu directement dans l'éditeur.
 - Limites de taille de la médiathèque configurables : `ASSET_MAX_AUDIO_MB` (15 par défaut), `ASSET_MAX_VIDEO_MB` (80),
@@ -289,13 +319,16 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 - 11 tests nouveaux (dos de carte, limites de configuration), 313 au total.
 
 ### Modifié
+
 - L'administration ne code plus les limites de la médiathèque : elle les reçoit du serveur.
 
 ### Migration et compatibilité
+
 - Aucune action. Aucun changement de base de données. Les jeux existants gardent le dos de leur thème.
 - Un paquet `.phgame` ne peut pas utiliser une image de la médiathèque pour son dos : ses ressources restent dans son archive.
 
 ### Problèmes connus
+
 - L'image recouvre entièrement la couleur de fond : la couleur n'est visible que sans image, ou avec une image transparente.
 - La suppression d'une image utilisée comme dos n'est pas bloquée : le dos reprend alors sa couleur de fond.
 - Éditeur de plateau et polices : reportés à 0.6.1 (voir `docs/ROADMAP.md`).
@@ -304,6 +337,7 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 ## [0.5.0] - 2026-10-14
 
 ### Ajouté
+
 - Format de paquet `.phgame`, version 1, pour les jeux déclaratifs : une archive ZIP avec le manifeste, la définition du jeu,
   les ressources graphiques, les données et les licences. Règles et limites dans `docs/PHGAME.md`.
 - Import, activation, désactivation et suppression des paquets dans l'administration (section « Paquets de jeux »).
@@ -317,9 +351,11 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 - 42 tests nouveaux (archive ZIP, validation, service, migration), 302 au total.
 
 ### Modifié
+
 - Base de données : version de schéma 2 (table `packages`). Migration automatique au premier démarrage, avec copie de sécurité.
 
 ### Migration et compatibilité
+
 - Action automatique au premier démarrage : une copie de la base est créée dans `/data/migrations/`. Conservez-la jusqu'à
   avoir vérifié le bon fonctionnement de la version.
 - Retour arrière vers 0.4.x : la version 0.4.x refuse une base de version 2. Restaurez la copie faite à la mise à jour,
@@ -327,6 +363,7 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 - La sauvegarde JSON de l'administration ne contient pas les fichiers `.phgame` : sauvegardez aussi `DATA_DIR/games/`.
 
 ### Problèmes connus
+
 - Les jeux JavaScript et l'émulation ne sont pas pris en charge. Aucun code de paquet n'est exécuté (voir `docs/PHGAME.md`).
 - Les vues de cartes n'affichent pas encore les images des paquets.
 - Pas de cache hors ligne ni de transfert entre téléphones : reportés à 0.7.0 (voir `docs/ROADMAP.md`).
@@ -335,6 +372,7 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 ## [0.4.0] - 2026-10-14
 
 ### Ajouté
+
 - Trois jeux de cartes, disponibles dans le catalogue :
   - **Poker (Texas hold’em)** de 2 à 8 joueurs : blindes, mises, tapis, pots secondaires, croupier, 25 s par action.
   - **Rami 51** de 2 à 5 joueurs (avec le jeu de 108 cartes) : ouverture à 51 points, tierce franche, échange de joker, rami sec.
@@ -345,9 +383,11 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
   écran TV et téléphone en 390 px, sans erreur ni débordement. Lancé en intégration continue.
 
 ### Migration et compatibilité
+
 - Aucune action manuelle. Aucune donnée existante n'est modifiée.
 
 ### Problèmes connus
+
 - Tarot : une partie demande 4 joueurs ; la salle d'entraînement ne fournit que 3 robots, il faut donc un téléphone.
 - Poker : la relance rouvre l'action à tous les joueurs encore en jeu (simplification documentée dans le module).
 - Non testé sur de vrais téléphones ni sur une TV (seulement Chromium, tailles d'écran simulées).
@@ -355,6 +395,7 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 ## [0.3.0] - 2026-10-14
 
 ### Ajouté
+
 - Versions du schéma de la base (`PRAGMA user_version`) et migrations ordonnées : chaque changement de schéma a un numéro.
 - Copie de sécurité de la base dans `/data/migrations/` avant toute migration d'une base existante. Ces copies ne sont
   jamais supprimées automatiquement.
@@ -363,20 +404,24 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
   annulation complète d'une migration en échec, ordre d'application.
 
 ### Modifié
+
 - Les bases créées par la version 0.2.x (version de schéma 0) passent automatiquement à la version 1 au premier démarrage.
   Le schéma lui-même n'a pas changé.
 
 ### Migration et compatibilité
+
 - Action automatique au premier démarrage : une copie de la base est créée dans `/data/migrations/`. Conservez-la jusqu'à
   avoir vérifié le bon fonctionnement de la version.
 - Le schéma de la version 1 est identique à celui de 0.2.x : un retour vers 0.2.x reste possible sans restauration.
 
 ### Problèmes connus
+
 - Non encore testé sur un vrai serveur CasaOS (voir `docs/ROADMAP.md`).
 
 ## [0.2.0] - 2026-10-14
 
 ### Ajouté
+
 - Image Docker publiée sur GHCR (`ghcr.io/matosman40/partyhub`), en `amd64` et `arm64`, téléchargeable sans compte.
 - `compose.yaml` pour les utilisateurs : utilise l'image, sans compilation. `compose.dev.yaml` pour les développeurs (compilation locale).
 - Icône et métadonnées CasaOS complètes (catégorie, description, port).
@@ -387,30 +432,37 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
   vérification de l'image téléchargée sans authentification, création de la release avec les notes de ce changelog.
 
 ### Modifié
+
 - Installation : `docker compose up -d` télécharge l'image. La compilation n'est plus nécessaire.
 - Mise à jour : `git pull`, puis `docker compose pull` et `docker compose up -d`.
 
 ### Migration et compatibilité
+
 - Aucune action manuelle. Le volume `partyhub-data` est réutilisé.
 - Les installations faites avec `docker compose up -d --build` peuvent passer à l'image publiée sans perte de données.
 
 ### Problèmes connus
+
 - Le paquet GHCR doit être rendu public une fois, dans les réglages GitHub, pour que l'installation sans authentification fonctionne.
 - Non encore testé sur un vrai serveur CasaOS ni sur des téléphones réels (voir `docs/ROADMAP.md`).
 
 ## [0.1.1] - 2026-10-14
 
 ### Corrigé
+
 - Le fichier `.env.example` manquait dans le dépôt publié : la commande `cp .env.example .env` du README échouait.
 
 ### Ajouté
+
 - Vérification automatique de l'installation décrite dans le README, sur un serveur Linux avec Docker
   (GitHub Actions) : démarrage, état « healthy », mot de passe généré, mise à jour.
 
 ### Migration et compatibilité
+
 - Aucune.
 
 ### Problèmes connus
+
 - Non encore testé sur un vrai serveur CasaOS ni sur des téléphones réels (voir `docs/ROADMAP.md`).
 
 ## [0.1.0] - 2026-10-14
@@ -418,6 +470,7 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 Première version publiée sur GitHub. Elle reprend l'état validé du projet (tests et build passants).
 
 ### Ajouté
+
 - Plateforme de jeux de soirée sur navigateur : écran principal (TV ou ordinateur) et téléphones des joueurs.
 - Jeux fournis : Quiz Party, Association express, Plutôt qui ?, L'Imposteur, Plus ou moins, Réflexe,
   Bombes party, Cartes couleurs, Cartes coco, Président, Promoteur, Loups du village, Sudoku, Solitaire,
@@ -427,9 +480,11 @@ Première version publiée sur GitHub. Elle reprend l'état validé du projet (t
 - Déploiement Docker Compose avec métadonnées CasaOS, healthcheck et utilisateur non privilégié.
 
 ### Migration et compatibilité
+
 - Aucune action manuelle. Les bases existantes sont mises à jour automatiquement au démarrage.
 
 ### Problèmes connus
+
 - Les salles et les parties sont en mémoire : un redémarrage du serveur interrompt les parties en cours.
 - Sur un réseau local en HTTP, l'écran principal doit rester ouvert pendant la partie.
 - L'image Docker n'est pas encore publiée sur GHCR : l'installation CasaOS demande aujourd'hui une compilation locale.

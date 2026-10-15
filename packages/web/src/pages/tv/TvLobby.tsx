@@ -1,21 +1,24 @@
-import type { HostRoomView } from '@partyhub/shared';
+import type { CharacterMood, HostRoomView } from '@partyhub/shared';
 import { Qr } from '../../components/Qr.js';
-import { PlayerAvatar } from '../../components/PlayerAvatar.js';
 import { GameLogo } from '../../components/GameLogo.js';
+import { LobbyArena } from '../../components/LobbyArena.js';
 
 /**
  * Salon : le logo du jeu en grand, le code pour rejoindre, les personnages des joueurs
- * et un seul bouton. Les réglages, la gestion des joueurs et la discussion sont dans le menu.
+ * (déplacés depuis leur téléphone, avec leurs émotions) et un seul bouton. Les réglages,
+ * la gestion des joueurs et la discussion sont dans le menu.
  */
 export function TvLobby({
   lobby,
   joinUrl,
   canStart,
+  moods,
   onStart,
 }: {
   lobby: HostRoomView['lobby'];
   joinUrl: string;
   canStart: boolean;
+  moods: Record<string, CharacterMood>;
   onStart: () => void;
 }) {
   const connected = lobby.players.filter((p) => p.connected).length;
@@ -38,17 +41,8 @@ export function TvLobby({
         </div>
       </div>
 
-      <ol className="stage-players" aria-label={`Joueurs : ${connected} connecté(s)`}>
-        {lobby.players.map((p) => (
-          <li key={p.id} className={`stage-player${p.connected ? '' : ' is-away'}`}>
-            <PlayerAvatar avatar={p.avatar} name={p.name} size="lg" />
-            <span className="stage-player-name">{p.name}</span>
-            {p.bot && <span className="stage-player-tag">robot</span>}
-            {p.ready && <span className="stage-player-tag is-ready">prêt</span>}
-          </li>
-        ))}
-        {lobby.players.length === 0 && <li className="stage-empty">En attente des premiers joueurs…</li>}
-      </ol>
+      <p className="sr-only">{connected} joueur(s) connecté(s)</p>
+      <LobbyArena players={lobby.players} moods={moods} />
 
       <div className="stage-start">
         <button type="button" className="title-option" disabled={!canStart} onClick={onStart}>

@@ -1,3 +1,4 @@
+import type { LobbyMood, LobbyMoodEvent, LobbyPosition } from './lobby-presence.js';
 import type { GameCategory, GameNotice, ScoreEntry } from './game-types.js';
 import type { GameDetails } from './schemas.js';
 import type { DeviceInfo, DeviceKind } from './devices.js';
@@ -39,6 +40,8 @@ export interface PublicPlayer {
   name: string;
   connected: boolean;
   ready: boolean;
+  /** Place du personnage dans le salon ; absent ou null tant que le joueur n'a pas bougé. */
+  position?: LobbyPosition | null;
   bot: boolean;
   /** Vrai si le joueur est connecté à un profil enregistré. */
   profile: boolean;
@@ -178,6 +181,8 @@ export interface ClientToServerEvents {
   'player:leave': (ack: Ack) => void;
   'player:chat': (p: { text: string }, ack: Ack) => void;
   'player:reaction': (p: { emoji: string }, ack: Ack) => void;
+  'player:lobby-move': (p: LobbyPosition, ack: Ack) => void;
+  'player:lobby-mood': (p: { mood: LobbyMood }, ack: Ack) => void;
 
   // Observateurs (regardent le plateau sans jouer ; aucune action de jeu)
   'observer:join': (p: { code: string; device?: DeviceInfo }, ack: Ack) => void;
@@ -193,4 +198,5 @@ export interface ServerToClientEvents {
   'room:closed': (p: { reason: 'closed' | 'kicked' | 'inactive' }) => void;
   'room:chat': (m: ChatMessage) => void;
   'room:reaction': (r: ReactionEvent) => void;
+  'room:lobby-mood': (e: LobbyMoodEvent) => void;
 }

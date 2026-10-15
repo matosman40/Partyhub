@@ -11,6 +11,8 @@ import {
   kickSchema,
   normalizeRoomCode,
   observerJoinSchema,
+  lobbyMoodSchema,
+  lobbyPositionSchema,
   readySchema,
   reactionSchema,
   type DeviceInfo,
@@ -185,6 +187,9 @@ export class RealtimeHub {
     const limiter = new RateLimiter(COMMANDS_PER_WINDOW, WINDOW_MS);
     const chatLimiter = new RateLimiter(CHAT_PER_WINDOW, CHAT_WINDOW_MS);
     const reactionLimiter = new RateLimiter(REACTIONS_PER_WINDOW, CHAT_WINDOW_MS);
+    // Déplacements : jusqu'à 30 par seconde (glisser suit le doigt) ; émotions : 6 toutes les 4 secondes.
+    const lobbyMoveLimiter = new RateLimiter(30, 1000);
+    const lobbyMoodLimiter = new RateLimiter(6, 4000);
     const ip = clientIp(this.trust, socket.handshake.address, socket.handshake.headers['x-forwarded-for']);
 
     const limited = (ack: Ack): boolean => {
@@ -429,6 +434,33 @@ export class RealtimeHub {
       const sender = current.room.senderOf(current.playerId);
       if (!sender) return invalid(ack, 'Vous n’êtes plus dans la salle.');
       this.broadcastChat(current.room, sender.name, sender.avatar, parsed.data.text);
+      ack({ ok: true });
+    });
+
+    socket.on('player:lobby-move', (p, ack) => {
+      if (limited(ack)) return;
+      const current = this.playerRoomOf(socket);
+      if (!current) return invalid(ack, 'Vous n’êtes pas dans une salle.');
+      if (!lobbyMoveLimiter.take()) return ack({ ok: false, error: 'Doucement avec les déplacements.' });
+      const parsed = lobbyPositionSchema.safeParse(p);
+      if (!parsed.success) return invalid(ack);
+      ack(current.room.setLobbyPosition(current.playerId, parsed.data));
+    });
+
+    socket.on('player:lobby-mood', (p, ack) => {
+      if (limited(ack)) return;
+      const current = this.playerRoomOf(socket);
+      if (!current) return invalid(ack, 'Vous n’êtes pas dans une salle.');
+      if (!lobbyMoodLimiter.take()) return ack({ ok: false, error: 'Doucement avec les émotions.' });
+      const parsed = lobbyMoodSchema.safeParse(p);
+      if (!parsed.success) return invalid(ack);
+      const allowed = current.room.lobbyMoodAllowed(current.playerId);
+      if (!allowed.ok) return ack(allowed);
+      this.io?.to(current.room.socketIds()).emit('room:lobby-mood', {
+        id: randomUUID(),
+        playerId: current.playerId,
+        mood: parsed.data.mood,
+      });
       ack({ ok: true });
     });
 

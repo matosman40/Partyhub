@@ -1,3 +1,4 @@
+import { clampLobbyPosition, type LobbyPosition } from '@partyhub/shared';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { settingsIssueMessage, type DeviceKind, type ObserverRoomView, type ObserverSummary } from '@partyhub/shared';
 import type {
@@ -90,6 +91,8 @@ export class Room {
   lastActivity: number;
   status: RoomStatus = 'waiting';
   readonly players = new Map<string, RoomPlayer>();
+  /** Place de chaque personnage dans le salon (perdue avec la salle, jamais enregistrée). */
+  private readonly positions = new Map<string, LobbyPosition>();
   readonly hostSockets = new Set<string>();
   /** Observateurs : socket -> type d'appareil. Ils ne jouent pas et ne comptent pas dans la partie. */
   readonly observers = new Map<string, DeviceKind>();
@@ -230,6 +233,7 @@ export class Room {
       profile: p.profileId !== null,
       avatar: p.avatar,
       devices: this.devicesOf(p),
+      position: this.positions.get(p.id) ?? null,
     }));
     const game: GameInfo = { ...gameInfo(this.module), notice: this.env.notice(this.module.manifest.id) };
     return {
@@ -438,6 +442,7 @@ export class Room {
   private dropPlayer(p: RoomPlayer): void {
     this.clearGrace(p);
     this.players.delete(p.id);
+    this.positions.delete(p.id);
     this.state = this.module.onPlayerLeave(this.state, { id: p.id, name: p.name }, this.ctx);
     this.refreshStatus();
   }
@@ -449,6 +454,22 @@ export class Room {
     p.ready = ready;
     this.touch();
     this.hooks.onChange(this);
+    return { ok: true };
+  }
+
+  /** Place d'un personnage dans le salon (avant la partie uniquement). */
+  setLobbyPosition(playerId: string, position: LobbyPosition): Outcome {
+    if (!this.players.has(playerId)) return { ok: false, error: 'Joueur inconnu.' };
+    if (!this.inLobby) return { ok: false, error: 'Les personnages ne se déplacent que dans le salon.' };
+    this.positions.set(playerId, clampLobbyPosition(position));
+    this.hooks.onChange(this);
+    return { ok: true };
+  }
+
+  /** Une émotion n'est possible que dans le salon ; le serveur la diffuse, rien n'est gardé. */
+  lobbyMoodAllowed(playerId: string): Outcome {
+    if (!this.players.has(playerId)) return { ok: false, error: 'Joueur inconnu.' };
+    if (!this.inLobby) return { ok: false, error: 'Les émotions ne servent qu’avant la partie.' };
     return { ok: true };
   }
 
