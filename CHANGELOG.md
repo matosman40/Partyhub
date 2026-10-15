@@ -6,7 +6,7 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 
 ### Corrigé
 - Image Docker : le serveur ne démarrait pas (« Cannot find package 'pino' ») et CasaOS affichait « container partyhub
-  is unhealthy ». Le Dockerfile copie maintenant les dépendances propres aux paquets `games` et `server`.
+  is unhealthy ». Le Dockerfile copie maintenant les dépendances propres aux paquets `shared`, `games` et `server`.
 
 ## [0.8.0] - 2026-10-15
 
