@@ -14,7 +14,7 @@ import { resolveGame } from '../games-registry.js';
 import type { BoardGameService } from '../boards/service.js';
 import type { PackageSourceService } from '../sources/service.js';
 import type { CardGameService } from '../cards/service.js';
-import type { BoumBankService } from '../boum/service.js';
+import { PROPOSAL_MAX_PENDING, PROPOSAL_MAX_PER_DAY, type BoumBankService } from '../boum/service.js';
 import { IMPORT_MAX_BYTES, isBankType } from '@partyhub/games';
 import { z } from 'zod';
 import type { AssetService } from '../assets/service.js';
@@ -340,8 +340,42 @@ export function createApp(deps: AppDeps): express.Express {
   });
 
   profileRoutes.delete('/me', withProfile, (req, res) => {
-    profiles.delete(profileOf(req));
+    const id = profileOf(req);
+    profiles.delete(id);
+    boumBank.anonymizeAuthor(id);
     res.json({ ok: true });
+  });
+
+  /* Propositions de cartes BOUM ! : un joueur inscrit propose, l'administrateur valide. */
+  const boumProposalBody = z.object({
+    type: z.string().max(40),
+    level: z.string().max(10),
+    text: z.string().max(400),
+    answer: z.string().max(200).nullable().optional(),
+    certified: z.boolean().optional(),
+  });
+
+  profileRoutes.get('/me/boum-proposals', withProfile, (req, res) => {
+    res.json({
+      proposals: boumBank.myProposals(profileOf(req)),
+      limits: { pending: PROPOSAL_MAX_PENDING, perDay: PROPOSAL_MAX_PER_DAY },
+    });
+  });
+
+  profileRoutes.post('/me/boum-proposals', withProfile, (req, res) => {
+    const parsed = boumProposalBody.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      res.status(400).json({ error: 'Proposition invalide.' });
+      return;
+    }
+    const id = profileOf(req);
+    const profile = profiles.view(id);
+    const result = boumBank.propose(parsed.data, { id, name: profile?.displayName ?? 'Joueur' });
+    if (!result.ok) {
+      res.status(400).json({ error: result.error });
+      return;
+    }
+    res.status(201).json({ proposal: result.value });
   });
 
   api.use('/profiles', profileRoutes);
@@ -1058,6 +1092,7 @@ export function createApp(deps: AppDeps): express.Express {
     };
     return {
       music: Object.fromEntries(MUSIC_SLOTS.map((slot) => [slot, url(stored.music[slot])])),
+      musicVolume: stored.musicVolume,
       sfx: Object.fromEntries(SFX_NAMES.map((name) => [name, url(stored.sfx[name])])),
     };
   };
@@ -1191,6 +1226,11 @@ export function createApp(deps: AppDeps): express.Express {
         q: queryText(req.query.q),
       }),
     });
+  });
+
+  /** File « Propositions » : seules les propositions en attente, avec leur auteur (visible dans l'administration seulement). */
+  admin.get('/boum/proposals', (_req, res) => {
+    res.json({ entries: boumBank.list({ status: 'propose' }) });
   });
 
   admin.get('/boum/counts', (_req, res) => {

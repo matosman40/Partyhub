@@ -40,6 +40,12 @@ export function SoundSettingsAdmin({ libraryVersion }: { libraryVersion: number 
     setDraft((current) => (current ? { ...current, music: { ...current.music, [slot]: id || null } } : current));
   }
 
+  function chooseVolume(slot: MusicSlot, percent: number) {
+    setDraft((current) =>
+      current ? { ...current, musicVolume: { ...current.musicVolume, [slot]: percent } } : current,
+    );
+  }
+
   function chooseSfx(name: SfxName, id: string) {
     setDraft((current) => (current ? { ...current, sfx: { ...current.sfx, [name]: id || null } } : current));
   }
@@ -85,6 +91,7 @@ export function SoundSettingsAdmin({ libraryVersion }: { libraryVersion: number 
       )}
 
       <h3>Musique de fond</h3>
+      <p className="muted small">Les musiques bouclent sans fin. Le volume règle le niveau de chaque piste.</p>
       {MUSIC_SLOTS.map((slot) => {
         const id = draft.music[slot];
         return (
@@ -97,8 +104,26 @@ export function SoundSettingsAdmin({ libraryVersion }: { libraryVersion: number 
               </select>
             </label>
             {id && (
-              <audio controls preload="none" src={`/api/assets/${id}`} aria-label={`Écouter : ${MUSIC_LABELS[slot]}`} />
+              <audio
+                controls
+                loop
+                preload="none"
+                src={`/api/assets/${id}`}
+                aria-label={`Écouter : ${MUSIC_LABELS[slot]}`}
+              />
             )}
+            <label className="field">
+              <span>Volume : {draft.musicVolume[slot]} %</span>
+              <input
+                type="range"
+                min={0}
+                max={100}
+                step={5}
+                value={draft.musicVolume[slot]}
+                disabled={!id}
+                onChange={(e) => chooseVolume(slot, Number(e.target.value))}
+              />
+            </label>
           </div>
         );
       })}

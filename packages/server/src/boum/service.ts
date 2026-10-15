@@ -22,6 +22,29 @@ import type { BoumEntryRow, Store } from '../db/store.js';
 
 /** En dessous de ce nombre d'entrées valides, l'administration affiche une alerte. */
 export const LOW_STOCK_THRESHOLD = 8;
+/** Quotas des propositions d'un compte : en attente, et par jour. */
+export const PROPOSAL_MAX_PENDING = 20;
+export const PROPOSAL_MAX_PER_DAY = 10;
+/** Niveaux qu'un joueur inscrit peut proposer : le niveau « limite » reste réservé à l'administration. */
+const PROPOSABLE_LEVELS: readonly Level[] = ['doux', 'corse'];
+
+export interface ProposalInput extends CandidateInput {
+  /** Case cochée : « ce texte est de ma composition ou libre de droits ». */
+  certified?: unknown;
+}
+
+/** Vue d'un joueur sur ses propres propositions : jamais la banque ni les propositions des autres. */
+export interface MyProposalView {
+  id: string;
+  type: BankType;
+  level: Level;
+  text: string;
+  answer: string | null;
+  /** « en attente » pour `propose` et `a_valider`, sinon le statut tel quel. */
+  state: 'en_attente' | 'validee' | 'refusee';
+  reason: string | null;
+  createdAt: string;
+}
 
 /** Clé kv : l'amorce n'est insérée qu'une seule fois, même si l'administrateur retire tout. */
 const SEEDED_KEY = 'boum_seeded';
@@ -62,6 +85,20 @@ function fail<T>(error: string): BankResult<T> {
 
 function ok<T>(value: T): BankResult<T> {
   return { ok: true, value };
+}
+
+function toMyProposal(row: BoumEntryRow): MyProposalView {
+  const state = row.status === 'valide' ? 'validee' : row.status === 'retire' ? 'refusee' : 'en_attente';
+  return {
+    id: row.id,
+    type: row.type as BankType,
+    level: row.level as Level,
+    text: row.text,
+    answer: row.answer,
+    state,
+    reason: state === 'refusee' ? row.reason : null,
+    createdAt: row.createdAt,
+  };
 }
 
 function toView(row: BoumEntryRow): BoumEntryView {
@@ -188,6 +225,61 @@ export class BoumBankService {
     const changed = this.store.setBoumStatus(ids, status, reason, this.clock());
     this.reload();
     return ok(changed);
+  }
+
+  /**
+   * Proposition d'un joueur inscrit. Jamais publiée d'elle-même : elle attend la validation de l'administrateur.
+   * Le niveau « limite » est refusé, la case de droits est obligatoire, et les quotas s'appliquent.
+   */
+  propose(input: ProposalInput, author: { id: string; name: string }): BankResult<MyProposalView> {
+    if (input.certified !== true) {
+      return fail('Cochez la case : le texte est de votre composition ou libre de droits.');
+    }
+    if (typeof input.level !== 'string' || !(PROPOSABLE_LEVELS as readonly string[]).includes(input.level)) {
+      return fail('Niveau non proposable : choisissez doux ou corsé.');
+    }
+    const counts = this.store.countBoumProposals(
+      author.id,
+      new Date(Date.parse(this.clock()) - 86_400_000).toISOString(),
+    );
+    if (counts.pending >= PROPOSAL_MAX_PENDING) {
+      return fail(`Vous avez déjà ${PROPOSAL_MAX_PENDING} propositions en attente.`);
+    }
+    if (counts.sinceCount >= PROPOSAL_MAX_PER_DAY) {
+      return fail(`Limite atteinte : ${PROPOSAL_MAX_PER_DAY} propositions par jour.`);
+    }
+    const checked = validateEntry(input);
+    if (!checked.ok) return fail(checked.reason);
+    const { entry } = checked;
+    if (this.existingKeys().has(duplicateKey(entry.type, entry.text))) {
+      return fail('doublon : ce texte existe déjà pour ce type');
+    }
+    const at = this.clock();
+    const row: BoumEntryRow = {
+      id: randomUUID(),
+      type: entry.type,
+      level: entry.level,
+      text: entry.text,
+      answer: entry.answer,
+      status: 'propose',
+      reason: null,
+      authorId: author.id,
+      authorName: author.name,
+      createdAt: at,
+      updatedAt: at,
+    };
+    this.store.insertBoumEntries([row]);
+    return ok(toMyProposal(row));
+  }
+
+  /** Propositions du joueur, de la plus récente à la plus ancienne. */
+  myProposals(authorId: string): MyProposalView[] {
+    return this.store.listBoumByAuthor(authorId).map(toMyProposal);
+  }
+
+  /** Compte supprimé : ses textes restent, son nom disparaît. */
+  anonymizeAuthor(authorId: string): void {
+    this.store.anonymizeBoumAuthor(authorId);
   }
 
   /** Aperçu d'un import : rien n'est écrit. L'administrateur confirme ensuite avec `commitImport`. */

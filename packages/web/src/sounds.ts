@@ -10,6 +10,8 @@ import { api } from './api.js';
 
 export interface PublicSounds {
   music: Record<MusicSlot, string | null>;
+  /** Volume de chaque musique, de 0 à 100. */
+  musicVolume: Record<MusicSlot, number>;
   sfx: Record<SfxName, string | null>;
 }
 

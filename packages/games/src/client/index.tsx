@@ -30,6 +30,10 @@ export {
 export type { MediaPrefs } from './media.js';
 export { isMuted, onMuteChange, setMuted, setSfxFiles, startMusic, stopMusic, unlockAudio } from './audio.js';
 export { SoundToggle } from './SoundToggle.js';
+// Banques BOUM ! : libellés, types et règles de saisie, partagés avec l'administration et le profil.
+export { BANK_TYPES, BANK_TYPE_INFO, LEVELS, LEVEL_LABELS, STATUSES, STATUS_LABELS } from '../boum/bank/types.js';
+export type { AnswerRule, BankType, EntryStatus, Level } from '../boum/bank/types.js';
+export type { ImportCandidate, ImportPreview, ImportRejection } from '../boum/bank/validate.js';
 export { cardGamePresets } from '../cards/presets.js';
 export { validatePlay, rankValue, RANKS, PRESIDENT_DEFINITION } from '../president/rules.js';
 export { CardFace } from '../cards/client/CardFace.js';

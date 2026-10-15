@@ -11,6 +11,7 @@ import { CharacterPacksAdmin } from '../admin/CharacterPacksAdmin.js';
 import { AssetLibrary } from '../admin/AssetLibrary.js';
 import { ScreenBackgroundsAdmin } from '../admin/ScreenBackgroundsAdmin.js';
 import { SoundSettingsAdmin } from '../admin/SoundSettingsAdmin.js';
+import { BoumBanksAdmin } from '../admin/BoumBanksAdmin.js';
 import { MediaGamesAdmin } from '../admin/MediaGamesAdmin.js';
 import { GameDetailsEditor } from '../admin/GameDetailsEditor.js';
 import { GameSettingsEditor } from '../admin/GameSettingsEditor.js';
@@ -484,6 +485,15 @@ export function AdminPage() {
           Musique de fond pour les menus, l’accueil et la fin de partie, et un fichier pour chaque bruitage des jeux.
         </p>
         <SoundSettingsAdmin libraryVersion={libraryVersion} />
+      </section>
+
+      <section className="card stack">
+        <h2>Banques BOUM !</h2>
+        <p className="muted small">
+          Textes des manches : validez les entrées avant qu’elles ne sortent en partie. Seules les entrées validées sont
+          tirées.
+        </p>
+        <BoumBanksAdmin />
       </section>
 
       <section className="card stack">

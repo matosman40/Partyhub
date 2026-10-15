@@ -12,6 +12,7 @@ export function MusicPlayer() {
   const muted = useMuted();
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const url = slot && sounds ? sounds.music[slot] : null;
+  const volume = slot && sounds ? sounds.musicVolume[slot] / 100 : 0.5;
 
   useEffect(() => {
     void loadSoundSettings();
@@ -21,7 +22,7 @@ export function MusicPlayer() {
     if (!url) return;
     const audio = new Audio(url);
     audio.loop = true;
-    audio.volume = 0.5;
+    audio.volume = volume;
     audioRef.current = audio;
 
     // Après un refus du navigateur, `paused` peut rester faux : on ne se fie pas à lui, on retente la lecture
@@ -50,8 +51,15 @@ export function MusicPlayer() {
       audio.removeAttribute('src');
       audioRef.current = null;
     };
-    // Le bouton muet est géré par l'effet suivant, sans relancer la piste.
+    // Le bouton muet et le volume sont gérés par les effets suivants, sans relancer la piste.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [url]);
+
+  // Le volume se règle sans relancer la piste.
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (audio) audio.volume = volume;
+  }, [volume]);
 
   useEffect(() => {
     const audio = audioRef.current;

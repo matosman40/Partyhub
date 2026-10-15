@@ -695,6 +695,33 @@ export class Store {
     return rows.map(toBoumEntry);
   }
 
+  /** Propositions d'un compte : en attente (`propose` ou relue) et depuis une date donnée. */
+  countBoumProposals(authorId: string, sinceIso?: string): { pending: number; sinceCount: number } {
+    const pending = this.db
+      .prepare("SELECT COUNT(*) AS n FROM boum_entries WHERE author_id = ? AND status IN ('propose', 'a_valider')")
+      .get(authorId) as { n: number };
+    const since = sinceIso
+      ? (this.db
+          .prepare('SELECT COUNT(*) AS n FROM boum_entries WHERE author_id = ? AND created_at >= ?')
+          .get(authorId, sinceIso) as { n: number })
+      : { n: 0 };
+    return { pending: pending.n, sinceCount: since.n };
+  }
+
+  listBoumByAuthor(authorId: string): BoumEntryRow[] {
+    const rows = this.db
+      .prepare('SELECT * FROM boum_entries WHERE author_id = ? ORDER BY created_at DESC, id')
+      .all(authorId) as BoumEntryDbRow[];
+    return rows.map(toBoumEntry);
+  }
+
+  /** Compte supprimé : le texte reste, l'auteur devient anonyme. */
+  anonymizeBoumAuthor(authorId: string): void {
+    this.db
+      .prepare("UPDATE boum_entries SET author_id = NULL, author_name = 'Joueur supprimé' WHERE author_id = ?")
+      .run(authorId);
+  }
+
   getBoumEntry(id: string): BoumEntryRow | undefined {
     const row = this.db.prepare('SELECT * FROM boum_entries WHERE id = ?').get(id) as BoumEntryDbRow | undefined;
     return row ? toBoumEntry(row) : undefined;

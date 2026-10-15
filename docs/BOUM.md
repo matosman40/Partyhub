@@ -11,7 +11,7 @@ Identifiant `boum`, catégorie quiz, de 2 à 12 joueurs.
 | Modes texte, vote et cartes : Réponse rapide, Combien ?, Trous noirs, Main sale, Vrai ou faux, Qui a dit ça ?, Épitaphe, Le pire conseil, Le plus probable, Détecteur de mauvaise foi | fait |
 | Pack Humour noir (activé par salle, avec avertissement) | fait |
 | Banques de contenu (table, amorce, validation, import et export `.txt`, routes d'administration) | fait |
-| Onglet « Banques BOUM » de l'administration, file « Propositions », « Proposer une carte » dans le profil | à faire |
+| Onglet « Banques BOUM » de l'administration (compteurs, filtres, édition, validation en lot, import avec aperçu, export), file « Propositions », « Proposer une carte » dans le profil avec quotas | fait |
 | Modes photo, son et téléphone (Où est-ce ?, Devine la chanson, Mime le métier, etc.) | à faire |
 | Formats (équipes, championnat) et super-pouvoirs | à faire |
 | Effets de mise en scène de l'écran principal | à faire |
@@ -43,11 +43,9 @@ Limites : 300 Ko et 2 000 lignes au plus. Un fichier illisible n'importe rien ; 
 Chaque ligne refusée est signalée avec son numéro et sa raison. L'import est additif : rien n'est écrasé ni supprimé.
 L'aperçu est obligatoire avant toute écriture.
 
-### Insultes dures
+### Contrôle des textes
 
-La liste est dans `packages/games/src/boum/bank/hard-terms.ts`. Elle est appliquée à la saisie, à l'import et aux
-propositions, sur des mots entiers, après normalisation (minuscules, sans accents). Pour la compléter, ajoutez les
-termes en minuscules sans accents, puis lancez les tests (`npm test -w @partyhub/games`).
+Les textes sont relus par l'administrateur avant tout tirage. Le contrôle automatique ne refuse que les noms de jeux commerciaux.
 
 ## Musique et bruitages
 
@@ -55,6 +53,8 @@ Dans l'administration, « Musiques et bruitages » choisit un fichier de la méd
 
 - la musique de l'accueil, celle des menus (rejoindre, profil, salon avant la partie) et celle de la fin de partie ;
 - chacun des bruitages des jeux, qui remplace le son synthétisé d'origine.
+
+Les musiques bouclent sans fin. Le volume (0 à 100 %, 50 % par défaut) se règle dans la même section.
 
 Par défaut, la musique est coupée et les bruitages restent ceux d'origine. Chaque appareil joue la musique de la page
 qu'il affiche. Le bouton muet coupe aussi la musique. Les téléphones ne jouent pas de musique de salon dans cette version.

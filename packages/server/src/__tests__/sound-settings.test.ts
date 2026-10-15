@@ -162,4 +162,27 @@ describe('Sons (administration)', () => {
     const released = await admin(`/assets/${track}`, { method: 'DELETE' });
     expect(released.status).toBe(200);
   });
+
+  it('enregistre le volume de chaque musique, entre 0 et 100', async () => {
+    const tooLoud = await admin('/sound-settings', {
+      method: 'PUT',
+      body: JSON.stringify({
+        sounds: { ...EMPTY_SOUND_SETTINGS, musicVolume: { ...EMPTY_SOUND_SETTINGS.musicVolume, fin: 150 } },
+      }),
+    });
+    expect(tooLoud.status).toBe(400);
+
+    const saved = await admin('/sound-settings', {
+      method: 'PUT',
+      body: JSON.stringify({
+        sounds: { ...EMPTY_SOUND_SETTINGS, musicVolume: { ...EMPTY_SOUND_SETTINGS.musicVolume, accueil: 80, fin: 0 } },
+      }),
+    });
+    expect(saved.status).toBe(200);
+    const res = await fetch(`${base}/api/sound-settings`);
+    const body = (await res.json()) as { sounds: { musicVolume: Record<string, number> } };
+    expect(body.sounds.musicVolume.accueil).toBe(80);
+    expect(body.sounds.musicVolume.fin).toBe(0);
+    expect(body.sounds.musicVolume.menus).toBe(50);
+  });
 });

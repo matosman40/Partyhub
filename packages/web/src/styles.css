@@ -6960,3 +6960,62 @@ html:not([data-theme='dark']) .corner-drawer {
   bottom: 12px;
   z-index: 60;
 }
+
+/* Banques BOUM ! (administration et profil) */
+.row.wrap {
+  flex-wrap: wrap;
+}
+.grow {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.boum-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+.boum-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px;
+  border: 1px solid var(--line, #3a3a48);
+  border-radius: 8px;
+}
+.boum-counts {
+  overflow-x: auto;
+}
+.boum-counts table {
+  border-collapse: collapse;
+  width: 100%;
+}
+.boum-counts th,
+.boum-counts td {
+  padding: 4px 8px;
+  text-align: left;
+  border-bottom: 1px solid var(--line, #3a3a48);
+}
+.boum-draft {
+  padding: 12px;
+  border: 1px dashed var(--line, #3a3a48);
+  border-radius: 8px;
+}
+.boum-preview {
+  padding: 10px 12px;
+  background: #0d0d12;
+  color: #f6efe0;
+  border-left: 4px solid #ff4d2e;
+  border-radius: 4px;
+}
+.boum-preview-text {
+  margin: 0 0 4px;
+  font-size: 1.1rem;
+}
+.boum-blank {
+  display: inline-block;
+  min-width: 4em;
+  border-bottom: 2px solid #ffd23f;
+  color: #ffd23f;
+}

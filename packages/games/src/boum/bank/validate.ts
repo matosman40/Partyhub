@@ -9,7 +9,6 @@ import {
   type Level,
 } from './types.js';
 import { COUNTRY_CODES } from './countries.js';
-import { HARD_TERMS } from './hard-terms.js';
 
 /**
  * Validation des entrées de banque, commune à l'import, à l'édition et aux propositions.
@@ -30,8 +29,6 @@ export const FORBIDDEN_NAMES = [
   'Dixit',
   'Cards Against Humanity',
 ] as const;
-
-export { HARD_TERMS };
 
 export const IMPORT_MAX_BYTES = 300 * 1024;
 export const IMPORT_MAX_LINES = 2000;
@@ -60,13 +57,10 @@ function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-/** Raison de refus si le texte cite un jeu commercial ou une insulte dure, sinon null. */
+/** Raison de refus si le texte cite un jeu commercial, sinon null. */
 export function forbiddenReason(text: string): string | null {
   for (const name of FORBIDDEN_NAMES) {
     if (containsWord(text, name)) return `le nom « ${name} » ne peut pas figurer dans une banque`;
-  }
-  for (const term of HARD_TERMS) {
-    if (containsWord(text, term)) return 'ce texte contient une insulte';
   }
   return null;
 }
