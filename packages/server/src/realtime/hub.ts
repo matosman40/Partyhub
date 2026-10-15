@@ -444,7 +444,13 @@ export class RealtimeHub {
       if (!lobbyMoveLimiter.take()) return ack({ ok: false, error: 'Doucement avec les déplacements.' });
       const parsed = lobbyPositionSchema.safeParse(p);
       if (!parsed.success) return invalid(ack);
-      ack(current.room.setLobbyPosition(current.playerId, parsed.data));
+      const moved = current.room.setLobbyPosition(current.playerId, parsed.data);
+      if (moved.ok) {
+        this.io
+          ?.to(current.room.socketIds())
+          .emit('room:lobby-position', { playerId: current.playerId, position: moved.position });
+      }
+      ack(moved.ok ? { ok: true } : moved);
     });
 
     socket.on('player:lobby-mood', (p, ack) => {

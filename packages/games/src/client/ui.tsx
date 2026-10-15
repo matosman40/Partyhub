@@ -102,7 +102,14 @@ export function Ranking({ entries, limit }: { entries: RankRow[]; limit?: number
 export function TimerBar({ remaining, total }: { remaining: number; total: number }) {
   const pct = total > 0 ? Math.max(0, Math.min(100, (remaining / total) * 100)) : 0;
   return (
-    <div className="timer-bar" aria-label="Temps restant">
+    <div
+      className="timer-bar"
+      role="progressbar"
+      aria-label="Temps restant"
+      aria-valuemin={0}
+      aria-valuemax={Math.max(0, Math.round(total))}
+      aria-valuenow={Math.max(0, Math.round(remaining))}
+    >
       <span style={{ width: `${pct}%` }} />
     </div>
   );
@@ -125,7 +132,7 @@ export function FinalScreen({ points, rank }: { points: number; rank: number | n
       <h2>Partie terminée</h2>
       <p className="big-number">{points} pts</p>
       <p>Vous êtes {rank ? `${rank}ᵉ` : '—'} du classement.</p>
-      <p className="muted">Regardez l'écran principal pour le podium final.</p>
+      <p className="muted">Regardez l’écran principal pour le podium final.</p>
     </section>
   );
 }

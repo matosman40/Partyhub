@@ -1,6 +1,12 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { io as ioClient, type Socket } from 'socket.io-client';
-import type { CatalogGame, ClientToServerEvents, HostRoomView, ServerToClientEvents } from '@partyhub/shared';
+import type {
+  CatalogGame,
+  ClientToServerEvents,
+  HostRoomView,
+  LobbyPositionEvent,
+  ServerToClientEvents,
+} from '@partyhub/shared';
 import { createServer, type PartyServer } from '../server.js';
 import { createLogger } from '../logger.js';
 import type { AppConfig } from '../config.js';
@@ -115,8 +121,8 @@ describe('Plateau de test', () => {
     const { code, hostToken } = await createPlateau();
     const host = await connect();
     clients.push(host);
-    const views = track<HostRoomView>(host, 'room:host');
     await call(host, 'host:connect', { code, hostToken });
+    const moves = track<LobbyPositionEvent>(host, 'room:lobby-position');
 
     const player = await connect();
     clients.push(player);
@@ -125,10 +131,8 @@ describe('Plateau de test', () => {
 
     const moved = await call(player, 'player:lobby-move', { x: 0.2, y: 0.7 });
     expect(moved.ok).toBe(true);
-    const seen = await until(views, (v) =>
-      v.lobby.players.some((p) => p.name === 'Lina' && p.position?.x === 0.2 && p.position?.y === 0.7),
-    );
-    expect(seen.lobby.players).toHaveLength(1);
+    const seen = await until(moves, (m) => m.position.x === 0.2 && m.position.y === 0.7);
+    expect(seen.playerId).toBe(joined.playerId);
     host.disconnect();
     player.disconnect();
   });

@@ -63,7 +63,14 @@ export function Plateau({ figures, onMove, label, emptyText, className }: Platea
   const lastSent = useRef(0);
   const tapStart = useRef<{ x: number; y: number } | null>(null);
   // Position locale de son propre personnage, pendant et juste après un déplacement.
-  const [mine, setMine] = useState<LobbyPosition | null>(null);
+  const [mine, setLocal] = useState<LobbyPosition | null>(null);
+  // Même valeur que `mine`, mise à jour tout de suite : deux flèches pressées dans le même instant
+  // repartent chacune de la place réellement atteinte, sans perdre de pas.
+  const latest = useRef<LobbyPosition | null>(null);
+  const setMine = (p: LobbyPosition | null) => {
+    latest.current = p;
+    setLocal(p);
+  };
   const [isDragging, setIsDragging] = useState(false);
 
   const own = figures.find((f) => f.mine);
@@ -182,7 +189,7 @@ export function Plateau({ figures, onMove, label, emptyText, className }: Platea
               onDown={interactive ? onFigureDown : undefined}
               onMove={interactive ? onFigureMove : undefined}
               onUp={interactive ? onFigureUp : undefined}
-              onKey={interactive ? (e) => onFigureKey(e, mine ?? f.position) : undefined}
+              onKey={interactive ? (e) => onFigureKey(e, latest.current ?? f.position) : undefined}
               onKeyUp={interactive ? onFigureKeyUp : undefined}
             />
           );

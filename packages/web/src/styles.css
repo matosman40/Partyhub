@@ -682,6 +682,25 @@ input[type='checkbox'] {
   font-weight: 600;
 }
 
+.table-scroll {
+  overflow-x: auto;
+}
+
+.table .nowrap {
+  white-space: nowrap;
+}
+
+.admin-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+/* Le bouton de menu d'angle ne doit pas recouvrir le titre de la carte. */
+.join-card h2 {
+  padding-right: 3.25rem;
+}
+
 /* ---- Dialogue ------------------------------------------------------------- */
 
 .dialog-backdrop {
@@ -1117,7 +1136,7 @@ input[type='checkbox'] {
   flex-direction: column;
   align-items: stretch;
   max-width: 480px;
-  margin: 0 auto;
+  margin: 3.25rem auto 0;
   width: 100%;
 }
 
@@ -7285,6 +7304,18 @@ html:not([data-theme='dark']) .corner-drawer {
     transition: none;
     animation: none;
   }
+}
+
+/* Écran principal de BOUM ! : le ciel est orangé et le texte atténué du thème (lilas) n'y lit pas.
+   Le texte passe en blanc, avec une ombre discrète pour les petites lignes. */
+.boum-host {
+  --muted: #ffffff;
+}
+
+.boum-host .round-info,
+.boum-host .muted,
+.boum-host .label {
+  text-shadow: 0 2px 8px rgba(40, 6, 0, 0.5);
 }
 
 .boum-clues {

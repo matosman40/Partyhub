@@ -10,6 +10,7 @@ import { GameScene } from '../components/GameScene.js';
 import { logoFor } from '../components/gameLogos.js';
 import { useArrivalMoods } from '../components/useArrivalMoods.js';
 import { useLobbyMoods } from '../components/useLobbyMoods.js';
+import { useLobbyPositions } from '../components/useLobbyPositions.js';
 import { ChatPanel, EmoteBar, ReactionLayer } from '../components/Social.js';
 import { NoticeDialog } from '../components/NoticeDialog.js';
 import { PlayerSeat } from '../seat/PlayerSeat.js';
@@ -47,6 +48,7 @@ export function TvPage() {
   const arrivals = useArrivalMoods(view ? view.lobby.players.map((p) => p.name) : []);
   // Émotions du salon (par identifiant) et saluts d'arrivée (par pseudo) réunis par identifiant.
   const emotes = useLobbyMoods(getSocket());
+  const positions = useLobbyPositions(getSocket());
   const lobbyPoses: Record<string, CharacterMood> = {
     ...Object.fromEntries(Object.entries(emotes).map(([id, e]) => [id, e.mood])),
     ...Object.fromEntries(
@@ -353,6 +355,7 @@ export function TvPage() {
               canStart={canStart}
               poses={lobbyPoses}
               emotes={emotes}
+              positions={positions}
               onStart={() => emitAck('host:start')}
             />
           ) : (

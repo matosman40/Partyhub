@@ -259,7 +259,7 @@ export function BoumBanksAdmin() {
       {counts ? (
         <>
           {lowStockTypes.length > 0 && <p className="error small">{LOW_STOCK_NOTE}</p>}
-          <div className="boum-counts">
+          <div className="boum-counts" role="region" aria-label="Entrées par type" tabIndex={0}>
             <table>
               <caption className="muted small">Entrées par type</caption>
               <thead>

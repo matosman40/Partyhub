@@ -3,6 +3,7 @@ import { Qr } from '../../components/Qr.js';
 import { GameLogo } from '../../components/GameLogo.js';
 import { LobbyPlateau } from '../../components/LobbyPlateau.js';
 import type { LobbyEmote } from '../../components/useLobbyMoods.js';
+import type { LobbyPosition } from '@partyhub/shared';
 
 /**
  * Salon : le logo du jeu en grand, le code pour rejoindre, le plateau des personnages (déplacés
@@ -16,6 +17,7 @@ export function TvLobby({
   canStart,
   poses,
   emotes,
+  positions,
   onStart,
 }: {
   lobby: HostRoomView['lobby'];
@@ -23,6 +25,7 @@ export function TvLobby({
   canStart: boolean;
   poses: Record<string, CharacterMood>;
   emotes: Record<string, LobbyEmote>;
+  positions: Record<string, LobbyPosition>;
   onStart: () => void;
 }) {
   const connected = lobby.players.filter((p) => p.connected).length;
@@ -50,6 +53,7 @@ export function TvLobby({
           players={lobby.players}
           poses={poses}
           emotes={emotes}
+          positions={positions}
           label={isTest ? 'Plateau de test' : 'Salon : les personnages des joueurs'}
         />
       </div>

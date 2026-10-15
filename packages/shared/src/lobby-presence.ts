@@ -38,6 +38,12 @@ export const lobbyPositionSchema = z.object({
 
 export const lobbyMoodSchema = z.object({ mood: z.enum(LOBBY_MOODS) });
 
+/** Nouvelle place d'un personnage, diffusée seule à la salle (sans renvoyer toute la vue). */
+export interface LobbyPositionEvent {
+  playerId: string;
+  position: LobbyPosition;
+}
+
 /** Émotion diffusée à toute la salle. */
 export interface LobbyMoodEvent {
   id: string;

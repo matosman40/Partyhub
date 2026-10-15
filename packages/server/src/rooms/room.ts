@@ -457,13 +457,16 @@ export class Room {
     return { ok: true };
   }
 
-  /** Place d'un personnage dans le salon (avant la partie uniquement). */
-  setLobbyPosition(playerId: string, position: LobbyPosition): Outcome {
+  /**
+   * Place d'un personnage dans le salon (avant la partie uniquement). Pas de nouvelle vue complète :
+   * la place est diffusée seule par le hub, pour ne pas renvoyer la salle à chaque pas.
+   */
+  setLobbyPosition(playerId: string, position: LobbyPosition): Result<{ position: LobbyPosition }> {
     if (!this.players.has(playerId)) return { ok: false, error: 'Joueur inconnu.' };
     if (!this.inLobby) return { ok: false, error: 'Les personnages ne se déplacent que dans le salon.' };
-    this.positions.set(playerId, clampLobbyPosition(position));
-    this.hooks.onChange(this);
-    return { ok: true };
+    const clamped = clampLobbyPosition(position);
+    this.positions.set(playerId, clamped);
+    return { ok: true, position: clamped };
   }
 
   /** Une émotion n'est possible que dans le salon ; le serveur la diffuse, rien n'est gardé. */

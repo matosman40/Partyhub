@@ -75,10 +75,12 @@ export async function createServer(opts: ServerOptions): Promise<PartyServer> {
   }
   // Installation neuve (aucun mot de passe administrateur encore créé) : jeux intégrés désactivés si configuré.
   // Une installation existante garde ses réglages, même si elle a été mise à jour.
+  // Un outil non listé (plateau de test) reste actif : le bouton de l'accueil doit toujours fonctionner.
   if (config.builtinGames === false && store.getKv('admin_password_hash') === undefined) {
-    for (const game of gameRegistry) store.setGameEnabled(game.manifest.id, false);
+    const games = gameRegistry.filter((game) => game.manifest.listed !== false);
+    for (const game of games) store.setGameEnabled(game.manifest.id, false);
     logger.info(
-      { count: gameRegistry.length },
+      { count: games.length },
       'Installation neuve : jeux intégrés désactivés (BUILTIN_GAMES=on pour les activer)',
     );
   }

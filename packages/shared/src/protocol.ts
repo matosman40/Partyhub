@@ -1,4 +1,4 @@
-import type { LobbyMood, LobbyMoodEvent, LobbyPosition } from './lobby-presence.js';
+import type { LobbyMood, LobbyMoodEvent, LobbyPosition, LobbyPositionEvent } from './lobby-presence.js';
 import type { GameCategory, GameNotice, ScoreEntry } from './game-types.js';
 import type { GameDetails } from './schemas.js';
 import type { DeviceInfo, DeviceKind } from './devices.js';
@@ -201,4 +201,5 @@ export interface ServerToClientEvents {
   'room:chat': (m: ChatMessage) => void;
   'room:reaction': (r: ReactionEvent) => void;
   'room:lobby-mood': (e: LobbyMoodEvent) => void;
+  'room:lobby-position': (e: LobbyPositionEvent) => void;
 }

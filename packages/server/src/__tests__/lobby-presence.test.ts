@@ -1,6 +1,12 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { io as ioClient, type Socket } from 'socket.io-client';
-import type { ClientToServerEvents, HostRoomView, LobbyMoodEvent, ServerToClientEvents } from '@partyhub/shared';
+import type {
+  ClientToServerEvents,
+  HostRoomView,
+  LobbyMoodEvent,
+  LobbyPositionEvent,
+  ServerToClientEvents,
+} from '@partyhub/shared';
 import { createServer, type PartyServer } from '../server.js';
 import { createLogger } from '../logger.js';
 import type { AppConfig } from '../config.js';
@@ -94,17 +100,19 @@ async function joinAs(code: string, name: string) {
 describe('Présence dans le salon : déplacement', () => {
   it('garde la position du personnage, bornée à la zone utile, et la diffuse à l’hôte', async () => {
     const { code, hostToken } = await freshRoom();
-    const { host, views } = await hostOf(code, hostToken);
+    const { host } = await hostOf(code, hostToken);
+    // Les places arrivent seules, par événement : la vue complète n'est pas renvoyée à chaque pas.
+    const moves = track<LobbyPositionEvent>(host, 'room:lobby-position');
     const ana = await joinAs(code, 'Ana');
 
     expect((await call(ana.socket, 'player:lobby-move', { x: 0.5, y: 0.3 })).ok).toBe(true);
-    const placed = await until(views, (v) => v.lobby.players.some((p) => p.name === 'Ana' && p.position?.x === 0.5));
-    expect(placed.lobby.players.find((p) => p.name === 'Ana')?.position).toEqual({ x: 0.5, y: 0.3 });
+    const placed = await until(moves, (m) => m.position.x === 0.5);
+    expect(placed.position).toEqual({ x: 0.5, y: 0.3 });
 
     // Au bord : ramené dans les marges (0,06 à gauche et à droite, 0,14 en haut et en bas).
     await call(ana.socket, 'player:lobby-move', { x: 1, y: 0 });
-    const clamped = await until(views, (v) => v.lobby.players.find((p) => p.name === 'Ana')?.position?.y === 0.14);
-    expect(clamped.lobby.players.find((p) => p.name === 'Ana')?.position).toEqual({ x: 0.94, y: 0.14 });
+    const clamped = await until(moves, (m) => m.position.y === 0.14);
+    expect(clamped.position).toEqual({ x: 0.94, y: 0.14 });
 
     host.disconnect();
   });

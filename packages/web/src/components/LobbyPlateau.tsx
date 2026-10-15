@@ -1,5 +1,5 @@
-import type { CharacterMood, LobbyMood, PublicPlayer } from '@partyhub/shared';
-import { defaultLobbyPosition, LOBBY_MOOD_INFO, LOBBY_MOODS, type LobbyPosition } from '@partyhub/shared';
+import type { CharacterMood, LobbyMood, LobbyPosition, PublicPlayer } from '@partyhub/shared';
+import { defaultLobbyPosition, LOBBY_MOOD_INFO, LOBBY_MOODS } from '@partyhub/shared';
 import { Plateau, type PlateauFigure } from '@partyhub/games/client';
 import { PlayerAvatar } from './PlayerAvatar.js';
 import type { LobbyEmote } from './useLobbyMoods.js';
@@ -12,6 +12,7 @@ export function LobbyPlateau({
   players,
   poses,
   emotes,
+  positions = {},
   me,
   onMove,
   label,
@@ -21,6 +22,8 @@ export function LobbyPlateau({
   poses: Record<string, CharacterMood>;
   /** Émotions en bulle, par identifiant. */
   emotes: Record<string, LobbyEmote>;
+  /** Dernières places diffusées (plus fraîches que la vue de la salle), par identifiant. */
+  positions?: Record<string, LobbyPosition>;
   /** Identifiant du joueur de cet appareil (absent sur l'écran principal). */
   me?: string;
   onMove?: (position: LobbyPosition) => void;
@@ -35,7 +38,7 @@ export function LobbyPlateau({
     return {
       id: p.id,
       name: p.name,
-      position: p.position ?? defaultLobbyPosition(i, count),
+      position: positions[p.id] ?? p.position ?? defaultLobbyPosition(i, count),
       character: p.avatar.character ?? null,
       avatar: p.avatar.character ? undefined : <PlayerAvatar avatar={p.avatar} name={p.name} size="md" />,
       mood: poses[p.id],

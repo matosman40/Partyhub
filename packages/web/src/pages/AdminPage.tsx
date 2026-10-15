@@ -336,7 +336,7 @@ export function AdminPage() {
       <header className="admin-top">
         <h1>Administration</h1>
         <div>
-          <span className="muted small">Uptime : {Math.floor(overview.uptimeSec / 60)} min</span>{' '}
+          <span className="muted small">En service depuis {Math.floor(overview.uptimeSec / 60)} min</span>{' '}
           <button type="button" className="btn ghost" onClick={logout}>
             Déconnexion
           </button>
@@ -352,19 +352,19 @@ export function AdminPage() {
       <section className="card">
         <h2>Statistiques</h2>
         <div className="stats">
-          <div>
+          <div className="admin-stat">
             <span className="big-number">{overview.rooms.length}</span>
             <span>Salles ouvertes</span>
           </div>
-          <div>
+          <div className="admin-stat">
             <span className="big-number">{stat('rooms_created')}</span>
             <span>Salles créées</span>
           </div>
-          <div>
+          <div className="admin-stat">
             <span className="big-number">{stat('games_started')}</span>
             <span>Parties lancées</span>
           </div>
-          <div>
+          <div className="admin-stat">
             <span className="big-number">{stat('games_completed')}</span>
             <span>Parties terminées</span>
           </div>
@@ -381,44 +381,46 @@ export function AdminPage() {
         {overview.rooms.length === 0 ? (
           <p className="muted">Aucune salle active.</p>
         ) : (
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Code</th>
-                <th>Jeu</th>
-                <th>Statut</th>
-                <th>Joueurs</th>
-                <th>Appareils</th>
-                <th>Spectateurs</th>
-                <th>Hôte</th>
-                <th>Dernière activité</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {overview.rooms.map((r) => (
-                <tr key={r.code}>
-                  <td>
-                    <strong>{r.code}</strong>
-                  </td>
-                  <td>{r.gameName}</td>
-                  <td>{STATUS_LABEL[r.status] ?? r.status}</td>
-                  <td>
-                    {r.connected}/{r.players}
-                  </td>
-                  <td>{deviceSummary(r.devices ?? {})}</td>
-                  <td>{r.observers ?? 0}</td>
-                  <td>{r.hostConnected ? 'connecté' : 'absent'}</td>
-                  <td>{new Date(r.lastActivity).toLocaleTimeString('fr-FR')}</td>
-                  <td>
-                    <button type="button" className="link-btn" onClick={() => closeRoom(r.code)}>
-                      Fermer
-                    </button>
-                  </td>
+          <div className="table-scroll">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Code</th>
+                  <th>Jeu</th>
+                  <th>Statut</th>
+                  <th>Joueurs</th>
+                  <th>Appareils</th>
+                  <th>Spectateurs</th>
+                  <th>Hôte</th>
+                  <th>Dernière activité</th>
+                  <th />
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {overview.rooms.map((r) => (
+                  <tr key={r.code}>
+                    <td>
+                      <strong>{r.code}</strong>
+                    </td>
+                    <td className="nowrap">{r.gameName}</td>
+                    <td>{STATUS_LABEL[r.status] ?? r.status}</td>
+                    <td>
+                      {r.connected}/{r.players}
+                    </td>
+                    <td>{deviceSummary(r.devices ?? {})}</td>
+                    <td>{r.observers ?? 0}</td>
+                    <td>{r.hostConnected ? 'connecté' : 'absent'}</td>
+                    <td>{new Date(r.lastActivity).toLocaleTimeString('fr-FR')}</td>
+                    <td>
+                      <button type="button" className="link-btn" onClick={() => closeRoom(r.code)}>
+                        Fermer
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </section>
 

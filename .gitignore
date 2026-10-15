@@ -12,3 +12,5 @@ admin-password.txt
 .env.*
 !.env.example
 coverage/
+
+__pycache__/

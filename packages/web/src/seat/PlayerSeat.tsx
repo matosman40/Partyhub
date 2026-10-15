@@ -8,6 +8,7 @@ import { PlayerAvatar } from '../components/PlayerAvatar.js';
 import { ChatPanel, EmoteBar } from '../components/Social.js';
 import { LobbyMoodBar, LobbyPlateau } from '../components/LobbyPlateau.js';
 import { useLobbyMoods } from '../components/useLobbyMoods.js';
+import { useLobbyPositions } from '../components/useLobbyPositions.js';
 import { NoticeDialog } from '../components/NoticeDialog.js';
 import { Qr } from '../components/Qr.js';
 import { CornerMenu, DrawerSection } from '../components/CornerMenu.js';
@@ -83,6 +84,7 @@ export function PlayerSeat({
 }: PlayerSeatProps) {
   const [socket] = useState<AppSocket>(() => createSocket());
   const emotes = useLobbyMoods(socket);
+  const positions = useLobbyPositions(socket);
   const poses = Object.fromEntries(Object.entries(emotes).map(([id, e]) => [id, e.mood]));
   const [joined, setJoined] = useState(false);
   const [view, setView] = useState<PlayerRoomView | null>(null);
@@ -354,6 +356,7 @@ export function PlayerSeat({
               players={lobby.players}
               poses={poses}
               emotes={emotes}
+              positions={positions}
               me={you.id}
               onMove={sendLobbyMove}
               label="Salon : déplacez votre personnage"
