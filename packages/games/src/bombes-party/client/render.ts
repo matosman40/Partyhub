@@ -659,7 +659,6 @@ export interface SceneOptions {
   skins?: ReadonlyMap<string, PackSkin>;
 }
 
-
 /** Liseré sombre autour du plateau. */
 function frameLine(ctx: Ctx, L: Layout): void {
   ctx.strokeStyle = INK;

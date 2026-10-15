@@ -79,7 +79,7 @@ def main() -> int:
         page.goto(f"{BASE_URL}/", wait_until="networkidle")
         page.evaluate(f"() => sessionStorage.setItem('ph:host:{code}', {json.dumps(host_token)})")
         page.goto(f"{BASE_URL}/tv/{code}", wait_until="networkidle")
-        page.wait_for_selector(".join-panel", timeout=10000)
+        page.wait_for_selector(".stage-lobby", timeout=10000)
         audit(page, "écran TV (salon)")
 
         page.goto(f"{BASE_URL}/admin", wait_until="networkidle")

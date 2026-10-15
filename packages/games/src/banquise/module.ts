@@ -45,9 +45,9 @@ interface LevelRule {
   hint: string;
   holes: boolean;
   wind: boolean;
-  /** Délai avant la première colonne fondue, depuis le départ du niveau. */
+  /** Délai avant la première case fondue, depuis le départ du niveau. */
   erodeDelayMs: number;
-  /** Délai entre deux colonnes fondues. */
+  /** Délai entre deux cases fondues. */
   erodeEveryMs: number;
 }
 
@@ -84,13 +84,13 @@ export interface BanquiseState {
   phase: BanquisePhase;
   /** Niveau en cours, ou dernier niveau joué (1 à 3). */
   level: number;
-  /** Une lettre par colonne : `i` glace, `.` eau. Vide avant la première manche. */
+  /** Une lettre par case, ligne par ligne : `i` glace, `.` eau. Vide avant la première manche. */
   ice: string;
   bodies: Record<string, Body>;
   names: Record<string, string>;
   points: Record<string, number>;
   wind: Wind | null;
-  /** Instant de la prochaine colonne fondue, ou null si la fonte n'a pas commencé. */
+  /** Instant de la prochaine case fondue, ou null si la fonte n'a pas commencé. */
   erodeAt: number | null;
   /** Fin du compte à rebours ou de l'annonce de fin de niveau. */
   phaseEndsAt: number;

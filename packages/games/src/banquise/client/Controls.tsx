@@ -8,7 +8,7 @@ import { useEffect, useRef, type MouseEvent as ReactMouseEvent, type PointerEven
 export type Side = 'left' | 'right' | 'up' | 'down';
 const SIDES: Side[] = ['left', 'right', 'up', 'down'];
 
-/** Place de chaque flèche dans la croix (colonne, ligne). */
+/** Place de chaque flèche dans la croix (colonne et ligne de la grille CSS). */
 const CROSS: Record<Side, { col: number; row: number; label: string; glyph: string }> = {
   up: { col: 2, row: 1, label: 'Aller vers le haut', glyph: '▲' },
   left: { col: 1, row: 2, label: 'Aller à gauche', glyph: '◀' },

@@ -157,7 +157,7 @@ def room_flow(browser) -> None:
     tv_page.goto(f"{BASE_URL}/", wait_until="networkidle")
     tv_page.evaluate(f"() => sessionStorage.setItem('ph:host:{code}', {json.dumps(host_token)})")
     tv_page.goto(f"{BASE_URL}/tv/{code}", wait_until="networkidle")
-    tv_page.wait_for_selector(".join-panel", timeout=10000)
+    tv_page.wait_for_selector(".stage-lobby", timeout=10000)
 
     # Téléphone : rejoint la salle depuis sa page joueur.
     phone = browser.new_context(**SCENARIOS[0][1])
@@ -170,8 +170,10 @@ def room_flow(browser) -> None:
     phone_page.wait_for_selector("text=Je suis prêt", timeout=10000)
     check(True, "téléphone : entré dans la salle")
 
-    tv_page.wait_for_selector(".players .device-icons", timeout=10000)
-    icons = tv_page.locator(".players .device-icons").first.inner_text()
+    # La liste des joueurs est dans le tiroir du menu d'angle (fermé par défaut).
+    tv_page.get_by_role("button", name="Menu").click()
+    tv_page.wait_for_selector(".corner-players .device-icons", timeout=10000)
+    icons = tv_page.locator(".corner-players .device-icons").first.inner_text()
     check("📱" in icons, f"TV : icône téléphone affichée ({icons!r})")
     tv_page.screenshot(path=str(SHOTS_DIR / "tv-salon-avec-joueur.png"))
 

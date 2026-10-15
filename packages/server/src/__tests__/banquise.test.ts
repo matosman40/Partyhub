@@ -170,7 +170,16 @@ describe('Banquise : banquise de chaque niveau', () => {
   });
 
   it('les personnages naissent sur la glace, en anneau autour du centre, à des places différentes', () => {
-    const players = [A, B, C, D, { id: 'e', name: 'Eva' }, { id: 'f', name: 'Fred' }, { id: 'g', name: 'Gus' }, { id: 'h', name: 'Hugo' }];
+    const players = [
+      A,
+      B,
+      C,
+      D,
+      { id: 'e', name: 'Eva' },
+      { id: 'f', name: 'Fred' },
+      { id: 'g', name: 'Gus' },
+      { id: 'h', name: 'Hugo' },
+    ];
     const { state } = begin(players, 7);
     const bodies = Object.values(state.bodies);
     expect(bodies).toHaveLength(8);
@@ -199,7 +208,9 @@ describe('Banquise : banquise de chaque niveau', () => {
     for (let k = 0; k < 15; k++) {
       const next = banquiseErode(ice, rng(k + 1));
       // Au moins une case de moins à chaque fonte.
-      expect(next.split('').filter((c) => c === 'i').length).toBeLessThan(ice.split('').filter((c) => c === 'i').length);
+      expect(next.split('').filter((c) => c === 'i').length).toBeLessThan(
+        ice.split('').filter((c) => c === 'i').length,
+      );
       ice = next;
     }
     const after = ice.split('').filter((c) => c === 'i').length;

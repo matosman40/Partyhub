@@ -2334,6 +2334,17 @@ button.bet:active:not(:disabled) {
   padding-bottom: 240px;
 }
 
+/* Le dock est fixé en bas de l'écran. Quand il y a une barre de réactions, la zone de jeu ne réserve pas
+   de place en bas (sinon la barre descend sous le dock) : la place du dock est réservée sous la barre. */
+.stack:has(> .player-game > .control-dock) > .player-game {
+  padding-bottom: 0;
+}
+
+.stack:has(> .player-game > .control-dock) > .emote-bar {
+  margin-top: 12px;
+  margin-bottom: 240px;
+}
+
 /* ==========================================================================
    Responsive : tablettes et grands écrans
    ========================================================================== */
@@ -2347,6 +2358,9 @@ button.bet:active:not(:disabled) {
   }
   .player-game:has(> .control-dock) {
     padding-bottom: 210px;
+  }
+  .stack:has(> .player-game > .control-dock) > .emote-bar {
+    margin-bottom: 210px;
   }
 }
 
