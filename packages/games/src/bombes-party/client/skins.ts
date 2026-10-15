@@ -49,3 +49,17 @@ export function packSkinFor(spec: CharacterSpec | null | undefined, packs: Chara
 export function skinReady(skin: PackSkin): boolean {
   return skin.image.complete && skin.image.naturalWidth > 0;
 }
+
+/**
+ * Personnage importé : sa case « repos », posée sur le bord bas de la case, à la hauteur du sprite peint
+ * (un pixel de plus). Il se retourne vers la gauche quand il regarde à gauche.
+ */
+export function drawSkin(ctx: CanvasRenderingContext2D, skin: PackSkin, cx: number, bottom: number, h: number, flip: boolean): void {
+  const w = h * (skin.sw / skin.sh);
+  ctx.save();
+  ctx.imageSmoothingEnabled = true;
+  ctx.translate(cx, bottom);
+  if (flip) ctx.scale(-1, 1);
+  ctx.drawImage(skin.image, skin.sx, skin.sy, skin.sw, skin.sh, -w / 2, -h, w, h);
+  ctx.restore();
+}

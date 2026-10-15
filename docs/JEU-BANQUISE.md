@@ -98,25 +98,22 @@ client : la position est calculée toutes les 50 ms.
 
 ## Personnages
 
-Chaque joueur apparaît avec son personnage (celui du profil). Un personnage **importé avec des planches** (voir
-`docs/PERSONNAGES-PACK.md`) s'affiche avec son look choisi. Le personnage dessiné s'affiche sinon.
+Le plan et les personnages suivent le plateau de Bomberman : pixel art, vue de dessus, mêmes sprites de couleur.
+Chaque joueur a son sprite (sa couleur). Un personnage **importé avec des planches** (voir
+`docs/PERSONNAGES-PACK.md`) remplace ce sprite : on affiche sa case « repos » (corps entier, face au joueur), comme sur
+le plateau de Bomberman.
 
-Attitudes utilisées :
-
-- au repos sur la glace : `Repos` ;
-- en l'air : `Joie` ;
-- pendant une poussée : `Salut` ;
-- vainqueur du niveau ou du jeu : `Danse` ;
-- éliminé : il disparaît dans l'eau, et sa vignette apparaît avec une mine triste dans la liste des éliminés.
+Le sprite suit le sens du regard (à gauche ou à droite) et rebondit d'un pixel à chaque pas. En l'air, il est dessiné
+plus haut, avec son ombre au sol, plus petite. Éliminé, il disparaît dans l'eau (éclaboussure).
 
 ## Écrans
 
-- **Vue** : une vue en plongée, légèrement de face. La banquise est une surface vue d'en haut, avec sa falaise de
-  face et ses trous d'eau. Les personnages restent debout et projettent une ombre au sol : l'ombre rétrécit quand ils
-  sautent. Le jeu ne bouge qu'en largeur ; la profondeur n'est qu'un effet visuel, identique pour tous.
-- **Écran principal** : la banquise, la mer et les icebergs à l'horizon, les personnages avec leur nom, le numéro du
-  niveau et son titre, l'annonce du vent et ses traînées, le temps avant la fonte, les éliminés et le classement.
-- **Téléphone** : la même scène en plus petit, votre personnage mis en évidence (« Vous »), les commandes en bas, et
+- **Plan** : une vue de dessus. La banquise est faite de tuiles de glace au biseau asymétrique (lumière en haut à
+  gauche, ombre en bas à droite), avec une écume au bord de l'eau. Les trous sont de l'eau à reflets. La mer entoure
+  la banquise.
+- **Écran principal** : le plan, les personnages avec leur nom, le numéro du niveau et son titre, l'annonce du vent et
+  ses traînées, le temps avant la fonte, les éliminés et le classement.
+- **Téléphone** : le même plan en plus petit, votre personnage mis en évidence (« Vous »), les commandes en bas, et
   « Tombé à l'eau » après l'élimination.
 
 ## Robots (mode test)

@@ -6666,131 +6666,80 @@ html:not([data-theme='dark']) .corner-drawer {
    ========================================================================== */
 
 .ban-stage {
-  /* Une colonne = --u. La surface de glace va de --fb (bord avant) à --fb + --fh (bord arrière). */
-  --u: calc(100cqw / 21);
-  --fb: calc(0.9 * var(--u));
-  --fh: calc(3.1 * var(--u));
-  --feet: calc(var(--fb) + var(--fh) * 0.42);
-  --hz: calc(var(--fb) + var(--fh) + 0.3 * var(--u));
-  --cliff: calc(0.95 * var(--u));
-  container-type: inline-size;
   position: relative;
   width: 100%;
-  aspect-ratio: 21 / 10;
   overflow: hidden;
-  background: #0b1233;
   color: #f4f7ff;
   user-select: none;
   -webkit-user-select: none;
 }
 
-.ban-sky,
+.ban-canvas {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: block;
+}
+
 .ban-fx,
-.ban-streaks,
-.ban-bergs,
-.ban-sea {
+.ban-streaks {
   position: absolute;
   inset: 0;
   overflow: hidden;
   pointer-events: none;
 }
 
-.ban-sky {
-  background:
-    radial-gradient(120% 60% at 50% 100%, rgba(214, 242, 255, 0.95) 0%, rgba(120, 190, 230, 0) 60%),
-    linear-gradient(180deg, #0a1030 0%, #1c2f73 42%, #4a7fbd 78%, #bfe6f7 100%);
-}
-
-/* Voile vert et violet, très doux, qui glisse lentement dans le ciel. */
-.ban-aurora {
+/* Repère d'un personnage : un point posé sur ses pieds, avec son nom au-dessus de la tête. */
+.ban-actor {
   position: absolute;
-  left: -20%;
-  right: -20%;
-  top: 4%;
-  height: 34%;
-  background: linear-gradient(90deg, transparent, #6effc0 25%, #6ec8ff 50%, #b48cff 75%, transparent);
-  filter: blur(calc(0.9 * var(--u)));
-  opacity: 0.38;
-  border-radius: 50%;
-  animation: ban-aurora 16s ease-in-out infinite alternate;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  z-index: 2;
 }
 
-@keyframes ban-aurora {
-  from {
-    transform: translateX(-6%) scaleY(0.9);
-  }
-  to {
-    transform: translateX(6%) scaleY(1.1);
-  }
-}
-
-.ban-star {
+.ban-name {
   position: absolute;
-  border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 0 4px rgba(255, 255, 255, 0.9);
-  animation: ban-twinkle 3.4s ease-in-out infinite alternate;
+  bottom: calc(var(--sprite-h) + 2px);
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: max(10px, calc(0.42 * var(--tile)));
+  font-weight: 800;
+  padding: 0 0.35em;
+  border-radius: 999px;
+  background: rgba(8, 6, 26, 0.7);
+  line-height: 1.5;
 }
 
-@keyframes ban-twinkle {
+.ban-actor.is-you .ban-name {
+  background: #ffd23f;
+  color: #1a1030;
+}
+
+.ban-actor.is-falling {
+  opacity: 0.7;
+}
+
+.ban-splash {
+  position: absolute;
+  width: calc(1.4 * var(--tile));
+  height: calc(0.5 * var(--tile));
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  animation: ban-splash 900ms ease-out forwards;
+  pointer-events: none;
+}
+
+@keyframes ban-splash {
   from {
-    opacity: 0.25;
-  }
-  to {
     opacity: 1;
-  }
-}
-
-/* Icebergs posés sur l'horizon. */
-.ban-berg {
-  position: absolute;
-  bottom: var(--hz);
-  width: calc(var(--w) * var(--u));
-  height: calc(var(--h) * var(--u));
-  background: linear-gradient(180deg, #ffffff 0%, #d4f1ff 45%, #8fcbe9 100%);
-  clip-path: polygon(0 100%, 16% 46%, 31% 62%, 52% 0, 74% 52%, 88% 30%, 100% 100%);
-  opacity: 0.92;
-}
-
-/* La mer, du lointain (plus clair) au premier plan (plus sombre). */
-.ban-sea {
-  top: auto;
-  height: var(--hz);
-  background: linear-gradient(180deg, #7cc8e6 0%, #2a7fb0 30%, #123f68 70%, #0a2a4a 100%);
-}
-
-.ban-sea::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0 2px, transparent 2px calc(var(--u) * 0.9));
-  animation: ban-sheen 4.2s linear infinite;
-}
-
-@keyframes ban-sheen {
-  from {
-    transform: translateY(0);
+    transform: translate(-50%, -50%) scale(0.4);
   }
   to {
-    transform: translateY(calc(var(--u) * 0.9));
-  }
-}
-
-.ban-flake {
-  position: absolute;
-  top: -6%;
-  border-radius: 50%;
-  background: #fff;
-  opacity: 0.8;
-  animation: ban-fall linear infinite;
-}
-
-@keyframes ban-fall {
-  from {
-    top: -6%;
-  }
-  to {
-    top: 110%;
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.6);
   }
 }
 
@@ -6810,174 +6759,6 @@ html:not([data-theme='dark']) .corner-drawer {
   }
   to {
     transform: translateX(calc(var(--dir, 1) * 130cqw));
-  }
-}
-
-/* Trou dans la banquise : l'eau, avec ses rides. */
-.ban-hole {
-  position: absolute;
-  bottom: var(--fb);
-  width: var(--u);
-  height: var(--fh);
-  background:
-    radial-gradient(60% 40% at 50% 45%, rgba(170, 230, 255, 0.35), transparent 70%),
-    linear-gradient(180deg, #2b7fb0 0%, #0d3a62 100%);
-  box-shadow:
-    inset 0 calc(var(--u) * 0.1) 0 rgba(255, 255, 255, 0.35),
-    inset 0 calc(var(--u) * -0.1) 0 rgba(0, 0, 0, 0.35);
-  overflow: hidden;
-}
-
-.ban-hole::after {
-  content: '';
-  position: absolute;
-  left: 22%;
-  right: 22%;
-  top: 40%;
-  height: 10%;
-  border-radius: 50%;
-  border: 1px solid rgba(220, 245, 255, 0.5);
-  animation: ban-ripple 2.6s ease-out infinite;
-}
-
-@keyframes ban-ripple {
-  from {
-    opacity: 0.8;
-    transform: scale(0.4);
-  }
-  to {
-    opacity: 0;
-    transform: scale(1.6);
-  }
-}
-
-/* La banquise : une seule surface vue d'en haut. Les trous et les falaises se posent par-dessus. */
-.ban-floe {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: var(--fb);
-  height: var(--fh);
-  background:
-    radial-gradient(60% 40% at 35% 0%, rgba(255, 255, 255, 0.95), transparent 80%),
-    linear-gradient(180deg, #f6fdff 0%, #d5f1fb 55%, #bde7f7 100%);
-  box-shadow: inset 0 calc(var(--u) * 0.12) 0 rgba(255, 255, 255, 0.95);
-}
-
-/* Falaise de face : l'épaisseur de la banquise, sous le bord avant de chaque colonne de glace. */
-.ban-cliff {
-  position: absolute;
-  width: var(--u);
-  bottom: calc(var(--fb) - var(--near) * var(--u) - var(--cliff));
-  height: var(--cliff);
-  background: linear-gradient(180deg, #4fa6d3 0%, #1b6393 50%, #0b3556 100%);
-}
-
-.ban-crack {
-  position: absolute;
-  width: calc(var(--u) * 0.36);
-  height: 1px;
-  background: rgba(60, 130, 176, 0.4);
-  transform: rotate(var(--rot, 0deg));
-}
-
-/* Ombre au sol : elle rétrécit et s'estompe quand le personnage saute. */
-.ban-shadow {
-  position: absolute;
-  bottom: var(--feet);
-  width: calc(1.1 * var(--u));
-  height: calc(0.34 * var(--u));
-  border-radius: 50%;
-  background: radial-gradient(closest-side, rgba(6, 26, 56, 0.6), rgba(6, 26, 56, 0));
-  transform: translate(-50%, 50%) scale(max(0.4, calc(1 - var(--lift, 0) * 0.16)));
-  opacity: max(0.2, calc(1 - var(--lift, 0) * 0.25));
-  transition:
-    left 60ms linear,
-    transform 60ms linear,
-    opacity 60ms linear;
-  z-index: 1;
-}
-
-.ban-actor {
-  position: absolute;
-  width: calc(1.2 * var(--u));
-  height: calc(2.5 * var(--u));
-  transform: translateX(-50%);
-  transition:
-    left 60ms linear,
-    bottom 60ms linear;
-  pointer-events: none;
-  z-index: 2;
-}
-
-.ban-body {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: calc(2.2 * var(--u));
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-}
-
-.ban-body .chara {
-  width: auto !important;
-  height: 100% !important;
-  max-width: 100%;
-  filter: drop-shadow(0 calc(var(--u) * 0.06) 0 rgba(6, 26, 56, 0.35));
-}
-
-.ban-actor.is-airborne .ban-body {
-  filter: drop-shadow(0 calc(var(--u) * 0.25) calc(var(--u) * 0.1) rgba(6, 26, 56, 0.3));
-}
-
-.ban-actor.is-falling .ban-body {
-  opacity: 0.7;
-}
-
-.ban-actor.is-you .ban-body {
-  filter: drop-shadow(0 0 4px #ffd23f) drop-shadow(0 0 10px rgba(255, 210, 63, 0.6));
-}
-
-.ban-name {
-  position: absolute;
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  white-space: nowrap;
-  font-size: max(10px, calc(0.42 * var(--u)));
-  font-weight: 800;
-  padding: 0 0.35em;
-  border-radius: 999px;
-  background: rgba(8, 6, 26, 0.7);
-  line-height: 1.5;
-}
-
-.ban-actor.is-you .ban-name {
-  background: #ffd23f;
-  color: #1a1030;
-}
-
-.ban-splash {
-  position: absolute;
-  bottom: var(--feet);
-  width: calc(1.5 * var(--u));
-  height: calc(0.5 * var(--u));
-  transform: translate(-50%, 50%);
-  border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.85);
-  animation: ban-splash 900ms ease-out forwards;
-}
-
-@keyframes ban-splash {
-  from {
-    opacity: 1;
-    transform: translate(-50%, 50%) scale(0.4);
-  }
-  to {
-    opacity: 0;
-    transform: translate(-50%, 50%) scale(1.6);
   }
 }
 
@@ -7077,17 +6858,12 @@ html:not([data-theme='dark']) .corner-drawer {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ban-aurora,
-  .ban-star,
-  .ban-sea::after,
-  .ban-hole::after,
-  .ban-flake,
-  .ban-streak,
-  .ban-wind.is-warning {
+  .ban-wind.is-warning,
+  .ban-splash,
+  .ban-streak {
     animation: none;
   }
-  .ban-actor,
-  .ban-shadow {
+  .ban-actor {
     transition: none;
   }
 }

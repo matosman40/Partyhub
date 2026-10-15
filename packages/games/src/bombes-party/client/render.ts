@@ -8,7 +8,7 @@
  */
 
 import { FRAMES, SPRITE_H, SPRITE_W, withFacing } from './sprites.js';
-import { skinReady, type PackSkin } from './skins.js';
+import { drawSkin, skinReady, type PackSkin } from './skins.js';
 
 export type Dir = 'up' | 'down' | 'left' | 'right';
 export type PowerKind = 'bomb' | 'flame' | 'speed' | 'kangaroo' | 'dino';
@@ -40,7 +40,7 @@ export interface BoardView {
 }
 
 /** Une case logique : 16 pixels, la résolution des décors d'origine. */
-const TILE_PX = 16;
+export const TILE_PX = 16;
 /** Marge autour du plateau, en cases. */
 const PAD_TILES = 0.25;
 
@@ -67,7 +67,7 @@ export function cellOrigin(L: Layout, x: number, y: number): { x: number; y: num
 }
 
 export const PLAYER_COLORS = ['#ff3d8b', '#3ff5e0', '#ffc83d', '#b59cff'];
-const INK = '#0c0a24';
+export const INK = '#0c0a24';
 const FACE = '#fdf0dc';
 const BOOTS = '#2a2770';
 const MOUNT_ICON: Record<Mount, string> = { kangaroo: '🦘', dino: '🦖' };
@@ -208,7 +208,7 @@ type Ctx = CanvasRenderingContext2D;
 const images = new Map<string, HTMLCanvasElement>();
 
 /** Image peinte une seule fois, puis réutilisée à chaque image d'animation. */
-function image(key: string, w: number, h: number, paint: (g: Ctx) => void): HTMLCanvasElement {
+export function image(key: string, w: number, h: number, paint: (g: Ctx) => void): HTMLCanvasElement {
   const hit = images.get(key);
   if (hit) return hit;
   const c = document.createElement('canvas');
@@ -221,13 +221,13 @@ function image(key: string, w: number, h: number, paint: (g: Ctx) => void): HTML
 }
 
 /** Valeur pseudo-aléatoire stable pour une case : même décor à chaque image. */
-function hash(a: number, b: number): number {
+export function hash(a: number, b: number): number {
   let h = Math.imul(a + 0x9e3779b1, 0x85ebca6b) ^ Math.imul(b + 0x7f4a7c15, 0xc2b2ae35);
   h = Math.imul(h ^ (h >>> 15), 0x2c1b3c6d);
   return ((h ^ (h >>> 12)) >>> 0) / 4294967296;
 }
 
-function rect(g: Ctx, x: number, y: number, w: number, h: number, color: string): void {
+export function rect(g: Ctx, x: number, y: number, w: number, h: number, color: string): void {
   g.fillStyle = color;
   g.fillRect(x, y, w, h);
 }
@@ -434,7 +434,7 @@ function paintSprite(g: Ctx, rows: readonly string[], color: string): void {
   });
 }
 
-function unitImage(
+export function unitImage(
   colorIndex: number,
   pose: 'front' | 'back',
   step: number,
@@ -659,19 +659,6 @@ export interface SceneOptions {
   skins?: ReadonlyMap<string, PackSkin>;
 }
 
-/**
- * Personnage importé : sa case « repos », posée sur le bord bas de la case, à la hauteur du sprite peint
- * (un pixel de plus). Il se retourne vers la gauche quand il regarde à gauche.
- */
-function drawSkin(ctx: Ctx, skin: PackSkin, cx: number, bottom: number, h: number, flip: boolean): void {
-  const w = h * (skin.sw / skin.sh);
-  ctx.save();
-  ctx.imageSmoothingEnabled = true;
-  ctx.translate(cx, bottom);
-  if (flip) ctx.scale(-1, 1);
-  ctx.drawImage(skin.image, skin.sx, skin.sy, skin.sw, skin.sh, -w / 2, -h, w, h);
-  ctx.restore();
-}
 
 /** Liseré sombre autour du plateau. */
 function frameLine(ctx: Ctx, L: Layout): void {

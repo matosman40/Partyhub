@@ -1,16 +1,15 @@
-import { useContext, type CSSProperties } from 'react';
-import { defaultCharacterFor, type CharacterMood } from '@partyhub/shared';
+import { useContext, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { AvatarsContext } from '../../client/avatar-context.js';
-import { Character } from '../../client/character.js';
+import { useCharacterPacks } from '../../client/character-packs.js';
+import { drawSkin, packSkinFor, skinReady, type PackSkin } from '../../bombes-party/client/skins.js';
+import { SPRITE_H } from '../../bombes-party/client/sprites.js';
+import { actorLeft, boardLayout, drawBoard, drawShadow, drawSpriteActor, groundY } from './board.js';
 
 /**
- * Scène de la banquise, commune à l'écran principal et au téléphone. Tout est en DOM et en CSS.
- *
- * Vue en plongée, légèrement de face : la banquise est une surface vue d'en haut, avec sa face
- * avant (la falaise) et ses trous d'eau. Les personnages restent debout, dressés sur la glace,
- * et leur ombre au sol dit leur hauteur quand ils sautent. Une colonne de glace vaut `--u`
- * (1/21 de la scène) ; la profondeur de la surface est `--fh`. Le jeu ne bouge qu'en largeur :
- * la profondeur n'est qu'un effet visuel, à la même hauteur pour tous.
+ * Scène de la banquise, commune à l'écran principal et au téléphone. Le plan est dessiné sur canvas
+ * comme le plateau de Bomberman (vue de dessus, mêmes tuiles, même biseau). Les personnages sont
+ * les sprites de couleur de Bomberman, ou le personnage importé quand le joueur en a choisi un.
+ * Les noms et l'éclaboussure restent en HTML, posés aux mêmes coordonnées que le canvas.
  */
 
 export interface BanquiseBodyView {
@@ -48,36 +47,7 @@ export interface BanquiseView {
   history: Array<{ level: number; levelName: string; winnerNames: string[] }>;
 }
 
-/** Flocons décoratifs, placés de façon fixe (pas de hasard au rendu). */
-const FLAKES = Array.from({ length: 22 }, (_, i) => ({
-  left: `${(i * 37) % 100}%`,
-  animationDelay: `${((i * 0.53) % 5).toFixed(2)}s`,
-  animationDuration: `${(6 + ((i * 7) % 5)).toFixed(1)}s`,
-  width: `${2 + (i % 3)}px`,
-  height: `${2 + (i % 3)}px`,
-}));
-
-/** Étoiles de la nuit polaire, en haut de la scène. */
-const STARS = Array.from({ length: 16 }, (_, i) => {
-  const size = `${(1 + (i % 3) * 0.7).toFixed(1)}px`;
-  return {
-    left: `${(i * 61) % 97}%`,
-    top: `${(i * 23) % 44}%`,
-    width: size,
-    height: size,
-    animationDelay: `${((i * 0.37) % 3).toFixed(2)}s`,
-  };
-});
-
-/** Icebergs à l'horizon : position et taille en colonnes (`--w`, `--h`). */
-const BERGS = [
-  { left: '6%', w: '4.2', h: '1.6' },
-  { left: '24%', w: '2.6', h: '0.9' },
-  { left: '71%', w: '5.4', h: '2.1' },
-  { left: '88%', w: '3.1', h: '1.1' },
-];
-
-/** Traînées du vent, dans le ciel. */
+/** Traînées du vent, par-dessus le plan. */
 const STREAKS = [
   { top: '18%', animationDelay: '0s' },
   { top: '34%', animationDelay: '0.35s' },
@@ -86,26 +56,8 @@ const STREAKS = [
   { top: '42%', animationDelay: '0.2s' },
 ];
 
-/**
- * Détails d'une colonne de glace : fissure et sa hauteur sur la surface, bord avant un peu
- * plus bas ou plus haut. Valeurs déterministes, pour que la scène ne change pas d'une image à l'autre.
- */
-function floeShape(col: number) {
-  return {
-    near: (((col * 37) % 11) / 11) * 0.12,
-    rot: ((col * 29) % 41) - 20,
-    crack: 14 + ((col * 17) % 60),
-    at: 0.2 + (((col * 13) % 7) / 7) * 0.7,
-  };
-}
-
-function moodOf(b: BanquiseBodyView, phase: string): CharacterMood {
-  if (b.won && (phase === 'level-over' || phase === 'final')) return 'dance';
-  if (b.pushed) return 'sad';
-  if (b.pushing) return 'wave';
-  if (!b.grounded) return 'joy';
-  return 'idle';
-}
+/** Variable CSS personnalisée, typée pour React. */
+const cssVar = (name: string, value: string | number): CSSProperties => ({ [name]: value }) as CSSProperties;
 
 function windText(wind: NonNullable<BanquiseView['wind']>): string {
   const side = wind.dir > 0 ? 'vers la droite' : 'vers la gauche';
@@ -113,69 +65,147 @@ function windText(wind: NonNullable<BanquiseView['wind']>): string {
   return `Vent ${side}`;
 }
 
-/** Variable CSS personnalisée, typée pour React. */
-const cssVar = (name: string, value: string | number): CSSProperties => ({ [name]: value }) as CSSProperties;
+interface Shown {
+  x: number;
+  y: number;
+  walkUntil: number;
+}
 
 export function BanquiseStage({ view, youId, label }: { view: BanquiseView; youId?: string; label: string }) {
   const avatars = useContext(AvatarsContext);
+  const { packs } = useCharacterPacks();
+  const rootRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const markers = useRef(new Map<string, HTMLDivElement>());
+  const shown = useRef(new Map<string, Shown>());
+  const [cssWidth, setCssWidth] = useState(360);
+
+  useEffect(() => {
+    const el = rootRef.current;
+    if (!el) return;
+    setCssWidth(Math.max(200, Math.round(el.clientWidth || 360)));
+    const observer = new ResizeObserver((entries) => {
+      const w = entries[0]?.contentRect.width;
+      if (w && w > 0) setCssWidth(Math.max(200, Math.round(w)));
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const L = useMemo(() => boardLayout(cssWidth), [cssWidth]);
+
+  // Personnage importé de chaque joueur (par identifiant), lu par la boucle d'affichage.
+  const skins = useMemo(() => {
+    const map = new Map<string, PackSkin>();
+    for (const b of view.bodies) {
+      const skin = packSkinFor(avatars[b.name]?.character, packs);
+      if (skin) map.set(b.playerId, skin);
+    }
+    return map;
+  }, [view.bodies, avatars, packs]);
+
+  const viewRef = useRef(view);
+  viewRef.current = view;
+  const layoutRef = useRef(L);
+  layoutRef.current = L;
+  const skinsRef = useRef(skins);
+  skinsRef.current = skins;
+
+  // Boucle d'affichage : la position suit le serveur en douceur, et les marqueurs HTML suivent le canvas.
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const reduced = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let raf = 0;
+    let last = performance.now();
+    const frame = (now: number) => {
+      const v = viewRef.current;
+      const LL = layoutRef.current;
+      const dpr = window.devicePixelRatio || 1;
+      const bw = Math.round(LL.width * dpr);
+      const bh = Math.round(LL.height * dpr);
+      if (canvas.width !== bw || canvas.height !== bh) {
+        canvas.width = bw;
+        canvas.height = bh;
+      }
+      const ctx = canvas.getContext('2d');
+      const dt = Math.min(0.1, (now - last) / 1000);
+      last = now;
+      if (ctx) {
+        drawBoard(ctx, LL, v.ice, reduced ? 0 : now, dpr);
+        const alive = v.bodies.filter((b) => b.x !== null && b.alive);
+        const placed: Array<{ b: BanquiseBodyView; s: Shown; walking: boolean; step: number }> = [];
+        for (const b of alive) {
+          const target = b.x as number;
+          let s = shown.current.get(b.playerId);
+          if (!s) {
+            s = { x: target, y: b.y, walkUntil: 0 };
+            shown.current.set(b.playerId, s);
+          }
+          const k = reduced ? 1 : 1 - Math.exp(-dt * 22);
+          const prevX = s.x;
+          s.x += (target - s.x) * k;
+          s.y += (b.y - s.y) * k;
+          if (Math.abs(s.x - prevX) > 0.002) s.walkUntil = now + 160;
+          placed.push({ b, s, walking: now < s.walkUntil, step: Math.floor(now / 140) % 2 });
+        }
+        for (const p of placed) {
+          drawShadow(ctx, LL, {
+            x: p.s.x,
+            lift: Math.max(0, p.s.y),
+            colorIndex: p.b.color,
+            facing: p.b.facing,
+            walking: p.walking,
+            step: p.step,
+          });
+        }
+        for (const p of placed) {
+          const skin = skinsRef.current.get(p.b.playerId);
+          const a = {
+            x: p.s.x,
+            lift: p.s.y,
+            colorIndex: p.b.color,
+            facing: p.b.facing,
+            walking: p.walking,
+            step: p.step,
+          };
+          if (skin && skinReady(skin)) {
+            const bounce = p.walking && p.step ? LL.S : 0;
+            const bottom = groundY(LL) - p.s.y * LL.T - bounce;
+            drawSkin(ctx, skin, actorLeft(LL, p.s.x), bottom, (SPRITE_H + 1) * LL.S, p.b.facing < 0);
+          } else {
+            drawSpriteActor(ctx, LL, a);
+          }
+          const el = markers.current.get(p.b.playerId);
+          if (el) {
+            el.style.left = `${actorLeft(LL, p.s.x)}px`;
+            el.style.top = `${groundY(LL) - p.s.y * LL.T}px`;
+          }
+        }
+      }
+      raf = requestAnimationFrame(frame);
+    };
+    raf = requestAnimationFrame(frame);
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
   const wind = view.wind && view.wind.phase !== 'calm' ? view.wind : null;
   const cls = ['ban-stage', `is-${view.phase}`, wind ? `wind-${wind.phase}` : ''].filter(Boolean).join(' ');
+  const groundPx = groundY(L);
 
   return (
-    <div className={cls} role="img" aria-label={label}>
-      <div className="ban-sky" aria-hidden="true">
-        <span className="ban-aurora" />
-        {STARS.map((s, i) => (
-          <span key={i} className="ban-star" style={s} />
-        ))}
-      </div>
-      <div className="ban-bergs" aria-hidden="true">
-        {BERGS.map((b, i) => (
-          <span key={i} className="ban-berg" style={{ left: b.left, ...cssVar('--w', b.w), ...cssVar('--h', b.h) }} />
-        ))}
-      </div>
-      <div className="ban-sea" aria-hidden="true" />
-
-      <div className="ban-floe" aria-hidden="true" />
-      {view.ice.split('').map((cell, col) => {
-        const shape = floeShape(col);
-        if (cell !== 'i') {
-          return (
-            <span
-              key={`hole-${col}`}
-              className="ban-hole"
-              aria-hidden="true"
-              style={{ left: `calc(${col} * var(--u))` }}
-            />
-          );
-        }
-        return (
-          <span key={`ice-${col}`} aria-hidden="true">
-            <span className="ban-cliff" style={{ left: `calc(${col} * var(--u))`, ...cssVar('--near', shape.near) }} />
-            <span
-              className="ban-crack"
-              style={{
-                left: `calc((${col} + ${shape.crack / 100}) * var(--u))`,
-                bottom: `calc(var(--fb) + var(--fh) * ${shape.at.toFixed(2)})`,
-                ...cssVar('--rot', `${shape.rot}deg`),
-              }}
-            />
-          </span>
-        );
-      })}
-
-      {view.bodies.map((b) => {
-        if (b.x === null || !b.alive) return null;
-        const shadowLift = Math.max(0, b.y);
-        return (
-          <span
-            key={`shadow-${b.playerId}`}
-            className="ban-shadow"
-            aria-hidden="true"
-            style={{ left: `calc(${b.x} * var(--u))`, ...cssVar('--lift', shadowLift.toFixed(2)) }}
-          />
-        );
-      })}
+    <div
+      ref={rootRef}
+      className={cls}
+      role="img"
+      aria-label={label}
+      style={{
+        height: L.height,
+        ...cssVar('--tile', `${L.T}px`),
+        ...cssVar('--sprite-h', `${SPRITE_H * L.S}px`),
+      }}
+    >
+      <canvas ref={canvasRef} className="ban-canvas" style={{ width: L.width, height: L.height }} aria-hidden="true" />
 
       {view.bodies.map((b) => {
         if (b.x === null) return null;
@@ -185,34 +215,26 @@ export function BanquiseStage({ view, youId, label }: { view: BanquiseView; youI
               key={`splash-${b.playerId}`}
               className="ban-splash"
               aria-hidden="true"
-              style={{ left: `calc(${b.x} * var(--u))` }}
+              style={{ left: actorLeft(L, b.x), top: groundPx }}
             />
           );
         }
-        const known = avatars[b.name];
-        const spec = known?.character ?? defaultCharacterFor(b.name);
         const isYou = b.playerId === youId;
         return (
           <div
             key={b.playerId}
-            className={`ban-actor${isYou ? ' is-you' : ''}${!b.grounded ? ' is-airborne' : ''}${b.y < -0.05 ? ' is-falling' : ''}`}
-            style={{
-              left: `calc(${b.x} * var(--u))`,
-              bottom: `calc(var(--feet) + ${b.y.toFixed(3)} * var(--u))`,
+            ref={(el) => {
+              if (el) markers.current.set(b.playerId, el);
+              else markers.current.delete(b.playerId);
             }}
+            className={`ban-actor${isYou ? ' is-you' : ''}${!b.grounded ? ' is-airborne' : ''}${b.y < -0.05 ? ' is-falling' : ''}`}
           >
             <span className="ban-name">{isYou ? 'Vous' : b.name}</span>
-            <span className="ban-body">
-              <Character spec={spec} mood={moodOf(b, view.phase)} framing="full" />
-            </span>
           </div>
         );
       })}
 
       <div className="ban-fx" aria-hidden="true">
-        {FLAKES.map((f, i) => (
-          <span key={i} className="ban-flake" style={f} />
-        ))}
         {wind?.phase === 'gust' && (
           <div className="ban-streaks" style={cssVar('--dir', wind.dir)}>
             {STREAKS.map((s, i) => (
