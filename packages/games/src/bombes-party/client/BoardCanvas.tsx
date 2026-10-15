@@ -1,5 +1,8 @@
-import { useEffect, useRef } from 'react';
+import { useContext, useEffect, useMemo, useRef } from 'react';
 import { play, type Sfx } from '../../client/audio.js';
+import { AvatarsContext } from '../../client/avatar-context.js';
+import { useCharacterPacks } from '../../client/character-packs.js';
+import { packSkinFor, type PackSkin } from './skins.js';
 import { diffEvents, type FxEvent } from './events.js';
 import {
   burstParticles,
@@ -119,6 +122,20 @@ export function BoardCanvas({
   const reduced = useRef(false);
   const lastCelebrate = useRef(0);
 
+  // Personnage importé de chaque joueur, par identifiant. La boucle d'affichage lit la valeur courante.
+  const avatars = useContext(AvatarsContext);
+  const { packs } = useCharacterPacks();
+  const skins = useMemo(() => {
+    const map = new Map<string, PackSkin>();
+    for (const u of view.units) {
+      const skin = packSkinFor(avatars[u.name]?.character, packs);
+      if (skin) map.set(u.playerId, skin);
+    }
+    return map;
+  }, [view.units, avatars, packs]);
+  const skinsRef = useRef(skins);
+  skinsRef.current = skins;
+
   useEffect(() => {
     reduced.current = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
   }, []);
@@ -186,7 +203,7 @@ export function BoardCanvas({
           ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
           const dt = Math.min(0.05, (now - last) / 1000);
           updateParticles(particles.current, dt);
-          drawScene(ctx, L, v, { now, particles: particles.current, dpr });
+          drawScene(ctx, L, v, { now, particles: particles.current, dpr, skins: skinsRef.current });
         }
       }
       last = now;

@@ -1,5 +1,6 @@
 /**
- * Rendu du plateau sur canvas, sans aucune image importée : tout est peint en code.
+ * Rendu du plateau sur canvas. Décors et sprites sont peints en code ; un joueur qui a choisi un
+ * personnage importé est dessiné avec sa case (voir skins.ts).
  * Vue de dessus, comme les Bomberman d'origine. Une case vaut 16 « pixels logiques » :
  * chaque décor est peint une seule fois à cette taille, puis agrandi sans lissage, ce qui
  * garde les contours nets à toutes les tailles d'écran. Les personnages glissent d'une case
@@ -7,6 +8,7 @@
  */
 
 import { FRAMES, SPRITE_H, SPRITE_W, withFacing } from './sprites.js';
+import { skinReady, type PackSkin } from './skins.js';
 
 export type Dir = 'up' | 'down' | 'left' | 'right';
 export type PowerKind = 'bomb' | 'flame' | 'speed' | 'kangaroo' | 'dino';
@@ -511,7 +513,16 @@ function glide(tr: Trail, now: number, dur: number): { x: number; y: number; t: 
   return { x: tr.fromX + (tr.x - tr.fromX) * e, y: tr.fromY + (tr.y - tr.fromY) * e, t };
 }
 
-function drawUnit(ctx: Ctx, L: Layout, S: number, u: BoardUnitView, now: number, index: number, onBomb: boolean): void {
+function drawUnit(
+  ctx: Ctx,
+  L: Layout,
+  S: number,
+  u: BoardUnitView,
+  now: number,
+  index: number,
+  onBomb: boolean,
+  skin: PackSkin | undefined,
+): void {
   const dur = stepMs(u);
   let tr = trails.get(u.playerId);
   if (!tr) {
@@ -559,7 +570,19 @@ function drawUnit(ctx: Ctx, L: Layout, S: number, u: BoardUnitView, now: number,
     // Debout sur sa bombe : légèrement transparent, pour que la bombe reste lisible.
     ctx.globalAlpha = 0.7;
   }
-  if (visible) ctx.drawImage(sprite, x0, y0, w, h);
+  // Haut de la tête, pour placer le pseudo au-dessus.
+  let headTop = y0;
+  if (visible) {
+    if (skin && skinReady(skin)) {
+      const skinH = (SPRITE_H + 1) * S;
+      // Le pas le plus haut rebondit d'un pixel.
+      const bottom = o.y + (TILE_PX - 1) * S - breath * S - (walking && step ? S : 0) + (u.alive ? 0 : 2 * S);
+      drawSkin(ctx, skin, o.x + L.T / 2, bottom, skinH, u.facing === 'left');
+      headTop = bottom - skinH;
+    } else {
+      ctx.drawImage(sprite, x0, y0, w, h);
+    }
+  }
 
   if (u.mount) {
     ctx.font = `${Math.round(L.T * 0.55)}px system-ui, "Apple Color Emoji", "Segoe UI Emoji", sans-serif`;
@@ -577,7 +600,7 @@ function drawUnit(ctx: Ctx, L: Layout, S: number, u: BoardUnitView, now: number,
   ctx.textBaseline = 'bottom';
   const label = u.name.trim().charAt(0).toUpperCase() || '?';
   const lx = o.x + L.T / 2;
-  const ly = y0 - S * 0.5;
+  const ly = headTop - S * 0.5;
   ctx.strokeText(label, lx, ly);
   ctx.fillText(label, lx, ly);
   ctx.restore();
@@ -632,6 +655,22 @@ export interface SceneOptions {
   particles: Particle[];
   /** Densité de pixels de l'écran : le plateau est peint net à cette résolution. */
   dpr?: number;
+  /** Personnages importés, par identifiant de joueur. Absent pour les joueurs au sprite peint. */
+  skins?: ReadonlyMap<string, PackSkin>;
+}
+
+/**
+ * Personnage importé : sa case « repos », posée sur le bord bas de la case, à la hauteur du sprite peint
+ * (un pixel de plus). Il se retourne vers la gauche quand il regarde à gauche.
+ */
+function drawSkin(ctx: Ctx, skin: PackSkin, cx: number, bottom: number, h: number, flip: boolean): void {
+  const w = h * (skin.sw / skin.sh);
+  ctx.save();
+  ctx.imageSmoothingEnabled = true;
+  ctx.translate(cx, bottom);
+  if (flip) ctx.scale(-1, 1);
+  ctx.drawImage(skin.image, skin.sx, skin.sy, skin.sw, skin.sh, -w / 2, -h, w, h);
+  ctx.restore();
 }
 
 /** Liseré sombre autour du plateau. */
@@ -663,7 +702,9 @@ export function drawScene(ctx: Ctx, L: Layout, view: BoardView, opts: SceneOptio
   // Personnages : de l'arrière vers l'avant, comme dans les vrais jeux de cases.
   const bombCells = new Set(view.bombs.map((b) => `${b.x},${b.y}`));
   const order = view.units.map((u, i) => ({ u, i })).sort((a, b) => a.u.y - b.u.y || a.i - b.i);
-  for (const { u, i } of order) drawUnit(ctx, L, S, u, now, i, bombCells.has(`${u.x},${u.y}`));
+  for (const { u, i } of order) {
+    drawUnit(ctx, L, S, u, now, i, bombCells.has(`${u.x},${u.y}`), opts.skins?.get(u.playerId));
+  }
 
   ctx.save();
   drawParticles(ctx, particles);
