@@ -532,3 +532,19 @@ describe('BOUM ! : Grimace', () => {
     expect(s.points[pleader]).toBe(detectorPoints([4, 2]));
   });
 });
+
+describe('BOUM ! : Galerie du thème', () => {
+  const photo = (letter: string) => `data:image/jpeg;base64,${letter.repeat(8)}`;
+  const at = (id: string) => ({ id, name: id });
+
+  it('tire un thème de galerie, puis passe au vote dès que tous ont envoyé leur photo', () => {
+    const h = started(['galerie_theme']);
+    let s = h.state;
+    expect(s.round!.prompt!.text.startsWith('theme_galerie')).toBe(true);
+    s = ok(h.game.handleAction(s, at('a'), 'photo', { dataUrl: photo('A') }, h.ctx));
+    s = ok(h.game.handleAction(s, at('b'), 'photo', { dataUrl: photo('B') }, h.ctx));
+    expect(s.phase).toBe('write');
+    s = ok(h.game.handleAction(s, at('c'), 'photo', { dataUrl: photo('C') }, h.ctx));
+    expect(s.phase).toBe('vote');
+  });
+});

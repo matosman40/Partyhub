@@ -74,7 +74,8 @@ export type ModeId =
   | 'devine_chanson'
   | 'le_mot_secret'
   | 'photo_defi'
-  | 'grimace';
+  | 'grimace'
+  | 'galerie_theme';
 
 export interface ModeNeed {
   type: BankType;
@@ -258,6 +259,16 @@ export const MODES: readonly ModeDef[] = [
     pack: false,
     minPlayers: 3,
     needs: [{ type: 'consigne_photo', minValid: 5 }],
+  },
+  {
+    id: 'galerie_theme',
+    title: 'Galerie du thème',
+    brief: 'Chacun photographie le thème à sa façon. Les autres votent pour la photo la plus réussie.',
+    family: 'image',
+    kind: 'photo',
+    pack: false,
+    minPlayers: 3,
+    needs: [{ type: 'theme_galerie', minValid: 5 }],
   },
 ];
 
