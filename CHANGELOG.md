@@ -4,6 +4,12 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 
 ## Non publié
 
+## [0.9.1] - 2026-10-15
+
+### Corrigé
+
+- Publication de l'image : le test de l'image publiée utilise un volume Docker, et non un dossier de l'hôte, qui empêchait le serveur de créer sa base. Le contenu est identique à la version 0.9.0 (voir ci-dessous).
+
 ## [0.9.0] - 2026-10-15
 
 ### Ajouté

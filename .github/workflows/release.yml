@@ -75,15 +75,16 @@ jobs:
         run: |
           docker logout ghcr.io
           docker pull ghcr.io/matosman40/partyhub:${VERSION}
-          mkdir -p "$RUNNER_TEMP/verif-data"
-          docker run -d --name verif -p 18282:8282 -v "$RUNNER_TEMP/verif-data:/data" \
+          # Volume Docker géré (pas un dossier de l'hôte) : il reçoit les droits de l'utilisateur
+          # « node » de l'image, sinon le serveur ne peut pas créer sa base.
+          docker run -d --name verif -p 18282:8282 -v verif-data:/data \
             -e ADMIN_PASSWORD=verif-admin-password ghcr.io/matosman40/partyhub:${VERSION}
           for i in $(seq 1 60); do
             s=$(docker inspect --format='{{.State.Health.Status}}' verif 2>/dev/null || echo starting)
             [ "$s" = "healthy" ] && break
             sleep 3
           done
-          curl -fsS http://127.0.0.1:18282/api/health
+          curl -fsS http://127.0.0.1:18282/api/health || { docker logs verif; exit 1; }
           docker rm -f verif
 
       - name: Créer la release GitHub avec les notes du CHANGELOG
