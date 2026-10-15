@@ -23,6 +23,9 @@ export function quickPoints(orderOfCorrect: readonly string[]): Record<string, n
   return points;
 }
 
+/** Mime le métier : le mimeur gagne ce montant par joueur qui trouve (même barème que Devine la chanson). */
+export const MIME_POINTS_PER_FINDER = 50;
+
 /**
  * Combien ? : le plus proche de la réponse gagne 100, le second 50, le troisième 25.
  * Les égalités partagent les places occupées, et chacun reçoit le plus haut score de ces places.

@@ -32,11 +32,13 @@ export function BoumHost({ publicState: pub, hostState: host, now }: HostViewPro
     const counter =
       kind === 'reponse'
         ? `${pub.found} trouvée(s) · ${pub.written} réponse(s)`
-        : kind === 'chiffre'
-          ? `${pub.guessed} estimation(s)`
-          : kind === 'carte_vote'
-            ? `${pub.played} carte(s) jouée(s)`
-            : `${pub.written} texte(s) envoyé(s)`;
+        : kind === 'mime'
+          ? `${pub.found} trouvé(s)`
+          : kind === 'chiffre'
+            ? `${pub.guessed} estimation(s)`
+            : kind === 'carte_vote'
+              ? `${pub.played} carte(s) jouée(s)`
+              : `${pub.written} texte(s) envoyé(s)`;
     return (
       <section className="game-host boum-host fade-in" key={key} style={style} data-effects={pub.effects}>
         <div className="round-info">
@@ -46,6 +48,13 @@ export function BoumHost({ publicState: pub, hostState: host, now }: HostViewPro
         {pub.prompt && <h2 className="huge-word small">{pub.prompt.text}</h2>}
         {kind === 'carte_vote' && <p className="muted">Chacun joue une carte sur son téléphone.</p>}
         {kind === 'detecteur' && pub.pleader && <p className="muted">{pub.pleader} se défend.</p>}
+        {kind === 'mime' && pub.pleader && (
+          <>
+            <p className="label">Mime le métier</p>
+            <h2 className="huge-word small">{pub.pleader}</h2>
+            <p className="muted">Pas un mot : les autres tapent le métier sur leur téléphone.</p>
+          </>
+        )}
         <TimerBar remaining={remaining} total={pub.durationMs} />
         <p className="muted">
           {counter}
@@ -111,6 +120,26 @@ export function BoumHost({ publicState: pub, hostState: host, now }: HostViewPro
         <>
           <p className="label">Réponse</p>
           <h3 className="reveal-answer">{reveal.answer}</h3>
+          <ol className="ranking">
+            {reveal.order.map((r: { name: string; gained: number }, i: number) => (
+              <li key={r.name}>
+                <span className="rank">{i + 1}</span>
+                <Avatar name={r.name} size="sm" />
+                <span className="name">{r.name}</span>
+                <span className="points">+{r.gained}</span>
+              </li>
+            ))}
+          </ol>
+          {reveal.misses.length > 0 && <p className="muted">Pas trouvé : {reveal.misses.join(', ')}</p>}
+        </>
+      )}
+      {reveal?.kind === 'mime' && (
+        <>
+          <p className="label">Le métier était</p>
+          <h3 className="reveal-answer">{reveal.word}</h3>
+          <p className="muted">
+            Mimé par {reveal.mimer}, +{reveal.gainedMimer}
+          </p>
           <ol className="ranking">
             {reveal.order.map((r: { name: string; gained: number }, i: number) => (
               <li key={r.name}>

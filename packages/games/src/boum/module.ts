@@ -2,9 +2,17 @@ import { z } from 'zod';
 import type { GameContext, GameModule, GameResult, PlayerRef, ScoreEntry } from '@partyhub/shared';
 import { fail, ok, shuffle } from '../common/engine.js';
 import { matchAnswer } from '../media-quiz/answer.js';
-import { MODE_BY_ID, FAMILY_COLORS, type ModeDef, type ModeId } from './modes.js';
+import { MODE_BY_ID, FAMILY_COLORS, MIME_SECONDS, type ModeDef, type ModeId } from './modes.js';
 import { drawModes, eligibleModes, type RoomRules } from './pool.js';
-import { closestPoints, detectorPoints, PROBABLE_POINTS, quickPoints, rankStandings, VOTE_POINTS } from './scoring.js';
+import {
+  closestPoints,
+  detectorPoints,
+  MIME_POINTS_PER_FINDER,
+  PROBABLE_POINTS,
+  quickPoints,
+  rankStandings,
+  VOTE_POINTS,
+} from './scoring.js';
 import { currentBoumBank, type BankSnapshot } from './bank/registry.js';
 import { BANK_TYPE_INFO, type BankType, type Level } from './bank/types.js';
 
@@ -255,11 +263,24 @@ function openRound(state: BoumState, ctx: GameContext): BoumState {
       round.pleader = sorted[s.index % sorted.length] ?? null;
       break;
     }
+    case 'mime': {
+      const { items, queues } = take(s, mode.needs[0]!.type, 1, ctx);
+      s = { ...s, queues };
+      round.prompt = items[0] ?? null;
+      const sorted = [...ids].sort();
+      round.pleader = sorted[s.index % sorted.length] ?? null;
+      break;
+    }
     case 'vrai_ou_faux':
       break;
   }
 
-  const seconds = mode.kind === 'vote_joueur' ? s.settings.voteSeconds : s.settings.writeSeconds;
+  const seconds =
+    mode.kind === 'vote_joueur'
+      ? s.settings.voteSeconds
+      : mode.kind === 'mime'
+        ? MIME_SECONDS
+        : s.settings.writeSeconds;
   const durationMs = seconds * 1000;
   ctx.schedule(TIMER, durationMs);
   round.endsAt = ctx.now() + durationMs;
@@ -305,6 +326,11 @@ function reveal(state: BoumState, ctx: GameContext): BoumState {
   switch (mode.kind) {
     case 'reponse': {
       for (const [id, pts] of Object.entries(quickPoints(round.correct))) add(id, pts);
+      break;
+    }
+    case 'mime': {
+      for (const [id, pts] of Object.entries(quickPoints(round.correct))) add(id, pts);
+      if (round.pleader) add(round.pleader, MIME_POINTS_PER_FINDER * round.correct.length);
       break;
     }
     case 'chiffre': {
@@ -368,7 +394,13 @@ function finish(state: BoumState, ctx: GameContext): BoumState {
 /** Réponse rapide : la manche se termine quand chaque joueur connecté a trouvé ou écrit. */
 function maybeAdvanceQuick(state: BoumState, ctx: GameContext): BoumState {
   const round = state.round!;
+  const mode = currentMode(state);
   const connected = connectedOf(state, ctx);
+  if (mode?.kind === 'mime') {
+    // Le mimeur ne devine pas : la manche finit quand tous les autres ont trouvé.
+    const guessers = connected.filter((id) => id !== round.pleader);
+    return guessers.every((id) => round.correct.includes(id)) ? reveal(state, ctx) : state;
+  }
   if (connected.every((id) => round.correct.includes(id) || id in round.writings)) return reveal(state, ctx);
   return state;
 }
@@ -493,10 +525,11 @@ export function createBoum(getBank: () => BankSnapshot = currentBoumBank): GameM
 
       if (type === 'answer') {
         const { text } = payload as { text: string };
-        if (mode.kind === 'reponse') {
+        if (mode.kind === 'reponse' || mode.kind === 'mime') {
           if (state.phase !== 'write') return fail('Le temps est écoulé');
+          if (mode.kind === 'mime' && pid === round.pleader) return fail('Vous mimez : vous ne tapez pas le métier');
           if (round.correct.includes(pid)) return fail('Vous avez déjà trouvé');
-          const answer = round.prompt?.answer ?? '';
+          const answer = mode.kind === 'mime' ? (round.prompt?.text ?? '') : (round.prompt?.answer ?? '');
           const right = matchAnswer(text, { answer, aliases: [] });
           const next: BoumRound = { ...round, writings: { ...round.writings, [pid]: text } };
           if (right) next.correct = [...round.correct, pid];
@@ -636,13 +669,15 @@ export function createBoum(getBank: () => BankSnapshot = currentBoumBank): GameM
       };
       if (!round || !mode || state.phase === 'ready' || state.phase === 'final') return base;
 
-      const prompt = round.prompt
-        ? {
-            type: round.prompt.type,
-            text: round.prompt.text,
-            label: BANK_TYPE_INFO[round.prompt.type].label,
-          }
-        : null;
+      // Le métier du mime ne sort jamais de la vue du mimeur : l'écran et les autres téléphones ne le voient pas.
+      const prompt =
+        round.prompt && mode.kind !== 'mime'
+          ? {
+              type: round.prompt.type,
+              text: round.prompt.text,
+              label: BANK_TYPE_INFO[round.prompt.type].label,
+            }
+          : null;
       const timed = { endsAt: round.endsAt, durationMs: round.durationMs };
       const pleader = round.pleader ? (state.players[round.pleader] ?? null) : null;
 
@@ -696,6 +731,7 @@ export function createBoum(getBank: () => BankSnapshot = currentBoumBank): GameM
       const mustAct =
         (state.phase === 'write' &&
           ((mode.kind === 'reponse' && !round.correct.includes(playerId)) ||
+            (mode.kind === 'mime' && playerId !== round.pleader && !round.correct.includes(playerId)) ||
             (mode.kind === 'chiffre' && !(playerId in round.guesses)) ||
             (mode.kind === 'ecriture_vote' && !(playerId in round.writings)) ||
             (mode.kind === 'vrai_ou_faux' && !(playerId in round.writings)) ||
@@ -706,6 +742,11 @@ export function createBoum(getBank: () => BankSnapshot = currentBoumBank): GameM
       return {
         phase: state.phase,
         isPleader: playerId === round.pleader,
+        // Le mimeur seul voit le métier, pendant la manche.
+        secretWord:
+          mode.kind === 'mime' && state.phase === 'write' && playerId === round.pleader
+            ? (round.prompt?.text ?? null)
+            : null,
         mustAct,
         hand: mode.kind === 'carte_vote' ? hand : [],
         played: round.played[playerId] ?? null,
@@ -729,6 +770,8 @@ export function createBoum(getBank: () => BankSnapshot = currentBoumBank): GameM
           const mode = currentMode(state);
           if (mode?.kind === 'chiffre') return connected.filter((id) => !(id in round.guesses));
           if (mode?.kind === 'reponse') return connected.filter((id) => !round.correct.includes(id));
+          if (mode?.kind === 'mime')
+            return connected.filter((id) => id !== round.pleader && !round.correct.includes(id));
           if (mode?.kind === 'carte_vote') return connected.filter((id) => !(id in round.played));
           if (mode?.kind === 'detecteur')
             return round.pleader ? [round.pleader].filter((id) => !(id in round.writings)) : [];
@@ -751,6 +794,17 @@ function revealView(state: BoumState, round: BoumRound, mode: ModeDef) {
   const name = (id: string) => state.players[id] ?? '?';
   const answer = round.prompt?.answer ?? null;
   switch (mode.kind) {
+    case 'mime':
+      return {
+        kind: 'mime' as const,
+        word: round.prompt?.text ?? null,
+        mimer: round.pleader ? name(round.pleader) : null,
+        order: round.correct.map((id) => ({ name: name(id), gained: round.gains[id] ?? 0 })),
+        gainedMimer: round.pleader ? (round.gains[round.pleader] ?? 0) : 0,
+        misses: Object.keys(state.players)
+          .filter((id) => id !== round.pleader && !round.correct.includes(id))
+          .map(name),
+      };
     case 'reponse':
       return {
         kind: 'reponse' as const,

@@ -235,3 +235,60 @@ describe('BOUM ! : confidentialité des vues', () => {
     expect(own.hand.some((card) => other.hand.includes(card))).toBe(false);
   });
 });
+
+describe('BOUM ! : Mime le métier', () => {
+  it('ne montre le métier qu’au mimeur, jamais à l’écran ni aux autres téléphones', () => {
+    const h = started(['mime_metier']);
+    const s = h.state;
+    const word = s.round!.prompt!.text;
+    const pleader = s.round!.pleader!;
+    expect(JSON.stringify(h.game.getPublicState(s))).not.toContain(word);
+    expect(JSON.stringify(h.game.getHostState(s))).not.toContain(word);
+    const others = ['a', 'b', 'c'].filter((id) => id !== pleader);
+    for (const id of others) {
+      expect((h.game.getPlayerState(s, id) as { secretWord: string | null }).secretWord).toBeNull();
+    }
+    expect((h.game.getPlayerState(s, pleader) as { secretWord: string | null }).secretWord).toBe(word);
+  });
+
+  it('refuse que le mimeur tape le métier, et ne lui demande aucune saisie', () => {
+    const h = started(['mime_metier']);
+    const pleader = h.state.round!.pleader!;
+    const refused = h.game.handleAction(
+      h.state,
+      { id: pleader, name: 'x' },
+      'answer',
+      { text: 'quelque chose' },
+      h.ctx,
+    );
+    expect(refused.ok).toBe(false);
+    expect((h.game.getPlayerState(h.state, pleader) as { mustAct: boolean }).mustAct).toBe(false);
+  });
+
+  it('donne 100 au premier et 70 au second devineur, et 50 par trouveur au mimeur', () => {
+    const h = started(['mime_metier']);
+    let s = h.state;
+    const word = s.round!.prompt!.text;
+    const pleader = s.round!.pleader!;
+    const [first, second] = ['a', 'b', 'c'].filter((id) => id !== pleader);
+    const at = (id: string) => ({ id, name: id });
+    s = ok(h.game.handleAction(s, at(first!), 'answer', { text: word }, h.ctx));
+    expect(s.phase).toBe('write');
+    s = ok(h.game.handleAction(s, at(second!), 'answer', { text: word }, h.ctx));
+    expect(s.phase).toBe('reveal');
+    expect(s.points[first!]).toBe(100);
+    expect(s.points[second!]).toBe(70);
+    expect(s.points[pleader]).toBe(100);
+  });
+
+  it('ne finit pas quand un devineur se trompe, et ne révèle le métier qu’à la fin', () => {
+    const h = started(['mime_metier']);
+    let s = h.state;
+    const word = s.round!.prompt!.text;
+    const pleader = s.round!.pleader!;
+    const guesser = ['a', 'b', 'c'].find((id) => id !== pleader)!;
+    s = ok(h.game.handleAction(s, { id: guesser, name: guesser }, 'answer', { text: 'mauvaise réponse' }, h.ctx));
+    expect(s.phase).toBe('write');
+    expect(JSON.stringify(h.game.getPublicState(s))).not.toContain(word);
+  });
+});

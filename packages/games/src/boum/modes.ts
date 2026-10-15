@@ -35,10 +35,14 @@ export const FAMILY_COLORS: Record<Family | 'noir', string> = {
  * - `carte_vote` : chacun joue une carte de sa main, puis tout le monde vote ;
  * - `vote_joueur` : tout le monde vote pour un joueur ;
  * - `vrai_ou_faux` : chacun écrit une affirmation, puis tout le monde vote pour la vraie ;
- * - `detecteur` : un plaideur se défend, les autres le notent.
+ * - `detecteur` : un plaideur se défend, les autres le notent ;
+ * - `mime` : un joueur mime un métier sans parler, les autres tapent le nom du métier.
  */
 export type ModeKind =
-  'reponse' | 'chiffre' | 'ecriture_vote' | 'carte_vote' | 'vote_joueur' | 'vrai_ou_faux' | 'detecteur';
+  'reponse' | 'chiffre' | 'ecriture_vote' | 'carte_vote' | 'vote_joueur' | 'vrai_ou_faux' | 'detecteur' | 'mime';
+
+/** Durée du mime, en secondes (spécification : le mimeur a 60 secondes). */
+export const MIME_SECONDS = 60;
 
 export type ModeId =
   | 'reponse_rapide'
@@ -50,7 +54,8 @@ export type ModeId =
   | 'epitaphe'
   | 'pire_conseil'
   | 'le_plus_probable'
-  | 'detecteur';
+  | 'detecteur'
+  | 'mime_metier';
 
 export interface ModeNeed {
   type: BankType;
@@ -174,6 +179,16 @@ export const MODES: readonly ModeDef[] = [
     pack: true,
     minPlayers: 3,
     needs: [{ type: 'situation', minValid: 5 }],
+  },
+  {
+    id: 'mime_metier',
+    title: 'Mime le métier',
+    brief: 'Un joueur mime le métier sans parler. Les autres tapent son nom.',
+    family: 'telephone',
+    kind: 'mime',
+    pack: false,
+    minPlayers: 3,
+    needs: [{ type: 'metier', minValid: 5 }],
   },
 ];
 

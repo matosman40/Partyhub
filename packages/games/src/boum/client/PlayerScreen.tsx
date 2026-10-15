@@ -41,19 +41,33 @@ export function BoumPlayer({ publicState: pub, playerState: me, playerId, now, s
   }
 
   if (pub.phase === 'write') {
+    if (kind === 'mime' && me?.secretWord) {
+      return (
+        <section className="player-game fade-in">
+          <div className="round-info">
+            {title} · <Countdown remaining={remaining} />
+          </div>
+          <p className="label">Mimez ce métier, sans parler</p>
+          <h2 className="question-small">{me.secretWord}</h2>
+          {notice}
+        </section>
+      );
+    }
     if (me?.mustAct === false) {
       return <WaitingScreen title="Envoyé ✔" text="En attente des autres… Regardez l’écran principal." />;
     }
 
     const promptText = pub.prompt?.text ?? '';
 
-    if (kind === 'reponse') {
+    if (kind === 'reponse' || kind === 'mime') {
       return (
         <section className="player-game fade-in">
           <div className="round-info">
             {title} · <Countdown remaining={remaining} />
           </div>
-          <h2 className="question-small">{promptText}</h2>
+          <h2 className="question-small">
+            {kind === 'mime' ? `${pub.pleader ?? 'Quelqu’un'} mime le métier` : promptText}
+          </h2>
           <form
             className="stack"
             onSubmit={(e: FormEvent) => {
