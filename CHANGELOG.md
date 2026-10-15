@@ -4,6 +4,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 
 ## Non publié
 
+## [0.9.0] - 2026-10-15
+
 ### Ajouté
 
 - Sons : l’administration choisit une musique de fond pour l’accueil, les menus (rejoindre, profil, salon avant la partie) et la fin de partie, et un fichier audio pour chaque bruitage des jeux. Les fichiers viennent de la médiathèque (mp3, ogg, wav, flac, m4a). Les musiques bouclent sans fin, et leur volume se règle pour chacune (0 à 100 %). Par défaut, la musique est coupée et les bruitages restent ceux d’origine. Le bouton muet coupe aussi la musique.
