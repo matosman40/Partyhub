@@ -3,10 +3,10 @@ import { hash, unitImage } from '../../bombes-party/client/render.js';
 import { SPRITE_H, SPRITE_W } from '../../bombes-party/client/sprites.js';
 
 /**
- * Plan de la banquise, dessiné comme un plateau de jeu de société : des plaques de glace hexagonales
- * en relief, posées sur une mer bleue percée de trous. Une colonne de la physique vaut la largeur
- * d'une plaque. La rangée centrale (celle des personnages) a une plaque par colonne ; les rangées
- * voisines sont décalées d'une demi-plaque, pour former le nid d'abeille. Une plaque absente est un trou.
+ * Plan de la banquise, sur une grille carrée comme le plateau de Bomberman. Chaque case de glace est une
+ * plaque carrée en relief : son dessus est clair, avec un biseau de pixels (lumière en haut à gauche, ombre
+ * en bas à droite), et son côté, plus sombre, dépasse vers le bas. Les trous sont des cases creuses, posées
+ * sur une mer bleue percée de trous. Une colonne de la physique vaut une case.
  */
 
 export const COLS = WIDTH;
@@ -14,20 +14,17 @@ export const COLS = WIDTH;
 export const ROWS = 5;
 export const FLOE_FIRST = 1;
 export const FLOE_LAST = 3;
-/** Rangée des personnages : la rangée centrale, dont les plaques sont alignées sur les colonnes. */
+/** Rangée des personnages : la rangée centrale de la banquise. */
 export const ACTOR_ROW = 2;
 
 export interface BoardLayout {
-  /** Largeur d'une plaque, donc d'une colonne (px CSS). Un saut se mesure en multiples de cette valeur. */
+  /** Côté d'une case, donc d'une colonne (px CSS). Un saut se mesure en multiples de cette valeur. */
   T: number;
-  /** Pixel logique du sprite : un seizième de la plaque. */
+  /** Pixel logique : un seizième de case, comme un pixel de Bomberman. */
   S: number;
-  /** Marge horizontale : une demi-colonne de chaque côté, pour le décalage des rangées. */
+  /** Marge horizontale : une demi-case de chaque côté. */
   pad: number;
   padY: number;
-  /** Hauteur d'une plaque (pointe en haut) et écart entre deux rangées. */
-  hexH: number;
-  rowStep: number;
   /** Épaisseur visible d'une plaque, sous son dessus. */
   thick: number;
   width: number;
@@ -35,28 +32,24 @@ export interface BoardLayout {
 }
 
 export function boardLayout(cssWidth: number): BoardLayout {
-  // Vingt-deux demi-colonnes : vingt et une colonnes, plus une demi-colonne de marge de chaque côté.
+  // Vingt-deux demi-cases : vingt et une colonnes, plus une demi-case de marge de chaque côté.
   const T = cssWidth / (COLS + 1);
-  const hexH = (T * 2) / Math.sqrt(3);
-  const rowStep = hexH * 0.75;
-  const padY = hexH * 0.3;
-  const thick = T * 0.22;
+  const padY = T * 0.35;
+  const thick = T * 0.2;
   return {
     T,
     S: T / 16,
     pad: T / 2,
     padY,
-    hexH,
-    rowStep,
     thick,
     width: cssWidth,
-    height: padY * 2 + hexH + (ROWS - 1) * rowStep + thick,
+    height: padY * 2 + ROWS * T + thick,
   };
 }
 
 /** Ordonnée du centre d'une rangée, en pixels. */
 export function rowCenterY(L: BoardLayout, row: number): number {
-  return L.padY + L.hexH / 2 + row * L.rowStep;
+  return L.padY + L.T / 2 + row * L.T;
 }
 
 /** Abscisse, en pixels, d'un personnage placé en `x` (colonnes). */
@@ -66,72 +59,40 @@ export function actorLeft(L: BoardLayout, x: number): number {
 
 /** Ligne de sol, en pixels : les pieds des personnages posés sur la rangée centrale. */
 export function groundY(L: BoardLayout): number {
-  return rowCenterY(L, ACTOR_ROW) + L.T * 0.3;
+  return rowCenterY(L, ACTOR_ROW) + L.T * 0.25;
 }
 
-// Palette : mer bleue, plaques de glace claires avec un côté plus sombre, trous d'eau foncés.
+// Palette : mer bleue, glace claire avec un biseau, côté plus sombre, trous creux.
 const SEA_TOP = '#3f97d6';
 const SEA_BOTTOM = '#1b5d99';
 const SEA_FOAM = '#8fd0f2';
-const HOLE = '#0a3560';
-const HOLE_RIM = '#7cc0ec';
+const PEG = '#0a3560';
+const PEG_RIM = '#7cc0ec';
+const HOLE = '#082a4d';
+const HOLE_SHADE = '#041a30';
 const SIDE = '#4c8fc0';
-const SIDE_LO = '#2f6896';
+const SIDE_LO = '#2a6291';
 const TOP_HI = '#ffffff';
 const TOP_LO = '#cfeefa';
+const BEVEL_LO = '#5c9fcb';
 const CRACK = '#9ed2ee';
 
-/** Hexagone à pointe en haut, centré en (cx, cy), de rayon `r`. */
-function hexPath(g: CanvasRenderingContext2D, cx: number, cy: number, r: number): void {
-  g.beginPath();
-  for (let k = 0; k < 6; k++) {
-    const a = -Math.PI / 2 + (k * Math.PI) / 3;
-    const x = cx + r * Math.cos(a);
-    const y = cy + r * Math.sin(a);
-    if (k === 0) g.moveTo(x, y);
-    else g.lineTo(x, y);
-  }
-  g.closePath();
-}
-
-/** Rayon d'une plaque, un peu réduit pour laisser voir le joint entre deux plaques. */
-function plateRadius(L: BoardLayout): number {
-  return L.T / Math.sqrt(3) - L.T * 0.04;
-}
-
-interface Plate {
-  row: number;
-  /** Colonne de la physique la plus proche : sert de graine au décor. */
-  col: number;
-  /** Position horizontale, en colonnes (centre). */
-  x: number;
-  present: boolean;
-}
-
-/**
- * Plaques d'une rangée. La rangée des personnages a une plaque par colonne, centrée en c + 0,5. Les rangées
- * voisines ont une plaque entre deux colonnes, centrée en j + 1 : elle n'existe que si les deux colonnes sont de glace.
- */
-function platesOf(ice: string, row: number): Plate[] {
-  const plates: Plate[] = [];
-  if (row === ACTOR_ROW) {
-    for (let c = 0; c < COLS; c++) plates.push({ row, col: c, x: c + 0.5, present: ice[c] === ICE });
-  } else {
-    for (let j = 0; j < COLS - 1; j++) {
-      plates.push({ row, col: j, x: j + 1, present: ice[j] === ICE && ice[j + 1] === ICE });
-    }
-  }
-  return plates;
-}
-
-function drawHole(g: CanvasRenderingContext2D, cx: number, cy: number, L: BoardLayout): void {
-  g.fillStyle = HOLE;
-  g.beginPath();
-  g.ellipse(cx, cy, L.T * 0.36, L.T * 0.3, 0, 0, Math.PI * 2);
-  g.fill();
-  g.strokeStyle = HOLE_RIM;
-  g.lineWidth = Math.max(1, L.T * 0.05);
-  g.stroke();
+/** Case creuse : un trou dans la mer ou dans la banquise, avec son bord. */
+function drawPit(
+  g: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  L: BoardLayout,
+  color: string,
+  shade: string,
+): void {
+  const side = L.T;
+  g.fillStyle = shade;
+  g.fillRect(x, y, side, side);
+  g.fillStyle = color;
+  g.fillRect(x, y + L.S, side, side - L.S * 2);
+  g.fillStyle = PEG_RIM;
+  g.fillRect(x, y + side - L.S, side, L.S);
 }
 
 /** Mer : dégradé, reflets qui glissent lentement, trous du cadre comme ceux d'un plateau à pions. */
@@ -143,47 +104,63 @@ function drawSea(g: CanvasRenderingContext2D, L: BoardLayout, now: number): void
   g.fillRect(0, 0, L.width, L.height);
 
   g.strokeStyle = SEA_FOAM;
-  g.lineWidth = Math.max(1, L.T * 0.04);
+  g.lineWidth = Math.max(1, L.S * 1.2);
   g.globalAlpha = 0.35;
   for (let i = 0; i < 8; i++) {
     const x = ((hash(i, 11) * 1.4 + now / 9000) % 1.2) * L.width - L.width * 0.1;
     const y = L.padY + hash(i, 12) * L.height;
     g.beginPath();
     g.moveTo(x, y);
-    g.lineTo(x + L.T * 0.7, y - L.T * 0.08);
+    g.lineTo(x + L.T * 0.6, y - L.T * 0.06);
     g.stroke();
   }
   g.globalAlpha = 1;
 
+  // Trous du cadre : une case creuse sur deux, au-dessus et au-dessous de la banquise.
   for (const row of [0, ROWS - 1]) {
-    const cy = rowCenterY(L, row);
-    for (let x = 1; x < COLS + 1; x += 2) drawHole(g, L.pad + (x - 0.5) * L.T, cy, L);
+    for (let c = 0; c < COLS; c += 2) {
+      const x = L.pad + c * L.T + L.T * 0.2;
+      const y = rowCenterY(L, row) - L.T / 2 + L.T * 0.2;
+      drawPit(g, x, y, { ...L, T: L.T * 0.6 }, PEG, '#0a2b4f');
+    }
   }
 }
 
-/** Dessus d'une plaque : dégradé clair, fissures et un petit éclat. */
-function drawTop(g: CanvasRenderingContext2D, L: BoardLayout, cx: number, cy: number, seed: number): void {
-  const r = plateRadius(L);
-  const grad = g.createLinearGradient(0, cy - r, 0, cy + r);
+/** Plaque de glace : côté sombre qui dépasse, dessus clair avec biseau de pixels et fissures. */
+function drawPlate(g: CanvasRenderingContext2D, L: BoardLayout, c: number, row: number): void {
+  const x = L.pad + c * L.T;
+  const y = rowCenterY(L, row) - L.T / 2;
+  const b = Math.max(1, L.S * 1.2);
+
+  // Côté : la plaque est épaisse, son côté dépasse sous le dessus.
+  g.fillStyle = SIDE_LO;
+  g.fillRect(x, y, L.T, L.T + L.thick);
+  g.fillStyle = SIDE;
+  g.fillRect(x, y + L.T - L.S * 2, L.T, L.S * 2);
+
+  // Dessus : dégradé clair.
+  const grad = g.createLinearGradient(0, y, 0, y + L.T);
   grad.addColorStop(0, TOP_HI);
   grad.addColorStop(1, TOP_LO);
-  hexPath(g, cx, cy, r);
   g.fillStyle = grad;
-  g.fill();
+  g.fillRect(x, y, L.T, L.T);
 
-  // Fissures : deux traits courts, placés de façon fixe pour chaque plaque.
-  const ox = (hash(seed, 3) - 0.5) * L.T * 0.4;
-  const oy = (hash(seed, 4) - 0.5) * L.T * 0.25;
-  g.strokeStyle = CRACK;
-  g.lineWidth = Math.max(1, L.T * 0.035);
-  g.beginPath();
-  g.moveTo(cx - L.T * 0.22 + ox, cy + oy);
-  g.lineTo(cx - L.T * 0.02 + ox, cy - L.T * 0.06 + oy);
-  g.lineTo(cx + L.T * 0.14 + ox, cy - L.T * 0.02 + oy);
-  g.stroke();
+  // Biseau, comme les blocs de Bomberman : clair en haut et à gauche, sombre en bas et à droite.
   g.fillStyle = TOP_HI;
-  const dot = Math.max(1, L.T * 0.06);
-  g.fillRect(cx + ox * 0.6, cy + L.T * 0.14, dot, dot);
+  g.fillRect(x, y, L.T, b);
+  g.fillRect(x, y, b, L.T);
+  g.fillStyle = BEVEL_LO;
+  g.fillRect(x, y + L.T - b, L.T, b);
+  g.fillRect(x + L.T - b, y, b, L.T);
+
+  // Fissures : deux traits courts, placés de façon fixe pour chaque case.
+  const seed = row * 31 + c;
+  const px = Math.round(hash(seed, 3) * 6) * L.S + L.T * 0.2;
+  const py = Math.round(hash(seed, 4) * 6) * L.S + L.T * 0.25;
+  g.fillStyle = CRACK;
+  g.fillRect(x + px, y + py, L.T * 0.28, Math.max(1, L.S));
+  g.fillRect(x + px + L.T * 0.2, y + py + L.S, L.T * 0.18, Math.max(1, L.S));
+  g.fillRect(x + L.T * 0.55, y + L.T * 0.6, L.T * 0.2, Math.max(1, L.S));
 }
 
 /** Plan complet : mer, trous, plaques de glace en relief. Les personnages sont dessinés ensuite. */
@@ -192,35 +169,18 @@ export function drawBoard(g: CanvasRenderingContext2D, L: BoardLayout, ice: stri
   g.clearRect(0, 0, L.width, L.height);
   drawSea(g, L, now);
 
-  const rows: Plate[][] = [];
-  for (let row = FLOE_FIRST; row <= FLOE_LAST; row++) rows.push(platesOf(ice, row));
-
-  // Trous : là où la plaque manque dans la banquise.
-  for (const plates of rows) {
-    for (const p of plates) {
-      if (!p.present) drawHole(g, L.pad + p.x * L.T, rowCenterY(L, p.row), L);
+  // Trous d'abord, puis les côtés, puis les dessus : une plaque recouvre le côté de celle du dessus.
+  for (let row = FLOE_FIRST; row <= FLOE_LAST; row++) {
+    for (let c = 0; c < COLS; c++) {
+      if (ice[c] === ICE) continue;
+      const x = L.pad + c * L.T;
+      const y = rowCenterY(L, row) - L.T / 2;
+      drawPit(g, x, y, L, HOLE, HOLE_SHADE);
     }
   }
-
-  // Côtés d'abord, puis dessus : une plaque recouvre le côté de celle qui est au-dessus d'elle.
-  const r = plateRadius(L);
-  for (const plates of rows) {
-    for (const p of plates) {
-      if (!p.present) continue;
-      const cx = L.pad + p.x * L.T;
-      const cy = rowCenterY(L, p.row);
-      const side = g.createLinearGradient(0, cy, 0, cy + L.thick + r);
-      side.addColorStop(0, SIDE);
-      side.addColorStop(1, SIDE_LO);
-      hexPath(g, cx, cy + L.thick, r);
-      g.fillStyle = side;
-      g.fill();
-    }
-  }
-  for (const plates of rows) {
-    for (const p of plates) {
-      if (!p.present) continue;
-      drawTop(g, L, L.pad + p.x * L.T, rowCenterY(L, p.row), p.row * 31 + p.col);
+  for (let row = FLOE_FIRST; row <= FLOE_LAST; row++) {
+    for (let c = 0; c < COLS; c++) {
+      if (ice[c] === ICE) drawPlate(g, L, c, row);
     }
   }
 }
