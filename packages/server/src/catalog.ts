@@ -37,25 +37,29 @@ export function originOf(id: string): GameOrigin {
 
 /** Catalogue public (jeux activés) ou complet pour l'administration. */
 export function catalog(store: Store, includeDisabled: boolean): CatalogGame[] {
-  return allGames()
-    .map((original) => {
-      const module = withOverrides(original, store);
-      const notice = module.manifest.notice;
-      const stored = store.getSettingsOverride(original.manifest.id) !== undefined;
-      return {
-        ...gameInfo(module),
-        origin: originOf(original.manifest.id),
-        notice,
-        defaultNotice: original.manifest.notice,
-        customNotice: notice !== original.manifest.notice,
-        defaultDetails: defaultDetails(original),
-        customDetails: detailsOverride(store, original.manifest.id) !== undefined,
-        settings: module.defaultSettings as Record<string, unknown>,
-        defaultSettings: original.defaultSettings as Record<string, unknown>,
-        customSettings: stored,
-        settingsStale: stored && settingsOverride(store, original) === undefined,
-        enabled: store.isGameEnabled(original.manifest.id),
-      };
-    })
-    .filter((g) => includeDisabled || g.enabled);
+  return (
+    allGames()
+      .map((original) => {
+        const module = withOverrides(original, store);
+        const notice = module.manifest.notice;
+        const stored = store.getSettingsOverride(original.manifest.id) !== undefined;
+        return {
+          ...gameInfo(module),
+          origin: originOf(original.manifest.id),
+          notice,
+          defaultNotice: original.manifest.notice,
+          customNotice: notice !== original.manifest.notice,
+          defaultDetails: defaultDetails(original),
+          customDetails: detailsOverride(store, original.manifest.id) !== undefined,
+          settings: module.defaultSettings as Record<string, unknown>,
+          defaultSettings: original.defaultSettings as Record<string, unknown>,
+          customSettings: stored,
+          settingsStale: stored && settingsOverride(store, original) === undefined,
+          enabled: store.isGameEnabled(original.manifest.id),
+          listed: original.manifest.listed !== false,
+        };
+      })
+      // Un jeu non listé (plateau de test) n'est proposé qu'à l'administration.
+      .filter((g) => includeDisabled || (g.enabled && g.listed))
+  );
 }

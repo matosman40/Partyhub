@@ -6,7 +6,7 @@ import { viewsFor } from '../games.js';
 import { AvatarsContext } from '@partyhub/games/client';
 import { PlayerAvatar } from '../components/PlayerAvatar.js';
 import { ChatPanel, EmoteBar } from '../components/Social.js';
-import { LobbyArena, LobbyMoodBar } from '../components/LobbyArena.js';
+import { LobbyMoodBar, LobbyPlateau } from '../components/LobbyPlateau.js';
 import { useLobbyMoods } from '../components/useLobbyMoods.js';
 import { NoticeDialog } from '../components/NoticeDialog.js';
 import { Qr } from '../components/Qr.js';
@@ -82,7 +82,8 @@ export function PlayerSeat({
   onProfileRejected,
 }: PlayerSeatProps) {
   const [socket] = useState<AppSocket>(() => createSocket());
-  const moods = useLobbyMoods(socket);
+  const emotes = useLobbyMoods(socket);
+  const poses = Object.fromEntries(Object.entries(emotes).map(([id, e]) => [id, e.mood]));
   const [joined, setJoined] = useState(false);
   const [view, setView] = useState<PlayerRoomView | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -348,7 +349,16 @@ export function PlayerSeat({
             {you.ready ? 'Prêt ! Annuler' : 'Je suis prêt'}
           </button>
           <p className="muted small">L’hôte lance la partie depuis l’écran principal.</p>
-          {!compact && <LobbyArena players={lobby.players} moods={moods} me={you.id} onMove={sendLobbyMove} />}
+          {!compact && (
+            <LobbyPlateau
+              players={lobby.players}
+              poses={poses}
+              emotes={emotes}
+              me={you.id}
+              onMove={sendLobbyMove}
+              label="Salon : déplacez votre personnage"
+            />
+          )}
           {!compact && <LobbyMoodBar onPick={sendLobbyMood} />}
           <EmoteBar onPick={sendReaction} />
         </section>

@@ -7034,19 +7034,57 @@ html:not([data-theme='dark']) .corner-drawer {
   }
 }
 
-/* Salon : personnages déplaçables et émotions (téléphone et écran principal). */
-.lobby-arena {
+/* Plateau : décor, personnages déplaçables et émotions. Base du salon et de tout jeu sur un plan. */
+.plateau {
   position: relative;
   width: 100%;
-  aspect-ratio: 16 / 7;
-  min-height: 9rem;
-  border-radius: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: radial-gradient(ellipse at 50% 80%, rgba(63, 245, 224, 0.12), transparent 70%), rgba(10, 8, 30, 0.35);
+  aspect-ratio: 16 / 10;
+  min-height: 12rem;
+  border-radius: 22px;
   overflow: hidden;
+  container-type: inline-size;
+  isolation: isolate;
+  background: #5cb35a;
+  box-shadow:
+    inset 0 0 0 6px #7a4f2a,
+    inset 0 0 0 9px #b98a52,
+    0 18px 40px -18px rgba(0, 0, 0, 0.6);
+  user-select: none;
 }
 
-.lobby-stage-list {
+.plateau-scene {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.plateau-ripple {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: plateau-ripple 3.2s ease-out infinite;
+}
+
+.plateau-ripple-late {
+  animation-delay: 1.6s;
+}
+
+@keyframes plateau-ripple {
+  0% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  30% {
+    opacity: 0.8;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.7);
+  }
+}
+
+.plateau-figures {
   position: absolute;
   inset: 0;
   margin: 0;
@@ -7054,80 +7092,172 @@ html:not([data-theme='dark']) .corner-drawer {
   list-style: none;
 }
 
-.lobby-figure {
+.plateau-figure {
   position: absolute;
-  width: 4.5rem;
-  transform: translate(-50%, -50%);
+  width: clamp(3.6rem, 14cqw, 7rem);
+  /* Le point d'ancrage est le sol, sous les pieds. */
+  transform: translate(-50%, -93%) scale(var(--scale, 1));
+  transform-origin: 50% 93%;
   display: flex;
   flex-direction: column;
   align-items: center;
   transition:
-    left 0.25s ease,
-    top 0.25s ease;
-  user-select: none;
+    left 0.5s cubic-bezier(0.2, 0.8, 0.25, 1),
+    top 0.5s cubic-bezier(0.2, 0.8, 0.25, 1);
   touch-action: pan-y;
 }
 
-.lobby-figure.is-own {
-  cursor: grab;
-  touch-action: none;
-  border-radius: 12px;
-  outline: 2px dashed var(--cyan);
-  outline-offset: 6px;
+.plateau-face {
+  width: 100%;
+  transform-origin: 50% 100%;
 }
 
-.lobby-figure.is-own.is-dragging {
+.plateau-bob {
+  width: 100%;
+  transform-origin: 50% 100%;
+}
+
+.plateau-figure.is-own {
+  cursor: grab;
+  touch-action: none;
+  border-radius: 14px;
+}
+
+.plateau-figure.is-own::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -0.35rem;
+  width: 120%;
+  height: 1.1rem;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(63, 245, 224, 0.7), rgba(63, 245, 224, 0) 70%);
+  pointer-events: none;
+}
+
+.plateau-figure.is-own.is-dragging {
   cursor: grabbing;
   transition: none;
 }
 
-.lobby-figure:focus-visible {
+.plateau-figure:focus-visible {
   outline: 3px solid var(--cyan);
   outline-offset: 6px;
 }
 
-.lobby-figure.is-away {
+.plateau-figure.is-away {
   opacity: 0.45;
 }
 
-.lobby-figure > * {
-  max-width: 100%;
+.plateau-label {
+  position: absolute;
+  top: calc(100% + 0.3rem);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.25rem;
+  max-width: 14rem;
+  pointer-events: none;
 }
 
-.lobby-name {
-  margin-top: 0.2rem;
-  padding: 0 0.4rem;
+.plateau-name {
+  padding: 0 0.45rem;
   border-radius: 999px;
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(10, 12, 28, 0.72);
+  color: #fff;
   font-size: 0.75rem;
+  line-height: 1.5;
   white-space: nowrap;
-  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
+  min-width: 0;
 }
 
-.lobby-tag {
+.plateau-tag {
+  padding: 0 0.4rem;
+  border-radius: 999px;
+  background: var(--lime);
+  color: #10131f;
   font-size: 0.65rem;
-  color: var(--lime);
+  font-weight: 700;
+  line-height: 1.6;
+  white-space: nowrap;
 }
 
-.lobby-bubble {
+.plateau-bubble {
   position: absolute;
-  bottom: 100%;
   left: 50%;
-  font-size: 1.6rem;
-  animation: lobby-bubble-pop 0.4s ease-out both;
+  bottom: 100%;
+  margin-bottom: 0.2rem;
+  font-size: clamp(1.3rem, 4.2cqw, 2.1rem);
+  line-height: 1;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.35));
+  animation: plateau-pop 0.5s cubic-bezier(0.3, 1.5, 0.5, 1) both;
+  pointer-events: none;
 }
 
-@keyframes lobby-bubble-pop {
+@keyframes plateau-pop {
   from {
-    transform: translate(-50%, 0.4rem) scale(0.5);
+    transform: translateX(-50%) translateY(0.5rem) scale(0.3);
     opacity: 0;
   }
   to {
-    transform: translate(-50%, 0) scale(1);
+    transform: translateX(-50%) translateY(0) scale(1);
     opacity: 1;
   }
+}
+
+.plateau-empty {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 1.2rem;
+  margin: 0;
+  text-align: center;
+  color: #fff;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+
+/* Écran principal : carte du code à gauche, plateau à droite. Tout tient dans la fenêtre. */
+.stage-lobby.is-wide {
+  max-width: 1480px;
+}
+
+.stage-lobby-row {
+  display: grid;
+  grid-template-columns: minmax(15rem, 20vw) minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(1rem, 2.4vw, 2.2rem);
+  width: 100%;
+  max-width: 1400px;
+}
+
+.stage-lobby-row .stage-join {
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  height: 100%;
+  justify-content: center;
+}
+
+.stage-lobby-row .lobby-plateau {
+  width: 100%;
+}
+
+.plateau-teaser {
+  display: grid;
+  justify-items: start;
+  gap: 0.7rem;
+  margin-top: 1.2rem;
+}
+
+.plateau-teaser p {
+  max-width: 36rem;
+  margin: 0;
+  text-align: left;
 }
 
 .lobby-moods {
@@ -7149,8 +7279,9 @@ html:not([data-theme='dark']) .corner-drawer {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .lobby-figure,
-  .lobby-bubble {
+  .plateau-figure,
+  .plateau-ripple,
+  .plateau-bubble {
     transition: none;
     animation: none;
   }

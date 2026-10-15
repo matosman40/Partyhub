@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import type { CatalogGame, GameCategory } from '@partyhub/shared';
+import { PLATEAU_TEST_ID, type CatalogGame, type GameCategory } from '@partyhub/shared';
 import { api } from '../api.js';
 import { ThemeToggle } from '../components/ThemeToggle.js';
 import { DeviceChoice } from '../components/DeviceChoice.js';
@@ -118,6 +118,20 @@ export function HomePage() {
             Jouez ensemble
           </li>
         </ul>
+        <div className="plateau-teaser">
+          <p>
+            Envie d’essayer ? Ouvrez un plateau de test : chacun y déplace son personnage et envoie des émotions, sans
+            partie.
+          </p>
+          <button
+            type="button"
+            className="btn primary"
+            disabled={busy !== null}
+            onClick={() => createRoom(PLATEAU_TEST_ID, false)}
+          >
+            {busy === `create:${PLATEAU_TEST_ID}` ? 'Ouverture du plateau…' : 'Essayer le plateau'}
+          </button>
+        </div>
       </header>
 
       {error && (

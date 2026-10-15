@@ -244,6 +244,35 @@ Le jeu apparaît automatiquement dans le catalogue de l'accueil. Il est **activ�
 
 Pour une mise en production : `docker compose up -d --build`, puis vérifier la carte du nouveau jeu sur l'accueil.
 
+## Un plateau de personnages
+
+Pour un jeu où les joueurs se déplacent sur un plan (salon, carte, plateau), le composant `Plateau`
+de `@partyhub/games/client` fournit le décor, les personnages déplaçables et les bulles d'émotion.
+Le salon l'utilise déjà (`packages/web/src/components/LobbyPlateau.tsx`).
+
+```tsx
+import { Plateau, type PlateauFigure } from '@partyhub/games/client';
+
+const figures: PlateauFigure[] = players.map((p) => ({
+  id: p.id,
+  name: p.name,
+  position: p.position,            // fractions 0 à 1 du plateau, envoyées par le serveur
+  character: p.avatar.character,   // ou `avatar: <PlayerAvatar … />` pour un avatar non dessiné
+  mood: 'idle',                    // pose du personnage
+  bubble: null,                    // { emoji, key } pour une émotion, la clé relance son apparition
+  mine: p.id === meId,             // seul ce personnage se déplace sous les doigts de l'appareil
+}));
+
+<Plateau figures={figures} label="Plateau de la partie" onMove={sendPosition} />;
+```
+
+- `onMove` envoie la position au serveur (le même principe que `player:lobby-move` : limite de débit, position
+  bornée au cadre). Sans `onMove`, le plateau sert seulement d'affichage (écran principal).
+- Le décor est le thème « prairie » (`plateau-scene.tsx`). Un autre thème s'ajoute à côté, sans toucher au
+  composant.
+- Le plateau de test (`packages/games/src/plateau-test/module.ts`) est un jeu sans partie, non listé au catalogue :
+  il sert à essayer le plateau, et ne doit pas être copié tel quel.
+
 ## Micro et caméra
 
 Un jeu peut utiliser le micro ou la caméra du téléphone, à condition de le demander au joueur au moment où il en a

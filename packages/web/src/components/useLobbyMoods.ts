@@ -5,21 +5,27 @@ import type { AppSocket } from '../realtime.js';
 /** Une émotion reste affichée quelques secondes, puis le personnage revient au repos. */
 export const LOBBY_MOOD_MS = 2600;
 
+/** Émotion en cours d'un joueur. L'identifiant change à chaque envoi, même pour une émotion répétée. */
+export interface LobbyEmote {
+  id: string;
+  mood: LobbyMood;
+}
+
 /** Émotions en cours, par identifiant de joueur. Rien n'est gardé au-delà de LOBBY_MOOD_MS. */
-export function useLobbyMoods(socket: AppSocket | null): Record<string, LobbyMood> {
-  const [moods, setMoods] = useState<Record<string, LobbyMood>>({});
+export function useLobbyMoods(socket: AppSocket | null): Record<string, LobbyEmote> {
+  const [emotes, setEmotes] = useState<Record<string, LobbyEmote>>({});
 
   useEffect(() => {
     if (!socket) return;
     const timers = new Map<string, number>();
     const onMood = (e: LobbyMoodEvent) => {
-      setMoods((prev) => ({ ...prev, [e.playerId]: e.mood }));
+      setEmotes((prev) => ({ ...prev, [e.playerId]: { id: e.id, mood: e.mood } }));
       window.clearTimeout(timers.get(e.playerId));
       timers.set(
         e.playerId,
         window.setTimeout(() => {
           timers.delete(e.playerId);
-          setMoods((prev) => {
+          setEmotes((prev) => {
             const next = { ...prev };
             delete next[e.playerId];
             return next;
@@ -34,5 +40,5 @@ export function useLobbyMoods(socket: AppSocket | null): Record<string, LobbyMoo
     };
   }, [socket]);
 
-  return moods;
+  return emotes;
 }

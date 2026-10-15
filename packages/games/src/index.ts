@@ -17,6 +17,7 @@ import { tarot } from './tarot/module.js';
 import { imiteMoi } from './imite-moi/module.js';
 import { banquise } from './banquise/module.js';
 import { boum } from './boum/module.js';
+import { plateauTest } from './plateau-test/module.js';
 
 /**
  * Registre explicite des jeux disponibles.
@@ -45,6 +46,7 @@ export const gameRegistry: GameModule[] = [
   imiteMoi,
   banquise,
   boum,
+  plateauTest,
 ];
 
 export function findGame(id: string): GameModule | undefined {

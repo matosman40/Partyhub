@@ -19,6 +19,9 @@ export const LOBBY_MOOD_INFO: Record<LobbyMood, { label: string; emoji: string }
   sad: { label: 'Triste', emoji: '😢' },
 };
 
+/** Identifiant du jeu « plateau de test » : une salle où l'on essaie les déplacements, sans partie. */
+export const PLATEAU_TEST_ID = 'plateau-test';
+
 /** Position relative (0 à 1) dans la zone du salon. */
 export interface LobbyPosition {
   x: number;

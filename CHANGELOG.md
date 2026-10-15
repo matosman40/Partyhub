@@ -22,6 +22,7 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
   dans les avatars, la salle et l'éditeur.
 - Looks : un personnage illustré peut avoir plusieurs looks. L'administration ajoute un look à un personnage existant
   et retire un look ; le profil permet de choisir le look. Format et procédure : `docs/PERSONNAGES-PACK.md`.
+- Plateau de test : un bouton « Essayer le plateau » sur l’accueil ouvre une salle sans partie. Chacun y déplace son personnage (glissé, tap sur un endroit libre, ou flèches) et envoie une émotion, visible sur l’écran principal et les téléphones. Le salon est désormais ce même plateau, avec un décor de prairie, une profondeur (les personnages du bas sont un peu plus grands) et des pas animés. Le composant `Plateau` est partagé dans `@partyhub/games/client`, prêt pour les futurs jeux (`docs/ADDING-A-GAME.md`).
 - Salon : chaque joueur déplace son personnage dans le salon (souris, doigt ou flèches) et envoie une émotion (joie, danse, salut, tristesse). Les positions et les émotions sont visibles par toute la salle, sur l’écran principal et sur les téléphones. Les émotions sont limitées en fréquence, et les positions se règlent au bord du salon.
 
 ### Corrigé

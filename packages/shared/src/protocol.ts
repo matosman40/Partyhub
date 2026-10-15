@@ -111,6 +111,8 @@ export type GameOrigin = 'builtin' | 'cards' | 'media' | 'board' | 'package';
 
 export interface CatalogGame extends GameInfo {
   enabled: boolean;
+  /** Faux pour un outil (plateau de test) : il n'est proposé qu'à l'administration. */
+  listed: boolean;
   /** D'où vient le jeu : code de l'application, jeu de cartes ou jeu de questions médias. */
   origin: GameOrigin;
   /** Notice affichée (défaut du jeu ou surcharge de l'administration). */

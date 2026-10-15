@@ -53,6 +53,8 @@ export interface GameManifest {
   durationMin: number;
   /** Notice par défaut (surchargeable depuis l'administration). */
   notice: GameNotice;
+  /** Absent ou vrai : le jeu figure au catalogue. Faux : il ne s'affiche que dans l'administration (outils). */
+  listed?: boolean;
 }
 
 /** Action proposée par le moteur à un robot (mode test). `key` identifie la décision en cours. */

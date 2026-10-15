@@ -1,6 +1,6 @@
 import { Suspense, lazy, useEffect, useState, type CSSProperties } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import type { ChatMessage, HostRoomView } from '@partyhub/shared';
+import type { CharacterMood, ChatMessage, HostRoomView } from '@partyhub/shared';
 import { DEVICE_KIND_ICONS, DEVICE_KIND_LABELS } from '@partyhub/shared';
 import { getSocket } from '../realtime.js';
 import { viewsFor } from '../games.js';
@@ -46,9 +46,9 @@ export function TvPage() {
   // Personnages qui viennent d'arriver saluent ; un jeu qui fournit ses propres humeurs les remplace.
   const arrivals = useArrivalMoods(view ? view.lobby.players.map((p) => p.name) : []);
   // Émotions du salon (par identifiant) et saluts d'arrivée (par pseudo) réunis par identifiant.
-  const emoteMoods = useLobbyMoods(getSocket());
-  const lobbyMoods = {
-    ...emoteMoods,
+  const emotes = useLobbyMoods(getSocket());
+  const lobbyPoses: Record<string, CharacterMood> = {
+    ...Object.fromEntries(Object.entries(emotes).map(([id, e]) => [id, e.mood])),
     ...Object.fromEntries(
       Object.entries(arrivals).flatMap(([name, mood]) => {
         const id = view?.lobby.players.find((p) => p.name === name)?.id;
@@ -351,7 +351,8 @@ export function TvPage() {
               lobby={lobby}
               joinUrl={joinUrl}
               canStart={canStart}
-              moods={lobbyMoods}
+              poses={lobbyPoses}
+              emotes={emotes}
               onStart={() => emitAck('host:start')}
             />
           ) : (

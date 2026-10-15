@@ -69,7 +69,7 @@ qu'il affiche. Le bouton muet coupe aussi la musique. Les téléphones ne jouent
 
 ## Salon : positions et émotions
 
-Dans le salon d’attente, chaque joueur déplace son personnage et envoie une émotion (joie, danse, salut, tristesse).
+Dans le salon d’attente (un plateau, voir `docs/ADDING-A-GAME.md`), chaque joueur déplace son personnage et envoie une émotion (joie, danse, salut, tristesse).
 Positions et émotions sont visibles par toute la salle, sur l’écran principal et sur les téléphones.
 
 - Les positions sont gardées en mémoire du serveur, pour la salle en cours : un redémarrage du serveur les remet à zéro, comme les salles elles-mêmes. Rien n’est écrit en base.
