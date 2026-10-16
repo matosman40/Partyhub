@@ -1,15 +1,19 @@
 import { PLATEAU_TEST_ID, type CharacterMood, type HostRoomView } from '@partyhub/shared';
+import type { LobbyPosition } from '@partyhub/shared';
 import { Qr } from '../../components/Qr.js';
 import { GameLogo } from '../../components/GameLogo.js';
-import { LobbyPlateau } from '../../components/LobbyPlateau.js';
+import { LobbyHeads, LobbyPlateau } from '../../components/LobbyPlateau.js';
 import type { LobbyEmote } from '../../components/useLobbyMoods.js';
-import type { LobbyPosition } from '@partyhub/shared';
+
+/** Code affiché pour qu'un téléphone devienne l'hôte de la salle (valable quelques minutes, une fois). */
+export interface HandoffCode {
+  code: string;
+  expiresAt: number;
+}
 
 /**
- * Salon : le logo du jeu en grand, le code pour rejoindre, le plateau des personnages (déplacés
- * depuis leur téléphone, avec leurs émotions) et un seul bouton. Le plateau de test n'a pas de
- * partie : il n'affiche pas de bouton de lancement. Les réglages, la gestion des joueurs et la
- * discussion sont dans le menu.
+ * Salon de l'écran hôte (TV, ordinateur, tablette ou téléphone de l'hôte) : le code pour rejoindre,
+ * les joueurs, et le bouton de lancement toujours visible. Le plateau de test garde son décor.
  */
 export function TvLobby({
   lobby,
@@ -19,6 +23,8 @@ export function TvLobby({
   emotes,
   positions,
   onStart,
+  handoff,
+  onHandoff,
 }: {
   lobby: HostRoomView['lobby'];
   joinUrl: string;
@@ -27,21 +33,23 @@ export function TvLobby({
   emotes: Record<string, LobbyEmote>;
   positions: Record<string, LobbyPosition>;
   onStart: () => void;
+  handoff: HandoffCode | null;
+  onHandoff: () => void;
 }) {
   const connected = lobby.players.filter((p) => p.connected).length;
   const isTest = lobby.game.id === PLATEAU_TEST_ID;
   return (
-    <section className="stage-lobby is-wide" aria-label="Salon de la partie">
+    <section className="stage-lobby" aria-label="Salon de la partie">
       <GameLogo gameId={lobby.game.id} name={lobby.game.name} className="stage-logo" />
 
       {lobby.practice && (
         <p className="stage-note">Entraînement : les robots jouent avec vous. Rien n’est enregistré.</p>
       )}
 
-      <div className="stage-lobby-row">
+      <div className="stage-lobby-main">
         <div className="stage-join">
           <div className="stage-qr">
-            <Qr value={joinUrl} size={360} />
+            <Qr value={joinUrl} size={240} />
           </div>
           <div className="stage-code">
             <p className="stage-label">Rejoignez avec votre téléphone</p>
@@ -49,28 +57,66 @@ export function TvLobby({
             <p className="stage-hint">ou ouvrez {joinUrl.replace(/^https?:\/\//, '')}</p>
           </div>
         </div>
-        <LobbyPlateau
-          players={lobby.players}
-          poses={poses}
-          emotes={emotes}
-          positions={positions}
-          label={isTest ? 'Plateau de test' : 'Salon : les personnages des joueurs'}
-        />
-      </div>
 
-      <p className="sr-only">{connected} joueur(s) connecté(s)</p>
+        <div className="stage-people">
+          {isTest ? (
+            <LobbyPlateau
+              players={lobby.players}
+              poses={poses}
+              emotes={emotes}
+              positions={positions}
+              label="Plateau de test"
+            />
+          ) : (
+            <>
+              <p className="stage-label">
+                {connected} joueur(s) connecté(s)
+                {lobby.game.minPlayers > 1 ? ` · minimum ${lobby.game.minPlayers}` : ''}
+              </p>
+              <LobbyHeads players={lobby.players} emotes={emotes} />
+            </>
+          )}
+        </div>
+      </div>
 
       {!isTest && (
         <div className="stage-start">
-          <button type="button" className="title-option" disabled={!canStart} onClick={onStart}>
-            <span className="title-cursor" aria-hidden="true">
-              ▸
-            </span>
+          <button type="button" className="stage-launch" disabled={!canStart} onClick={onStart}>
             Lancer la partie
           </button>
-          {!canStart && <p className="stage-hint">Il faut au moins {lobby.game.minPlayers} joueur(s) connecté(s).</p>}
+          {!canStart && (
+            <p className="stage-hint">Il faut au moins {lobby.game.minPlayers} joueur(s) connecté(s) pour lancer.</p>
+          )}
         </div>
       )}
+
+      {!isTest && (
+        <div className="stage-handoff">
+          {handoff ? (
+            <>
+              <p className="stage-label">
+                Sur votre téléphone : ouvrez la salle, touchez « Je suis l’hôte », puis entrez
+              </p>
+              <p className="stage-handoff-code">
+                {handoff.code.slice(0, 3)} {handoff.code.slice(3)}
+              </p>
+              <p className="stage-hint">
+                Valable jusqu’à{' '}
+                {new Date(handoff.expiresAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}, une
+                seule fois.
+              </p>
+              <button type="button" className="link-btn" onClick={onHandoff}>
+                Nouveau code
+              </button>
+            </>
+          ) : (
+            <button type="button" className="link-btn" onClick={onHandoff}>
+              Lancer depuis mon téléphone (je suis l’hôte)
+            </button>
+          )}
+        </div>
+      )}
+
       {isTest && (
         <p className="stage-hint">
           Essayez les déplacements : touchez le plateau, ou envoyez une émotion depuis votre téléphone.

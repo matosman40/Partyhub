@@ -26,6 +26,11 @@ export const createRoomSchema = z.object({
   practice: z.boolean().optional(),
 });
 
+export const handoffClaimSchema = z.object({
+  code: roomCodeSchema,
+  handoffCode: z.string().regex(/^\d{6}$/, 'Code à 6 chiffres.'),
+});
+
 export const hostConnectSchema = z.object({
   code: roomCodeSchema,
   hostToken: tokenSchema,

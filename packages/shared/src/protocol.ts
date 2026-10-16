@@ -158,6 +158,10 @@ export type Ack<T extends object = object> = (res: ({ ok: true } & T) | { ok: fa
 export interface ClientToServerEvents {
   // Hôte (écran principal) — réservé au socket qui a présenté le jeton d'hôte
   'host:connect': (p: { code: string; hostToken: string }, ack: Ack) => void;
+  /** Code à 6 chiffres pour ouvrir l'écran hôte sur un autre appareil (valable 3 minutes, une fois). */
+  'host:handoff': (ack: Ack<{ code: string; expiresAt: number }>) => void;
+  /** Un téléphone saisit le code de transfert : il reçoit le jeton d'hôte de la salle. */
+  'host:claim': (p: { code: string; handoffCode: string }, ack: Ack<{ hostToken: string }>) => void;
   'host:configure': (p: { gameSettings: Record<string, unknown> }, ack: Ack) => void;
   'host:start': (ack: Ack) => void;
   'host:next': (ack: Ack) => void;

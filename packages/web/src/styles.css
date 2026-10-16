@@ -5772,6 +5772,106 @@ html.is-tv #root > .stage {
   text-align: center;
 }
 
+/* Salon : le contenu ne doit jamais être coupé en haut ni en bas (défilement si l'écran est trop petit). */
+.stage:has(> .stage-lobby) {
+  justify-content: flex-start;
+  overflow-y: auto;
+}
+
+.stage-lobby {
+  margin-block: auto;
+}
+
+.stage-lobby .stage-logo {
+  width: min(40vw, 380px);
+}
+
+.stage-lobby-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  justify-content: center;
+  gap: clamp(0.8rem, 2vw, 1.4rem);
+  width: 100%;
+}
+
+.stage-people {
+  flex: 1 1 340px;
+  max-width: 640px;
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  justify-items: center;
+  gap: 0.6rem;
+  padding: clamp(0.8rem, 2vh, 1.2rem) clamp(1rem, 2vw, 1.6rem);
+  border-radius: 28px;
+  background: rgba(8, 6, 26, 0.42);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(6px);
+}
+
+.stage-people .stage-label {
+  margin: 0;
+}
+
+.stage-start,
+.stage-handoff {
+  display: grid;
+  justify-items: center;
+  gap: 0.35rem;
+  text-align: center;
+}
+
+.stage-launch {
+  font-family: var(--display);
+  font-size: clamp(1.4rem, 3.6vh, 2.2rem);
+  line-height: 1;
+  padding: 0.7em 1.9em;
+  border: 0;
+  border-radius: 999px;
+  background: var(--sun, #ffd23f);
+  color: #2a1466;
+  box-shadow: 0 6px 0 rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+}
+
+.stage-launch:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.stage-launch:focus-visible,
+.stage-handoff .link-btn:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 4px;
+}
+
+.stage-handoff .link-btn {
+  color: #fff;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.stage-handoff-code {
+  margin: 0;
+  font-family: var(--display);
+  font-size: clamp(2rem, 6vh, 3.2rem);
+  line-height: 1;
+  letter-spacing: 0.12em;
+  color: var(--sun, #ffd23f);
+  text-shadow: 0 4px 0 rgba(0, 0, 0, 0.35);
+}
+
+@media (max-width: 720px) {
+  .stage-join {
+    flex-direction: column;
+  }
+  .stage-lobby .stage-logo {
+    width: min(70vw, 300px);
+  }
+}
+
 .stage-logo {
   width: min(62vw, 560px);
   height: auto;

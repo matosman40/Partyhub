@@ -62,6 +62,15 @@ export function removeSeat(code: string, seatId: string): void {
   }
 }
 
+/** Jeton d'hôte gardé par cet onglet pour la salle (transféré depuis l'écran hôte), sans erreur si absent. */
+function readHostToken(code: string): string | null {
+  try {
+    return sessionStorage.getItem(`ph:host:${code}`);
+  } catch {
+    return null;
+  }
+}
+
 export interface PlayerSeatProps {
   code: string;
   seatId: string;
@@ -98,6 +107,27 @@ export function PlayerSeat({
   const [socialError, setSocialError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [ended, setEnded] = useState<string | null>(null);
+  // Jeton d'hôte de cet appareil (transféré par l'écran hôte) : le siège reste joueur, et ouvre
+  // en plus une connexion d'hôte pour lancer la partie depuis ce téléphone.
+  const [hostToken, setHostToken] = useState<string | null>(() => readHostToken(code));
+  const [hostSocket, setHostSocket] = useState<AppSocket | null>(null);
+  const [isHost, setIsHost] = useState(false);
+  const [claimOpen, setClaimOpen] = useState(false);
+  const [claimCode, setClaimCode] = useState('');
+  const [claimError, setClaimError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!hostToken || compact) return;
+    const hs = createSocket();
+    hs.connect();
+    setHostSocket(hs);
+    hs.emit('host:connect', { code, hostToken }, (res) => setIsHost(res.ok));
+    return () => {
+      hs.disconnect();
+      setHostSocket(null);
+      setIsHost(false);
+    };
+  }, [code, hostToken, compact]);
   const [chat, setChat] = useState<ChatMessage[]>([]);
   const [name, setName] = useState(() => readSeat(code, seatId)?.name ?? '');
   const [noticeOpen, setNoticeOpen] = useState(false);
@@ -328,6 +358,31 @@ export function PlayerSeat({
     </>
   );
 
+  /** L'hôte a ouvert « Lancer depuis mon téléphone » sur l'écran : le code donne accès aux commandes d'hôte. */
+  function claimHost(e: FormEvent) {
+    e.preventDefault();
+    setClaimError(null);
+    socket.emit('host:claim', { code, handoffCode: claimCode.trim() }, (res) => {
+      if (!res.ok) {
+        setClaimError(res.error);
+        return;
+      }
+      try {
+        sessionStorage.setItem(`ph:host:${code}`, res.hostToken);
+      } catch {
+        /* sans effet : le jeton reste valable pour cet onglet */
+      }
+      setClaimOpen(false);
+      setClaimCode('');
+      setHostToken(res.hostToken);
+    });
+  }
+
+  function startAsHost() {
+    if (!hostSocket) return;
+    hostSocket.emit('host:start', (res) => setError(res.ok ? null : res.error));
+  }
+
   return wrapper(
     <AvatarsContext.Provider value={avatars}>
       <div className="seat-head">
@@ -356,7 +411,57 @@ export function PlayerSeat({
           <button type="button" className={`btn big ${you.ready ? 'ready' : 'primary'}`} onClick={toggleReady}>
             {you.ready ? 'Prêt ! Annuler' : 'Je suis prêt'}
           </button>
-          <p className="muted small">L’hôte lance la partie depuis l’écran principal.</p>
+          {isHost && lobby.game.id !== PLATEAU_TEST_ID ? (
+            <div className="stack host-start">
+              <p className="muted small">Vous êtes l’hôte de la salle.</p>
+              <button
+                type="button"
+                className="btn primary big"
+                disabled={lobby.players.filter((p) => p.connected).length < lobby.game.minPlayers}
+                onClick={startAsHost}
+              >
+                Lancer la partie
+              </button>
+              {lobby.players.filter((p) => p.connected).length < lobby.game.minPlayers && (
+                <p className="muted small">Il faut au moins {lobby.game.minPlayers} joueur(s) connecté(s).</p>
+              )}
+            </div>
+          ) : (
+            <p className="muted small">En attente de l’hôte : il lance la partie depuis son écran.</p>
+          )}
+          {!compact &&
+            !isHost &&
+            lobby.game.id !== PLATEAU_TEST_ID &&
+            (claimOpen ? (
+              <form className="stack claim-host" onSubmit={claimHost}>
+                <p className="muted small">Entrez le code à 6 chiffres affiché sur l’écran de la salle.</p>
+                <label className="field">
+                  <span>Code hôte</span>
+                  <input
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    maxLength={6}
+                    value={claimCode}
+                    onChange={(e) => setClaimCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  />
+                </label>
+                {claimError && (
+                  <p className="error" role="alert">
+                    {claimError}
+                  </p>
+                )}
+                <button type="submit" className="btn primary" disabled={!/^\d{6}$/.test(claimCode)}>
+                  Je suis l’hôte
+                </button>
+                <button type="button" className="link-btn" onClick={() => setClaimOpen(false)}>
+                  Annuler
+                </button>
+              </form>
+            ) : (
+              <button type="button" className="link-btn" onClick={() => setClaimOpen(true)}>
+                Je suis l’hôte de cette salle
+              </button>
+            ))}
           {lobby.game.id === PLATEAU_TEST_ID ? (
             !compact && (
               <LobbyPlateau

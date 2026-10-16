@@ -6,6 +6,7 @@ import {
   configureSchema,
   defaultCharacterFor,
   deviceKindFromUserAgent,
+  handoffClaimSchema,
   hostConnectSchema,
   joinSchema,
   kickSchema,
@@ -235,6 +236,30 @@ export class RealtimeHub {
       socket.data = { role: 'host', roomId: room.id };
       room.attachHost(socket.id, this.kindOf(socket));
       ack({ ok: true });
+    });
+
+    socket.on('host:handoff', (ack) => {
+      if (limited(ack)) return;
+      const room = this.hostRoomOf(socket);
+      if (!room) return invalid(ack, 'Action réservée à l’hôte de la salle.');
+      const handoff = room.createHandoff();
+      this.logger?.info({ event: 'room.handoff-created', roomCode: room.code }, 'Code de transfert d’hôte créé');
+      ack({ ok: true, code: handoff.code, expiresAt: handoff.expiresAt });
+    });
+
+    socket.on('host:claim', (p, ack) => {
+      if (limited(ack)) return;
+      const parsed = handoffClaimSchema.safeParse(p);
+      if (!parsed.success) return invalid(ack);
+      const room = roomOrRefuse(parsed.data.code, ack);
+      if (!room) return;
+      const res = room.claimHandoff(parsed.data.handoffCode);
+      if (!res.ok) {
+        this.logger?.warn({ event: 'room.handoff-refused', roomCode: room.code }, 'Code de transfert d’hôte refusé');
+        return ack(res);
+      }
+      this.logger?.info({ event: 'room.handoff-claimed', roomCode: room.code }, 'Accès hôte transféré à un appareil');
+      ack({ ok: true, hostToken: res.hostToken });
     });
 
     const hostCommand = (ack: Ack, run: (room: Room) => { ok: true } | { ok: false; error: string }) => {

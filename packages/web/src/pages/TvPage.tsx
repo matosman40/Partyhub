@@ -18,7 +18,7 @@ import { FitStage } from '../components/FitStage.js';
 import { Boundary } from '../components/Boundary.js';
 import { read3DPreference, supportsWebGL, write3DPreference } from '../three/prefs.js';
 import { AvatarsContext, MoodsContext, useWakeLock, type PromoteurPub } from '@partyhub/games/client';
-import { TvLobby } from './tv/TvLobby.js';
+import { TvLobby, type HandoffCode } from './tv/TvLobby.js';
 import { CornerMenu, DrawerSection } from '../components/CornerMenu.js';
 import { useActivity } from './tv/useActivity.js';
 import { musicForLobby, useMusicSlot } from '../sounds.js';
@@ -59,6 +59,8 @@ export function TvPage() {
     ),
   };
   // Menu discret et commandes de partie : elles reviennent au moindre mouvement, puis s'effacent.
+  // Code pour ouvrir l'écran hôte sur un téléphone (affiché dans le salon, jamais envoyé aux joueurs).
+  const [handoff, setHandoff] = useState<HandoffCode | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [barFocused, setBarFocused] = useState(false);
   const active = useActivity(menuOpen || barFocused);
@@ -166,6 +168,13 @@ export function TvPage() {
     else if (event === 'host:next') socket.emit('host:next', done);
     else if (event === 'host:end') socket.emit('host:end', done);
     else socket.emit('host:replay', done);
+  }
+
+  function createHandoff() {
+    socket.emit('host:handoff', (res) => {
+      if (res.ok) setHandoff({ code: res.code, expiresAt: res.expiresAt });
+      else setError(res.error);
+    });
   }
 
   function configure(gameSettings: Record<string, unknown>) {
@@ -357,6 +366,8 @@ export function TvPage() {
               emotes={emotes}
               positions={positions}
               onStart={() => emitAck('host:start')}
+              handoff={handoff}
+              onHandoff={createHandoff}
             />
           ) : (
             <>

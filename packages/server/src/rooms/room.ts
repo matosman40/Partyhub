@@ -1,5 +1,5 @@
 import { clampLobbyPosition, type LobbyPosition } from '@partyhub/shared';
-import { randomBytes, randomUUID } from 'node:crypto';
+import { randomBytes, randomInt, randomUUID } from 'node:crypto';
 import { settingsIssueMessage, type DeviceKind, type ObserverRoomView, type ObserverSummary } from '@partyhub/shared';
 import type {
   AvatarInfo,
@@ -83,6 +83,10 @@ export function newToken(): string {
  * Le serveur est l'unique autorité : les vues envoyées aux clients sont
  * construites ici, à partir de l'état complet.
  */
+/** Durée et nombre d'essais d'un code de transfert d'hôte. */
+export const HANDOFF_MS = 3 * 60_000;
+export const HANDOFF_TRIES = 5;
+
 export class Room {
   readonly id = randomUUID();
   readonly hostToken = newToken();
@@ -383,6 +387,35 @@ export class Room {
       this.touch();
       this.hooks.onChange(this);
     }
+  }
+
+  /**
+   * Transfert de l'accès hôte à un autre appareil (téléphone) : l'écran hôte affiche un code court,
+   * valable quelques minutes, à usage unique. Le téléphone qui le saisit reçoit le jeton d'hôte.
+   */
+  private handoff: { code: string; expiresAt: number; attempts: number } | null = null;
+
+  createHandoff(now = Date.now()): { code: string; expiresAt: number } {
+    const code = String(randomInt(0, 1_000_000)).padStart(6, '0');
+    const expiresAt = now + HANDOFF_MS;
+    this.handoff = { code, expiresAt, attempts: 0 };
+    return { code, expiresAt };
+  }
+
+  claimHandoff(code: string, now = Date.now()): { ok: true; hostToken: string } | { ok: false; error: string } {
+    const h = this.handoff;
+    if (!h || now > h.expiresAt) {
+      this.handoff = null;
+      return { ok: false, error: 'Ce code a expiré. Demandez un nouveau code sur l’écran.' };
+    }
+    if (h.attempts >= HANDOFF_TRIES) {
+      this.handoff = null;
+      return { ok: false, error: 'Trop d’essais. Demandez un nouveau code sur l’écran.' };
+    }
+    h.attempts += 1;
+    if (code !== h.code) return { ok: false, error: 'Code incorrect. Vérifiez le code affiché sur l’écran.' };
+    this.handoff = null;
+    return { ok: true, hostToken: this.hostToken };
   }
 
   attachHost(socketId: string, kind: DeviceKind = 'unknown'): void {

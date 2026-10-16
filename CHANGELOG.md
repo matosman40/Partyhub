@@ -2,6 +2,17 @@
 
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## Non publié
+
+### Modifié
+
+- Salon de l’écran hôte (TV, ordinateur, tablette) : les joueurs s’affichent comme sur le téléphone, avec leur tête et leur pseudo. La prairie ne reste que pour le plateau de test.
+- L’hôte peut lancer la partie depuis son téléphone : sur le téléphone d’un joueur, « Je suis l’hôte de cette salle » demande le code affiché sur l’écran (valable 3 minutes, une seule utilisation, cinq essais maximum). Le téléphone reste joueur.
+
+### Corrigé
+
+- Le bouton « Lancer la partie » pouvait être hors de l’écran : le contenu du salon était coupé en haut et en bas. Il reste visible, et son message indique ce qui manque pour lancer.
+
 ## [0.9.3] - 2026-10-16
 
 ### Ajouté
