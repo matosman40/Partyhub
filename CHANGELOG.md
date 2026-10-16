@@ -4,6 +4,17 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 
 ## Non publié
 
+### Modifié
+
+- Salon sur téléphone, pour tous les jeux : chaque joueur est représenté par sa tête, son pseudo et ses étiquettes (vous, prêt, robot), sans plateau à déplacer. Le plateau reste réservé au plateau de test.
+- Accueil : les jeux se présentent en liste épurée ; un clic déploie le sous-menu du jeu (description, créer la salle, essayer seul, comment jouer).
+- Le bouton « Essayer le plateau » de l'accueil est retiré : le plateau de test n'est pas encore proposé au public.
+
+### Corrigé
+
+- Écran TV : le bouton ☰ d'un siège joueur ne se superpose plus au bouton « Fermer » du menu ouvert.
+- Salon sur téléphone : les boutons d'émotion ont le style du reste de l'interface.
+
 ## [0.9.1] - 2026-10-15
 
 ### Corrigé

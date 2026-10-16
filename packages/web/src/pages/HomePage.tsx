@@ -1,38 +1,13 @@
-import { useEffect, useMemo, useState, type CSSProperties } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { PLATEAU_TEST_ID, type CatalogGame, type GameCategory } from '@partyhub/shared';
+import type { CatalogGame, GameCategory } from '@partyhub/shared';
 import { api } from '../api.js';
 import { ThemeToggle } from '../components/ThemeToggle.js';
 import { DeviceChoice } from '../components/DeviceChoice.js';
 import { NoticeDialog } from '../components/NoticeDialog.js';
 import { CornerMenu, DrawerSection } from '../components/CornerMenu.js';
-import { GameLogo } from '../components/GameLogo.js';
-import { GameScene } from '../components/GameScene.js';
-import { logoFor } from '../components/gameLogos.js';
+import { CATEGORY_LABEL, GameRow } from '../components/GameRow.js';
 import { useMusicSlot } from '../sounds.js';
-
-const CATEGORY_LABEL: Record<GameCategory, string> = {
-  cartes: 'Cartes',
-  plateau: 'Plateau',
-  quiz: 'Quiz',
-  role: 'Rôle',
-  solo: 'Solo',
-};
-
-/** Classe CSS associée à chaque catégorie : couleur du ticket et de l'étiquette. */
-const CATEGORY_CLASS: Record<GameCategory, string> = {
-  cartes: 'cards',
-  plateau: 'plateau',
-  quiz: 'quiz',
-  role: 'role',
-  solo: 'solo',
-};
-
-/** Couleurs de la « affiche » d'un jeu : celles de son identité visuelle. */
-function artStyle(id: string, name: string): CSSProperties {
-  const [a, b] = logoFor(id, name).sky;
-  return { '--sky-a': a, '--sky-b': b } as CSSProperties;
-}
 
 export function HomePage() {
   const navigate = useNavigate();
@@ -41,6 +16,7 @@ export function HomePage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [filter, setFilter] = useState<GameCategory | 'all'>('all');
+  const [openId, setOpenId] = useState<string | null>(null);
   const [notice, setNotice] = useState<CatalogGame | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -118,20 +94,6 @@ export function HomePage() {
             Jouez ensemble
           </li>
         </ul>
-        <div className="plateau-teaser">
-          <p>
-            Envie d’essayer ? Ouvrez un plateau de test : chacun y déplace son personnage et envoie des émotions, sans
-            partie.
-          </p>
-          <button
-            type="button"
-            className="btn primary"
-            disabled={busy !== null}
-            onClick={() => createRoom(PLATEAU_TEST_ID, false)}
-          >
-            {busy === `create:${PLATEAU_TEST_ID}` ? 'Ouverture du plateau…' : 'Essayer le plateau'}
-          </button>
-        </div>
       </header>
 
       {error && (
@@ -166,39 +128,22 @@ export function HomePage() {
         </nav>
       )}
 
-      <section className="game-grid">
+      <ul className="game-list" aria-label="Jeux disponibles">
         {visible.map((g) => (
-          <article key={g.id} className={`game-card cat-${CATEGORY_CLASS[g.category] ?? 'party'}`}>
-            <div className="game-art" style={artStyle(g.id, g.name)}>
-              <GameScene gameId={g.id} name={g.name} className="game-art-scene" />
-              <span className="cat-badge">{CATEGORY_LABEL[g.category] ?? g.category}</span>
-              <GameLogo gameId={g.id} name={g.name} className="game-art-logo" />
-            </div>
-            <h2 className="sr-only">{g.name}</h2>
-            <p>{g.description}</p>
-            <p className="meta muted">
-              {g.minPlayers === g.maxPlayers ? g.minPlayers : `${g.minPlayers} à ${g.maxPlayers}`} joueurs · environ{' '}
-              {g.durationMin} min
-            </p>
-            <div className="actions">
-              <button
-                type="button"
-                className="btn primary big"
-                disabled={busy !== null}
-                onClick={() => createRoom(g.id, false)}
-              >
-                {busy === `create:${g.id}` ? 'Création…' : 'Créer la salle'}
-              </button>
-              <button type="button" className="btn big" disabled={busy !== null} onClick={() => createRoom(g.id, true)}>
-                {busy === `try:${g.id}` ? 'Préparation…' : 'Essayer seul'}
-              </button>
-              <button type="button" className="link-btn" onClick={() => setNotice(g)}>
-                Comment jouer
-              </button>
-            </div>
-          </article>
+          <GameRow
+            key={g.id}
+            game={g}
+            open={openId === g.id}
+            creating={busy === `create:${g.id}`}
+            trying={busy === `try:${g.id}`}
+            busy={busy !== null}
+            onToggle={() => setOpenId(openId === g.id ? null : g.id)}
+            onCreate={() => createRoom(g.id, false)}
+            onTry={() => createRoom(g.id, true)}
+            onNotice={() => setNotice(g)}
+          />
         ))}
-      </section>
+      </ul>
 
       {games && games.length > 0 && visible.length === 0 && <p className="muted">Aucun jeu dans cette catégorie.</p>}
 

@@ -59,6 +59,54 @@ export function LobbyPlateau({
   );
 }
 
+/**
+ * Salon épuré (téléphone, tous les jeux) : la tête de chaque joueur, son pseudo et ses étiquettes.
+ * Pas de décor ni de déplacement : le plateau reste réservé au plateau de test.
+ */
+export function LobbyHeads({
+  players,
+  me,
+  emotes,
+}: {
+  players: PublicPlayer[];
+  /** Identifiant du joueur de cet appareil. */
+  me?: string;
+  emotes: Record<string, LobbyEmote>;
+}) {
+  if (players.length === 0) {
+    return <p className="lobby-heads-empty muted small">En attente des premiers joueurs…</p>;
+  }
+  return (
+    <ul className="lobby-heads" aria-label="Joueurs de la salle">
+      {players.map((p) => {
+        const emote = emotes[p.id];
+        const isMe = p.id === me;
+        const tags = [isMe ? 'vous' : null, p.ready ? 'prêt' : null, p.bot ? 'robot' : null].filter(
+          (t): t is string => t !== null,
+        );
+        return (
+          <li key={p.id} className={`lobby-head${p.connected ? '' : ' is-away'}${isMe ? ' is-me' : ''}`}>
+            <span className="lobby-head-face">
+              <PlayerAvatar avatar={p.avatar} name={p.name} size="md" highlight={isMe} />
+              {emote && (
+                <span className="lobby-head-emote" aria-hidden="true">
+                  {LOBBY_MOOD_INFO[emote.mood].emoji}
+                </span>
+              )}
+            </span>
+            <span className="lobby-head-name">{p.name}</span>
+            {tags.map((t) => (
+              <span key={t} className={`lobby-head-tag${t === 'prêt' ? ' is-ready' : ''}`}>
+                {t}
+              </span>
+            ))}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
 /** Boutons d'émotion : un tap montre l'émotion à toute la salle. */
 export function LobbyMoodBar({ onPick }: { onPick: (mood: LobbyMood) => void }) {
   return (

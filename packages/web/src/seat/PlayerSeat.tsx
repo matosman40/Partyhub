@@ -1,12 +1,18 @@
 import { Suspense, useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react';
-import type { ChatMessage, LobbyMood, LobbyPosition, PlayerRoomView } from '@partyhub/shared';
+import {
+  PLATEAU_TEST_ID,
+  type ChatMessage,
+  type LobbyMood,
+  type LobbyPosition,
+  type PlayerRoomView,
+} from '@partyhub/shared';
 import { createSocket, type AppSocket } from '../realtime.js';
 import { newId } from '../api.js';
 import { viewsFor } from '../games.js';
 import { AvatarsContext } from '@partyhub/games/client';
 import { PlayerAvatar } from '../components/PlayerAvatar.js';
 import { ChatPanel, EmoteBar } from '../components/Social.js';
-import { LobbyMoodBar, LobbyPlateau } from '../components/LobbyPlateau.js';
+import { LobbyHeads, LobbyMoodBar, LobbyPlateau } from '../components/LobbyPlateau.js';
 import { useLobbyMoods } from '../components/useLobbyMoods.js';
 import { useLobbyPositions } from '../components/useLobbyPositions.js';
 import { NoticeDialog } from '../components/NoticeDialog.js';
@@ -351,16 +357,20 @@ export function PlayerSeat({
             {you.ready ? 'Prêt ! Annuler' : 'Je suis prêt'}
           </button>
           <p className="muted small">L’hôte lance la partie depuis l’écran principal.</p>
-          {!compact && (
-            <LobbyPlateau
-              players={lobby.players}
-              poses={poses}
-              emotes={emotes}
-              positions={positions}
-              me={you.id}
-              onMove={sendLobbyMove}
-              label="Salon : déplacez votre personnage"
-            />
+          {lobby.game.id === PLATEAU_TEST_ID ? (
+            !compact && (
+              <LobbyPlateau
+                players={lobby.players}
+                poses={poses}
+                emotes={emotes}
+                positions={positions}
+                me={you.id}
+                onMove={sendLobbyMove}
+                label="Salon : déplacez votre personnage"
+              />
+            )
+          ) : (
+            <LobbyHeads players={lobby.players} me={you.id} emotes={emotes} />
           )}
           {!compact && <LobbyMoodBar onPick={sendLobbyMood} />}
           <EmoteBar onPick={sendReaction} />
