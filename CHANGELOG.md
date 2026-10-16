@@ -2,15 +2,7 @@
 
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [versionnement sémantique](https://semver.org/lang/fr/).
 
-## Non publié
-
-### Ajouté
-
-- Menu d’administration par rubriques : Salles et statistiques, Jeux, Créer des jeux, Médias et ambiance, Système. Chaque rubrique a son propre écran, avec un bouton retour vers le menu.
-
-### Modifié
-
-- Boutons « Retour à l’accueil » au même endroit et de même style sur les pages de connexion, rejoindre, profil, test des appareils, administration et spectateur.
+## [0.9.3] - 2026-10-16
 
 ### Ajouté
 
@@ -19,11 +11,13 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 - Journal des erreurs complet, dans `DATA_DIR/logs/partyhub.log` (une ligne JSON par événement, niveau en toutes lettres, rotation automatique). Chaque requête reçoit un identifiant (`X-Request-Id`) qui relie une erreur à sa requête. Les mots de passe et jetons sont masqués.
 - Les erreurs du navigateur remontent dans le même journal (écran de secours, erreurs de script, promesses rejetées, appels API en échec, connexion temps réel perdue), sous `source: "client"`, avec limite de débit par adresse.
 - Administration, rubrique Système : consultation du journal avec filtres (niveau, source, recherche), erreurs les plus fréquentes regroupées, détail de chaque entrée, téléchargement et vidage.
+- Menu d’administration par rubriques : Salles et statistiques, Jeux, Créer des jeux, Médias et ambiance, Système. Chaque rubrique a son propre écran, avec un bouton retour vers le menu.
+- Script `scripts/casaos-check.sh` : contrôle d'une installation HTTPS, à lancer sur le serveur.
 
 ### Modifié
 
+- Boutons « Retour à l’accueil » au même endroit et de même style sur les pages de connexion, rejoindre, profil, test des appareils, administration et spectateur.
 - Publication : la release n'est créée qu'après la vérification du fichier d'installation CasaOS (mise à jour depuis la version précédente, installation propre, amd64 et arm64). Les deux fichiers d'installation doivent épingler la version publiée.
-- Script `scripts/casaos-check.sh` : contrôle d'une installation HTTPS, à lancer sur le serveur.
 
 ### Corrigé
 
