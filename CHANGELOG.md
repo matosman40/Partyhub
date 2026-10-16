@@ -4,6 +4,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 
 ## Non publié
 
+## [0.9.2] - 2026-10-16
+
 ### Modifié
 
 - Salon sur téléphone, pour tous les jeux : chaque joueur est représenté par sa tête, son pseudo et ses étiquettes (vous, prêt, robot), sans plateau à déplacer. Le plateau reste réservé au plateau de test.
