@@ -2,11 +2,13 @@ import { useState, type ReactNode } from 'react';
 import {
   CHARACTER_ACCESSORIES,
   CHARACTER_BODY_COLORS,
+  CHARACTER_EXPRESSIONS,
   CHARACTER_HAIR_COLORS,
   CHARACTER_HAIR_STYLES,
   CHARACTER_MOODS,
   CHARACTER_SKIN_TONES,
   type CharacterAccessory,
+  type CharacterExpression,
   type CharacterMood,
   type CharacterSpec,
   type HairStyle,
@@ -58,6 +60,15 @@ const ACCESSORY_NAMES: Record<CharacterAccessory, string> = {
   bow: 'Nœud',
   flower: 'Fleur',
 };
+const EXPRESSION_NAMES: Record<CharacterExpression, string> = {
+  calme: 'Calme',
+  souriant: 'Souriant',
+  rieur: 'Rieur',
+  clin: 'Clin d’œil',
+  triste: 'Triste',
+  etonne: 'Étonné',
+};
+
 const MOOD_NAMES: Record<CharacterMood, string> = {
   idle: 'Repos',
   joy: 'Joie',
@@ -167,6 +178,20 @@ export function CharacterEditor({
         )}
         {!activePack && (
           <>
+            <Group label="Expression au repos">
+              {CHARACTER_EXPRESSIONS.map((key, i) => (
+                <button
+                  key={key}
+                  type="button"
+                  className="chip"
+                  aria-pressed={(spec.expression ?? 0) === i}
+                  disabled={busy}
+                  onClick={() => pick({ expression: i })}
+                >
+                  {EXPRESSION_NAMES[key]}
+                </button>
+              ))}
+            </Group>
             <Group label="Couleur du corps">
               {CHARACTER_BODY_COLORS.map((color, i) => (
                 <button

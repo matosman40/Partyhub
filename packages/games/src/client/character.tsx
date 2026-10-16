@@ -1,5 +1,12 @@
 import { useId } from 'react';
-import { characterColors, resolveLook, type CharacterMood, type CharacterSpec } from '@partyhub/shared';
+import {
+  CHARACTER_EXPRESSIONS,
+  characterColors,
+  resolveLook,
+  type CharacterExpression,
+  type CharacterMood,
+  type CharacterSpec,
+} from '@partyhub/shared';
 import { usePackInfo } from './character-packs.js';
 import { PackFigure } from './character-pack-figure.js';
 
@@ -30,6 +37,24 @@ interface Pose {
   look: Pair;
   wave?: boolean;
   sparkles?: boolean;
+}
+
+/** Visage de chaque expression du profil (au repos). « calme » reprend le visage de l'attitude de repos. */
+const EXPRESSION_FACE: Record<CharacterExpression, Pick<Pose, 'eyes' | 'brow' | 'mouth'>> = {
+  calme: { eyes: 'open', brow: 'neutral', mouth: 'smile' },
+  souriant: { eyes: 'open', brow: 'happy', mouth: 'grin' },
+  rieur: { eyes: 'happy', brow: 'happy', mouth: 'shout' },
+  clin: { eyes: 'wink', brow: 'happy', mouth: 'grin' },
+  triste: { eyes: 'sad', brow: 'sad', mouth: 'frown' },
+  etonne: { eyes: 'open', brow: 'neutral', mouth: 'shout' },
+};
+
+/** Expression d'un personnage au repos : seule l'attitude « repos » la montre, les autres gardent leur visage. */
+function restingPose(mood: CharacterMood, expression: number | undefined): Pose {
+  const base = POSES[mood];
+  if (mood !== 'idle' || expression === undefined) return base;
+  const key = CHARACTER_EXPRESSIONS[expression];
+  return key ? { ...base, ...EXPRESSION_FACE[key] } : base;
 }
 
 /** Une humeur par moment de jeu : idle au repos, joy, sad, wave (main levée), dance. */
@@ -414,7 +439,7 @@ const FRAMES = {
 function DrawnCharacter({ spec, mood = 'idle', framing = 'full', label, className }: CharacterProps) {
   const uid = useId().replace(/[^a-zA-Z0-9]/g, '');
   const c = characterColors(spec);
-  const P = POSES[mood];
+  const P = restingPose(mood, spec.expression);
   const bob = P.bounce;
   const hy = 62 + bob;
   const frame = FRAMES[framing];

@@ -10,6 +10,10 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 - L’hôte peut lancer la partie depuis son téléphone : sur le téléphone d’un joueur, « Je suis l’hôte de cette salle » demande le code affiché sur l’écran (valable 3 minutes, une seule utilisation, cinq essais maximum). Le téléphone reste joueur.
 - Depuis le téléphone de l’hôte : lancer la partie, étape suivante, arrêter, rejouer et ajouter un robot. « Ajouter un robot » est aussi accessible directement dans le salon de l’écran hôte.
 
+### Ajouté
+
+- Expression au repos du personnage : dans son profil, chaque joueur choisit une expression (calme, souriant, rieur, clin d’œil, triste, étonné). Elle reste affichée dans le salon et sur l’écran, contrairement à une émote qui disparaît.
+
 ### Corrigé
 
 - Le bouton « Lancer la partie » pouvait être hors de l’écran : le contenu du salon était coupé en haut et en bas. Il reste visible, et son message indique ce qui manque pour lancer.
