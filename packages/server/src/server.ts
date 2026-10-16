@@ -25,6 +25,7 @@ import type { Logger } from './logger.js';
 import type { RotatingFile } from './logs/rotating-file.js';
 import { RealtimeHub, type SocketData } from './realtime/hub.js';
 import { RoomManager } from './rooms/manager.js';
+import { createAiClient } from './ai/client.js';
 import { DbBackupScheduler } from './db/backup.js';
 import { compileTrustProxy } from './trust-proxy.js';
 import type { JoinThrottleOptions } from './realtime/join-throttle.js';
@@ -107,11 +108,27 @@ export async function createServer(opts: ServerOptions): Promise<PartyServer> {
   const characterPacks = new CharacterPackService(store.db);
   const hub = new RealtimeHub(compileTrustProxy(config.trustProxy ?? 'loopback'), opts.joinThrottle);
   hub.setCadence(() => appliedCadence(store.getTestMode()));
+  const aiClient = config.ai ? createAiClient({ config: config.ai, logger }) : undefined;
+  if (config.ai) {
+    logger.info(
+      {
+        event: 'ai.enabled',
+        providers: config.ai.providers.map((p) => ({
+          id: p.id,
+          model: p.model,
+          free: p.free,
+          maxCallsPerDay: p.maxCallsPerDay ?? null,
+        })),
+      },
+      'Génération par IA activée',
+    );
+  }
   const manager = new RoomManager(
     {
       now: () => Date.now(),
       random: () => Math.random(),
       logger,
+      ...(aiClient ? { ai: aiClient } : {}),
       maxPlayers: () => store.getSettings().maxPlayers,
       graceMs: () => store.getSettings().graceSeconds * 1000,
       notice: (gameId) => {

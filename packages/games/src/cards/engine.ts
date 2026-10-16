@@ -12,6 +12,9 @@ import {
   type PlayerRef,
 } from '@partyhub/shared';
 import { directory, fail, ok, rankEntries, shuffle } from '../common/engine.js';
+import { createMemoryGame, type MemoryState } from './memory.js';
+import { createRaceGame, type RaceState } from './race.js';
+import { createTrickGame, type TrickState } from './trick.js';
 
 /**
  * Moteur générique des jeux de cartes. Une définition (familles, cartes,
@@ -306,7 +309,12 @@ function majorityFamily(s: CardGameState, playerId: string): string {
 export function createCardGame(
   def: CardGameDefinition,
   options: { id: string },
-): GameModule<CardGameState, CardSettings> {
+): GameModule<CardGameState | MemoryState | RaceState | TrickState, CardSettings> {
+  // Le mémo (cartes retournées par paires), la ressemblance (course au centre) et les plis ont leurs propres
+  // mécaniques ; le reste passe par la défausse.
+  if (def.rules.mechanic === 'memory') return createMemoryGame(def, options);
+  if (def.rules.mechanic === 'race') return createRaceGame(def, options);
+  if (def.rules.mechanic === 'trick') return createTrickGame(def, options);
   const { rules } = def;
   const settingsSchema = cardSettingsSchema({
     targetScore: rules.targetScore,

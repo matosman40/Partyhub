@@ -3,11 +3,14 @@ import { randomBytes, randomInt, randomUUID } from 'node:crypto';
 import { settingsIssueMessage, type DeviceKind, type ObserverRoomView, type ObserverSummary } from '@partyhub/shared';
 import type {
   AvatarInfo,
+  AiClient,
   GameInfo,
+  GameJob,
   GameModule,
   GameNotice,
   GameResult,
   HostRoomView,
+  JobOutcome,
   LobbyView,
   PlayerRef,
   PlayerRoomView,
@@ -49,6 +52,8 @@ export interface RoomEnv {
   graceMs: () => number;
   /** Notice affichée pour un jeu (défaut du code ou surcharge de l'administration). */
   notice: (gameId: string) => GameNotice;
+  /** Client d'IA générative, absent si aucune clé n'est configurée. Seul le lanceur de travaux s'en sert. */
+  ai?: AiClient;
 }
 
 export interface RoomHooks {
@@ -109,6 +114,10 @@ export class Room {
   private state: unknown;
   private readonly timers = new Map<string, NodeJS.Timeout>();
   private readonly botTimers = new Map<string, { key: string; timer: NodeJS.Timeout }>();
+  /** Travail du jeu en cours (ex. génération) : son identifiant et le moyen de l'annuler. */
+  private running: { id: string; controller: AbortController } | null = null;
+  /** Dernier travail terminé : un identifiant déjà traité n'est jamais relancé. */
+  private finishedJobId: string | null = null;
   private readonly ctx: import('@partyhub/shared').GameContext;
 
   constructor(
@@ -129,6 +138,7 @@ export class Room {
       schedule: (key, ms) => this.schedule(key, ms),
       cancel: (key) => this.cancelTimer(key),
       connectedPlayerIds: () => [...this.players.values()].filter((p) => p.bot || p.sockets.size > 0).map((p) => p.id),
+      ...(env.ai ? { ai: env.ai } : {}),
     };
     this.state = module.initialize(this.settings, [], this.ctx);
   }
@@ -635,6 +645,27 @@ export class Room {
     return { ok: true };
   }
 
+  /**
+   * Action de l'écran principal (ex. « générer des personnages ») : elle n'est attribuée à aucun joueur.
+   * Le schéma déclaré par le jeu valide le payload, comme pour les actions des joueurs.
+   */
+  hostAction(type: string, payload: unknown): Outcome {
+    if (this.status !== 'in_game') return { ok: false, error: 'Aucune partie en cours.' };
+    const { hostActions, handleHostAction } = this.module;
+    if (!hostActions || !handleHostAction || !Object.hasOwn(hostActions, type)) {
+      return { ok: false, error: 'Action inconnue.' };
+    }
+    // Sans payload, l'action reçoit un objet vide : « régénérer » n'a rien à transmettre.
+    const parsed = hostActions[type]!.safeParse(payload ?? {});
+    if (!parsed.success) return { ok: false, error: 'Données invalides.' };
+
+    const result = this.safely(() => handleHostAction.call(this.module, this.state, type, parsed.data, this.ctx));
+    if (!result.ok) return { ok: false, error: result.error };
+    this.state = result.state;
+    this.afterMutation();
+    return { ok: true };
+  }
+
   // ---------------------------------------------------------------------------
   // Actions des joueurs
   // ---------------------------------------------------------------------------
@@ -755,6 +786,7 @@ export class Room {
     this.touch();
     this.hooks.onChange(this);
     this.scheduleBots();
+    this.syncJob();
   }
 
   private schedule(key: string, ms: number): void {
@@ -780,6 +812,53 @@ export class Room {
     for (const handle of this.timers.values()) clearTimeout(handle);
     this.timers.clear();
     this.clearBotTimers();
+    this.abortJob();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Travaux asynchrones du jeu (ex. génération par IA)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Lance le travail que le jeu demande, s'il y en a un, et abandonne celui qui ne l'est plus.
+   * Un seul travail à la fois par salle. Son résultat revient par `completeJob`, comme une mutation normale :
+   * un résultat tardif (salle terminée, travail remplacé) est ignoré.
+   */
+  private syncJob(): void {
+    const m = this.module;
+    if (!m.pendingJob || !m.runJob || !m.completeJob) return;
+    const job = this.status === 'in_game' ? m.pendingJob(this.state) : null;
+    if (this.running && this.running.id !== job?.id) this.abortJob();
+    if (!job || this.running || job.id === this.finishedJobId) return;
+
+    const controller = new AbortController();
+    this.running = { id: job.id, controller };
+    const run = m.runJob;
+    new Promise<unknown>((resolve) => resolve(run.call(m, job, this.ctx, controller.signal))).then(
+      (value) => this.finishJob(job, { ok: true, value }),
+      (err: unknown) => this.finishJob(job, { ok: false, error: err instanceof Error ? err.message : String(err) }),
+    );
+  }
+
+  private finishJob(job: GameJob, outcome: JobOutcome): void {
+    if (this.running?.id !== job.id) return;
+    this.running = null;
+    this.finishedJobId = job.id;
+    if (!outcome.ok) {
+      this.env.logger.warn(
+        { event: 'room.job-failed', room: this.code, kind: job.kind, error: outcome.error },
+        'Travail du jeu en échec',
+      );
+    }
+    const complete = this.module.completeJob;
+    if (this.status !== 'in_game' || !complete) return;
+    this.mutate((s) => complete.call(this.module, s, job.id, outcome, this.ctx));
+  }
+
+  private abortJob(): void {
+    if (!this.running) return;
+    this.running.controller.abort();
+    this.running = null;
   }
 
   /** Libère minuteurs et temporisations (fermeture de la salle). */

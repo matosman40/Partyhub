@@ -45,6 +45,15 @@ export const GAME_LOGOS: Record<string, LogoSpec> = {
     mark: 'fuse',
     tilt: -2,
   },
+  'aventure-ia': {
+    lines: ['Aventure', 'IA'],
+    fill: '#b6ff5c',
+    edge: '#ffc83d',
+    ink: '#0d1404',
+    sky: ['#1d3b2a', '#06120b'],
+    mark: 'star',
+    tilt: -1,
+  },
   imposteur: {
     lines: ['L’Imposteur'],
     fill: '#3ff5e0',
@@ -143,6 +152,15 @@ export const GAME_LOGOS: Record<string, LogoSpec> = {
     sky: ['#3b1d7a', '#120729'],
     mark: 'star',
     tilt: 0,
+  },
+  'poker-texas': {
+    lines: ['Poker', 'Texas'],
+    fill: '#fbf6ea',
+    edge: '#d63a3a',
+    ink: '#0c2418',
+    sky: ['#1d6b43', '#0a2c1c'],
+    mark: 'deck',
+    tilt: -4,
   },
   association: {
     lines: ['Association', 'express'],

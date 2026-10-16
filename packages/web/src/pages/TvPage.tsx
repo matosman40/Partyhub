@@ -22,6 +22,7 @@ import { read3DPreference, supportsWebGL, write3DPreference } from '../three/pre
 import { AvatarsContext, MoodsContext, useWakeLock, type PromoteurPub } from '@partyhub/games/client';
 import { TvLobby, type HandoffCode } from './tv/TvLobby.js';
 import { CornerMenu, DrawerSection } from '../components/CornerMenu.js';
+import { useActiveProfile } from '../profile/useProfile.js';
 import { useActivity } from './tv/useActivity.js';
 import { musicForLobby, useMusicSlot } from '../sounds.js';
 
@@ -37,6 +38,8 @@ export function TvPage() {
   const { code = '' } = useParams();
   const navigate = useNavigate();
   const hostToken = sessionStorage.getItem(`ph:host:${code}`);
+  // Le profil actif de cet appareil joue la place « Jouer depuis cet écran » : même personnage partout.
+  const seatProfile = useActiveProfile();
 
   const [view, setView] = useState<HostRoomView | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -157,13 +160,23 @@ export function TvPage() {
     <FitStage>
       {views && game && (
         <Suspense fallback={<p className="muted">Chargement du jeu…</p>}>
-          <views.Host publicState={game.public} hostState={game.host} now={view.now} />
+          <views.Host publicState={game.public} hostState={game.host} now={view.now} onAction={sendGameAction} />
         </Suspense>
       )}
     </FitStage>
   );
   const sky = logoFor(lobby.game.id, lobby.game.name).sky;
   const skyStyle = { '--sky-a': sky[0], '--sky-b': sky[1] } as CSSProperties;
+
+  /** Action propre au jeu, demandée par l'écran principal (ex. générer des personnages). */
+  function sendGameAction(type: string, payload?: unknown): Promise<{ ok: boolean; error?: string }> {
+    return new Promise((resolve) => {
+      socket.emit('host:game-action', { type, payload }, (res) => {
+        if (!res.ok) setError(res.error);
+        resolve(res.ok ? { ok: true } : { ok: false, error: res.error });
+      });
+    });
+  }
 
   function emitAck(event: 'host:start' | 'host:next' | 'host:end' | 'host:replay') {
     const done = (res: { ok: true } | { ok: false; error: string }) => setError(res.ok ? null : res.error);
@@ -322,7 +335,15 @@ export function TvPage() {
 
       <DrawerSection title="Jouer depuis cet écran">
         <p className="muted small">Prenez une manette sur cet écran pour jouer avec les autres.</p>
-        <PlayerSeat code={lobby.code} seatId="tv" compact />
+        <PlayerSeat
+          key={`tv:${seatProfile?.id ?? 'sans-profil'}`}
+          code={lobby.code}
+          seatId="tv"
+          compact
+          profileToken={seatProfile?.token ?? null}
+          profileName={seatProfile?.name ?? null}
+          profileId={seatProfile?.id ?? null}
+        />
       </DrawerSection>
 
       <div className="corner-actions">

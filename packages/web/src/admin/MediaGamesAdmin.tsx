@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { MEDIA_KIND_ICON, MEDIA_KIND_LABEL, type MediaQuizDefinition } from '@partyhub/shared';
 import { api } from '../api.js';
+import { GameMenu } from '../components/GameMenu.js';
 import { MediaGameEditor, type MediaGameRecord } from './MediaGameEditor.js';
 
 /**
@@ -153,19 +154,14 @@ export function MediaGamesAdmin({ onChanged }: { onChanged: () => void }) {
               >
                 Modifier
               </button>
-              <button type="button" className="btn ghost small" onClick={() => duplicate(r)}>
-                Dupliquer
-              </button>
-              <a
-                className="btn ghost small"
-                href={`/api/admin/media-games/${encodeURIComponent(r.id)}/export`}
-                download
-              >
-                Exporter
-              </a>
-              <button type="button" className="btn ghost small" onClick={() => remove(r)}>
-                Supprimer
-              </button>
+              <GameMenu
+                gameName={r.definition.name}
+                items={[
+                  { label: 'Dupliquer', onSelect: () => void duplicate(r) },
+                  { label: 'Exporter (JSON)', href: `/api/admin/media-games/${encodeURIComponent(r.id)}/export` },
+                  { label: 'Supprimer', danger: true, onSelect: () => void remove(r) },
+                ]}
+              />
             </div>
           </li>
         ))}

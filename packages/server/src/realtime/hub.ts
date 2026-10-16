@@ -9,6 +9,7 @@ import {
   handoffClaimSchema,
   hostConnectSchema,
   joinSchema,
+  hostGameActionSchema,
   kickSchema,
   normalizeRoomCode,
   observerJoinSchema,
@@ -17,6 +18,7 @@ import {
   readySchema,
   reactionSchema,
   voicePlaySchema,
+  PROFILE_SESSION_EXPIRED,
   type DeviceInfo,
   type DeviceKind,
   type Ack,
@@ -307,6 +309,13 @@ export class RealtimeHub {
       hostCommand(ack, (room) => room.replay());
     });
 
+    socket.on('host:game-action', (p, ack) => {
+      if (limited(ack)) return;
+      const parsed = hostGameActionSchema.safeParse(p);
+      if (!parsed.success) return invalid(ack);
+      hostCommand(ack, (room) => room.hostAction(parsed.data.type, parsed.data.payload));
+    });
+
     socket.on('host:kick', (p, ack) => {
       if (limited(ack)) return;
       const parsed = kickSchema.safeParse(p);
@@ -379,7 +388,7 @@ export class RealtimeHub {
         const profileId = this.profiles?.authenticate(parsed.data.profileToken);
         profile = profileId ? this.profiles?.playerProfile(profileId) : undefined;
         if (!profile) {
-          return invalid(ack, 'Votre session de profil a expiré. Reconnectez-vous ou entrez sans profil.');
+          return invalid(ack, PROFILE_SESSION_EXPIRED);
         }
       }
 

@@ -2,8 +2,11 @@ import { randomBytes } from 'node:crypto';
 import { createCardGame } from '@partyhub/games';
 import {
   CARD_EXPORT_FORMAT,
+  CARD_EXPORT_VERSION,
   cardExportSchema,
   cardGameDefinitionSchema,
+  mergeCardCsv,
+  type CardExportAsset,
   type CardGameDefinition,
 } from '@partyhub/shared';
 import type { Store } from '../db/store.js';
@@ -101,18 +104,25 @@ export class CardGameService {
     return true;
   }
 
+  /** Définition d'un jeu au format d'export, sans les fichiers joints (ajoutés par la route). */
   exportOf(id: string) {
     const record = this.list().find((r) => r.id === id);
     if (!record) return null;
-    return { format: CARD_EXPORT_FORMAT, version: 1 as const, definition: record.definition };
+    return { format: CARD_EXPORT_FORMAT, version: CARD_EXPORT_VERSION, definition: record.definition, assets: [] };
   }
 
   /** Lit un fichier exporté (ou une définition brute) sans rien enregistrer. */
-  parseImport(input: unknown): { ok: true; definition: CardGameDefinition } | { ok: false; error: string } {
-    const wrapped = cardExportSchema.safeParse(input);
-    if (wrapped.success) return { ok: true, definition: wrapped.data.definition };
-    const raw = cardGameDefinitionSchema.safeParse(input);
-    if (raw.success) return { ok: true, definition: raw.data };
+  parseImport(
+    input: unknown,
+  ): { ok: true; definition: CardGameDefinition; assets: CardExportAsset[] } | { ok: false; error: string } {
+    // Un champ `csv` (texte à importer comme cartes) est développé avant la validation du schéma.
+    const merged = mergeCardCsv(input);
+    if (!merged.ok) return merged;
+    const source = merged.value;
+    const wrapped = cardExportSchema.safeParse(source);
+    if (wrapped.success) return { ok: true, definition: wrapped.data.definition, assets: wrapped.data.assets };
+    const raw = cardGameDefinitionSchema.safeParse(source);
+    if (raw.success) return { ok: true, definition: raw.data, assets: [] };
     const issue = (wrapped.error ?? raw.error).issues[0];
     return { ok: false, error: issue?.message ?? 'Fichier non reconnu.' };
   }

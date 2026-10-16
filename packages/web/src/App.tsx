@@ -13,6 +13,7 @@ import { MusicPlayer } from './components/MusicPlayer.js';
 import { Boundary } from './components/Boundary.js';
 import { BackButton } from './components/BackButton.js';
 import { CrashScreen } from './components/CrashScreen.js';
+import { ProfileGate } from './profile/ProfileGate.js';
 
 function NotFound() {
   return (
@@ -32,10 +33,32 @@ function RoutedPages() {
   return (
     <Boundary key={location.pathname} fallback={(error) => <CrashScreen error={error} />}>
       <Routes>
-        <Route path="/" element={<HomePage />} />
+        {/* Accueil, saisie du code et téléphone : il faut un profil avant de continuer. */}
+        <Route
+          path="/"
+          element={
+            <ProfileGate>
+              <HomePage />
+            </ProfileGate>
+          }
+        />
         <Route path="/tv/:code" element={<TvPage />} />
-        <Route path="/join" element={<JoinPage />} />
-        <Route path="/j/:code" element={<PlayerPage />} />
+        <Route
+          path="/join"
+          element={
+            <ProfileGate>
+              <JoinPage />
+            </ProfileGate>
+          }
+        />
+        <Route
+          path="/j/:code"
+          element={
+            <ProfileGate>
+              <PlayerPage />
+            </ProfileGate>
+          }
+        />
         <Route path="/spectate/:code" element={<ObserverPage />} />
         <Route path="/profil" element={<ProfilePage />} />
         <Route path="/admin" element={<AdminPage />} />

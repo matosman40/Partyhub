@@ -14,10 +14,12 @@ import { loupsVillage } from './loups-village/module.js';
 import { sudoku, solitaire, taquin, motsCroises } from './solo/index.js';
 import { rami51 } from './rami51/module.js';
 import { tarot } from './tarot/module.js';
+import { pokerTexas } from './poker/module.js';
 import { imiteMoi } from './imite-moi/module.js';
 import { banquise } from './banquise/module.js';
 import { boum } from './boum/module.js';
 import { plateauTest } from './plateau-test/module.js';
+import { aventureIa } from './aventure/module.js';
 
 /**
  * Registre explicite des jeux disponibles.
@@ -29,6 +31,7 @@ export const gameRegistry: GameModule[] = [
   association,
   plutotQui,
   imposteur,
+  aventureIa,
   plusOuMoins,
   reflexe,
   bombesParty,
@@ -43,6 +46,7 @@ export const gameRegistry: GameModule[] = [
   motsCroises,
   rami51,
   tarot,
+  pokerTexas,
   imiteMoi,
   banquise,
   boum,
@@ -58,6 +62,7 @@ export type { QuizSettings, QuizState } from './quiz-party/module.js';
 export { association } from './association/module.js';
 export { plutotQui } from './plutot-qui/module.js';
 export { imposteur } from './imposteur/module.js';
+export { aventureIa } from './aventure/module.js';
 export { plusOuMoins } from './plus-ou-moins/module.js';
 export { reflexe } from './reflexe/module.js';
 export { bombesParty } from './bombes-party/module.js';
@@ -118,6 +123,8 @@ export { createCardGame, canPlayCard } from './cards/engine.js';
 export type { CardGameState, CardInstance, CardPhase } from './cards/engine.js';
 export { cardGamePresets, cartesCouleurs, blancMangerCoco } from './cards/presets.js';
 export { president, createPresidentGame } from './president/module.js';
+export { pokerTexas } from './poker/module.js';
+export type { PokerSettings, PokerState } from './poker/module.js';
 export type { PresidentState, PresidentSettings } from './president/module.js';
 export { validatePlay, rankValue, RANKS, PRESIDENT_DEFINITION } from './president/rules.js';
 export { promoteur } from './promoteur/module.js';

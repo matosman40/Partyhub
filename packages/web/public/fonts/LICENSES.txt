@@ -1,2 +1,7 @@
 Luckiest Guy et Fredoka : polices de Google Fonts, sous licence SIL Open Font License 1.1
 (https://openfontlicense.org). Fichiers WOFF2 du sous-ensemble latin, redistribués tels quels.
+
+Atkinson Hyperlegible et Noto Sans Symbols 2 : polices sous licence SIL Open Font License 1.1
+(https://openfontlicense.org), distribuées via Fontsource (@fontsource/atkinson-hyperlegible 5.3.0 et
+@fontsource/noto-sans-symbols-2 5.3.0). Fichiers WOFF2 des sous-ensembles latin, et symboles pour
+Noto Sans Symbols 2, redistribués tels quels.

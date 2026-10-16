@@ -118,11 +118,19 @@ export class ProfileService {
     return token;
   }
 
-  async register(input: { username: string; password: string; displayName: string }) {
-    const exists = this.db.prepare('SELECT 1 FROM profiles WHERE username = ?').get(input.username);
-    if (exists) throw new ProfileError(409, 'Cet identifiant est déjà pris. Choisissez-en un autre.');
+  /**
+   * Crée un profil. Sans identifiant ni mot de passe : profil « nom seul » (identifiant généré,
+   * pas de mot de passe). Avec les deux : ancien compte, identifiant unique et mot de passe.
+   */
+  async register(input: { displayName: string; username?: string; password?: string }) {
     const id = randomUUID();
-    const avatar = defaultAvatarFor(input.username);
+    const withPassword = input.password !== undefined;
+    const username = withPassword ? input.username! : `p${randomBytes(6).toString('hex')}`;
+    if (withPassword) {
+      const exists = this.db.prepare('SELECT 1 FROM profiles WHERE username = ?').get(username);
+      if (exists) throw new ProfileError(409, 'Cet identifiant est déjà pris. Choisissez-en un autre.');
+    }
+    const avatar = defaultAvatarFor(username);
     this.db
       .prepare(
         `INSERT INTO profiles (id, username, display_name, password_hash, avatar_hue, avatar_emoji, created_at)
@@ -130,9 +138,9 @@ export class ProfileService {
       )
       .run(
         id,
-        input.username,
+        username,
         input.displayName,
-        await hashPassword(input.password),
+        withPassword ? await hashPassword(input.password!) : '',
         avatar.hue,
         avatar.emoji,
         new Date(this.now()).toISOString(),
@@ -142,7 +150,8 @@ export class ProfileService {
 
   async login(username: string, password: string) {
     const row = this.db.prepare('SELECT * FROM profiles WHERE username = ?').get(username) as ProfileRow | undefined;
-    const valid = row !== undefined && (await verifyPassword(password, row.password_hash));
+    // Un profil « nom seul » n'a pas de mot de passe : il ne se connecte pas par identifiant.
+    const valid = row !== undefined && row.password_hash !== '' && (await verifyPassword(password, row.password_hash));
     if (!row || !valid) {
       throw new ProfileError(401, 'Identifiant ou mot de passe incorrect.');
     }
@@ -159,6 +168,13 @@ export class ProfileService {
     if (row.expires_at < this.now()) {
       this.db.prepare('DELETE FROM profile_sessions WHERE token_hash = ?').run(hashToken(token));
       return undefined;
+    }
+    // Session glissante : un profil « nom seul » n'a que ce jeton pour revenir, il ne doit pas expirer
+    // pendant qu'on s'en sert. Prolongée dès que la moitié de la durée est passée.
+    if (row.expires_at - this.now() < SESSION_TTL_MS / 2) {
+      this.db
+        .prepare('UPDATE profile_sessions SET expires_at = ? WHERE token_hash = ?')
+        .run(this.now() + SESSION_TTL_MS, hashToken(token));
     }
     return row.profile_id;
   }
@@ -183,6 +199,7 @@ export class ProfileService {
       displayName: row.display_name,
       avatar: this.avatarOf(row),
       avatarShared: row.avatar_shared === 1,
+      hasPassword: row.password_hash !== '',
       createdAt: row.created_at,
       stats: this.stats(profileId),
     };
@@ -228,6 +245,7 @@ export class ProfileService {
   async changePassword(profileId: string, current: string, next: string): Promise<void> {
     const row = this.rowById(profileId);
     if (!row) throw new ProfileError(404, 'Profil introuvable.');
+    if (row.password_hash === '') throw new ProfileError(400, 'Ce profil n’a pas de mot de passe.');
     if (!(await verifyPassword(current, row.password_hash))) {
       throw new ProfileError(401, 'Le mot de passe actuel est incorrect.');
     }

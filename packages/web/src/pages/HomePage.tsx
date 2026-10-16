@@ -8,6 +8,7 @@ import { NoticeDialog } from '../components/NoticeDialog.js';
 import { CornerMenu, DrawerSection } from '../components/CornerMenu.js';
 import { CATEGORY_LABEL, GameRow } from '../components/GameRow.js';
 import { useMusicSlot } from '../sounds.js';
+import { ProfileSwitcher } from '../profile/ProfileSwitcher.js';
 
 export function HomePage() {
   const navigate = useNavigate();
@@ -77,6 +78,10 @@ export function HomePage() {
           <ThemeToggle />
         </DrawerSection>
       </CornerMenu>
+
+      <div className="home-profile">
+        <ProfileSwitcher />
+      </div>
 
       <header className="hero">
         <h1 className="brand-title register-in" data-text="PartyHub">

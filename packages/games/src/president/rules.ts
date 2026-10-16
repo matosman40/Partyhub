@@ -26,6 +26,16 @@ export function rankOf(entry: { label: string }): number {
   return rankValue(entry.label);
 }
 
+/**
+ * Main triée du plus faible au plus fort, pour l'affichage seulement : le jeu ne change pas.
+ * À rang égal, l'ordre des couleurs du paquet.
+ */
+export function sortHandByRank<T extends { entry: string }>(hand: readonly T[]): T[] {
+  const deck = new Map(PRESIDENT_DEFINITION.cards.map((c, order) => [c.id, { rank: rankOf(c), order }]));
+  const at = (card: T) => deck.get(card.entry) ?? { rank: Number.MAX_SAFE_INTEGER, order: 0 };
+  return [...hand].sort((a, b) => at(a).rank - at(b).rank || at(a).order - at(b).order);
+}
+
 /** Définition du paquet, au format commun aux jeux de cartes (rendu SVG partagé). */
 export const PRESIDENT_DEFINITION: CardGameDefinition = {
   name: 'Président',

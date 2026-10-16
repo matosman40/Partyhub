@@ -6,11 +6,13 @@ import { GameScene } from '../components/GameScene.js';
 
 const BUILTIN_IDS = [
   'association',
+  'aventure-ia',
   'bombes-party',
   'imposteur',
   'loups-village',
   'plus-ou-moins',
   'plutot-qui',
+  'poker-texas',
   'president',
   'promoteur',
   'quiz-party',

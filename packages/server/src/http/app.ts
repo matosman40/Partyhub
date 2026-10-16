@@ -16,6 +16,7 @@ import { resolveGame } from '../games-registry.js';
 import type { BoardGameService } from '../boards/service.js';
 import type { PackageSourceService } from '../sources/service.js';
 import type { CardGameService } from '../cards/service.js';
+import { embedCardAssets, restoreCardAssets } from '../cards/assets.js';
 import { PROPOSAL_MAX_PENDING, PROPOSAL_MAX_PER_DAY, type BoumBankService } from '../boum/service.js';
 import { IMPORT_MAX_BYTES, isBankType } from '@partyhub/games';
 import { z } from 'zod';
@@ -130,10 +131,11 @@ export function createApp(deps: AppDeps): express.Express {
   // Les images de profil tiennent dans le corps JSON (60 Ko maximum après encodage).
   // La sauvegarde complète est lue plus bas, avec sa propre limite.
   const jsonBody = express.json({ limit: '80kb' });
-  // Ces deux routes lisent elles-mêmes leur corps : le JSON global ne doit pas y toucher.
+  // Ces routes lisent elles-mêmes leur corps (limite propre) : le JSON global ne doit pas y toucher.
   app.use((req, res, next) => {
     const selfParsed =
       req.path === '/api/admin/backup/import' ||
+      req.path === '/api/admin/card-games/import' ||
       (req.method === 'POST' && (req.path === '/api/admin/assets' || req.path === '/api/admin/backup/archive'));
     return selfParsed ? next() : jsonBody(req, res, next);
   });
@@ -1109,10 +1111,16 @@ export function createApp(deps: AppDeps): express.Express {
     res.status(201).json({ ok: true, id: result.id });
   });
 
+  /** Export autonome : la définition et les fichiers qu'elle utilise (image du dos, police), en base64. */
   admin.get('/card-games/:id/export', (req, res) => {
     const exported = cardGames.exportOf(req.params.id ?? '');
     if (!exported) {
       res.status(404).json({ error: 'Jeu inconnu.' });
+      return;
+    }
+    const embedded = embedCardAssets(exported.definition, assets);
+    if (!embedded.ok) {
+      res.status(409).json({ error: embedded.error });
       return;
     }
     const slug =
@@ -1121,17 +1129,27 @@ export function createApp(deps: AppDeps): express.Express {
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-|-$/g, '') || 'jeu';
     res.setHeader('Content-Disposition', `attachment; filename="${slug}.partyhub.json"`);
-    res.json(exported);
+    res.json({ ...exported, assets: embedded.assets });
   });
 
+  /**
+   * Import : toujours un nouveau jeu. Les fichiers joints sont recréés dans la médiathèque sous de nouveaux
+   * identifiants ; si le jeu n'est pas enregistré, ils sont retirés.
+   */
   admin.post('/card-games/import', (req, res) => {
     const parsed = cardGames.parseImport(req.body);
     if (!parsed.ok) {
       res.status(400).json({ error: parsed.error });
       return;
     }
-    const result = cardGames.save(null, parsed.definition);
+    const restored = restoreCardAssets(parsed.definition, parsed.assets, assets);
+    if (!restored.ok) {
+      res.status(400).json({ error: restored.error });
+      return;
+    }
+    const result = cardGames.save(null, restored.definition);
     if (!result.ok) {
+      for (const id of restored.created) assets.remove(id);
       res.status(400).json({ error: result.error });
       return;
     }
@@ -1541,7 +1559,9 @@ export function createApp(deps: AppDeps): express.Express {
       ) {
         return next();
       }
-      return express.json({ limit: req.path === '/backup/import' ? '20mb' : '512kb' })(req, res, next);
+      // Sauvegarde et jeu de cartes avec ses fichiers joints (base64) : des limites plus hautes.
+      const limit = req.path === '/backup/import' ? '20mb' : req.path === '/card-games/import' ? '16mb' : '512kb';
+      return express.json({ limit })(req, res, next);
     },
     admin,
   );

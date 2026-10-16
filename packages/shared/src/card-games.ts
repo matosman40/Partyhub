@@ -50,17 +50,45 @@ export const cardEntrySchema = z.object({
   effect: z.enum(CARD_EFFECTS),
   /** Nombre d'exemplaires dans le paquet. */
   count: z.number().int().min(1).max(20),
-  /** Valeur en points si la carte reste en main en fin de manche. */
+  /** Valeur en points si la carte reste en main en fin de manche (au mémo : points de la paire trouvée). */
   points: z.number().int().min(0).max(100),
+  /** Texte imprimé sur la carte : phrases, questions, mots (jeux à texte). */
+  text: z.string().trim().max(240).optional(),
+  /** Rang d'ordre de grandeur, pour trier la main. Absent : on prend le chiffre du symbole, puis les points. */
+  rank: z.number().int().min(0).max(999).optional(),
+  /**
+   * Paire (mémo) : deux cartes de même paire forment une paire. Absent : la paire est l'identifiant
+   * de la carte, donc deux exemplaires de la même carte (count 2) forment une paire.
+   */
+  pair: z.string().trim().min(1).max(40).optional(),
 });
+
+/**
+ * Mécanique du jeu. « shedding » : se débarrasser de ses cartes (défaut, règles de la défausse).
+ * « memory » : cartes cachées, on retourne deux cartes par tour pour trouver les paires.
+ */
+export const CARD_MECHANICS = ['shedding', 'memory', 'race', 'trick'] as const;
+export type CardMechanic = (typeof CARD_MECHANICS)[number];
+
+/** Au mémo, nombre maximal de cartes sur le plateau (un écran de téléphone en tient environ 60). */
+export const MEMORY_MAX_CARDS = 60;
+
+/** Plafond d'exemplaires pour la ressemblance et les plis, pour garder une table lisible. */
+export const RACE_TRICK_MAX_CARDS = 120;
 
 export const cardRulesSchema = z.object({
   minPlayers: z.number().int().min(2).max(8),
   maxPlayers: z.number().int().min(2).max(8),
+  /** Taille de main (shedding). Ignorée au mémo. */
   handSize: z.number().int().min(3).max(10),
+  /** Comment une carte se pose (shedding). Ignoré au mémo. */
   matchOn: z.enum(MATCH_MODES),
   targetScore: z.number().int().min(50).max(2000),
   turnSeconds: z.number().int().min(0).max(60),
+  /** Mécanique (absent : shedding, comme les définitions précédentes). */
+  mechanic: z.enum(CARD_MECHANICS).optional(),
+  /** Atout (plis) : famille qui bat les autres couleurs. Absent : pas d'atout. */
+  trump: z.string().trim().min(1).max(16).optional(),
 });
 
 export const cardNoticeSchema = z.object({
@@ -68,6 +96,14 @@ export const cardNoticeSchema = z.object({
   steps: z.array(z.string().trim().min(1).max(300)).min(1).max(10),
   tips: z.array(z.string().trim().min(1).max(300)).max(6),
 });
+
+/** Polices livrées avec l'application : pas de fichier à envoyer pour les utiliser. */
+export const CARD_FONT_PRESETS = ['lisible', 'symboles', 'titre'] as const;
+export type CardFontPreset = (typeof CARD_FONT_PRESETS)[number];
+
+/** Motifs du dos de carte, dessinés en SVG (aucune image à envoyer). */
+export const CARD_BACK_PATTERNS = ['uni', 'rayures', 'pois', 'losanges', 'quadrillage'] as const;
+export type CardBackPattern = (typeof CARD_BACK_PATTERNS)[number];
 
 /**
  * Dos de carte personnalisé. Absent = dos du thème graphique.
@@ -81,6 +117,8 @@ export const cardBackSchema = z.object({
     .string()
     .regex(/^[0-9a-f]{32}$/, 'Image du dos invalide.')
     .optional(),
+  /** Motif dessiné sur la couleur de fond. Ignoré quand une image est choisie. */
+  pattern: z.enum(CARD_BACK_PATTERNS).optional(),
 });
 
 export const cardGameBaseSchema = z.object({
@@ -89,7 +127,8 @@ export const cardGameBaseSchema = z.object({
   icon: z.string().trim().min(1).max(8),
   theme: z.enum(CARD_THEMES),
   families: z.array(cardFamilySchema).min(1).max(8),
-  cards: z.array(cardEntrySchema).min(1).max(60),
+  /** Types de cartes (pas les exemplaires) : 200 au plus, pour les jeux à texte alimentés par CSV. */
+  cards: z.array(cardEntrySchema).min(1).max(200),
   rules: cardRulesSchema,
   notice: cardNoticeSchema,
   back: cardBackSchema.optional(),
@@ -98,6 +137,8 @@ export const cardGameBaseSchema = z.object({
     .string()
     .regex(/^[0-9a-f]{32}$/, 'Police invalide.')
     .optional(),
+  /** Police livrée avec l'application. Ignorée quand une police de la médiathèque est choisie. */
+  fontPreset: z.enum(CARD_FONT_PRESETS).optional(),
 });
 
 export const cardGameDefinitionSchema = cardGameBaseSchema.superRefine((def, ctx) => {
@@ -142,6 +183,87 @@ export const cardGameDefinitionSchema = cardGameBaseSchema.superRefine((def, ctx
   if (minPlayers > maxPlayers) {
     ctx.addIssue({ code: 'custom', path: ['rules', 'minPlayers'], message: 'Le minimum dépasse le maximum.' });
   }
+
+  // L'atout n'existe qu'aux plis : ailleurs, il ne ferait que tromper l'administrateur.
+  if (def.rules.trump !== undefined && def.rules.mechanic !== 'trick') {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['rules', 'trump'],
+      message: 'Seule la mécanique « plis » accepte un atout.',
+    });
+  }
+
+  if (def.rules.mechanic === 'race' || def.rules.mechanic === 'trick') {
+    // Ressemblance et plis : pas d'effets ni de jokers, un atout éventuel, et assez de cartes pour distribuer.
+    const race = def.rules.mechanic === 'race';
+    for (const [i, c] of def.cards.entries()) {
+      if (c.effect !== 'none' || c.family === WILD_FAMILY) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['cards', i, 'effect'],
+          message: `Cette mécanique n’utilise ni effet ni joker : « ${c.label || c.symbol} » doit être sans effet.`,
+        });
+      }
+    }
+    if (!race && def.rules.trump !== undefined && !familyIds.has(def.rules.trump)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['rules', 'trump'],
+        message: `L’atout « ${def.rules.trump} » n’est pas une famille du jeu.`,
+      });
+    }
+    const needed = race ? maxPlayers * handSize + 1 : maxPlayers * handSize;
+    if (deckSize < needed) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['cards'],
+        message: `Il faut au moins ${needed} cartes pour distribuer ${maxPlayers} joueurs à ${handSize} cartes${race ? ' et poser une carte au centre' : ''} (${deckSize} actuellement).`,
+      });
+    }
+    if (deckSize > RACE_TRICK_MAX_CARDS) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['cards'],
+        message: `Au plus ${RACE_TRICK_MAX_CARDS} cartes pour cette mécanique (${deckSize} actuellement).`,
+      });
+    }
+    return;
+  }
+
+  if (def.rules.mechanic === 'memory') {
+    // Au mémo, pas de main à distribuer : il faut seulement des paires complètes.
+    const groups = new Map<string, number>();
+    for (const [i, c] of def.cards.entries()) {
+      if (c.effect !== 'none' || c.family === WILD_FAMILY) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['cards', i, 'effect'],
+          message: `Au mémo, la carte « ${c.label || c.symbol} » n’a ni effet ni joker.`,
+        });
+      }
+      // Même espace de clés que le moteur : une étiquette ne se confond jamais avec un identifiant.
+      const key = c.pair !== undefined ? `pair:${c.pair}` : `id:${c.id}`;
+      groups.set(key, (groups.get(key) ?? 0) + c.count);
+    }
+    for (const [key, n] of groups) {
+      if (n !== 2) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['cards'],
+          message: `La paire « ${key.replace(/^(pair|id):/, '')} » compte ${n} carte(s) : il en faut exactement 2.`,
+        });
+      }
+    }
+    if (deckSize < 4 || deckSize > MEMORY_MAX_CARDS) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['cards'],
+        message: `Au mémo, il faut entre 4 et ${MEMORY_MAX_CARDS} cartes (${deckSize} actuellement).`,
+      });
+    }
+    return;
+  }
+
   if (deckSize < maxPlayers * handSize + 5) {
     ctx.addIssue({
       code: 'custom',

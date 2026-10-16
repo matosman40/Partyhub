@@ -6,6 +6,7 @@ export * from './avatars.js';
 export * from './characters.js';
 export * from './lobby-presence.js';
 export * from './card-games.js';
+export * from './card-csv.js';
 export * from './board-games.js';
 export * from './media-quiz.js';
 export * from './transfer.js';

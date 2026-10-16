@@ -361,6 +361,23 @@ const imposteur: Scene = (c) => (
   </>
 );
 
+const aventure: Scene = (c) => (
+  <>
+    <Stars c={c} count={70} maxY={H * 0.45} />
+    <Moon cx={330} cy={220} r={110} color={c.fill} craters={c.ink} />
+    <Ridge c={c} base={H * 0.66} amp={110} color="#14361f" />
+    <Pines c={c} base={H * 0.74} count={18} minH={110} maxH={220} color="#0b2214" />
+    <rect x={1040} y={H * 0.42} width={60} height={H * 0.44} fill="#0b1d12" />
+    <rect x={1300} y={H * 0.42} width={60} height={H * 0.44} fill="#0b1d12" />
+    <rect x={1080} y={H * 0.5} width={260} height={H * 0.36} fill="#0b1d12" />
+    <polygon points="1040,378 1070,300 1100,378" fill="#0b1d12" />
+    <polygon points="1300,378 1330,300 1360,378" fill="#0b1d12" />
+    <circle cx={1210} cy={560} r={70} fill={c.edge} opacity={0.2} />
+    <rect x={1204} y={520} width={12} height={40} fill={c.fill} />
+    <Ridge c={c} base={H * 0.88} amp={40} color="#06140b" />
+  </>
+);
+
 const loups: Scene = (c) => (
   <>
     <Stars c={c} count={90} maxY={H * 0.55} />
@@ -631,6 +648,35 @@ const banquise: Scene = (c) => {
   );
 };
 
+/** Table de poker : tapis vert, jetons autour, cartes au centre. */
+const poker: Scene = (c) => (
+  <>
+    <Stars c={c} count={60} maxY={H * 0.5} />
+    <ellipse cx={800} cy={470} rx={640} ry={330} fill={c.ink} opacity={0.35} />
+    <ellipse cx={800} cy={460} rx={600} ry={300} fill={c.a} opacity={0.9} />
+    <ellipse cx={800} cy={460} rx={560} ry={265} fill="none" stroke={c.fill} strokeWidth={6} opacity={0.35} />
+    {Array.from({ length: 16 }, (_, i) => {
+      const angle = (i * Math.PI) / 8;
+      const x = 800 + Math.cos(angle) * 660;
+      const y = 460 + Math.sin(angle) * 350;
+      return <circle key={i} cx={x} cy={y} r={span(c.r, 26, 40)} fill={i % 2 ? c.edge : c.fill} opacity={0.55} />;
+    })}
+    {[-1, 0, 1].map((i) => (
+      <rect
+        key={i}
+        x={800 + i * 70 - 46}
+        y={400 - (i === 0 ? 10 : 0)}
+        width={92}
+        height={130}
+        rx={12}
+        fill={c.fill}
+        opacity={0.8}
+        transform={`rotate(${i * 8} ${800 + i * 70} 465)`}
+      />
+    ))}
+  </>
+);
+
 /** Décors génériques, pour les jeux sans décor dessiné (paquets, cartes, plateau, solo). */
 const FALLBACK: Scene[] = [plutotQui, tarot, association, promoteur];
 
@@ -639,6 +685,7 @@ const SCENES: Record<string, Scene> = {
   'bombes-party': bombes,
   banquise,
   imposteur,
+  'aventure-ia': aventure,
   'loups-village': loups,
   'plus-ou-moins': plusOuMoins,
   'plutot-qui': plutotQui,
@@ -648,6 +695,7 @@ const SCENES: Record<string, Scene> = {
   reflexe,
   tarot,
   association,
+  'poker-texas': poker,
 };
 
 /** Fond de scène du jeu, en SVG. À placer en premier enfant d'un conteneur positionné. */

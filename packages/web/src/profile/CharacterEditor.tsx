@@ -60,7 +60,8 @@ const ACCESSORY_NAMES: Record<CharacterAccessory, string> = {
   bow: 'Nœud',
   flower: 'Fleur',
 };
-const EXPRESSION_NAMES: Record<CharacterExpression, string> = {
+/** Noms des expressions au repos, dans l'ordre de la liste partagée (l'index est la valeur du personnage). */
+export const EXPRESSION_NAMES: Record<CharacterExpression, string> = {
   calme: 'Calme',
   souriant: 'Souriant',
   rieur: 'Rieur',

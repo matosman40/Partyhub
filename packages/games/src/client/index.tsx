@@ -38,6 +38,7 @@ export { BANK_TYPES, BANK_TYPE_INFO, LEVELS, LEVEL_LABELS, STATUSES, STATUS_LABE
 export type { AnswerRule, BankType, EntryStatus, Level } from '../boum/bank/types.js';
 export type { ImportCandidate, ImportPreview, ImportRejection } from '../boum/bank/validate.js';
 export { cardGamePresets } from '../cards/presets.js';
+export { cardGameTemplates, type CardGameTemplate } from '../cards/templates.js';
 export { validatePlay, rankValue, RANKS, PRESIDENT_DEFINITION } from '../president/rules.js';
 export { CardFace } from '../cards/client/CardFace.js';
 export { assetFontFamily } from '../cards/client/fonts.js';
@@ -112,6 +113,18 @@ export const clientViews: Record<string, GameClientViews> = {
       Settings: fieldSettings([{ key: 'rounds', label: 'Manches', min: 1, max: 8 }]),
       Host: ImposteurHost,
       Player: ImposteurPlayer,
+    };
+  }),
+  'aventure-ia': lazyViews(async () => {
+    const [{ AventureHost }, { AventurePlayer }, { AventureSettings }] = await Promise.all([
+      import('../aventure/client/HostScreen.js'),
+      import('../aventure/client/PlayerScreen.js'),
+      import('../aventure/client/Settings.js'),
+    ]);
+    return {
+      Settings: AventureSettings,
+      Host: AventureHost,
+      Player: AventurePlayer,
     };
   }),
   'plus-ou-moins': lazyViews(async () => {
@@ -208,6 +221,7 @@ export const clientViews: Record<string, GameClientViews> = {
   'mots-croises': soloViews('mots-croises'),
   'rami-51': lazyViews(() => import('../rami51/client/index.js').then((m) => m.ramiViews)),
   tarot: lazyViews(() => import('../tarot/client/index.js').then((m) => m.tarotViews)),
+  'poker-texas': lazyViews(() => import('../poker/client/index.js').then((m) => m.pokerViews)),
 };
 
 // Briques partagées avec la vue 3D du Promoteur (écran TV, chargement différé côté web).

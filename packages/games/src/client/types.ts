@@ -26,6 +26,11 @@ export interface HostViewProps {
   hostState: any;
   /** Horodatage serveur au moment de l'émission de la vue. */
   now: number;
+  /**
+   * Envoie une action de l'écran principal au jeu (ex. générer des personnages). Absent quand la vue
+   * n'est pas celle de l'hôte (spectateur) : le jeu n'affiche alors pas les boutons correspondants.
+   */
+  onAction?: (type: string, payload?: unknown) => Promise<{ ok: boolean; error?: string }>;
 }
 
 export interface PlayerViewProps {

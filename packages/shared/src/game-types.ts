@@ -26,7 +26,38 @@ export interface GameContext {
   random(): number;
   /** Identifiants des joueurs actuellement connectés. */
   connectedPlayerIds(): string[];
+  /**
+   * Client d'IA générative, absent si aucune clé n'est configurée. Seul `runJob` doit l'utiliser :
+   * le moteur, lui, reste synchrone et ne voit jamais la clé.
+   */
+  ai?: AiClient;
 }
+
+/** Requête envoyée à un modèle de langage : une consigne système, un message utilisateur, une taille maximale. */
+export interface AiRequest {
+  system: string;
+  user: string;
+  maxTokens: number;
+  signal?: AbortSignal;
+}
+
+/** Client d'IA générative. `complete` renvoie le texte brut de la réponse ; le jeu le valide lui-même. */
+export interface AiClient {
+  complete(request: AiRequest): Promise<string>;
+}
+
+/**
+ * Travail asynchrone demandé par un jeu (par exemple une génération de texte). Le moteur le décrit dans son
+ * état ; la salle l'exécute hors du moteur avec `runJob`, puis lui transmet le résultat avec `completeJob`.
+ * `id` change à chaque nouveau travail : un résultat tardif d'un travail abandonné est ignoré.
+ */
+export interface GameJob {
+  id: string;
+  kind: string;
+  input: unknown;
+}
+
+export type JobOutcome = { ok: true; value: unknown } | { ok: false; error: string };
 
 /** Catégorie affichée dans le catalogue pour filtrer les jeux. */
 export type GameCategory = 'cartes' | 'plateau' | 'quiz' | 'role' | 'solo';
@@ -105,4 +136,21 @@ export interface GameModule<S = any, C = any> {
    * Doit renvoyer null quand le robot n'a rien à faire. Sans cette méthode, le robot reste passif.
    */
   suggest?(state: S, playerId: string, random: () => number): BotSuggestion | null;
+
+  /**
+   * Optionnel : actions que l'écran principal (hôte) peut demander, par exemple « générer des personnages ».
+   * Elles ne sont pas attribuées à un joueur. Les schémas valident le payload comme pour les joueurs.
+   */
+  hostActions?: Record<string, ZodTypeAny>;
+  handleHostAction?(state: S, type: string, payload: unknown, ctx: GameContext): GameResult<S>;
+
+  /**
+   * Optionnel : travail asynchrone en attente, ou null. Doit rester identique tant que le travail n'est pas
+   * terminé. La salle l'exécute en dehors du moteur, sans bloquer les autres salles.
+   */
+  pendingJob?(state: S): GameJob | null;
+  /** Exécute le travail (réseau compris). Ne doit pas modifier l'état : il renvoie seulement une valeur. */
+  runJob?(job: GameJob, ctx: GameContext, signal: AbortSignal): Promise<unknown>;
+  /** Intègre le résultat (ou l'échec) d'un travail. Un identifiant périmé doit laisser l'état inchangé. */
+  completeJob?(state: S, jobId: string, outcome: JobOutcome, ctx: GameContext): S;
 }

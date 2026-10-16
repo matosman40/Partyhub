@@ -1,15 +1,22 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import {
+  CARD_BACK_PATTERNS,
   CARD_EFFECTS,
+  CARD_FONT_PRESETS,
   CARD_THEMES,
   MATCH_MODES,
+  RACE_TRICK_MAX_CARDS,
   WILD_FAMILY,
+  type CardBackPattern,
   type CardEntry,
+  type CardFontPreset,
   type CardGameDefinition,
+  type CardMechanic,
   type CardTheme,
 } from '@partyhub/shared';
-import { CardFace, cardGamePresets } from '@partyhub/games/client';
+import { CardFace, cardGamePresets, cardGameTemplates } from '@partyhub/games/client';
 import { api } from '../api.js';
+import { GameMenu } from '../components/GameMenu.js';
 
 export interface CardGameRecord {
   id: string;
@@ -37,6 +44,30 @@ const MATCH_LABEL: Record<string, string> = {
   family: 'Même couleur seulement',
   symbol: 'Même symbole seulement',
   either: 'Même couleur ou même symbole',
+};
+
+const MECHANIC_LABEL: Record<CardMechanic, string> = {
+  shedding: 'Défausse : poser ses cartes sur la pile',
+  memory: 'Mémo : retourner deux cartes, trouver les paires',
+  race: 'Ressemblance : toucher la carte du centre dès qu’elle ressemble à une des siennes',
+  trick: 'Plis : jouer une carte à chaque tour, remporter les plis',
+};
+
+/** Mécaniques sans effet ni joker : leurs cartes sont toutes sans effet et de familles normales. */
+const PURE_MECHANICS: CardMechanic[] = ['memory', 'race', 'trick'];
+
+const PATTERN_LABEL: Record<CardBackPattern, string> = {
+  uni: 'Uni',
+  rayures: 'Rayures',
+  pois: 'Pois',
+  losanges: 'Losanges',
+  quadrillage: 'Quadrillage',
+};
+
+const FONT_PRESET_LABEL: Record<CardFontPreset, string> = {
+  lisible: 'Lisible (Atkinson Hyperlegible)',
+  symboles: 'Symboles (Noto Sans Symbols 2)',
+  titre: 'Titre (Luckiest Guy)',
 };
 
 /** Identifiant court et valide (minuscules, chiffres, tirets). */
@@ -83,6 +114,8 @@ export function CardGamesAdmin({ onChanged }: { onChanged: () => void }) {
   const [editing, setEditing] = useState<{ id: string | null; draft: CardGameDefinition } | null>(null);
   const [model, setModel] = useState<string>('blank');
   const [error, setError] = useState<string | null>(null);
+  /** CSV de cartes choisi : il est ajouté au prochain import JSON (cartes à texte). */
+  const [pendingCsv, setPendingCsv] = useState<{ name: string; text: string } | null>(null);
 
   async function load() {
     try {
@@ -98,9 +131,17 @@ export function CardGamesAdmin({ onChanged }: { onChanged: () => void }) {
   }, []);
 
   function startNew() {
-    const base =
-      model === 'blank' ? blankDefinition() : structuredClone(cardGamePresets[model as keyof typeof cardGamePresets]);
-    if (model !== 'blank') base.name = `${base.name} (copie)`;
+    let base: CardGameDefinition;
+    if (model === 'blank') {
+      base = blankDefinition();
+    } else if (model.startsWith('tpl:')) {
+      // Un modèle prêt à l’emploi garde son nom : c’est un nouveau jeu, pas une copie.
+      const template = cardGameTemplates.find((t) => `tpl:${t.id}` === model);
+      base = structuredClone(template?.definition ?? blankDefinition());
+    } else {
+      base = structuredClone(cardGamePresets[model as keyof typeof cardGamePresets]);
+      base.name = `${base.name} (copie)`;
+    }
     setError(null);
     setEditing({ id: null, draft: base });
   }
@@ -113,8 +154,15 @@ export function CardGamesAdmin({ onChanged }: { onChanged: () => void }) {
   async function importFile(file: File) {
     setError(null);
     try {
-      const data = JSON.parse(await file.text()) as unknown;
+      const data = JSON.parse(await file.text()) as Record<string, unknown>;
+      if (pendingCsv) {
+        // Le CSV rejoint la définition : ses lignes deviennent des cartes à texte.
+        const target =
+          data.definition && typeof data.definition === 'object' ? (data.definition as Record<string, unknown>) : data;
+        target.csv = pendingCsv.text;
+      }
       await api('/api/admin/card-games/import', { method: 'POST', body: JSON.stringify(data) });
+      setPendingCsv(null);
       await load();
       onChanged();
     } catch (err) {
@@ -174,6 +222,13 @@ export function CardGamesAdmin({ onChanged }: { onChanged: () => void }) {
             <option value="blank">Jeu vierge</option>
             <option value="cartes-couleurs">Couleurs &amp; chiffres (modèle)</option>
             <option value="cartes-coco">Blanc-manger coco (modèle)</option>
+            <optgroup label="Modèles prêts à l’emploi">
+              {cardGameTemplates.map((t) => (
+                <option key={t.id} value={`tpl:${t.id}`}>
+                  {t.title}
+                </option>
+              ))}
+            </optgroup>
           </select>
         </label>
         <button type="button" className="btn primary" onClick={startNew}>
@@ -192,6 +247,29 @@ export function CardGamesAdmin({ onChanged }: { onChanged: () => void }) {
             }}
           />
         </label>
+        <label className="btn ghost">
+          CSV de cartes (facultatif)
+          <input
+            type="file"
+            accept=".csv,text/csv"
+            className="sr-only"
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              e.target.value = '';
+              if (!file) return;
+              setError(null);
+              setPendingCsv({ name: file.name, text: await file.text() });
+            }}
+          />
+        </label>
+        {pendingCsv && (
+          <span className="muted small">
+            « {pendingCsv.name} » sera lié au prochain import JSON.{' '}
+            <button type="button" className="link-btn" onClick={() => setPendingCsv(null)}>
+              Retirer
+            </button>
+          </span>
+        )}
       </div>
 
       {error && (
@@ -222,15 +300,17 @@ export function CardGamesAdmin({ onChanged }: { onChanged: () => void }) {
               <button type="button" className="btn ghost small" onClick={() => startEdit(r)}>
                 Modifier
               </button>
-              <button type="button" className="btn ghost small" onClick={() => duplicate(r)}>
-                Dupliquer
-              </button>
-              <a className="btn ghost small" href={`/api/admin/card-games/${encodeURIComponent(r.id)}/export`} download>
-                Exporter
-              </a>
-              <button type="button" className="btn ghost small" onClick={() => remove(r)}>
-                Supprimer
-              </button>
+              <GameMenu
+                gameName={r.definition.name}
+                items={[
+                  { label: 'Dupliquer', onSelect: () => void duplicate(r) },
+                  {
+                    label: 'Exporter (JSON, avec ses fichiers)',
+                    href: `/api/admin/card-games/${encodeURIComponent(r.id)}/export`,
+                  },
+                  { label: 'Supprimer', danger: true, onSelect: () => void remove(r) },
+                ]}
+              />
             </div>
           </li>
         ))}
@@ -283,6 +363,12 @@ function CardGameEditor({
 
   const deckSize = draft.cards.reduce((n, c) => n + (Number(c.count) || 0), 0);
   const needed = draft.rules.maxPlayers * draft.rules.handSize + 5;
+  const mechanic: CardMechanic = draft.rules.mechanic ?? 'shedding';
+  const { maxPlayers, handSize } = draft.rules;
+  /** Sans effet ni joker : seules les cartes de familles normales peuvent exister. */
+  const pure = PURE_MECHANICS.includes(mechanic);
+  /** Cartes nécessaires pour distribuer les mains (et une carte au centre à la ressemblance). */
+  const neededDeck = mechanic === 'race' ? maxPlayers * handSize + 1 : maxPlayers * handSize;
 
   function patch(fields: Partial<CardGameDefinition>) {
     setDraft((d) => ({ ...d, ...fields }));
@@ -315,6 +401,47 @@ function CardGameEditor({
         ...d,
         families: rest,
         cards: d.cards.map((c) => (c.family === id ? { ...c, family: fallback } : c)),
+        // Un atout supprimé ne doit pas rester référencé : le jeu redevient sans atout.
+        rules: d.rules.trump === id ? { ...d.rules, trump: undefined } : d.rules,
+      };
+    });
+  }
+
+  /**
+   * Change la mécanique. Passer au mémo, à la ressemblance ou aux plis retire effets et jokers : on prévient
+   * d'abord. L'atout n'existe que pour les plis et disparaît dès qu'on en sort.
+   */
+  function changeMechanic(next: CardMechanic) {
+    const current = draft.rules.mechanic ?? 'shedding';
+    if (next === current) return;
+    const becomesPure = PURE_MECHANICS.includes(next) && !PURE_MECHANICS.includes(current);
+    if (becomesPure) {
+      const affected = draft.cards.filter((c) => c.effect !== 'none' || c.family === WILD_FAMILY).length;
+      if (
+        affected > 0 &&
+        !window.confirm(
+          `Cette mécanique n’utilise ni effets ni jokers. ${affected > 1 ? `${affected} cartes perdront` : '1 carte perdra'} leur effet ou leur statut de joker. Continuer ?`,
+        )
+      ) {
+        return;
+      }
+    }
+    setDraft((d) => {
+      const fallback = d.families[0]?.id ?? WILD_FAMILY;
+      return {
+        ...d,
+        cards: becomesPure
+          ? d.cards.map((c) => ({
+              ...c,
+              effect: 'none',
+              family: c.family === WILD_FAMILY ? fallback : c.family,
+            }))
+          : d.cards,
+        rules: {
+          ...d.rules,
+          mechanic: next === 'shedding' ? undefined : next,
+          trump: next === 'trick' ? d.rules.trump : undefined,
+        },
       };
     });
   }
@@ -349,6 +476,23 @@ function CardGameEditor({
 
   function removeCard(id: string) {
     setDraft((d) => ({ ...d, cards: d.cards.filter((c) => c.id !== id) }));
+  }
+
+  /** Police choisie, codée pour le menu : « asset: » (médiathèque), « preset: » (livrée) ou vide (thème). */
+  const fontChoice = draft.fontAssetId
+    ? `asset:${draft.fontAssetId}`
+    : draft.fontPreset
+      ? `preset:${draft.fontPreset}`
+      : '';
+
+  function chooseFont(value: string) {
+    if (value.startsWith('asset:')) {
+      patch({ fontAssetId: value.slice('asset:'.length), fontPreset: undefined });
+    } else if (value.startsWith('preset:')) {
+      patch({ fontPreset: value.slice('preset:'.length) as CardFontPreset, fontAssetId: undefined });
+    } else {
+      patch({ fontAssetId: undefined, fontPreset: undefined });
+    }
   }
 
   async function save(e: FormEvent) {
@@ -409,14 +553,25 @@ function CardGameEditor({
           <input value={draft.description} maxLength={160} onChange={(e) => patch({ description: e.target.value })} />
         </label>
         <label className="field">
-          <span>Police des cartes (médiathèque)</span>
-          <select value={draft.fontAssetId ?? ''} onChange={(e) => patch({ fontAssetId: e.target.value || undefined })}>
+          <span>Police des cartes</span>
+          <select value={fontChoice} onChange={(e) => chooseFont(e.target.value)}>
             <option value="">Police du thème</option>
-            {fonts.map((f) => (
-              <option key={f.id} value={f.id}>
-                {f.name}
-              </option>
-            ))}
+            <optgroup label="Livrées avec l’application">
+              {CARD_FONT_PRESETS.map((p) => (
+                <option key={p} value={`preset:${p}`}>
+                  {FONT_PRESET_LABEL[p]}
+                </option>
+              ))}
+            </optgroup>
+            {fonts.length > 0 && (
+              <optgroup label="Médiathèque">
+                {fonts.map((f) => (
+                  <option key={f.id} value={`asset:${f.id}`}>
+                    {f.name}
+                  </option>
+                ))}
+              </optgroup>
+            )}
           </select>
         </label>
         <div className="ed-themes" role="radiogroup" aria-label="Thème graphique">
@@ -460,6 +615,19 @@ function CardGameEditor({
             />
           </label>
         </div>
+        <label className="field">
+          <span>Motif (sans image)</span>
+          <select
+            value={draft.back?.pattern ?? 'uni'}
+            onChange={(e) => patchBack({ pattern: e.target.value as CardBackPattern })}
+          >
+            {CARD_BACK_PATTERNS.map((p) => (
+              <option key={p} value={p}>
+                {PATTERN_LABEL[p]}
+              </option>
+            ))}
+          </select>
+        </label>
         <label className="field">
           <span>Image (médiathèque)</span>
           <select
@@ -563,16 +731,19 @@ function CardGameEditor({
                     {f.label}
                   </option>
                 ))}
-                <option value={WILD_FAMILY}>Joker</option>
+                {!pure && <option value={WILD_FAMILY}>Joker</option>}
               </select>
               <select
                 aria-label="Effet"
                 value={c.effect}
                 onChange={(e) => updateCard(c.id, { effect: e.target.value as CardEntry['effect'] })}
               >
-                {CARD_EFFECTS.filter((eff) =>
-                  c.family === WILD_FAMILY ? eff === 'wild' || eff === 'draw4' : eff !== 'wild' && eff !== 'draw4',
-                ).map((eff) => (
+                {CARD_EFFECTS.filter((eff) => {
+                  if (pure) return eff === 'none';
+                  return c.family === WILD_FAMILY
+                    ? eff === 'wild' || eff === 'draw4'
+                    : eff !== 'wild' && eff !== 'draw4';
+                }).map((eff) => (
                   <option key={eff} value={eff}>
                     {EFFECT_LABEL[eff]}
                   </option>
@@ -607,10 +778,45 @@ function CardGameEditor({
                   ✕
                 </button>
               </span>
+              <div className="ed-card-extra">
+                <label className="field ed-card-text">
+                  <span>Texte</span>
+                  <input
+                    value={c.text ?? ''}
+                    maxLength={240}
+                    onChange={(e) => updateCard(c.id, { text: e.target.value || undefined })}
+                  />
+                </label>
+                <label className="field">
+                  <span>Paire (mémo)</span>
+                  <input
+                    value={c.pair ?? ''}
+                    maxLength={40}
+                    onChange={(e) => updateCard(c.id, { pair: e.target.value || undefined })}
+                  />
+                </label>
+                <label className="field">
+                  <span>Rang (tri de la main)</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={999}
+                    value={c.rank ?? ''}
+                    onChange={(e) =>
+                      updateCard(c.id, { rank: e.target.value === '' ? undefined : Number(e.target.value) })
+                    }
+                  />
+                </label>
+              </div>
             </div>
           ))}
         </div>
-        <button type="button" className="btn ghost small" disabled={draft.cards.length >= 60} onClick={() => addCard()}>
+        <button
+          type="button"
+          className="btn ghost small"
+          disabled={draft.cards.length >= 200}
+          onClick={() => addCard()}
+        >
           Ajouter une carte
         </button>
       </Section>
@@ -629,6 +835,44 @@ function CardGameEditor({
       </Section>
 
       <Section title="Règles">
+        <label className="field">
+          <span>Mécanique</span>
+          <select value={mechanic} onChange={(e) => changeMechanic(e.target.value as CardMechanic)}>
+            {(Object.keys(MECHANIC_LABEL) as CardMechanic[]).map((m) => (
+              <option key={m} value={m}>
+                {MECHANIC_LABEL[m]}
+              </option>
+            ))}
+          </select>
+        </label>
+        {mechanic === 'memory' && (
+          <p className="muted small">
+            Au mémo, deux cartes forment une paire si elles ont la même étiquette « Paire », ou si ce sont deux
+            exemplaires identiques. La main, la pioche et les effets ne servent pas.
+          </p>
+        )}
+        {mechanic === 'race' && (
+          <p className="muted small">
+            Une carte est visible au centre, chaque joueur a une main cachée. Quand une de ses cartes ressemble au
+            centre (selon « Ce qui rend deux cartes semblables »), il la touche : il prend la carte et ses points, et sa
+            carte devient le centre. Une fausse touche le bloque 1,5 s. Sans réponse pendant « Secondes par tour », le
+            centre change. Pas d’effet ni de joker.
+          </p>
+        )}
+        {mechanic === 'trick' && (
+          <p className="muted small">
+            Le premier joueur pose une carte, les autres doivent suivre la couleur s’ils le peuvent. Le pli va à la plus
+            forte carte de la couleur demandée, ou à l’atout s’il y en a un. Son gagnant prend les points du pli et
+            ouvre le suivant. La manche finit quand les mains sont vides : gagne qui a fait le plus de plis. Pas d’effet
+            ni de joker.
+          </p>
+        )}
+        {(mechanic === 'race' || mechanic === 'trick') && (
+          <p className={`small ${deckSize >= neededDeck && deckSize <= RACE_TRICK_MAX_CARDS ? 'muted' : 'error'}`}>
+            {deckSize} cartes dans le paquet. Il en faut au moins {neededDeck} ({maxPlayers} joueurs à {handSize} cartes
+            {mechanic === 'race' ? ' et une au centre' : ''}), {RACE_TRICK_MAX_CARDS} au plus.
+          </p>
+        )}
         <div className="ed-grid-3">
           <label className="field">
             <span>Joueurs minimum</span>
@@ -660,19 +904,37 @@ function CardGameEditor({
               onChange={(e) => patchRule({ handSize: Number(e.target.value) })}
             />
           </label>
-          <label className="field">
-            <span>Pour poser une carte</span>
-            <select
-              value={draft.rules.matchOn}
-              onChange={(e) => patchRule({ matchOn: e.target.value as CardGameDefinition['rules']['matchOn'] })}
-            >
-              {MATCH_MODES.map((m) => (
-                <option key={m} value={m}>
-                  {MATCH_LABEL[m]}
-                </option>
-              ))}
-            </select>
-          </label>
+          {(mechanic === 'shedding' || mechanic === 'race') && (
+            <label className="field">
+              <span>{mechanic === 'race' ? 'Ce qui rend deux cartes semblables' : 'Pour poser une carte'}</span>
+              <select
+                value={draft.rules.matchOn}
+                onChange={(e) => patchRule({ matchOn: e.target.value as CardGameDefinition['rules']['matchOn'] })}
+              >
+                {MATCH_MODES.map((m) => (
+                  <option key={m} value={m}>
+                    {MATCH_LABEL[m]}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          {mechanic === 'trick' && (
+            <label className="field">
+              <span>Atout</span>
+              <select
+                value={draft.rules.trump ?? ''}
+                onChange={(e) => patchRule({ trump: e.target.value || undefined })}
+              >
+                <option value="">Sans atout</option>
+                {families.map((f) => (
+                  <option key={f.id} value={f.id}>
+                    {f.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           <label className="field">
             <span>Points pour gagner</span>
             <input

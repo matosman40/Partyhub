@@ -17,7 +17,12 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   }
   const data = (await res.json().catch(() => ({}))) as { error?: string } & T;
   if (res.status >= 500) logClient('error', 'api', `HTTP ${res.status} : ${method} ${route}`);
-  if (!res.ok) throw new Error(data.error ?? 'Erreur inattendue.');
+  if (!res.ok) {
+    // Le code HTTP accompagne le message : un 401 veut dire « ce jeton n’est plus valable ».
+    const err = new Error(data.error ?? 'Erreur inattendue.') as Error & { status?: number };
+    err.status = res.status;
+    throw err;
+  }
   return data;
 }
 

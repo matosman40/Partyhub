@@ -153,9 +153,14 @@ export interface ProfileStats {
   perGame: { gameId: string; name: string; played: number; wins: number; points: number }[];
 }
 
+/** Message renvoyé quand le jeton de profil n'est plus valable : le téléphone retire alors ce profil. */
+export const PROFILE_SESSION_EXPIRED = 'Votre session de profil a expiré. Choisissez un profil sur cet appareil.';
+
 export interface ProfileView {
   /** Vrai si la photo est visible des autres joueurs pendant les parties. */
   avatarShared: boolean;
+  /** Faux pour un profil « nom seul » : pas de mot de passe, donc pas de changement de mot de passe. */
+  hasPassword: boolean;
   id: string;
   username: string;
   displayName: string;
@@ -186,6 +191,8 @@ export interface ClientToServerEvents {
   'host:removeBot': (p: { playerId: string }, ack: Ack) => void;
   'host:chat': (p: { text: string }, ack: Ack) => void;
   'host:reaction': (p: { emoji: string }, ack: Ack) => void;
+  /** Action du jeu demandée par l'écran principal (ex. générer des personnages), sans joueur attribué. */
+  'host:game-action': (p: { type: string; payload?: unknown }, ack: Ack) => void;
 
   // Joueurs (smartphones)
   'player:join': (

@@ -1,3 +1,17 @@
+import type { CardFontPreset } from '@partyhub/shared';
+
+/** Noms de famille des polices livrées dans packages/web/public/fonts (déclarées dans styles.css). */
+const PRESET_FAMILIES: Record<CardFontPreset, string> = {
+  lisible: 'Atkinson Hyperlegible',
+  symboles: 'Noto Sans Symbols 2',
+  titre: 'Luckiest Guy',
+};
+
+/** Pile de polices d'une police livrée avec l'application, prête pour un style CSS. */
+export function presetFontFamily(preset: CardFontPreset): string {
+  return `"${PRESET_FAMILIES[preset]}", sans-serif`;
+}
+
 /**
  * Police de la médiathèque, chargée une seule fois par identifiant. Retourne le nom de famille
  * CSS à utiliser. L'identifiant vient du serveur et ne contient que des caractères hexadécimaux.

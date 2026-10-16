@@ -1,4 +1,58 @@
 /* Polices livrées avec l'application (licence SIL OFL 1.1), sans appel à un service externe. */
+/* Polices des cartes : sous-ensembles latin (texte) et symboles (Noto Sans Symbols 2 couvre les figures de jeux). */
+@font-face {
+  font-family: 'Atkinson Hyperlegible';
+  src: url('/fonts/atkinson-hyperlegible-latin-400-normal.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC,
+    U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Atkinson Hyperlegible';
+  src: url('/fonts/atkinson-hyperlegible-latin-700-normal.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC,
+    U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Noto Sans Symbols 2';
+  src: url('/fonts/noto-sans-symbols-2-latin-400-normal.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC,
+    U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Noto Sans Symbols 2';
+  src: url('/fonts/noto-sans-symbols-2-symbols-400-normal.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  unicode-range:
+    U+0001-000C, U+000E-001F, U+007F-009F, U+20DD-20E0, U+20E2-20E4, U+2150-218F, U+2190, U+2192, U+2194-2199, U+21AF,
+    U+21E6-21F0, U+21F3, U+2218-2219, U+2299, U+22C4-22C6, U+2300-243F, U+2440-244A, U+2460-24FF, U+25A0-27BF,
+    U+2800-28FF, U+2921-2922, U+2981, U+29BF, U+29EB, U+2B00-2BFF, U+4DC0-4DFF, U+FFF9-FFFB, U+10140-1018E,
+    U+10190-1019C, U+101A0, U+101D0-101FD, U+102E0-102FB, U+10E60-10E7E, U+1D2C0-1D2D3, U+1D2E0-1D37F, U+1F000-1F0FF,
+    U+1F100-1F1AD, U+1F1E6-1F1FF, U+1F30D-1F30F, U+1F315, U+1F31C, U+1F31E, U+1F320-1F32C, U+1F336, U+1F378, U+1F37D,
+    U+1F382, U+1F393-1F39F, U+1F3A7-1F3A8, U+1F3AC-1F3AF, U+1F3C2, U+1F3C4-1F3C6, U+1F3CA-1F3CE, U+1F3D4-1F3E0, U+1F3ED,
+    U+1F3F1-1F3F3, U+1F3F5-1F3F7, U+1F408, U+1F415, U+1F41F, U+1F426, U+1F43F, U+1F441-1F442, U+1F444, U+1F446-1F449,
+    U+1F44C-1F44E, U+1F453, U+1F46A, U+1F47D, U+1F4A3, U+1F4B0, U+1F4B3, U+1F4B9, U+1F4BB, U+1F4BF, U+1F4C8-1F4CB,
+    U+1F4D6, U+1F4DA, U+1F4DF, U+1F4E3-1F4E6, U+1F4EA-1F4ED, U+1F4F7, U+1F4F9-1F4FB, U+1F4FD-1F4FE, U+1F503,
+    U+1F507-1F50B, U+1F50D, U+1F512-1F513, U+1F53E-1F54A, U+1F54F-1F5FA, U+1F610, U+1F650-1F67F, U+1F687, U+1F68D,
+    U+1F691, U+1F694, U+1F698, U+1F6AD, U+1F6B2, U+1F6B9-1F6BA, U+1F6BC, U+1F6C6-1F6CF, U+1F6D3-1F6D7, U+1F6E0-1F6EA,
+    U+1F6F0-1F6F3, U+1F6F7-1F6FC, U+1F700-1F7FF, U+1F800-1F80B, U+1F810-1F847, U+1F850-1F859, U+1F860-1F887,
+    U+1F890-1F8AD, U+1F8B0-1F8BB, U+1F8C0-1F8C1, U+1F900-1F90B, U+1F93B, U+1F946, U+1F984, U+1F996, U+1F9E9,
+    U+1FA00-1FA6F, U+1FA70-1FA7C, U+1FA80-1FA89, U+1FA8F-1FAC6, U+1FACE-1FADC, U+1FADF-1FAE9, U+1FAF0-1FAF8,
+    U+1FB00-1FBFF;
+}
 @font-face {
   font-family: 'Luckiest Guy';
   src: url('/fonts/luckiest-guy-latin-400-normal.woff2') format('woff2');
@@ -120,6 +174,8 @@
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  /* Sans hauteur ici, le fond du body ne couvre que le contenu : une bande sombre apparaît sur les pages courtes. */
+  height: 100%;
 }
 
 body {
@@ -3273,6 +3329,55 @@ html {
   justify-content: flex-end;
 }
 
+/* Actions secondaires d'un jeu, déroulées sous « ⋯ » (GameMenu). */
+.game-menu {
+  position: relative;
+}
+
+.game-menu-trigger {
+  min-width: 2.4rem;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.game-menu-panel {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  right: 0;
+  z-index: 20;
+  display: grid;
+  gap: 0.1rem;
+  min-width: 15rem;
+  padding: 0.35rem;
+  border-radius: 14px;
+  background: var(--bg1);
+  border: 1px solid var(--line);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+}
+
+.game-menu-item {
+  display: block;
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.game-menu-item:hover,
+.game-menu-item:focus-visible {
+  background: var(--glass);
+}
+
+.game-menu-item.is-danger {
+  color: var(--danger);
+}
+
 .ed-editor {
   gap: 1.1rem;
 }
@@ -3396,6 +3501,425 @@ html {
   font-weight: 700;
   color: var(--muted);
   padding: 0 0.2rem;
+}
+
+/* Mémo : plateau de cartes face cachée (téléphone et écran principal). */
+.memory-board {
+  display: grid;
+  grid-template-columns: repeat(var(--memory-cols, 4), minmax(0, 1fr));
+  gap: 0.5rem;
+  width: 100%;
+}
+.memory-board.is-host {
+  --memory-gap: 0.9rem;
+  /* Tuile aussi grande que possible sans dépasser la largeur utile ni la hauteur de l'écran. */
+  --memory-tile-w: min(
+    calc((min(92vw, 1100px) - (var(--memory-cols) - 1) * var(--memory-gap)) / var(--memory-cols)),
+    calc((max(120px, 100vh - 300px) - (var(--memory-rows) - 1) * var(--memory-gap)) / var(--memory-rows) * 2 / 3)
+  );
+  grid-template-columns: repeat(var(--memory-cols), var(--memory-tile-w));
+  justify-content: center;
+  gap: var(--memory-gap);
+  width: auto;
+  margin: 0.5rem auto;
+}
+.memory-tile {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  aspect-ratio: 2 / 3;
+  cursor: pointer;
+  transition:
+    transform 0.15s ease,
+    opacity 0.3s ease;
+}
+.memory-tile .pcard {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.memory-tile:disabled {
+  cursor: default;
+}
+.memory-tile:not(:disabled):hover {
+  transform: translateY(-2px);
+}
+.memory-tile:focus-visible {
+  outline: 3px solid #ffc83d;
+  outline-offset: 3px;
+}
+.memory-tile.is-open {
+  box-shadow: 0 0 0 3px #ffc83d;
+}
+.memory-tile.is-found {
+  opacity: 0.45;
+}
+@media (prefers-reduced-motion: reduce) {
+  .memory-tile {
+    transition: none;
+  }
+}
+
+/* Ressemblance : carte du centre (TV), carte du centre (téléphone), main et verrou après une touche fausse. */
+.race-center {
+  display: flex;
+  justify-content: center;
+  margin: 0.5rem auto;
+}
+.race-center .pcard {
+  width: min(26vh, 260px);
+}
+.seat-card.is-locked {
+  box-shadow: 0 0 0 2px #ff4d5a;
+}
+.race-center-mini {
+  width: min(36vw, 150px);
+  margin: 0.4rem auto 0.8rem;
+}
+.pick-hand {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
+  gap: 0.6rem;
+  width: 100%;
+}
+.pick-card {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  cursor: pointer;
+  transition: transform 0.12s ease;
+}
+.pick-card .pcard {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.pick-card:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+.pick-card:not(:disabled):active {
+  transform: scale(0.96);
+}
+.pick-card:focus-visible {
+  outline: 3px solid #ffc83d;
+  outline-offset: 3px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pick-card {
+    transition: none;
+  }
+}
+
+/* Pli : table au centre, carte gagnante mise en valeur, mini-table sur le téléphone. */
+.trick-table {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 1rem;
+  min-height: min(30vh, 260px);
+  margin: 0.5rem auto;
+}
+.trick-slot {
+  margin: 0;
+  width: min(18vh, 170px);
+  text-align: center;
+  border-radius: 14px;
+  transition: transform 0.3s ease;
+}
+.trick-slot .pcard {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.trick-slot figcaption {
+  margin-top: 0.3rem;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--text);
+}
+.trick-slot.is-winner {
+  outline: 3px solid #ffc83d;
+  outline-offset: 4px;
+  transform: scale(1.05);
+}
+.trick-mini-row {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.4rem 0 0.8rem;
+}
+.trick-mini {
+  width: min(19vw, 84px);
+}
+.trick-mini .pcard {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+@media (prefers-reduced-motion: reduce) {
+  .trick-slot {
+    transition: none;
+  }
+}
+
+/* Poker : table verte, sièges autour, cartes, piles de jetons et actions du téléphone. */
+.poker-table {
+  position: relative;
+  width: min(94vw, 1180px);
+  aspect-ratio: 16 / 9;
+  max-height: calc(100vh - 150px);
+  margin: 0.5rem auto 0;
+}
+.poker-felt {
+  position: absolute;
+  left: 20%;
+  right: 20%;
+  top: 24%;
+  bottom: 24%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 1rem 2rem;
+  border-radius: 999px;
+  background: radial-gradient(ellipse at center, #1f7a4d 0%, #14553a 70%, #0c3525 100%);
+  border: 6px solid #5a3a1d;
+  box-shadow:
+    inset 0 0 40px rgba(0, 0, 0, 0.5),
+    0 14px 30px rgba(0, 0, 0, 0.5);
+}
+.poker-board {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
+.poker-board .pk-card {
+  width: clamp(2.6rem, 5.2vw, 4.6rem);
+}
+.poker-pot {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #ffffff;
+  font-weight: 800;
+}
+.poker-pot-amount {
+  font-size: clamp(1rem, 2.2vw, 1.4rem);
+}
+.poker-event {
+  margin: 0;
+  min-height: 1.4em;
+  text-align: center;
+  font-size: clamp(0.8rem, 1.6vw, 1rem);
+  color: #f4f4f4;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+.poker-seat {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: clamp(120px, 14vw, 160px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.4rem 0.5rem;
+  border-radius: 16px;
+  background: rgba(8, 6, 26, 0.65);
+  border: 2px solid var(--line-strong);
+  transition: opacity 0.3s ease;
+}
+.poker-seat.is-turn {
+  box-shadow: 0 0 0 3px #ffc83d;
+}
+.poker-seat.is-winner {
+  box-shadow: 0 0 0 3px #7fdc6a;
+}
+.poker-seat.is-folded {
+  opacity: 0.5;
+}
+.poker-seat.is-out {
+  opacity: 0.35;
+}
+.poker-seat-head {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+}
+.poker-seat-head .seat-meta {
+  min-width: 0;
+}
+.poker-seat-cards {
+  display: flex;
+  gap: 0.25rem;
+}
+.poker-seat-bet {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 800;
+  color: #ffe066;
+}
+.poker-dealer {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #111111;
+  font-weight: 900;
+  font-size: 0.8rem;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.4);
+}
+.chip-stack {
+  position: relative;
+  display: inline-block;
+  width: 26px;
+  height: 26px;
+  flex: 0 0 auto;
+}
+.chip {
+  position: absolute;
+  left: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 3px dashed rgba(0, 0, 0, 0.35);
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.4);
+}
+.pk-card {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  width: 3.6rem;
+  aspect-ratio: 5 / 7;
+  height: auto;
+  box-sizing: border-box;
+  padding: 0.3rem 0.4rem;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #15161c;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35);
+  font-weight: 800;
+  line-height: 1;
+}
+.pk-card.pk-red {
+  color: #c62828;
+}
+.pk-card .pk-rank {
+  font-size: 1.25rem;
+}
+.pk-card .pk-suit {
+  align-self: flex-end;
+  font-size: 1.3rem;
+}
+.pk-card.pk-small {
+  width: 2.5rem;
+  padding: 0.2rem 0.25rem;
+  border-radius: 7px;
+}
+.pk-card.pk-small .pk-rank,
+.pk-card.pk-small .pk-suit {
+  font-size: 0.95rem;
+}
+.pk-card.pk-back {
+  background: repeating-linear-gradient(45deg, #1d2a5c 0 8px, #2a3a78 8px 16px);
+  border: 3px solid #e7c873;
+}
+.pk-card.pk-slot {
+  background: rgba(255, 255, 255, 0.08);
+  border: 2px dashed rgba(255, 255, 255, 0.35);
+  box-shadow: none;
+}
+.poker-player .poker-hole {
+  display: flex;
+  justify-content: center;
+  gap: 0.7rem;
+  margin: 0.6rem 0;
+}
+.poker-player .poker-hole .pk-card {
+  width: 5.4rem;
+}
+.poker-board-mini {
+  display: flex;
+  justify-content: center;
+  gap: 0.3rem;
+  margin: 0.3rem 0;
+}
+.poker-pot-line {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 700;
+}
+.poker-clock {
+  margin: 0.2rem 0;
+  text-align: center;
+}
+.poker-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+  margin-top: 0.8rem;
+}
+.poker-raise {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-top: 0.8rem;
+}
+.poker-presets {
+  display: flex;
+  gap: 0.4rem;
+}
+.poker-presets .btn {
+  flex: 1;
+}
+.poker-raise input[type='range'] {
+  width: 100%;
+}
+.poker-raise-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+}
+@media (prefers-reduced-motion: reduce) {
+  .poker-seat {
+    transition: none;
+  }
+}
+
+/* Éditeur : texte, paire et rang sous chaque carte. */
+.ed-card-row > .ed-card-extra {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding-left: 52px;
+}
+.ed-card-row > .ed-card-extra .field {
+  flex: 1 1 140px;
+}
+.ed-card-row > .ed-card-extra .ed-card-text {
+  flex: 3 1 260px;
 }
 
 .ed-card-row {
@@ -7861,6 +8385,151 @@ html:not([data-theme='dark']) .corner-drawer {
   gap: 0.4rem;
 }
 
+/* Une voix : « Écouter » (sur ce téléphone) et son nom (envoi à l’écran), côte à côte. */
+.voice-pair {
+  display: inline-flex;
+  gap: 0.25rem;
+  align-items: center;
+}
+
+/* Expression au repos, réglée depuis la salle : trois colonnes, comme la barre des visages. */
+.seat-expressions {
+  display: grid;
+  gap: 0.4rem;
+  width: 100%;
+  max-width: 640px;
+}
+
+.seat-expressions-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.seat-expressions-choices {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.4rem;
+}
+
+.seat-expressions-choices .chip {
+  width: 100%;
+  justify-content: center;
+}
+
+/* Profil de l’appareil : pastille et liste des profils. */
+.profile-switcher {
+  display: grid;
+  justify-items: center;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.profile-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.9rem 0.35rem 0.35rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(8, 6, 26, 0.45);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.profile-initial {
+  display: inline-grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  color: #1b1040;
+  font-weight: 800;
+}
+
+.profile-panel {
+  display: grid;
+  gap: 0.6rem;
+  width: min(100%, 26rem);
+  padding: 0.9rem;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(8, 6, 26, 0.6);
+}
+
+.profile-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.profile-panel-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  justify-content: center;
+}
+
+.home-profile {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 0.5rem;
+}
+
+/* Caméra en bulle : un rond qui s’ouvre sur la prise de photo. */
+.camera-zone {
+  display: grid;
+  justify-items: center;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.camera-bubble {
+  display: inline-grid;
+  justify-items: center;
+  align-content: center;
+  gap: 0.1rem;
+  width: 4.6rem;
+  height: 4.6rem;
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  background: rgba(8, 6, 26, 0.6);
+  color: #fff;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.08);
+}
+
+.camera-bubble-text {
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.camera-bubble:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.camera-panel {
+  width: min(100%, 22rem);
+  padding: 0.8rem;
+  border-radius: 24px;
+  background: rgba(8, 6, 26, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.camera-note {
+  margin: 0;
+  text-align: center;
+}
+
 /* Profil : liste des voix, ajout, enregistrement. */
 .voice-list {
   display: grid;
@@ -7990,5 +8659,422 @@ html:not([data-theme='dark']) .corner-drawer {
 @media (prefers-reduced-motion: reduce) {
   .webcam-count {
     transition: none;
+  }
+}
+
+/* Aventure IA */
+.aventure {
+  max-width: min(100%, 1180px);
+}
+
+/* Écran principal : une place réservée à la barre de commandes posée en bas de la scène. */
+.game-host.aventure {
+  padding-bottom: clamp(4.5rem, 10vh, 6rem);
+}
+
+.aventure-world {
+  display: grid;
+  gap: 0.4rem;
+  justify-items: center;
+}
+
+.aventure-world-title {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: clamp(1.8rem, 4.2vw, 3rem);
+  color: var(--sun);
+  text-shadow: 0 3px 0 rgba(0, 0, 0, 0.35);
+}
+
+.aventure-world-intro {
+  margin: 0;
+  max-width: 62ch;
+  line-height: 1.5;
+}
+
+.aventure-world-mini {
+  margin: 0;
+  font-family: var(--display);
+  font-size: clamp(1.2rem, 2.6vw, 1.8rem);
+  color: var(--sun);
+}
+
+.aventure-mode {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.aventure-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 0.8rem;
+  width: 100%;
+}
+
+.aventure-cards.compact {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr));
+  font-size: 0.9rem;
+}
+
+.aventure-sheet {
+  display: grid;
+  gap: 0.5rem;
+  padding: clamp(0.9rem, 2.4vw, 1.2rem);
+  border-radius: var(--r-lg);
+  border: 1px solid var(--line-strong);
+  background: linear-gradient(180deg, rgba(255, 200, 61, 0.08), transparent 45%), rgba(14, 10, 40, 0.9);
+  text-align: left;
+}
+
+.aventure-sheet.is-mine {
+  border-color: var(--sun);
+  box-shadow: 0 0 0 2px rgba(255, 200, 61, 0.35);
+}
+
+.aventure-sheet.is-down {
+  opacity: 0.55;
+  filter: grayscale(0.6);
+}
+
+.aventure-sheet-head {
+  display: flex;
+  gap: 0.7rem;
+  align-items: center;
+}
+
+.aventure-sheet-head h3 {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 1.25rem;
+}
+
+.aventure-sheet-head p {
+  margin: 0;
+}
+
+.aventure-emoji {
+  font-size: 2.2rem;
+  line-height: 1;
+}
+
+.aventure-pv {
+  display: block;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+.aventure-pv > span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--lime), var(--cyan));
+  transition: width 0.4s ease;
+}
+
+.aventure-pv-text,
+.aventure-owner {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.aventure-down {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--danger);
+}
+
+.aventure-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.35rem;
+  margin: 0;
+}
+
+.aventure-stats div {
+  display: grid;
+  justify-items: center;
+  padding: 0.3rem 0.1rem;
+  border-radius: var(--r-sm);
+  background: var(--glass);
+}
+
+.aventure-stats dt {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.aventure-stats dd {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 1.1rem;
+  color: var(--cyan);
+}
+
+.aventure-ability,
+.aventure-detail {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.aventure-result {
+  display: grid;
+  gap: 0.35rem;
+  justify-items: center;
+  width: min(100%, 560px);
+  padding: 1rem;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--line-strong);
+  background: var(--glass);
+}
+
+.aventure-result.is-success {
+  border-color: rgba(182, 255, 92, 0.6);
+}
+
+.aventure-result.is-fail {
+  border-color: rgba(255, 93, 115, 0.6);
+}
+
+.aventure-result-title {
+  margin: 0;
+  font-weight: 600;
+}
+
+.aventure-dice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8rem;
+  margin: 0;
+}
+
+.aventure-roll {
+  display: grid;
+  place-items: center;
+  width: 4.2rem;
+  height: 4.2rem;
+  border-radius: 1.1rem;
+  font-family: var(--display);
+  font-size: 2.2rem;
+  background: var(--btn-face);
+  border: 2px solid var(--line-strong);
+  box-shadow: 0 6px 0 var(--btn-shade);
+  transform: rotate(-4deg);
+  animation: aventure-roll-in 0.55s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+
+.is-success .aventure-roll,
+.is-success .aventure-verdict {
+  color: var(--lime);
+}
+
+.is-fail .aventure-roll,
+.is-fail .aventure-verdict {
+  color: var(--danger);
+}
+
+.aventure-math {
+  font-size: 1.05rem;
+}
+
+.aventure-verdict {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 1.6rem;
+}
+
+@keyframes aventure-roll-in {
+  from {
+    transform: rotate(-30deg) scale(0.4);
+    opacity: 0;
+  }
+  to {
+    transform: rotate(-4deg) scale(1);
+    opacity: 1;
+  }
+}
+
+.aventure-scene {
+  display: grid;
+  gap: 0.5rem;
+  width: min(100%, 860px);
+  padding: clamp(1rem, 3vw, 1.6rem);
+  border-radius: var(--r-xl);
+  border: 1px solid var(--line-strong);
+  background: radial-gradient(100% 100% at 50% 0%, rgba(182, 255, 92, 0.12), transparent 65%), rgba(14, 10, 40, 0.9);
+  text-align: left;
+}
+
+.aventure-scene-title {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: clamp(1.6rem, 4vw, 2.6rem);
+  color: var(--lime);
+}
+
+.aventure-scene-text {
+  margin: 0;
+  line-height: 1.55;
+  font-size: clamp(1rem, 1.8vw, 1.2rem);
+}
+
+.aventure-choices {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0.4rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.aventure-choices li {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  gap: 0.6rem;
+  align-items: center;
+  padding: 0.6rem 0.8rem;
+  border-radius: var(--r-md);
+  background: var(--glass);
+  border: 1px solid var(--line);
+}
+
+.aventure-choice-index {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: var(--sun);
+  color: var(--primary-ink);
+  font-family: var(--display);
+}
+
+.aventure-choice-label {
+  font-weight: 600;
+}
+
+.aventure-choice-tag {
+  font-size: 0.8rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.aventure-preparing {
+  display: grid;
+  gap: 1rem;
+  justify-items: center;
+}
+
+.aventure-preparing-text {
+  margin: 0;
+  font-family: var(--display);
+  font-size: clamp(1.4rem, 3.4vw, 2.2rem);
+  color: var(--sun);
+}
+
+.aventure-epilogue {
+  display: grid;
+  gap: 0.5rem;
+  justify-items: center;
+  max-width: 70ch;
+  margin-inline: auto;
+  text-align: center;
+}
+
+.aventure-epilogue-text {
+  margin: 0;
+  line-height: 1.6;
+}
+
+.aventure-pick-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.aventure-pick,
+.aventure-vote {
+  display: grid;
+  gap: 0.25rem;
+  justify-items: start;
+  width: 100%;
+  padding: 0.7rem 0.8rem;
+  border-radius: var(--r-md);
+  border: 1px solid var(--line-strong);
+  background: var(--glass);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.aventure-pick:disabled,
+.aventure-vote:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.aventure-pick.is-selected,
+.aventure-vote.is-chosen {
+  border-color: var(--sun);
+  background: rgba(255, 200, 61, 0.14);
+}
+
+.aventure-pick-name {
+  font-family: var(--display);
+  font-size: 1.1rem;
+}
+
+.aventure-vote-list {
+  display: grid;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.aventure-vote-label {
+  font-weight: 600;
+}
+
+.aventure-vote .aventure-choice-tag {
+  margin-right: 0.3rem;
+}
+
+.aventure-sheet-toggle {
+  width: 100%;
+}
+
+.aventure-sheet-toggle summary {
+  cursor: pointer;
+  font-family: var(--display);
+}
+
+@media (max-width: 600px) {
+  .aventure-choices li {
+    grid-template-columns: auto 1fr;
+  }
+
+  .aventure-choices .aventure-choice-tag {
+    justify-self: start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aventure-pv > span {
+    transition: none;
+  }
+
+  .aventure-roll {
+    animation: none;
   }
 }

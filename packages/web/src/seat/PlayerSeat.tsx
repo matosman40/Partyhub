@@ -1,6 +1,7 @@
-import { Suspense, useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react';
+import { Suspense, useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import {
   PLATEAU_TEST_ID,
+  PROFILE_SESSION_EXPIRED,
   type ChatMessage,
   type LobbyMoodChoice,
   type LobbyPosition,
@@ -12,7 +13,11 @@ import { viewsFor } from '../games.js';
 import { AvatarsContext } from '@partyhub/games/client';
 import { PlayerAvatar } from '../components/PlayerAvatar.js';
 import { ChatPanel, EmoteBar } from '../components/Social.js';
+import { Link } from 'react-router-dom';
 import { VoiceBar } from './VoiceBar.js';
+import { CameraBubble } from './CameraBubble.js';
+import { ExpressionRow } from './ExpressionRow.js';
+import { CreateProfileForm } from '../profile/CreateProfileForm.js';
 import { ConnectingNotice } from '../components/ConnectingNotice.js';
 import { LobbyHeads, LobbyMoodBar, LobbyPlateau } from '../components/LobbyPlateau.js';
 import { TestModeBadge } from '../components/TestModeBadge.js';
@@ -34,6 +39,8 @@ import { SHARED_PLACE_PARAM } from './share.js';
 export interface Stored {
   token: string;
   name: string;
+  /** Profil avec lequel la place a été prise : une autre identité sur l'appareil ne la reprend pas. */
+  profileId?: string;
 }
 
 export const seatStorageKey = (code: string, seatId: string) =>
@@ -80,6 +87,8 @@ export interface PlayerSeatProps {
   /** Jeton du profil connecté : le siège entre sous ce profil (pseudo et image imposés). */
   profileToken?: string | null;
   profileName?: string | null;
+  /** Identifiant du profil (sert à retrouver la place prise avec ce profil). */
+  profileId?: string | null;
   /** Vue réduite (écran principal) : pas de liste des joueurs dans le salon. */
   compact?: boolean;
   hidden?: boolean;
@@ -94,6 +103,7 @@ export function PlayerSeat({
   seatId,
   profileToken = null,
   profileName = null,
+  profileId = null,
   compact = false,
   hidden = false,
   deviceMenu,
@@ -101,6 +111,9 @@ export function PlayerSeat({
   onProfileRejected,
 }: PlayerSeatProps) {
   const [socket] = useState<AppSocket>(() => createSocket());
+  // Lu par les callbacks de connexion, qui sont figés au premier rendu : toujours le profil courant.
+  const profileRef = useRef({ profileId, profileToken });
+  profileRef.current = { profileId, profileToken };
   const emotes = useLobbyMoods(socket);
   const positions = useLobbyPositions(socket);
   const poses = Object.fromEntries(Object.entries(emotes).map(([id, e]) => [id, poseOf(e)]));
@@ -142,6 +155,14 @@ export function PlayerSeat({
     const rejoin = () => {
       const stored = readSeat(code, seatId);
       if (!stored) return;
+      // Place prise avec un autre profil de l'appareil : elle n'est pas reprise, le joueur entre à nouveau.
+      const current = profileRef.current.profileId;
+      if (stored.profileId && current && stored.profileId !== current) {
+        removeSeat(code, seatId);
+        setJoined(false);
+        setView(null);
+        return;
+      }
       socket.emit('player:join', { code, name: stored.name, token: stored.token, device: getDevice() }, (res) => {
         if (res.ok) {
           setJoined(true);
@@ -207,12 +228,13 @@ export function PlayerSeat({
       (res) => {
         setBusy(false);
         if (!res.ok) {
-          if (profileToken) onProfileRejected?.();
+          // Seule une session de profil perdue retire le profil ; un pseudo déjà pris ne doit pas le faire.
+          if (profileToken && res.error === PROFILE_SESSION_EXPIRED) onProfileRejected?.();
           setError(res.error);
           return;
         }
         const finalName = pseudo || profileName || 'Joueur';
-        writeSeat(code, seatId, { token: res.token, name: finalName });
+        writeSeat(code, seatId, { token: res.token, name: finalName, profileId: profileId ?? undefined });
         setJoined(true);
         setEnded(null);
         onIdentity?.(seatId, finalName);
@@ -295,6 +317,9 @@ export function PlayerSeat({
   if (!joined || !view) {
     if (joined && !view) {
       return wrapper(<ConnectingNotice />);
+    }
+    if (!profileToken && compact) {
+      return wrapper(<CreateProfileForm title="Votre profil pour jouer sur cet écran" onCreated={() => undefined} />);
     }
     return wrapper(
       <form className="card join-card" onSubmit={join}>
@@ -499,9 +524,18 @@ export function PlayerSeat({
             <LobbyHeads players={lobby.players} me={you.id} emotes={emotes} />
           )}
           {!compact && <TestModeBadge />}
+          {!compact && you.profile && you.avatar.character && profileToken && (
+            <ExpressionRow character={you.avatar.character} token={profileToken} />
+          )}
           {!compact && <LobbyMoodBar onPick={sendLobbyMood} />}
           <EmoteBar onPick={sendReaction} />
-          {!compact && you.profile && <VoiceBar socket={socket} />}
+          {!compact && you.profile && <VoiceBar socket={socket} token={profileToken} />}
+          {!compact && you.profile && <CameraBubble token={profileToken} />}
+          {!compact && you.profile && (
+            <Link className="link-btn" to="/profil">
+              Modifier mon personnage et mon profil
+            </Link>
+          )}
         </section>
       ) : (
         views &&
@@ -535,7 +569,7 @@ export function PlayerSeat({
               />
             </Suspense>
             <EmoteBar onPick={sendReaction} />
-            {!compact && you.profile && <VoiceBar socket={socket} />}
+            {!compact && you.profile && <VoiceBar socket={socket} token={profileToken} />}
           </section>
         )
       )}
