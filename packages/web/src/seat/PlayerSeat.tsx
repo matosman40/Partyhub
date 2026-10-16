@@ -13,6 +13,7 @@ import { AvatarsContext } from '@partyhub/games/client';
 import { PlayerAvatar } from '../components/PlayerAvatar.js';
 import { ChatPanel, EmoteBar } from '../components/Social.js';
 import { VoiceBar } from './VoiceBar.js';
+import { ConnectingNotice } from '../components/ConnectingNotice.js';
 import { LobbyHeads, LobbyMoodBar, LobbyPlateau } from '../components/LobbyPlateau.js';
 import { useLobbyMoods } from '../components/useLobbyMoods.js';
 import { useLobbyPositions } from '../components/useLobbyPositions.js';
@@ -292,7 +293,7 @@ export function PlayerSeat({
 
   if (!joined || !view) {
     if (joined && !view) {
-      return wrapper(<p className="muted">Connexion à la salle…</p>);
+      return wrapper(<ConnectingNotice />);
     }
     return wrapper(
       <form className="card join-card" onSubmit={join}>

@@ -17,6 +17,7 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 
 ### Corrigé
 
+- Quand le salon ne répond pas (réseau coupé, serveur injoignable), l’écran TV, la page spectateur et le téléphone n’affichaient qu’une ligne de texte sur fond sombre. Après quelques secondes, ils expliquent quoi vérifier et proposent « Réessayer ».
 - Le bouton « Lancer la partie » pouvait être hors de l’écran : le contenu du salon était coupé en haut et en bas. Il reste visible, et son message indique ce qui manque pour lancer.
 
 ## [0.9.3] - 2026-10-16

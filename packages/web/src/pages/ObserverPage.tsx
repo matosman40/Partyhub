@@ -9,6 +9,7 @@ import { FitStage } from '../components/FitStage.js';
 import { Boundary } from '../components/Boundary.js';
 import { BackButton } from '../components/BackButton.js';
 import { ChatPanel, EmoteBar, ReactionLayer } from '../components/Social.js';
+import { ConnectingNotice } from '../components/ConnectingNotice.js';
 import { NoticeDialog } from '../components/NoticeDialog.js';
 import { PlayerAvatar } from '../components/PlayerAvatar.js';
 import { PlayerSeat } from '../seat/PlayerSeat.js';
@@ -80,7 +81,7 @@ export function ObserverPage() {
   if (!view) {
     return (
       <main className="page center">
-        <p>{error ?? 'Connexion à la salle…'}</p>
+        <ConnectingNotice error={error} />
       </main>
     );
   }

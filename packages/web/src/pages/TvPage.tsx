@@ -13,6 +13,7 @@ import { useLobbyMoods } from '../components/useLobbyMoods.js';
 import { useLobbyPositions } from '../components/useLobbyPositions.js';
 import { ChatPanel, EmoteBar, ReactionLayer } from '../components/Social.js';
 import { VoiceLayer } from '../components/VoiceLayer.js';
+import { ConnectingNotice } from '../components/ConnectingNotice.js';
 import { NoticeDialog } from '../components/NoticeDialog.js';
 import { PlayerSeat } from '../seat/PlayerSeat.js';
 import { FitStage } from '../components/FitStage.js';
@@ -135,7 +136,7 @@ export function TvPage() {
   if (!view) {
     return (
       <main className="page center">
-        <p>{error ?? 'Connexion à la salle…'}</p>
+        <ConnectingNotice error={error} />
       </main>
     );
   }
