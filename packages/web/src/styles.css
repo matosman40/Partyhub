@@ -5853,6 +5853,13 @@ html.is-tv #root > .stage {
   text-underline-offset: 3px;
 }
 
+.host-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
 .stage-handoff-code {
   margin: 0;
   font-family: var(--display);

@@ -25,6 +25,7 @@ export function TvLobby({
   onStart,
   handoff,
   onHandoff,
+  onAddBot,
 }: {
   lobby: HostRoomView['lobby'];
   joinUrl: string;
@@ -35,6 +36,8 @@ export function TvLobby({
   onStart: () => void;
   handoff: HandoffCode | null;
   onHandoff: () => void;
+  /** Ajoute un robot (utile pour essayer seul ou compléter une salle). Absent : pas de bouton. */
+  onAddBot?: () => void;
 }) {
   const connected = lobby.players.filter((p) => p.connected).length;
   const isTest = lobby.game.id === PLATEAU_TEST_ID;
@@ -86,6 +89,11 @@ export function TvLobby({
           </button>
           {!canStart && (
             <p className="stage-hint">Il faut au moins {lobby.game.minPlayers} joueur(s) connecté(s) pour lancer.</p>
+          )}
+          {onAddBot && lobby.players.length < lobby.maxPlayers && (
+            <button type="button" className="link-btn" onClick={onAddBot}>
+              Ajouter un robot
+            </button>
           )}
         </div>
       )}

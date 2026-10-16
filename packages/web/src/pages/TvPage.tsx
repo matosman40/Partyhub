@@ -368,6 +368,7 @@ export function TvPage() {
               onStart={() => emitAck('host:start')}
               handoff={handoff}
               onHandoff={createHandoff}
+              onAddBot={addBot}
             />
           ) : (
             <>

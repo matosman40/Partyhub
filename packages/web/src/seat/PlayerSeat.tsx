@@ -383,6 +383,16 @@ export function PlayerSeat({
     hostSocket.emit('host:start', (res) => setError(res.ok ? null : res.error));
   }
 
+  /** Commande d'hôte depuis ce téléphone (même règles que l'écran TV : elles passent par la connexion d'hôte). */
+  function hostCommand(event: 'host:next' | 'host:end' | 'host:replay' | 'host:addBot') {
+    if (!hostSocket) return;
+    const done = (res: { ok: true } | { ok: false; error: string }) => setError(res.ok ? null : res.error);
+    if (event === 'host:next') hostSocket.emit('host:next', done);
+    else if (event === 'host:end') hostSocket.emit('host:end', done);
+    else if (event === 'host:replay') hostSocket.emit('host:replay', done);
+    else hostSocket.emit('host:addBot', done);
+  }
+
   return wrapper(
     <AvatarsContext.Provider value={avatars}>
       <div className="seat-head">
@@ -425,6 +435,14 @@ export function PlayerSeat({
               {lobby.players.filter((p) => p.connected).length < lobby.game.minPlayers && (
                 <p className="muted small">Il faut au moins {lobby.game.minPlayers} joueur(s) connecté(s).</p>
               )}
+              <button
+                type="button"
+                className="btn small"
+                onClick={() => hostCommand('host:addBot')}
+                disabled={lobby.players.length >= lobby.maxPlayers}
+              >
+                Ajouter un robot
+              </button>
             </div>
           ) : (
             <p className="muted small">En attente de l’hôte : il lance la partie depuis son écran.</p>
@@ -484,6 +502,24 @@ export function PlayerSeat({
         views &&
         game && (
           <section className="stack">
+            {isHost && (lobby.status === 'in_game' || lobby.status === 'ended') && (
+              <div className="host-bar" role="group" aria-label="Commandes de l’hôte">
+                {lobby.status === 'in_game' ? (
+                  <>
+                    <button type="button" className="btn primary small" onClick={() => hostCommand('host:next')}>
+                      Étape suivante
+                    </button>
+                    <button type="button" className="btn ghost small" onClick={() => hostCommand('host:end')}>
+                      Arrêter la partie
+                    </button>
+                  </>
+                ) : (
+                  <button type="button" className="btn primary small" onClick={() => hostCommand('host:replay')}>
+                    Rejouer avec les mêmes joueurs
+                  </button>
+                )}
+              </div>
+            )}
             <Suspense fallback={<p className="muted">Chargement du jeu…</p>}>
               <views.Player
                 publicState={game.public}
