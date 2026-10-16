@@ -98,13 +98,13 @@ Les sauvegardes automatiques de la base sont aussi dans le dossier `backups` du 
 
 ## 8. Dépannage
 
-| Symptôme | Cause probable | Action |
-|---|---|---|
-| Le site ne s'ouvre pas | Port déjà utilisé | Changer `PARTYHUB_PORT` dans `.env`, puis `sudo docker compose up -d` |
+| Symptôme                                                    | Cause probable                             | Action                                                                          |
+| ----------------------------------------------------------- | ------------------------------------------ | ------------------------------------------------------------------------------- |
+| Le site ne s'ouvre pas                                      | Port déjà utilisé                          | Changer `PARTYHUB_PORT` dans `.env`, puis `sudo docker compose up -d`           |
 | `manifest unknown` ou `denied` au téléchargement de l'image | Version absente, ou paquet GHCR non public | Vérifier la version dans `compose.yaml` ; le paquet doit être public sur GitHub |
-| « Connexion impossible » | Conteneur arrêté ou non prêt | `sudo docker compose logs` |
-| Le QR code ouvre une mauvaise adresse | L'écran est ouvert avec `localhost` | Ouvrir l'écran avec l'adresse IP du serveur |
-| Le conteneur est « unhealthy » | Serveur bloqué au démarrage | Consulter les journaux, vérifier la place disque |
+| « Connexion impossible »                                    | Conteneur arrêté ou non prêt               | `sudo docker compose logs`                                                      |
+| Le QR code ouvre une mauvaise adresse                       | L'écran est ouvert avec `localhost`        | Ouvrir l'écran avec l'adresse IP du serveur                                     |
+| Le conteneur est « unhealthy »                              | Serveur bloqué au démarrage                | Consulter les journaux, vérifier la place disque                                |
 
 ## 9. Désinstallation
 
@@ -112,3 +112,25 @@ Les sauvegardes automatiques de la base sont aussi dans le dossier `backups` du 
 sudo docker compose down              # arrête et supprime le conteneur, conserve le volume
 sudo docker volume rm partyhub-data   # uniquement si vous voulez effacer les données
 ```
+
+## 10. HTTPS sur CasaOS (micro et caméra sur les téléphones)
+
+Le micro et la caméra des téléphones n'existent qu'en HTTPS. Le fichier `deploy/casaos/compose.https.yaml` contient
+PartyHub **et** Caddy dans un seul fichier : il s'installe depuis l'interface CasaOS, sans ligne de commande.
+
+1. Ouvrir le fichier sur GitHub, cliquer sur **Raw**, copier tout le contenu.
+2. Dans CasaOS : **Install a customized app** (ou « Importer un compose »), coller le contenu.
+3. Remplacer `192.168.1.156` par l'adresse fixe de votre serveur. Elle apparaît à deux endroits, dans la commande de
+   Caddy : la ligne `default_sni` et le bloc `https://`. Renseigner `ADMIN_PASSWORD` si besoin, puis valider.
+4. Ouvrir `https://<adresse-du-serveur>` sur le téléphone : passer l'avertissement (**Avancé**, **Continuer**).
+5. Ouvrir **Installer le certificat HTTPS** dans le menu de l'accueil, télécharger le certificat, et suivre les étapes
+   de l'appareil. Le détail est dans [HTTPS-LAN.md](HTTPS-LAN.md).
+
+Le port d'accès devient **443** (`https://<adresse-du-serveur>`), et non plus 8282. Le port 443 doit être libre sur le
+serveur. Les données restent dans le volume `partyhub-data` : le même que le compose de base.
+
+La page `/certificat` est disponible à partir de la version 0.9.3 de l'image, dont le numéro est indiqué dans le fichier.
+Le téléchargement du certificat ne dépend que de Caddy : il fonctionne dès que Caddy tourne.
+
+Pour mettre à jour : réimporter le fichier de la version suivante, en gardant le même nom d'application et les mêmes
+variables, comme dans la section 6.

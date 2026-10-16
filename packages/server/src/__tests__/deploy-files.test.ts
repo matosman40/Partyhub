@@ -6,7 +6,12 @@ import { fileURLToPath } from 'node:url';
 /** Garde-fou : chaque variable documentée dans .env.example doit atteindre le conteneur, et réciproquement. */
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
 const read = (file: string) => fs.readFileSync(path.join(root, file), 'utf8');
-const COMPOSE_FILES = ['compose.yaml', 'compose.dev.yaml', 'deploy/https/compose.https.yaml'];
+const COMPOSE_FILES = [
+  'compose.yaml',
+  'compose.dev.yaml',
+  'deploy/https/compose.https.yaml',
+  'deploy/casaos/compose.https.yaml',
+];
 /** Surcouche optionnelle : ses variables ne sont pas toutes utiles au compose de base. */
 const BASE_COMPOSE = ['compose.yaml', 'compose.dev.yaml'];
 const OVERLAY_ONLY = ['PARTYHUB_HOST', 'PARTYHUB_HTTPS_PORT'];
@@ -40,6 +45,23 @@ describe('fichiers de déploiement', () => {
       const missing = baseVariables.filter((name) => !usedBy(read(file)).includes(name));
       expect(missing, file).toEqual([]);
     }
+  });
+
+  it('le fichier CasaOS HTTPS embarque exactement le Caddyfile de la surcouche (adresse de test mise à part)', () => {
+    // Même configuration Caddy dans les deux fichiers : ils ne peuvent pas diverger sans que ce test échoue.
+    const caddyfile =
+      read('deploy/https/Caddyfile')
+        .split('\n')
+        .filter((line) => line.trim() && !line.trim().startsWith('#'))
+        .map((line) =>
+          line
+            .replace(/\t/g, '  ')
+            .replace('{$PARTYHUB_HOST}', '192.168.1.156')
+            .replace('{$CADDY_CA_DIR:/data/caddy/pki/authorities/local}', '/data/caddy/pki/authorities/local'),
+        )
+        .join('\\n') + '\\n';
+    const embedded = /printf "%b" "([^"]*)"/.exec(read('deploy/casaos/compose.https.yaml'))?.[1];
+    expect(embedded).toBe(caddyfile);
   });
 
   for (const file of COMPOSE_FILES) {

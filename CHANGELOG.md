@@ -14,6 +14,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 
 ### Ajouté
 
+- Page **Installer le certificat HTTPS** (`/certificat`, dans le menu de l'accueil) : le certificat racine se télécharge directement, avec les instructions de l'appareil détecté (iPhone et iPad, Android, Windows, Mac, Linux). Il est servi par Caddy, sans volume supplémentaire pour l'application.
+- Fichier `deploy/casaos/compose.https.yaml` : PartyHub et Caddy dans un seul fichier, installable depuis l'interface CasaOS, sans ligne de commande.
 - Journal des erreurs complet, dans `DATA_DIR/logs/partyhub.log` (une ligne JSON par événement, niveau en toutes lettres, rotation automatique). Chaque requête reçoit un identifiant (`X-Request-Id`) qui relie une erreur à sa requête. Les mots de passe et jetons sont masqués.
 - Les erreurs du navigateur remontent dans le même journal (écran de secours, erreurs de script, promesses rejetées, appels API en échec, connexion temps réel perdue), sous `source: "client"`, avec limite de débit par adresse.
 - Administration, rubrique Système : consultation du journal avec filtres (niveau, source, recherche), erreurs les plus fréquentes regroupées, détail de chaque entrée, téléchargement et vidage.

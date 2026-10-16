@@ -49,35 +49,23 @@ Pensez alors à remettre `COOKIE_SECURE=false` dans `.env` (le mode HTTP ne fonc
 
 ## 2. Installer le certificat racine
 
-Le certificat racine est le même pour tous les appareils. Récupérez-le une fois sur la machine qui héberge PartyHub :
+Le certificat racine se télécharge depuis PartyHub, sans passer par le serveur :
 
-```bash
-sudo docker compose -f compose.yaml -f deploy/https/compose.https.yaml cp caddy:/data/caddy/pki/authorities/local/root.crt ./partyhub-root.crt
-```
+1. Ouvrez `https://192.168.1.156` sur l'appareil. Le navigateur affiche un avertissement : c'est normal tant que le
+   certificat n'est pas installé. Choisissez **Avancé**, puis **Continuer**.
+2. Ouvrez la page **Installer le certificat HTTPS** (menu de l'accueil, ou `https://192.168.1.156/certificat`).
+3. Touchez **Télécharger le certificat**, puis suivez les étapes affichées pour votre appareil.
 
-Envoyez le fichier `partyhub-root.crt` au téléphone ou à la tablette (AirDrop, mail, clé USB, ou transfert local).
-Les libellés des menus varient selon la marque et la version du système.
+La page reconnaît l'appareil et ouvre les instructions correspondantes : iPhone et iPad, Android, Windows, Mac, Linux.
+Les autres appareils restent disponibles dans une section repliée. Les libellés des menus varient selon la marque et
+la version du système.
 
-### iPhone et iPad
+Le certificat est le même pour tous les appareils. Il s'installe une fois par appareil, et il reste valable tant que le
+volume `partyhub-caddy-data` n'est pas supprimé.
 
-1. Ouvrez le fichier. Réglages → *Profil de configuration téléchargé* → **Installer** (code de l'appareil demandé).
-2. Ensuite, Réglages → Général → Informations → **Réglages des certificats** → activez la **confiance totale**
-   pour « Caddy Local Authority » (le nom affiché peut contenir l'année).
-
-Sans cette deuxième étape, Safari continue d'afficher un avertissement.
-
-### Android
-
-1. Paramètres → Sécurité (ou « Sécurité et confidentialité ») → Chiffrement et identifiants →
-   **Installer un certificat** → **Certificat CA**.
-2. Choisissez le fichier `partyhub-root.crt`.
-
-Chrome utilise ce certificat. Certaines applications Android l'ignorent, mais le navigateur suffit pour PartyHub.
-
-### Ordinateur (optionnel)
-
-Sous Windows, double-cliquez sur le fichier, puis « Installer le certificat » → **Autorités de certification racines de
-confiance**. Sous macOS, ouvrez-le dans Trousseau d'accès et réglez la confiance sur « Toujours faire confiance ».
+> Version plus ancienne (sans la page) : le fichier se récupère sur le serveur avec
+> `sudo docker compose -f compose.yaml -f deploy/https/compose.https.yaml cp caddy:/data/caddy/pki/authorities/local/root.crt ./partyhub-root.crt`,
+> puis se transfère à l'appareil (AirDrop, mail, clé USB).
 
 ## 3. Vérifier
 
@@ -93,8 +81,8 @@ Si l'avertissement persiste, le certificat racine n'est pas installé ou n'est p
   autorité : il faudra réinstaller le certificat racine partout.
 - **Changer `PARTYHUB_HOST`** (par exemple, une nouvelle adresse IP de la box) impose un nouveau certificat : il est
   émis automatiquement, mais les appareils doivent accepter la nouvelle adresse.
-- **CasaOS** installe PartyHub en HTTP par défaut. La surcouche HTTPS se lance en ligne de commande, depuis le dossier
-  de PartyHub.
+- **CasaOS** : un seul fichier suffit pour PartyHub et Caddy, sans ligne de commande : `deploy/casaos/compose.https.yaml`
+  (voir [CASAOS.md](CASAOS.md), section 10).
 - Le certificat est valable pour l'adresse du serveur uniquement. Une adresse IP qui change (DHCP) casse l'accès :
   réservez une adresse fixe sur la box.
 - La surcouche n'a été vérifiée qu'à la syntaxe de ses fichiers. Testez-la sur votre serveur avant une soirée.

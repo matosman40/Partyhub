@@ -6,6 +6,7 @@ import { ObserverPage } from './pages/ObserverPage.js';
 import { PlayerPage } from './pages/PlayerPage.js';
 import { ProfilePage } from './pages/ProfilePage.js';
 import { DeviceTestPage } from './pages/DeviceTestPage.js';
+import { CertificatePage } from './pages/CertificatePage.js';
 import { TvPage } from './pages/TvPage.js';
 import { ScreenBackdrop } from './components/ScreenBackdrop.js';
 import { MusicPlayer } from './components/MusicPlayer.js';
@@ -39,6 +40,7 @@ function RoutedPages() {
         <Route path="/profil" element={<ProfilePage />} />
         <Route path="/admin" element={<AdminPage />} />
         <Route path="/test-appareils" element={<DeviceTestPage />} />
+        <Route path="/certificat" element={<CertificatePage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Boundary>

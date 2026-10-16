@@ -67,6 +67,9 @@ export function HomePage() {
             <Link to="/test-appareils" onClick={() => setMenuOpen(false)}>
               Tester micro, caméra, image
             </Link>
+            <Link to="/certificat" onClick={() => setMenuOpen(false)}>
+              Installer le certificat HTTPS
+            </Link>
           </nav>
         </DrawerSection>
         <DrawerSection title="Préférences">
