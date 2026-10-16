@@ -37,7 +37,7 @@ export const LOBBY_FACE_INFO: Record<CharacterExpression, { label: string; emoji
 /** Un choix envoyé par le téléphone : une attitude, ou un visage (jamais les deux). */
 export type LobbyMoodChoice = { mood: LobbyMood } | { face: CharacterExpression };
 
-//** Identifiant du jeu « plateau de test » : une salle où l'on essaie les déplacements, sans partie. */
+/** Identifiant du jeu « plateau de test » : une salle où l'on essaie les déplacements, sans partie. */
 export const PLATEAU_TEST_ID = 'plateau-test';
 
 /** Position relative (0 à 1) dans la zone du salon. */

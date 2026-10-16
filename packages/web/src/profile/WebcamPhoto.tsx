@@ -73,6 +73,7 @@ export function WebcamPhoto({ onCapture, onCancel }: { onCapture: (dataUrl: stri
     const video = videoRef.current;
     if (!video || !video.videoWidth) {
       setError('La caméra ne renvoie pas encore d’image. Réessayez dans une seconde.');
+      setStatus('ready');
       return;
     }
     try {
