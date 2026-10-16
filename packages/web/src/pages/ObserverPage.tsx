@@ -7,6 +7,7 @@ import { viewsFor } from '../games.js';
 import { AvatarsContext } from '@partyhub/games/client';
 import { FitStage } from '../components/FitStage.js';
 import { Boundary } from '../components/Boundary.js';
+import { BackButton } from '../components/BackButton.js';
 import { ChatPanel, EmoteBar, ReactionLayer } from '../components/Social.js';
 import { NoticeDialog } from '../components/NoticeDialog.js';
 import { PlayerAvatar } from '../components/PlayerAvatar.js';
@@ -152,6 +153,7 @@ export function ObserverPage() {
             Salle <strong>{lobby.code}</strong>
           </div>
           <div className="page-nav">
+            <BackButton to="/">Quitter</BackButton>
             <span className="muted small" aria-live="polite">
               {lobby.observers.count} spectateur(s)
               {lobby.observers.devices.length > 0 && (

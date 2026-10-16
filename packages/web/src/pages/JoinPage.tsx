@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
-import { useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { BackButton } from '../components/BackButton.js';
 import { api } from '../api.js';
 import { isValidRoomCode, ROOM_CODE_MAX_LENGTH } from '@partyhub/shared';
 import { QrScanner, canScanQr } from '../components/QrScanner.js';
@@ -98,9 +99,7 @@ export function JoinPage() {
           {error}
         </p>
       )}
-      <p className="muted small">
-        <Link to="/">Retour à l’accueil</Link>
-      </p>
+      <BackButton to="/">Retour à l’accueil</BackButton>
     </main>
   );
 }

@@ -1,6 +1,8 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App.js';
+import { Boundary } from './components/Boundary.js';
+import { CrashScreen } from './components/CrashScreen.js';
 import { applyTheme, loadTheme } from './theme/index.js';
 import { initDevice } from './device/device.js';
 import '@fontsource/dela-gothic-one/latin-400.css';
@@ -15,6 +17,8 @@ initDevice();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <Boundary fallback={(error) => <CrashScreen error={error} />}>
+      <App />
+    </Boundary>
   </StrictMode>,
 );

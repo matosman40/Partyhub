@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { BackButton } from '../components/BackButton.js';
 import { readMediaPrefs, requestCamera, requestMicrophone } from '@partyhub/games/client';
 import {
   describeMediaError,
@@ -289,9 +289,7 @@ export function DeviceTestPage() {
   return (
     <main className="page devtest fade-in">
       <header className="stack">
-        <Link to="/" className="muted small">
-          ← Accueil
-        </Link>
+        <BackButton to="/">Retour à l’accueil</BackButton>
         <h1>Test des appareils</h1>
         <p className="muted">
           Vérifiez que le micro, la caméra et les images fonctionnent sur cet appareil. Au premier essai, le navigateur

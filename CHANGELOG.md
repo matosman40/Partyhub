@@ -4,6 +4,18 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 
 ## Non publié
 
+### Ajouté
+
+- Menu d’administration par rubriques : Salles et statistiques, Jeux, Créer des jeux, Médias et ambiance, Système. Chaque rubrique a son propre écran, avec un bouton retour vers le menu.
+
+### Modifié
+
+- Boutons « Retour à l’accueil » au même endroit et de même style sur les pages de connexion, rejoindre, profil, test des appareils, administration et spectateur.
+
+### Corrigé
+
+- Plus d’écran noir : une page qui plante affiche un message, un bouton pour recharger la page et un retour à l’accueil. Si le script de l’application ne se charge pas, le texte « Chargement de PartyHub… » reste visible.
+
 ## [0.9.2] - 2026-10-16
 
 ### Modifié

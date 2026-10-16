@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
+import { BackButton } from '../components/BackButton.js';
 import { defaultCharacterFor, type ProfileView } from '@partyhub/shared';
 import { api } from '../api.js';
 import { PlayerAvatar } from '../components/PlayerAvatar.js';
@@ -71,7 +72,7 @@ export function ProfilePage() {
     return (
       <main className="page fade-in" style={{ maxWidth: 560 }}>
         <p className="page-nav">
-          <Link to="/">Accueil</Link>
+          <BackButton to="/">Retour à l’accueil</BackButton>
         </p>
         <h1>{mode === 'register' ? 'Créer un profil' : 'Se connecter'}</h1>
         <p className="muted">
@@ -159,7 +160,7 @@ export function ProfilePage() {
   return (
     <main className="page fade-in" style={{ maxWidth: 760 }}>
       <p className="page-nav">
-        <Link to="/">Accueil</Link>
+        <BackButton to="/">Retour à l’accueil</BackButton>
         <Link to="/join">Rejoindre une salle</Link>
       </p>
 
