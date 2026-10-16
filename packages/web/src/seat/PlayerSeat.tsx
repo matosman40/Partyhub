@@ -15,6 +15,7 @@ import { ChatPanel, EmoteBar } from '../components/Social.js';
 import { VoiceBar } from './VoiceBar.js';
 import { ConnectingNotice } from '../components/ConnectingNotice.js';
 import { LobbyHeads, LobbyMoodBar, LobbyPlateau } from '../components/LobbyPlateau.js';
+import { TestModeBadge } from '../components/TestModeBadge.js';
 import { poseOf, useLobbyMoods } from '../components/useLobbyMoods.js';
 import { useLobbyPositions } from '../components/useLobbyPositions.js';
 import { NoticeDialog } from '../components/NoticeDialog.js';
@@ -497,6 +498,7 @@ export function PlayerSeat({
           ) : (
             <LobbyHeads players={lobby.players} me={you.id} emotes={emotes} />
           )}
+          {!compact && <TestModeBadge />}
           {!compact && <LobbyMoodBar onPick={sendLobbyMood} />}
           <EmoteBar onPick={sendReaction} />
           {!compact && you.profile && <VoiceBar socket={socket} />}

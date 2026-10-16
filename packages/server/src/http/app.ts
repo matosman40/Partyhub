@@ -49,6 +49,7 @@ import {
   type SoundSettings,
 } from '@partyhub/shared';
 import type { AppConfig } from '../config.js';
+import { testModeSchema } from '@partyhub/shared';
 import { adminSettingsSchema, type Store } from '../db/store.js';
 import {
   screenBackgroundsSchema,
@@ -525,6 +526,12 @@ export function createApp(deps: AppDeps): express.Express {
   api.get('/sound-settings', (_req, res) => {
     res.setHeader('Cache-Control', 'no-cache');
     res.json({ sounds: resolveSounds(store.getSoundSettings()) });
+  });
+
+  /** Mode test : affiché sur les écrans et les téléphones. Aucun secret. */
+  api.get('/test-mode', (_req, res) => {
+    res.setHeader('Cache-Control', 'no-cache');
+    res.json({ mode: store.getTestMode() });
   });
 
   api.get('/avatars/:id', (req, res) => {
@@ -1491,6 +1498,21 @@ export function createApp(deps: AppDeps): express.Express {
     }
     store.saveSettings(parsed.data);
     res.json({ settings: parsed.data });
+  });
+
+  /** Mode test : curseur de cadence pour les émotions et les voix. Sans effet quand il est éteint. */
+  admin.put('/test-mode', (req, res) => {
+    const parsed = testModeSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: 'Réglage du mode test invalide.' });
+      return;
+    }
+    store.saveTestMode(parsed.data);
+    logger.info(
+      { event: 'admin.test-mode', enabled: parsed.data.enabled, factor: parsed.data.factor },
+      'Mode test modifié par l’administrateur',
+    );
+    res.json({ mode: parsed.data });
   });
 
   admin.post('/rooms/purge-idle', (_req, res) => {

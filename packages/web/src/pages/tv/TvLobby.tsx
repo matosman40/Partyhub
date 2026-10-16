@@ -3,6 +3,7 @@ import type { LobbyPosition } from '@partyhub/shared';
 import { Qr } from '../../components/Qr.js';
 import { GameLogo } from '../../components/GameLogo.js';
 import { LobbyHeads, LobbyPlateau } from '../../components/LobbyPlateau.js';
+import { TestModeBadge } from '../../components/TestModeBadge.js';
 import type { LobbyEmote } from '../../components/useLobbyMoods.js';
 
 /** Code affiché pour qu'un téléphone devienne l'hôte de la salle (valable quelques minutes, une fois). */
@@ -61,6 +62,7 @@ export function TvLobby({
           </div>
         </div>
 
+        <TestModeBadge />
         <div className="stage-people">
           {isTest ? (
             <LobbyPlateau

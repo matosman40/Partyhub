@@ -5,6 +5,7 @@ import { createServer as createHttpServer, type Server as HttpServer } from 'nod
 import path from 'node:path';
 import { Server } from 'socket.io';
 import type { ClientToServerEvents, ServerToClientEvents } from '@partyhub/shared';
+import { appliedCadence } from '@partyhub/shared';
 import { gameRegistry } from '@partyhub/games';
 import { resolveGame } from './games-registry.js';
 import { CardGameService } from './cards/service.js';
@@ -105,6 +106,7 @@ export async function createServer(opts: ServerOptions): Promise<PartyServer> {
   const packageSources = new PackageSourceService(store, packages, { token: config.githubToken });
   const characterPacks = new CharacterPackService(store.db);
   const hub = new RealtimeHub(compileTrustProxy(config.trustProxy ?? 'loopback'), opts.joinThrottle);
+  hub.setCadence(() => appliedCadence(store.getTestMode()));
   const manager = new RoomManager(
     {
       now: () => Date.now(),

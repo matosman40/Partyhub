@@ -13,3 +13,4 @@ export * from './devices.js';
 export * from './settings-form.js';
 export * from './sounds.js';
 export * from './voices.js';
+export * from './test-mode.js';

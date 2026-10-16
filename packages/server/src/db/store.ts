@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { ROOM_CODE_DEFAULT_LENGTH, ROOM_CODE_MAX_LENGTH, ROOM_CODE_MIN_LENGTH } from '@partyhub/shared';
 import { parseScreenBackgrounds, type ScreenBackgrounds } from '../screen-backgrounds.js';
 import { parseSoundSettings, type SoundSettings } from '@partyhub/shared';
+import { DEFAULT_TEST_MODE, testModeSchema, type TestMode } from '@partyhub/shared';
 
 /** Fichier de la médiathèque (les octets sont sur le disque, pas en base). */
 export interface AssetRow {
@@ -547,6 +548,22 @@ export class Store {
 
   saveSettings(settings: AdminSettings): void {
     this.setKv('admin_settings', JSON.stringify(settings));
+  }
+
+  /** Mode test : curseur de cadence. Une valeur illisible retombe sur le réglage normal (éteint). */
+  getTestMode(): TestMode {
+    const raw = this.getKv('test_mode');
+    if (!raw) return { ...DEFAULT_TEST_MODE };
+    try {
+      const parsed = testModeSchema.safeParse(JSON.parse(raw));
+      return parsed.success ? parsed.data : { ...DEFAULT_TEST_MODE };
+    } catch {
+      return { ...DEFAULT_TEST_MODE };
+    }
+  }
+
+  saveTestMode(mode: TestMode): void {
+    this.setKv('test_mode', JSON.stringify(mode));
   }
 
   /** Fond d'écran choisi pour chaque écran (identifiants de médiathèque). */

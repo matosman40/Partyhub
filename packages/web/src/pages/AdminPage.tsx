@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { DEVICE_KIND_ICONS, type CatalogGame, type DeviceKind } from '@partyhub/shared';
+import { DEFAULT_TEST_MODE, TEST_MODE_FACTORS, testModeLabel, type TestMode } from '@partyhub/shared';
 import { api } from '../api.js';
 import { openRoomsText } from '../admin/messages.js';
 import { CardGamesAdmin } from '../admin/CardGamesAdmin.js';
@@ -240,6 +241,79 @@ function SettingsForm({ settings, onSaved }: { settings: AdminSettings; onSaved:
       {field('roomCodeLength', 'Chiffres du code de salle (4–6) : les salles déjà ouvertes gardent leur code', 4, 6)}
       <button type="submit" className="btn primary">
         Enregistrer
+      </button>
+      {message && (
+        <p className={message.ok ? 'notice' : 'error'} role="status">
+          {message.text}
+        </p>
+      )}
+    </form>
+  );
+}
+
+/** Mode test : un curseur de cadence pour essayer les émotions et les voix, sans toucher aux réglages habituels. */
+function TestModeForm() {
+  const [mode, setMode] = useState<TestMode>(DEFAULT_TEST_MODE);
+  const [loaded, setLoaded] = useState(false);
+  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
+
+  useEffect(() => {
+    api<{ mode: TestMode }>('/api/test-mode')
+      .then((res) => setMode(res.mode))
+      .catch(() => undefined)
+      .finally(() => setLoaded(true));
+  }, []);
+
+  const step = Math.max(0, (TEST_MODE_FACTORS as readonly number[]).indexOf(mode.factor));
+
+  async function save(e: FormEvent) {
+    e.preventDefault();
+    setMessage(null);
+    try {
+      const res = await api<{ mode: TestMode }>('/api/admin/test-mode', {
+        method: 'PUT',
+        body: JSON.stringify(mode),
+      });
+      setMode(res.mode);
+      setMessage({
+        ok: true,
+        text: res.mode.enabled ? `Mode test actif : cadence ${testModeLabel(res.mode.factor)}.` : 'Mode test éteint.',
+      });
+    } catch (err) {
+      setMessage({ ok: false, text: (err as Error).message });
+    }
+  }
+
+  return (
+    <form className="admin-form" onSubmit={save}>
+      <label className="field">
+        <span>
+          <input
+            type="checkbox"
+            checked={mode.enabled}
+            onChange={(e) => setMode({ ...mode, enabled: e.target.checked })}
+          />{' '}
+          Mode test actif
+        </span>
+      </label>
+      <label className="field">
+        <span>Cadence des émotions et des voix : {testModeLabel(mode.factor)}</span>
+        <input
+          type="range"
+          min={0}
+          max={TEST_MODE_FACTORS.length - 1}
+          step={1}
+          value={step}
+          aria-valuetext={testModeLabel(mode.factor)}
+          onChange={(e) => setMode({ ...mode, factor: TEST_MODE_FACTORS[Number(e.target.value)] ?? 1 })}
+        />
+      </label>
+      <p className="muted small">
+        Normal : la cadence habituelle. Chaque palier la multiplie. Les joueurs connectés voient le bandeau « Mode test
+        » sur le salon et le téléphone.
+      </p>
+      <button type="submit" className="btn primary" disabled={!loaded}>
+        Enregistrer le mode test
       </button>
       {message && (
         <p className={message.ok ? 'notice' : 'error'} role="status">
@@ -632,6 +706,11 @@ export function AdminPage() {
               <section className="card">
                 <h2>Réglages généraux</h2>
                 <SettingsForm settings={overview.settings} onSaved={load} />
+              </section>
+
+              <section className="card">
+                <h2>Mode test</h2>
+                <TestModeForm />
               </section>
 
               <section className="card stack">

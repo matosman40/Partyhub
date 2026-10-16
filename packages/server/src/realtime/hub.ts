@@ -46,15 +46,17 @@ type TypedSocket = Socket<ClientToServerEvents, ServerToClientEvents, Record<str
 class RateLimiter {
   private hits: number[] = [];
 
+  /** Maximum fixe, ou fonction lue à chaque envoi (cadence du mode test). */
   constructor(
-    private readonly max: number,
+    private readonly max: number | (() => number),
     private readonly windowMs: number,
   ) {}
 
   take(): boolean {
     const now = Date.now();
     this.hits = this.hits.filter((t) => now - t < this.windowMs);
-    if (this.hits.length >= this.max) return false;
+    const limit = typeof this.max === 'number' ? this.max : this.max();
+    if (this.hits.length >= limit) return false;
     this.hits.push(now);
     return true;
   }
@@ -88,12 +90,18 @@ export class RealtimeHub {
   private logger: Logger | null = null;
   private profiles: ProfileService | null = null;
   private readonly joinThrottle: JoinThrottle;
+  /** Cadence du mode test (1 hors essai) : multiplie les émotions et les voix autorisées. */
+  private cadence: () => number = () => 1;
 
   constructor(
     private readonly trust: TrustProxy = compileTrustProxy('loopback'),
     throttle: Partial<JoinThrottleOptions> = {},
   ) {
     this.joinThrottle = new JoinThrottle({ ...JOIN_THROTTLE_DEFAULTS, ...throttle });
+  }
+
+  setCadence(cadence: () => number): void {
+    this.cadence = cadence;
   }
 
   attach(io: IO, manager: RoomManager, logger: Logger, profiles: ProfileService): void {
@@ -191,9 +199,10 @@ export class RealtimeHub {
     const reactionLimiter = new RateLimiter(REACTIONS_PER_WINDOW, CHAT_WINDOW_MS);
     // Déplacements : jusqu'à 30 par seconde (glisser suit le doigt) ; émotions : 6 toutes les 4 secondes.
     const lobbyMoveLimiter = new RateLimiter(30, 1000);
-    const lobbyMoodLimiter = new RateLimiter(6, 4000);
+    const lobbyMoodLimiter = new RateLimiter(() => 6 * this.cadence(), 4000);
     // Voix : une toutes les quelques secondes et par socket ; la salle a aussi sa file d'attente côté écran.
-    const voiceLimiter = new RateLimiter(3, 10_000);
+    // Le mode test multiplie ces deux cadences par son facteur.
+    const voiceLimiter = new RateLimiter(() => 3 * this.cadence(), 10_000);
     const ip = clientIp(this.trust, socket.handshake.address, socket.handshake.headers['x-forwarded-for']);
 
     const limited = (ack: Ack): boolean => {

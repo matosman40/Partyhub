@@ -10,6 +10,7 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 - Photo de profil à la webcam : « Prendre une photo avec la webcam » ouvre un aperçu en miroir, avec un compte à rebours de 3 secondes. La photo est recadrée comme une photo choisie. La webcam demande une connexion sécurisée (https).
 - Expression au repos du personnage : dans son profil, chaque joueur choisit une expression (calme, souriant, rieur, clin d’œil, triste, étonné). Elle reste affichée dans le salon et sur l’écran, contrairement à une émote qui disparaît.
 - Voix de profil : chaque joueur enregistre jusqu’à 5 courts sons (5 secondes au maximum), nommés comme il veut, au micro ou depuis un fichier audio. Pendant une partie, il les envoie depuis son téléphone et l’écran principal les joue, avec un bandeau qui indique qui parle. Si le navigateur bloque le son de l’écran, un bouton « Activer le son » le relance.
+- Mode test (administration) : un curseur règle la cadence des émotions et des voix (×1, ×2, ×4, ×10), pour essayer les réglages. Un bandeau « Mode test » s’affiche sur le salon et le téléphone pendant l’essai.
 
 ### Modifié
 

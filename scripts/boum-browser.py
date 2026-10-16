@@ -105,7 +105,10 @@ def main() -> int:
                 pad = phone.locator("button.rhythm-pad")
                 if rhythm_counted is None and pad.count() and pad.first.is_enabled():
                     # Manche Rythme : le téléphone tape le rythme, l'écran principal compte les joueurs qui ont tapé.
+                    # Le rythme compte de 3 à 5 intervalles, tirés au hasard : on tape jusqu'à l'envoi (6 coups au plus).
                     for _ in range(6):
+                        if pad.count() == 0 or not pad.first.is_enabled():
+                            break
                         pad.first.click()
                         phone.wait_for_timeout(250)
                     tv.wait_for_timeout(600)
