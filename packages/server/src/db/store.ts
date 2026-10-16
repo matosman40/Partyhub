@@ -350,6 +350,23 @@ export const MIGRATIONS: Migration[] = [
       `);
     },
   },
+  {
+    version: 12,
+    description: 'Voix de profil : courts sons nommés par le joueur (5 au maximum), stockés en base',
+    up(db) {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS voice_clips (
+          id         TEXT PRIMARY KEY,
+          profile_id TEXT NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+          name       TEXT NOT NULL,
+          mime       TEXT NOT NULL,
+          data       BLOB NOT NULL,
+          created_at TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS voice_clips_profile ON voice_clips (profile_id);
+      `);
+    },
+  },
 ];
 
 /** Entrée d'une banque BOUM ! telle qu'elle est stockée. */

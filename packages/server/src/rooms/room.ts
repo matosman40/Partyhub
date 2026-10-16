@@ -98,6 +98,8 @@ export class Room {
   /** Place de chaque personnage dans le salon (perdue avec la salle, jamais enregistrée). */
   private readonly positions = new Map<string, LobbyPosition>();
   readonly hostSockets = new Set<string>();
+  /** Sous-ensemble des sockets hôte : les écrans principaux (ils jouent les voix des joueurs). */
+  private readonly screens = new Set<string>();
   /** Observateurs : socket -> type d'appareil. Ils ne jouent pas et ne comptent pas dans la partie. */
   readonly observers = new Map<string, DeviceKind>();
   /** Type d'appareil déclaré par chaque socket (hôte, joueur ou observateur). */
@@ -196,6 +198,16 @@ export class Room {
       createdAt: new Date(this.createdAt).toISOString(),
       lastActivity: new Date(this.lastActivity).toISOString(),
     };
+  }
+
+  /** Sockets des écrans principaux (et seulement eux) : les voix des joueurs y sont jouées. */
+  screenSocketIds(): string[] {
+    return [...this.screens];
+  }
+
+  /** Profil lié à un joueur, ou null pour un invité. */
+  profileOf(playerId: string): string | null {
+    return this.players.get(playerId)?.profileId ?? null;
   }
 
   /** Identifiants de toutes les sockets de la salle (hôte, joueurs et observateurs), pour le relais de messages. */
@@ -375,6 +387,7 @@ export class Room {
   /** Retire un socket (hôte, joueur ou observateur). Une absence n'efface jamais un joueur tout de suite. */
   removeSocket(socketId: string): void {
     let changed = this.hostSockets.delete(socketId);
+    this.screens.delete(socketId);
     changed = this.observers.delete(socketId) || changed;
     for (const p of this.players.values()) {
       if (p.sockets.delete(socketId)) {
@@ -418,8 +431,10 @@ export class Room {
     return { ok: true, hostToken: this.hostToken };
   }
 
-  attachHost(socketId: string, kind: DeviceKind = 'unknown'): void {
+  attachHost(socketId: string, kind: DeviceKind = 'unknown', screen = false): void {
     this.hostSockets.add(socketId);
+    if (screen) this.screens.add(socketId);
+    else this.screens.delete(socketId);
     this.socketDevice.set(socketId, kind);
     this.touch();
     this.hooks.onChange(this);

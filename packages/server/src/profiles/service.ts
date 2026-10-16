@@ -9,6 +9,10 @@ import {
   type ProfileStats,
   type ProfileView,
   type AvatarEmoji,
+  type VoiceClip,
+  VOICE_MAX_BYTES,
+  VOICE_MAX_PER_PROFILE,
+  sniffAudioMime,
 } from '@partyhub/shared';
 import { hashPassword, verifyPassword } from '../auth.js';
 import type { Store } from '../db/store.js';
@@ -239,7 +243,76 @@ export class ProfileService {
   }
 
   delete(profileId: string): void {
+    // Les voix partent avec le profil (la clé étrangère l'assure aussi, mais on ne compte pas dessus).
+    this.db.prepare('DELETE FROM voice_clips WHERE profile_id = ?').run(profileId);
     this.db.prepare('DELETE FROM profiles WHERE id = ?').run(profileId);
+  }
+
+  /* Voix de profil : le son reste en base, seule la liste part vers le navigateur. */
+
+  voices(profileId: string): VoiceClip[] {
+    const rows = this.db
+      .prepare('SELECT id, name, created_at FROM voice_clips WHERE profile_id = ? ORDER BY rowid')
+      .all(profileId) as { id: string; name: string; created_at: string }[];
+    return rows.map((r) => ({ id: r.id, name: r.name, createdAt: r.created_at }));
+  }
+
+  /** Ajoute une voix si le profil n'en a pas encore cinq et si le son est bien un format audio connu. */
+  addVoice(profileId: string, name: string, data: Buffer): VoiceClip {
+    const mime = sniffAudioMime(data);
+    if (!mime) {
+      throw new ProfileError(
+        400,
+        'Ce fichier n’est pas un son reconnu. Enregistrez à nouveau, ou choisissez un fichier MP3, WAV, OGG, WebM ou M4A.',
+      );
+    }
+    if (data.length > VOICE_MAX_BYTES) {
+      throw new ProfileError(413, 'Enregistrement trop lourd : 5 secondes maximum.');
+    }
+    const id = randomUUID();
+    const createdAt = new Date(this.now()).toISOString();
+    // Le contrôle du nombre et l'insertion se font dans une même transaction.
+    const insert = this.db.transaction(() => {
+      const count = (
+        this.db.prepare('SELECT COUNT(*) AS n FROM voice_clips WHERE profile_id = ?').get(profileId) as { n: number }
+      ).n;
+      if (count >= VOICE_MAX_PER_PROFILE) {
+        throw new ProfileError(409, `Vous avez déjà ${VOICE_MAX_PER_PROFILE} voix. Supprimez-en une pour en ajouter.`);
+      }
+      this.db
+        .prepare('INSERT INTO voice_clips (id, profile_id, name, mime, data, created_at) VALUES (?, ?, ?, ?, ?, ?)')
+        .run(id, profileId, name, mime, data, createdAt);
+    });
+    insert();
+    return { id, name, createdAt };
+  }
+
+  renameVoice(profileId: string, voiceId: string, name: string): VoiceClip {
+    const result = this.db
+      .prepare('UPDATE voice_clips SET name = ? WHERE id = ? AND profile_id = ?')
+      .run(name, voiceId, profileId);
+    if (result.changes === 0) throw new ProfileError(404, 'Cette voix n’existe plus.');
+    return this.voices(profileId).find((v) => v.id === voiceId)!;
+  }
+
+  deleteVoice(profileId: string, voiceId: string): void {
+    const result = this.db.prepare('DELETE FROM voice_clips WHERE id = ? AND profile_id = ?').run(voiceId, profileId);
+    if (result.changes === 0) throw new ProfileError(404, 'Cette voix n’existe plus.');
+  }
+
+  /** La voix si elle appartient à ce profil (la salle ne joue que les voix de son joueur). */
+  ownedVoice(profileId: string, voiceId: string): { id: string; name: string } | undefined {
+    const row = this.db
+      .prepare('SELECT id, name FROM voice_clips WHERE id = ? AND profile_id = ?')
+      .get(voiceId, profileId) as { id: string; name: string } | undefined;
+    return row;
+  }
+
+  /** Son d'une voix, pour la route publique /api/voices/:id (les écrans n'ont pas de compte). */
+  voiceAudio(voiceId: string): { mime: string; data: Buffer } | undefined {
+    const row = this.db.prepare('SELECT mime, data FROM voice_clips WHERE id = ?').get(voiceId) as
+      { mime: string; data: Buffer } | undefined;
+    return row;
   }
 
   count(): number {

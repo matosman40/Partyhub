@@ -16,6 +16,7 @@ import {
   lobbyPositionSchema,
   readySchema,
   reactionSchema,
+  voicePlaySchema,
   type DeviceInfo,
   type DeviceKind,
   type Ack,
@@ -191,6 +192,8 @@ export class RealtimeHub {
     // Déplacements : jusqu'à 30 par seconde (glisser suit le doigt) ; émotions : 6 toutes les 4 secondes.
     const lobbyMoveLimiter = new RateLimiter(30, 1000);
     const lobbyMoodLimiter = new RateLimiter(6, 4000);
+    // Voix : une toutes les quelques secondes et par socket ; la salle a aussi sa file d'attente côté écran.
+    const voiceLimiter = new RateLimiter(3, 10_000);
     const ip = clientIp(this.trust, socket.handshake.address, socket.handshake.headers['x-forwarded-for']);
 
     const limited = (ack: Ack): boolean => {
@@ -234,7 +237,7 @@ export class RealtimeHub {
       }
       this.leave(socket);
       socket.data = { role: 'host', roomId: room.id };
-      room.attachHost(socket.id, this.kindOf(socket));
+      room.attachHost(socket.id, this.kindOf(socket), parsed.data.screen === true);
       ack({ ok: true });
     });
 
@@ -511,6 +514,35 @@ export class RealtimeHub {
         from: sender?.name ?? '?',
         emoji: parsed.data.emoji,
       });
+      ack({ ok: true });
+    });
+
+    socket.on('player:voice', (p, ack) => {
+      if (limited(ack)) return;
+      const current = this.playerRoomOf(socket);
+      if (!current) return invalid(ack, 'Vous n’êtes pas dans une salle.');
+      const parsed = voicePlaySchema.safeParse(p);
+      if (!parsed.success) return invalid(ack);
+      if (!voiceLimiter.take()) return ack({ ok: false, error: 'Doucement : une voix toutes les quelques secondes.' });
+      // Seules les voix du profil du joueur sont jouées : une voix d'un autre joueur est refusée.
+      const profileId = current.room.profileOf(current.playerId);
+      const voice = profileId && this.profiles ? this.profiles.ownedVoice(profileId, parsed.data.id) : undefined;
+      if (!voice) return invalid(ack, 'Cette voix n’est pas dans votre profil.');
+      const sender = current.room.senderOf(current.playerId);
+      if (!sender) return invalid(ack, 'Vous n’êtes plus dans la salle.');
+      const screens = current.room.screenSocketIds();
+      if (screens.length === 0) {
+        return ack({ ok: false, error: 'Aucun écran principal n’est connecté : la voix ne sera pas entendue.' });
+      }
+      this.io?.to(screens).emit('room:voice', {
+        id: randomUUID(),
+        playerId: current.playerId,
+        from: sender.name,
+        avatar: sender.avatar,
+        name: voice.name,
+        voiceId: voice.id,
+      });
+      this.logger?.debug({ event: 'room.voice', room: current.room.code }, 'Voix jouée sur l’écran');
       ack({ ok: true });
     });
 

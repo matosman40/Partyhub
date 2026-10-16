@@ -12,6 +12,7 @@ import { useArrivalMoods } from '../components/useArrivalMoods.js';
 import { useLobbyMoods } from '../components/useLobbyMoods.js';
 import { useLobbyPositions } from '../components/useLobbyPositions.js';
 import { ChatPanel, EmoteBar, ReactionLayer } from '../components/Social.js';
+import { VoiceLayer } from '../components/VoiceLayer.js';
 import { NoticeDialog } from '../components/NoticeDialog.js';
 import { PlayerSeat } from '../seat/PlayerSeat.js';
 import { FitStage } from '../components/FitStage.js';
@@ -79,7 +80,8 @@ export function TvPage() {
     const socket = getSocket();
 
     const authenticate = () => {
-      socket.emit('host:connect', { code, hostToken }, (res) => {
+      // screen : cet écran joue les voix des joueurs (le téléphone de l’hôte, non).
+      socket.emit('host:connect', { code, hostToken, screen: true }, (res) => {
         if (res.ok) setError(null);
         else setError(res.error);
       });
@@ -350,6 +352,7 @@ export function TvPage() {
             className={`stage-scene${inLobby ? '' : ' is-quiet'}`}
           />
           <ReactionLayer socket={socket} />
+          <VoiceLayer socket={socket} />
 
           {error && (
             <p className="stage-toast" role="alert" onClick={() => setError(null)}>

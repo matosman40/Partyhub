@@ -12,6 +12,7 @@ import { viewsFor } from '../games.js';
 import { AvatarsContext } from '@partyhub/games/client';
 import { PlayerAvatar } from '../components/PlayerAvatar.js';
 import { ChatPanel, EmoteBar } from '../components/Social.js';
+import { VoiceBar } from './VoiceBar.js';
 import { LobbyHeads, LobbyMoodBar, LobbyPlateau } from '../components/LobbyPlateau.js';
 import { useLobbyMoods } from '../components/useLobbyMoods.js';
 import { useLobbyPositions } from '../components/useLobbyPositions.js';
@@ -497,6 +498,7 @@ export function PlayerSeat({
           )}
           {!compact && <LobbyMoodBar onPick={sendLobbyMood} />}
           <EmoteBar onPick={sendReaction} />
+          {!compact && you.profile && <VoiceBar socket={socket} />}
         </section>
       ) : (
         views &&
@@ -530,6 +532,7 @@ export function PlayerSeat({
               />
             </Suspense>
             <EmoteBar onPick={sendReaction} />
+            {!compact && you.profile && <VoiceBar socket={socket} />}
           </section>
         )
       )}

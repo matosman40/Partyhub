@@ -10,6 +10,7 @@ import { CharacterEditor } from '../profile/CharacterEditor.js';
 import { DeviceChooser } from '../device/DeviceChooser.js';
 import { useMusicSlot } from '../sounds.js';
 import { ProposeBoumCard } from '../profile/ProposeBoumCard.js';
+import { VoicesSection } from '../profile/VoicesSection.js';
 
 /**
  * Profil : compte réutilisable d'un appareil à l'autre. Le profil garde le pseudo,
@@ -307,6 +308,8 @@ export function ProfilePage() {
           }
         />
       </section>
+
+      <VoicesSection />
 
       <section className="card stack" aria-labelledby="boum-title">
         <h2 id="boum-title">Proposer une carte pour BOUM !</h2>

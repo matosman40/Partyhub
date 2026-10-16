@@ -13,6 +13,7 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 ### Ajouté
 
 - Expression au repos du personnage : dans son profil, chaque joueur choisit une expression (calme, souriant, rieur, clin d’œil, triste, étonné). Elle reste affichée dans le salon et sur l’écran, contrairement à une émote qui disparaît.
+- Voix de profil : chaque joueur enregistre jusqu’à 5 courts sons (5 secondes au maximum), nommés comme il veut, au micro ou depuis un fichier audio. Pendant une partie, il les envoie depuis son téléphone et l’écran principal les joue, avec un bandeau qui indique qui parle. Si le navigateur bloque le son de l’écran, un bouton « Activer le son » le relance.
 
 ### Corrigé
 

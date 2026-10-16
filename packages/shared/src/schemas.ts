@@ -34,6 +34,7 @@ export const handoffClaimSchema = z.object({
 export const hostConnectSchema = z.object({
   code: roomCodeSchema,
   hostToken: tokenSchema,
+  screen: z.boolean().optional(),
 });
 
 export const joinSchema = z.object({

@@ -9,6 +9,8 @@ import {
   profileUpdateSchema,
   registerSchema,
   roomCodeSchema,
+  VOICE_MAX_BYTES,
+  voiceNameSchema,
 } from '@partyhub/shared';
 import { resolveGame } from '../games-registry.js';
 import type { BoardGameService } from '../boards/service.js';
@@ -255,6 +257,34 @@ export function createApp(deps: AppDeps): express.Express {
   };
   const profileOf = (req: Request) => (req as Request & { profileId: string }).profileId;
 
+  /**
+   * Envoie un fichier en mémoire, avec les plages d'octets (Safari ne lance pas un son sans elles).
+   */
+  const sendBytes = (req: Request, res: Response, mime: string, data: Buffer) => {
+    res.setHeader('Content-Type', mime);
+    res.setHeader('Accept-Ranges', 'bytes');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    const range = /^bytes=(\d*)-(\d*)$/.exec(req.headers.range ?? '');
+    if (!range) {
+      res.setHeader('Content-Length', data.length);
+      res.end(data);
+      return;
+    }
+    const size = data.length;
+    const start = range[1] === '' ? Math.max(0, size - Number(range[2])) : Number(range[1]);
+    const end = range[1] === '' || range[2] === '' ? size - 1 : Math.min(Number(range[2]), size - 1);
+    if (!Number.isFinite(start) || start > end || start >= size) {
+      res.setHeader('Content-Range', `bytes */${size}`);
+      res.status(416).end();
+      return;
+    }
+    res.status(206);
+    res.setHeader('Content-Range', `bytes ${start}-${end}/${size}`);
+    res.setHeader('Content-Length', end - start + 1);
+    res.end(data.subarray(start, end + 1));
+  };
+
   /** Réponse d'erreur métier, ou erreur interne. */
   const fail = (res: Response, err: unknown) => {
     if (err instanceof ProfileError) {
@@ -404,6 +434,53 @@ export function createApp(deps: AppDeps): express.Express {
     res.status(201).json({ proposal: result.value });
   });
 
+  /* Voix de profil (5 au maximum). L'envoi est lu brut : le son n'est jamais interprété comme du JSON. */
+  profileRoutes.get('/me/voices', withProfile, (req, res) => {
+    res.setHeader('Cache-Control', 'no-cache');
+    res.json({ voices: profiles.voices(profileOf(req)) });
+  });
+
+  profileRoutes.post(
+    '/me/voices',
+    withProfile,
+    express.raw({ type: () => true, limit: VOICE_MAX_BYTES }),
+    (req, res) => {
+      const name = voiceNameSchema.safeParse(typeof req.query.name === 'string' ? req.query.name : '');
+      if (!name.success) {
+        res.status(400).json({ error: name.error.issues[0]?.message ?? 'Nom invalide.' });
+        return;
+      }
+      const data = Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0);
+      try {
+        res.status(201).json({ voice: profiles.addVoice(profileOf(req), name.data, data) });
+      } catch (err) {
+        fail(res, err);
+      }
+    },
+  );
+
+  profileRoutes.put('/me/voices/:id', withProfile, (req, res) => {
+    const name = voiceNameSchema.safeParse((req.body as { name?: unknown } | undefined)?.name);
+    if (!name.success) {
+      res.status(400).json({ error: name.error.issues[0]?.message ?? 'Nom invalide.' });
+      return;
+    }
+    try {
+      res.json({ voice: profiles.renameVoice(profileOf(req), String(req.params.id ?? ''), name.data) });
+    } catch (err) {
+      fail(res, err);
+    }
+  });
+
+  profileRoutes.delete('/me/voices/:id', withProfile, (req, res) => {
+    try {
+      profiles.deleteVoice(profileOf(req), String(req.params.id ?? ''));
+      res.json({ ok: true });
+    } catch (err) {
+      fail(res, err);
+    }
+  });
+
   api.use('/profiles', profileRoutes);
 
   /** Packs de personnages (sprites) : liste publique et planches PNG. Revalidées à chaque chargement. */
@@ -458,6 +535,16 @@ export function createApp(deps: AppDeps): express.Express {
     }
     res.setHeader('Cache-Control', 'public, max-age=3600');
     res.type(image.mime).send(image.data);
+  });
+
+  /** Voix de profil jouée sur l'écran principal : publique (les écrans n'ont pas de compte), identifiant aléatoire. */
+  api.get('/voices/:id', (req, res) => {
+    const voice = profiles.voiceAudio(req.params.id ?? '');
+    if (!voice) {
+      res.status(404).json({ error: 'Voix introuvable.' });
+      return;
+    }
+    sendBytes(req, res, voice.mime, voice.data);
   });
 
   // --- Administration (authentification obligatoire) -------------------------

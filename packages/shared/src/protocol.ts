@@ -71,6 +71,18 @@ export interface ReactionEvent {
   emoji: string;
 }
 
+/** Voix jouée sur l'écran principal, déclenchée depuis le téléphone d'un joueur. */
+export interface VoiceEvent {
+  id: string;
+  playerId: string;
+  from: string;
+  avatar: AvatarInfo;
+  /** Nom donné à la voix par le joueur (affiché sur l'écran). */
+  name: string;
+  /** Identifiant de la voix : l'écran la télécharge depuis /api/voices/:id. */
+  voiceId: string;
+}
+
 export interface LobbyView {
   code: string;
   status: RoomStatus;
@@ -157,7 +169,8 @@ export type Ack<T extends object = object> = (res: ({ ok: true } & T) | { ok: fa
 
 export interface ClientToServerEvents {
   // Hôte (écran principal) — réservé au socket qui a présenté le jeton d'hôte
-  'host:connect': (p: { code: string; hostToken: string }, ack: Ack) => void;
+  /** screen : cet écran est l'écran principal de la salle (il joue les voix). */
+  'host:connect': (p: { code: string; hostToken: string; screen?: boolean }, ack: Ack) => void;
   /** Code à 6 chiffres pour ouvrir l'écran hôte sur un autre appareil (valable 3 minutes, une fois). */
   'host:handoff': (ack: Ack<{ code: string; expiresAt: number }>) => void;
   /** Un téléphone saisit le code de transfert : il reçoit le jeton d'hôte de la salle. */
@@ -189,6 +202,7 @@ export interface ClientToServerEvents {
   'player:reaction': (p: { emoji: string }, ack: Ack) => void;
   'player:lobby-move': (p: LobbyPosition, ack: Ack) => void;
   'player:lobby-mood': (p: { mood: LobbyMood }, ack: Ack) => void;
+  'player:voice': (p: { id: string }, ack: Ack) => void;
 
   // Observateurs (regardent le plateau sans jouer ; aucune action de jeu)
   'observer:join': (p: { code: string; device?: DeviceInfo }, ack: Ack) => void;
@@ -206,4 +220,5 @@ export interface ServerToClientEvents {
   'room:reaction': (r: ReactionEvent) => void;
   'room:lobby-mood': (e: LobbyMoodEvent) => void;
   'room:lobby-position': (e: LobbyPositionEvent) => void;
+  'room:voice': (e: VoiceEvent) => void;
 }

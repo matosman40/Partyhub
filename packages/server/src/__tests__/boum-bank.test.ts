@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { BANK_TYPES, BANK_TYPE_INFO, currentBoumBank, setBoumBank, type BankType, type Level } from '@partyhub/games';
 import { BoumBankService, LOW_STOCK_THRESHOLD } from '../boum/service.js';
-import { MIGRATIONS, Store } from '../db/store.js';
+import { LATEST_SCHEMA_VERSION, MIGRATIONS, Store } from '../db/store.js';
 
 /** Banque BOUM ! : amorce, validation, import/export et migration. */
 
@@ -212,7 +212,7 @@ describe('Migration', () => {
     expect(after.getKv('marqueur')).toBe('ancien');
     expect(after.listBoumEntries()).toEqual([]);
     expect(after.migration.from).toBe(10);
-    expect(after.migration.to).toBe(11);
+    expect(after.migration.to).toBe(LATEST_SCHEMA_VERSION);
     expect(after.migration.backup).toBeTruthy();
   });
 });

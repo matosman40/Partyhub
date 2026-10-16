@@ -12,3 +12,4 @@ export * from './transfer.js';
 export * from './devices.js';
 export * from './settings-form.js';
 export * from './sounds.js';
+export * from './voices.js';
