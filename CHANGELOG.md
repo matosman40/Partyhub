@@ -4,19 +4,22 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 
 ## Non publié
 
+### Ajouté
+
+- Visages dans le salon : sous les attitudes, le téléphone propose les six visages du profil (calme, souriant, rire, clin d’œil, chagrin, étonné). Le personnage montre ce visage pendant quelques secondes, sur l’écran comme sur le téléphone, puis reprend son visage habituel.
+- Photo de profil à la webcam : « Prendre une photo avec la webcam » ouvre un aperçu en miroir, avec un compte à rebours de 3 secondes. La photo est recadrée comme une photo choisie. La webcam demande une connexion sécurisée (https).
+- Expression au repos du personnage : dans son profil, chaque joueur choisit une expression (calme, souriant, rieur, clin d’œil, triste, étonné). Elle reste affichée dans le salon et sur l’écran, contrairement à une émote qui disparaît.
+- Voix de profil : chaque joueur enregistre jusqu’à 5 courts sons (5 secondes au maximum), nommés comme il veut, au micro ou depuis un fichier audio. Pendant une partie, il les envoie depuis son téléphone et l’écran principal les joue, avec un bandeau qui indique qui parle. Si le navigateur bloque le son de l’écran, un bouton « Activer le son » le relance.
+
 ### Modifié
 
 - Salon de l’écran hôte (TV, ordinateur, tablette) : les joueurs s’affichent comme sur le téléphone, avec leur tête et leur pseudo. La prairie ne reste que pour le plateau de test.
 - L’hôte peut lancer la partie depuis son téléphone : sur le téléphone d’un joueur, « Je suis l’hôte de cette salle » demande le code affiché sur l’écran (valable 3 minutes, une seule utilisation, cinq essais maximum). Le téléphone reste joueur.
 - Depuis le téléphone de l’hôte : lancer la partie, étape suivante, arrêter, rejouer et ajouter un robot. « Ajouter un robot » est aussi accessible directement dans le salon de l’écran hôte.
 
-### Ajouté
-
-- Expression au repos du personnage : dans son profil, chaque joueur choisit une expression (calme, souriant, rieur, clin d’œil, triste, étonné). Elle reste affichée dans le salon et sur l’écran, contrairement à une émote qui disparaît.
-- Voix de profil : chaque joueur enregistre jusqu’à 5 courts sons (5 secondes au maximum), nommés comme il veut, au micro ou depuis un fichier audio. Pendant une partie, il les envoie depuis son téléphone et l’écran principal les joue, avec un bandeau qui indique qui parle. Si le navigateur bloque le son de l’écran, un bouton « Activer le son » le relance.
-
 ### Corrigé
 
+- Dans le salon, une émotion n’était qu’un emoji à côté de la tête : le personnage ne bougeait pas et ne changeait pas de visage. Il joue maintenant l’attitude ou le visage choisi. Sur l’écran, les têtes du salon sont plus grandes pour lire les visages de loin.
 - Quand le salon ne répond pas (réseau coupé, serveur injoignable), l’écran TV, la page spectateur et le téléphone n’affichaient qu’une ligne de texte sur fond sombre. Après quelques secondes, ils expliquent quoi vérifier et proposent « Réessayer ».
 - Le bouton « Lancer la partie » pouvait être hors de l’écran : le contenu du salon était coupé en haut et en bas. Il reste visible, et son message indique ce qui manque pour lancer.
 

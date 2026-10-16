@@ -7366,10 +7366,52 @@ html:not([data-theme='dark']) .corner-drawer {
 }
 
 .lobby-moods {
+  display: grid;
+  gap: 0.45rem;
+  justify-items: center;
+}
+
+/* Deux rangées : les attitudes (le corps bouge), puis les visages (l'expression change). */
+.lobby-mood-row {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 0.5rem;
+  gap: 0.4rem;
+}
+
+/* Six visages sur une rangée de téléphone : boutons plus étroits, libellé plus court. */
+.lobby-face-btn {
+  min-width: 52px;
+  padding: 0.35rem 0.4rem;
+  font-size: 0.7rem;
+}
+
+/* Visages : trois colonnes sur téléphone (deux rangées), une seule rangée à partir de tablette. */
+.lobby-faces {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: min(100%, 360px);
+}
+
+.lobby-faces .lobby-mood-btn {
+  min-width: 0;
+  width: 100%;
+}
+
+@media (min-width: 720px) {
+  .lobby-faces {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    width: min(100%, 640px);
+  }
+}
+
+/* Écran principal : les personnages du salon sont grands, pour lire leur visage à distance. */
+.lobby-heads.is-large .lobby-head {
+  width: 128px;
+}
+
+.lobby-heads.is-large .lobby-head-emote {
+  font-size: 2rem;
 }
 
 .lobby-mood-btn {
@@ -7902,5 +7944,51 @@ html:not([data-theme='dark']) .corner-drawer {
   .voice-wave i,
   .voice-dot {
     animation: none;
+  }
+}
+
+/* Webcam pour la photo de profil : aperçu carré en miroir, compte à rebours par-dessus. */
+.webcam {
+  max-width: 320px;
+}
+
+.webcam-frame {
+  position: relative;
+  aspect-ratio: 1;
+  width: 100%;
+  overflow: hidden;
+  border-radius: var(--r-lg);
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--line-strong);
+}
+
+.webcam-video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1);
+}
+
+.webcam-note,
+.webcam-count {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  color: #fff;
+}
+
+.webcam-count {
+  font-size: clamp(4rem, 22vw, 6rem);
+  font-weight: 800;
+  text-shadow: 0 6px 24px rgba(0, 0, 0, 0.55);
+  background: rgba(0, 0, 0, 0.25);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .webcam-count {
+    transition: none;
   }
 }

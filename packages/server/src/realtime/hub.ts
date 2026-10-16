@@ -493,10 +493,12 @@ export class RealtimeHub {
       if (!parsed.success) return invalid(ack);
       const allowed = current.room.lobbyMoodAllowed(current.playerId);
       if (!allowed.ok) return ack(allowed);
+      const choice = parsed.data;
       this.io?.to(current.room.socketIds()).emit('room:lobby-mood', {
         id: randomUUID(),
         playerId: current.playerId,
-        mood: parsed.data.mood,
+        mood: 'mood' in choice ? choice.mood : null,
+        face: 'face' in choice ? choice.face : null,
       });
       ack({ ok: true });
     });

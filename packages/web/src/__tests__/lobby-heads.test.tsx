@@ -56,10 +56,21 @@ describe('LobbyHeads', () => {
   it("affiche l'émotion en cours sur la tête", () => {
     const html = renderToStaticMarkup(
       <LobbyHeads
-        emotes={{ a: { id: 'e1', mood: 'joy' } }}
+        emotes={{ a: { id: 'e1', mood: 'joy', face: null } }}
         players={[player({ id: 'a', name: 'Lina' }), player({ id: 'b', name: 'Théo' })]}
       />,
     );
+    expect(html.match(/lobby-head-emote/g)?.length).toBe(1);
+  });
+
+  it('montre le visage choisi dans le salon, avec son emoji sur la tête', () => {
+    const html = renderToStaticMarkup(
+      <LobbyHeads
+        emotes={{ a: { id: 'e2', mood: null, face: 'rieur' } }}
+        players={[player({ id: 'a', name: 'Lina' })]}
+      />,
+    );
+    expect(html).toContain('😂');
     expect(html.match(/lobby-head-emote/g)?.length).toBe(1);
   });
 

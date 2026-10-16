@@ -2,7 +2,7 @@ import { Suspense, useCallback, useEffect, useState, type FormEvent, type ReactN
 import {
   PLATEAU_TEST_ID,
   type ChatMessage,
-  type LobbyMood,
+  type LobbyMoodChoice,
   type LobbyPosition,
   type PlayerRoomView,
 } from '@partyhub/shared';
@@ -15,7 +15,7 @@ import { ChatPanel, EmoteBar } from '../components/Social.js';
 import { VoiceBar } from './VoiceBar.js';
 import { ConnectingNotice } from '../components/ConnectingNotice.js';
 import { LobbyHeads, LobbyMoodBar, LobbyPlateau } from '../components/LobbyPlateau.js';
-import { useLobbyMoods } from '../components/useLobbyMoods.js';
+import { poseOf, useLobbyMoods } from '../components/useLobbyMoods.js';
 import { useLobbyPositions } from '../components/useLobbyPositions.js';
 import { NoticeDialog } from '../components/NoticeDialog.js';
 import { Qr } from '../components/Qr.js';
@@ -102,7 +102,7 @@ export function PlayerSeat({
   const [socket] = useState<AppSocket>(() => createSocket());
   const emotes = useLobbyMoods(socket);
   const positions = useLobbyPositions(socket);
-  const poses = Object.fromEntries(Object.entries(emotes).map(([id, e]) => [id, e.mood]));
+  const poses = Object.fromEntries(Object.entries(emotes).map(([id, e]) => [id, poseOf(e)]));
   const [joined, setJoined] = useState(false);
   const [view, setView] = useState<PlayerRoomView | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -258,9 +258,9 @@ export function PlayerSeat({
     socket.emit('player:lobby-move', position, () => undefined);
   }
 
-  function sendLobbyMood(mood: LobbyMood) {
+  function sendLobbyMood(choice: LobbyMoodChoice) {
     setSocialError(null);
-    socket.emit('player:lobby-mood', { mood }, (res) => {
+    socket.emit('player:lobby-mood', choice, (res) => {
       if (!res.ok) setSocialError(res.error);
     });
   }

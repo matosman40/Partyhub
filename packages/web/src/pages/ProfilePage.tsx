@@ -6,6 +6,7 @@ import { api } from '../api.js';
 import { PlayerAvatar } from '../components/PlayerAvatar.js';
 import { authHeaders, clearProfileToken, readProfileToken, saveProfileToken } from '../profile/session.js';
 import { fileToAvatarDataUrl } from '../profile/avatarImage.js';
+import { WebcamPhoto, webcamAvailable } from '../profile/WebcamPhoto.js';
 import { CharacterEditor } from '../profile/CharacterEditor.js';
 import { DeviceChooser } from '../device/DeviceChooser.js';
 import { useMusicSlot } from '../sounds.js';
@@ -427,6 +428,7 @@ function AvatarSection({
   onChange: (patch: Record<string, unknown>) => void;
 }) {
   const [error, setError] = useState<string | null>(null);
+  const [webcamOpen, setWebcamOpen] = useState(false);
 
   async function pickFile(file: File | undefined) {
     if (!file) return;
@@ -445,19 +447,44 @@ function AvatarSection({
       <div className="profile-hero">
         <PlayerAvatar avatar={profile.avatar} name={profile.displayName} size="lg" />
         <div className="stack" style={{ flex: 1, minWidth: 220 }}>
-          <label className="field">
-            <span>Choisir une photo</span>
-            <input type="file" accept="image/*" disabled={busy} onChange={(e) => void pickFile(e.target.files?.[0])} />
-          </label>
-          {profile.avatar.imageUrl && (
-            <button
-              type="button"
-              className="btn ghost small"
-              disabled={busy}
-              onClick={() => onChange({ avatarImage: null })}
-            >
-              Retirer la photo
-            </button>
+          {webcamOpen ? (
+            <WebcamPhoto
+              onCapture={(dataUrl) => {
+                setWebcamOpen(false);
+                setError(null);
+                onChange({ avatarImage: dataUrl });
+              }}
+              onCancel={() => setWebcamOpen(false)}
+            />
+          ) : (
+            <>
+              <label className="field">
+                <span>Choisir une photo</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  disabled={busy}
+                  onChange={(e) => void pickFile(e.target.files?.[0])}
+                />
+              </label>
+              {webcamAvailable() ? (
+                <button type="button" className="btn ghost small" disabled={busy} onClick={() => setWebcamOpen(true)}>
+                  Prendre une photo avec la webcam
+                </button>
+              ) : (
+                <p className="muted small">La webcam ne s’ouvre que sur une connexion sécurisée (https).</p>
+              )}
+              {profile.avatar.imageUrl && (
+                <button
+                  type="button"
+                  className="btn ghost small"
+                  disabled={busy}
+                  onClick={() => onChange({ avatarImage: null })}
+                >
+                  Retirer la photo
+                </button>
+              )}
+            </>
           )}
         </div>
       </div>

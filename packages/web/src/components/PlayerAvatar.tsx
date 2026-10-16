@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { AvatarInfo } from '@partyhub/shared';
+import type { AvatarInfo, CharacterExpression, CharacterMood } from '@partyhub/shared';
 import { Character } from '@partyhub/games/client';
 
 /**
@@ -11,11 +11,16 @@ export function PlayerAvatar({
   name,
   size = 'md',
   highlight = false,
+  mood,
+  face,
 }: {
   avatar: AvatarInfo;
   name: string;
   size?: 'sm' | 'md' | 'lg';
   highlight?: boolean;
+  /** Attitude et visage joués par le personnage (émotions du salon). */
+  mood?: CharacterMood;
+  face?: CharacterExpression;
 }) {
   const [broken, setBroken] = useState(false);
   const showImage = !!avatar.imageUrl && !broken;
@@ -29,7 +34,7 @@ export function PlayerAvatar({
       {showImage ? (
         <img src={avatar.imageUrl ?? ''} alt="" loading="lazy" onError={() => setBroken(true)} />
       ) : avatar.character ? (
-        <Character spec={avatar.character} framing="bust" />
+        <Character spec={avatar.character} framing="bust" mood={mood} face={face} />
       ) : (
         avatar.emoji
       )}

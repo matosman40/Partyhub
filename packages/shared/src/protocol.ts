@@ -1,4 +1,4 @@
-import type { LobbyMood, LobbyMoodEvent, LobbyPosition, LobbyPositionEvent } from './lobby-presence.js';
+import type { LobbyMoodChoice, LobbyMoodEvent, LobbyPosition, LobbyPositionEvent } from './lobby-presence.js';
 import type { GameCategory, GameNotice, ScoreEntry } from './game-types.js';
 import type { GameDetails } from './schemas.js';
 import type { DeviceInfo, DeviceKind } from './devices.js';
@@ -201,7 +201,7 @@ export interface ClientToServerEvents {
   'player:chat': (p: { text: string }, ack: Ack) => void;
   'player:reaction': (p: { emoji: string }, ack: Ack) => void;
   'player:lobby-move': (p: LobbyPosition, ack: Ack) => void;
-  'player:lobby-mood': (p: { mood: LobbyMood }, ack: Ack) => void;
+  'player:lobby-mood': (p: LobbyMoodChoice, ack: Ack) => void;
   'player:voice': (p: { id: string }, ack: Ack) => void;
 
   // Observateurs (regardent le plateau sans jouer ; aucune action de jeu)

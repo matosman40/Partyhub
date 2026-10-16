@@ -9,7 +9,7 @@ import { GameLogo } from '../components/GameLogo.js';
 import { GameScene } from '../components/GameScene.js';
 import { logoFor } from '../components/gameLogos.js';
 import { useArrivalMoods } from '../components/useArrivalMoods.js';
-import { useLobbyMoods } from '../components/useLobbyMoods.js';
+import { poseOf, useLobbyMoods } from '../components/useLobbyMoods.js';
 import { useLobbyPositions } from '../components/useLobbyPositions.js';
 import { ChatPanel, EmoteBar, ReactionLayer } from '../components/Social.js';
 import { VoiceLayer } from '../components/VoiceLayer.js';
@@ -52,7 +52,7 @@ export function TvPage() {
   const emotes = useLobbyMoods(getSocket());
   const positions = useLobbyPositions(getSocket());
   const lobbyPoses: Record<string, CharacterMood> = {
-    ...Object.fromEntries(Object.entries(emotes).map(([id, e]) => [id, e.mood])),
+    ...Object.fromEntries(Object.entries(emotes).map(([id, e]) => [id, poseOf(e)])),
     ...Object.fromEntries(
       Object.entries(arrivals).flatMap(([name, mood]) => {
         const id = view?.lobby.players.find((p) => p.name === name)?.id;

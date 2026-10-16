@@ -76,7 +76,7 @@ export function TvLobby({
                 {connected} joueur(s) connecté(s)
                 {lobby.game.minPlayers > 1 ? ` · minimum ${lobby.game.minPlayers}` : ''}
               </p>
-              <LobbyHeads players={lobby.players} emotes={emotes} />
+              <LobbyHeads players={lobby.players} emotes={emotes} size="lg" />
             </>
           )}
         </div>
