@@ -134,3 +134,18 @@ Le téléchargement du certificat ne dépend que de Caddy : il fonctionne dès q
 
 Pour mettre à jour : réimporter le fichier de la version suivante, en gardant le même nom d'application et les mêmes
 variables, comme dans la section 6.
+
+## 11. Vérifier l'installation
+
+Après l'installation (ou une mise à jour), sur le serveur :
+
+```bash
+sudo bash scripts/casaos-check.sh 192.168.1.156
+```
+
+Le script contrôle, sans rien modifier : les conteneurs, la réponse HTTPS, la page `/certificat`, le certificat racine
+téléchargeable, la reconnaissance de ce certificat, et l'accès à l'administration. Chaque ligne est marquée OK ou ECHEC ;
+le code de sortie vaut 1 en cas d'échec. Sans adresse, la première adresse IP de la machine est utilisée.
+
+Pour les versions publiées, le fichier `deploy/casaos/compose.https.yaml` est testé avant chaque publication : mise à jour
+depuis la version précédente (réglages et certificat conservés), puis installation propre, sur amd64 et arm64.

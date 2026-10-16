@@ -64,6 +64,18 @@ describe('fichiers de déploiement', () => {
     expect(embedded).toBe(caddyfile);
   });
 
+  it('le fichier CasaOS est sûr à coller dans l’interface : un seul « $ » légitime, pas de « $$ »', () => {
+    // CasaOS réécrit les « $ » de ses champs : une chaîne contenant « $$ » ou une variable inconnue casse l'installation.
+    const text = read('deploy/casaos/compose.https.yaml');
+    expect(text).not.toContain('$$');
+    const dollars = [...text.matchAll(/\$[^ \n'"]*/g)].map((m) => m[0]);
+    expect(dollars.every((d) => d.startsWith('${ADMIN_PASSWORD'))).toBe(true);
+  });
+
+  it('le fichier CasaOS épingle une version précise de l’image, pas « latest »', () => {
+    expect(read('deploy/casaos/compose.https.yaml')).toMatch(/image: ghcr\.io\/matosman40\/partyhub:\d+\.\d+\.\d+\n/);
+  });
+
   for (const file of COMPOSE_FILES) {
     it(`${file} n'utilise aucune variable absente de .env.example`, () => {
       const unknown = usedBy(read(file)).filter((name) => !variables.includes(name));

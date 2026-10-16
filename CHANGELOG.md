@@ -20,6 +20,11 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 - Les erreurs du navigateur remontent dans le même journal (écran de secours, erreurs de script, promesses rejetées, appels API en échec, connexion temps réel perdue), sous `source: "client"`, avec limite de débit par adresse.
 - Administration, rubrique Système : consultation du journal avec filtres (niveau, source, recherche), erreurs les plus fréquentes regroupées, détail de chaque entrée, téléchargement et vidage.
 
+### Modifié
+
+- Publication : la release n'est créée qu'après la vérification du fichier d'installation CasaOS (mise à jour depuis la version précédente, installation propre, amd64 et arm64). Les deux fichiers d'installation doivent épingler la version publiée.
+- Script `scripts/casaos-check.sh` : contrôle d'une installation HTTPS, à lancer sur le serveur.
+
 ### Corrigé
 
 - Plus d’écran noir : une page qui plante affiche un message, un bouton pour recharger la page et un retour à l’accueil. Si le script de l’application ne se charge pas, le texte « Chargement de PartyHub… » reste visible.

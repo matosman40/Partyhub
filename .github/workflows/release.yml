@@ -17,10 +17,13 @@ jobs:
     permissions:
       contents: write
       packages: write
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v4
 
       - name: Vérifier le tag et la version du paquet
+        id: version
         run: |
           TAG="${GITHUB_REF_NAME}"
           if ! [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
@@ -34,9 +37,17 @@ jobs:
           if ! grep -q "^## \[$VERSION\]" CHANGELOG.md; then
             echo "CHANGELOG.md ne contient pas de section [$VERSION]"; exit 1
           fi
+          # Les fichiers d'installation doivent épingler cette version exacte (pas une version antérieure).
+          for file in compose.yaml deploy/casaos/compose.https.yaml; do
+            pinned="$(grep -o 'ghcr.io/matosman40/partyhub:[0-9.]*' "$file" | head -1 | cut -d: -f2)"
+            if [ "$pinned" != "$VERSION" ]; then
+              echo "$file épingle $pinned, le tag indique $VERSION"; exit 1
+            fi
+          done
           MAJOR_MINOR="$(echo "$VERSION" | cut -d. -f1-2)"
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
           echo "MAJOR_MINOR=$MAJOR_MINOR" >> "$GITHUB_ENV"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - uses: actions/setup-node@v4
         with:
@@ -86,6 +97,27 @@ jobs:
           done
           curl -fsS http://127.0.0.1:18282/api/health || { docker logs verif; exit 1; }
           docker rm -f verif
+
+  # Le fichier d'installation CasaOS est testé avec l'image publiée, avant la release : un échec bloque la publication.
+  verify-casaos:
+    needs: publish
+    permissions:
+      contents: read
+      packages: read
+    uses: ./.github/workflows/verify-casaos.yml
+    with:
+      image: ghcr.io/matosman40/partyhub:${{ needs.publish.outputs.version }}
+
+  release:
+    needs: [publish, verify-casaos]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    env:
+      VERSION: ${{ needs.publish.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
 
       - name: Créer la release GitHub avec les notes du CHANGELOG
         env:
