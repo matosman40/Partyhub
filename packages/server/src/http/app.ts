@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs';
+import { createReadStream, existsSync } from 'node:fs';
 import path from 'node:path';
 import express, { type NextFunction, type Request, type Response } from 'express';
 import {
@@ -55,6 +55,10 @@ import {
   type ScreenBackgrounds,
 } from '../screen-backgrounds.js';
 import type { Logger } from '../logger.js';
+import type { RotatingFile } from '../logs/rotating-file.js';
+import { readJournal, type JournalMinLevel } from '../logs/journal.js';
+import { BatchLimiter, clientBatchSchema, recordClientEntries } from '../logs/client-logs.js';
+import { requestIdOf, requestLogger } from '../logs/request-log.js';
 import type { RoomManager } from '../rooms/manager.js';
 import type { RealtimeHub } from '../realtime/hub.js';
 import { ProfileError, type ProfileService } from '../profiles/service.js';
@@ -64,6 +68,8 @@ import type { CharacterPackService } from '../characters/packs.js';
 export interface AppDeps {
   config: AppConfig;
   logger: Logger;
+  /** Journal fichier consultable par l'administrateur. Absent = pas de consultation (tests). */
+  journal?: RotatingFile;
   store: Store;
   manager: RoomManager;
   hub: RealtimeHub;
@@ -93,6 +99,7 @@ export function createApp(deps: AppDeps): express.Express {
   const {
     config,
     logger,
+    journal,
     store,
     manager,
     profiles,
@@ -115,6 +122,8 @@ export function createApp(deps: AppDeps): express.Express {
 
   app.disable('x-powered-by');
   app.set('trust proxy', config.trustProxy ?? 'loopback');
+  // Chaque requête reçoit un identifiant et sa durée est journalisée.
+  app.use(requestLogger(logger));
   // Les images de profil tiennent dans le corps JSON (60 Ko maximum après encodage).
   // La sauvegarde complète est lue plus bas, avec sa propre limite.
   const jsonBody = express.json({ limit: '80kb' });
@@ -206,6 +215,23 @@ export function createApp(deps: AppDeps): express.Express {
     res.setHeader('Cache-Control', 'public, max-age=3600');
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.type(asset.contentType).send(Buffer.from(asset.bytes));
+  });
+
+  // Erreurs du navigateur (écran de secours, erreurs de script, appels API en échec). Limité par adresse.
+  const clientLogLimiter = new BatchLimiter();
+  api.post('/logs/client', (req, res) => {
+    const ip = req.ip ?? 'inconnue';
+    if (!clientLogLimiter.allow(ip)) {
+      res.status(429).json({ error: 'Trop de journaux envoyés. Patientez une minute.' });
+      return;
+    }
+    const parsed = clientBatchSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: 'Journal invalide.' });
+      return;
+    }
+    recordClientEntries(logger, parsed.data.entries, ip);
+    res.status(204).end();
   });
 
   app.use('/api', api);
@@ -453,7 +479,7 @@ export function createApp(deps: AppDeps): express.Express {
     const valid = password.length > 0 && (await verifyPassword(password, stored));
     if (!valid) {
       limiter.fail(ip);
-      logger.warn({ ip }, 'Tentative de connexion administrateur refusée');
+      logger.warn({ event: 'admin.login.refused', ip }, 'Tentative de connexion administrateur refusée');
       res.status(401).json({ error: 'Mot de passe incorrect.' });
       return;
     }
@@ -480,6 +506,43 @@ export function createApp(deps: AppDeps): express.Express {
       return;
     }
     next();
+  });
+
+  // Journal des erreurs : consultation, téléchargement et vidage (administrateur seulement).
+  const noJournal = (res: Response) => res.status(503).json({ error: 'Journal fichier désactivé (LOG_DIR).' });
+
+  admin.get('/logs', (req, res) => {
+    if (!journal) return noJournal(res);
+    const level = typeof req.query.level === 'string' ? req.query.level : '';
+    const minLevel: JournalMinLevel = level === 'all' ? 'all' : level === 'error' ? 'error' : 'warn';
+    const source = req.query.source === 'client' || req.query.source === 'server' ? req.query.source : undefined;
+    const text = typeof req.query.q === 'string' ? req.query.q.trim().slice(0, 200) : '';
+    const limit = Number(req.query.limit) || 200;
+    res.json(readJournal(journal, { minLevel, source, text: text || undefined, limit }));
+  });
+
+  admin.get('/logs/download', (_req, res) => {
+    if (!journal) return noJournal(res);
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+    res.setHeader('Content-Type', 'application/x-ndjson; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="partyhub-journal-${stamp}.jsonl"`);
+    const files = journal.files();
+    void (async () => {
+      for (const file of files) {
+        for await (const chunk of createReadStream(file)) res.write(chunk);
+      }
+      res.end();
+    })().catch((err: unknown) => {
+      logger.error({ event: 'admin.logs.download', err }, 'Téléchargement du journal interrompu');
+      res.destroy();
+    });
+  });
+
+  admin.delete('/logs', (_req, res) => {
+    if (!journal) return noJournal(res);
+    journal.clear();
+    logger.info({ event: 'admin.logs.cleared' }, 'Journal vidé par l’administrateur');
+    res.json({ ok: true });
   });
 
   admin.get('/overview', (_req, res) => {
@@ -1389,14 +1452,20 @@ export function createApp(deps: AppDeps): express.Express {
       res.sendFile(indexFile);
     });
   } else {
-    logger.warn({ staticDir: config.staticDir }, 'Interface web absente : lancer npm run build');
+    logger.warn({ event: 'app.no-web', staticDir: config.staticDir }, 'Interface web absente : lancer npm run build');
   }
 
   // --- Erreurs ---------------------------------------------------------------
 
-  app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+  app.use((err: unknown, req: Request, res: Response, _next: NextFunction) => {
     const status = typeof (err as { status?: unknown })?.status === 'number' ? (err as { status: number }).status : 500;
-    if (status >= 500) logger.error({ err }, 'Erreur HTTP');
+    if (status >= 500) {
+      res.locals.errorLogged = true;
+      logger.error(
+        { event: 'http.error', req: requestIdOf(res), method: req.method, path: req.path, err },
+        'Erreur HTTP',
+      );
+    }
     const message =
       status === 400 ? 'Requête invalide.' : status === 413 ? 'Requête trop volumineuse.' : 'Erreur interne.';
     res.status(status).json({ error: message });

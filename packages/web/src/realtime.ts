@@ -1,9 +1,26 @@
 import { io, type Socket } from 'socket.io-client';
 import type { ClientToServerEvents, ServerToClientEvents } from '@partyhub/shared';
+import { logClient } from './log/clientLog.js';
 
 export type AppSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 
 let shared: AppSocket | null = null;
+
+/**
+ * Journalise les coupures réelles (refus du serveur, réseau, transport). Les déconnexions voulues
+ * (fermeture de l'onglet, changement de page) ne sont pas des erreurs.
+ */
+function watch(socket: AppSocket): AppSocket {
+  socket.on('connect_error', (err) => {
+    logClient('warn', 'socket', `Connexion temps réel refusée ou interrompue : ${err.message}`);
+  });
+  socket.on('disconnect', (reason) => {
+    if (reason === 'io server disconnect' || reason === 'transport error' || reason === 'ping timeout') {
+      logClient('warn', 'socket', `Connexion temps réel perdue : ${reason}`);
+    }
+  });
+  return socket;
+}
 
 function options(autoConnect: boolean) {
   return {
@@ -17,7 +34,7 @@ function options(autoConnect: boolean) {
 
 /** Connexion partagée de la page (écran principal ou page d'accueil). */
 export function getSocket(): AppSocket {
-  if (!shared) shared = io(options(true));
+  if (!shared) shared = watch(io(options(true)));
   return shared;
 }
 
@@ -27,5 +44,5 @@ export function getSocket(): AppSocket {
  * La connexion n'est ouverte qu'à l'appel de `connect()`.
  */
 export function createSocket(): AppSocket {
-  return io(options(false));
+  return watch(io(options(false)));
 }

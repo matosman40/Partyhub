@@ -78,7 +78,7 @@ export class RoomManager {
     this.byCode.delete(room.code);
     this.hooks.onClosed(room, reason);
     room.destroy();
-    this.env.logger.info({ room: room.code, reason }, 'Salle fermée');
+    this.env.logger.info({ event: 'room.closed', room: room.code, reason }, 'Salle fermée');
     return true;
   }
 

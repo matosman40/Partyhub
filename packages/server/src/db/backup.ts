@@ -91,10 +91,10 @@ export class DbBackupScheduler {
       this.store.backupTo(file);
       chmodSync(file, 0o600);
       const removed = pruneDbBackups(this.config.dir, this.config.keep);
-      this.logger.info({ backup: name, removed: removed.length }, 'Sauvegarde de la base créée');
+      this.logger.info({ event: 'db.backup', backup: name, removed: removed.length }, 'Sauvegarde de la base créée');
       return { ok: true, name, removed };
     } catch (err) {
-      this.logger.error({ err }, 'Échec de la sauvegarde de la base');
+      this.logger.error({ event: 'db.backup-failed', err }, 'Échec de la sauvegarde de la base');
       return { ok: false, error: 'La sauvegarde a échoué. Consultez les journaux du serveur.' };
     }
   }

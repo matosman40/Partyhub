@@ -21,6 +21,7 @@ import type { AppConfig } from './config.js';
 import { createApp } from './http/app.js';
 import { Store } from './db/store.js';
 import type { Logger } from './logger.js';
+import type { RotatingFile } from './logs/rotating-file.js';
 import { RealtimeHub, type SocketData } from './realtime/hub.js';
 import { RoomManager } from './rooms/manager.js';
 import { DbBackupScheduler } from './db/backup.js';
@@ -40,6 +41,8 @@ export interface PartyServer {
 export interface ServerOptions {
   config: AppConfig;
   logger: Logger;
+  /** Journal fichier (consultable depuis l'administration). Absent = sortie standard seulement. */
+  journal?: RotatingFile;
   /** Période du nettoyage des salles (0 = désactivé, utile aux tests). */
   sweepEveryMs?: number;
   /** Réglages du ralentissement des codes inconnus (valeurs par défaut sinon). */
@@ -62,7 +65,10 @@ async function ensureAdminPassword(store: Store, config: AppConfig, logger: Logg
   store.setKv('admin_password_hash', await hashPassword(generated));
   const file = path.join(config.dataDir, 'admin-password.txt');
   writeFileSync(file, `${generated}\n`, { mode: 0o600 });
-  logger.warn({ file }, 'Mot de passe administrateur généré : lisez ce fichier, puis supprimez-le');
+  logger.warn(
+    { event: 'admin.password-generated', file },
+    'Mot de passe administrateur généré : lisez ce fichier, puis supprimez-le',
+  );
 }
 
 export async function createServer(opts: ServerOptions): Promise<PartyServer> {
@@ -71,7 +77,10 @@ export async function createServer(opts: ServerOptions): Promise<PartyServer> {
   const store = new Store(config.dbFile, { backupDir: path.join(config.dataDir, 'migrations') });
   const migration = store.migration;
   if (migration.to !== migration.from) {
-    logger.info({ from: migration.from, to: migration.to, backup: migration.backup }, 'Schéma de la base mis à jour');
+    logger.info(
+      { event: 'db.migrated', from: migration.from, to: migration.to, backup: migration.backup },
+      'Schéma de la base mis à jour',
+    );
   }
   // Installation neuve (aucun mot de passe administrateur encore créé) : jeux intégrés désactivés si configuré.
   // Une installation existante garde ses réglages, même si elle a été mise à jour.
@@ -80,7 +89,7 @@ export async function createServer(opts: ServerOptions): Promise<PartyServer> {
     const games = gameRegistry.filter((game) => game.manifest.listed !== false);
     for (const game of games) store.setGameEnabled(game.manifest.id, false);
     logger.info(
-      { count: games.length },
+      { event: 'db.fresh-install', count: games.length },
       'Installation neuve : jeux intégrés désactivés (BUILTIN_GAMES=on pour les activer)',
     );
   }
@@ -137,6 +146,7 @@ export async function createServer(opts: ServerOptions): Promise<PartyServer> {
   const app = createApp({
     config,
     logger,
+    journal: opts.journal,
     store,
     manager,
     hub,
@@ -174,7 +184,7 @@ export async function createServer(opts: ServerOptions): Promise<PartyServer> {
         inactivityMs: s.inactivityMinutes * 60_000,
         maxAgeMs: s.maxRoomAgeMinutes * 60_000,
       });
-      if (removed > 0) logger.info({ removed }, 'Salles inactives nettoyées');
+      if (removed > 0) logger.info({ event: 'room.purged', removed }, 'Salles inactives nettoyées');
     }, sweepEvery);
     sweeper.unref();
   }

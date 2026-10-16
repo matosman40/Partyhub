@@ -12,6 +12,12 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 
 - Boutons « Retour à l’accueil » au même endroit et de même style sur les pages de connexion, rejoindre, profil, test des appareils, administration et spectateur.
 
+### Ajouté
+
+- Journal des erreurs complet, dans `DATA_DIR/logs/partyhub.log` (une ligne JSON par événement, niveau en toutes lettres, rotation automatique). Chaque requête reçoit un identifiant (`X-Request-Id`) qui relie une erreur à sa requête. Les mots de passe et jetons sont masqués.
+- Les erreurs du navigateur remontent dans le même journal (écran de secours, erreurs de script, promesses rejetées, appels API en échec, connexion temps réel perdue), sous `source: "client"`, avec limite de débit par adresse.
+- Administration, rubrique Système : consultation du journal avec filtres (niveau, source, recherche), erreurs les plus fréquentes regroupées, détail de chaque entrée, téléchargement et vidage.
+
 ### Corrigé
 
 - Plus d’écran noir : une page qui plante affiche un message, un bouton pour recharger la page et un retour à l’accueil. Si le script de l’application ne se charge pas, le texte « Chargement de PartyHub… » reste visible.

@@ -14,18 +14,21 @@ services:
     stop_grace_period: 20s
     ports:
       # Seul le port HTTP est publié ; le port interne n'est jamais exposé directement.
-      - "${PARTYHUB_PORT:-8282}:8282"
+      - '${PARTYHUB_PORT:-8282}:8282'
     environment:
-      PORT: "8282"
-      HOST: "0.0.0.0"
+      PORT: '8282'
+      HOST: '0.0.0.0'
       DATA_DIR: /data
-      ADMIN_PASSWORD: "${ADMIN_PASSWORD:-}"
-      GITHUB_TOKEN: "${GITHUB_TOKEN:-}"
-      LOG_LEVEL: "${LOG_LEVEL:-info}"
-      COOKIE_SECURE: "${COOKIE_SECURE:-false}"
-      TRUST_PROXY: "${TRUST_PROXY:-loopback}"
-      DB_BACKUP_EVERY_HOURS: "${DB_BACKUP_EVERY_HOURS:-24}"
-      DB_BACKUP_KEEP: "${DB_BACKUP_KEEP:-7}"
+      ADMIN_PASSWORD: '${ADMIN_PASSWORD:-}'
+      GITHUB_TOKEN: '${GITHUB_TOKEN:-}'
+      LOG_LEVEL: '${LOG_LEVEL:-info}'
+      LOG_DIR: '${LOG_DIR:-}'
+      LOG_MAX_MB: '${LOG_MAX_MB:-5}'
+      LOG_FILES: '${LOG_FILES:-6}'
+      COOKIE_SECURE: '${COOKIE_SECURE:-false}'
+      TRUST_PROXY: '${TRUST_PROXY:-loopback}'
+      DB_BACKUP_EVERY_HOURS: '${DB_BACKUP_EVERY_HOURS:-24}'
+      DB_BACKUP_KEEP: '${DB_BACKUP_KEEP:-7}'
     volumes:
       - partyhub-data:/data
     healthcheck:
@@ -57,7 +60,7 @@ services:
         fr_FR: Jeux de soirée sur votre réseau local
       developer: PartyHub contributors
       category: Games
-      port_map: "${PARTYHUB_PORT:-8282}"
+      port_map: '${PARTYHUB_PORT:-8282}'
       index: /
       title:
         en_US: PartyHub

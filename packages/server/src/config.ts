@@ -17,6 +17,8 @@ export interface AppConfig {
    */
   builtinGames?: boolean;
   logLevel: string;
+  /** Journal fichier tournant (LOG_DIR, LOG_MAX_MB, LOG_FILES). Absent = sortie standard seulement (tests). */
+  logFile?: { dir: string; maxBytes: number; maxFiles: number };
   secureCookies: boolean;
   /** Proxys de confiance (TRUST_PROXY, syntaxe d'Express). Absent = « loopback ». */
   trustProxy?: string;
@@ -64,6 +66,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   const adminPassword = env.ADMIN_PASSWORD?.trim() || undefined;
   const everyHours = intFromEnv('DB_BACKUP_EVERY_HOURS', env.DB_BACKUP_EVERY_HOURS, 24, 0, 24 * 365);
   const keep = intFromEnv('DB_BACKUP_KEEP', env.DB_BACKUP_KEEP, 7, 1, 365);
+  const logMb = intFromEnv('LOG_MAX_MB', env.LOG_MAX_MB, 5, 1, 100);
+  const logFiles = intFromEnv('LOG_FILES', env.LOG_FILES, 6, 1, 50);
   const trustProxy = env.TRUST_PROXY?.trim() || 'loopback';
   try {
     compileTrustProxy(trustProxy);
@@ -81,6 +85,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     githubToken: env.GITHUB_TOKEN?.trim() || undefined,
     builtinGames: builtinGamesFromEnv(env.BUILTIN_GAMES),
     logLevel: env.LOG_LEVEL?.trim() || 'info',
+    logFile: {
+      dir: env.LOG_DIR?.trim() || path.join(dataDir, 'logs'),
+      maxBytes: logMb * MB,
+      maxFiles: logFiles,
+    },
     secureCookies: env.COOKIE_SECURE === 'true',
     trustProxy,
     assetLimits: {

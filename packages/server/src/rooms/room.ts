@@ -427,7 +427,7 @@ export class Room {
     const p = this.players.get(playerId);
     if (!p || p.sockets.size > 0 || !this.inLobby) return;
     this.dropPlayer(p);
-    this.env.logger.info({ room: this.code }, 'Joueur absent retiré de la salle');
+    this.env.logger.info({ event: 'room.player-removed', room: this.code }, 'Joueur absent retiré de la salle');
     this.touch();
     this.hooks.onChange(this);
   }
@@ -663,7 +663,11 @@ export class Room {
     const suggestion = this.module.suggest(this.state, botId, this.env.random);
     if (!suggestion) return;
     const res = this.apply(bot, suggestion.type, suggestion.payload);
-    if (!res.ok) this.env.logger.debug({ room: this.code, error: res.error }, 'Action de robot refusée');
+    if (!res.ok)
+      this.env.logger.debug(
+        { event: 'room.bot-refused', room: this.code, error: res.error },
+        'Action de robot refusée',
+      );
   }
 
   private clearBotTimers(): void {
@@ -680,7 +684,7 @@ export class Room {
     try {
       return fn();
     } catch (err) {
-      this.env.logger.error({ err, room: this.code }, 'Erreur du moteur de jeu');
+      this.env.logger.error({ event: 'game.error', err, room: this.code }, 'Erreur du moteur de jeu');
       return { ok: false, error: 'Erreur interne, réessayez.' };
     }
   }
@@ -689,7 +693,7 @@ export class Room {
     try {
       this.state = fn(this.state);
     } catch (err) {
-      this.env.logger.error({ err, room: this.code }, 'Erreur du moteur de jeu');
+      this.env.logger.error({ event: 'game.error', err, room: this.code }, 'Erreur du moteur de jeu');
     }
     this.afterMutation();
   }

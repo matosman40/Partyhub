@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
+import { describeError, logClient } from '../log/clientLog.js';
 
 interface BoundaryProps {
   children: ReactNode;
@@ -23,7 +24,12 @@ export class Boundary extends Component<BoundaryProps, BoundaryState> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo): void {
-    console.error('[PartyHub] erreur de rendu', error, info.componentStack);
+    const { message, stack } = describeError(error);
+    const component = info.componentStack ? info.componentStack.trim().split('\n')[0]?.trim() : undefined;
+    logClient('error', 'boundary', message, {
+      stack: [stack, info.componentStack].filter(Boolean).join('\n'),
+      extra: component ? { component } : undefined,
+    });
     this.props.onError?.(error, info);
   }
 

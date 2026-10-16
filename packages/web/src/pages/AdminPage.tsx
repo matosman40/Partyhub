@@ -19,6 +19,7 @@ import { viewsFor } from '../games.js';
 import { BackupPanel } from '../admin/BackupPanel.js';
 import { DbBackups } from '../admin/DbBackups.js';
 import { BackButton } from '../components/BackButton.js';
+import { LogsAdmin } from '../admin/LogsAdmin.js';
 
 const ORIGIN_LABEL: Record<CatalogGame['origin'], string | null> = {
   builtin: null,
@@ -274,7 +275,7 @@ const ADMIN_CATEGORIES = [
   {
     id: 'systeme',
     title: 'Système',
-    text: 'Réglages généraux, sauvegardes et base de données.',
+    text: 'Journal des erreurs, réglages généraux, sauvegardes et base de données.',
   },
 ] as const;
 
@@ -623,6 +624,11 @@ export function AdminPage() {
 
           {category === 'systeme' && (
             <>
+              <section className="card stack">
+                <h2>Journal des erreurs</h2>
+                <LogsAdmin />
+              </section>
+
               <section className="card">
                 <h2>Réglages généraux</h2>
                 <SettingsForm settings={overview.settings} onSaved={load} />

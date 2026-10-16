@@ -209,7 +209,10 @@ export class RealtimeHub {
       const unknown = 'Code de salle inconnu. Vérifiez le code affiché sur l’écran.';
       const reservation = this.joinThrottle.reserve(ip, normalizeRoomCode(rawCode));
       if ('refused' in reservation) {
-        this.logger?.warn({ ip }, 'Trop de codes de salle inconnus : tentative refusée');
+        this.logger?.warn(
+          { event: 'socket.join-throttled', ip },
+          'Trop de codes de salle inconnus : tentative refusée',
+        );
         invalid(ack, 'Trop de codes incorrects depuis cette connexion. Patientez quelques instants.');
         return undefined;
       }
@@ -497,7 +500,7 @@ export class RealtimeHub {
 
     socket.on('disconnect', () => {
       this.leave(socket);
-      this.logger?.debug({ socket: socket.id }, 'Socket déconnecté');
+      this.logger?.debug({ event: 'socket.disconnected', socket: socket.id }, 'Socket déconnecté');
     });
   }
 }

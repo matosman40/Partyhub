@@ -7,16 +7,16 @@ Jeux fournis (architecture modulaire, un dossier par jeu, voir [docs/ADDING-A-GA
 
 Sur une installation neuve, les jeux intégrés sont désactivés : l'administrateur les active un par un, ou avec `BUILTIN_GAMES=on`. Une installation existante garde ses réglages. Les jeux installés depuis une source GitHub ou un paquet sont actifs.
 
-| Jeu | Catégorie | Principe |
-| --- | --- | --- |
-| 🧠 **Quiz Party** | Quiz | Questions à choix multiples, points et bonus de rapidité. |
-| 💭 **Association express** | Soirée | Écrivez le premier mot qui vous vient, puis votez anonymement pour le plus drôle. |
-| 👉 **Plutôt qui ?** | Soirée | « Qui est le plus susceptible de… ? » Votez en secret et suivez la majorité. |
-| 🕵️ **L'Imposteur** | Soirée | Un imposteur ignore le mot secret : donnez des indices, puis démasquez-le. |
-| 🃏 **Plus ou moins** | Cartes | Un paquet de 52 cartes : la suivante sera-t-elle plus haute ou plus basse ? |
-| ⚡ **Réflexe** | Adresse | Attendez le vert, puis touchez le plus vite possible. |
-| 🃏 **Rami 51** | Cartes | Ouvrez à 51 points, posez vos combinaisons, videz votre main le premier. |
-| 🎴 **Tarot** | Cartes | Enchères, chien, écart et plis à quatre joueurs. |
+| Jeu                        | Catégorie | Principe                                                                          |
+| -------------------------- | --------- | --------------------------------------------------------------------------------- |
+| 🧠 **Quiz Party**          | Quiz      | Questions à choix multiples, points et bonus de rapidité.                         |
+| 💭 **Association express** | Soirée    | Écrivez le premier mot qui vous vient, puis votez anonymement pour le plus drôle. |
+| 👉 **Plutôt qui ?**        | Soirée    | « Qui est le plus susceptible de… ? » Votez en secret et suivez la majorité.      |
+| 🕵️ **L'Imposteur**         | Soirée    | Un imposteur ignore le mot secret : donnez des indices, puis démasquez-le.        |
+| 🃏 **Plus ou moins**       | Cartes    | Un paquet de 52 cartes : la suivante sera-t-elle plus haute ou plus basse ?       |
+| ⚡ **Réflexe**             | Adresse   | Attendez le vert, puis touchez le plus vite possible.                             |
+| 🃏 **Rami 51**             | Cartes    | Ouvrez à 51 points, posez vos combinaisons, videz votre main le premier.          |
+| 🎴 **Tarot**               | Cartes    | Enchères, chien, écart et plis à quatre joueurs.                                  |
 
 ## Fonctionnalités
 
@@ -130,25 +130,28 @@ la bonne réponse n'apparaît qu'à la révélation, et les réponses privées r
 
 ## Variables d'environnement
 
-| Variable | Défaut | Rôle |
-|---|---|---|
-| `PARTYHUB_PORT` | `8282` | Port publié sur la machine hôte (Compose) |
-| `PARTYHUB_HOST` | vide | Adresse du serveur pour le HTTPS du réseau local (surcouche `deploy/https`, voir [docs/HTTPS-LAN.md](docs/HTTPS-LAN.md)) |
-| `ADMIN_PASSWORD` | généré | Mot de passe de l'administration, prioritaire s'il est défini |
-| `LOG_LEVEL` | `info` | `fatal`, `error`, `warn`, `info`, `debug`, `trace` |
-| `COOKIE_SECURE` | `false` | `true` uniquement derrière un proxy HTTPS |
-| `TRUST_PROXY` | `loopback` | Proxys de confiance pour lire l'adresse réelle des joueurs dans `X-Forwarded-For`. Même syntaxe qu'Express : `loopback`, une adresse, ou un réseau comme `172.16.0.0/12` (voir [docs/REMOTE-ACCESS.md](docs/REMOTE-ACCESS.md)) |
-| `DATA_DIR` | `./data` (`/data` dans Docker) | Dossier de la base SQLite |
-| `DB_BACKUP_EVERY_HOURS` | `24` | Sauvegarde automatique de la base, en heures (`0` pour la désactiver) |
-| `DB_BACKUP_KEEP` | `7` | Nombre de sauvegardes de la base conservées |
-| `DB_BACKUP_DIR` | `<DATA_DIR>/backups` | Dossier des sauvegardes de la base |
-| `ASSET_MAX_AUDIO_MB` | `15` | Taille maximale d'un fichier audio de la médiathèque (1 à 512) |
-| `ASSET_MAX_VIDEO_MB` | `80` | Taille maximale d'une vidéo de la médiathèque (1 à 2048) |
-| `ASSET_MAX_IMAGE_MB` | `5` | Taille maximale d'une image de la médiathèque (1 à 64) |
-| `ASSET_MAX_FONT_MB` | `2` | Taille maximale d'une police de la médiathèque (1 à 16) |
-| `BUILTIN_GAMES` | `off` | `on` active les jeux intégrés sur une installation neuve ; `off` les laisse désactivés (les installations existantes ne changent pas) |
-| `GITHUB_TOKEN` | vide | Jeton GitHub (lecture des releases). Requis pour les dépôts privés ; évite aussi la limite d'appels anonymes. Jamais affiché ni sauvegardé |
-| `PORT`, `HOST` | `8282`, `0.0.0.0` | Écoute du serveur dans le conteneur |
+| Variable                | Défaut                         | Rôle                                                                                                                                                                                                                           |
+| ----------------------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `PARTYHUB_PORT`         | `8282`                         | Port publié sur la machine hôte (Compose)                                                                                                                                                                                      |
+| `PARTYHUB_HOST`         | vide                           | Adresse du serveur pour le HTTPS du réseau local (surcouche `deploy/https`, voir [docs/HTTPS-LAN.md](docs/HTTPS-LAN.md))                                                                                                       |
+| `ADMIN_PASSWORD`        | généré                         | Mot de passe de l'administration, prioritaire s'il est défini                                                                                                                                                                  |
+| `LOG_LEVEL`             | `info`                         | `fatal`, `error`, `warn`, `info`, `debug`, `trace`                                                                                                                                                                             |
+| `LOG_DIR`               | `DATA_DIR/logs`                | Dossier du journal des erreurs (fichier `partyhub.log`, JSON une ligne par événement)                                                                                                                                          |
+| `LOG_MAX_MB`            | `5`                            | Taille d'un fichier de journal avant rotation (1 à 100)                                                                                                                                                                        |
+| `LOG_FILES`             | `6`                            | Nombre d'anciens fichiers gardés en plus du courant                                                                                                                                                                            |
+| `COOKIE_SECURE`         | `false`                        | `true` uniquement derrière un proxy HTTPS                                                                                                                                                                                      |
+| `TRUST_PROXY`           | `loopback`                     | Proxys de confiance pour lire l'adresse réelle des joueurs dans `X-Forwarded-For`. Même syntaxe qu'Express : `loopback`, une adresse, ou un réseau comme `172.16.0.0/12` (voir [docs/REMOTE-ACCESS.md](docs/REMOTE-ACCESS.md)) |
+| `DATA_DIR`              | `./data` (`/data` dans Docker) | Dossier de la base SQLite                                                                                                                                                                                                      |
+| `DB_BACKUP_EVERY_HOURS` | `24`                           | Sauvegarde automatique de la base, en heures (`0` pour la désactiver)                                                                                                                                                          |
+| `DB_BACKUP_KEEP`        | `7`                            | Nombre de sauvegardes de la base conservées                                                                                                                                                                                    |
+| `DB_BACKUP_DIR`         | `<DATA_DIR>/backups`           | Dossier des sauvegardes de la base                                                                                                                                                                                             |
+| `ASSET_MAX_AUDIO_MB`    | `15`                           | Taille maximale d'un fichier audio de la médiathèque (1 à 512)                                                                                                                                                                 |
+| `ASSET_MAX_VIDEO_MB`    | `80`                           | Taille maximale d'une vidéo de la médiathèque (1 à 2048)                                                                                                                                                                       |
+| `ASSET_MAX_IMAGE_MB`    | `5`                            | Taille maximale d'une image de la médiathèque (1 à 64)                                                                                                                                                                         |
+| `ASSET_MAX_FONT_MB`     | `2`                            | Taille maximale d'une police de la médiathèque (1 à 16)                                                                                                                                                                        |
+| `BUILTIN_GAMES`         | `off`                          | `on` active les jeux intégrés sur une installation neuve ; `off` les laisse désactivés (les installations existantes ne changent pas)                                                                                          |
+| `GITHUB_TOKEN`          | vide                           | Jeton GitHub (lecture des releases). Requis pour les dépôts privés ; évite aussi la limite d'appels anonymes. Jamais affiché ni sauvegardé                                                                                     |
+| `PORT`, `HOST`          | `8282`, `0.0.0.0`              | Écoute du serveur dans le conteneur                                                                                                                                                                                            |
 
 Réglages modifiables depuis l'administration (sans redémarrage) : joueurs maximum par salle, délai de
 reconnexion, délai d'inactivité, durée maximale d'une salle, nombre de chiffres du code de salle (4 à 6, 4 par défaut).

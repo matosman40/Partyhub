@@ -1,15 +1,22 @@
+import { describeError, logClient } from './log/clientLog.js';
+
 /** Appels HTTP vers l'API. Les erreurs remontent avec un message lisible en français. */
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
+  const method = init?.method ?? 'GET';
+  // Seule la route (sans les paramètres) est journalisée : pas de code de salle ni de jeton.
+  const route = path.split('?')[0] ?? path;
   let res: Response;
   try {
     res = await fetch(path, {
       ...init,
       headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) },
     });
-  } catch {
-    throw new Error('Connexion impossible. Vérifiez le réseau.');
+  } catch (err) {
+    logClient('error', 'api', `Réseau : ${method} ${route}`, { stack: describeError(err).stack });
+    throw new Error('Connexion impossible. Vérifiez le réseau.', { cause: err });
   }
   const data = (await res.json().catch(() => ({}))) as { error?: string } & T;
+  if (res.status >= 500) logClient('error', 'api', `HTTP ${res.status} : ${method} ${route}`);
   if (!res.ok) throw new Error(data.error ?? 'Erreur inattendue.');
   return data;
 }
