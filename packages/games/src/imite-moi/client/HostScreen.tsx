@@ -16,7 +16,7 @@ function Answer({ item, alt }: { item: Shown; alt: string }) {
 function Timer({ percent }: { percent: number }) {
   return (
     <div className="imite-timer" aria-hidden="true">
-      <span style={{ width: `${percent}%` }} />
+      <span style={{ transform: `scaleX(${Math.max(0, Math.min(100, percent)) / 100})` }} />
     </div>
   );
 }

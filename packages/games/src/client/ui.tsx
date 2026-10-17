@@ -110,7 +110,8 @@ export function TimerBar({ remaining, total }: { remaining: number; total: numbe
       aria-valuemax={Math.max(0, Math.round(total))}
       aria-valuenow={Math.max(0, Math.round(remaining))}
     >
-      <span style={{ width: `${pct}%` }} />
+      {/* Mise à l'échelle, et non largeur : la barre glisse sans recalculer la mise en page à chaque image. */}
+      <span style={{ transform: `scaleX(${pct / 100})` }} />
     </div>
   );
 }

@@ -40,6 +40,8 @@ export interface PlayerViewProps {
   now: number;
   /** Envoie une action au serveur et attend sa validation. */
   send: (type: string, payload?: unknown) => Promise<{ ok: boolean; error?: string }>;
+  /** Vrai quand la connexion au salon est établie : le jeu efface un message de coupure une fois la connexion revenue. */
+  connected?: boolean;
 }
 
 export interface GameClientViews {
