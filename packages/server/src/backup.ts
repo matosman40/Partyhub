@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { gameRegistry } from '@partyhub/games';
 import { BACKUP_FORMAT, backupSchema, type Backup, type GameNotice } from '@partyhub/shared';
@@ -7,12 +8,15 @@ import type { CardGameService } from './cards/service.js';
 import type { Store } from './db/store.js';
 import { detailsOverride } from './game-details.js';
 import type { MediaQuizService } from './media/service.js';
+import type { PackageBackupEntry, PackageService } from './packages/service.js';
+import { compareVersions } from './packages/semver.js';
 import { formatBytes, readZip, writeZip, ZipError, type ZipFileEntry, type ZipReadLimits } from './packages/zip.js';
 
 /**
  * Sauvegarde et restauration : jeux de cartes, jeux de questions médias, jeux de plateau,
- * présentation (nom, icône, description, notice) des jeux intégrés modifiés, et, dans
- * l’archive complète, les fichiers de la médiathèque.
+ * présentation (nom, icône, description, notice) des jeux intégrés modifiés. Dans l’archive
+ * complète s’ajoutent les fichiers de la médiathèque et les paquets `.phgame` installés
+ * (chaque version, active ou conservée, avec son archive).
  */
 
 /** Identifiants des jeux intégrés (ceux du code, jamais ceux de l’administration). */
@@ -73,7 +77,10 @@ export interface RestoreSummary {
   /** Fichiers de la médiathèque ajoutés, et fichiers déjà présents (non remplacés). */
   assets: number;
   assetsPresent: number;
-  /** Jeux ou fichiers non restaurés, avec la raison. */
+  /** Versions de paquets installées depuis l’archive, et versions déjà présentes à l’identique. */
+  packages: number;
+  packagesPresent: number;
+  /** Jeux, fichiers ou paquets non restaurés, avec la raison. */
   skipped: string[];
 }
 
@@ -88,6 +95,8 @@ function emptySummary(): RestoreSummary {
     replaced: 0,
     assets: 0,
     assetsPresent: 0,
+    packages: 0,
+    packagesPresent: 0,
     skipped: [],
   };
 }
@@ -198,6 +207,16 @@ export function restoreBackup(
 // ---------- Archive complète : sauvegarde + médiathèque ----------
 
 const ARCHIVE_ASSET_ENTRY = /^assets\/([0-9a-f]{32})$/;
+const ARCHIVE_PACKAGE_LIST = 'packages.json';
+const ARCHIVE_PACKAGE_ENTRY = /^packages\/([a-z0-9][a-z0-9-]{1,47})\/([0-9][0-9A-Za-z.+-]{0,40})\.phgame$/;
+
+/** Un paquet installé, tel qu'il est listé dans `packages.json`. */
+export interface ArchivedPackage {
+  id: string;
+  version: string;
+  active: boolean;
+  sha256: string;
+}
 
 const ARCHIVE_READ_LIMITS: ZipReadLimits = {
   maxEntries: 50_000,
@@ -210,8 +229,11 @@ const ARCHIVE_READ_LIMITS: ZipReadLimits = {
 
 export class ArchiveTooLargeError extends Error {}
 
-/** Archive ZIP : backup.json (définitions), assets.json (fiches) et assets/<id> (fichiers). */
-export function buildArchive(backup: Backup, assets: AssetService): Uint8Array {
+/**
+ * Archive ZIP : backup.json (définitions), assets.json (fiches), assets/<id> (fichiers),
+ * packages.json (paquets installés) et packages/<id>/<version>.phgame (leurs archives).
+ */
+export function buildArchive(backup: Backup, assets: AssetService, packages: PackageBackupEntry[] = []): Uint8Array {
   const records = assets.list().filter((r) => existsSync(assets.filePath(r.id)));
   const total = records.reduce((sum, r) => sum + r.size, 0);
   if (total > ARCHIVE_MAX_BYTES) {
@@ -220,10 +242,18 @@ export function buildArchive(backup: Backup, assets: AssetService): Uint8Array {
     );
   }
   const enc = (text: string) => new TextEncoder().encode(text);
+  const listed: ArchivedPackage[] = packages.map(({ id, version, active, sha256 }) => ({
+    id,
+    version,
+    active,
+    sha256,
+  }));
   const files: ZipFileEntry[] = [
     { name: 'backup.json', data: enc(JSON.stringify(backup)) },
     { name: 'assets.json', data: enc(JSON.stringify(records)) },
+    { name: ARCHIVE_PACKAGE_LIST, data: enc(JSON.stringify(listed)) },
     ...records.map((r) => ({ name: `assets/${r.id}`, data: readFileSync(assets.filePath(r.id)) })),
+    ...packages.map((p) => ({ name: `packages/${p.id}/${p.version}.phgame`, data: p.bytes })),
   ];
   return writeZip(files);
 }
@@ -232,11 +262,43 @@ export interface ParsedArchive {
   backup: unknown;
   assets: AssetRecord[];
   files: Map<string, Buffer>;
+  packages: ArchivedPackage[];
+  /** Archives des paquets, par « identifiant/version ». */
+  packageFiles: Map<string, Buffer>;
+}
+
+const SHA256_HEX = /^[0-9a-f]{64}$/;
+
+function parseArchivedPackages(raw: Uint8Array | undefined): ArchivedPackage[] {
+  // Une archive antérieure à 0.12.0 n'a pas de liste de paquets : rien à restaurer.
+  if (!raw) return [];
+  const list = JSON.parse(Buffer.from(raw).toString('utf8')) as unknown;
+  if (!Array.isArray(list)) throw new ZipError('Liste des paquets illisible.');
+  return list.map((item) => {
+    const p = item as Partial<ArchivedPackage>;
+    if (
+      typeof p.id !== 'string' ||
+      typeof p.version !== 'string' ||
+      typeof p.active !== 'boolean' ||
+      typeof p.sha256 !== 'string' ||
+      !SHA256_HEX.test(p.sha256)
+    ) {
+      throw new ZipError('Liste des paquets illisible.');
+    }
+    return { id: p.id, version: p.version, active: p.active, sha256: p.sha256 };
+  });
 }
 
 export function readArchive(bytes: Uint8Array): ParsedArchive {
   const entries = readZip(bytes, ARCHIVE_READ_LIMITS, (name) => {
-    if (name === 'backup.json' || name === 'assets.json' || ARCHIVE_ASSET_ENTRY.test(name)) return;
+    if (
+      name === 'backup.json' ||
+      name === 'assets.json' ||
+      name === ARCHIVE_PACKAGE_LIST ||
+      ARCHIVE_ASSET_ENTRY.test(name) ||
+      ARCHIVE_PACKAGE_ENTRY.test(name)
+    )
+      return;
     throw new ZipError(`Élément inattendu dans la sauvegarde : « ${name} ».`);
   });
   const byName = new Map(entries.map((e) => [e.name, e.data]));
@@ -248,16 +310,77 @@ export function readArchive(bytes: Uint8Array): ParsedArchive {
   const records = json('assets.json');
   if (!Array.isArray(records)) throw new ZipError('Liste de fichiers illisible.');
   const files = new Map<string, Buffer>();
+  const packageFiles = new Map<string, Buffer>();
   for (const [name, data] of byName) {
     const match = ARCHIVE_ASSET_ENTRY.exec(name);
     if (match) files.set(match[1]!, Buffer.from(data));
+    const pkg = ARCHIVE_PACKAGE_ENTRY.exec(name);
+    if (pkg) packageFiles.set(`${pkg[1]}/${pkg[2]}`, Buffer.from(data));
   }
-  return { backup: json('backup.json'), assets: records as AssetRecord[], files };
+  return {
+    backup: json('backup.json'),
+    assets: records as AssetRecord[],
+    files,
+    packages: parseArchivedPackages(byName.get(ARCHIVE_PACKAGE_LIST)),
+    packageFiles,
+  };
+}
+
+/**
+ * Réinstalle les paquets d’une archive. Chaque version passe par la même validation qu’un import
+ * (schéma, moteur, lancement de test) ; une version refusée est signalée sans bloquer les autres.
+ * Les versions sont importées de la plus ancienne à la plus récente, puis la version active sauvegardée
+ * est appliquée si le paquet est nouveau, ou si le mode est « remplacer ». En mode « ajouter », la
+ * version active déjà en place est conservée.
+ */
+function restorePackages(
+  parsed: ParsedArchive,
+  packages: PackageService | undefined,
+  mode: ConflictMode,
+): { installed: number; present: number; skipped: string[] } {
+  const out = { installed: 0, present: 0, skipped: [] as string[] };
+  if (parsed.packages.length === 0) return out;
+  if (!packages) {
+    out.skipped.push('Paquets installés : non restaurés (service des paquets absent).');
+    return out;
+  }
+  const ids = [...new Set(parsed.packages.map((p) => p.id))];
+  for (const id of ids) {
+    const listed = parsed.packages.filter((p) => p.id === id);
+    const hadPackage = packages.get(id) !== undefined;
+    for (const entry of [...listed].sort((a, b) => compareVersions(a.version, b.version))) {
+      const label = `« ${entry.id} » ${entry.version}`;
+      const bytes = parsed.packageFiles.get(`${entry.id}/${entry.version}`);
+      if (!bytes) {
+        out.skipped.push(`${label} : fichier absent de l’archive.`);
+        continue;
+      }
+      if (createHash('sha256').update(bytes).digest('hex') !== entry.sha256) {
+        out.skipped.push(`${label} : l’archive ne correspond pas à son empreinte.`);
+        continue;
+      }
+      const result = packages.install(bytes);
+      if (!result.ok) {
+        out.skipped.push(`${label} : ${result.error}`);
+        continue;
+      }
+      if (result.unchanged) out.present++;
+      else out.installed++;
+    }
+    const target = listed.find((p) => p.active);
+    if (!target) continue;
+    const current = packages.get(id)?.version;
+    if (current !== target.version && (!hadPackage || mode === 'replace')) {
+      const switched = packages.activate(id, target.version);
+      if (!switched.ok) out.skipped.push(`« ${id} » : version ${target.version} non activée (${switched.error}).`);
+    }
+  }
+  return out;
 }
 
 /**
  * Restaure une archive complète : les fichiers d’abord (les jeux de médias les référencent),
- * puis les définitions. Les fichiers déjà présents ne sont jamais remplacés.
+ * puis les définitions, puis les paquets installés. Les fichiers déjà présents ne sont jamais remplacés.
  */
 export function restoreArchive(
   bytes: Uint8Array,
@@ -267,6 +390,7 @@ export function restoreArchive(
     media: MediaQuizService;
     boards: BoardGameService;
     assets: AssetService;
+    packages?: PackageService;
   },
   options: RestoreOptions,
 ): { ok: true; summary: RestoreSummary } | { ok: false; error: string } {
@@ -290,13 +414,16 @@ export function restoreArchive(
   }
   const restored = restoreBackup(parsed.backup, deps.store, deps.cards, deps.media, deps.boards, options);
   if (!restored.ok) return restored;
+  const pkg = restorePackages(parsed, deps.packages, options.conflict);
   return {
     ok: true,
     summary: {
       ...restored.summary,
       assets: summary.assets,
       assetsPresent: summary.assetsPresent,
-      skipped: [...summary.skipped, ...restored.summary.skipped],
+      packages: pkg.installed,
+      packagesPresent: pkg.present,
+      skipped: [...summary.skipped, ...restored.summary.skipped, ...pkg.skipped],
     },
   };
 }

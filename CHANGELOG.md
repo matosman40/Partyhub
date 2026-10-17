@@ -35,9 +35,18 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 - Protocole : nouveau message `host:championship` (manches et équipes, avant la partie). La vue du salon porte `championship`, `series` et `lastResult`, et chaque joueur porte son `team`.
 - Phrases à trous : nouveau jeu de la catégorie Quiz. L’IA écrit des phrases à trou à partir des mots-clés de chaque joueur. À chaque tour, chacun pose une carte de sa main dans le trou, puis tout le monde vote anonymement (100 points par vote reçu, 50 de plus pour la carte qui complète juste le trou). De 3 à 8 tours, puis un vainqueur. Sans IA configurée, les phrases intégrées prennent le relais, avec un message à l’écran.
 - Quiz Party, source « Thèmes des joueurs (IA) » : chaque joueur donne quelques mots-clés à tour de rôle, et l’IA écrit les questions à partir de ces thèmes. Sans IA configurée, ou si sa réponse est inutilisable, les questions intégrées prennent le relais, avec un message à l’écran.
+- Sauvegarde complète : chaque version installée d'un paquet, active ou conservée, entre dans l'archive ZIP avec son
+  archive `.phgame`. La restauration les réinstalle et rétablit la version active sauvegardée (mode « remplacer ») ou
+  garde la version active déjà en place (mode « ajouter »). La clé `ai-secret.key` n'entre pas dans l'archive.
+- Contrôle du cycle d'un paquet sur une instance réelle (`scripts/paquet-cycle-check.py`) : installation de la
+  version 1.0.0, mise à jour vers 1.1.0, retour arrière, sauvegarde, suppression et restauration. Exécuté dans la CI.
 
 ### Modifié
 
+- Contrôle des exemples en CI : les quatre paquets d'exemple (cartes, plateau, questions, recette) sont vérifiés et
+  reconstruits à l'identique. Plateau et questions ne l'étaient pas.
+- Documentation : feuille de route, « Publier un jeu » (modèle sur la version 0.11.0) et format `.phgame` (sauvegarde des
+  paquets ; lancement sans réseau et transfert entre téléphones indiqués comme non livrés).
 - Recettes, validation : les phases à écran fixe (attente et génération, classement du téléphone) ne se personnalisent plus, et la clé est refusée au lieu d’être ignorée. Un même bloc ne figure qu’une fois par phase, et deux consignes identiques (sans tenir compte de la casse) font refuser le paquet.
 
 - ModelScope (génération d'images) est désactivé par défaut : son service est réservé à un usage non commercial. Il ne s'active que si `MODELSCOPE_ALLOW_NONCOMMERCIAL=1` est défini.
@@ -72,6 +81,16 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 - Son, reprise d’écran : le premier état reçu après un rechargement ne joue plus le départ.
 - Bots de « Ressemblance des formes » : le verrou d’un robot se comparait à `Date.now()` au lieu de l’horloge de la partie. Il utilise désormais `now`, transmis à `suggest` par la salle.
 - Salle TV sur tablette : les boutons compacts « Ajouter un robot » et « Lancer depuis mon téléphone » font au moins 44 px de haut au toucher (`pointer: coarse`). Constat à vérifier sur un vrai appareil, l’écran principal étant mis à l’échelle. Le hook ne comparait pas avec un état qui n’existait pas encore.
+
+### Problèmes connus
+
+- Les salons et les parties en cours sont en mémoire : un redémarrage du serveur les interrompt.
+- Les images d'un paquet (`manifest.cover` compris) sont contrôlées et conservées, mais aucun écran ne les affiche encore.
+- Les formats 1 et 2 ignorent encore les clés inconnues sans message. Seul le format 3 refuse les clés inconnues.
+- Un paquet ne se lance pas sans réseau, et ne se transfère pas entre téléphones : ces fonctions ne sont pas livrées.
+- La clé `ai-secret.key` n'est pas dans la sauvegarde complète : une copie complète du dossier de données la contient.
+- Les vérifications sur vrais téléphones (Android, iPhone), sur une installation CasaOS réelle et sur le téléviseur ne sont
+  pas encore faites : elles sont à réaliser avant la publication.
 
 ## [0.11.0] - 2026-10-17
 

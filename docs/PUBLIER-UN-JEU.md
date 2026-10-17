@@ -35,7 +35,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: matosman40/Partyhub
-          ref: v0.7.0
+          ref: v0.11.0
           path: partyhub
       - name: Préparer PartyHub
         working-directory: partyhub
@@ -58,7 +58,7 @@ jobs:
 ```
 
 Notes :
-- Le modèle utilise la version 0.7.0 de PartyHub pour construire et vérifier le paquet (format 2 : cartes, plateau, questions). `ref` pointe sur le tag `v0.7.0`, qui existe. Mettez à jour `ref` quand le moteur change.
+- Le modèle utilise la version 0.11.0 de PartyHub pour construire et vérifier le paquet (formats 1 et 2 : cartes, plateau, questions). `ref` pointe sur le tag `v0.11.0`, qui existe. Pour une recette (format 3), il faut une version qui contient ce format, 0.12.0 ou suivante, une fois son tag posé. Mettez à jour `ref` quand le moteur change.
 - Un jeu de plateau ou de questions se publie de la même façon : seul le module (`requires.modules`) change. Voir [PHGAME.md](PHGAME.md).
 - Le fichier `mon-jeu.phgame.sha256` est obligatoire : sans lui, PartyHub refuse la release.
 - Pour un dépôt privé, PartyHub a besoin d'un jeton GitHub (variable `GITHUB_TOKEN` du serveur) pouvant lire les releases.

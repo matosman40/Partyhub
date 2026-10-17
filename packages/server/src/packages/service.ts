@@ -74,6 +74,17 @@ export interface PackageVersionRecord {
   active: boolean;
 }
 
+/** Une version d'un paquet, avec son archive, telle qu'elle entre dans une sauvegarde complète. */
+export interface PackageBackupEntry {
+  id: string;
+  version: string;
+  active: boolean;
+  sha256: string;
+  bytes: Uint8Array;
+}
+
+export class PackageExportError extends Error {}
+
 export interface PackageServiceOptions {
   limits?: PackageLimits;
   /** Réglages du lancement de contrôle (les tests réduisent le nombre de pas pour forcer un échec). */
@@ -283,6 +294,32 @@ export class PackageService {
         active: row.version === current.version,
       }))
       .sort((a, b) => compareVersions(b.version, a.version));
+  }
+
+  /**
+   * Toutes les versions de chaque paquet, actives et conservées, avec leurs octets. Sert à la sauvegarde
+   * complète. Une archive qui ne correspond plus à son empreinte fait échouer la sauvegarde : elle n’est
+   * jamais copiée en silence.
+   */
+  exportAll(): PackageBackupEntry[] {
+    const out: PackageBackupEntry[] = [];
+    for (const row of this.store.listPackages()) {
+      for (const version of this.versions(row.id) ?? []) {
+        let bytes: Uint8Array;
+        try {
+          bytes = fs.readFileSync(this.archivePath(row.id, version.version));
+        } catch {
+          throw new PackageExportError(`L’archive « ${row.id} » ${version.version} est absente du disque.`);
+        }
+        if (sha256Of(bytes) !== version.sha256) {
+          throw new PackageExportError(
+            `L’archive « ${row.id} » ${version.version} ne correspond plus à son empreinte.`,
+          );
+        }
+        out.push({ id: row.id, version: version.version, active: version.active, sha256: version.sha256, bytes });
+      }
+    }
+    return out;
   }
 
   /**

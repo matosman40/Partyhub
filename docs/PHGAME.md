@@ -231,8 +231,12 @@ Chaque archive vérifiée est conservée dans `DATA_DIR/games/<identifiant>/<ver
 est revalidée et son empreinte comparée à celle de la base. Une archive modifiée à la main passe en état **Erreur** et son
 jeu n'est pas proposé.
 
-La sauvegarde complète de PartyHub (fichier JSON de l'administration) ne contient pas les fichiers des paquets : sauvegardez
-aussi le dossier `DATA_DIR/games/`, ou conservez les fichiers `.phgame` d'origine.
+La sauvegarde complète de PartyHub (archive ZIP de l'administration) contient chaque version installée d'un paquet, avec la
+version active, et la restauration les réinstalle. La sauvegarde JSON, elle, ne contient aucun paquet : gardez les fichiers
+`.phgame` d'origine, ou la sauvegarde complète.
+
+La clé de chiffrement des clés d'IA (`ai-secret.key`, dans `DATA_DIR`) n'est dans aucune archive. Une copie complète de
+`DATA_DIR` la contient ; sans elle, les clés d'IA sauvegardées doivent être saisies à nouveau.
 
 ## Ressources graphiques
 
@@ -268,8 +272,8 @@ Le modèle de publication pour un dépôt de jeu est décrit dans [PUBLIER-UN-JE
 - Scripts JavaScript dans un paquet : prévus pour la version 1.1, après une revue de sécurité. Les recettes couvrent les
   jeux de texte et de vote ; les jeux à règles libres restent du code intégré en attendant.
 - Blocs d'écran de capteurs, de photo et de son dans les recettes : ajoutés avec les recettes qui en ont besoin.
-- Cache hors ligne et lancement sans réseau des paquets installés : prévus avec l'application installable (version 0.7.0).
-- Transfert d'un paquet entre téléphones : prévu avec la reprise d'écran (version 0.7.0).
+- Lancement sans réseau des paquets installés : non livré. L'application s'ouvre hors ligne, mais une partie demande la connexion.
+- Transfert d'un paquet entre téléphones : non livré.
 - Jeux JavaScript dans un bac à sable : prévus dans une version ultérieure (voir la feuille de route).
 - Jeux de temps réel et de mouvement (type Bomberman, Just Dance) : pas dans un paquet. Un paquet ne porte que des données ;
   ces mécaniques restent du code intégré à PartyHub, ou demanderont le bac à sable JavaScript.

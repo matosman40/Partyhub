@@ -11,6 +11,8 @@ interface RestoreSummary {
   replaced: number;
   assets: number;
   assetsPresent: number;
+  packages: number;
+  packagesPresent: number;
   skipped: string[];
 }
 
@@ -24,7 +26,7 @@ async function readOrThrow(res: Response): Promise<void> {
 /**
  * Sauvegarde et restauration. Deux formats :
  * - JSON : jeux, textes et notices modifiés (léger, sans les fichiers de la médiathèque) ;
- * - ZIP : la même chose plus les fichiers de la médiathèque, avec leurs identifiants.
+ * - ZIP : la même chose, plus les fichiers de la médiathèque et les paquets installés (chaque version).
  * La restauration ajoute ce qui manque. Les doublons (définitions identiques) ne sont pas recréés.
  * Avec « remplacer », un jeu de même nom est mis à jour au lieu d’être copié.
  */
@@ -93,8 +95,10 @@ export function BackupPanel({ onChanged }: { onChanged: () => void }) {
     <div className="stack">
       <p className="muted">
         La sauvegarde complète (ZIP) contient les jeux de cartes, de questions médias et de plateau, les textes et
-        notices modifiés des jeux intégrés, et les fichiers de la médiathèque. Au-delà de 512 Mio de médias, téléchargez
-        la sauvegarde sans les fichiers et copiez le dossier des médias à part.
+        notices modifiés des jeux intégrés, les fichiers de la médiathèque, et les paquets installés, chaque version
+        avec la version active. Elle ne contient pas la clé de chiffrement des clés d’IA (ai-secret.key) : une copie
+        complète du dossier de données la contient. Au-delà de 512 Mio de médias, téléchargez la sauvegarde sans les
+        fichiers et copiez le dossier des médias à part.
       </p>
       <div className="ed-new">
         <button type="button" className="btn primary" onClick={() => void downloadArchive()} disabled={busy}>
@@ -136,6 +140,8 @@ export function BackupPanel({ onChanged }: { onChanged: () => void }) {
           <br />
           Fichiers de la médiathèque : {summary.assets} ajouté(s), {summary.assetsPresent} déjà présent(s). Doublons
           ignorés : {summary.duplicates}. Remplacés : {summary.replaced}.
+          <br />
+          Paquets installés : {summary.packages} version(s) ajoutée(s), {summary.packagesPresent} déjà présente(s).
           {summary.skipped.length > 0 && (
             <>
               <br />

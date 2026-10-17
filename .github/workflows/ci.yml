@@ -34,14 +34,13 @@ jobs:
         run: python3 scripts/secret-scan.py
       - run: npm run typecheck
       - run: npm test
-      - name: "Paquet .phgame d'exemple : contrôle et reproductibilité"
+      - name: "Paquets .phgame d'exemple (quatre formats) : contrôle et reproductibilité"
         run: |
-          npm run phgame -w @partyhub/server -- check ../../examples/exemple-cartes.phgame
-          npm run phgame -w @partyhub/server -- pack ../../examples/exemple-cartes "$RUNNER_TEMP/exemple.phgame"
-          cmp "$RUNNER_TEMP/exemple.phgame" examples/exemple-cartes.phgame
-          npm run phgame -w @partyhub/server -- check ../../examples/exemple-recette.phgame
-          npm run phgame -w @partyhub/server -- pack ../../examples/exemple-recette "$RUNNER_TEMP/exemple-recette.phgame"
-          cmp "$RUNNER_TEMP/exemple-recette.phgame" examples/exemple-recette.phgame
+          for ex in exemple-cartes exemple-plateau exemple-quiz exemple-recette; do
+            npm run phgame -w @partyhub/server -- check "../../examples/$ex.phgame"
+            npm run phgame -w @partyhub/server -- pack "../../examples/$ex" "$RUNNER_TEMP/$ex.phgame"
+            cmp "$RUNNER_TEMP/$ex.phgame" "examples/$ex.phgame"
+          done
 
   image:
     name: Construction de l'image (sans publication)
@@ -139,6 +138,10 @@ jobs:
           BASE_URL: http://127.0.0.1:8282
           ADMIN_PASSWORD: ci-admin-password-test
         run: python scripts/recette-check-browser.py
+      - name: Cycle d'un paquet (installation, mise à jour, retour arrière, sauvegarde, restauration)
+        env:
+          ADMIN_PASSWORD: ci-admin-password-test
+        run: python scripts/paquet-cycle-check.py http://127.0.0.1:8282
       - name: Journal du serveur en cas d'échec
         if: failure()
         run: cat "$RUNNER_TEMP/server.log" || true

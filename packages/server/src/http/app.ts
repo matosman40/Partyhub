@@ -21,7 +21,7 @@ import { PROPOSAL_MAX_PENDING, PROPOSAL_MAX_PER_DAY, type BoumBankService } from
 import { IMPORT_MAX_BYTES, isBankType } from '@partyhub/games';
 import { z } from 'zod';
 import type { AssetService } from '../assets/service.js';
-import type { PackageService } from '../packages/service.js';
+import { PackageExportError, type PackageService } from '../packages/service.js';
 import {
   copyPackageToEditable,
   packageCopyStatuses,
@@ -1298,10 +1298,10 @@ export function createApp(deps: AppDeps): express.Express {
     res.json({ ok: true, summary: result.summary });
   });
 
-  /** Archive complète (ZIP) : sauvegarde et fichiers de la médiathèque. */
+  /** Archive complète (ZIP) : sauvegarde, fichiers de la médiathèque et paquets installés. */
   admin.get('/backup/archive', (_req, res) => {
     try {
-      const bytes = buildArchive(buildBackup(store, cardGames, mediaGames, boardGames), assets);
+      const bytes = buildArchive(buildBackup(store, cardGames, mediaGames, boardGames), assets, packages.exportAll());
       const stamp = new Date().toISOString().slice(0, 10);
       res.setHeader('Content-Type', 'application/zip');
       res.setHeader('Content-Disposition', `attachment; filename="partyhub-sauvegarde-complete-${stamp}.zip"`);
@@ -1309,6 +1309,10 @@ export function createApp(deps: AppDeps): express.Express {
     } catch (err) {
       if (err instanceof ArchiveTooLargeError) {
         res.status(413).json({ error: err.message });
+        return;
+      }
+      if (err instanceof PackageExportError) {
+        res.status(500).json({ error: err.message });
         return;
       }
       throw err;
@@ -1326,7 +1330,7 @@ export function createApp(deps: AppDeps): express.Express {
       }
       const result = restoreArchive(
         body,
-        { store, cards: cardGames, media: mediaGames, boards: boardGames, assets },
+        { store, cards: cardGames, media: mediaGames, boards: boardGames, assets, packages },
         { conflict: conflictMode(req.query.conflict) },
       );
       if (!result.ok) {
