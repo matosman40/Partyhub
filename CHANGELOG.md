@@ -4,6 +4,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 
 ## Non publié
 
+## [0.11.0] - 2026-10-17
+
 ### Ajouté
 
 - Clés d’IA dans l’administration (Système → Intelligence artificielle), derrière le mot de passe administrateur. Chaque fournisseur a un champ de clé, un modèle, un plafond journalier facultatif et un bouton « Tester ». Les clés sont chiffrées sur le serveur (AES-256-GCM, clé locale `ai-secret.key`), ne reviennent jamais dans la page et priment sur les variables d’environnement d’un même fournisseur. Les changements s’appliquent sans redémarrage.
