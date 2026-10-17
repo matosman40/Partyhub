@@ -165,7 +165,9 @@ def room_flow(browser) -> None:
     phone_errors: list[str] = []
     watch(phone_page, phone_errors)
     phone_page.goto(f"{BASE_URL}/j/{code}", wait_until="networkidle")
-    phone_page.get_by_label("Votre pseudo").fill("Léa")
+    # Appareil neuf : le profil (« Votre nom ») est créé avant d'entrer dans la salle.
+    phone_page.get_by_label("Votre nom").fill("Léa")
+    phone_page.get_by_role("button", name="Continuer").click()
     phone_page.get_by_role("button", name="Entrer dans la salle").click()
     phone_page.wait_for_selector("text=Je suis prêt", timeout=10000)
     check(True, "téléphone : entré dans la salle")
@@ -199,6 +201,9 @@ def room_flow(browser) -> None:
     other_errors: list[str] = []
     watch(other_page, other_errors)
     other_page.goto(f"{BASE_URL}/j/{code}#place={token}", wait_until="networkidle")
+    # Appareil neuf : il crée d'abord son profil, puis la place partagée s'ouvre.
+    other_page.get_by_label("Votre nom").fill("Marc")
+    other_page.get_by_role("button", name="Continuer").click()
     other_page.wait_for_selector(".seat-tabs", timeout=10000)
     check("#place=" not in other_page.url, "second appareil : jeton retiré de l'adresse")
     check(True, "second appareil : place partagée, onglets de joueurs affichés")

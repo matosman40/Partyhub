@@ -77,8 +77,10 @@ def main() -> int:
             tv.goto(f"{BASE_URL}/tv/{code}", wait_until="networkidle", timeout=20000)
             # Le téléphone rejoint avant le lancement : une partie déjà commencée refuse les nouveaux joueurs.
             phone.goto(f"{BASE_URL}/j/{code}", wait_until="networkidle", timeout=20000)
-            phone.get_by_label(re.compile("pseudo", re.I)).first.fill("Testeur")
-            phone.get_by_role("button", name=re.compile("entrer|rejoindre|continuer", re.I)).first.click()
+            # Appareil neuf : le profil (« Votre nom ») est créé avant d'entrer dans la salle.
+            phone.get_by_label(re.compile("votre nom", re.I)).first.fill("Testeur")
+            phone.get_by_role("button", name=re.compile("continuer", re.I)).first.click()
+            phone.get_by_role("button", name=re.compile("entrer dans la salle", re.I)).first.click()
             phone.get_by_role("button", name=re.compile("Je suis prêt", re.I)).first.wait_for(timeout=15000)
             phone.get_by_role("button", name=re.compile("Je suis prêt", re.I)).first.click()
 
