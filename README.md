@@ -25,6 +25,8 @@ Sur une installation neuve, les jeux intégrés sont désactivés : l'administra
 - Salle d'attente avec joueurs connectés, joueurs prêts, réglages du jeu et bouton de lancement.
 - Interface smartphone : pseudo, réponses tactiles, retour immédiat, reconnexion automatique.
 - Reconnexion après coupure : un joueur absent garde sa place et ses points pendant le délai de grâce.
+- Championnat du salon, pour tous les jeux multijoueurs : de 1 à 10 manches, 2 à 4 équipes, rangs de
+  progression (Recrue à Légende), icônes de victoire et podium de fin de partie.
 - Administration protégée par mot de passe : activer ou désactiver les jeux, consulter les salles,
   supprimer les salles inactives, régler les limites.
 - Persistance SQLite (réglages, jeux activés, statistiques) dans un volume Docker.
@@ -126,7 +128,7 @@ la bonne réponse n'apparaît qu'à la révélation, et les réponses privées r
 6. Répondre depuis les téléphones. Vérifier que l'écran principal affiche la révélation dès que tous ont répondu.
 7. Couper le Wi-Fi d'un téléphone quelques secondes, le rétablir : le joueur doit retrouver sa place sans changer de score.
 8. Vérifier le classement après chaque question puis le classement final, avec les égalités.
-9. Cliquer sur **Rejouer avec les mêmes joueurs**, puis sur **Retour au catalogue**.
+9. Cliquer sur **Rejouer avec les mêmes joueurs** (ou sur **Manche suivante** si un championnat est réglé dans le menu), puis sur **Retour au catalogue**.
 10. Ouvrir `/admin`, se connecter, vérifier la salle dans la liste, puis désactiver Quiz Party : la salle en cours doit être fermée.
 
 ## Variables d'environnement

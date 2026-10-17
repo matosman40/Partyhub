@@ -3,6 +3,7 @@ import type { Server, Socket } from 'socket.io';
 import {
   actionSchema,
   chatSchema,
+  championshipSchema,
   configureSchema,
   defaultCharacterFor,
   deviceKindFromUserAgent,
@@ -291,6 +292,13 @@ export class RealtimeHub {
       const parsed = configureSchema.safeParse(p);
       if (!parsed.success) return invalid(ack);
       hostCommand(ack, (room) => room.configure(parsed.data.gameSettings));
+    });
+
+    socket.on('host:championship', (p, ack) => {
+      if (limited(ack)) return;
+      const parsed = championshipSchema.safeParse(p);
+      if (!parsed.success) return invalid(ack);
+      hostCommand(ack, (room) => room.setChampionship(parsed.data));
     });
 
     socket.on('host:start', (ack) => {

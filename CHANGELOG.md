@@ -6,12 +6,19 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 
 ### Ajouté
 
+- Championnat du salon, pour tous les jeux multijoueurs : le salon joue une partie unique (par défaut) ou de 2 à 10 manches, avec 0, 2, 3 ou 4 équipes (Rouge, Bleue, Verte, Jaune). Le réglage se fait dans le menu de l’écran principal, avant la partie, et reste en place d’une manche à l’autre. Chaque manche rapporte des points selon le rang (10 au premier, puis 6, 4, 3, 2 et 1), cumulés jusqu’à la dernière manche. Une équipe marque la somme de ses membres ; les ex æquo se partagent le titre.
+- Championnat, rangs de progression : Recrue, Habitué (10 points), Confirmé (25), Expert (50) et Légende (100), affichés à côté de chaque joueur.
+- Championnat, icônes de victoire : champion, série de victoires (dès deux d’affilée), invaincu, et régulier (toujours sur le podium).
+- Podium de fin de partie pour tous les jeux : les trois premiers, avec leurs médailles, s’affichent à côté des résultats sur l’écran principal. Sur le téléphone, chaque joueur voit sa place, son rang de championnat et son équipe.
+- Championnat, historique : l’écran principal liste le vainqueur de chaque manche. Les équipes sont réparties à l’arrivée des joueurs et gardent leurs membres d’une manche à l’autre.
+- Protocole : nouveau message `host:championship` (manches et équipes, avant la partie). La vue du salon porte `championship`, `series` et `lastResult`, et chaque joueur porte son `team`.
 - Phrases à trous : nouveau jeu de la catégorie Quiz. L’IA écrit des phrases à trou à partir des mots-clés de chaque joueur. À chaque tour, chacun pose une carte de sa main dans le trou, puis tout le monde vote anonymement (100 points par vote reçu, 50 de plus pour la carte qui complète juste le trou). De 3 à 8 tours, puis un vainqueur. Sans IA configurée, les phrases intégrées prennent le relais, avec un message à l’écran.
 - Quiz Party, source « Thèmes des joueurs (IA) » : chaque joueur donne quelques mots-clés à tour de rôle, et l’IA écrit les questions à partir de ces thèmes. Sans IA configurée, ou si sa réponse est inutilisable, les questions intégrées prennent le relais, avec un message à l’écran.
 
 ### Modifié
 
 - Réglages de Quiz Party et des Phrases à trous : un champ numérique vidé est ramené à sa borne minimale à la perte de focus, au lieu d’envoyer 0 au serveur.
+- Rejouer : pendant un championnat, le bouton devient « Manche suivante : 2 sur 3 », puis « Nouveau championnat » une fois le titre attribué. Rejouer ramène toujours au salon, où l’hôte lance la manche avec « Lancer la partie ». Le salon affiche la progression du championnat.
 
 ## [0.11.0] - 2026-10-17
 

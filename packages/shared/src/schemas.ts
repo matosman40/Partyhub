@@ -132,6 +132,12 @@ export const configureSchema = z.object({
   gameSettings: z.record(z.string(), z.unknown()),
 });
 
+/** Championnat du salon : 1 à 10 manches, et 0 (sans équipes) ou 2, 3, 4 équipes. */
+export const championshipSchema = z.object({
+  length: z.number().int().min(1).max(10),
+  teams: z.union([z.literal(0), z.literal(2), z.literal(3), z.literal(4)]),
+});
+
 export const kickSchema = z.object({
   playerId: z.string().min(1).max(64),
 });

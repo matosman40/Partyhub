@@ -1,6 +1,6 @@
 import { Suspense, lazy, useEffect, useState, type CSSProperties } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import type { CharacterMood, ChatMessage, HostRoomView } from '@partyhub/shared';
+import type { ChampionshipSettings, CharacterMood, ChatMessage, HostRoomView } from '@partyhub/shared';
 import { DEVICE_KIND_ICONS, DEVICE_KIND_LABELS } from '@partyhub/shared';
 import { getSocket } from '../realtime.js';
 import { viewsFor } from '../games.js';
@@ -23,6 +23,7 @@ import { read3DPreference, supportsWebGL, write3DPreference } from '../three/pre
 import { AvatarsContext, MoodsContext, useWakeLock, type PromoteurPub } from '@partyhub/games/client';
 import { TvLobby, type HandoffCode } from './tv/TvLobby.js';
 import { CornerMenu, DrawerSection } from '../components/CornerMenu.js';
+import { ChampionshipSettingsForm, GameEndPanel, championshipPill, replayLabel } from '../components/Championship.js';
 import { useActiveProfile } from '../profile/useProfile.js';
 import { useActivity } from './tv/useActivity.js';
 import { musicForLobby, useMusicSlot } from '../sounds.js';
@@ -157,6 +158,10 @@ export function TvPage() {
   const socket = getSocket();
   // Avatars de la salle par pseudo : les jeux affichent photo ou emoji sans rien transmettre de plus.
   const avatars = Object.fromEntries(lobby.players.map((p) => [p.name, p.avatar]));
+  // Équipe d'un joueur (nom, icône, couleur) : null sans équipes.
+  const teamNameOf = (index: number | null) => (index === null ? null : (lobby.series?.teams?.[index] ?? null));
+  // Pastille du salon : réglage du championnat, ou manche en cours.
+  const pill = inLobby ? championshipPill(lobby) : null;
   // Plateau du Promoteur : vue 3D par défaut quand le navigateur sait l'afficher, 2D sinon ou en cas d'erreur.
   const can3d = lobby.game.id === 'promoteur' && !board3dFailed && supportsWebGL();
   const use3d = can3d && board3d;
@@ -208,6 +213,14 @@ export function TvPage() {
   function configure(gameSettings: Record<string, unknown>) {
     if (!canSend(socket, setError)) return;
     socket.emit('host:configure', { gameSettings }, (res) => {
+      if (!res.ok) setError(res.error);
+    });
+  }
+
+  /** Championnat du salon (manches et équipes) : réglé avant la partie, il reste en place d'une manche à l'autre. */
+  function setChampionship(next: ChampionshipSettings) {
+    if (!canSend(socket, setError)) return;
+    socket.emit('host:championship', next, (res) => {
       if (!res.ok) setError(res.error);
     });
   }
@@ -288,6 +301,11 @@ export function TvPage() {
               <li key={p.id}>
                 <PlayerAvatar avatar={p.avatar} name={p.name} size="sm" />
                 <span className="corner-name">{p.name}</span>
+                {teamNameOf(p.team) && (
+                  <span className="team-chip" style={{ '--team': teamNameOf(p.team)?.color } as CSSProperties}>
+                    <span aria-hidden="true">{teamNameOf(p.team)?.icon}</span> Équipe {teamNameOf(p.team)?.name}
+                  </span>
+                )}
                 {p.devices.length > 0 && (
                   <span className="device-icons" title={p.devices.map((d) => DEVICE_KIND_LABELS[d]).join(', ')}>
                     {p.devices.map((d) => DEVICE_KIND_ICONS[d]).join(' ')}
@@ -339,6 +357,12 @@ export function TvPage() {
         </DrawerSection>
       )}
 
+      {inLobby && (
+        <DrawerSection title="Championnat">
+          <ChampionshipSettingsForm value={lobby.championship} onChange={setChampionship} />
+        </DrawerSection>
+      )}
+
       {can3d && game && (
         <DrawerSection title="Affichage">
           <button type="button" className="btn ghost small" onClick={toggle3d} aria-pressed={board3d}>
@@ -386,7 +410,10 @@ export function TvPage() {
   return (
     <AvatarsContext.Provider value={avatars}>
       <MoodsContext.Provider value={arrivals}>
-        <main className={`stage ${inLobby ? 'is-lobby' : 'is-game'}`} style={skyStyle}>
+        <main
+          className={`stage ${inLobby ? 'is-lobby' : 'is-game'}${lobby.status === 'ended' ? ' has-results' : ''}`}
+          style={skyStyle}
+        >
           <GameScene
             gameId={lobby.game.id}
             name={lobby.game.name}
@@ -406,6 +433,7 @@ export function TvPage() {
             </p>
           )}
 
+          {pill && <p className="champ-pill">{pill}</p>}
           {inLobby ? (
             <TvLobby
               lobby={lobby}
@@ -438,6 +466,8 @@ export function TvPage() {
                 )}
               </div>
 
+              {lobby.status === 'ended' && <GameEndPanel lobby={lobby} />}
+
               <div
                 className={`stage-bar${active ? ' is-visible' : ''}`}
                 onFocus={() => setBarFocused(true)}
@@ -456,7 +486,7 @@ export function TvPage() {
                 {lobby.status === 'ended' && (
                   <>
                     <button type="button" className="btn primary" onClick={() => emitAck('host:replay')}>
-                      Rejouer avec les mêmes joueurs
+                      {replayLabel(lobby)}
                     </button>
                     <button type="button" className="btn ghost" onClick={backToCatalog}>
                       Retour au catalogue

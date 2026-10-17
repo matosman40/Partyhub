@@ -13,6 +13,7 @@ import './styles/rami51.css';
 import './styles/tarot.css';
 import './styles/board.css';
 import './styles/quiz-phrases.css';
+import './styles/championship.css';
 
 installClientLogging(__APP_VERSION__);
 applyTheme(loadTheme());

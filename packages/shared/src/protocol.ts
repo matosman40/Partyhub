@@ -49,6 +49,75 @@ export interface PublicPlayer {
   avatar: AvatarInfo;
   /** Types des appareils connectés à cette place (un par socket). Vide pour un robot ou une place absente. */
   devices: DeviceKind[];
+  /** Équipe du joueur (indice dans `series.teams`), ou null quand il n'y a pas d'équipes. */
+  team: number | null;
+}
+
+/** Réglages du championnat du salon : nombre de manches (1 = partie unique) et d'équipes (0 = sans équipes). */
+export interface ChampionshipSettings {
+  length: number;
+  teams: number;
+}
+
+/** Rang de progression d'un joueur pendant le championnat (Recrue, Habitué, …). */
+export interface SeriesTierView {
+  id: string;
+  label: string;
+  icon: string;
+}
+
+/** Icône de victoire gagnée pendant le championnat. */
+export interface SeriesBadgeView {
+  id: string;
+  icon: string;
+  label: string;
+}
+
+export interface SeriesStandingView {
+  playerId: string;
+  name: string;
+  points: number;
+  rank: number;
+  wins: number;
+  podiums: number;
+  played: number;
+  tier: SeriesTierView;
+  badges: SeriesBadgeView[];
+  team: number | null;
+}
+
+export interface SeriesTeamView {
+  index: number;
+  name: string;
+  icon: string;
+  color: string;
+  points: number;
+  rank: number;
+  members: string[];
+}
+
+export interface SeriesHistoryView {
+  index: number;
+  game: string;
+  winners: string[];
+}
+
+/** Championnat du salon, tel qu'il est affiché : classements, équipes, historique et vainqueur. */
+export interface SeriesView {
+  length: number;
+  played: number;
+  finished: boolean;
+  standings: SeriesStandingView[];
+  teams: SeriesTeamView[] | null;
+  history: SeriesHistoryView[];
+  /** Vainqueur quand le championnat est terminé : un ou plusieurs noms (ex æquo), ou l'équipe gagnante. */
+  champion: { names: string[]; team: number | null } | null;
+}
+
+/** Classement de la dernière partie terminée : le podium à médailles s'affiche pour n'importe quel jeu. */
+export interface LastResultView {
+  game: string;
+  ranking: Array<{ playerId: string; name: string; points: number; rank: number }>;
 }
 
 /** Nombre et types des observateurs (personnes qui regardent sans jouer). */
@@ -94,6 +163,9 @@ export interface LobbyView {
   players: PublicPlayer[];
   readyCount: number;
   observers: ObserverSummary;
+  championship: ChampionshipSettings;
+  series: SeriesView | null;
+  lastResult: LastResultView | null;
 }
 
 export interface HostRoomView {
@@ -182,6 +254,8 @@ export interface ClientToServerEvents {
   /** Un téléphone saisit le code de transfert : il reçoit le jeton d'hôte de la salle. */
   'host:claim': (p: { code: string; handoffCode: string }, ack: Ack<{ hostToken: string }>) => void;
   'host:configure': (p: { gameSettings: Record<string, unknown> }, ack: Ack) => void;
+  /** Championnat du salon (avant la partie) : nombre de manches et d'équipes. */
+  'host:championship': (p: ChampionshipSettings, ack: Ack) => void;
   'host:start': (ack: Ack) => void;
   'host:next': (ack: Ack) => void;
   'host:end': (ack: Ack) => void;

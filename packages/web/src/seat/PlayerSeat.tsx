@@ -28,6 +28,7 @@ import { useLobbyPositions } from '../components/useLobbyPositions.js';
 import { NoticeDialog } from '../components/NoticeDialog.js';
 import { Qr } from '../components/Qr.js';
 import { CornerMenu, DrawerSection } from '../components/CornerMenu.js';
+import { MyResult, TeamBadge, championshipSummary, hasChampionship, replayLabel } from '../components/Championship.js';
 import { getDevice } from '../device/device.js';
 import { SHARED_PLACE_PARAM } from './share.js';
 
@@ -582,7 +583,14 @@ export function PlayerSeat({
               />
             )
           ) : (
-            <LobbyHeads players={lobby.players} me={you.id} emotes={emotes} />
+            <>
+              {!compact && hasChampionship(lobby.championship) && (
+                <p className="muted small">
+                  Championnat : {championshipSummary(lobby.championship)} <TeamBadge lobby={lobby} playerId={you.id} />
+                </p>
+              )}
+              <LobbyHeads players={lobby.players} me={you.id} emotes={emotes} />
+            </>
           )}
           {!compact && <TestModeBadge />}
           {!compact && you.profile && you.avatar.character && profileToken && (
@@ -615,11 +623,12 @@ export function PlayerSeat({
                   </>
                 ) : (
                   <button type="button" className="btn primary small" onClick={() => hostCommand('host:replay')}>
-                    Rejouer avec les mêmes joueurs
+                    {replayLabel(lobby)}
                   </button>
                 )}
               </div>
             )}
+            {lobby.status === 'ended' && <MyResult lobby={lobby} playerId={you.id} />}
             <Suspense fallback={<p className="muted">Chargement du jeu…</p>}>
               <SensorSenderContext.Provider value={sendSensor}>
                 <views.Player

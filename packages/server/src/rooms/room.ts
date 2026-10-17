@@ -19,10 +19,13 @@ import type {
   PublicPlayer,
   RoomStatus,
   ScoreEntry,
+  ChampionshipSettings,
+  LastResultView,
 } from '@partyhub/shared';
 import type { Logger } from '../logger.js';
 import { gameInfo } from '../catalog.js';
 import { guestAvatar } from '../avatars.js';
+import { assignTeams, createSeries, recordGame, seriesFinished, seriesView, type SeriesRecord } from './series.js';
 
 /** Résultat d'une commande sans données particulières. */
 export type Outcome = { ok: true } | { ok: false; error: string };
@@ -115,6 +118,13 @@ export class Room {
   readonly observers = new Map<string, DeviceKind>();
   /** Type d'appareil déclaré par chaque socket (hôte, joueur ou observateur). */
   private readonly socketDevice = new Map<string, DeviceKind>();
+  /**
+   * Championnat du salon : manches, équipes et classement cumulé. Il reprend d'une partie à l'autre
+   * (rejouer) jusqu'à sa dernière manche, puis repart à zéro.
+   */
+  private series: SeriesRecord = createSeries(1, 0);
+  /** Classement de la dernière partie terminée : le podium s'affiche pour n'importe quel jeu. */
+  private lastResult: LastResultView | null = null;
 
   private settings: Record<string, unknown>;
   private state: unknown;
@@ -265,6 +275,12 @@ export class Room {
   // Vues destinées aux clients
   // ---------------------------------------------------------------------------
 
+  /** Équipe d'un joueur, ou null sans équipes. */
+  private teamOf(playerId: string): number | null {
+    if (this.series.teamCount < 2) return null;
+    return this.series.teams[playerId] ?? null;
+  }
+
   private lobbyView(): LobbyView {
     const players: PublicPlayer[] = [...this.players.values()].map((p) => ({
       id: p.id,
@@ -276,6 +292,7 @@ export class Room {
       avatar: p.avatar,
       devices: this.devicesOf(p),
       position: this.positions.get(p.id) ?? null,
+      team: this.teamOf(p.id),
     }));
     const game: GameInfo = { ...gameInfo(this.module), notice: this.env.notice(this.module.manifest.id) };
     return {
@@ -288,6 +305,9 @@ export class Room {
       players,
       readyCount: players.filter((p) => p.ready).length,
       observers: this.observerSummary(),
+      championship: { length: this.series.length, teams: this.series.teamCount },
+      series: seriesView(this.series),
+      lastResult: this.lastResult,
     };
   }
 
@@ -340,7 +360,17 @@ export class Room {
   private refreshStatus(): void {
     if (this.inLobby) {
       this.status = this.players.size >= this.effectiveMaxPlayers ? 'full' : 'waiting';
+      this.refreshTeams();
     }
+  }
+
+  /**
+   * Répartit les joueurs présents en équipes équilibrées. Un joueur garde son équipe d'une manche à l'autre,
+   * et seuls les joueurs présents comptent dans la répartition.
+   */
+  private refreshTeams(): void {
+    const { teamCount } = this.series;
+    this.series.teams = assignTeams([...this.players.keys()], teamCount, this.series.teams);
   }
 
   private nameTaken(name: string, exceptId?: string): boolean {
@@ -627,6 +657,20 @@ export class Room {
     return { ok: true };
   }
 
+  /**
+   * Règle le championnat du salon : nombre de manches et d'équipes. Un réglage identique ne remet rien à zéro ;
+   * un réglage différent ouvre un nouveau championnat, donc sans classement.
+   */
+  setChampionship(settings: ChampionshipSettings): Outcome {
+    if (!this.inLobby) return { ok: false, error: 'Le championnat se règle avant la partie.' };
+    if (settings.length === this.series.length && settings.teams === this.series.teamCount) return { ok: true };
+    this.series = createSeries(settings.length, settings.teams);
+    this.refreshTeams();
+    this.touch();
+    this.hooks.onChange(this);
+    return { ok: true };
+  }
+
   start(): Outcome {
     if (!this.inLobby) return { ok: false, error: 'Une partie est déjà en cours.' };
     const min = this.module.manifest.minPlayers;
@@ -659,6 +703,10 @@ export class Room {
     this.status = 'waiting';
     this.clearTimers();
     this.state = this.module.initialize(this.settings, this.playerRefs(), this.ctx);
+    // Un championnat terminé s'achève ici : la manche suivante ouvre un nouveau championnat.
+    if (seriesFinished(this.series)) {
+      this.series = createSeries(this.series.length, this.series.teamCount);
+    }
     this.refreshStatus();
     this.touch();
     this.hooks.onChange(this);
@@ -801,12 +849,27 @@ export class Room {
     if (this.status === 'in_game' && this.module.isFinished(this.state)) {
       this.status = 'ended';
       this.clearTimers();
+      this.recordFinishedGame();
       this.hooks.onGameEnded(this);
     }
     this.touch();
     this.hooks.onChange(this);
     this.scheduleBots();
     this.syncJob();
+  }
+
+  /**
+   * Partie terminée : son classement devient le podium affiché, et il entre dans le championnat du salon
+   * tant que celui-ci n'est pas terminé.
+   */
+  private recordFinishedGame(): void {
+    const ranking = this.finalScores();
+    const game = this.module.manifest.name;
+    this.lastResult = {
+      game,
+      ranking: ranking.map((e) => ({ playerId: e.playerId, name: e.name, points: e.points, rank: e.rank })),
+    };
+    if (!seriesFinished(this.series)) recordGame(this.series, game, ranking);
   }
 
   private schedule(key: string, ms: number): void {
