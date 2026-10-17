@@ -148,6 +148,10 @@ export const hostGameActionSchema = z.object({
   payload: z.unknown().optional(),
 });
 
+export const pauseSchema = z.object({
+  paused: z.boolean(),
+});
+
 export const readySchema = z.object({
   ready: z.boolean(),
 });

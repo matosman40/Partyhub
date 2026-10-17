@@ -12,6 +12,7 @@ import {
   joinSchema,
   hostGameActionSchema,
   kickSchema,
+  pauseSchema,
   normalizeRoomCode,
   observerJoinSchema,
   lobbyMoodSchema,
@@ -319,6 +320,13 @@ export class RealtimeHub {
     socket.on('host:replay', (ack) => {
       if (limited(ack)) return;
       hostCommand(ack, (room) => room.replay());
+    });
+
+    socket.on('host:pause', (p, ack) => {
+      if (limited(ack)) return;
+      const parsed = pauseSchema.safeParse(p);
+      if (!parsed.success) return invalid(ack);
+      hostCommand(ack, (room) => room.setPaused(parsed.data.paused));
     });
 
     socket.on('host:game-action', (p, ack) => {

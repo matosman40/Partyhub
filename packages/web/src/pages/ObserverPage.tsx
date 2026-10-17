@@ -5,7 +5,7 @@ import { DEVICE_KIND_ICONS, DEVICE_KIND_LABELS } from '@partyhub/shared';
 import { canSend } from '../connection.js';
 import { createSocket, type AppSocket } from '../realtime.js';
 import { viewsFor } from '../games.js';
-import { AvatarsContext } from '@partyhub/games/client';
+import { AvatarsContext, PauseContext } from '@partyhub/games/client';
 import { FitStage } from '../components/FitStage.js';
 import { GameViewBoundary } from '../components/GameView.js';
 import { BackButton } from '../components/BackButton.js';
@@ -150,71 +150,78 @@ export function ObserverPage() {
 
   return (
     <AvatarsContext.Provider value={avatars}>
-      <main className={`observer-page fade-in${sideBySide ? ' is-wide' : ''}`}>
-        <ReactionLayer socket={socket} />
+      <PauseContext.Provider value={lobby.paused}>
+        <main className={`observer-page fade-in${sideBySide ? ' is-wide' : ''}`}>
+          <ReactionLayer socket={socket} />
 
-        <header className="tv-top">
-          <div className="brand">
-            <span aria-hidden="true">{lobby.game.icon}</span> {lobby.game.name}
-          </div>
-          <div className="room-code">
-            Salle <strong>{lobby.code}</strong>
-          </div>
-          <div className="page-nav">
-            <BackButton to="/">Quitter</BackButton>
-            <span className="muted small" aria-live="polite">
-              {lobby.observers.count} spectateur(s)
-              {lobby.observers.devices.length > 0 && (
-                <span className="device-icons">
-                  {' '}
-                  {lobby.observers.devices.map((d) => DEVICE_KIND_ICONS[d]).join(' ')}
-                </span>
-              )}
-            </span>
-            <button type="button" className="btn ghost" onClick={() => setNoticeOpen(true)}>
-              Comment jouer
-            </button>
-          </div>
-        </header>
-
-        {error && (
-          <p className="error" role="alert" onClick={() => setError(null)}>
-            {error}
-          </p>
-        )}
-
-        <div className={`observer-layout${playing ? ' with-seat' : ''}`}>
-          <div className="observer-board">
-            {board}
-            <div className="observer-actions">
-              <button
-                type="button"
-                className={`btn ${playing ? 'ghost' : 'primary'}`}
-                aria-pressed={playing}
-                onClick={() => setPlaying((v) => !v)}
-              >
-                {playing ? 'Arrêter de jouer' : 'Je joue aussi'}
+          <header className="tv-top">
+            <div className="brand">
+              <span aria-hidden="true">{lobby.game.icon}</span> {lobby.game.name}
+            </div>
+            <div className="room-code">
+              Salle <strong>{lobby.code}</strong>
+            </div>
+            <div className="page-nav">
+              <BackButton to="/">Quitter</BackButton>
+              <span className="muted small" aria-live="polite">
+                {lobby.observers.count} spectateur(s)
+                {lobby.observers.devices.length > 0 && (
+                  <span className="device-icons">
+                    {' '}
+                    {lobby.observers.devices.map((d) => DEVICE_KIND_ICONS[d]).join(' ')}
+                  </span>
+                )}
+              </span>
+              <button type="button" className="btn ghost" onClick={() => setNoticeOpen(true)}>
+                Comment jouer
               </button>
             </div>
+          </header>
+
+          {error && (
+            <p className="error" role="alert" onClick={() => setError(null)}>
+              {error}
+            </p>
+          )}
+          {lobby.paused && (
+            <p className="observer-pause" role="status">
+              Partie en pause.
+            </p>
+          )}
+
+          <div className={`observer-layout${playing ? ' with-seat' : ''}`}>
+            <div className="observer-board">
+              {board}
+              <div className="observer-actions">
+                <button
+                  type="button"
+                  className={`btn ${playing ? 'ghost' : 'primary'}`}
+                  aria-pressed={playing}
+                  onClick={() => setPlaying((v) => !v)}
+                >
+                  {playing ? 'Arrêter de jouer' : 'Je joue aussi'}
+                </button>
+              </div>
+            </div>
+
+            <aside className="observer-side" aria-label="Discussion et manette">
+              {playing && (
+                <section className="stack" aria-label="Ma manette">
+                  <h2>Ma manette</h2>
+                  <PlayerSeat code={lobby.code} seatId="board" compact />
+                </section>
+              )}
+              <section className="card stack">
+                <h2>Discussion</h2>
+                <ChatPanel messages={chat} onSend={sendChat} error={chatError} compact />
+                <EmoteBar onPick={sendReaction} />
+              </section>
+            </aside>
           </div>
 
-          <aside className="observer-side" aria-label="Discussion et manette">
-            {playing && (
-              <section className="stack" aria-label="Ma manette">
-                <h2>Ma manette</h2>
-                <PlayerSeat code={lobby.code} seatId="board" compact />
-              </section>
-            )}
-            <section className="card stack">
-              <h2>Discussion</h2>
-              <ChatPanel messages={chat} onSend={sendChat} error={chatError} compact />
-              <EmoteBar onPick={sendReaction} />
-            </section>
-          </aside>
-        </div>
-
-        {noticeOpen && <NoticeDialog game={lobby.game} onClose={() => setNoticeOpen(false)} />}
-      </main>
+          {noticeOpen && <NoticeDialog game={lobby.game} onClose={() => setNoticeOpen(false)} />}
+        </main>
+      </PauseContext.Provider>
     </AvatarsContext.Provider>
   );
 }

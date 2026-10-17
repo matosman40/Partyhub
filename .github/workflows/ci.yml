@@ -127,6 +127,10 @@ jobs:
         env:
           BASE_URL: http://127.0.0.1:8282
         run: python scripts/offline-check-browser.py
+      - name: Pause de partie (figée pendant la pause, reprise correcte)
+        env:
+          BASE_URL: http://127.0.0.1:8282
+        run: python scripts/pause-check-browser.py quiz-party
       - name: Journal du serveur en cas d'échec
         if: failure()
         run: cat "$RUNNER_TEMP/server.log" || true

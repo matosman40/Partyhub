@@ -67,7 +67,7 @@ function playOne(mod: GameModule, seed: number, maxSteps: number): LaunchCheckRe
 
       let acted = false;
       for (const player of players) {
-        const suggestion = mod.suggest?.(state, player.id, random) ?? null;
+        const suggestion = mod.suggest?.(state, player.id, random, clock.t) ?? null;
         if (!suggestion) continue;
         const result = mod.handleAction(state, player, suggestion.type, suggestion.payload, ctx);
         if (!result.ok) return fail(`action « ${suggestion.type} » refusée : ${result.error}`);

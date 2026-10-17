@@ -193,8 +193,9 @@ export interface GameModule<S = any, C = any> {
   /**
    * Optionnel : propose l’action qu’un robot jouerait maintenant (mode test).
    * Doit renvoyer null quand le robot n’a rien à faire. Sans cette méthode, le robot reste passif.
+   * `now` est l’horloge de la partie (celle de `ctx.now()`) : à comparer aux échéances du jeu, jamais Date.now().
    */
-  suggest?(state: S, playerId: string, random: () => number): BotSuggestion | null;
+  suggest?(state: S, playerId: string, random: () => number, now: number): BotSuggestion | null;
 
   /**
    * Optionnel : actions que l’écran principal (hôte) peut demander, par exemple « générer des personnages ».

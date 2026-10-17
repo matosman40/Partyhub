@@ -6905,6 +6905,41 @@ html.is-tv #root > .stage {
   cursor: pointer;
 }
 
+/* ---- Pause de la partie : surcouche sur l’écran TV, bandeaux sur téléphone et observateur ---- */
+
+.stage-pause {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 0.8rem;
+  padding: 1.5rem;
+  text-align: center;
+  background: rgba(8, 6, 26, 0.72);
+  backdrop-filter: blur(4px);
+}
+
+.stage-pause-title {
+  margin: 0;
+  font-size: clamp(1.8rem, 4vw, 3rem);
+  font-weight: 800;
+}
+
+.stage-pause .muted {
+  margin: 0;
+}
+
+.seat-pause,
+.observer-pause {
+  margin: 0;
+  padding: 0.5rem 0.8rem;
+  border-radius: 12px;
+  background: rgba(255, 201, 60, 0.18);
+  text-align: center;
+}
+
 /* Tiroir ouvert : son propre bouton « Fermer » suffit, le bouton ☰ s'efface pour ne pas le recouvrir.
    Une page peut contenir plusieurs boutons ☰ (ex. sièges joueurs sur l'écran TV) : on les masque tous. */
 .corner-button[aria-expanded='true'],

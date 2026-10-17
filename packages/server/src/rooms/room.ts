@@ -100,6 +100,8 @@ export function newToken(): string {
 /** Durée et nombre d’essais d’un code de transfert d’hôte. */
 export const HANDOFF_MS = 3 * 60_000;
 export const HANDOFF_TRIES = 5;
+/** Réponse donnée à toute action pendant une pause de l’écran principal. */
+const PAUSED_ERROR = 'La partie est en pause.';
 
 export class Room {
   readonly id = randomUUID();
@@ -130,6 +132,15 @@ export class Room {
   private state: unknown;
   private readonly timers = new Map<string, NodeJS.Timeout>();
   private readonly botTimers = new Map<string, { key: string; timer: NodeJS.Timeout }>();
+  /**
+   * Pause de l’écran principal. Toute échéance du jeu se compte sur l’horloge de la partie, qui est le temps
+   * réel moins les pauses : pendant une pause, elle reste figée, et décomptes, minuteurs et robots attendent.
+   */
+  private paused = false;
+  private pausedAt = 0;
+  private pausedTotal = 0;
+  /** Échéance de chaque minuteur nommé, sur l’horloge de la partie. Gardée pendant une pause. */
+  private readonly timerTargets = new Map<string, number>();
   /** Travail du jeu en cours (ex. génération) : son identifiant et le moyen de l’annuler. */
   private running: { id: string; controller: AbortController } | null = null;
   /** Dernier travail terminé : un identifiant déjà traité n’est jamais relancé. */
@@ -149,7 +160,7 @@ export class Room {
     this.settings = { ...(module.defaultSettings as Record<string, unknown>) };
 
     this.ctx = {
-      now: () => this.env.now(),
+      now: () => this.clock(),
       random: () => this.env.random(),
       schedule: (key, ms) => this.schedule(key, ms),
       cancel: (key) => this.cancelTimer(key),
@@ -233,7 +244,7 @@ export class Room {
    * Hors partie, rien n’est relayé (le salon n’a pas besoin de mouvements).
    */
   acceptsSensors(playerId: string): boolean {
-    return this.status === 'in_game' && this.players.has(playerId);
+    return this.status === 'in_game' && !this.paused && this.players.has(playerId);
   }
 
   /** Sockets des écrans principaux (et seulement eux) : les voix des joueurs y sont jouées. */
@@ -298,6 +309,7 @@ export class Room {
     return {
       code: this.code,
       status: this.status,
+      paused: this.paused,
       game,
       gameSettings: this.settings,
       practice: this.practice,
@@ -313,7 +325,7 @@ export class Room {
 
   hostView(): HostRoomView {
     return {
-      now: this.env.now(),
+      now: this.clock(),
       lobby: this.lobbyView(),
       game: this.inLobby
         ? null
@@ -327,7 +339,7 @@ export class Room {
   /** Vue d’un observateur : salon et état public uniquement (jamais l’état réservé à l’hôte). */
   observerView(): ObserverRoomView {
     return {
-      now: this.env.now(),
+      now: this.clock(),
       lobby: this.lobbyView(),
       game: this.inLobby ? null : { public: this.module.getPublicState(this.state) },
     };
@@ -337,7 +349,7 @@ export class Room {
     const p = this.players.get(playerId);
     if (!p) return null;
     return {
-      now: this.env.now(),
+      now: this.clock(),
       lobby: this.lobbyView(),
       you: { id: p.id, name: p.name, ready: p.ready, avatar: p.avatar, profile: p.profileId !== null },
       game: this.inLobby
@@ -719,6 +731,7 @@ export class Room {
    */
   hostAction(type: string, payload: unknown): Outcome {
     if (this.status !== 'in_game') return { ok: false, error: 'Aucune partie en cours.' };
+    if (this.paused) return { ok: false, error: PAUSED_ERROR };
     const { hostActions, handleHostAction } = this.module;
     if (!hostActions || !handleHostAction || !Object.hasOwn(hostActions, type)) {
       return { ok: false, error: 'Action inconnue.' };
@@ -740,6 +753,7 @@ export class Room {
 
   handleAction(playerId: string, commandId: string, type: string, payload: unknown): Result<{ duplicate: boolean }> {
     if (this.status !== 'in_game') return { ok: false, error: 'Aucune partie en cours.' };
+    if (this.paused) return { ok: false, error: PAUSED_ERROR };
     const p = this.players.get(playerId);
     if (!p) return { ok: false, error: 'Joueur inconnu.' };
 
@@ -757,6 +771,7 @@ export class Room {
 
   /** Applique une action validée par le schéma du jeu (commun aux joueurs et aux robots). */
   private apply(p: RoomPlayer, type: string, payload: unknown): Outcome {
+    if (this.paused) return { ok: false, error: PAUSED_ERROR };
     if (!Object.hasOwn(this.module.actions, type)) {
       return { ok: false, error: 'Action inconnue.' };
     }
@@ -779,13 +794,13 @@ export class Room {
 
   /** Planifie les actions des robots dont le jeu propose une décision. */
   private scheduleBots(): void {
-    if (this.status !== 'in_game' || !this.module.suggest) {
+    if (this.paused || this.status !== 'in_game' || !this.module.suggest) {
       this.clearBotTimers();
       return;
     }
     for (const p of this.players.values()) {
       if (!p.bot) continue;
-      const suggestion = this.module.suggest(this.state, p.id, this.env.random);
+      const suggestion = this.module.suggest(this.state, p.id, this.env.random, this.clock());
       const pending = this.botTimers.get(p.id);
       if (!suggestion) {
         if (pending) clearTimeout(pending.timer);
@@ -807,7 +822,7 @@ export class Room {
     if (this.status !== 'in_game') return;
     const bot = this.players.get(botId);
     if (!bot || !this.module.suggest) return;
-    const suggestion = this.module.suggest(this.state, botId, this.env.random);
+    const suggestion = this.module.suggest(this.state, botId, this.env.random, this.clock());
     if (!suggestion) return;
     const res = this.apply(bot, suggestion.type, suggestion.payload);
     if (!res.ok)
@@ -848,6 +863,7 @@ export class Room {
   private afterMutation(): void {
     if (this.status === 'in_game' && this.module.isFinished(this.state)) {
       this.status = 'ended';
+      this.unpause();
       this.clearTimers();
       this.recordFinishedGame();
       this.hooks.onGameEnded(this);
@@ -872,28 +888,76 @@ export class Room {
     if (!seriesFinished(this.series)) recordGame(this.series, game, ranking);
   }
 
+  /**
+   * Met la partie en pause, ou la reprend. Pendant la pause, l’horloge de la partie ne bouge plus : les
+   * décomptes s’arrêtent, les minuteurs et les robots attendent, et les actions sont refusées. À la reprise,
+   * chaque minuteur repart avec le temps qui lui restait.
+   */
+  setPaused(paused: boolean): Outcome {
+    if (this.status !== 'in_game') return { ok: false, error: 'Aucune partie en cours.' };
+    if (paused === this.paused) return { ok: true };
+    if (paused) {
+      this.paused = true;
+      this.pausedAt = this.env.now();
+      for (const handle of this.timers.values()) clearTimeout(handle);
+      this.timers.clear();
+      this.clearBotTimers();
+    } else {
+      this.unpause();
+      for (const key of this.timerTargets.keys()) this.armTimer(key);
+      this.scheduleBots();
+    }
+    this.touch();
+    this.hooks.onChange(this);
+    return { ok: true };
+  }
+
+  /** Horloge de la partie : le temps réel moins les pauses. Figée pendant une pause. */
+  private clock(): number {
+    return (this.paused ? this.pausedAt : this.env.now()) - this.pausedTotal;
+  }
+
+  /** Fin de pause : le temps passé en pause est retiré de l’horloge de la partie. */
+  private unpause(): void {
+    if (!this.paused) return;
+    this.pausedTotal += this.env.now() - this.pausedAt;
+    this.paused = false;
+  }
+
   private schedule(key: string, ms: number): void {
     this.cancelTimer(key);
-    const handle = setTimeout(() => {
-      this.timers.delete(key);
-      if (this.status !== 'in_game') return;
-      this.mutate((s) => this.module.onTimer(s, key, this.ctx));
-    }, ms);
+    this.timerTargets.set(key, this.clock() + ms);
+    if (!this.paused) this.armTimer(key);
+  }
+
+  /** Arme le minuteur nommé à son échéance sur l’horloge de la partie. */
+  private armTimer(key: string): void {
+    const target = this.timerTargets.get(key);
+    if (target === undefined) return;
+    const handle = setTimeout(
+      () => {
+        this.timers.delete(key);
+        this.timerTargets.delete(key);
+        if (this.status !== 'in_game') return;
+        this.mutate((s) => this.module.onTimer(s, key, this.ctx));
+      },
+      Math.max(0, target - this.clock()),
+    );
     handle.unref();
     this.timers.set(key, handle);
   }
 
   private cancelTimer(key: string): void {
     const handle = this.timers.get(key);
-    if (handle) {
-      clearTimeout(handle);
-      this.timers.delete(key);
-    }
+    if (handle) clearTimeout(handle);
+    this.timers.delete(key);
+    this.timerTargets.delete(key);
   }
 
   private clearTimers(): void {
     for (const handle of this.timers.values()) clearTimeout(handle);
     this.timers.clear();
+    this.timerTargets.clear();
     this.clearBotTimers();
     this.abortJob();
   }

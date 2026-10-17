@@ -1,4 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+
+/**
+ * Vrai pendant une pause de l’écran principal (`lobby.paused`). Les décomptes gardent alors leur valeur :
+ * le temps écoulé sur le téléphone ou la TV ne doit pas continuer à passer.
+ */
+export const PauseContext = createContext(false);
 
 /**
  * Temps restant (ms) avant une échéance exprimée dans l’horloge serveur.
@@ -7,18 +13,19 @@ import { useEffect, useMemo, useState } from 'react';
  */
 export function useRemaining(endsAt: number | undefined, serverNow: number): number {
   const [, setTick] = useState(0);
+  const paused = useContext(PauseContext);
   // `serverNow` n’est pas lu ici : il sert à recaler l’instant de réception à chaque nouvelle vue du serveur.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const receivedAt = useMemo(() => performance.now(), [serverNow]);
 
   useEffect(() => {
-    if (!endsAt) return;
+    if (!endsAt || paused) return;
     const id = setInterval(() => setTick((t) => t + 1), 250);
     return () => clearInterval(id);
-  }, [endsAt]);
+  }, [endsAt, paused]);
 
   if (!endsAt) return 0;
-  const elapsed = performance.now() - receivedAt;
+  const elapsed = paused ? 0 : performance.now() - receivedAt;
   return Math.max(0, endsAt - serverNow - elapsed);
 }
 
@@ -41,16 +48,18 @@ export function useLocalStart(startedAt: number, serverNow: number): number {
  */
 export function useElapsed(startedAt: number, serverNow: number, active: boolean, everyMs = 50): number {
   const [, setTick] = useState(0);
+  const paused = useContext(PauseContext);
   // `serverNow` n’est pas lu ici : il sert à recaler l’instant de réception à chaque nouvelle vue du serveur.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const receivedAt = useMemo(() => performance.now(), [serverNow]);
 
   useEffect(() => {
-    if (!active || !startedAt) return;
+    if (!active || !startedAt || paused) return;
     const id = window.setInterval(() => setTick((t) => t + 1), everyMs);
     return () => window.clearInterval(id);
-  }, [active, startedAt, everyMs]);
+  }, [active, startedAt, everyMs, paused]);
 
   if (!active || !startedAt) return 0;
-  return Math.max(0, serverNow - startedAt + (performance.now() - receivedAt));
+  const drift = paused ? 0 : performance.now() - receivedAt;
+  return Math.max(0, serverNow - startedAt + drift);
 }

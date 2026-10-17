@@ -21,7 +21,7 @@ import { FitStage } from '../components/FitStage.js';
 import { Boundary } from '../components/Boundary.js';
 import { GameViewBoundary } from '../components/GameView.js';
 import { read3DPreference, supportsWebGL, write3DPreference } from '../three/prefs.js';
-import { AvatarsContext, MoodsContext, useWakeLock, type PromoteurPub } from '@partyhub/games/client';
+import { AvatarsContext, MoodsContext, PauseContext, useWakeLock, type PromoteurPub } from '@partyhub/games/client';
 import { TvLobby, type HandoffCode } from './tv/TvLobby.js';
 import { CornerMenu, DrawerSection } from '../components/CornerMenu.js';
 import { ChampionshipSettingsForm, GameEndPanel, championshipPill, replayLabel } from '../components/Championship.js';
@@ -209,6 +209,12 @@ export function TvPage() {
     else if (event === 'host:next') socket.emit('host:next', done);
     else if (event === 'host:end') socket.emit('host:end', done);
     else socket.emit('host:replay', done);
+  }
+
+  /** Met la partie en pause ou la reprend : les décomptes, les robots et les actions des joueurs suivent. */
+  function setPause(paused: boolean) {
+    if (!canSend(socket, setError)) return;
+    socket.emit('host:pause', { paused }, (res) => setError(res.ok ? null : res.error));
   }
 
   function createHandoff() {
@@ -446,99 +452,114 @@ export function TvPage() {
   return (
     <AvatarsContext.Provider value={avatars}>
       <MoodsContext.Provider value={arrivals}>
-        <main
-          className={`stage ${inLobby ? 'is-lobby' : 'is-game'}${lobby.status === 'ended' ? ' has-results' : ''}`}
-          style={skyStyle}
-        >
-          <GameScene
-            gameId={lobby.game.id}
-            name={lobby.game.name}
-            className={`stage-scene${inLobby ? '' : ' is-quiet'}`}
-          />
-          <ReactionLayer socket={socket} />
-          <VoiceLayer socket={socket} />
-
-          {error && (
-            <p className="stage-toast" role="alert" onClick={() => setError(null)}>
-              {error}
-            </p>
-          )}
-          {connection.lost && !connection.connected && (
-            <p className="stage-toast" role="status">
-              Connexion au serveur perdue. Reconnexion en cours…
-            </p>
-          )}
-
-          {pill && <p className="champ-pill">{pill}</p>}
-          {inLobby ? (
-            <TvLobby
-              lobby={lobby}
-              joinUrl={joinUrl}
-              canStart={canStart}
-              poses={lobbyPoses}
-              emotes={emotes}
-              positions={positions}
-              onStart={() => emitAck('host:start')}
-              handoff={handoff}
-              onHandoff={createHandoff}
-              onAddBot={addBot}
+        <PauseContext.Provider value={lobby.paused}>
+          <main
+            className={`stage ${inLobby ? 'is-lobby' : 'is-game'}${lobby.status === 'ended' ? ' has-results' : ''}`}
+            style={skyStyle}
+          >
+            <GameScene
+              gameId={lobby.game.id}
+              name={lobby.game.name}
+              className={`stage-scene${inLobby ? '' : ' is-quiet'}`}
             />
-          ) : (
-            <>
-              <div className={`stage-mini${active ? ' is-visible' : ''}`} aria-hidden={!active}>
-                <GameLogo gameId={lobby.game.id} name={lobby.game.name} className="stage-mini-logo" />
-                <span>Salle {lobby.code}</span>
-              </div>
+            <ReactionLayer socket={socket} />
+            <VoiceLayer socket={socket} />
 
-              <div className="stage-game">
-                {use3d && game?.public ? (
-                  <Boundary fallback={flat} onError={() => setBoard3dFailed(true)}>
-                    <Suspense fallback={flat}>
-                      <PromoteurStage pub={game.public as PromoteurPub} now={view.now} flat={flat} />
-                    </Suspense>
-                  </Boundary>
-                ) : (
-                  flat
+            {error && (
+              <p className="stage-toast" role="alert" onClick={() => setError(null)}>
+                {error}
+              </p>
+            )}
+            {connection.lost && !connection.connected && (
+              <p className="stage-toast" role="status">
+                Connexion au serveur perdue. Reconnexion en cours…
+              </p>
+            )}
+
+            {pill && <p className="champ-pill">{pill}</p>}
+            {inLobby ? (
+              <TvLobby
+                lobby={lobby}
+                joinUrl={joinUrl}
+                canStart={canStart}
+                poses={lobbyPoses}
+                emotes={emotes}
+                positions={positions}
+                onStart={() => emitAck('host:start')}
+                handoff={handoff}
+                onHandoff={createHandoff}
+                onAddBot={addBot}
+              />
+            ) : (
+              <>
+                <div className={`stage-mini${active ? ' is-visible' : ''}`} aria-hidden={!active}>
+                  <GameLogo gameId={lobby.game.id} name={lobby.game.name} className="stage-mini-logo" />
+                  <span>Salle {lobby.code}</span>
+                </div>
+
+                <div className="stage-game">
+                  {use3d && game?.public ? (
+                    <Boundary fallback={flat} onError={() => setBoard3dFailed(true)}>
+                      <Suspense fallback={flat}>
+                        <PromoteurStage pub={game.public as PromoteurPub} now={view.now} flat={flat} />
+                      </Suspense>
+                    </Boundary>
+                  ) : (
+                    flat
+                  )}
+                </div>
+
+                {lobby.status === 'ended' && <GameEndPanel lobby={lobby} />}
+
+                {lobby.paused && lobby.status === 'in_game' && (
+                  <div className="stage-pause" role="status">
+                    <p className="stage-pause-title">Partie en pause</p>
+                    <p className="muted">Les décomptes et les actions sont suspendus.</p>
+                    <button type="button" className="btn primary" onClick={() => setPause(false)}>
+                      Reprendre la partie
+                    </button>
+                  </div>
                 )}
-              </div>
 
-              {lobby.status === 'ended' && <GameEndPanel lobby={lobby} />}
+                <div
+                  className={`stage-bar${active ? ' is-visible' : ''}`}
+                  onFocus={() => setBarFocused(true)}
+                  onBlur={() => setBarFocused(false)}
+                >
+                  {lobby.status === 'in_game' && (
+                    <>
+                      <button type="button" className="btn primary" onClick={() => emitAck('host:next')}>
+                        Étape suivante
+                      </button>
+                      <button type="button" className="btn ghost" onClick={() => setPause(!lobby.paused)}>
+                        {lobby.paused ? 'Reprendre la partie' : 'Mettre en pause'}
+                      </button>
+                      <button type="button" className="btn ghost" onClick={() => emitAck('host:end')}>
+                        Arrêter la partie
+                      </button>
+                    </>
+                  )}
+                  {lobby.status === 'ended' && (
+                    <>
+                      <button type="button" className="btn primary" onClick={() => emitAck('host:replay')}>
+                        {replayLabel(lobby)}
+                      </button>
+                      <button type="button" className="btn ghost" onClick={backToCatalog}>
+                        Retour au catalogue
+                      </button>
+                    </>
+                  )}
+                </div>
+              </>
+            )}
 
-              <div
-                className={`stage-bar${active ? ' is-visible' : ''}`}
-                onFocus={() => setBarFocused(true)}
-                onBlur={() => setBarFocused(false)}
-              >
-                {lobby.status === 'in_game' && (
-                  <>
-                    <button type="button" className="btn primary" onClick={() => emitAck('host:next')}>
-                      Étape suivante
-                    </button>
-                    <button type="button" className="btn ghost" onClick={() => emitAck('host:end')}>
-                      Arrêter la partie
-                    </button>
-                  </>
-                )}
-                {lobby.status === 'ended' && (
-                  <>
-                    <button type="button" className="btn primary" onClick={() => emitAck('host:replay')}>
-                      {replayLabel(lobby)}
-                    </button>
-                    <button type="button" className="btn ghost" onClick={backToCatalog}>
-                      Retour au catalogue
-                    </button>
-                  </>
-                )}
-              </div>
-            </>
-          )}
+            <CornerMenu open={menuOpen} visible={active} onOpen={() => setMenuOpen(true)} onClose={closeMenu}>
+              {menu}
+            </CornerMenu>
 
-          <CornerMenu open={menuOpen} visible={active} onOpen={() => setMenuOpen(true)} onClose={closeMenu}>
-            {menu}
-          </CornerMenu>
-
-          {noticeOpen && <NoticeDialog game={lobby.game} onClose={() => setNoticeOpen(false)} />}
-        </main>
+            {noticeOpen && <NoticeDialog game={lobby.game} onClose={() => setNoticeOpen(false)} />}
+          </main>
+        </PauseContext.Provider>
       </MoodsContext.Provider>
     </AvatarsContext.Provider>
   );

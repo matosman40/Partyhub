@@ -11,7 +11,7 @@ import {
 import { createSocket, type AppSocket } from '../realtime.js';
 import { newId } from '../api.js';
 import { viewsFor } from '../games.js';
-import { AvatarsContext, SensorSenderContext } from '@partyhub/games/client';
+import { AvatarsContext, PauseContext, SensorSenderContext } from '@partyhub/games/client';
 import { PlayerAvatar } from '../components/PlayerAvatar.js';
 import { ChatPanel, EmoteBar } from '../components/Social.js';
 import { Link } from 'react-router-dom';
@@ -482,179 +482,196 @@ export function PlayerSeat({
     else hostSocket.emit('host:addBot', done);
   }
 
+  /** Pause de l’écran principal : elle se commande depuis l’hôte, et elle suspend aussi les actions de ce téléphone. */
+  function hostPause(paused: boolean) {
+    if (!hostSocket || !canSend(hostSocket, setError)) return;
+    hostSocket.emit('host:pause', { paused }, (res) => setError(res.ok ? null : res.error));
+  }
+
   return wrapper(
     <AvatarsContext.Provider value={avatars}>
-      <div className="seat-head">
-        <PlayerAvatar avatar={you.avatar} name={you.name} size="md" highlight />
-        <span className="name">{you.name}</span>
-        <span className="muted small">Salle {lobby.code}</span>
-      </div>
+      <PauseContext.Provider value={lobby.paused}>
+        <div className="seat-head">
+          <PlayerAvatar avatar={you.avatar} name={you.name} size="md" highlight />
+          <span className="name">{you.name}</span>
+          <span className="muted small">Salle {lobby.code}</span>
+        </div>
 
-      {!connected && (
-        <p className="notice" role="status">
-          Connexion perdue. Reconnexion en cours…
-        </p>
-      )}
-
-      {error && (
-        <p className="error" role="alert" onClick={() => setError(null)}>
-          {error}
-        </p>
-      )}
-
-      {inLobby ? (
-        <section className="stack">
-          <div className="lobby-game">
-            <span className="lobby-icon" aria-hidden="true">
-              {lobby.game.icon}
-            </span>
-            <p className="big">{lobby.game.name}</p>
-          </div>
-          <p className="muted small">
-            {lobby.players.length} joueur(s) · {lobby.readyCount} prêt(s)
+        {!connected && (
+          <p className="notice" role="status">
+            Connexion perdue. Reconnexion en cours…
           </p>
-          <button type="button" className={`btn big ${readyNow ? 'ready' : 'primary'}`} onClick={toggleReady}>
-            {readyNow ? 'Prêt ! Annuler' : 'Je suis prêt'}
-          </button>
-          {isHost && lobby.game.id !== PLATEAU_TEST_ID ? (
-            <div className="stack host-start">
-              <p className="muted small">Vous êtes l’hôte de la salle.</p>
-              <button
-                type="button"
-                className="btn primary big"
-                disabled={lobby.players.filter((p) => p.connected).length < lobby.game.minPlayers}
-                onClick={startAsHost}
-              >
-                Lancer la partie
-              </button>
-              {lobby.players.filter((p) => p.connected).length < lobby.game.minPlayers && (
-                <p className="muted small">Il faut au moins {lobby.game.minPlayers} joueur(s) connecté(s).</p>
-              )}
-              <button
-                type="button"
-                className="btn small"
-                onClick={() => hostCommand('host:addBot')}
-                disabled={lobby.players.length >= lobby.maxPlayers}
-              >
-                Ajouter un robot
-              </button>
+        )}
+
+        {error && (
+          <p className="error" role="alert" onClick={() => setError(null)}>
+            {error}
+          </p>
+        )}
+
+        {inLobby ? (
+          <section className="stack">
+            <div className="lobby-game">
+              <span className="lobby-icon" aria-hidden="true">
+                {lobby.game.icon}
+              </span>
+              <p className="big">{lobby.game.name}</p>
             </div>
-          ) : (
-            <p className="muted small">En attente de l’hôte : il lance la partie depuis son écran.</p>
-          )}
-          {!compact &&
-            !isHost &&
-            lobby.game.id !== PLATEAU_TEST_ID &&
-            (claimOpen ? (
-              <form className="stack claim-host" onSubmit={claimHost}>
-                <p className="muted small">Entrez le code à 6 chiffres affiché sur l’écran de la salle.</p>
-                <label className="field">
-                  <span>Code hôte</span>
-                  <input
-                    inputMode="numeric"
-                    autoComplete="one-time-code"
-                    maxLength={6}
-                    value={claimCode}
-                    onChange={(e) => setClaimCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                  />
-                </label>
-                {claimError && (
-                  <p className="error" role="alert">
-                    {claimError}
+            <p className="muted small">
+              {lobby.players.length} joueur(s) · {lobby.readyCount} prêt(s)
+            </p>
+            <button type="button" className={`btn big ${readyNow ? 'ready' : 'primary'}`} onClick={toggleReady}>
+              {readyNow ? 'Prêt ! Annuler' : 'Je suis prêt'}
+            </button>
+            {isHost && lobby.game.id !== PLATEAU_TEST_ID ? (
+              <div className="stack host-start">
+                <p className="muted small">Vous êtes l’hôte de la salle.</p>
+                <button
+                  type="button"
+                  className="btn primary big"
+                  disabled={lobby.players.filter((p) => p.connected).length < lobby.game.minPlayers}
+                  onClick={startAsHost}
+                >
+                  Lancer la partie
+                </button>
+                {lobby.players.filter((p) => p.connected).length < lobby.game.minPlayers && (
+                  <p className="muted small">Il faut au moins {lobby.game.minPlayers} joueur(s) connecté(s).</p>
+                )}
+                <button
+                  type="button"
+                  className="btn small"
+                  onClick={() => hostCommand('host:addBot')}
+                  disabled={lobby.players.length >= lobby.maxPlayers}
+                >
+                  Ajouter un robot
+                </button>
+              </div>
+            ) : (
+              <p className="muted small">En attente de l’hôte : il lance la partie depuis son écran.</p>
+            )}
+            {!compact &&
+              !isHost &&
+              lobby.game.id !== PLATEAU_TEST_ID &&
+              (claimOpen ? (
+                <form className="stack claim-host" onSubmit={claimHost}>
+                  <p className="muted small">Entrez le code à 6 chiffres affiché sur l’écran de la salle.</p>
+                  <label className="field">
+                    <span>Code hôte</span>
+                    <input
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      maxLength={6}
+                      value={claimCode}
+                      onChange={(e) => setClaimCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    />
+                  </label>
+                  {claimError && (
+                    <p className="error" role="alert">
+                      {claimError}
+                    </p>
+                  )}
+                  <button type="submit" className="btn primary" disabled={!/^\d{6}$/.test(claimCode)}>
+                    Je suis l’hôte
+                  </button>
+                  <button type="button" className="link-btn" onClick={() => setClaimOpen(false)}>
+                    Annuler
+                  </button>
+                </form>
+              ) : (
+                <button type="button" className="link-btn" onClick={() => setClaimOpen(true)}>
+                  Je suis l’hôte de cette salle
+                </button>
+              ))}
+            {lobby.game.id === PLATEAU_TEST_ID ? (
+              !compact && (
+                <LobbyPlateau
+                  players={lobby.players}
+                  poses={poses}
+                  emotes={emotes}
+                  positions={positions}
+                  me={you.id}
+                  onMove={sendLobbyMove}
+                  label="Salon : déplacez votre personnage"
+                />
+              )
+            ) : (
+              <>
+                {!compact && hasChampionship(lobby.championship) && (
+                  <p className="muted small">
+                    Championnat : {championshipSummary(lobby.championship)}{' '}
+                    <TeamBadge lobby={lobby} playerId={you.id} />
                   </p>
                 )}
-                <button type="submit" className="btn primary" disabled={!/^\d{6}$/.test(claimCode)}>
-                  Je suis l’hôte
-                </button>
-                <button type="button" className="link-btn" onClick={() => setClaimOpen(false)}>
-                  Annuler
-                </button>
-              </form>
-            ) : (
-              <button type="button" className="link-btn" onClick={() => setClaimOpen(true)}>
-                Je suis l’hôte de cette salle
-              </button>
-            ))}
-          {lobby.game.id === PLATEAU_TEST_ID ? (
-            !compact && (
-              <LobbyPlateau
-                players={lobby.players}
-                poses={poses}
-                emotes={emotes}
-                positions={positions}
-                me={you.id}
-                onMove={sendLobbyMove}
-                label="Salon : déplacez votre personnage"
-              />
-            )
-          ) : (
-            <>
-              {!compact && hasChampionship(lobby.championship) && (
-                <p className="muted small">
-                  Championnat : {championshipSummary(lobby.championship)} <TeamBadge lobby={lobby} playerId={you.id} />
-                </p>
-              )}
-              <LobbyHeads players={lobby.players} me={you.id} emotes={emotes} />
-            </>
-          )}
-          {!compact && <TestModeBadge />}
-          {!compact && you.profile && you.avatar.character && profileToken && (
-            <ExpressionRow character={you.avatar.character} token={profileToken} />
-          )}
-          {!compact && <LobbyMoodBar onPick={sendLobbyMood} />}
-          <EmoteBar onPick={sendReaction} />
-          {!compact && you.profile && <VoiceBar socket={socket} token={profileToken} />}
-          {!compact && you.profile && <CameraBubble token={profileToken} />}
-          {!compact && you.profile && (
-            <Link className="link-btn" to="/profil">
-              Modifier mon personnage et mon profil
-            </Link>
-          )}
-        </section>
-      ) : (
-        views &&
-        game && (
-          <section className="stack">
-            {isHost && (lobby.status === 'in_game' || lobby.status === 'ended') && (
-              <div className="host-bar" role="group" aria-label="Commandes de l’hôte">
-                {lobby.status === 'in_game' ? (
-                  <>
-                    <button type="button" className="btn primary small" onClick={() => hostCommand('host:next')}>
-                      Étape suivante
-                    </button>
-                    <button type="button" className="btn ghost small" onClick={() => hostCommand('host:end')}>
-                      Arrêter la partie
-                    </button>
-                  </>
-                ) : (
-                  <button type="button" className="btn primary small" onClick={() => hostCommand('host:replay')}>
-                    {replayLabel(lobby)}
-                  </button>
-                )}
-              </div>
+                <LobbyHeads players={lobby.players} me={you.id} emotes={emotes} />
+              </>
             )}
-            {lobby.status === 'ended' && <MyResult lobby={lobby} playerId={you.id} />}
-            <GameViewBoundary gameId={lobby.game.id} publicState={game.public}>
-              <Suspense fallback={<p className="muted">Chargement du jeu…</p>}>
-                <SensorSenderContext.Provider value={sendSensor}>
-                  <views.Player
-                    publicState={game.public}
-                    playerState={game.player}
-                    playerId={you.id}
-                    now={view.now}
-                    send={send}
-                    connected={connected}
-                  />
-                </SensorSenderContext.Provider>
-              </Suspense>
-            </GameViewBoundary>
+            {!compact && <TestModeBadge />}
+            {!compact && you.profile && you.avatar.character && profileToken && (
+              <ExpressionRow character={you.avatar.character} token={profileToken} />
+            )}
+            {!compact && <LobbyMoodBar onPick={sendLobbyMood} />}
             <EmoteBar onPick={sendReaction} />
             {!compact && you.profile && <VoiceBar socket={socket} token={profileToken} />}
+            {!compact && you.profile && <CameraBubble token={profileToken} />}
+            {!compact && you.profile && (
+              <Link className="link-btn" to="/profil">
+                Modifier mon personnage et mon profil
+              </Link>
+            )}
           </section>
-        )
-      )}
+        ) : (
+          views &&
+          game && (
+            <section className="stack">
+              {isHost && (lobby.status === 'in_game' || lobby.status === 'ended') && (
+                <div className="host-bar" role="group" aria-label="Commandes de l’hôte">
+                  {lobby.status === 'in_game' ? (
+                    <>
+                      <button type="button" className="btn primary small" onClick={() => hostCommand('host:next')}>
+                        Étape suivante
+                      </button>
+                      <button type="button" className="btn ghost small" onClick={() => hostPause(!lobby.paused)}>
+                        {lobby.paused ? 'Reprendre la partie' : 'Mettre en pause'}
+                      </button>
+                      <button type="button" className="btn ghost small" onClick={() => hostCommand('host:end')}>
+                        Arrêter la partie
+                      </button>
+                    </>
+                  ) : (
+                    <button type="button" className="btn primary small" onClick={() => hostCommand('host:replay')}>
+                      {replayLabel(lobby)}
+                    </button>
+                  )}
+                </div>
+              )}
+              {lobby.paused && lobby.status === 'in_game' && (
+                <p className="seat-pause" role="status">
+                  Partie en pause : les actions reprendront à la reprise.
+                </p>
+              )}
+              {lobby.status === 'ended' && <MyResult lobby={lobby} playerId={you.id} />}
+              <GameViewBoundary gameId={lobby.game.id} publicState={game.public}>
+                <Suspense fallback={<p className="muted">Chargement du jeu…</p>}>
+                  <SensorSenderContext.Provider value={sendSensor}>
+                    <views.Player
+                      publicState={game.public}
+                      playerState={game.player}
+                      playerId={you.id}
+                      now={view.now}
+                      send={send}
+                      connected={connected}
+                    />
+                  </SensorSenderContext.Provider>
+                </Suspense>
+              </GameViewBoundary>
+              <EmoteBar onPick={sendReaction} />
+              {!compact && you.profile && <VoiceBar socket={socket} token={profileToken} />}
+            </section>
+          )
+        )}
 
-      {noticeOpen && <NoticeDialog game={lobby.game} onClose={() => setNoticeOpen(false)} />}
+        {noticeOpen && <NoticeDialog game={lobby.game} onClose={() => setNoticeOpen(false)} />}
+      </PauseContext.Provider>
     </AvatarsContext.Provider>,
     drawer,
   );

@@ -395,10 +395,10 @@ export function createRaceGame(def: CardGameDefinition, options: { id: string })
   }
 
   /** Robot : touche une carte qui répond au centre, en laissant passer parfois l’occasion. */
-  function suggest(state: RaceState, playerId: string, random: () => number) {
+  function suggest(state: RaceState, playerId: string, random: () => number, now: number) {
     if (!state.started || state.phase !== 'play' || !state.center) return null;
     if (!state.order.includes(playerId)) return null;
-    if ((state.locked[playerId] ?? 0) > Date.now()) return null;
+    if ((state.locked[playerId] ?? 0) > now) return null;
     if (random() < BOT_MISS_RATE) return null;
     const entries = entryMap(state.def);
     const centerEntry = entries.get(state.center.entry);

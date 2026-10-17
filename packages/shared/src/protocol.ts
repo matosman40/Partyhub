@@ -158,6 +158,8 @@ export interface VoiceEvent {
 export interface LobbyView {
   code: string;
   status: RoomStatus;
+  /** Vrai pendant une pause de l’écran principal : l’horloge de la partie est figée. */
+  paused: boolean;
   game: GameInfo;
   gameSettings: Record<string, unknown>;
   practice: boolean;
@@ -262,6 +264,8 @@ export interface ClientToServerEvents {
   'host:next': (ack: Ack) => void;
   'host:end': (ack: Ack) => void;
   'host:replay': (ack: Ack) => void;
+  /** Met la partie en pause (décomptes, robots et actions des joueurs suspendus), ou la reprend. */
+  'host:pause': (p: { paused: boolean }, ack: Ack) => void;
   'host:kick': (p: { playerId: string }, ack: Ack) => void;
   'host:close': (ack: Ack) => void;
   'host:addBot': (ack: Ack) => void;
