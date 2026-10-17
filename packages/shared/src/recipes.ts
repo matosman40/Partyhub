@@ -81,10 +81,19 @@ export const appareilsSchema = z
 
 const phaseListSchema = z.array(z.enum(SCREEN_BLOCKS)).max(8, 'Au plus 8 blocs par phase.');
 
-const screenLayoutSchema = z
+/**
+ * Une phase d'attente ou de fin qui a un écran fixe ne se personnalise pas : la présence de la clé est refusée,
+ * pour qu'un réglage ne soit jamais ignoré en silence.
+ */
+function fixedScreen(phase: RecipePhase) {
+  return z.never({ error: `La phase « ${phase} » a un écran fixe : elle ne se personnalise pas.` }).optional();
+}
+
+/** Écran principal : l'attente de lancement et la génération ont un écran fixe ; le reste se personnalise. */
+const tvLayoutSchema = z
   .object({
-    pret: phaseListSchema.optional(),
-    generation: phaseListSchema.optional(),
+    pret: fixedScreen('pret'),
+    generation: fixedScreen('generation'),
     ecriture: phaseListSchema.optional(),
     vote: phaseListSchema.optional(),
     resultat: phaseListSchema.optional(),
@@ -92,10 +101,22 @@ const screenLayoutSchema = z
   })
   .strict();
 
+/** Téléphone : l'attente, la génération et le classement final ont un écran fixe ; les phases de jeu se personnalisent. */
+const joueurLayoutSchema = z
+  .object({
+    pret: fixedScreen('pret'),
+    generation: fixedScreen('generation'),
+    ecriture: phaseListSchema.optional(),
+    vote: phaseListSchema.optional(),
+    resultat: phaseListSchema.optional(),
+    final: fixedScreen('final'),
+  })
+  .strict();
+
 export const screensSchema = z
   .object({
-    tv: screenLayoutSchema.optional(),
-    joueur: screenLayoutSchema.optional(),
+    tv: tvLayoutSchema.optional(),
+    joueur: joueurLayoutSchema.optional(),
   })
   .strict();
 
@@ -134,7 +155,21 @@ export const voteSurConsigneSchema = z
     icon: z.string().trim().min(1).max(8).default('💭'),
     rules: recipeRulesSchema.optional(),
     /** Consignes du paquet : liste complète, utilisée seule ou en repli de l'IA. */
-    consignes: z.array(z.string().trim().min(3).max(90)).min(1, 'Ajoutez au moins une consigne.').max(100),
+    consignes: z
+      .array(z.string().trim().min(3).max(90))
+      .min(1, 'Ajoutez au moins une consigne.')
+      .max(100)
+      .superRefine((list, ctx) => {
+        // Sans casse : « Le plus rapide » et « le plus rapide » tirent la même question deux fois.
+        const seen = new Set<string>();
+        list.forEach((consigne, index) => {
+          const key = consigne.toLocaleLowerCase('fr');
+          if (seen.has(key)) {
+            ctx.addIssue({ code: 'custom', path: [index], message: `Consigne en double : « ${consigne} ».` });
+          }
+          seen.add(key);
+        });
+      }),
     ai: recipeAiSchema.optional(),
     ecrans: screensSchema.optional(),
     appareils: appareilsSchema.optional(),
@@ -154,9 +189,18 @@ export const recipeDefinitionSchema = z
       const layout = screens[role];
       if (!layout) continue;
       for (const phase of RECIPE_PHASES) {
-        const blocks = layout[phase];
+        const blocks = (layout as Partial<Record<RecipePhase, ScreenBlock[]>>)[phase];
         if (!blocks) continue;
+        const seen = new Set<ScreenBlock>();
         blocks.forEach((block, index) => {
+          if (seen.has(block)) {
+            ctx.addIssue({
+              code: 'custom',
+              path: ['ecrans', role, phase, index],
+              message: `Le bloc « ${block} » ne figure qu’une fois par phase.`,
+            });
+          }
+          seen.add(block);
           const rule = BLOCK_RULES[block];
           const where = role === 'tv' ? 'l’écran principal' : 'le téléphone';
           if (!rule.roles.includes(role)) {
@@ -187,6 +231,7 @@ export function resolveRules(definition: RecipeDefinition): RecipeRules {
 
 /** Blocs à afficher pour un écran et une phase : la disposition du paquet, sinon la disposition par défaut. */
 export function resolveScreen(definition: RecipeDefinition, role: ScreenRole, phase: RecipePhase): ScreenBlock[] {
-  const custom = definition.ecrans?.[role]?.[phase];
+  const layout = definition.ecrans?.[role] as Partial<Record<RecipePhase, ScreenBlock[]>> | undefined;
+  const custom = layout?.[phase];
   return custom ?? DEFAULT_SCREENS[role][phase] ?? [];
 }

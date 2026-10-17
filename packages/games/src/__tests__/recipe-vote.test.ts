@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { recipeDefinitionSchema, type GameResult, type RecipeDefinition } from '@partyhub/shared';
 import { createVoteSurConsigne, type RecipeState } from '../recipes/vote-sur-consigne.js';
 import { RECIPE_JOB_KIND, validateConsignes } from '../recipes/ai.js';
+import { isAcceptableConsigne } from '../recipes/moderation.js';
 import { A, B, C } from './aventure-helpers.js';
 import { fakeAi, harness, type Harness } from './turn-harness.js';
 
@@ -236,5 +237,106 @@ describe('validation des consignes de l’IA', () => {
     expect(validateConsignes({ consignes: ['Le plus néon'] }, 6)).toEqual([]);
     expect(validateConsignes({ autre: [] }, 3)).toEqual([]);
     expect(validateConsignes(null, 3)).toEqual([]);
+  });
+});
+
+describe('recette vote-sur-consigne : plafond d’IA et contenu des consignes', () => {
+  const aiDefinition = () =>
+    definition({ ai: { theme: 'années 80', nombre: 4 }, consignes: ['Le plus rétro', 'Le plus flashy'] });
+
+  it('au-delà de dix générations par heure, la partie prend les consignes du paquet, avec un message', () => {
+    const h = harness({ connected, ai: fakeAi('{}') });
+    const game = createVoteSurConsigne(aiDefinition(), { id: 'pkgr-ia' });
+    for (let i = 0; i < 10; i++) {
+      expect(unwrap(game.start(game.initialize({}, players, h.ctx), h.ctx)).phase).toBe('generation');
+    }
+    const limited = unwrap(game.start(game.initialize({}, players, h.ctx), h.ctx));
+    expect(limited.phase).toBe('ecriture');
+    expect(limited.notice).toBe('Limite d’IA atteinte pour cette recette : consignes du paquet.');
+    h.advance(60 * 60 * 1000);
+    expect(unwrap(game.start(game.initialize({}, players, h.ctx), h.ctx)).phase).toBe('generation');
+  });
+
+  it('sans fournisseur d’IA, les démarrages ne consomment pas le plafond', () => {
+    const h = harness({ connected });
+    const game = createVoteSurConsigne(aiDefinition(), { id: 'pkgr-ia' });
+    for (let i = 0; i < 12; i++) {
+      expect(unwrap(game.start(game.initialize({}, players, h.ctx), h.ctx)).phase).toBe('generation');
+    }
+  });
+
+  it('écarte une consigne refusée, avant de la montrer aux joueurs', () => {
+    const raw = {
+      consignes: [
+        'Le plus néon',
+        'Le plus pute',
+        'Va sur https://exemple.fr',
+        'Le plus cassette',
+        'Le plus walkman',
+        'Le plus rétro',
+      ],
+    };
+    expect(validateConsignes(raw, 4)).toEqual(['Le plus néon', 'Le plus cassette', 'Le plus walkman', 'Le plus rétro']);
+  });
+
+  it('refuse les termes listés, sans tenir compte des accents ni de la casse', () => {
+    expect(isAcceptableConsigne('Le plus NÉGRE')).toBe(false);
+    expect(isAcceptableConsigne('Le plus de l’enculé')).toBe(false);
+    expect(isAcceptableConsigne('Le plus pénible à la plage')).toBe(true);
+    expect(isAcceptableConsigne('Le plus susceptible d’oublier son téléphone en vacances')).toBe(true);
+  });
+
+  it('refuse adresses, e-mails et balisage', () => {
+    expect(isAcceptableConsigne('Le plus visité sur monsite.fr')).toBe(false);
+    expect(isAcceptableConsigne('Écrivez à quelqu’un@mail')).toBe(false);
+    expect(isAcceptableConsigne('Le plus <b>gras</b>')).toBe(false);
+  });
+});
+
+describe('recette vote-sur-consigne : départ d’un joueur en cours de partie', () => {
+  it('si le dernier joueur attendu part pendant l’écriture, le vote s’ouvre tout de suite', () => {
+    const h = harness({ connected: [...connected] });
+    const { game, state } = started(definition(), h);
+    let s = unwrap(game.handleAction(state, A, 'word', { word: 'Chat' }, h.ctx));
+    s = unwrap(game.handleAction(s, B, 'word', { word: 'Chien' }, h.ctx));
+    expect(s.phase).toBe('ecriture');
+    h.connected.splice(h.connected.indexOf(C.id), 1);
+    s = game.onPlayerLeave(s, C, h.ctx);
+    expect(s.phase).toBe('vote');
+    expect(h.timers.has('write-timeout')).toBe(false);
+    expect(h.timers.has('vote-timeout')).toBe(true);
+  });
+
+  it('si le dernier joueur attendu part pendant le vote, la révélation vient tout de suite', () => {
+    const h = harness({ connected: [...connected] });
+    const { game, state } = started(definition(), h);
+    let s = unwrap(game.handleAction(state, A, 'word', { word: 'Chat' }, h.ctx));
+    s = unwrap(game.handleAction(s, B, 'word', { word: 'Chien' }, h.ctx));
+    // C n'a pas écrit : c'est le délai d'écriture qui ouvre le vote.
+    s = h.fire(game, s, 'write-timeout');
+    s = unwrap(game.handleAction(s, A, 'vote', { option: s.options.indexOf(B.id) }, h.ctx));
+    s = unwrap(game.handleAction(s, B, 'vote', { option: s.options.indexOf(A.id) }, h.ctx));
+    expect(s.phase).toBe('vote');
+    h.connected.splice(h.connected.indexOf(C.id), 1);
+    s = game.onPlayerLeave(s, C, h.ctx);
+    expect(s.phase).toBe('resultat');
+  });
+
+  it('le joueur parti n’est plus attendu sur l’écran principal, ni compté sur les téléphones', () => {
+    const h = harness({ connected: [...connected] });
+    const { game, state } = started(definition(), h);
+    h.connected.splice(h.connected.indexOf(C.id), 1);
+    const s = game.onPlayerLeave(state, C, h.ctx);
+    expect(game.getHostState(s).pending).toEqual([A.name, B.name]);
+    expect(game.getPublicState(s).playerCount).toBe(2);
+  });
+
+  it('ses points restent au classement, mais il ne peut plus écrire ni voter', () => {
+    const h = harness({ connected: [...connected] });
+    const { game, state } = started(definition(), h);
+    h.connected.splice(h.connected.indexOf(C.id), 1);
+    const s = game.onPlayerLeave(state, C, h.ctx);
+    expect(game.getPublicState(s).ranking.map((e) => e.playerId)).toContain(C.id);
+    expect(refusal(game.handleAction(s, C, 'word', { word: 'Tard' }, h.ctx))).toBe('Joueur inconnu dans cette partie');
   });
 });

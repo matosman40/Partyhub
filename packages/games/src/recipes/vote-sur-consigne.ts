@@ -20,6 +20,14 @@ import { consigneJob, consignesFromOutcome, runConsignesJob } from './ai.js';
  */
 
 const REVEAL_MS = 9000;
+/** Plafond des générations d'IA par heure pour un même paquet, en plus du plafond global du serveur. */
+const AI_GENERATIONS_PER_HOUR = 10;
+const HOUR_MS = 60 * 60 * 1000;
+
+/** Vrai quand un fournisseur d'IA répond : seul ce cas consomme le plafond. */
+function providerReady(ctx: GameContext): boolean {
+  return ctx.ai !== undefined && (ctx.ai.available ? ctx.ai.available() : true);
+}
 const WRITE_TIMEOUT = 'write-timeout';
 const VOTE_TIMEOUT = 'vote-timeout';
 const REVEAL_NEXT = 'reveal-next';
@@ -43,6 +51,8 @@ export interface RecipeState {
   /** Identifiant du travail IA en cours ; un résultat tardif d'un autre travail est ignoré. */
   jobId: string | null;
   players: Record<string, string>;
+  /** Joueurs partis en cours de partie : ils gardent leurs points, mais n'attendent plus personne. */
+  left: string[];
   points: Record<string, number>;
   /** auteur -> mot proposé pendant la manche en cours. */
   words: Record<string, string>;
@@ -59,6 +69,11 @@ function clearRoundTimers(ctx: GameContext): void {
   ctx.cancel(WRITE_TIMEOUT);
   ctx.cancel(VOTE_TIMEOUT);
   ctx.cancel(REVEAL_NEXT);
+}
+
+/** Joueurs qui comptent encore pour la partie : ceux qui sont partis n'attendent plus. */
+function active(s: RecipeState): string[] {
+  return Object.keys(s.players).filter((id) => !s.left.includes(id));
 }
 
 function openWriting(s: RecipeState, ctx: GameContext): RecipeState {
@@ -128,6 +143,9 @@ export function createVoteSurConsigne(
   const rules = resolveRules(definition);
   const wordSchema = z.object({ word: z.string().trim().min(1).max(rules.motMax) });
   const voteSchema = z.object({ option: z.number().int().min(0).max(39) });
+  /** Instants des générations d'IA demandées par ce paquet. Remis à zéro au redémarrage du serveur. */
+  const generations: number[] = [];
+  const recentGenerations = (now: number) => generations.filter((t) => now - t < HOUR_MS).length;
 
   return {
     manifest: {
@@ -172,6 +190,7 @@ export function createVoteSurConsigne(
         notice: null,
         jobId: null,
         players: directory(players),
+        left: [],
         points: Object.fromEntries(players.map((p) => [p.id, 0])),
         words: {},
         options: [],
@@ -190,19 +209,36 @@ export function createVoteSurConsigne(
       };
     },
 
-    onPlayerLeave(s, p: PlayerRef) {
-      if (s.phase !== 'pret') return s;
-      const players = { ...s.players };
-      const points = { ...s.points };
-      delete players[p.id];
-      delete points[p.id];
-      return { ...s, players, points };
+    onPlayerLeave(s, p: PlayerRef, ctx) {
+      if (s.phase === 'pret') {
+        const players = { ...s.players };
+        const points = { ...s.points };
+        delete players[p.id];
+        delete points[p.id];
+        return { ...s, players, points };
+      }
+      if (!(p.id in s.players) || s.left.includes(p.id)) return s;
+      // En cours de partie : son départ peut être la dernière chose qu'on attendait pour passer à la suite.
+      const next = { ...s, left: [...s.left, p.id] };
+      if (s.phase === 'ecriture') {
+        return everyConnectedDone(ctx, active(next), (id) => id in next.words) ? openVote(next, ctx) : next;
+      }
+      if (s.phase === 'vote') {
+        return everyConnectedDone(ctx, active(next), (id) => id in next.votes) ? reveal(next, ctx) : next;
+      }
+      return next;
     },
 
     start(s, ctx) {
       if (s.phase !== 'pret') return fail('La partie a déjà commencé');
       if (s.consignes.length === 0) return fail('Aucune consigne disponible');
       if (definition.ai) {
+        // Au-delà du plafond horaire du paquet, la partie prend ses consignes sans appeler l'IA.
+        const paid = providerReady(ctx);
+        if (paid && recentGenerations(ctx.now()) >= AI_GENERATIONS_PER_HOUR) {
+          return ok(startRounds(s, s.consignes, 'Limite d’IA atteinte pour cette recette : consignes du paquet.', ctx));
+        }
+        if (paid) generations.push(ctx.now());
         // L'IA écrit les consignes d'abord ; le travail est exécuté par la salle, sans bloquer les autres.
         const jobId = `c${Math.floor(ctx.random() * 1e9)}`;
         return ok({ ...s, phase: 'generation', jobId, notice: null });
@@ -211,7 +247,7 @@ export function createVoteSurConsigne(
     },
 
     handleAction(s, p, type, payload, ctx) {
-      if (!(p.id in s.players)) return fail('Joueur inconnu dans cette partie');
+      if (!(p.id in s.players) || s.left.includes(p.id)) return fail('Joueur inconnu dans cette partie');
 
       if (type === 'word') {
         if (s.phase !== 'ecriture') return fail('Les mots ne sont pas attendus maintenant');
@@ -219,7 +255,7 @@ export function createVoteSurConsigne(
         const parsed = wordSchema.safeParse(payload);
         if (!parsed.success) return fail('Mot invalide');
         const next = { ...s, words: { ...s.words, [p.id]: parsed.data.word } };
-        const done = everyConnectedDone(ctx, Object.keys(next.players), (id) => id in next.words);
+        const done = everyConnectedDone(ctx, active(next), (id) => id in next.words);
         return ok(done ? openVote(next, ctx) : next);
       }
 
@@ -232,7 +268,7 @@ export function createVoteSurConsigne(
         if (option >= s.options.length) return fail('Choix invalide');
         if (s.options[option] === p.id) return fail('Vous ne pouvez pas voter pour votre propre mot');
         const next = { ...s, votes: { ...s.votes, [p.id]: option } };
-        const done = everyConnectedDone(ctx, Object.keys(next.players), (id) => id in next.votes);
+        const done = everyConnectedDone(ctx, active(next), (id) => id in next.votes);
         return ok(done ? reveal(next, ctx) : next);
       }
 
@@ -280,7 +316,7 @@ export function createVoteSurConsigne(
         phase: s.phase,
         round: s.round,
         total: s.rounds.length,
-        playerCount: Object.keys(s.players).length,
+        playerCount: active(s).length,
         ranking: rankEntries(s.players, s.points),
         motMax: s.rules.motMax,
         notice: s.notice,
@@ -348,9 +384,9 @@ export function createVoteSurConsigne(
     getHostState(s) {
       const missing =
         s.phase === 'ecriture'
-          ? Object.keys(s.players).filter((id) => !(id in s.words))
+          ? active(s).filter((id) => !(id in s.words))
           : s.phase === 'vote'
-            ? Object.keys(s.players).filter((id) => !(id in s.votes))
+            ? active(s).filter((id) => !(id in s.votes))
             : [];
       return { pending: missing.map((id) => s.players[id] ?? '?') };
     },

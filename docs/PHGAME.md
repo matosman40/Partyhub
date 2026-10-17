@@ -124,16 +124,21 @@ et `"engine": { "minVersion": "0.12.0", "api": 1 }`. La définition, `game/defin
 
 - **`rules`** : toutes les valeurs sont facultatives. `manches` (1 à 10), `ecriture` et `vote` en secondes, `pointsParVote`
   (0 à 500), `motMax` (4 à 40 caractères).
-- **`consignes`** : au moins une consigne, 90 caractères au plus chacune, 100 au plus. Elles tirent au sort les manches.
-- **`ai`** (facultatif) : `{ "theme": "années 80", "nombre": 6, "consigne": "…" }`. Quand un fournisseur d'IA est configuré,
-  la partie commence par la génération de consignes sur ce thème. La réponse est validée consigne par consigne ; sans assez de
-  consignes valides, ou sans fournisseur, le jeu prend la liste `consignes` et l'écran l'indique. Le modèle de consigne peut
-  contenir `{{theme}}` et `{{nombre}}`.
-- **`ecrans`** (facultatif) : pour chaque écran (`tv` ou `joueur`) et chaque phase (`pret`, `generation`, `ecriture`, `vote`,
-  `resultat`, `final`), la liste des blocs à afficher, dans l'ordre. Sans cette liste, la disposition par défaut sert.
+- **`consignes`** : au moins une consigne, 90 caractères au plus chacune, 100 au plus. Pas de doublon, sans tenir compte de la
+  casse. Elles tirent au sort les manches.
+- **`ai`** (facultatif) : `{ "theme": "années 80", "nombre": 6, "consigne": "…" }`. Quand `ai` est déclaré, la partie passe
+  d'abord par une phase de génération. Si un fournisseur d'IA répond, il écrit les consignes sur ce thème ; sinon, ou en cas
+  d'échec, le jeu prend la liste `consignes` et l'écran l'indique. Chaque consigne écrite par l'IA est vérifiée : une consigne
+  trop longue, en double, qui contient une adresse, du balisage ou un terme refusé, est écartée. Sans assez de consignes
+  valides, le repli du paquet sert. Un paquet demande au plus 10 générations par heure ; au-delà, la partie prend ses consignes
+  sans appeler l'IA. Le modèle de consigne peut contenir `{{theme}}` et `{{nombre}}`.
+- **`ecrans`** (facultatif) : la liste des blocs à afficher, dans l'ordre, pour chaque phase qui se personnalise. Sur l'écran
+  principal : `ecriture`, `vote`, `resultat`, `final` ; sur le téléphone : `ecriture`, `vote`, `resultat`. Les phases `pret` et
+  `generation` de l'écran principal, et `pret`, `generation` et `final` du téléphone, ont un écran fixe : les personnaliser
+  fait refuser le paquet. Sans liste, la disposition par défaut sert.
   Blocs admis : `titre`, `consigne`, `minuteur`, `attente`, `saisie-texte`, `vote`, `resultat`, `classement`. Un bloc ne
-  s'affiche que là où il a un sens (`saisie-texte` seulement sur le téléphone, pendant l'écriture). Une autre place fait refuser
-  le paquet, avec le chemin exact du bloc.
+  s'affiche que là où il a un sens (`saisie-texte` seulement sur le téléphone, pendant l'écriture), et un même bloc ne figure
+  qu'une fois par phase. Une autre place fait refuser le paquet, avec le chemin exact du bloc.
 - **`appareils`** (facultatif) : besoins déclarés, `camera`, `micro`, `mouvement`, `vibreur`, `qr`, chacun `requis` ou
   `facultatif`. Ils sont validés, mais aucune recette actuelle n'utilise d'appareil : ils seront exploités avec les blocs de
   photo, de son et de capteurs.
@@ -143,6 +148,9 @@ silence. Les écrans, les textes et les règles d'une recette sont donc tous dé
 
 **Limites actuelles des recettes** : pas de copie modifiable dans l'administration (une recette reste un paquet) ; les
 consignes de l'IA viennent du thème de l'auteur, pas des mots des joueurs ; pas de script (prévu après revue de sécurité).
+Le filtre des consignes de l'IA repose sur une liste de termes refusés (`packages/games/src/recipes/moderation.ts`) : c'est une
+première version, à relire avant une sortie publique. Les mots tapés par les joueurs ne sont pas filtrés. Aucune classe d'âge
+n'est encore déclarée pour un paquet.
 
 ## Règles de validation
 
@@ -161,8 +169,8 @@ Un paquet est refusé dès qu'une règle n'est pas respectée. Les anomalies du 
   déclaré mais absent, ou présent mais non déclaré, est refusé.
 - **Moteur** : la version minimale du moteur doit être égale ou inférieure à celle du serveur, et l'API doit être `1`.
 - **Licences** : chaque ressource de `assets/` doit être couverte par une licence ou une attribution listée dans le manifeste.
-- **Images** : la signature doit correspondre à l'extension. Pour les PNG, les côtés ne dépassent pas 1024 px, et chaque image
-  pèse 200 Ko au plus (les JPEG et WebP sont contrôlés sur leur signature et leur poids).
+- **Images** : la signature doit correspondre à l'extension. Pour les trois formats (PNG, JPEG, WebP), les dimensions sont lues
+  dans l'en-tête et le côté le plus long ne dépasse pas 1024 px ; chaque image pèse 200 Ko au plus.
 - **Définition** : `game/definition.json` est validé avec les mêmes règles que les jeux créés dans l'administration, selon le
   module (cartes, plateau ou questions). Un paquet de questions ne peut référencer que des vidéos YouTube.
 - **Module** : exactement un module par paquet, admis par le format (version 1 : cartes seulement ; version 3 : recettes seulement).

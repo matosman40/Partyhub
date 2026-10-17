@@ -8,6 +8,7 @@ export interface PackageRecord {
   version: string;
   description: string;
   author: string;
+  module: 'cards' | 'board' | 'quiz' | 'recipe';
   sha256: string;
   size: number;
   enabled: boolean;
@@ -370,7 +371,7 @@ export function PackagesAdmin({ onChanged }: { onChanged: () => void }) {
               >
                 Versions
               </button>
-              {r.status === 'actif' && (
+              {r.status === 'actif' && r.module !== 'recipe' && (
                 <button type="button" className="btn ghost small" onClick={() => copy(r)}>
                   Créer une copie modifiable
                 </button>

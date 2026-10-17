@@ -45,6 +45,8 @@ export interface PackageRecord {
   version: string;
   description: string;
   author: string;
+  /** Module de jeu porté par le paquet : une recette ne se copie pas dans l’administration. */
+  module: PackageModule;
   sha256: string;
   size: number;
   enabled: boolean;
@@ -121,6 +123,7 @@ export class PackageService {
         version: row.version,
         description: manifest.description,
         author: manifest.author,
+        module: manifest.module,
         sha256: row.sha256,
         size: row.size,
         enabled,

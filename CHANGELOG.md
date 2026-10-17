@@ -2,9 +2,11 @@
 
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [versionnement sémantique](https://semver.org/lang/fr/).
 
-## Non publié
+## [0.12.0] - non publiée
 
 ### Ajouté
+
+- Recettes : les consignes écrites par l’IA sont contrôlées avant d’être montrées (adresses, e-mails, balisage, liste de termes refusés). Un paquet demande au plus 10 générations d’IA par heure ; au-delà, la partie prend ses consignes sans appeler l’IA, avec un message.
 
 - Format de paquet 3 : **recettes**. Une recette décrit un jeu avec les règles d'une famille connue du moteur (aujourd'hui « vote sur consigne ») : textes, règles, écrans par rôle et consignes écrites par l'IA, avec repli obligatoire. Le moteur devient 0.12.0. Le paquet d'exemple `examples/exemple-recette` pèse 1,4 Ko, et le contrôle navigateur `scripts/recette-check-browser.py` joue une partie complète, avec installation par l'API d'administration.
 
@@ -36,6 +38,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 
 ### Modifié
 
+- Recettes, validation : les phases à écran fixe (attente et génération, classement du téléphone) ne se personnalisent plus, et la clé est refusée au lieu d’être ignorée. Un même bloc ne figure qu’une fois par phase, et deux consignes identiques (sans tenir compte de la casse) font refuser le paquet.
+
 - ModelScope (génération d'images) est désactivé par défaut : son service est réservé à un usage non commercial. Il ne s'active que si `MODELSCOPE_ALLOW_NONCOMMERCIAL=1` est défini.
 
 - Budgets des paquets, pour rester petits : archive 8 Mio (16 Mio auparavant), manifeste 8 Ko (64 Ko), définition 256 Ko (1 Mio), image 200 Ko et 1024 px de côté (2048 px). Les données pèsent quelques Ko ; seules les images sont lourdes.
@@ -53,6 +57,11 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 - Textes : les apostrophes sont typographiques (’) dans les textes et les commentaires en français. Le message « Ce n’est pas votre tour. » suit la même règle.
 
 ### Corrigé
+
+- Recettes : un joueur qui quitte en pleine manche ne bloque plus la phase. Quand le dernier joueur attendu part pendant l’écriture ou le vote, la phase suivante s’ouvre tout de suite, et le joueur parti n’apparaît plus dans l’attente ni dans le compte. Ses points restent au classement.
+- Images des paquets : les JPEG et WebP sont contrôlés comme les PNG (côté le plus long au plus 1024 px). Les dimensions sont lues dans l’en-tête, sans décodage.
+- ModelScope dans Docker : la variable `MODELSCOPE_ALLOW_NONCOMMERCIAL` est transmise au conteneur (`compose.yaml`, `compose.dev.yaml`) et documentée dans `.env.example` et le README. Sans elle, ModelScope reste désactivé.
+- Administration : le bouton « Créer une copie modifiable » n’apparaît plus pour une recette, qui ne se copie pas.
 
 - Une recette installée était relue comme un jeu de cartes : sa réinstallation était refusée à tort (« est installé comme jeu de cartes »). Le module stocké est maintenant lu correctement.
 

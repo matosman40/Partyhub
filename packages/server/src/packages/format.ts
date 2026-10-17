@@ -149,7 +149,89 @@ export function pathProblem(name: string, limits: Pick<PackageLimits, 'maxPathLe
   return null;
 }
 
-/** Vérifie la signature d’un fichier image (PNG, JPEG, WebP) et, pour le PNG, ses dimensions. */
+export interface Dimensions {
+  width: number;
+  height: number;
+}
+
+function sizeOf(width: number, height: number): Dimensions | null {
+  return width > 0 && height > 0 ? { width, height } : null;
+}
+
+/** PNG : dimensions dans l’en-tête IHDR, en gros-boutiste, octets 16 à 23. */
+function pngDimensions(view: DataView): Dimensions | null {
+  return sizeOf(view.getUint32(16), view.getUint32(20));
+}
+
+/**
+ * JPEG : on parcourt les segments jusqu’à celui de début de cadre (SOF), qui porte la hauteur et la largeur.
+ * Les octets de remplissage et les marqueurs sans longueur sont sautés.
+ */
+function jpegDimensions(view: DataView): Dimensions | null {
+  let pos = 2;
+  while (pos + 4 <= view.byteLength) {
+    if (view.getUint8(pos) !== 0xff) return null;
+    const marker = view.getUint8(pos + 1);
+    if (marker === 0xff) {
+      pos += 1;
+      continue;
+    }
+    // Fin d’image, ou début des données de pixels avant tout cadre : pas de dimensions.
+    if (marker === 0xd9 || marker === 0xda) return null;
+    if (marker === 0x01 || (marker >= 0xd0 && marker <= 0xd7)) {
+      pos += 2;
+      continue;
+    }
+    const length = view.getUint16(pos + 2);
+    if (length < 2) return null;
+    const isFrame = marker >= 0xc0 && marker <= 0xcf && marker !== 0xc4 && marker !== 0xc8 && marker !== 0xcc;
+    if (isFrame) return sizeOf(view.getUint16(pos + 7), view.getUint16(pos + 5));
+    pos += 2 + length;
+  }
+  return null;
+}
+
+/** WebP : dimensions dans le premier morceau (VP8, VP8L ou VP8X), selon son format de codage. */
+function webpDimensions(view: DataView): Dimensions | null {
+  const chunk = String.fromCharCode(view.getUint8(12), view.getUint8(13), view.getUint8(14), view.getUint8(15));
+  if (chunk === 'VP8 ') {
+    return sizeOf(view.getUint16(26, true) & 0x3fff, view.getUint16(28, true) & 0x3fff);
+  }
+  if (chunk === 'VP8L') {
+    if (view.getUint8(20) !== 0x2f) return null;
+    const bits = view.getUint32(21, true);
+    return sizeOf((bits & 0x3fff) + 1, ((bits >>> 14) & 0x3fff) + 1);
+  }
+  if (chunk === 'VP8X') {
+    const width = 1 + (view.getUint8(24) | (view.getUint8(25) << 8) | (view.getUint8(26) << 16));
+    const height = 1 + (view.getUint8(27) | (view.getUint8(28) << 8) | (view.getUint8(29) << 16));
+    return sizeOf(width, height);
+  }
+  return null;
+}
+
+/**
+ * Dimensions d’une image, lues dans ses en-têtes sans la décoder (PNG, JPEG, WebP). Null quand elles sont
+ * introuvables, nulles, ou quand le fichier est tronqué.
+ */
+export function imageDimensions(data: Uint8Array): Dimensions | null {
+  const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
+  try {
+    if (data[0] === 0x89 && data[1] === 0x50 && data[2] === 0x4e && data[3] === 0x47) return pngDimensions(view);
+    if (data[0] === 0xff && data[1] === 0xd8 && data[2] === 0xff) return jpegDimensions(view);
+    if (data[0] === 0x52 && data[1] === 0x49 && data[2] === 0x46 && data[3] === 0x46) return webpDimensions(view);
+    return null;
+  } catch {
+    // Lecture hors du fichier : en-tête tronqué.
+    return null;
+  }
+}
+
+/**
+ * Vérifie la signature d’une image (PNG, JPEG, WebP), puis ses dimensions. Le côté le plus long est borné pour
+ * les trois formats : une image très haute en définition pèse peu sur le disque, mais coûte cher à décoder
+ * dans le navigateur.
+ */
 export function imageProblem(data: Uint8Array, ext: string, limits: PackageLimits): string | null {
   const isPng = data[0] === 0x89 && data[1] === 0x50 && data[2] === 0x4e && data[3] === 0x47;
   const isJpeg = data[0] === 0xff && data[1] === 0xd8 && data[2] === 0xff;
@@ -164,17 +246,19 @@ export function imageProblem(data: Uint8Array, ext: string, limits: PackageLimit
     data[11] === 0x50;
   if (ext === '.png') {
     if (!isPng) return 'fichier .png invalide';
-    const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
     if (data.length < 24) return 'fichier .png tronqué';
-    const width = view.getUint32(16);
-    const height = view.getUint32(20);
-    if (width === 0 || height === 0 || width > limits.maxImageSide || height > limits.maxImageSide) {
-      return `image trop grande (côté maximal ${limits.maxImageSide} px)`;
-    }
+  } else if (ext === '.jpg' || ext === '.jpeg') {
+    if (!isJpeg) return 'fichier JPEG invalide';
+  } else if (ext === '.webp') {
+    if (!isWebp) return 'fichier WebP invalide';
+  } else {
     return null;
   }
-  if (ext === '.jpg' || ext === '.jpeg') return isJpeg ? null : 'fichier JPEG invalide';
-  if (ext === '.webp') return isWebp ? null : 'fichier WebP invalide';
+  const size = imageDimensions(data);
+  if (!size) return 'dimensions de l’image illisibles';
+  if (size.width > limits.maxImageSide || size.height > limits.maxImageSide) {
+    return `image trop grande (côté maximal ${limits.maxImageSide} px)`;
+  }
   return null;
 }
 

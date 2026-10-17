@@ -114,3 +114,34 @@ describe('vocabulaire fermé', () => {
     expect(RECIPE_IDS).toEqual(['vote-sur-consigne']);
   });
 });
+
+describe('règles ajoutées après revue', () => {
+  it('refuse de personnaliser une phase à écran fixe, sur chaque écran', () => {
+    expect(issuesOf({ ...base, ecrans: { tv: { pret: ['titre'] } } }).join(' ')).toContain('ecrans.tv.pret');
+    expect(issuesOf({ ...base, ecrans: { tv: { generation: ['titre'] } } }).join(' ')).toContain('écran fixe');
+    expect(issuesOf({ ...base, ecrans: { joueur: { final: ['classement'] } } }).join(' ')).toContain('écran fixe');
+    expect(issuesOf({ ...base, ecrans: { joueur: { pret: ['titre'] } } }).join(' ')).toContain('écran fixe');
+  });
+
+  it('accepte la fin de partie personnalisée sur l’écran principal', () => {
+    const def = recipeDefinitionSchema.parse({ ...base, ecrans: { tv: { final: ['titre', 'classement'] } } });
+    expect(resolveScreen(def, 'tv', 'final')).toEqual(['titre', 'classement']);
+  });
+
+  it('refuse un même bloc deux fois dans une phase', () => {
+    const issues = issuesOf({
+      ...base,
+      ecrans: { joueur: { ecriture: ['saisie-texte', 'consigne', 'saisie-texte'] } },
+    });
+    expect(issues).toHaveLength(1);
+    expect(issues[0]).toContain('ecrans.joueur.ecriture.2');
+    expect(issues[0]).toContain('ne figure qu’une fois par phase');
+  });
+
+  it('refuse deux consignes identiques, sans tenir compte de la casse', () => {
+    const issues = issuesOf({ ...base, consignes: ['Le plus vite', 'le PLUS vite', 'Le plus lent'] });
+    expect(issues).toHaveLength(1);
+    expect(issues[0]).toContain('consignes.1');
+    expect(issues[0]).toContain('Consigne en double');
+  });
+});

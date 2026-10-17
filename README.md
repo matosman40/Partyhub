@@ -194,6 +194,7 @@ Les images (portraits des personnages, fonds de décor) sont générées par une
 | ----------------------------------------------- | ----------------------------- | ----------------------------------------------------------------------------------------- |
 | `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN` | vide                          | Cloudflare Workers AI (FLUX.1 schnell), gratuit dans la limite d'un quota quotidien.      |
 | `MODELSCOPE_API_KEY`                            | vide                          | ModelScope (Qwen-Image). Usage non commercial uniquement, avec un compte Alibaba vérifié. |
+| `MODELSCOPE_ALLOW_NONCOMMERCIAL`                | vide (désactivé)              | Mettre `1` pour déclarer un usage non commercial. Sans cela, ModelScope reste désactivé.  |
 | `IMAGE_PROVIDERS`                               | ceux dont la clé est présente | Ordre d'appel, séparé par des virgules (ex. `cloudflare,modelscope`).                     |
 | `IMAGE_MAX_PER_DAY`                             | `150`                         | Nombre maximal d'images par jour, tous fournisseurs confondus (1 à 100000).               |
 | `IMAGE_TIMEOUT_MS`                              | `60000`                       | Délai maximal pour une image, de 5000 à 300000 ms.                                        |

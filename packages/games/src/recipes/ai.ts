@@ -1,6 +1,7 @@
 import type { GameContext, GameJob, JobOutcome, RecipeDefinition } from '@partyhub/shared';
 import { askAiJson } from '../common/ai-json.js';
 import { shuffle } from '../common/engine.js';
+import { isAcceptableConsigne } from './moderation.js';
 
 /**
  * Consignes écrites par l'IA pour une recette. Le texte du paquet et le thème sont des données : ils
@@ -44,6 +45,7 @@ export function validateConsignes(raw: unknown, nombre: number): string[] {
     if (typeof item !== 'string') continue;
     const text = item.trim();
     if (text.length < 3 || text.length > 90 || /[\r\n]/.test(text)) continue;
+    if (!isAcceptableConsigne(text)) continue;
     const key = text.toLocaleLowerCase('fr');
     if (seen.has(key)) continue;
     seen.add(key);
