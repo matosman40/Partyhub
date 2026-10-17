@@ -166,6 +166,14 @@
   background: rgba(63, 245, 224, 0.12);
 }
 
+/* Étiquette « (la vôtre) » sur une proposition : reste sur une seule ligne, même sur téléphone. */
+.own-tag {
+  flex: none;
+  white-space: nowrap;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
 .roster {
   display: flex;
   flex-wrap: wrap;

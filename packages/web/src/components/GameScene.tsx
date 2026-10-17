@@ -755,7 +755,7 @@ const phrasesTrous: Scene = (c) => (
         stroke={c.edge}
         strokeWidth={6}
         strokeDasharray="36 22"
-        opacity={0.45}
+        opacity={0.22}
       />
     ))}
     {Array.from({ length: 14 }, (_, i) => {

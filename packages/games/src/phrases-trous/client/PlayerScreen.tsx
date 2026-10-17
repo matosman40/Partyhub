@@ -146,7 +146,7 @@ export function PhrasesPlayer({ publicState: pub, playerState: me, now, send }: 
             >
               <span className="letter">{LETTERS[i]}</span>
               {o.text}
-              {ownOption === i && <span className="muted"> (la vôtre)</span>}
+              {ownOption === i && <span className="own-tag"> (la vôtre)</span>}
             </button>
           ))}
         </div>

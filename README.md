@@ -9,7 +9,8 @@ Sur une installation neuve, les jeux intégrés sont désactivés : l'administra
 
 | Jeu                        | Catégorie | Principe                                                                          |
 | -------------------------- | --------- | --------------------------------------------------------------------------------- |
-| 🧠 **Quiz Party**          | Quiz      | Questions à choix multiples, points et bonus de rapidité.                         |
+| 🧠 **Quiz Party**          | Quiz      | Questions à choix multiples, points et bonus de rapidité. Les mots-clés de chacun peuvent devenir les questions (IA). |
+| 🧩 **Phrases à trous**     | Quiz      | L’IA écrit des phrases à trou. Chacun pose une carte dans le trou, puis tout le monde vote anonymement. |
 | 💭 **Association express** | Soirée    | Écrivez le premier mot qui vous vient, puis votez anonymement pour le plus drôle. |
 | 👉 **Plutôt qui ?**        | Soirée    | « Qui est le plus susceptible de… ? » Votez en secret et suivez la majorité.      |
 | 🕵️ **L'Imposteur**         | Soirée    | Un imposteur ignore le mot secret : donnez des indices, puis démasquez-le.        |
