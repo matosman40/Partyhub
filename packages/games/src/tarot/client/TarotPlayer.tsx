@@ -226,7 +226,7 @@ export function TarotPlayer({ publicState, playerState, playerId, now, send }: P
 
           {pub.phase === 'play' && (
             <div className="table-mat tarot-phone-trick">
-              <div className="tarot-strip" aria-label="Pli en cours">
+              <div className="tarot-strip" role="group" aria-label="Pli en cours">
                 {pub.order.map((id) => {
                   const card = pub.trick.find((p) => p.playerId === id)?.cardId;
                   return (

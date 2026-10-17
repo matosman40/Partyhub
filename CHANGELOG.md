@@ -35,6 +35,12 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 - Statistiques des profils : un jeu renommé par l’administration s’y affiche sous son nouveau nom, et non plus sous son nom d’origine.
 - Réglages de Quiz Party et des Phrases à trous : un champ numérique vidé est ramené à sa borne minimale à la perte de focus, au lieu d’envoyer 0 au serveur.
 - Rejouer : pendant un championnat, le bouton devient « Manche suivante : 2 sur 3 », puis « Nouveau championnat » une fois le titre attribué. Rejouer ramène toujours au salon, où l’hôte lance la manche avec « Lancer la partie ». Le salon affiche la progression du championnat.
+- Accessibilité des vues de jeu : `scripts/a11y-games-browser.py` joue chaque jeu en salle d’entraînement (les robots jouent) et audite l’écran TV et le téléphone avec axe-core (WCAG 2 niveaux A et AA), au salon puis à 2, 5, 9 et 14 secondes de la partie. Le script échoue sur une violation grave ou critique, ou sur une erreur JavaScript. La CI le lance après l’audit des pages.
+- Garde-fou d’accessibilité (`aria-roles.test.ts`) : un élément générique (div, span, p) ne porte pas de nom (`aria-label`) sans rôle explicite.
+
+### Corrigé
+
+- Accessibilité des vues de jeu : Sudoku, Taquin et Mots croisés déclaraient une grille (`role="grid"`) sans les cellules ni la navigation attendues ; ce sont désormais des groupes nommés. Solitaire annonce la carte cachée comme une image. Tarot : la main est accessible au clavier et le pli en cours est nommé. Poker, Rami 51, Président, Cartes, Promoteur, Plateau, Phrases à trous et Aventure : éléments nommés sans rôle, désormais annoncés comme images, groupes ou jauges. Administration (webcam, niveaux des appareils) et écran des appareils corrigés de la même façon.
 
 ## [0.11.0] - 2026-10-17
 

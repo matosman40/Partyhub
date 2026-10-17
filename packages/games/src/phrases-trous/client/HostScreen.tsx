@@ -124,7 +124,7 @@ function Sentence({ sentence }: { sentence: string }) {
   return (
     <h2 className="question-title phrase-sentence">
       {parts[0]}
-      <span className="hole" aria-label="Trou à compléter">
+      <span className="hole" role="img" aria-label="Trou à compléter">
         {'      '}
       </span>
       {parts.slice(1).join(BLANK)}

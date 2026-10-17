@@ -96,7 +96,7 @@ export function PresidentHost({ publicState, now }: HostViewProps) {
 
       <div className="pres-table table-mat">
         {pile.length > 0 ? (
-          <div className="pres-pile" aria-label={`Pli : ${pub.pileCount} carte(s)`}>
+          <div className="pres-pile" role="img" aria-label={`Pli : ${pub.pileCount} carte(s)`}>
             {pile.map((c, i) => (
               <div
                 key={c.uid}

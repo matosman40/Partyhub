@@ -455,7 +455,7 @@ function BoardGameEditor({
             })}
           </tbody>
         </table>
-        <div className="bd-track" aria-label="Aperçu du parcours">
+        <div className="bd-track" role="group" aria-label="Aperçu du parcours">
           {cells.map((cell, i) => (
             <div
               key={i}

@@ -121,7 +121,11 @@ export function ObserverPage() {
             <PlayerAvatar avatar={p.avatar} name={p.name} size="sm" />
             <span className="name">{p.name}</span>
             {p.devices.length > 0 && (
-              <span className="device-icons" aria-label={p.devices.map((d) => DEVICE_KIND_LABELS[d]).join(', ')}>
+              <span
+                className="device-icons"
+                role="img"
+                aria-label={p.devices.map((d) => DEVICE_KIND_LABELS[d]).join(', ')}
+              >
                 {p.devices.map((d) => DEVICE_KIND_ICONS[d]).join(' ')}
               </span>
             )}

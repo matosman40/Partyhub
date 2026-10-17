@@ -27,7 +27,7 @@ interface Selection {
 
 function CardFace({ card, className = '' }: { card: CardPub; className?: string }) {
   if (!card.up || card.rank === undefined || card.suit === undefined) {
-    return <span className={`solo-card is-back ${className}`} aria-label="Carte cachée" />;
+    return <span className={`solo-card is-back ${className}`} role="img" aria-label="Carte cachée" />;
   }
   return (
     <span className={`solo-card is-up ${isRed(card.suit) ? 'is-red' : ''} ${className}`}>

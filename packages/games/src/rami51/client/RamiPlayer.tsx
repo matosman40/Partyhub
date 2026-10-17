@@ -290,7 +290,7 @@ export function RamiPlayer({ publicState, playerState, playerId, send }: PlayerV
 
       <div className="table-mat hand-mat">
         <div className="cards-table-row rami-stock-row">
-          <div className="rami-back" aria-label={`${pub.drawCount} cartes en pioche`}>
+          <div className="rami-back" role="img" aria-label={`${pub.drawCount} cartes en pioche`}>
             <CardFace def={RAMI_DEFINITION} back />
           </div>
           <div className="cards-top">

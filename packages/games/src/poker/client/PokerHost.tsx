@@ -65,7 +65,7 @@ export function PokerHost({ publicState, now }: HostViewProps) {
 
       <div className="poker-table">
         <div className="poker-felt">
-          <div className="poker-board" aria-label="Cartes communes">
+          <div className="poker-board" role="group" aria-label="Cartes communes">
             {[0, 1, 2, 3, 4].map((i) => {
               const card = pub.board[i];
               return card ? <PokerCardFace key={i} card={card} /> : <PokerCardFace key={i} empty />;
@@ -98,7 +98,7 @@ export function PokerHost({ publicState, now }: HostViewProps) {
           return (
             <div key={pid} className={cls} data-seat={pid} style={{ left: `${pos.left}%`, top: `${pos.top}%` }}>
               {pub.dealerId === pid && (
-                <span className="poker-dealer" aria-label="Bouton">
+                <span className="poker-dealer" role="img" aria-label="Bouton">
                   D
                 </span>
               )}

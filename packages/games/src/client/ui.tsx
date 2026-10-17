@@ -170,7 +170,7 @@ export function PlayingCard({ card, label }: { card: CardView | null; label?: st
   const rank = FACE[card.rank] ?? String(card.rank);
   const red = card.suit === '♥' || card.suit === '♦';
   return (
-    <div className={`playing-card${red ? ' red' : ''}`} aria-label={label ?? `${rank} de ${card.suit}`}>
+    <div className={`playing-card${red ? ' red' : ''}`} role="img" aria-label={label ?? `${rank} de ${card.suit}`}>
       <span className="corner top">
         {rank}
         <br />

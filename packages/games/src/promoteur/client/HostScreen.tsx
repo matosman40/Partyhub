@@ -87,7 +87,7 @@ export function PromoteurHost({ publicState, now }: HostViewProps) {
                 </span>
               )}
               {tile.houses > 0 && (
-                <span className="pm-houses" aria-label={`${tile.houses} maison(s)`}>
+                <span className="pm-houses" role="img" aria-label={`${tile.houses} maison(s)`}>
                   {'●'.repeat(tile.houses)}
                 </span>
               )}
@@ -105,7 +105,12 @@ export function PromoteurHost({ publicState, now }: HostViewProps) {
           {pub.phase === 'roll' && <p className="muted">À lui (ou elle) de lancer les dés</p>}
 
           {pub.dice && (
-            <div className="pm-dice" key={pub.lastEvent} aria-label={`Dés : ${pub.dice[0]} et ${pub.dice[1]}`}>
+            <div
+              className="pm-dice"
+              key={pub.lastEvent}
+              role="img"
+              aria-label={`Dés : ${pub.dice[0]} et ${pub.dice[1]}`}
+            >
               <span className="pm-die">{pub.dice[0]}</span>
               <span className="pm-die">{pub.dice[1]}</span>
             </div>

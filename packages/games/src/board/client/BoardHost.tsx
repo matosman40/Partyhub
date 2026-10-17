@@ -56,7 +56,7 @@ export function BoardHost({ publicState, now }: HostViewProps) {
           <div className="bd-dice" aria-live="polite">
             <div className="bd-faces">
               {pub.lastRoll.dice.map((d, i) => (
-                <span key={i} className="bd-die" aria-label={`Dé : ${d}`}>
+                <span key={i} className="bd-die" role="img" aria-label={`Dé : ${d}`}>
                   {faceOf(d)}
                 </span>
               ))}

@@ -108,14 +108,14 @@ export function WebcamPhoto({ onCapture, onCancel }: { onCapture: (dataUrl: stri
   }
 
   return (
-    <div className="webcam stack" aria-label="Photo avec la webcam">
+    <div className="webcam stack" role="group" aria-label="Photo avec la webcam">
       <div className="webcam-frame" aria-live="polite">
         {status !== 'error' && (
           <video ref={videoRef} className="webcam-video" autoPlay muted playsInline aria-label="Aperçu de la webcam" />
         )}
         {status === 'starting' && <p className="webcam-note">Ouverture de la caméra…</p>}
         {status === 'countdown' && (
-          <p className="webcam-count" aria-label={`Photo dans ${count}`}>
+          <p className="webcam-count" role="status" aria-label={`Photo dans ${count}`}>
             {count}
           </p>
         )}

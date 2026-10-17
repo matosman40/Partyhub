@@ -68,7 +68,7 @@ export function EntryPreview({ type, text, answer }: { type: BankType; text: str
   const info = BANK_TYPE_INFO[type];
   const parts = text.split('___');
   return (
-    <div className="boum-preview" aria-label="Aperçu">
+    <div className="boum-preview" role="group" aria-label="Aperçu">
       <p className="boum-preview-text">
         {type === 'phrase_trous'
           ? parts.map((part, i) => (

@@ -163,7 +163,14 @@ export function DeviceChooser({ compact = false }: Props) {
       {micChosenMissing && (
         <p className="muted small">Le micro choisi n’est plus branché : l’appareil par défaut est utilisé.</p>
       )}
-      <div className="devtest-meter" aria-label="Niveau du micro">
+      <div
+        className="devtest-meter"
+        role="meter"
+        aria-label="Niveau du micro"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(level * 100)}
+      >
         <span style={{ width: `${Math.round(level * 100)}%` }} />
       </div>
       <div className="devtest-actions">

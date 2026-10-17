@@ -33,7 +33,7 @@ export function TaquinView({ board, disabled, send }: SoloBoardProps) {
       <div
         className="solo-taquin-grid"
         style={{ gridTemplateColumns: `repeat(${size}, minmax(0, 1fr))` }}
-        role="grid"
+        role="group"
         aria-label="Taquin"
       >
         {view.tiles.map((value, i) => {
@@ -42,7 +42,6 @@ export function TaquinView({ board, disabled, send }: SoloBoardProps) {
             <button
               key={i}
               type="button"
-              role="gridcell"
               className={`solo-tile ${value === 0 ? 'is-blank' : ''} ${movable ? 'is-movable' : ''}`}
               disabled={disabled || value === 0}
               aria-label={value === 0 ? 'Case vide' : `Tuile ${value}`}

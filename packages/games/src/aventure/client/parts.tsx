@@ -306,7 +306,7 @@ export function ResolutionCard({ r }: { r: Resolution }) {
         {r.characterName} tente « {r.choiceLabel} »
       </p>
       <p className="aventure-dice">
-        <span className="aventure-roll" aria-label={`Dé : ${r.roll}`}>
+        <span className="aventure-roll" role="img" aria-label={`Dé : ${r.roll}`}>
           {r.roll}
         </span>
         <span className="aventure-math">

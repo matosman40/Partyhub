@@ -148,7 +148,14 @@ function MicPanel() {
     <section className="card stack devtest-card" aria-labelledby="devtest-mic">
       <h2 id="devtest-mic">Micro</h2>
       <p className="muted small">Autorisation : {permission}</p>
-      <div className="devtest-meter" aria-label="Niveau du micro">
+      <div
+        className="devtest-meter"
+        role="meter"
+        aria-label="Niveau du micro"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(level * 100)}
+      >
         <span style={{ width: `${Math.round(level * 100)}%` }} />
       </div>
       <div className="devtest-actions">
@@ -403,7 +410,14 @@ function MotionPanel() {
           <p className="small">
             Secousses : <strong>{shakes}</strong>
           </p>
-          <div className="devtest-meter" aria-label="Énergie des secousses">
+          <div
+            className="devtest-meter"
+            role="meter"
+            aria-label="Énergie des secousses"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={Math.round(energy * 100)}
+          >
             <span style={{ width: `${Math.round(energy * 100)}%` }} />
           </div>
         </>

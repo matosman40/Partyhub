@@ -82,7 +82,7 @@ export function CardsHost({ publicState, now }: HostViewProps) {
                 <span className="seat-name">{name}</span>
                 <span className="seat-score">{pub.scores[id] ?? 0} pts</span>
               </div>
-              <span className="seat-count" aria-label={`${count} cartes en main`}>
+              <span className="seat-count" role="img" aria-label={`${count} cartes en main`}>
                 <span className="mini-stack">
                   {Array.from({ length: Math.min(count, 5) }).map((_, i) => (
                     <span key={i} className="mini-back">
@@ -98,7 +98,7 @@ export function CardsHost({ publicState, now }: HostViewProps) {
       </div>
 
       <div className="cards-felt table-mat">
-        <div className="cards-pile" aria-label={`${pub.drawCount} cartes en pioche`}>
+        <div className="cards-pile" role="img" aria-label={`${pub.drawCount} cartes en pioche`}>
           <div className="pile-back">
             <CardFace def={pub.def} back />
           </div>

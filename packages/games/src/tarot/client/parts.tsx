@@ -72,7 +72,7 @@ export function HandRows({
 }: HandRowsProps) {
   const rows = handRows(ids);
   return (
-    <div className="tarot-hand">
+    <div className="tarot-hand" role="group" aria-label="Votre main" tabIndex={0}>
       {rows.map((row, index) => (
         <HandFan
           key={index}

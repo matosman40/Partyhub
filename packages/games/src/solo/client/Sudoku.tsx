@@ -63,7 +63,7 @@ export function SudokuView({ board, disabled, send }: SoloBoardProps) {
 
   return (
     <div className="solo-sudoku">
-      <div className="solo-sudoku-grid" role="grid" aria-label="Grille de sudoku">
+      <div className="solo-sudoku-grid" role="group" aria-label="Grille de sudoku">
         {view.grid.map((value, i) => {
           const r = Math.floor(i / 9);
           const c = i % 9;
@@ -81,7 +81,6 @@ export function SudokuView({ board, disabled, send }: SoloBoardProps) {
             <button
               key={i}
               type="button"
-              role="gridcell"
               className={classes}
               aria-label={`Ligne ${r + 1}, colonne ${c + 1}${value ? `, ${value}` : ', vide'}`}
               disabled={disabled}
