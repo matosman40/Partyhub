@@ -16,6 +16,8 @@ import {
   lobbyMoodSchema,
   lobbyPositionSchema,
   readySchema,
+  SENSOR_MAX_PER_SECOND,
+  sensorSchema,
   reactionSchema,
   voicePlaySchema,
   PROFILE_SESSION_EXPIRED,
@@ -201,6 +203,8 @@ export class RealtimeHub {
     const reactionLimiter = new RateLimiter(REACTIONS_PER_WINDOW, CHAT_WINDOW_MS);
     // Déplacements : jusqu'à 30 par seconde (glisser suit le doigt) ; émotions : 6 toutes les 4 secondes.
     const lobbyMoveLimiter = new RateLimiter(30, 1000);
+    // Capteurs : débit propre à la socket (pas de compte dans les commandes), relayé sans accusé.
+    const sensorLimiter = new RateLimiter(SENSOR_MAX_PER_SECOND, 1000);
     const lobbyMoodLimiter = new RateLimiter(() => 6 * this.cadence(), 4000);
     // Voix : une toutes les quelques secondes et par socket ; la salle a aussi sa file d'attente côté écran.
     // Le mode test multiplie ces deux cadences par son facteur.
@@ -500,6 +504,23 @@ export class RealtimeHub {
           .emit('room:lobby-position', { playerId: current.playerId, position: moved.position });
       }
       ack(moved.ok ? { ok: true } : moved);
+    });
+
+    socket.on('player:sensor', (p) => {
+      const current = this.playerRoomOf(socket);
+      if (!current || !current.room.acceptsSensors(current.playerId)) return;
+      // Le débit est compté avant la lecture du message : un flot de messages, valides ou non, reste borné.
+      if (!sensorLimiter.take()) return;
+      const parsed = sensorSchema.safeParse(p);
+      if (!parsed.success) return;
+      const screens = current.room.screenSocketIds();
+      if (screens.length === 0) return;
+      this.io?.to(screens).emit('room:sensor', {
+        playerId: current.playerId,
+        x: parsed.data.x,
+        y: parsed.data.y,
+        energy: parsed.data.energy,
+      });
     });
 
     socket.on('player:lobby-mood', (p, ack) => {

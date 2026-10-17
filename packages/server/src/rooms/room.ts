@@ -12,7 +12,9 @@ import type {
   HostRoomView,
   JobOutcome,
   LobbyView,
+  GameImages,
   PlayerRef,
+  ProfileDataStore,
   PlayerRoomView,
   PublicPlayer,
   RoomStatus,
@@ -54,6 +56,10 @@ export interface RoomEnv {
   notice: (gameId: string) => GameNotice;
   /** Client d'IA générative, absent si aucune clé n'est configurée. Seul le lanceur de travaux s'en sert. */
   ai?: AiClient;
+  /** Données par profil, par jeu (personnages gardés d'une partie à l'autre). */
+  gameData?: (gameId: string) => ProfileDataStore;
+  /** Images générées (portraits, fonds), absent si aucun fournisseur d'images n'est configuré. */
+  images?: GameImages;
 }
 
 export interface RoomHooks {
@@ -139,6 +145,8 @@ export class Room {
       cancel: (key) => this.cancelTimer(key),
       connectedPlayerIds: () => [...this.players.values()].filter((p) => p.bot || p.sockets.size > 0).map((p) => p.id),
       ...(env.ai ? { ai: env.ai } : {}),
+      ...(env.gameData ? { profileData: env.gameData(module.manifest.id) } : {}),
+      ...(env.images?.available() ? { images: env.images } : {}),
     };
     this.state = module.initialize(this.settings, [], this.ctx);
   }
@@ -208,6 +216,14 @@ export class Room {
       createdAt: new Date(this.createdAt).toISOString(),
       lastActivity: new Date(this.lastActivity).toISOString(),
     };
+  }
+
+  /**
+   * Vrai si les capteurs de ce joueur sont relayés : une partie en cours et un joueur présent.
+   * Hors partie, rien n'est relayé (le salon n'a pas besoin de mouvements).
+   */
+  acceptsSensors(playerId: string): boolean {
+    return this.status === 'in_game' && this.players.has(playerId);
   }
 
   /** Sockets des écrans principaux (et seulement eux) : les voix des joueurs y sont jouées. */
@@ -318,7 +334,7 @@ export class Room {
   // ---------------------------------------------------------------------------
 
   private playerRefs(): PlayerRef[] {
-    return [...this.players.values()].map((p) => ({ id: p.id, name: p.name }));
+    return [...this.players.values()].map((p) => ({ id: p.id, name: p.name, profileId: p.profileId }));
   }
 
   private refreshStatus(): void {
@@ -379,7 +395,11 @@ export class Room {
       avatar: profile?.avatar ?? guestAvatar(finalName),
     };
     this.players.set(player.id, player);
-    this.state = this.module.onPlayerJoin(this.state, { id: player.id, name: player.name }, this.ctx);
+    this.state = this.module.onPlayerJoin(
+      this.state,
+      { id: player.id, name: player.name, profileId: player.profileId },
+      this.ctx,
+    );
     this.refreshStatus();
     this.touch();
     this.hooks.onChange(this);
