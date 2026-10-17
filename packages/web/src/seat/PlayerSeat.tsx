@@ -6,11 +6,12 @@ import {
   type LobbyMoodChoice,
   type LobbyPosition,
   type PlayerRoomView,
+  type SensorSample,
 } from '@partyhub/shared';
 import { createSocket, type AppSocket } from '../realtime.js';
 import { newId } from '../api.js';
 import { viewsFor } from '../games.js';
-import { AvatarsContext } from '@partyhub/games/client';
+import { AvatarsContext, SensorSenderContext } from '@partyhub/games/client';
 import { PlayerAvatar } from '../components/PlayerAvatar.js';
 import { ChatPanel, EmoteBar } from '../components/Social.js';
 import { Link } from 'react-router-dom';
@@ -19,6 +20,7 @@ import { CameraBubble } from './CameraBubble.js';
 import { ExpressionRow } from './ExpressionRow.js';
 import { CreateProfileForm } from '../profile/CreateProfileForm.js';
 import { ConnectingNotice } from '../components/ConnectingNotice.js';
+import { ACK_TIMEOUT_MS, canSend, NO_ANSWER_ERROR, OFFLINE_ACTION_ERROR, useConnection } from '../connection.js';
 import { LobbyHeads, LobbyMoodBar, LobbyPlateau } from '../components/LobbyPlateau.js';
 import { TestModeBadge } from '../components/TestModeBadge.js';
 import { poseOf, useLobbyMoods } from '../components/useLobbyMoods.js';
@@ -122,6 +124,9 @@ export function PlayerSeat({
   const [error, setError] = useState<string | null>(null);
   const [socialError, setSocialError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const { connected } = useConnection(socket);
+  // Case « Je suis prêt » : le choix s'affiche tout de suite, le salon le confirme ensuite.
+  const [readyPending, setReadyPending] = useState<boolean | null>(null);
   const [ended, setEnded] = useState<string | null>(null);
   // Jeton d'hôte de cet appareil (transféré par l'écran hôte) : le siège reste joueur, et ouvre
   // en plus une connexion d'hôte pour lancer la partie depuis ce téléphone.
@@ -220,6 +225,7 @@ export function PlayerSeat({
       setError('Entrez un pseudo.');
       return;
     }
+    if (!canSend(socket, setError)) return;
     setBusy(true);
     setError(null);
     socket.emit(
@@ -242,14 +248,32 @@ export function PlayerSeat({
     );
   }
 
+  // Le choix en attente est abandonné dès que le salon envoie l'état réel de la case.
+  useEffect(() => {
+    setReadyPending(null);
+  }, [view?.you.ready]);
+
   function toggleReady() {
     if (!view) return;
-    socket.emit('player:ready', { ready: !view.you.ready }, (res) => {
-      if (!res.ok) setError(res.error);
+    if (!connected) {
+      setError(OFFLINE_ACTION_ERROR);
+      return;
+    }
+    const next = !(readyPending ?? view.you.ready);
+    setReadyPending(next);
+    socket.timeout(ACK_TIMEOUT_MS).emit('player:ready', { ready: next }, (err, res) => {
+      if (err) {
+        setReadyPending(null);
+        setError(NO_ANSWER_ERROR);
+      } else if (!res.ok) {
+        setReadyPending(null);
+        setError(res.error);
+      }
     });
   }
 
   function leave() {
+    if (!canSend(socket, setError)) return;
     socket.emit('player:leave', (res) => {
       if (!res.ok) {
         setError(res.error);
@@ -262,27 +286,52 @@ export function PlayerSeat({
     });
   }
 
+  // Une action ne part qu'en ligne : rien n'est gardé pour plus tard. Gardée pendant une coupure, elle arriverait
+  // avant la reconnexion et le salon la refuserait avec un message trompeur. Sans réponse dans le délai, le
+  // bouton redevient utilisable.
   const send = (type: string, payload?: unknown) =>
     new Promise<{ ok: boolean; error?: string }>((resolve) => {
-      socket.emit('player:action', { commandId: newId(), type, payload }, (res) =>
-        resolve(res.ok ? { ok: true } : { ok: false, error: res.error }),
-      );
+      if (!socket.connected) {
+        resolve({ ok: false, error: OFFLINE_ACTION_ERROR });
+        return;
+      }
+      socket.timeout(ACK_TIMEOUT_MS).emit('player:action', { commandId: newId(), type, payload }, (err, res) => {
+        if (err) resolve({ ok: false, error: NO_ANSWER_ERROR });
+        else resolve(res.ok ? { ok: true } : { ok: false, error: res.error });
+      });
     });
 
   function sendChat(text: string) {
     setSocialError(null);
+    if (!connected) {
+      setSocialError(OFFLINE_ACTION_ERROR);
+      return;
+    }
     socket.emit('player:chat', { text }, (res) => {
       if (!res.ok) setSocialError(res.error);
     });
   }
 
+  /**
+   * Capteurs du téléphone : relayés à l'écran pendant la partie seulement (le serveur filtre le reste).
+   * Volatile : un échantillon n'est pas gardé pendant une coupure, il serait périmé au retour.
+   */
+  function sendSensor(sample: SensorSample) {
+    socket.volatile.emit('player:sensor', sample);
+  }
+
   function sendLobbyMove(position: LobbyPosition) {
+    if (!connected) return;
     // Les refus de déplacement (débit, fin du salon) ne sont pas affichés : la place revient d'elle-même.
     socket.emit('player:lobby-move', position, () => undefined);
   }
 
   function sendLobbyMood(choice: LobbyMoodChoice) {
     setSocialError(null);
+    if (!connected) {
+      setSocialError(OFFLINE_ACTION_ERROR);
+      return;
+    }
     socket.emit('player:lobby-mood', choice, (res) => {
       if (!res.ok) setSocialError(res.error);
     });
@@ -290,6 +339,10 @@ export function PlayerSeat({
 
   function sendReaction(emoji: string) {
     setSocialError(null);
+    if (!connected) {
+      setSocialError(OFFLINE_ACTION_ERROR);
+      return;
+    }
     socket.emit('player:reaction', { emoji }, (res) => {
       if (!res.ok) setSocialError(res.error);
     });
@@ -350,6 +403,7 @@ export function PlayerSeat({
   const { lobby, you, game } = view;
   const inLobby = lobby.status === 'waiting' || lobby.status === 'full';
   const views = viewsFor(lobby.game.id);
+  const readyNow = readyPending ?? you.ready;
 
   const avatars = Object.fromEntries(lobby.players.map((p) => [p.name, p.avatar]));
   const drawer = (
@@ -390,6 +444,7 @@ export function PlayerSeat({
   function claimHost(e: FormEvent) {
     e.preventDefault();
     setClaimError(null);
+    if (!canSend(socket, setClaimError)) return;
     socket.emit('host:claim', { code, handoffCode: claimCode.trim() }, (res) => {
       if (!res.ok) {
         setClaimError(res.error);
@@ -407,13 +462,13 @@ export function PlayerSeat({
   }
 
   function startAsHost() {
-    if (!hostSocket) return;
+    if (!hostSocket || !canSend(hostSocket, setError)) return;
     hostSocket.emit('host:start', (res) => setError(res.ok ? null : res.error));
   }
 
   /** Commande d'hôte depuis ce téléphone (même règles que l'écran TV : elles passent par la connexion d'hôte). */
   function hostCommand(event: 'host:next' | 'host:end' | 'host:replay' | 'host:addBot') {
-    if (!hostSocket) return;
+    if (!hostSocket || !canSend(hostSocket, setError)) return;
     const done = (res: { ok: true } | { ok: false; error: string }) => setError(res.ok ? null : res.error);
     if (event === 'host:next') hostSocket.emit('host:next', done);
     else if (event === 'host:end') hostSocket.emit('host:end', done);
@@ -428,6 +483,12 @@ export function PlayerSeat({
         <span className="name">{you.name}</span>
         <span className="muted small">Salle {lobby.code}</span>
       </div>
+
+      {!connected && (
+        <p className="notice" role="status">
+          Connexion perdue. Reconnexion en cours…
+        </p>
+      )}
 
       {error && (
         <p className="error" role="alert" onClick={() => setError(null)}>
@@ -446,8 +507,8 @@ export function PlayerSeat({
           <p className="muted small">
             {lobby.players.length} joueur(s) · {lobby.readyCount} prêt(s)
           </p>
-          <button type="button" className={`btn big ${you.ready ? 'ready' : 'primary'}`} onClick={toggleReady}>
-            {you.ready ? 'Prêt ! Annuler' : 'Je suis prêt'}
+          <button type="button" className={`btn big ${readyNow ? 'ready' : 'primary'}`} onClick={toggleReady}>
+            {readyNow ? 'Prêt ! Annuler' : 'Je suis prêt'}
           </button>
           {isHost && lobby.game.id !== PLATEAU_TEST_ID ? (
             <div className="stack host-start">
@@ -560,13 +621,16 @@ export function PlayerSeat({
               </div>
             )}
             <Suspense fallback={<p className="muted">Chargement du jeu…</p>}>
-              <views.Player
-                publicState={game.public}
-                playerState={game.player}
-                playerId={you.id}
-                now={view.now}
-                send={send}
-              />
+              <SensorSenderContext.Provider value={sendSensor}>
+                <views.Player
+                  publicState={game.public}
+                  playerState={game.player}
+                  playerId={you.id}
+                  now={view.now}
+                  send={send}
+                  connected={connected}
+                />
+              </SensorSenderContext.Provider>
             </Suspense>
             <EmoteBar onPick={sendReaction} />
             {!compact && you.profile && <VoiceBar socket={socket} token={profileToken} />}

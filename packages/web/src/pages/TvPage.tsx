@@ -11,6 +11,7 @@ import { logoFor } from '../components/gameLogos.js';
 import { useArrivalMoods } from '../components/useArrivalMoods.js';
 import { poseOf, useLobbyMoods } from '../components/useLobbyMoods.js';
 import { useLobbyPositions } from '../components/useLobbyPositions.js';
+import { RoomSensors } from '../components/RoomSensors.js';
 import { ChatPanel, EmoteBar, ReactionLayer } from '../components/Social.js';
 import { VoiceLayer } from '../components/VoiceLayer.js';
 import { ConnectingNotice } from '../components/ConnectingNotice.js';
@@ -25,6 +26,7 @@ import { CornerMenu, DrawerSection } from '../components/CornerMenu.js';
 import { useActiveProfile } from '../profile/useProfile.js';
 import { useActivity } from './tv/useActivity.js';
 import { musicForLobby, useMusicSlot } from '../sounds.js';
+import { canSend, OFFLINE_ACTION_ERROR, useConnection } from '../connection.js';
 
 /** Plateau 3D du Promoteur : chargé seulement quand il est affiché (Three.js reste hors du premier chargement). */
 const PromoteurStage = lazy(() => import('../three/PromoteurStage.js'));
@@ -112,6 +114,8 @@ export function TvPage() {
 
   // Musique de la salle : menus avant la partie, fin de partie aux résultats, silence pendant le jeu.
   useMusicSlot(musicForLobby(view?.lobby.status));
+  // Une coupure est annoncée sur l'écran : sinon, il reste figé sans que personne ne sache pourquoi.
+  const connection = useConnection(getSocket());
 
   if (!hostToken) {
     return (
@@ -157,13 +161,15 @@ export function TvPage() {
   const can3d = lobby.game.id === 'promoteur' && !board3dFailed && supportsWebGL();
   const use3d = can3d && board3d;
   const flat = (
-    <FitStage>
-      {views && game && (
-        <Suspense fallback={<p className="muted">Chargement du jeu…</p>}>
-          <views.Host publicState={game.public} hostState={game.host} now={view.now} onAction={sendGameAction} />
-        </Suspense>
-      )}
-    </FitStage>
+    <RoomSensors socket={socket}>
+      <FitStage>
+        {views && game && (
+          <Suspense fallback={<p className="muted">Chargement du jeu…</p>}>
+            <views.Host publicState={game.public} hostState={game.host} now={view.now} onAction={sendGameAction} />
+          </Suspense>
+        )}
+      </FitStage>
+    </RoomSensors>
   );
   const sky = logoFor(lobby.game.id, lobby.game.name).sky;
   const skyStyle = { '--sky-a': sky[0], '--sky-b': sky[1] } as CSSProperties;
@@ -171,6 +177,10 @@ export function TvPage() {
   /** Action propre au jeu, demandée par l'écran principal (ex. générer des personnages). */
   function sendGameAction(type: string, payload?: unknown): Promise<{ ok: boolean; error?: string }> {
     return new Promise((resolve) => {
+      if (!canSend(socket, setError)) {
+        resolve({ ok: false, error: OFFLINE_ACTION_ERROR });
+        return;
+      }
       socket.emit('host:game-action', { type, payload }, (res) => {
         if (!res.ok) setError(res.error);
         resolve(res.ok ? { ok: true } : { ok: false, error: res.error });
@@ -179,6 +189,7 @@ export function TvPage() {
   }
 
   function emitAck(event: 'host:start' | 'host:next' | 'host:end' | 'host:replay') {
+    if (!canSend(socket, setError)) return;
     const done = (res: { ok: true } | { ok: false; error: string }) => setError(res.ok ? null : res.error);
     if (event === 'host:start') socket.emit('host:start', done);
     else if (event === 'host:next') socket.emit('host:next', done);
@@ -187,6 +198,7 @@ export function TvPage() {
   }
 
   function createHandoff() {
+    if (!canSend(socket, setError)) return;
     socket.emit('host:handoff', (res) => {
       if (res.ok) setHandoff({ code: res.code, expiresAt: res.expiresAt });
       else setError(res.error);
@@ -194,24 +206,28 @@ export function TvPage() {
   }
 
   function configure(gameSettings: Record<string, unknown>) {
+    if (!canSend(socket, setError)) return;
     socket.emit('host:configure', { gameSettings }, (res) => {
       if (!res.ok) setError(res.error);
     });
   }
 
   function kick(playerId: string) {
+    if (!canSend(socket, setError)) return;
     socket.emit('host:kick', { playerId }, (res) => {
       if (!res.ok) setError(res.error);
     });
   }
 
   function addBot() {
+    if (!canSend(socket, setError)) return;
     socket.emit('host:addBot', (res) => {
       if (!res.ok) setError(res.error);
     });
   }
 
   function removeBot(playerId: string) {
+    if (!canSend(socket, setError)) return;
     socket.emit('host:removeBot', { playerId }, (res) => {
       if (!res.ok) setError(res.error);
     });
@@ -219,6 +235,7 @@ export function TvPage() {
 
   function sendChat(text: string) {
     setChatError(null);
+    if (!canSend(socket, setChatError)) return;
     socket.emit('host:chat', { text }, (res) => {
       if (!res.ok) setChatError(res.error);
     });
@@ -226,6 +243,7 @@ export function TvPage() {
 
   function sendReaction(emoji: string) {
     setChatError(null);
+    if (!canSend(socket, setChatError)) return;
     socket.emit('host:reaction', { emoji }, (res) => {
       if (!res.ok) setChatError(res.error);
     });
@@ -238,6 +256,7 @@ export function TvPage() {
   }
 
   function backToCatalog() {
+    if (!canSend(socket, setError)) return;
     socket.emit('host:close', () => {
       sessionStorage.removeItem(`ph:host:${code}`);
       navigate('/');
@@ -379,6 +398,11 @@ export function TvPage() {
           {error && (
             <p className="stage-toast" role="alert" onClick={() => setError(null)}>
               {error}
+            </p>
+          )}
+          {connection.lost && !connection.connected && (
+            <p className="stage-toast" role="status">
+              Connexion au serveur perdue. Reconnexion en cours…
             </p>
           )}
 
