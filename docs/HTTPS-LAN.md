@@ -1,8 +1,9 @@
-# HTTPS sur le réseau local (micro et caméra)
+# HTTPS sur le réseau local (micro, caméra et mouvement)
 
-Sur un téléphone ou une tablette, le navigateur ne donne accès au **micro** et à la **caméra** qu'en HTTPS.
-Une adresse `http://192.168.x.x:8282` ne suffit donc pas pour le test des appareils ni pour un jeu qui utilise
-la caméra. Cette page explique comment servir PartyHub en `https://` sur le réseau local, avec un certificat
+Sur un téléphone ou une tablette, le navigateur ne donne accès au **micro**, à la **caméra** et aux **capteurs de
+mouvement** (gyroscope, accéléromètre) qu'en HTTPS.
+Une adresse `http://192.168.x.x:8282` ne suffit donc pas pour le test des appareils, ni pour un jeu qui utilise
+la caméra ou l'inclinaison du téléphone (Micro-Défis, Funambule). Cette page explique comment servir PartyHub en `https://` sur le réseau local, avec un certificat
 interne émis par Caddy.
 
 Le HTTPS ne demande ni nom de domaine ni ouverture de la box. L'inconvénient : le certificat n'est pas reconnu
@@ -72,6 +73,8 @@ volume `partyhub-caddy-data` n'est pas supprimé.
 1. Ouvrez `https://192.168.1.156` sur le téléphone : le cadenas doit être fermé, sans avertissement.
 2. Ouvrez `https://192.168.1.156/test-appareils` (ou le lien « Tester micro, caméra, image » du menu d'accueil) :
    « Activer le micro » et « Tester la caméra » doivent demander l'autorisation.
+3. Dans la même page, la section « Tester le mouvement » doit demander l'autorisation des capteurs (sur iPhone et iPad),
+   puis afficher le point qui suit l'inclinaison quand on penche le téléphone.
 
 Si l'avertissement persiste, le certificat racine n'est pas installé ou n'est pas approuvé (voir l'étape 2).
 
@@ -85,4 +88,9 @@ Si l'avertissement persiste, le certificat racine n'est pas installé ou n'est p
   (voir [CASAOS.md](CASAOS.md), section 10).
 - Le certificat est valable pour l'adresse du serveur uniquement. Une adresse IP qui change (DHCP) casse l'accès :
   réservez une adresse fixe sur la box.
+- **Mouvement** : le gyroscope et l'accéléromètre suivent les mêmes règles que le micro. Sans HTTPS, Micro-Défis et
+  Funambule indiquent que le téléphone ne transmet pas le mouvement, et le défi ne peut pas être réussi. Sur iPhone, un
+  refus se corrige dans les réglages de Safari (Mouvement et orientation), ou en effaçant les données du site.
+- **En-tête `Permissions-Policy`** : PartyHub autorise lui-même le gyroscope, l'accéléromètre, le micro et la caméra
+  pour ses pages. Le proxy Caddy transmet cet en-tête sans le modifier, dans les deux surcouches Docker (et CasaOS).
 - La surcouche n'a été vérifiée qu'à la syntaxe de ses fichiers. Testez-la sur votre serveur avant une soirée.

@@ -179,6 +179,25 @@ Les identifiants ci-dessous se mettent dans `AI_PROVIDER`. Les variables `AI_<FO
 - Les plafonds (par jour et par heure) sont comptés en mémoire : ils repartent de zéro au redémarrage du serveur.
 - Quand un fournisseur échoue (erreur, délai dépassé, plafond atteint), le suivant de la liste prend le relais. Une partie interrompue (fin ou relance) ne déclenche pas de relais.
 - Les fournisseurs gratuits ont été vérifiés d'après leur documentation, pas par un appel réel : faire un essai avant une soirée.
+- Les clés peuvent aussi être saisies dans l'administration, section **Système → Intelligence artificielle** (derrière le mot de passe administrateur). Une clé saisie là prend le pas sur la variable d'environnement du même fournisseur, s'applique tout de suite et ne se réaffiche jamais. Le bouton **Tester** envoie un appel minimal pour vérifier la clé et le modèle.
+- Les clés saisies dans l'administration sont chiffrées (AES-256-GCM) avec une clé locale, `ai-secret.key`, créée à côté de la base dans le dossier de données (droits 0600). Une sauvegarde de la base reste protégée sans ce fichier, mais une copie du dossier de données entier ne l'est pas. Sans `ai-secret.key` (restauration partielle, par exemple), les clés saisies deviennent illisibles : l'administration demande alors de les ressaisir. Sauvegarder ce fichier avec la base.
+- Les modèles proposés pour une clé saisie dans l'administration sont des suggestions : vérifier chacun avec **Tester**, car les noms de modèles changent souvent.
+
+### Images (Aventure IA et autres jeux)
+
+Les images (portraits des personnages, fonds de décor) sont générées par une IA d'image, puis gardées dans une bibliothèque partagée et reprises dans les parties suivantes. Elles sont facultatives : sans clé, les jeux gardent leur rendu habituel.
+
+| Variable                                        | Défaut                        | Rôle                                                                                      |
+| ----------------------------------------------- | ----------------------------- | ----------------------------------------------------------------------------------------- |
+| `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN` | vide                          | Cloudflare Workers AI (FLUX.1 schnell), gratuit dans la limite d'un quota quotidien.      |
+| `MODELSCOPE_API_KEY`                            | vide                          | ModelScope (Qwen-Image). Usage non commercial uniquement, avec un compte Alibaba vérifié. |
+| `IMAGE_PROVIDERS`                               | ceux dont la clé est présente | Ordre d'appel, séparé par des virgules (ex. `cloudflare,modelscope`).                     |
+| `IMAGE_MAX_PER_DAY`                             | `150`                         | Nombre maximal d'images par jour, tous fournisseurs confondus (1 à 100000).               |
+| `IMAGE_TIMEOUT_MS`                              | `60000`                       | Délai maximal pour une image, de 5000 à 300000 ms.                                        |
+
+- Les images sont stockées dans la base, et suivent ses sauvegardes. Le plafond journalier est compté en base, donc il survit au redémarrage.
+- Les clés d'images se règlent dans l'environnement du serveur. Il n'y a pas encore d'écran d'administration pour elles.
+- ModelScope n'est pas autorisé pour un usage commercial : pour un service public ou payant, utiliser Cloudflare, ou un autre fournisseur.
 
 Réglages modifiables depuis l'administration (sans redémarrage) : joueurs maximum par salle, délai de
 reconnexion, délai d'inactivité, durée maximale d'une salle, nombre de chiffres du code de salle (4 à 6, 4 par défaut).
@@ -218,7 +237,7 @@ par jeu est installée. Le modèle de publication pour les dépôts de jeux est 
 Pour un accès depuis Internet, voir [docs/REMOTE-ACCESS.md](docs/REMOTE-ACCESS.md) : HTTPS obligatoire, administration
 bloquée depuis l'extérieur, de préférence via un VPN.
 
-Pour que le micro et la caméra des téléphones fonctionnent sur le réseau local, PartyHub doit être servi en HTTPS :
+Pour que le micro, la caméra et les capteurs de mouvement (gyroscope) des téléphones fonctionnent sur le réseau local, PartyHub doit être servi en HTTPS :
 voir [docs/HTTPS-LAN.md](docs/HTTPS-LAN.md) (surcouche Caddy avec certificat interne).
 
 ## Sauvegarde et restauration de la base

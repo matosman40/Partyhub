@@ -4,6 +4,49 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 
 ## Non publié
 
+### Ajouté
+
+- Clés d’IA dans l’administration (Système → Intelligence artificielle), derrière le mot de passe administrateur. Chaque fournisseur a un champ de clé, un modèle, un plafond journalier facultatif et un bouton « Tester ». Les clés sont chiffrées sur le serveur (AES-256-GCM, clé locale `ai-secret.key`), ne reviennent jamais dans la page et priment sur les variables d’environnement d’un même fournisseur. Les changements s’appliquent sans redémarrage.
+- Aventure IA, plus de variété : six thèmes (Brumes et lanternes, Carnaval masqué, Forêt qui chuchote, Fromagerie hantée, Les pigeons gouvernent, Vaisseau rétro), chacun avec son intrigue de secours. Le salon choisit le thème (au hasard, un thème précis, ou libre avec une précision), le ton (dont « Absurde et loufoque ») et la difficulté : facile, normale ou difficile, qui décale les jets et les points de vie des ennemis.
+- Aventure IA, types de scène : rencontre, dialogue avec un personnage (chaque réplique fait évoluer son lien avec le groupe, de « hostile » à « allié »), énigme (un indice, et un objet à la clé), halte (on reprend des points de vie) et affrontement tour par tour.
+- Aventure IA, progression : chaque réussite rapporte de l’expérience. Un personnage monte jusqu’au niveau 5, avec plus de points de vie maximum, une stat plus faible renforcée, et un sac de quatre objets au plus.
+- Aventure IA, personnages gardés : les personnages joués sont enregistrés dans le profil (jusqu’à quarante, avec leur niveau, leurs parties et leur portrait). Dans une autre partie, « Tes personnages » sur le téléphone permet de les reprendre. Ils sont supprimés avec le profil.
+- Aventure IA, images : chaque personnage reçoit un portrait et chaque monde un fond, générés par une IA d’image (Cloudflare Workers AI, avec ModelScope en secours). Ils sont gardés dans une bibliothèque partagée par thème : un fond ou un portrait déjà créé se reprend dans les parties suivantes. Sans fournisseur, le rendu reste celui d’aujourd’hui. Les clés et le plafond journalier (`IMAGE_MAX_PER_DAY`) restent sur le serveur.
+- Images pour les autres jeux : un jeu peut demander une image à la même bibliothèque (`ctx.images`). Les images sont servies par `/api/ai-images/:id`.
+- Capteurs du téléphone pour les jeux : le gyroscope (inclinaison), l’accéléromètre (secousses) et le micro (souffle) servent de manettes. Le téléphone envoie son inclinaison à l’écran principal, qui la montre en direct. Ces échantillons passent par un canal à part (`player:sensor` vers `room:sensor`) : ils ne touchent pas à l’état de la salle, ne sont relayés qu’aux écrans, et seulement pendant une partie. Le serveur plafonne le débit à quarante messages par seconde et par joueur, et rien n’est enregistré.
+- Micro-Défis : une succession de défis éclair, les mêmes pour tout le monde. Secouer, garder le téléphone à plat, le faire tourner, souffler dans le micro, tapoter, appuyer au bon moment. De 1 à 12 défis par partie ; un défi réussi rapporte 100 points, plus jusqu’à 60 pour la rapidité.
+- Funambule : chaque joueur tient son funambule sur le fil en penchant son téléphone contre le vent, qui se renforce d’une manche à l’autre (de 1 à 6 manches). Tout le monde marche en même temps, et l’écran principal montre les funambules en direct. Un funambule qui tombe garde le temps tenu ; celui qui traverse les douze secondes reçoit une prime.
+- Page « Test des appareils » : une section « Tester le mouvement » (inclinaison en direct, secousses, recentrage) pour vérifier le gyroscope avant une partie.
+
+### Modifié
+
+- Aventure IA, refondue pour une histoire qui tient debout : le monde a un objectif et un secret que le conteur révèle petit à petit. Chaque choix dit déjà ce qui arrive en cas de réussite ou d’échec, et le jet ne fait que trancher. Le groupe rencontre des personnages secondaires, dessinés comme les personnages du jeu (le dessin dépend du nom) ; la fiche de chaque joueur montre son avatar ou sa photo ; un affrontement se joue tour par tour sur les téléphones (frapper, feinter, soigner, parlementer). Parties de 3 à 6 scènes, vote de 15 à 120 secondes.
+- Aventure IA, bibliothèque : jusqu’à quarante personnages par profil (huit auparavant).
+- Docker et HTTPS : l’en-tête `Permissions-Policy` autorise le gyroscope, l’accéléromètre, le micro et la caméra pour PartyHub. La page de test des appareils et les jeux partagent le même calcul du niveau sonore (`levelFromBytes`).
+- Lisibilité sur les TV et les téléphones : les textes des écrans Micro-Défis et Funambule, le classement, la barre de contrôle de la TV et l’étiquette « Salle » ne descendent plus sous 14 px. Les cases à cocher font 24 px sur écran tactile, et toute la ligne (libellé compris) est une cible d’au moins 44 px.
+- Téléphones, contrôles en premier : le pad d’un défi (tapotement, « Stop ! ») occupe la moitié de l’écran et son libellé est grand ; le fil du funambule est plus haut ; « Recentrer » et les boutons d’autorisation font une cible pleine largeur de 52 px ; les choix du vote et de l’Aventure, les actions de combat et « Ma fiche » sont des blocs plus hauts. Hors des jeux, les boutons font au moins 50 px sur téléphone (44 px pour les petits boutons).
+- Réactivité des jeux : les capteurs du téléphone partent au plus trente fois par seconde (une dizaine auparavant) et l’écran principal les affiche à l’image suivante. Un capteur met environ 10 ms à s’afficher sur la TV, contre 50 ms auparavant, et le mouvement du funambule sur le téléphone suit le capteur au lieu de se mettre à jour dix fois par seconde. Les barres de temps, les rubans du vent et les jauges du micro sont mis à l’échelle au lieu de changer de largeur, pour ne plus recalculer la mise en page à chaque image. Les personnages ne se redessinent que lorsque leur propre mesure change.
+- Connexion coupée : une action qui ne peut pas partir (choix, vote, « Lancer », message, réaction) est refusée tout de suite avec le message « Connexion perdue », sur le téléphone comme sur l’écran principal. Rien n’est gardé pour plus tard. L’attente entre deux tentatives de reconnexion passe de 4 secondes au plus à 1,5 seconde (le salon revient en 1,2 à 1,7 seconde après le rétablissement), et le bandeau « Reconnexion en cours… » disparaît dès qu’elle aboutit.
+- Aventure : le choix (personnage, vote, action de combat) s’affiche à l’appui, sans attendre l’aller-retour avec le salon. Avec 150 ms de latence, le retour visuel passe d’environ 160 ms à 1 ou 2 ms.
+- Chargement : les pages secondaires (administration, profil, test des appareils, certificat, spectateur, écran principal) ne sont téléchargées qu’à leur ouverture. Le fichier principal passe de 670 ko à 236 ko avant compression, et l’accueil charge en tout 511 ko de JavaScript (contre 795 ko) ; sur une 4G simulée, le formulaire d’accueil s’affiche en 4,3 s au lieu de 6,3 s.
+
+### Corrigé
+
+- Aventure IA : une fiche abîmée dans la bibliothèque d’un profil ne fait plus perdre les autres personnages à la sauvegarde suivante. Seule la fiche abîmée est écartée.
+- Funambule et Micro-Défis sur la TV : le contenu était collé à gauche de l’écran. Il est centré, et chaque jeu a son propre décor (un chapiteau au crépuscule pour Funambule, une borne d’arcade pour Micro-Défis) au lieu d’un décor générique.
+- Micro-Défis, « Souffle » : le trait qui marque le seuil était invisible sur le téléphone. Les défis occupent aussi l’écran du téléphone, centrés.
+- Micro-Défis, « Plateau tournant » : un aller-retour ne compte plus comme un tour, il faut faire 360 degrés dans un sens (ou dans l’autre). Un téléphone qui ne donne pas son cap est signalé, au lieu de laisser le défi bloqué.
+- Micro-Défis, « Secoue ! » : sur certains Android, qui donnent des mesures d’accélération vides, aucune secousse n’était comptée. La mesure de repli prend le relais.
+- Funambule : une traversée se termine à sa durée même si le téléphone cesse d’envoyer ses mesures (écran éteint, onglet caché).
+- Écran principal : les mesures des téléphones sont regroupées, vingt mises à jour par seconde au plus, au lieu de plusieurs centaines avec douze joueurs. L’avertissement « ResizeObserver loop » n’apparaît plus à la mise à l’échelle des jeux.
+- Les délais des jeux se mesurent sur l’horloge monotone de la page : un changement d’heure ne fausse plus le décompte.
+- Cases à cocher des réglages (restauration d’une sauvegarde, fournisseur d’IA activé, jeu média) : elles rétrécissaient à 13 px sur téléphone. Elles gardent leur taille.
+- Salon et Aventure : les libellés du salon, l’objectif et l’épilogue de l’Aventure ne descendent plus sous 14 px sur les écrans TV.
+- Téléphones : le pad d’un défi restait à 44 px de haut, car une règle générique pour les boutons tactiles l’emportait sur la sienne. Il prend maintenant sa hauteur prévue.
+- Profil : le bouton « Choisir un fichier » est aux couleurs de l’application, et chaque statistique sépare bien son chiffre de son libellé.
+- Coupure réseau : pendant une coupure, les boutons restaient actifs sans rien dire, et une commande pressée était rejouée à la reconnexion, avant que le salon ne reconnaisse l’écran. Elle était alors refusée avec un message trompeur (« Vous n’êtes pas dans une salle. ») ou perdue en silence. Le message « Connexion perdue » remplace ce comportement.
+- Aventure : le message « Les personnages se choisissent au début de l’aventure » restait affiché pendant le vote quand un appui arrivait après le changement d’étape. Un refus n’est plus montré que dans l’étape où le choix a été fait.
+
 ## [0.10.0] - 2026-10-16
 
 ### Ajouté
