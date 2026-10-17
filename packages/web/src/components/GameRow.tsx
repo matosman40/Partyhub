@@ -1,15 +1,11 @@
 import type { CSSProperties } from 'react';
+import { Link } from 'react-router-dom';
 import type { CatalogGame, GameCategory } from '@partyhub/shared';
+import { CATEGORY_LABEL } from '../catalog/labels.js';
 import { GameLogo } from './GameLogo.js';
 import { logoFor } from './gameLogos.js';
 
-export const CATEGORY_LABEL: Record<GameCategory, string> = {
-  cartes: 'Cartes',
-  plateau: 'Plateau',
-  quiz: 'Quiz',
-  role: 'Rôle',
-  solo: 'Solo',
-};
+export { CATEGORY_LABEL };
 
 /** Classe CSS associée à chaque catégorie. */
 export const CATEGORY_CLASS: Record<GameCategory, string> = {
@@ -37,6 +33,7 @@ export function playersLabel(game: Pick<CatalogGame, 'minPlayers' | 'maxPlayers'
  */
 export function GameRow({
   game,
+  detailsHref,
   open,
   creating,
   trying,
@@ -47,6 +44,8 @@ export function GameRow({
   onNotice,
 }: {
   game: CatalogGame;
+  /** Lien vers la fiche complète du jeu, affiché dans le sous-menu. */
+  detailsHref?: string;
   open: boolean;
   /** Une création de salle est en cours pour ce jeu. */
   creating: boolean;
@@ -96,6 +95,11 @@ export function GameRow({
             <button type="button" className="link-btn" onClick={onNotice}>
               Comment jouer
             </button>
+            {detailsHref && (
+              <Link className="link-btn" to={detailsHref}>
+                Voir la fiche
+              </Link>
+            )}
           </div>
         </div>
       )}

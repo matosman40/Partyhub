@@ -900,6 +900,7 @@ export const aventureIa: GameModule<AventureState, AventureSettings> = {
     minPlayers: 2,
     maxPlayers: MAX_CHARACTERS,
     durationMin: 12,
+    ai: true,
     notice: {
       goal: 'Atteindre l’objectif de l’aventure, sans que tous les personnages tombent.',
       steps: [

@@ -1,0 +1,223 @@
+/* ==========================================================================
+   Fiche de jeu (/jeux/:id) : en-tête aux couleurs du jeu, notice, fiche technique,
+   autres jeux de la catégorie.
+   ========================================================================== */
+
+.game-page {
+  display: grid;
+  gap: 1.2rem;
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding-top: clamp(0.8rem, 3vw, 1.6rem);
+}
+
+.sheet-nav {
+  display: flex;
+}
+
+.game-sheet {
+  display: grid;
+  gap: 1.6rem;
+  min-width: 0;
+}
+
+/* ---- En-tête -------------------------------------------------------------------- */
+
+.sheet-hero {
+  display: grid;
+  gap: 1.2rem;
+  align-items: center;
+  padding: clamp(1.2rem, 4vw, 2.4rem);
+  border-radius: var(--r-xl);
+  color: #fff;
+  background:
+    radial-gradient(120% 140% at 100% 0%, rgba(255, 255, 255, 0.16), transparent 55%),
+    linear-gradient(160deg, var(--sky-a, #2a1466), var(--sky-b, #0b0630));
+  box-shadow: 0 30px 60px -36px rgba(0, 0, 0, 0.6);
+}
+
+.sheet-art {
+  display: grid;
+  place-items: center;
+}
+
+.sheet-logo {
+  width: min(56vw, 260px);
+  height: auto;
+  filter: drop-shadow(0 6px 0 rgba(0, 0, 0, 0.25));
+}
+
+.sheet-intro {
+  display: grid;
+  gap: 0.7rem;
+  min-width: 0;
+}
+
+.sheet-kicker {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+.sheet-title {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: clamp(2.1rem, 6vw, 3.8rem);
+  line-height: 1.02;
+  text-shadow: 0 3px 0 rgba(0, 0, 0, 0.2);
+  overflow-wrap: anywhere;
+}
+
+.sheet-lede {
+  margin: 0;
+  max-width: 40ch;
+  font-size: clamp(1rem, 1.8vw, 1.15rem);
+  line-height: 1.45;
+}
+
+.sheet-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sheet-tags .tag {
+  background: rgba(8, 6, 26, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #fff;
+}
+
+.sheet-tags .tag-ai {
+  background: linear-gradient(135deg, var(--magenta), var(--sun));
+  border-color: transparent;
+  color: #1a1030;
+}
+
+.sheet-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 0.3rem;
+}
+
+.sheet-hero .error {
+  margin: 0;
+  color: #fff;
+  font-weight: 600;
+}
+
+@media (min-width: 720px) {
+  .sheet-hero {
+    grid-template-columns: minmax(200px, 300px) minmax(0, 1fr);
+  }
+}
+
+/* ---- Corps : notice à gauche, fiche technique à droite ---------------------------- */
+
+.sheet-body {
+  display: grid;
+  gap: 1.2rem;
+  align-items: start;
+}
+
+@media (min-width: 900px) {
+  .sheet-body {
+    grid-template-columns: minmax(0, 1fr) 300px;
+  }
+}
+
+.sheet-section,
+.sheet-facts {
+  display: grid;
+  gap: 0.8rem;
+  padding: 1.2rem 1.3rem;
+  border-radius: var(--r-md);
+  background: var(--glass);
+  border: 1px solid var(--line);
+}
+
+.sheet-section h2,
+.sheet-facts h2,
+.sheet-related h2 {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 1.35rem;
+}
+
+.sheet-section h3 {
+  margin: 0.5rem 0 0;
+  font-size: 1rem;
+  color: var(--text);
+}
+
+.sheet-goal {
+  margin: 0;
+  max-width: 62ch;
+  font-size: 1.05rem;
+  line-height: 1.55;
+}
+
+.sheet-steps,
+.sheet-tips {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+  padding-left: 1.3rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.sheet-steps li::marker {
+  color: var(--cyan);
+  font-weight: 700;
+}
+
+.sheet-facts dl {
+  display: grid;
+  margin: 0;
+}
+
+.sheet-facts dl > div {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.6rem 0;
+  border-top: 1px solid var(--line);
+}
+
+.sheet-facts dl > div:first-child {
+  border-top: 0;
+}
+
+.sheet-facts dt {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.sheet-facts dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+/* ---- Jeux de la même catégorie ---------------------------------------------------- */
+
+.sheet-related {
+  display: grid;
+  gap: 0.7rem;
+  min-width: 0;
+}
+
+.sheet-related ul {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.9rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}

@@ -6,6 +6,11 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 
 ### Ajouté
 
+- Fiches de jeu, façon boutique : chaque jeu a sa page (`/jeux/<identifiant>`), avec un en-tête aux couleurs du jeu, la notice complète (but, déroulé, astuces), une fiche technique (type, joueurs, durée, IA, version, lancé ou non sur cet appareil) et les autres jeux de la même catégorie. « Créer la salle » et « Essayer seul » sont sur la fiche.
+- Catalogue : filtres par nombre de joueurs, type de jeu, durée (moins de 10 min, de 10 à 25 min, plus de 25 min), intelligence artificielle (avec ou sans IA) et jeux joués récemment. Recherche par nom ou description, tri par nom, durée, nombre de joueurs ou jeux récents. Les filtres restent dans l’adresse de la page : un retour depuis une fiche retrouve la même liste.
+- Catalogue en fiches ou en liste. La liste garde le sous-menu de chaque jeu et ajoute un lien vers la fiche.
+- Bandeau « Joués récemment » sur l’accueil. Les jeux lancés (salle ou essai) sont mémorisés sur cet appareil seulement, 12 au plus.
+- Drapeau « IA » dans le manifeste des jeux (Quiz Party, Phrases à trous, Aventure IA), qui alimente le filtre « Avec IA ».
 - Championnat du salon, pour tous les jeux multijoueurs : le salon joue une partie unique (par défaut) ou de 2 à 10 manches, avec 0, 2, 3 ou 4 équipes (Rouge, Bleue, Verte, Jaune). Le réglage se fait dans le menu de l’écran principal, avant la partie, et reste en place d’une manche à l’autre. Chaque manche rapporte des points selon le rang (10 au premier, puis 6, 4, 3, 2 et 1), cumulés jusqu’à la dernière manche. Une équipe marque la somme de ses membres ; les ex æquo se partagent le titre.
 - Championnat, rangs de progression : Recrue, Habitué (10 points), Confirmé (25), Expert (50) et Légende (100), affichés à côté de chaque joueur.
 - Championnat, icônes de victoire : champion, série de victoires (dès deux d’affilée), invaincu, et régulier (toujours sur le podium).
@@ -17,6 +22,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 
 ### Modifié
 
+- Accueil : les puces de catégorie cèdent la place à la recherche, au tri, à l’affichage et à un panneau de filtres. Sur téléphone, les filtres se déplient depuis le bouton « Filtres ».
+- Statistiques des profils : un jeu renommé par l’administration s’y affiche sous son nouveau nom, et non plus sous son nom d’origine.
 - Réglages de Quiz Party et des Phrases à trous : un champ numérique vidé est ramené à sa borne minimale à la perte de focus, au lieu d’envoyer 0 au serveur.
 - Rejouer : pendant un championnat, le bouton devient « Manche suivante : 2 sur 3 », puis « Nouveau championnat » une fois le titre attribué. Rejouer ramène toujours au salon, où l’hôte lance la manche avec « Lancer la partie ». Le salon affiche la progression du championnat.
 

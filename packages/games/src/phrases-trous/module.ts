@@ -307,6 +307,7 @@ export const phrasesTrous: GameModule<PhrasesState, PhrasesSettings> = {
     minPlayers: 2,
     maxPlayers: 8,
     durationMin: 12,
+    ai: true,
     notice: {
       goal: 'Compléter chaque phrase avec la carte la plus drôle ou la plus juste, puis gagner les votes du public.',
       steps: [

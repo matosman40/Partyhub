@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { HomePage } from './pages/HomePage.js';
+import { GamePage } from './pages/GamePage.js';
 import { JoinPage } from './pages/JoinPage.js';
 import { ScreenBackdrop } from './components/ScreenBackdrop.js';
 import { MusicPlayer } from './components/MusicPlayer.js';
@@ -52,6 +53,15 @@ function RoutedPages() {
             element={
               <ProfileGate>
                 <HomePage />
+              </ProfileGate>
+            }
+          />
+          {/* Fiche d'un jeu : même règle que l'accueil, il faut un profil. */}
+          <Route
+            path="/jeux/:gameId"
+            element={
+              <ProfileGate>
+                <GamePage />
               </ProfileGate>
             }
           />

@@ -143,6 +143,8 @@ export interface GameManifest {
   notice: GameNotice;
   /** Absent ou vrai : le jeu figure au catalogue. Faux : il ne s'affiche que dans l'administration (outils). */
   listed?: boolean;
+  /** Vrai si le jeu s'appuie sur une IA générative (texte ou images) quand elle est configurée. Sert au filtre du catalogue. */
+  ai?: boolean;
 }
 
 /** Action proposée par le moteur à un robot (mode test). `key` identifie la décision en cours. */

@@ -1,5 +1,6 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { resolveGame } from '../games-registry.js';
+import { withOverrides } from '../game-details.js';
 import {
   characterSchema,
   defaultAvatarFor,
@@ -58,6 +59,12 @@ const hashToken = (token: string) => createHash('sha256').update(token).digest('
  * Les jetons de session ne sont jamais stockés en clair (seule leur empreinte SHA-256 l'est).
  */
 export class ProfileService {
+  /** Nom d'un jeu tel qu'il s'affiche (renommage de l'administrateur compris), ou son identifiant s'il n'existe plus. */
+  private gameName(gameId: string): string {
+    const original = resolveGame(gameId);
+    return original ? withOverrides(original, this.store).manifest.name : gameId;
+  }
+
   constructor(
     private readonly store: Store,
     private readonly now: () => number = () => Date.now(),
@@ -365,7 +372,8 @@ export class ProfileService {
       .all(profileId) as { game_id: string; played: number; wins: number; points: number }[];
     const perGame = rows.map((r) => ({
       gameId: r.game_id,
-      name: resolveGame(r.game_id)?.manifest.name ?? r.game_id,
+      // Nom affiché : celui que l'administrateur a donné au jeu, s'il l'a renommé.
+      name: this.gameName(r.game_id),
       played: r.played,
       wins: r.wins,
       points: r.points,

@@ -265,6 +265,7 @@ export const quizParty: GameModule<QuizState, QuizSettings> = {
     minPlayers: 1,
     maxPlayers: 12,
     durationMin: 10,
+    ai: true,
     notice: {
       goal: 'Répondre le plus vite et le plus juste aux questions pour marquer le plus de points.',
       steps: [

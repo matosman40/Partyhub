@@ -1,25 +1,59 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import type { CatalogGame, GameCategory } from '@partyhub/shared';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import type { CatalogGame } from '@partyhub/shared';
 import { api } from '../api.js';
 import { ThemeToggle } from '../components/ThemeToggle.js';
 import { DeviceChoice } from '../components/DeviceChoice.js';
 import { NoticeDialog } from '../components/NoticeDialog.js';
 import { CornerMenu, DrawerSection } from '../components/CornerMenu.js';
-import { CATEGORY_LABEL, GameRow } from '../components/GameRow.js';
+import { GameRow } from '../components/GameRow.js';
+import { GameCard } from '../components/GameCard.js';
+import { CatalogFilterPanel } from '../components/CatalogFilterPanel.js';
 import { useMusicSlot } from '../sounds.js';
 import { ProfileSwitcher } from '../profile/ProfileSwitcher.js';
+import { CATEGORY_ORDER } from '../catalog/labels.js';
+import {
+  SORT_LABEL,
+  applyFilters,
+  countActiveFilters,
+  parseFilters,
+  resetFilters,
+  writeFilters,
+  type CatalogFilters,
+  type SortKey,
+} from '../catalog/filters.js';
+import { readRecent } from '../catalog/recentGames.js';
+import { launchGame } from '../catalog/launch.js';
 
+const SORT_CHOICES = Object.keys(SORT_LABEL) as SortKey[];
+const MAX_RECENT_SHOWN = 6;
+
+function countLabel(n: number): string {
+  if (n === 0) return 'Aucun jeu';
+  return n === 1 ? '1 jeu' : `${n} jeux`;
+}
+
+/**
+ * Catalogue de l'accueil. Les filtres, le tri, la recherche et l'affichage sont dans l'URL :
+ * revenir d'une fiche de jeu retrouve la même liste.
+ */
 export function HomePage() {
   const navigate = useNavigate();
   useMusicSlot('accueil');
+  const [params, setParams] = useSearchParams();
   const [games, setGames] = useState<CatalogGame[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
-  const [filter, setFilter] = useState<GameCategory | 'all'>('all');
   const [openId, setOpenId] = useState<string | null>(null);
   const [notice, setNotice] = useState<CatalogGame | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [panelOpen, setPanelOpen] = useState(false);
+  const [recentIds] = useState<string[]>(() => readRecent());
+
+  // Les filtres vivent dans l'écran (saisie instantanée) et sont reportés dans l'URL sans nouvelle entrée d'historique.
+  // L'URL n'est relue qu'au montage : un retour depuis une fiche remonte la page.
+  const [filters, setFilters] = useState<CatalogFilters>(() => parseFilters(params));
+  const activeCount = countActiveFilters(filters);
 
   useEffect(() => {
     api<{ games: CatalogGame[] }>('/api/catalog')
@@ -27,24 +61,41 @@ export function HomePage() {
       .catch((e: Error) => setError(e.message));
   }, []);
 
-  const categories = useMemo(() => {
+  const presentCategories = useMemo(() => {
     const present = new Set((games ?? []).map((g) => g.category));
-    return (Object.keys(CATEGORY_LABEL) as GameCategory[]).filter((c) => present.has(c));
+    return CATEGORY_ORDER.filter((c) => present.has(c));
   }, [games]);
 
-  const visible = (games ?? []).filter((g) => filter === 'all' || g.category === filter);
+  const visible = useMemo(() => applyFilters(games ?? [], filters, recentIds), [games, filters, recentIds]);
 
-  async function createRoom(gameId: string, practice: boolean) {
+  const recentGames = useMemo(
+    () =>
+      recentIds
+        .map((id) => (games ?? []).find((g) => g.id === id))
+        .filter((g): g is CatalogGame => g !== undefined)
+        .slice(0, MAX_RECENT_SHOWN),
+    [games, recentIds],
+  );
+
+  function commit(next: CatalogFilters) {
+    setFilters(next);
+    setParams(writeFilters(next, params), { replace: true });
+  }
+
+  function update(patch: Partial<CatalogFilters>) {
+    commit({ ...filters, ...patch });
+  }
+
+  function clearFilters() {
+    commit(resetFilters(filters));
+  }
+
+  async function launch(gameId: string, practice: boolean) {
     setBusy(`${practice ? 'try' : 'create'}:${gameId}`);
     setError(null);
     try {
-      const room = await api<{ code: string; hostToken: string }>('/api/rooms', {
-        method: 'POST',
-        body: JSON.stringify({ gameId, practice }),
-      });
-      // Le jeton d'hôte reste dans cet onglet : il n'est jamais transmis aux joueurs.
-      sessionStorage.setItem(`ph:host:${room.code}`, room.hostToken);
-      navigate(`/tv/${room.code}`);
+      const code = await launchGame(gameId, practice);
+      navigate(`/tv/${code}`);
     } catch (e) {
       setError((e as Error).message);
       setBusy(null);
@@ -112,48 +163,124 @@ export function HomePage() {
       {games === null && !error && <p className="muted">Chargement du catalogue…</p>}
       {games?.length === 0 && <p className="notice">Aucun jeu n’est disponible pour le moment.</p>}
 
-      {categories.length > 1 && (
-        <nav className="filters" aria-label="Filtrer par catégorie">
-          <button
-            type="button"
-            className={`chip${filter === 'all' ? ' active' : ''}`}
-            aria-pressed={filter === 'all'}
-            onClick={() => setFilter('all')}
-          >
-            Tous les jeux
-          </button>
-          {categories.map((c) => (
+      {games && games.length > 0 && (
+        <section className="catalog" aria-labelledby="catalog-title">
+          <div className="catalog-head">
+            <h2 id="catalog-title" className="catalog-title">
+              Jeux
+            </h2>
+            <p className="catalog-count" role="status">
+              {countLabel(visible.length)}
+            </p>
+          </div>
+
+          <div className="catalog-toolbar">
+            <input
+              className="catalog-search"
+              type="search"
+              aria-label="Rechercher un jeu"
+              placeholder="Rechercher un jeu"
+              maxLength={80}
+              value={filters.query}
+              onChange={(e) => update({ query: e.target.value })}
+            />
+            <div className="catalog-sort">
+              <label htmlFor="catalog-sort">Trier par</label>
+              <select
+                id="catalog-sort"
+                value={filters.sort}
+                onChange={(e) => update({ sort: e.target.value as SortKey })}
+              >
+                {SORT_CHOICES.map((s) => (
+                  <option key={s} value={s}>
+                    {SORT_LABEL[s]}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="view-toggle" role="group" aria-label="Affichage">
+              <button type="button" aria-pressed={filters.view === 'cards'} onClick={() => update({ view: 'cards' })}>
+                Fiches
+              </button>
+              <button type="button" aria-pressed={filters.view === 'list'} onClick={() => update({ view: 'list' })}>
+                Liste
+              </button>
+            </div>
             <button
-              key={c}
               type="button"
-              className={`chip${filter === c ? ' active' : ''}`}
-              aria-pressed={filter === c}
-              onClick={() => setFilter(c)}
+              className="filters-toggle"
+              aria-expanded={panelOpen}
+              aria-controls="catalog-filters"
+              onClick={() => setPanelOpen((open) => !open)}
             >
-              {CATEGORY_LABEL[c]}
+              Filtres{activeCount > 0 ? ` · ${activeCount}` : ''}
             </button>
-          ))}
-        </nav>
+          </div>
+
+          <div className="catalog-body">
+            <CatalogFilterPanel
+              id="catalog-filters"
+              hidden={!panelOpen}
+              filters={filters}
+              categories={presentCategories}
+              recentCount={recentIds.length}
+              activeCount={activeCount}
+              onChange={update}
+              onReset={clearFilters}
+            />
+
+            <div className="catalog-results">
+              {activeCount === 0 && recentGames.length > 0 && (
+                <section className="recent-strip" aria-labelledby="recent-title">
+                  <h3 id="recent-title">Joués récemment</h3>
+                  <ul>
+                    {recentGames.map((g) => (
+                      <li key={g.id}>
+                        <GameCard game={g} compact />
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+
+              {visible.length === 0 ? (
+                <div className="catalog-empty">
+                  <p>Aucun jeu ne correspond à ces critères.</p>
+                  <button type="button" className="btn" onClick={clearFilters}>
+                    Effacer les filtres
+                  </button>
+                </div>
+              ) : filters.view === 'cards' ? (
+                <ul className="game-grid" aria-label="Jeux disponibles">
+                  {visible.map((g) => (
+                    <li key={g.id}>
+                      <GameCard game={g} />
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <ul className="game-list" aria-label="Jeux disponibles">
+                  {visible.map((g) => (
+                    <GameRow
+                      key={g.id}
+                      game={g}
+                      detailsHref={`/jeux/${g.id}`}
+                      open={openId === g.id}
+                      creating={busy === `create:${g.id}`}
+                      trying={busy === `try:${g.id}`}
+                      busy={busy !== null}
+                      onToggle={() => setOpenId(openId === g.id ? null : g.id)}
+                      onCreate={() => launch(g.id, false)}
+                      onTry={() => launch(g.id, true)}
+                      onNotice={() => setNotice(g)}
+                    />
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        </section>
       )}
-
-      <ul className="game-list" aria-label="Jeux disponibles">
-        {visible.map((g) => (
-          <GameRow
-            key={g.id}
-            game={g}
-            open={openId === g.id}
-            creating={busy === `create:${g.id}`}
-            trying={busy === `try:${g.id}`}
-            busy={busy !== null}
-            onToggle={() => setOpenId(openId === g.id ? null : g.id)}
-            onCreate={() => createRoom(g.id, false)}
-            onTry={() => createRoom(g.id, true)}
-            onNotice={() => setNotice(g)}
-          />
-        ))}
-      </ul>
-
-      {games && games.length > 0 && visible.length === 0 && <p className="muted">Aucun jeu dans cette catégorie.</p>}
 
       {notice && <NoticeDialog game={notice} onClose={() => setNotice(null)} />}
     </main>

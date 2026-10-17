@@ -21,7 +21,7 @@ Sur une installation neuve, les jeux intégrés sont désactivés : l'administra
 
 ## Fonctionnalités
 
-- Catalogue sur l'écran principal, création de salle avec code court et QR code.
+- Catalogue sur l'écran principal : fiche par jeu, filtres (joueurs, type, durée, IA, jeux récents), recherche, affichage en fiches ou en liste, création de salle avec code court et QR code.
 - Salle d'attente avec joueurs connectés, joueurs prêts, réglages du jeu et bouton de lancement.
 - Interface smartphone : pseudo, réponses tactiles, retour immédiat, reconnexion automatique.
 - Reconnexion après coupure : un joueur absent garde sa place et ses points pendant le délai de grâce.

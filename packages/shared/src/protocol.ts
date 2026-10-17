@@ -25,6 +25,8 @@ export interface GameInfo {
   durationMin: number;
   /** Bornes des réglages numériques : le formulaire les affiche telles quelles. */
   settingsBounds: SettingsBounds;
+  /** Le jeu s'appuie sur une IA quand elle est configurée (filtre « Avec IA » du catalogue). */
+  ai: boolean;
 }
 
 /** Apparence d'un joueur : image de profil si elle existe, sinon emoji sur une teinte. */

@@ -19,6 +19,7 @@ export function gameInfo(module: GameModule): GameInfo {
     durationMin: m.durationMin,
     notice: m.notice,
     settingsBounds: settingsBounds(module.settingsSchema),
+    ai: m.ai === true,
   };
 }
 

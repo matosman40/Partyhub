@@ -14,6 +14,8 @@ import './styles/tarot.css';
 import './styles/board.css';
 import './styles/quiz-phrases.css';
 import './styles/championship.css';
+import './styles/catalog.css';
+import './styles/game-sheet.css';
 
 installClientLogging(__APP_VERSION__);
 applyTheme(loadTheme());
