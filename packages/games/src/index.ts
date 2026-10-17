@@ -5,6 +5,8 @@ import { plutotQui } from './plutot-qui/module.js';
 import { imposteur } from './imposteur/module.js';
 import { plusOuMoins } from './plus-ou-moins/module.js';
 import { reflexe } from './reflexe/module.js';
+import { microDefis } from './micro-defis/module.js';
+import { funambule } from './funambule/module.js';
 import { bombesParty } from './bombes-party/module.js';
 import { createCardGame } from './cards/engine.js';
 import { cardGamePresets } from './cards/presets.js';
@@ -34,6 +36,8 @@ export const gameRegistry: GameModule[] = [
   aventureIa,
   plusOuMoins,
   reflexe,
+  microDefis,
+  funambule,
   bombesParty,
   createCardGame(cardGamePresets['cartes-couleurs'], { id: 'cartes-couleurs' }),
   createCardGame(cardGamePresets['cartes-coco'], { id: 'cartes-coco' }),
@@ -65,6 +69,13 @@ export { imposteur } from './imposteur/module.js';
 export { aventureIa } from './aventure/module.js';
 export { plusOuMoins } from './plus-ou-moins/module.js';
 export { reflexe } from './reflexe/module.js';
+export { microDefis, microDefisSettingsSchema } from './micro-defis/module.js';
+export type { MicroDefisState, MicroDefisSettings } from './micro-defis/module.js';
+export { MICROGAMES, MICROGAME_IDS, judge as judgeMicrogame, pileMarker } from './micro-defis/microgames.js';
+export type { Microgame, MicrogameId } from './micro-defis/microgames.js';
+export { funambule, funambuleSettingsSchema } from './funambule/module.js';
+export type { FunambuleState, FunambuleSettings, FunambulePhase } from './funambule/module.js';
+export { judgeWalk, windAt, windStrength, FallDetector, WALK_MS } from './funambule/rules.js';
 export { bombesParty } from './bombes-party/module.js';
 export { banquise, LEVEL_RULES as BANQUISE_LEVELS, LEVEL_COUNT as BANQUISE_LEVEL_COUNT } from './banquise/module.js';
 export type { BanquiseState, BanquiseSettings } from './banquise/module.js';

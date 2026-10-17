@@ -33,6 +33,30 @@ export {
 export type { MediaPrefs } from './media.js';
 export { isMuted, onMuteChange, setMuted, setSfxFiles, startMusic, stopMusic, unlockAudio } from './audio.js';
 export { SoundToggle } from './SoundToggle.js';
+export {
+  motionAvailable,
+  motionNeedsPermission,
+  requestMotionAccess,
+  SensorsContext,
+  SensorSenderContext,
+  useMicLevel,
+  useMotionFeed,
+  useSensorBroadcast,
+  useSensors,
+} from './sensors.js';
+export type { MicStatus, MotionAccess, MotionFrame, SensorReading, SignalState } from './sensors.js';
+export {
+  angleDelta,
+  GRAVITY,
+  HoldTimer,
+  levelFromBytes,
+  Pulses,
+  ShakeDetector,
+  SpinTracker,
+  Throttle,
+  TILT_FULL_DEG,
+  tiltFrom,
+} from './sensors-core.js';
 // Banques BOUM ! : libellés, types et règles de saisie, partagés avec l'administration et le profil.
 export { BANK_TYPES, BANK_TYPE_INFO, LEVELS, LEVEL_LABELS, STATUSES, STATUS_LABELS } from '../boum/bank/types.js';
 export type { AnswerRule, BankType, EntryStatus, Level } from '../boum/bank/types.js';
@@ -113,6 +137,28 @@ export const clientViews: Record<string, GameClientViews> = {
       Settings: fieldSettings([{ key: 'rounds', label: 'Manches', min: 1, max: 8 }]),
       Host: ImposteurHost,
       Player: ImposteurPlayer,
+    };
+  }),
+  'micro-defis': lazyViews(async () => {
+    const [{ MicroDefisHost }, { MicroDefisPlayer }] = await Promise.all([
+      import('../micro-defis/client/HostScreen.js'),
+      import('../micro-defis/client/PlayerScreen.js'),
+    ]);
+    return {
+      Settings: fieldSettings([{ key: 'rounds', label: 'Défis', min: 1, max: 12 }]),
+      Host: MicroDefisHost,
+      Player: MicroDefisPlayer,
+    };
+  }),
+  funambule: lazyViews(async () => {
+    const [{ FunambuleHost }, { FunambulePlayer }] = await Promise.all([
+      import('../funambule/client/HostScreen.js'),
+      import('../funambule/client/PlayerScreen.js'),
+    ]);
+    return {
+      Settings: fieldSettings([{ key: 'rounds', label: 'Manches', min: 1, max: 6 }]),
+      Host: FunambuleHost,
+      Player: FunambulePlayer,
     };
   }),
   'aventure-ia': lazyViews(async () => {
