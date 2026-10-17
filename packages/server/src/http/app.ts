@@ -68,6 +68,11 @@ import type { RealtimeHub } from '../realtime/hub.js';
 import { ProfileError, type ProfileService } from '../profiles/service.js';
 import { type DbBackupScheduler, listDbBackups } from '../db/backup.js';
 import type { CharacterPackService } from '../characters/packs.js';
+import type { AiRuntime } from '../ai/runtime.js';
+import type { ImageLibrary } from '../images/library.js';
+import { GAME_IMAGE_ID } from '@partyhub/shared';
+import { aiProviderUpdateSchema } from '../ai/settings.js';
+import { PRESETS } from '../config.js';
 
 export interface AppDeps {
   config: AppConfig;
@@ -93,6 +98,10 @@ export interface AppDeps {
   characterPacks: CharacterPackService;
   /** Sauvegardes automatiques de la base. Absent = fonction non configurée. */
   dbBackups?: DbBackupScheduler;
+  /** IA générative : fournisseurs de l'environnement et de l'administration. */
+  ai: AiRuntime;
+  /** Images générées par IA (portraits, fonds) : servies publiquement par identifiant. */
+  imageLibrary?: ImageLibrary;
 }
 
 const ADMIN_COOKIE = 'ph_admin';
@@ -144,6 +153,12 @@ export function createApp(deps: AppDeps): express.Express {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Referrer-Policy', 'same-origin');
     res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+    // Capteurs (gyroscope, accéléromètre, magnétomètre) et appareils (micro, caméra) : réservés à ce site.
+    // Le navigateur refuse les capteurs hors HTTPS ; cet en-tête évite qu'une politique héritée les coupe.
+    res.setHeader(
+      'Permissions-Policy',
+      'accelerometer=(self), gyroscope=(self), magnetometer=(self), microphone=(self), camera=(self)',
+    );
     // YouTube est autorisé uniquement pour les extraits des jeux de questions (API du lecteur,
     // iframe du lecteur, oEmbed de l'administration). Tout le reste reste limité à ce site.
     res.setHeader(
@@ -516,6 +531,19 @@ export function createApp(deps: AppDeps): express.Express {
     res.sendFile(assets.filePath(asset.id), (err) => {
       if (err && !res.headersSent) res.status(404).json({ error: 'Fichier introuvable.' });
     });
+  });
+
+  /** Images générées par IA : identifiants aléatoires, contenu immuable. */
+  api.get('/ai-images/:id', (req, res) => {
+    const id = req.params.id ?? '';
+    const image = GAME_IMAGE_ID.test(id) ? deps.imageLibrary?.data(id) : null;
+    if (!image) {
+      res.status(404).json({ error: 'Image introuvable.' });
+      return;
+    }
+    res.setHeader('Content-Type', image.mime);
+    res.setHeader('Cache-Control', 'public, max-age=86400, immutable');
+    res.send(image.bytes);
   });
 
   /** Fonds d'écran affichés sur chaque écran (adresses des images de la médiathèque, ou null). */
@@ -1531,6 +1559,48 @@ export function createApp(deps: AppDeps): express.Express {
       'Mode test modifié par l’administrateur',
     );
     res.json({ mode: parsed.data });
+  });
+
+  /**
+   * Fournisseurs d'IA. Les clés ne sortent jamais du serveur : on sait seulement si une clé existe, et d'où elle vient.
+   */
+  admin.get('/ai', (_req, res) => {
+    res.json(deps.ai.status());
+  });
+
+  admin.put('/ai/:id', (req, res) => {
+    const id = req.params.id ?? '';
+    if (!PRESETS.some((p) => p.id === id)) {
+      res.status(404).json({ error: 'Fournisseur inconnu.' });
+      return;
+    }
+    const parsed = aiProviderUpdateSchema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.issues[0]?.message ?? 'Réglages invalides.' });
+      return;
+    }
+    const { error, changed } = deps.ai.update(id, parsed.data);
+    if (error) {
+      res.status(400).json({ error });
+      return;
+    }
+    // Journal : les noms des champs modifiés, jamais leurs valeurs (la clé en particulier).
+    logger.info(
+      { event: 'admin.ai.updated', provider: id, fields: changed },
+      'Fournisseur d’IA modifié par l’administrateur',
+    );
+    res.json(deps.ai.status());
+  });
+
+  admin.post('/ai/:id/test', async (req, res) => {
+    const id = req.params.id ?? '';
+    if (!PRESETS.some((p) => p.id === id)) {
+      res.status(404).json({ error: 'Fournisseur inconnu.' });
+      return;
+    }
+    const result = await deps.ai.test(id);
+    logger.info({ event: 'admin.ai.tested', provider: id, ok: result.ok }, 'Clé d’IA testée par l’administrateur');
+    res.json(result);
   });
 
   admin.post('/rooms/purge-idle', (_req, res) => {

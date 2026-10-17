@@ -1,5 +1,5 @@
 import type { AiClient, AiRequest } from '@partyhub/shared';
-import type { AiConfig, AiProviderConfig } from '../config.js';
+import { AI_DEFAULTS, type AiConfig, type AiProviderConfig } from '../config.js';
 
 /**
  * Client d'IA générative pour les jeux racontés. Plusieurs fournisseurs, appelés directement par `fetch`, sans SDK :
@@ -31,7 +31,11 @@ export interface AiLogger {
 }
 
 export interface AiClientOptions {
-  config: AiConfig;
+  /**
+   * Réglages en vigueur. Une fonction permet de les changer sans recréer le client : les compteurs d'appels
+   * (horaire et journaliers) restent ceux de la salle, même quand l'administrateur modifie une clé.
+   */
+  config: AiConfig | (() => AiConfig | undefined);
   fetch?: typeof fetch;
   now?: () => number;
   sleep?: (ms: number) => Promise<void>;
@@ -107,7 +111,8 @@ export function buildRequest(
 }
 
 export function createAiClient(options: AiClientOptions): AiClient {
-  const { config } = options;
+  const current: () => AiConfig | undefined =
+    typeof options.config === 'function' ? options.config : () => options.config as AiConfig;
   const doFetch = options.fetch ?? fetch;
   const now = options.now ?? Date.now;
   const sleep = options.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
@@ -140,7 +145,8 @@ export function createAiClient(options: AiClientOptions): AiClient {
 
   function checkHourly(): void {
     prune(hourCalls, HOUR_MS);
-    if (hourCalls.length >= config.maxCallsPerHour) throw new AiError(HOURLY_LIMIT_MESSAGE, false);
+    const limit = current()?.maxCallsPerHour ?? AI_DEFAULTS.maxCallsPerHour;
+    if (hourCalls.length >= limit) throw new AiError(HOURLY_LIMIT_MESSAGE, false);
   }
 
   /** Compte un appel avant de l'envoyer ; refuse, sans rien envoyer, au-delà des limites. */
@@ -155,7 +161,7 @@ export function createAiClient(options: AiClientOptions): AiClient {
   /** Un appel HTTP, borné par le délai et par le signal d'annulation de la salle. */
   async function attempt(provider: AiProviderConfig, request: AiRequest): Promise<string> {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), config.timeoutMs);
+    const timer = setTimeout(() => controller.abort(), current()?.timeoutMs ?? AI_DEFAULTS.timeoutMs);
     const onAbort = () => controller.abort();
     request.signal?.addEventListener('abort', onAbort);
     try {
@@ -208,6 +214,8 @@ export function createAiClient(options: AiClientOptions): AiClient {
 
   return {
     async complete(request: AiRequest): Promise<string> {
+      const config = current();
+      if (!config || config.providers.length === 0) throw new AiError('Aucun fournisseur d’IA configuré.', false);
       checkHourly();
       let last: AiError | undefined;
       for (const provider of config.providers) {

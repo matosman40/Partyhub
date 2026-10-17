@@ -16,6 +16,7 @@ import {
 } from '@partyhub/shared';
 import { hashPassword, verifyPassword } from '../auth.js';
 import type { Store } from '../db/store.js';
+import { purgeGameData } from './game-data.js';
 
 const SESSION_TTL_MS = 90 * 24 * 60 * 60 * 1000;
 
@@ -263,6 +264,8 @@ export class ProfileService {
   delete(profileId: string): void {
     // Les voix partent avec le profil (la clé étrangère l'assure aussi, mais on ne compte pas dessus).
     this.db.prepare('DELETE FROM voice_clips WHERE profile_id = ?').run(profileId);
+    // Les données de jeu (personnages gardés d'une partie à l'autre) aussi.
+    purgeGameData(this.store, profileId);
     this.db.prepare('DELETE FROM profiles WHERE id = ?').run(profileId);
   }
 

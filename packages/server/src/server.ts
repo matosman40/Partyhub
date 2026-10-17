@@ -17,6 +17,7 @@ import { MediaQuizService } from './media/service.js';
 import { PackageService } from './packages/service.js';
 import { hashPassword } from './auth.js';
 import { effectiveNotice } from './catalog.js';
+import { gameDataFor } from './profiles/game-data.js';
 import { ProfileService } from './profiles/service.js';
 import type { AppConfig } from './config.js';
 import { createApp } from './http/app.js';
@@ -25,7 +26,10 @@ import type { Logger } from './logger.js';
 import type { RotatingFile } from './logs/rotating-file.js';
 import { RealtimeHub, type SocketData } from './realtime/hub.js';
 import { RoomManager } from './rooms/manager.js';
-import { createAiClient } from './ai/client.js';
+import { AiRuntime } from './ai/runtime.js';
+import { IMAGES_DEFAULTS, buildImageProviders } from './images/config.js';
+import { createGameImages } from './images/game-images.js';
+import { ImageLibrary } from './images/library.js';
 import { DbBackupScheduler } from './db/backup.js';
 import { compileTrustProxy } from './trust-proxy.js';
 import type { JoinThrottleOptions } from './realtime/join-throttle.js';
@@ -108,27 +112,27 @@ export async function createServer(opts: ServerOptions): Promise<PartyServer> {
   const characterPacks = new CharacterPackService(store.db);
   const hub = new RealtimeHub(compileTrustProxy(config.trustProxy ?? 'loopback'), opts.joinThrottle);
   hub.setCadence(() => appliedCadence(store.getTestMode()));
-  const aiClient = config.ai ? createAiClient({ config: config.ai, logger }) : undefined;
-  if (config.ai) {
-    logger.info(
-      {
-        event: 'ai.enabled',
-        providers: config.ai.providers.map((p) => ({
-          id: p.id,
-          model: p.model,
-          free: p.free,
-          maxCallsPerDay: p.maxCallsPerDay ?? null,
-        })),
-      },
-      'Génération par IA activée',
-    );
-  }
+  // Les fournisseurs viennent de l'environnement et de l'administration (clés saisies dans l'interface).
+  const aiRuntime = new AiRuntime(store, config.ai, config.dataDir, logger);
+  // Images générées (portraits, fonds) : une bibliothèque partagée par les jeux, alimentée par les fournisseurs
+  // configurés (Cloudflare, ModelScope). Sans fournisseur, les jeux gardent leur rendu de secours.
+  const imageLibrary = new ImageLibrary(store);
+  const imageConfig = config.images ?? { providers: [], ...IMAGES_DEFAULTS };
+  const gameImages = createGameImages({
+    providers: buildImageProviders(imageConfig),
+    library: imageLibrary,
+    maxPerDay: imageConfig.maxPerDay,
+    timeoutMs: imageConfig.timeoutMs,
+    logger,
+  });
   const manager = new RoomManager(
     {
       now: () => Date.now(),
       random: () => Math.random(),
       logger,
-      ...(aiClient ? { ai: aiClient } : {}),
+      ai: aiRuntime,
+      images: gameImages,
+      gameData: gameDataFor(store),
       maxPlayers: () => store.getSettings().maxPlayers,
       graceMs: () => store.getSettings().graceSeconds * 1000,
       notice: (gameId) => {
@@ -165,6 +169,8 @@ export async function createServer(opts: ServerOptions): Promise<PartyServer> {
   const app = createApp({
     config,
     logger,
+    ai: aiRuntime,
+    imageLibrary,
     journal: opts.journal,
     store,
     manager,

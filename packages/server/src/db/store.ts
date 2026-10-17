@@ -368,6 +368,26 @@ export const MIGRATIONS: Migration[] = [
       `);
     },
   },
+  {
+    version: 13,
+    description: 'Images générées par IA (portraits et fonds), partagées par les jeux, stockées en base',
+    up(db) {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS ai_images (
+          id         TEXT PRIMARY KEY,
+          kind       TEXT NOT NULL,
+          tag        TEXT NOT NULL,
+          mime       TEXT NOT NULL,
+          provider   TEXT NOT NULL,
+          prompt     TEXT NOT NULL,
+          size       INTEGER NOT NULL,
+          data       BLOB NOT NULL,
+          created_at TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS ai_images_by_tag ON ai_images (kind, tag, created_at);
+      `);
+    },
+  },
 ];
 
 /** Entrée d'une banque BOUM ! telle qu'elle est stockée. */

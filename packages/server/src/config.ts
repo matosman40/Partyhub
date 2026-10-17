@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { compileTrustProxy } from './trust-proxy.js';
+import { imagesFromEnv, type ImagesConfig } from './images/config.js';
 
 /** Protocole d'appel : Anthropic (Messages) ou compatible OpenAI (chat/completions). */
 export type AiProtocol = 'anthropic' | 'openai';
@@ -35,6 +36,11 @@ export interface AiConfig {
 
 export interface AppConfig {
   port: number;
+  /**
+   * Fournisseurs d'images (Cloudflare, ModelScope) : clés de l'environnement, plafonds. `loadConfig` le renseigne
+   * toujours ; sans lui (serveur créé par programme), il n'y a simplement aucun fournisseur.
+   */
+  images?: ImagesConfig;
   host: string;
   dataDir: string;
   dbFile: string;
@@ -80,6 +86,9 @@ function intFromEnv(name: string, raw: string | undefined, fallback: number, min
 
 const MB = 1024 * 1024;
 
+/** Réglages d'appel par défaut, quand l'environnement n'en donne pas (l'administration peut configurer sans lui). */
+export const AI_DEFAULTS = { timeoutMs: 30000, maxCallsPerHour: 300 } as const;
+
 /** BUILTIN_GAMES : « on » active les jeux intégrés sur une installation neuve ; « off » (défaut) les désactive. */
 export function builtinGamesFromEnv(raw: string | undefined): boolean {
   const value = (raw ?? '').trim().toLowerCase();
@@ -89,7 +98,7 @@ export function builtinGamesFromEnv(raw: string | undefined): boolean {
 }
 
 /** Fournisseur connu : protocole, adresse par défaut, variable de clé et paramètres d'appel. */
-interface ProviderPreset {
+export interface ProviderPreset {
   id: string;
   protocol: AiProtocol;
   keyEnv: string;
@@ -109,7 +118,7 @@ interface ProviderPreset {
  * des fournisseurs. Le mode JSON n'est activé que là où il est documenté ; ailleurs, la réponse texte est lue avec une
  * extraction tolérante du JSON. Tout autre service compatible OpenAI passe par « custom ».
  */
-const PRESETS: ProviderPreset[] = [
+export const PRESETS: ProviderPreset[] = [
   {
     id: 'anthropic',
     protocol: 'anthropic',
@@ -193,6 +202,32 @@ const PRESETS: ProviderPreset[] = [
   },
 ];
 
+/**
+ * Fournisseur construit à partir de sa clé et de réglages saisis dans l'administration. Même règles que l'environnement :
+ * modèle et adresse vérifiés avant tout appel.
+ */
+export function providerFromPreset(
+  preset: ProviderPreset,
+  fields: { apiKey: string; model?: string; baseUrl?: string; maxCallsPerDay?: number },
+): AiProviderConfig {
+  const model = fields.model?.trim() || preset.defaultModel;
+  if (!model) throw new Error(`Le modèle est obligatoire pour « ${preset.id} ».`);
+  const baseUrl = fields.baseUrl?.trim() || preset.baseUrl;
+  if (!baseUrl) throw new Error(`L’adresse du service est obligatoire pour « ${preset.id} ».`);
+  assertHttpUrl('Adresse du service', baseUrl);
+  return {
+    id: preset.id,
+    protocol: preset.protocol,
+    apiKey: fields.apiKey,
+    model,
+    endpoint: `${baseUrl.replace(/\/+$/, '')}${preset.path}`,
+    maxTokensField: preset.maxTokensField,
+    jsonMode: preset.jsonMode,
+    free: preset.free,
+    maxCallsPerDay: fields.maxCallsPerDay,
+  };
+}
+
 /** Entier facultatif : absent ou vide, pas de limite. */
 function optionalIntFromEnv(name: string, raw: string | undefined, min: number, max: number): number | undefined {
   if (raw === undefined || raw.trim() === '') return undefined;
@@ -263,8 +298,14 @@ export function aiFromEnv(env: NodeJS.ProcessEnv): AiConfig | undefined {
   });
   return {
     providers,
-    timeoutMs: intFromEnv('AI_TIMEOUT_MS', env.AI_TIMEOUT_MS, 30000, 5000, 120000),
-    maxCallsPerHour: intFromEnv('AI_MAX_CALLS_PER_HOUR', env.AI_MAX_CALLS_PER_HOUR, 300, 1, 100000),
+    timeoutMs: intFromEnv('AI_TIMEOUT_MS', env.AI_TIMEOUT_MS, AI_DEFAULTS.timeoutMs, 5000, 120000),
+    maxCallsPerHour: intFromEnv(
+      'AI_MAX_CALLS_PER_HOUR',
+      env.AI_MAX_CALLS_PER_HOUR,
+      AI_DEFAULTS.maxCallsPerHour,
+      1,
+      100000,
+    ),
   };
 }
 
@@ -298,6 +339,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     githubToken: env.GITHUB_TOKEN?.trim() || undefined,
     builtinGames: builtinGamesFromEnv(env.BUILTIN_GAMES),
     ai: aiFromEnv(env),
+    images: imagesFromEnv(env),
     logLevel: env.LOG_LEVEL?.trim() || 'info',
     logFile: {
       dir: env.LOG_DIR?.trim() || path.join(dataDir, 'logs'),
