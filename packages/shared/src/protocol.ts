@@ -4,6 +4,7 @@ import type { GameDetails } from './schemas.js';
 import type { DeviceInfo, DeviceKind } from './devices.js';
 import type { SettingsBounds } from './settings-form.js';
 import type { CharacterSpec } from './characters.js';
+import type { SensorEvent, SensorSample } from './sensors.js';
 
 export type { DeviceInfo, DeviceKind };
 
@@ -210,6 +211,8 @@ export interface ClientToServerEvents {
   'player:lobby-move': (p: LobbyPosition, ack: Ack) => void;
   'player:lobby-mood': (p: LobbyMoodChoice, ack: Ack) => void;
   'player:voice': (p: { id: string }, ack: Ack) => void;
+  /** Capteurs du téléphone : pas d'accusé, relayé seulement aux écrans pendant une partie. */
+  'player:sensor': (p: SensorSample) => void;
 
   // Observateurs (regardent le plateau sans jouer ; aucune action de jeu)
   'observer:join': (p: { code: string; device?: DeviceInfo }, ack: Ack) => void;
@@ -228,4 +231,5 @@ export interface ServerToClientEvents {
   'room:lobby-mood': (e: LobbyMoodEvent) => void;
   'room:lobby-position': (e: LobbyPositionEvent) => void;
   'room:voice': (e: VoiceEvent) => void;
+  'room:sensor': (e: SensorEvent) => void;
 }

@@ -13,9 +13,64 @@ import type { ZodTypeAny } from 'zod';
 export interface PlayerRef {
   id: string;
   name: string;
+  /** Profil du joueur, quand il en a un : permet de garder des données d'une partie à l'autre. */
+  profileId?: string | null;
+}
+
+/**
+ * Données qu'un jeu garde pour un profil, d'une partie à l'autre (par exemple les personnages d'un joueur).
+ * Synchrone et borné : le jeu valide ce qu'il lit, et ne reçoit jamais les données d'un autre profil.
+ * Absent quand la salle ne peut pas stocker (aucun profil, ou stockage indisponible).
+ */
+export interface ProfileDataStore {
+  /** Données du profil pour ce jeu, ou null. Une valeur illisible renvoie null. */
+  read(profileId: string): unknown | null;
+  /** Remplace les données du profil pour ce jeu. Lève une erreur si la valeur est trop volumineuse. */
+  write(profileId: string, value: unknown): void;
+}
+
+/** Catégories d'images que les jeux peuvent demander : un portrait de personnage, ou un fond de décor. */
+export type GameImageKind = 'portrait' | 'fond';
+
+/** Identifiant d'image gardée par le serveur : 24 caractères hexadécimaux. */
+export const GAME_IMAGE_ID = /^[a-f0-9]{24}$/;
+
+/** Image gardée dans la bibliothèque partagée. `tag` range l'image par thème, pour la réutiliser. */
+export interface GameImage {
+  id: string;
+  kind: GameImageKind;
+  tag: string;
+  /** Adresse publique de l'image (chemin relatif au serveur). */
+  url: string;
+}
+
+export interface GameImageRequest {
+  kind: GameImageKind;
+  /** Description de l'image, en français ou en anglais. Les jeux écrivent leur propre style. */
+  prompt: string;
+  /** Thème de rangement : l'image sera réutilisable pour ce même thème. */
+  tag: string;
+  signal?: AbortSignal;
+}
+
+/**
+ * Bibliothèque d'images partagée par les jeux : générer une image, ou reprendre celles déjà gardées.
+ * Une image qui n'a pas pu être générée renvoie null : le jeu garde alors son rendu de secours.
+ */
+export interface GameImages {
+  /** Faux quand aucun fournisseur d'images n'est configuré. */
+  available(): boolean;
+  /** Génère une image et la garde dans la bibliothèque. Null en cas d'échec, de limite atteinte ou d'annulation. */
+  generate(request: GameImageRequest): Promise<GameImage | null>;
+  /** Images déjà gardées pour cette catégorie et ce thème, les plus anciennes d'abord. */
+  list(kind: GameImageKind, tag: string): GameImage[];
 }
 
 export interface GameContext {
+  /** Données par profil pour ce jeu (voir `ProfileDataStore`). */
+  profileData?: ProfileDataStore;
+  /** Images générées par un fournisseur (portraits, fonds). Absent si aucun fournisseur d'images n'est configuré. */
+  images?: GameImages;
   /** Horloge serveur, en millisecondes epoch. */
   now(): number;
   /** Planifie un minuteur nommé : `onTimer(state, key)` sera appelé à échéance. */
@@ -44,6 +99,8 @@ export interface AiRequest {
 /** Client d'IA générative. `complete` renvoie le texte brut de la réponse ; le jeu le valide lui-même. */
 export interface AiClient {
   complete(request: AiRequest): Promise<string>;
+  /** Faux quand aucun fournisseur n'est configuré : le jeu prend alors son histoire de secours, sans erreur. */
+  available?(): boolean;
 }
 
 /**
