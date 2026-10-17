@@ -7,6 +7,7 @@ import { imposteur } from './imposteur/module.js';
 import { plusOuMoins } from './plus-ou-moins/module.js';
 import { reflexe } from './reflexe/module.js';
 import { microDefis } from './micro-defis/module.js';
+import { gagsEnRafale } from './gags-en-rafale/module.js';
 import { funambule } from './funambule/module.js';
 import { bombesParty } from './bombes-party/module.js';
 import { createCardGame } from './cards/engine.js';
@@ -39,6 +40,7 @@ export const gameRegistry: GameModule[] = [
   plusOuMoins,
   reflexe,
   microDefis,
+  gagsEnRafale,
   funambule,
   bombesParty,
   createCardGame(cardGamePresets['cartes-couleurs'], { id: 'cartes-couleurs' }),
@@ -76,6 +78,10 @@ export { microDefis, microDefisSettingsSchema } from './micro-defis/module.js';
 export type { MicroDefisState, MicroDefisSettings } from './micro-defis/module.js';
 export { MICROGAMES, MICROGAME_IDS, judge as judgeMicrogame, pileMarker } from './micro-defis/microgames.js';
 export type { Microgame, MicrogameId } from './micro-defis/microgames.js';
+export { gagsEnRafale, gagsSettingsSchema } from './gags-en-rafale/module.js';
+export type { GagsState, GagsSettings } from './gags-en-rafale/module.js';
+export { GAGS, GAG_IDS, judge as judgeGag, flyAt } from './gags-en-rafale/gags.js';
+export type { Gag, GagId } from './gags-en-rafale/gags.js';
 export { funambule, funambuleSettingsSchema } from './funambule/module.js';
 export type { FunambuleState, FunambuleSettings, FunambulePhase } from './funambule/module.js';
 export { judgeWalk, windAt, windStrength, FallDetector, WALK_MS } from './funambule/rules.js';

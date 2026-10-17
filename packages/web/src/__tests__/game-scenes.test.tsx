@@ -9,6 +9,7 @@ const BUILTIN_IDS = [
   'aventure-ia',
   'bombes-party',
   'funambule',
+  'gags-en-rafale',
   'imposteur',
   'loups-village',
   'micro-defis',

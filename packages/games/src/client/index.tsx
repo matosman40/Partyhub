@@ -158,6 +158,17 @@ export const clientViews: Record<string, GameClientViews> = {
       Player: MicroDefisPlayer,
     };
   }),
+  'gags-en-rafale': lazyViews(async () => {
+    const [{ GagsHost }, { GagsPlayer }] = await Promise.all([
+      import('../gags-en-rafale/client/HostScreen.js'),
+      import('../gags-en-rafale/client/PlayerScreen.js'),
+    ]);
+    return {
+      Settings: fieldSettings([{ key: 'rounds', label: 'Gags', min: 1, max: 20 }]),
+      Host: GagsHost,
+      Player: GagsPlayer,
+    };
+  }),
   funambule: lazyViews(async () => {
     const [{ FunambuleHost }, { FunambulePlayer }] = await Promise.all([
       import('../funambule/client/HostScreen.js'),

@@ -6,6 +6,7 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 
 ### Ajouté
 
+- Gags en rafale : nouveau jeu, seul ou à plusieurs, façon jeux-éclair loufoques. Six gags d’une seconde jouent sur le téléphone : lancer la crêpe, écraser une mouche qui bouge, gonfler un ballon, ne pas toucher un bouton rouge, faire la statue, gratter un ticket. Une réussite rapporte 100 points, plus jusqu’à 60 pour la rapidité. De 1 à 20 gags, 10 par défaut. Le prompt complet pour recréer le jeu est servi par l’application, à `/prompts/gags-en-rafale.md`.
 - Fiches de jeu, façon boutique : chaque jeu a sa page (`/jeux/<identifiant>`), avec un en-tête aux couleurs du jeu, la notice complète (but, déroulé, astuces), une fiche technique (type, joueurs, durée, IA, version, lancé ou non sur cet appareil) et les autres jeux de la même catégorie. « Créer la salle » et « Essayer seul » sont sur la fiche.
 - Catalogue : filtres par nombre de joueurs, type de jeu, durée (moins de 10 min, de 10 à 25 min, plus de 25 min), intelligence artificielle (avec ou sans IA) et jeux joués récemment. Recherche par nom ou description, tri par nom, durée, nombre de joueurs ou jeux récents. Les filtres restent dans l’adresse de la page : un retour depuis une fiche retrouve la même liste.
 - Catalogue en fiches ou en liste. Un clic sur une ligne ouvre la fiche du jeu, où l’on peut revenir avant de créer une salle.

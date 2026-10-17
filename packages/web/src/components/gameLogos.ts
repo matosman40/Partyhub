@@ -54,6 +54,15 @@ export const GAME_LOGOS: Record<string, LogoSpec> = {
     mark: 'fuse',
     tilt: -2,
   },
+  'gags-en-rafale': {
+    lines: ['Gags', 'en rafale'],
+    fill: '#9dff4a',
+    edge: '#ff3dcf',
+    ink: '#0c0519',
+    sky: ['#2d0b4a', '#080214'],
+    mark: 'star',
+    tilt: -4,
+  },
   'micro-defis': {
     lines: ['Micro', 'Défis'],
     fill: '#ff5fd2',

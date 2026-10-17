@@ -779,6 +779,47 @@ const phrasesTrous: Scene = (c) => (
   </>
 );
 
+/** Gags en rafale : confettis et bulles qui tournent, pour un décor de fête qui part dans tous les sens. */
+const gagsEnRafale: Scene = (c) => {
+  const confetti = Array.from({ length: 44 }, (_, i) => {
+    const x = c.r() * W;
+    const y = c.r() * H;
+    const rot = c.r() * 360;
+    const colors = [c.fill, c.edge, '#7cf3ff', '#ff3dcf'];
+    return (
+      <rect
+        key={`c${i}`}
+        x={x}
+        y={y}
+        width={26}
+        height={10}
+        rx={3}
+        fill={colors[i % colors.length]}
+        opacity={0.55}
+        transform={`rotate(${rot.toFixed(1)} ${x.toFixed(1)} ${y.toFixed(1)})`}
+      />
+    );
+  });
+  const bubbles = Array.from({ length: 7 }, (_, i) => (
+    <circle
+      key={`b${i}`}
+      cx={c.r() * W}
+      cy={c.r() * H}
+      r={40 + c.r() * 90}
+      fill="none"
+      stroke={c.edge}
+      strokeWidth={6}
+      opacity={0.3 + (i % 3) * 0.1}
+    />
+  ));
+  return (
+    <g>
+      {bubbles}
+      {confetti}
+    </g>
+  );
+};
+
 const FALLBACK: Scene[] = [plutotQui, tarot, association, promoteur];
 
 const SCENES: Record<string, Scene> = {
@@ -800,6 +841,7 @@ const SCENES: Record<string, Scene> = {
   'poker-texas': poker,
   funambule,
   'micro-defis': microDefis,
+  'gags-en-rafale': gagsEnRafale,
 };
 
 /** Fond de scène du jeu, en SVG. À placer en premier enfant d'un conteneur positionné. */
