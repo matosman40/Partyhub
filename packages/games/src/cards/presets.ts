@@ -47,7 +47,7 @@ const couleursCards: CardEntry[] = [
 export const cartesCouleurs: CardGameDefinition = {
   name: 'Couleurs & chiffres',
   description: 'Le classique : suivez la couleur ou le chiffre, et videz votre main le premier.',
-  icon: '🃏',
+  icon: '🌈',
   theme: 'arcade',
   families: couleursFamilies,
   cards: couleursCards,

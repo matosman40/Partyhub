@@ -6,6 +6,10 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 
 ### Ajouté
 
+- Identité visuelle complète du catalogue : chaque jeu listé a son propre logo et son décor. Huit jeux n'en avaient pas (Couleurs & chiffres, Blanc-manger coco, Sudoku, Solitaire, Taquin, Mots croisés, Imite-moi, BOUM !) ; ils recevaient un décor emprunté à un autre jeu, choisi au hasard.
+- Bruitages de l'écran principal pour tous les jeux : lancement de la partie, bilan de chaque manche (bruit de jetons), fin de partie (fanfare). Aucun jeu n'a rien à faire ; un premier état reçu, comme une reprise d'écran, ne sonne pas. L'administration peut remplacer chaque bruitage.
+- Application installable : manifeste (nom, couleurs, icônes 192, 512 et adaptative), icône iOS et balises de partage. Le mode hors ligne reste prévu pour la version 0.7.0.
+- Contrôle qualité du catalogue (tests) : chaque jeu listé doit avoir une fiche complète (titre, description de 40 à 180 caractères, notice de 2 à 12 étapes), une icône unique, un logo et un décor dessinés.
 - Gags en rafale : nouveau jeu, seul ou à plusieurs, façon jeux-éclair loufoques. Six gags d’une seconde jouent sur le téléphone : lancer la crêpe, écraser une mouche qui bouge, gonfler un ballon, ne pas toucher un bouton rouge, faire la statue, gratter un ticket. Une réussite rapporte 100 points, plus jusqu’à 60 pour la rapidité. De 1 à 20 gags, 10 par défaut. Le prompt complet pour recréer le jeu est servi par l’application, à `/prompts/gags-en-rafale.md`.
 - Fiches de jeu, façon boutique : chaque jeu a sa page (`/jeux/<identifiant>`), avec un en-tête aux couleurs du jeu, la notice complète (but, déroulé, astuces), une fiche technique (type, joueurs, durée, IA, version, lancé ou non sur cet appareil) et les autres jeux de la même catégorie. « Créer la salle » et « Essayer seul » sont sur la fiche.
 - Catalogue : filtres par nombre de joueurs, type de jeu, durée (moins de 10 min, de 10 à 25 min, plus de 25 min), intelligence artificielle (avec ou sans IA) et jeux joués récemment. Recherche par nom ou description, tri par nom, durée, nombre de joueurs ou jeux récents. Les filtres restent dans l’adresse de la page : un retour depuis une fiche retrouve la même liste.
@@ -25,6 +29,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 
 ### Modifié
 
+- Icônes : Couleurs & chiffres (🌈) et Taquin (🔀) ne partagent plus leur icône avec un autre jeu.
+- Aventure IA : description raccourcie pour tenir sur une carte du catalogue. Tarot : une étape de la notice raccourcie, sans changer la règle.
 - Accueil : les puces de catégorie cèdent la place à la recherche, au tri, à l’affichage et à un panneau de filtres. Sur téléphone, les filtres se déplient depuis le bouton « Filtres ».
 - Statistiques des profils : un jeu renommé par l’administration s’y affiche sous son nouveau nom, et non plus sous son nom d’origine.
 - Réglages de Quiz Party et des Phrases à trous : un champ numérique vidé est ramené à sa borne minimale à la perte de focus, au lieu d’envoyer 0 au serveur.

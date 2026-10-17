@@ -11029,3 +11029,17 @@ input[type='file']::file-selector-button {
   align-items: baseline;
   gap: 0.1rem 0.45rem;
 }
+
+/* Vue d'un jeu en erreur : un message court, centré, à la place de la seule zone concernée. */
+.game-view-error {
+  display: grid;
+  gap: 0.4rem;
+  place-content: center;
+  min-height: 40vh;
+  padding: 2rem 1rem;
+  text-align: center;
+}
+
+.game-view-error p {
+  margin: 0;
+}

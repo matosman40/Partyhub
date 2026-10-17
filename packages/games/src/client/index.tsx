@@ -31,7 +31,16 @@ export {
   MEDIA_PREFS_KEY,
 } from './media.js';
 export type { MediaPrefs } from './media.js';
-export { isMuted, onMuteChange, setMuted, setSfxFiles, startMusic, stopMusic, unlockAudio } from './audio.js';
+export {
+  isMuted,
+  onMuteChange,
+  play as playSfx,
+  setMuted,
+  setSfxFiles,
+  startMusic,
+  stopMusic,
+  unlockAudio,
+} from './audio.js';
 export { SoundToggle } from './SoundToggle.js';
 export {
   motionAvailable,

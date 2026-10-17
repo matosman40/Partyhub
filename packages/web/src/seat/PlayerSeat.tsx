@@ -26,6 +26,7 @@ import { TestModeBadge } from '../components/TestModeBadge.js';
 import { poseOf, useLobbyMoods } from '../components/useLobbyMoods.js';
 import { useLobbyPositions } from '../components/useLobbyPositions.js';
 import { NoticeDialog } from '../components/NoticeDialog.js';
+import { GameViewBoundary } from '../components/GameView.js';
 import { Qr } from '../components/Qr.js';
 import { CornerMenu, DrawerSection } from '../components/CornerMenu.js';
 import { MyResult, TeamBadge, championshipSummary, hasChampionship, replayLabel } from '../components/Championship.js';
@@ -629,18 +630,20 @@ export function PlayerSeat({
               </div>
             )}
             {lobby.status === 'ended' && <MyResult lobby={lobby} playerId={you.id} />}
-            <Suspense fallback={<p className="muted">Chargement du jeu…</p>}>
-              <SensorSenderContext.Provider value={sendSensor}>
-                <views.Player
-                  publicState={game.public}
-                  playerState={game.player}
-                  playerId={you.id}
-                  now={view.now}
-                  send={send}
-                  connected={connected}
-                />
-              </SensorSenderContext.Provider>
-            </Suspense>
+            <GameViewBoundary gameId={lobby.game.id} publicState={game.public}>
+              <Suspense fallback={<p className="muted">Chargement du jeu…</p>}>
+                <SensorSenderContext.Provider value={sendSensor}>
+                  <views.Player
+                    publicState={game.public}
+                    playerState={game.player}
+                    playerId={you.id}
+                    now={view.now}
+                    send={send}
+                    connected={connected}
+                  />
+                </SensorSenderContext.Provider>
+              </Suspense>
+            </GameViewBoundary>
             <EmoteBar onPick={sendReaction} />
             {!compact && you.profile && <VoiceBar socket={socket} token={profileToken} />}
           </section>

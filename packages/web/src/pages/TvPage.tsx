@@ -19,6 +19,7 @@ import { NoticeDialog } from '../components/NoticeDialog.js';
 import { PlayerSeat } from '../seat/PlayerSeat.js';
 import { FitStage } from '../components/FitStage.js';
 import { Boundary } from '../components/Boundary.js';
+import { GameViewBoundary } from '../components/GameView.js';
 import { read3DPreference, supportsWebGL, write3DPreference } from '../three/prefs.js';
 import { AvatarsContext, MoodsContext, useWakeLock, type PromoteurPub } from '@partyhub/games/client';
 import { TvLobby, type HandoffCode } from './tv/TvLobby.js';
@@ -28,6 +29,7 @@ import { useActiveProfile } from '../profile/useProfile.js';
 import { useActivity } from './tv/useActivity.js';
 import { useGamePhotoCapture } from '../tv/useGamePhotoCapture.js';
 import { musicForLobby, useMusicSlot } from '../sounds.js';
+import { phaseOf, useGameCues } from '../tv/gameCues.js';
 import { canSend, OFFLINE_ACTION_ERROR, useConnection } from '../connection.js';
 
 /** Plateau 3D du Promoteur : chargé seulement quand il est affiché (Three.js reste hors du premier chargement). */
@@ -118,6 +120,8 @@ export function TvPage() {
 
   // Musique de la salle : menus avant la partie, fin de partie aux résultats, silence pendant le jeu.
   useMusicSlot(musicForLobby(view?.lobby.status));
+  // Bruitages de partie (début, bilan, fin) : tous les jeux qui annoncent leur étape en profitent.
+  useGameCues(view?.lobby.status ?? null, phaseOf(view?.game?.public));
   // Une coupure est annoncée sur l'écran : sinon, il reste figé sans que personne ne sache pourquoi.
   const connection = useConnection(getSocket());
 
@@ -172,9 +176,11 @@ export function TvPage() {
     <RoomSensors socket={socket}>
       <FitStage>
         {views && game && (
-          <Suspense fallback={<p className="muted">Chargement du jeu…</p>}>
-            <views.Host publicState={game.public} hostState={game.host} now={view.now} onAction={sendGameAction} />
-          </Suspense>
+          <GameViewBoundary gameId={lobby.game.id} publicState={game.public}>
+            <Suspense fallback={<p className="muted">Chargement du jeu…</p>}>
+              <views.Host publicState={game.public} hostState={game.host} now={view.now} onAction={sendGameAction} />
+            </Suspense>
+          </GameViewBoundary>
         )}
       </FitStage>
     </RoomSensors>

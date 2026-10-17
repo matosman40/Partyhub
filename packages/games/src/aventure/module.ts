@@ -893,7 +893,7 @@ export const aventureIa: GameModule<AventureState, AventureSettings> = {
     category: 'role',
     name: 'Aventure IA',
     description:
-      'Une aventure courte et racontée en direct : chacun incarne un personnage, parle aux habitants, vote les choix, affronte les ennemis tour par tour, et garde son personnage pour la prochaine partie.',
+      'Une aventure racontée en direct : chacun incarne un personnage, vote les choix et affronte les ennemis tour par tour.',
     icon: '🐉',
     version: '1.2.0',
     apiVersion: 1,

@@ -200,7 +200,7 @@ export const TAROT_NOTICE: GameNotice = {
     'Chacun reçoit 18 cartes, 6 forment le chien. Le donneur change à chaque donne. Si votre seul atout est le Petit (Excuse ou non), c’est le Petit sec : la donne est annulée et refaite.',
     'Enchères en un seul tour, à partir du joueur après le donneur : passez ou annoncez plus haut que l’enchère précédente. Petite (×1), Garde (×2), Garde sans le chien (×4), Garde contre le chien (×6).',
     'Si tout le monde passe, les cartes sont redistribuées par le donneur suivant. Sinon, la plus haute enchère désigne le preneur ; les trois autres forment la défense.',
-    'Petite ou Garde : le chien est montré à tous, le preneur le prend et écarte 6 cartes. Ni roi ni oudler à l’écart, des atouts seulement sans autre choix (ils sont montrés). L’écart compte pour le preneur.',
+    'Petite ou Garde : le chien est montré, le preneur le prend et écarte 6 cartes (ni roi ni oudler ; sans autre choix, des atouts, montrés). L’écart compte pour le preneur.',
     'Garde sans le chien : personne ne le voit, il compte pour le preneur. Garde contre le chien : personne ne le voit, il compte pour la défense.',
     'Le joueur après le donneur entame. Fournissez la couleur demandée ; sinon coupez, en surcoupant si possible ; sans atout, jouez ce que vous voulez. Sur un atout, montez si vous le pouvez.',
     'L’Excuse se joue à tout moment et ne gagne jamais le pli : elle reste à son camp, qui cède un demi-point si l’autre camp gagne le pli. Jouée au dernier pli, elle va au camp qui le remporte.',

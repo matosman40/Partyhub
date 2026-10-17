@@ -7,7 +7,7 @@ import { createSocket, type AppSocket } from '../realtime.js';
 import { viewsFor } from '../games.js';
 import { AvatarsContext } from '@partyhub/games/client';
 import { FitStage } from '../components/FitStage.js';
-import { Boundary } from '../components/Boundary.js';
+import { GameViewBoundary } from '../components/GameView.js';
 import { BackButton } from '../components/BackButton.js';
 import { ChatPanel, EmoteBar, ReactionLayer } from '../components/Social.js';
 import { ConnectingNotice } from '../components/ConnectingNotice.js';
@@ -135,10 +135,10 @@ export function ObserverPage() {
     <FitStage>
       {views && game && (
         <Suspense fallback={<p className="muted">Chargement du jeu…</p>}>
-          <Boundary fallback={<p className="muted">Ce plateau ne peut pas s’afficher ici.</p>}>
+          <GameViewBoundary gameId={lobby.game.id} publicState={game.public}>
             {/* Pas d'état d'hôte : le spectateur ne voit jamais les réponses secrètes ni les rôles cachés. */}
             <views.Host publicState={game.public} hostState={null} now={view.now} />
-          </Boundary>
+          </GameViewBoundary>
         </Suspense>
       )}
     </FitStage>

@@ -820,6 +820,258 @@ const gagsEnRafale: Scene = (c) => {
   );
 };
 
+/** Cartes couleurs : un éventail de cartes qui se déploie depuis le bas, avec des pastilles de couleur. */
+const cartesCouleurs: Scene = (c) => (
+  <>
+    <Stars c={c} count={36} maxY={H * 0.5} />
+    {[-2, -1, 0, 1, 2].map((i) => (
+      <g key={i} transform={`rotate(${i * 13} 800 900)`}>
+        <rect x={700} y={250} width={200} height={300} rx={26} fill={i % 2 ? c.fill : c.edge} opacity={0.92} />
+        <circle cx={800} cy={400} r={44} fill={c.ink} opacity={0.3} />
+        <rect x={722} y={290} width={26} height={26} rx={6} fill={c.ink} opacity={0.3} />
+      </g>
+    ))}
+  </>
+);
+
+/** Blanc-manger coco : plage, mer et cocotier, avec des noix de coco au pied du tronc. */
+const cartesCoco: Scene = (c) => (
+  <>
+    <circle cx={1180} cy={300} r={130} fill={c.fill} opacity={0.85} />
+    <rect x={0} y={H * 0.7} width={W} height={H * 0.3} fill={c.ink} opacity={0.35} />
+    <path
+      d={`M0 ${H * 0.7} Q800 ${H * 0.62} ${W} ${H * 0.7}`}
+      fill="none"
+      stroke={c.edge}
+      strokeWidth={8}
+      opacity={0.6}
+    />
+    <path
+      d="M560 900 Q600 560 700 380"
+      fill="none"
+      stroke={c.ink}
+      strokeWidth={36}
+      strokeLinecap="round"
+      opacity={0.75}
+    />
+    {[-150, -80, -10, 60, 130, 200].map((deg) => (
+      <ellipse
+        key={deg}
+        cx={700}
+        cy={380}
+        rx={170}
+        ry={44}
+        fill={c.edge}
+        opacity={0.9}
+        transform={`rotate(${deg} 700 380) translate(170 0)`}
+      />
+    ))}
+    {[
+      [684, 416],
+      [722, 416],
+      [704, 440],
+    ].map(([x, y]) => (
+      <circle key={`${x}-${y}`} cx={x} cy={y} r={24} fill={c.fill} />
+    ))}
+  </>
+);
+
+/** Sudoku : une grille 9 × 9 aux blocs 3 × 3 marqués, avec quelques cases remplies. */
+const sudoku: Scene = (c) => {
+  const size = 70;
+  const x0 = 865;
+  const y0 = 135;
+  const filled = Array.from({ length: 81 }, (_, i) => i).filter(() => c.r() < 0.22);
+  return (
+    <g>
+      {filled.map((i) => (
+        <rect
+          key={`f${i}`}
+          x={x0 + (i % 9) * size}
+          y={y0 + Math.floor(i / 9) * size}
+          width={size}
+          height={size}
+          fill={c.edge}
+          opacity={0.35}
+        />
+      ))}
+      {Array.from({ length: 10 }, (_, i) => (
+        <g key={`g${i}`} stroke={c.fill} strokeWidth={i % 3 ? 2 : 8} opacity={0.7}>
+          <line x1={x0 + i * size} y1={y0} x2={x0 + i * size} y2={y0 + 9 * size} />
+          <line x1={x0} y1={y0 + i * size} x2={x0 + 9 * size} y2={y0 + i * size} />
+        </g>
+      ))}
+    </g>
+  );
+};
+
+/** Solitaire : une table de jeu feutrée, une pile de cartes et un éventail en premier plan. */
+const solitaire: Scene = (c) => (
+  <>
+    <ellipse cx={800} cy={H * 0.62} rx={820} ry={380} fill={c.ink} opacity={0.35} />
+    <ellipse cx={800} cy={H * 0.6} rx={760} ry={340} fill="none" stroke={c.fill} strokeWidth={6} opacity={0.25} />
+    {[0, 1, 2, 3].map((i) => (
+      <rect
+        key={`p${i}`}
+        x={1080 + i * 6}
+        y={520 - i * 6}
+        width={170}
+        height={240}
+        rx={22}
+        fill={i % 2 ? c.fill : c.edge}
+        opacity={0.85}
+      />
+    ))}
+    {[-16, 0, 16].map((deg, i) => (
+      <rect
+        key={`e${i}`}
+        x={330}
+        y={520}
+        width={170}
+        height={240}
+        rx={22}
+        fill={i === 1 ? c.fill : c.edge}
+        opacity={0.95}
+        transform={`rotate(${deg} 415 640)`}
+      />
+    ))}
+  </>
+);
+
+/** Taquin : une grille de tuiles, une case vide, et une flèche qui indique le glissement. */
+const taquin: Scene = (c) => {
+  const size = 130;
+  const gap = 12;
+  const x0 = 960;
+  const y0 = 180;
+  const empty = 15;
+  const tiles: ReactNode[] = [];
+  for (let i = 0; i < 16; i++) {
+    if (i === empty) continue;
+    const x = x0 + (i % 4) * (size + gap);
+    const y = y0 + Math.floor(i / 4) * (size + gap);
+    tiles.push(
+      <g key={i}>
+        <rect x={x} y={y} width={size} height={size} rx={20} fill={i % 2 ? c.fill : c.edge} />
+        <circle cx={x + size / 2} cy={y + size / 2} r={22} fill={c.ink} opacity={0.25} />
+      </g>,
+    );
+  }
+  const ex = x0 + (empty % 4) * (size + gap);
+  const ey = y0 + Math.floor(empty / 4) * (size + gap);
+  const board = 4 * size + 3 * gap;
+  const mid = ey + size / 2;
+  return (
+    <g>
+      <rect x={x0 - 24} y={y0 - 24} width={board + 48} height={board + 48} rx={34} fill={c.ink} opacity={0.3} />
+      {tiles}
+      <rect x={ex} y={ey} width={size} height={size} rx={20} fill={c.ink} opacity={0.45} />
+      <path
+        d={`M${ex - 120} ${mid} H${ex - 20}`}
+        stroke={c.edge}
+        strokeWidth={14}
+        strokeLinecap="round"
+        strokeDasharray="6 26"
+        fill="none"
+      />
+    </g>
+  );
+};
+
+/** Mots croisés : une grille de cases blanches et noires, à bordure marquée. */
+const motsCroises: Scene = (c) => {
+  const size = 84;
+  const x0 = 860;
+  const y0 = 100;
+  const cells: ReactNode[] = [];
+  for (let r = 0; r < 8; r++) {
+    for (let k = 0; k < 8; k++) {
+      const black = c.r() < 0.2;
+      cells.push(
+        <rect
+          key={`${r}-${k}`}
+          x={x0 + k * size}
+          y={y0 + r * size}
+          width={size}
+          height={size}
+          fill={black ? c.ink : c.fill}
+          opacity={black ? 0.55 : 0.85}
+          stroke={c.ink}
+          strokeWidth={3}
+        />,
+      );
+    }
+  }
+  return <g>{cells}</g>;
+};
+
+/** Imite-moi : une scène de théâtre, deux rideaux et deux masques qui se font face. */
+const imiteMoi: Scene = (c) => (
+  <>
+    <Stars c={c} count={30} maxY={H * 0.35} />
+    <Curtain a={0} b={260} bottom={H * 0.7} color={c.edge} folds={4} opacity={0.85} />
+    <Curtain a={W} b={W - 260} bottom={H * 0.7} color={c.edge} folds={4} opacity={0.85} />
+    {[560, 1040].map((x, i) => (
+      <g key={x}>
+        <circle cx={x} cy={430} r={150} fill={i ? c.fill : c.edge} opacity={0.92} />
+        <circle cx={x - 52} cy={400} r={18} fill={c.ink} />
+        <circle cx={x + 52} cy={400} r={18} fill={c.ink} />
+        <path
+          d={i ? `M${x - 70} 470 Q${x} 540 ${x + 70} 470` : `M${x - 70} 480 Q${x} 420 ${x + 70} 480`}
+          fill="none"
+          stroke={c.ink}
+          strokeWidth={14}
+          strokeLinecap="round"
+        />
+      </g>
+    ))}
+    <rect x={0} y={H * 0.8} width={W} height={H * 0.2} fill={c.ink} opacity={0.4} />
+  </>
+);
+
+/** BOUM : une explosion étoilée au centre, des étincelles, et des nuages de fumée en bas. */
+const boum: Scene = (c) => {
+  const points: string[] = [];
+  for (let i = 0; i < 28; i++) {
+    const radius = i % 2 ? span(c.r, 170, 210) : span(c.r, 300, 380);
+    const angle = (i * Math.PI) / 14;
+    points.push(`${(800 + radius * Math.cos(angle)).toFixed(1)},${(430 + radius * Math.sin(angle)).toFixed(1)}`);
+  }
+  return (
+    <>
+      <Stars c={c} count={50} maxY={H * 0.55} />
+      <polygon
+        points={points.join(' ')}
+        fill={c.fill}
+        stroke={c.edge}
+        strokeWidth={10}
+        strokeLinejoin="round"
+        opacity={0.95}
+      />
+      <circle cx={800} cy={430} r={120} fill={c.edge} />
+      {Array.from({ length: 14 }, (_, i) => {
+        const angle = (i / 14) * Math.PI * 2;
+        return (
+          <line
+            key={i}
+            x1={800 + Math.cos(angle) * 460}
+            y1={430 + Math.sin(angle) * 460}
+            x2={800 + Math.cos(angle) * 560}
+            y2={430 + Math.sin(angle) * 560}
+            stroke={c.fill}
+            strokeWidth={8}
+            strokeLinecap="round"
+            opacity={0.6}
+          />
+        );
+      })}
+      {[0, 1, 2].map((i) => (
+        <circle key={`s${i}`} cx={520 + i * 280} cy={H * 0.92} r={90 + i * 20} fill={c.ink} opacity={0.35} />
+      ))}
+    </>
+  );
+};
+
 const FALLBACK: Scene[] = [plutotQui, tarot, association, promoteur];
 
 const SCENES: Record<string, Scene> = {
@@ -842,7 +1094,20 @@ const SCENES: Record<string, Scene> = {
   funambule,
   'micro-defis': microDefis,
   'gags-en-rafale': gagsEnRafale,
+  'cartes-couleurs': cartesCouleurs,
+  'cartes-coco': cartesCoco,
+  sudoku,
+  solitaire,
+  taquin,
+  'mots-croises': motsCroises,
+  'imite-moi': imiteMoi,
+  boum,
 };
+
+/** Vrai quand le jeu a son propre décor (et non l'un des décors génériques). */
+export function hasDrawnScene(gameId: string): boolean {
+  return Object.prototype.hasOwnProperty.call(SCENES, gameId);
+}
 
 /** Fond de scène du jeu, en SVG. À placer en premier enfant d'un conteneur positionné. */
 export function GameScene({ gameId, name, className }: { gameId: string; name: string; className?: string }) {

@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3a1670" />
+      <stop offset="1" stop-color="#0b0630" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#sky)" />
+  <g transform="rotate(-12 256 256)">
+    <polygon points="130,400 382,400 256,96" fill="#ffd23f" stroke="#ff3d8b" stroke-width="14" stroke-linejoin="round" />
+    <line x1="200" y1="230" x2="312" y2="230" stroke="#ff3d8b" stroke-width="22" stroke-linecap="round" />
+    <line x1="167" y1="310" x2="345" y2="310" stroke="#7cf3ff" stroke-width="22" stroke-linecap="round" />
+    <circle cx="256" cy="96" r="30" fill="#7cf3ff" stroke="#ffffff" stroke-width="8" />
+  </g>
+  <rect x="96" y="150" width="26" height="12" rx="4" fill="#ff3d8b" transform="rotate(30 109 156)" />
+  <circle cx="412" cy="170" r="13" fill="#9dff4a" />
+  <rect x="402" y="300" width="26" height="12" rx="4" fill="#7cf3ff" transform="rotate(-25 415 306)" />
+  <circle cx="110" cy="330" r="11" fill="#ffffff" />
+  <circle cx="340" cy="420" r="10" fill="#ff3d8b" />
+</svg>
