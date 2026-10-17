@@ -12,7 +12,7 @@ import {
 import type { Store } from '../db/store.js';
 import { setCustomGames } from '../games-registry.js';
 
-/** Préfixe des identifiants de jeux créés dans l'administration. */
+/** Préfixe des identifiants de jeux créés dans l’administration. */
 export const CUSTOM_GAME_PREFIX = 'custom-';
 
 export interface CardGameRecord {
@@ -38,7 +38,7 @@ export class CardGameService {
         const parsed = cardGameDefinitionSchema.safeParse(JSON.parse(row.definition));
         if (parsed.success) modules.push(createCardGame(parsed.data, { id: row.id }));
       } catch {
-        // Ligne illisible : on l'ignore plutôt que de bloquer le serveur.
+        // Ligne illisible : on l’ignore plutôt que de bloquer le serveur.
       }
     }
     setCustomGames('cards', modules);
@@ -61,7 +61,7 @@ export class CardGameService {
     return this.store.listCardGames().some((row) => row.id === id);
   }
 
-  /** Crée un jeu (id absent) ou remplace la définition d'un jeu existant. */
+  /** Crée un jeu (id absent) ou remplace la définition d’un jeu existant. */
   save(id: string | null, input: unknown): { ok: true; id: string } | { ok: false; error: string } {
     const parsed = cardGameDefinitionSchema.safeParse(input);
     if (!parsed.success) {
@@ -104,7 +104,7 @@ export class CardGameService {
     return true;
   }
 
-  /** Définition d'un jeu au format d'export, sans les fichiers joints (ajoutés par la route). */
+  /** Définition d’un jeu au format d’export, sans les fichiers joints (ajoutés par la route). */
   exportOf(id: string) {
     const record = this.list().find((r) => r.id === id);
     if (!record) return null;
@@ -127,7 +127,7 @@ export class CardGameService {
     return { ok: false, error: issue?.message ?? 'Fichier non reconnu.' };
   }
 
-  /** Copie d'un jeu de cartes, nommée « … (copie) ». */
+  /** Copie d’un jeu de cartes, nommée « … (copie) ». */
   duplicate(id: string): { ok: true; id: string } | { ok: false; error: string } {
     const original = this.list().find((r) => r.id === id);
     if (!original) return { ok: false, error: 'Jeu inconnu.' };

@@ -409,7 +409,7 @@ function CardGameEditor({
 
   /**
    * Change la mécanique. Passer au mémo, à la ressemblance ou aux plis retire effets et jokers : on prévient
-   * d'abord. L'atout n'existe que pour les plis et disparaît dès qu'on en sort.
+   * d’abord. L’atout n’existe que pour les plis et disparaît dès qu’on en sort.
    */
   function changeMechanic(next: CardMechanic) {
     const current = draft.rules.mechanic ?? 'shedding';
@@ -450,7 +450,7 @@ function CardGameEditor({
     setDraft((d) => ({ ...d, cards: d.cards.map((c) => (c.id === id ? { ...c, ...fields } : c)) }));
   }
 
-  /** Le choix d'une famille « joker » entraîne un effet joker, et réciproquement. */
+  /** Le choix d’une famille « joker » entraîne un effet joker, et réciproquement. */
   function changeFamily(card: CardEntry, family: string) {
     if (family === WILD_FAMILY) {
       updateCard(card.id, { family, effect: card.effect === 'draw4' ? 'draw4' : 'wild' });

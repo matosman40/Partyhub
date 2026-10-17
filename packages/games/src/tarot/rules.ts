@@ -2,22 +2,22 @@ import { WILD_FAMILY, type CardEntry, type CardGameDefinition, type GameNotice }
 
 /**
  * Règles pures du tarot à quatre : paquet de 78 cartes, valeur des cartes, cartes
- * jouables, gagnant d'un pli, validation de l'écart et marque d'une donne.
+ * jouables, gagnant d’un pli, validation de l’écart et marque d’une donne.
  * Le serveur et le téléphone utilisent les mêmes fonctions : une carte refusée sur
- * le téléphone l'est aussi sur le serveur, et inversement.
+ * le téléphone l’est aussi sur le serveur, et inversement.
  *
  * Identifiants des cartes :
  * - couleurs : lettre de la couleur (« s » pique, « h » cœur, « d » carreau, « c » trèfle)
  *   puis le rang de 1 à 14 (11 valet, 12 cavalier, 13 dame, 14 roi) : « h14 » = roi de cœur ;
  * - atouts : « t1 » (le Petit) à « t21 » ;
- * - l'Excuse : « excuse ».
+ * - l’Excuse : « excuse ».
  *
  * Les points se comptent en demi-points entiers : un roi vaut 9, une petite carte 1,
- * le paquet entier 182 (soit 91 points). On évite ainsi les erreurs d'arrondi.
+ * le paquet entier 182 (soit 91 points). On évite ainsi les erreurs d’arrondi.
  */
 
 export type SuitId = 's' | 'h' | 'd' | 'c';
-/** Famille d'une carte : une couleur, les atouts (« t ») ou l'Excuse (« e »). */
+/** Famille d’une carte : une couleur, les atouts (« t ») ou l’Excuse (« e »). */
 export type FamilyId = SuitId | 't' | 'e';
 export type Side = 'attack' | 'defence';
 
@@ -54,7 +54,7 @@ const FACE_NAME: Record<number, string> = { 11: 'Valet', 12: 'Cavalier', 13: 'Da
 // Paquet et lecture des cartes
 // ---------------------------------------------------------------------------
 
-/** Les 78 cartes : quatre couleurs de 14 cartes, 21 atouts et l'Excuse. */
+/** Les 78 cartes : quatre couleurs de 14 cartes, 21 atouts et l’Excuse. */
 export const TAROT_DECK: readonly string[] = [
   ...SUITS.flatMap((suit) => Array.from({ length: 14 }, (_, i) => `${suit.id}${i + 1}`)),
   ...Array.from({ length: 21 }, (_, i) => `t${i + 1}`),
@@ -77,7 +77,7 @@ function parse(id: string): Parsed {
   return PARSED.get(id) ?? { family: 'e', rank: -1 };
 }
 
-/** Vrai si l'identifiant désigne une carte du paquet. */
+/** Vrai si l’identifiant désigne une carte du paquet. */
 export function isCard(id: string): boolean {
   return PARSED.has(id);
 }
@@ -86,7 +86,7 @@ export function familyOf(id: string): FamilyId {
   return parse(id).family;
 }
 
-/** Rang : 1 à 14 dans une couleur, 1 à 21 pour un atout, 0 pour l'Excuse. */
+/** Rang : 1 à 14 dans une couleur, 1 à 21 pour un atout, 0 pour l’Excuse. */
 export function rankOf(id: string): number {
   return parse(id).rank;
 }
@@ -108,13 +108,13 @@ export function isKing(id: string): boolean {
   return p.family !== 't' && p.family !== 'e' && p.rank === 14;
 }
 
-/** Carte de couleur qui n'est pas un roi : la seule qu'on écarte sans condition. */
+/** Carte de couleur qui n’est pas un roi : la seule qu’on écarte sans condition. */
 function isPlainDiscard(id: string): boolean {
   const p = parse(id);
   return p.family !== 't' && p.family !== 'e' && p.rank < 14;
 }
 
-/** Valeur d'une carte en demi-points : roi 9, dame 7, cavalier 5, valet 3, oudler 9, autre 1. */
+/** Valeur d’une carte en demi-points : roi 9, dame 7, cavalier 5, valet 3, oudler 9, autre 1. */
 export function cardHalfPoints(id: string): number {
   if (isOudler(id)) return 9;
   const p = parse(id);
@@ -136,7 +136,7 @@ export function formatHalf(half: number): string {
   return `${half < 0 ? '−' : ''}${Math.floor(abs / 2)}${abs % 2 === 1 ? ',5' : ''}`;
 }
 
-/** Force d'une carte pour les tris : l'Excuse, puis les couleurs par rang, puis les atouts. */
+/** Force d’une carte pour les tris : l’Excuse, puis les couleurs par rang, puis les atouts. */
 export function cardStrength(id: string): number {
   const p = parse(id);
   if (p.family === 'e') return 0;
@@ -144,7 +144,7 @@ export function cardStrength(id: string): number {
   return p.rank;
 }
 
-/** Symbole court, comme sur la carte : « 10♥ », « R♠ », « 21 », « ★ » pour l'Excuse. */
+/** Symbole court, comme sur la carte : « 10♥ », « R♠ », « 21 », « ★ » pour l’Excuse. */
 export function cardSymbol(id: string): string {
   const p = parse(id);
   if (p.family === 'e') return '★';
@@ -152,7 +152,7 @@ export function cardSymbol(id: string): string {
   return `${FACE_SHORT[p.rank] ?? String(p.rank)}${SUIT_GLYPH[p.family]}`;
 }
 
-/** Nom complet (lecteurs d'écran, listes) : « Roi de cœur », « Atout 12 », « Le Petit », « Excuse ». */
+/** Nom complet (lecteurs d’écran, listes) : « Roi de cœur », « Atout 12 », « Le Petit », « Excuse ». */
 export function cardName(id: string): string {
   const p = parse(id);
   if (p.family === 'e') return 'Excuse';
@@ -160,7 +160,7 @@ export function cardName(id: string): string {
   return `${FACE_NAME[p.rank] ?? String(p.rank)} de ${SUIT_NAME[p.family]}`;
 }
 
-/** Nom avec article, pour les phrases du journal : « le roi de cœur », « l'atout 12 », « l'Excuse ». */
+/** Nom avec article, pour les phrases du journal : « le roi de cœur », « l’atout 12 », « l’Excuse ». */
 export function cardPhrase(id: string): string {
   const p = parse(id);
   if (p.family === 'e') return 'l’Excuse';
@@ -174,7 +174,7 @@ export function cardPhrase(id: string): string {
   return `${p.rank === 13 ? 'la' : 'le'} ${face.toLowerCase()} de ${SUIT_NAME[p.family]}`;
 }
 
-/** Nom d'une couleur en minuscules (« cœur »), pour les messages. */
+/** Nom d’une couleur en minuscules (« cœur »), pour les messages. */
 export function suitName(suit: SuitId): string {
   return SUIT_NAME[suit];
 }
@@ -182,7 +182,7 @@ export function suitName(suit: SuitId): string {
 // Couleurs alternées dans la main : noir, rouge, noir, rouge.
 const SUIT_ORDER: Record<string, number> = { s: 0, h: 1, c: 2, d: 3 };
 
-/** Main triée : les atouts du plus petit au plus grand, l'Excuse, puis pique, cœur, trèfle et carreau. */
+/** Main triée : les atouts du plus petit au plus grand, l’Excuse, puis pique, cœur, trèfle et carreau. */
 export function sortHand(cards: readonly string[]): string[] {
   const key = (id: string): number => {
     const p = parse(id);
@@ -248,12 +248,12 @@ export const TAROT_DEFINITION: CardGameDefinition = {
 
 const ENTRY_BY_ID: Map<string, CardEntry> = new Map(TAROT_DEFINITION.cards.map((c) => [c.id, c]));
 
-/** Entrée de rendu d'une carte (pour CardFace). */
+/** Entrée de rendu d’une carte (pour CardFace). */
 export function tarotEntry(id: string): CardEntry | undefined {
   return ENTRY_BY_ID.get(id);
 }
 
-/** Vrai si le seul atout de la main est le Petit (l'Excuse ne compte pas comme un atout ici). */
+/** Vrai si le seul atout de la main est le Petit (l’Excuse ne compte pas comme un atout ici). */
 export function hasPetitSec(hand: readonly string[]): boolean {
   const trumps = hand.filter(isTrump);
   return trumps.length === 1 && trumps[0] === PETIT;
@@ -263,7 +263,7 @@ export function hasPetitSec(hand: readonly string[]): boolean {
 // Jeu de la carte
 // ---------------------------------------------------------------------------
 
-/** Couleur demandée : celle de la première carte qui n'est pas l'Excuse, ou null (pli vide ou Excuse seule). */
+/** Couleur demandée : celle de la première carte qui n’est pas l’Excuse, ou null (pli vide ou Excuse seule). */
 export function ledFamily(trick: readonly string[]): SuitId | 't' | null {
   for (const id of trick) {
     if (isExcuse(id)) continue;
@@ -277,9 +277,9 @@ function highestTrump(trick: readonly string[]): number {
 }
 
 /**
- * Cartes jouables, dans l'ordre de la main. Fournir la couleur demandée ; sinon couper
- * (en surcoupant si possible), sinon jouer n'importe quoi. Sur un atout, monter si possible.
- * L'Excuse est toujours jouable.
+ * Cartes jouables, dans l’ordre de la main. Fournir la couleur demandée ; sinon couper
+ * (en surcoupant si possible), sinon jouer n’importe quoi. Sur un atout, monter si possible.
+ * L’Excuse est toujours jouable.
  */
 export function legalCards(hand: readonly string[], trick: readonly string[]): string[] {
   const led = ledFamily(trick);
@@ -316,9 +316,9 @@ export function playError(hand: readonly string[], trick: readonly string[], car
 }
 
 /**
- * Position (dans l'ordre de jeu) de la carte qui remporte le pli : le plus gros atout,
- * sinon la plus forte carte de la couleur demandée. L'Excuse ne gagne jamais.
- * Renvoie -1 si le pli ne contient que l'Excuse.
+ * Position (dans l’ordre de jeu) de la carte qui remporte le pli : le plus gros atout,
+ * sinon la plus forte carte de la couleur demandée. L’Excuse ne gagne jamais.
+ * Renvoie -1 si le pli ne contient que l’Excuse.
  */
 export function trickWinner(trick: readonly string[]): number {
   const led = ledFamily(trick);
@@ -349,7 +349,7 @@ export function plainDiscardCount(hand: readonly string[]): number {
   return hand.filter(isPlainDiscard).length;
 }
 
-/** Pourquoi cette carte ne peut pas aller à l'écart (main de 24 cartes), ou null si elle le peut. */
+/** Pourquoi cette carte ne peut pas aller à l’écart (main de 24 cartes), ou null si elle le peut. */
 export function ecartCardError(hand: readonly string[], id: string): string | null {
   if (!hand.includes(id)) return 'Cette carte n’est pas dans votre main.';
   if (isKing(id) || isOudler(id)) return 'Les rois et les oudlers ne vont pas à l’écart.';
@@ -359,12 +359,12 @@ export function ecartCardError(hand: readonly string[], id: string): string | nu
   return null;
 }
 
-/** Vrai si la carte peut faire partie d'un écart valable pour cette main. */
+/** Vrai si la carte peut faire partie d’un écart valable pour cette main. */
 export function canDiscard(hand: readonly string[], id: string): boolean {
   return ecartCardError(hand, id) === null;
 }
 
-/** Pourquoi cet écart est refusé, ou null s'il est valable. `hand` est la main avec le chien (24 cartes). */
+/** Pourquoi cet écart est refusé, ou null s’il est valable. `hand` est la main avec le chien (24 cartes). */
 export function ecartError(hand: readonly string[], ecart: readonly string[]): string | null {
   if (ecart.length !== CHIEN_SIZE) return `L’écart compte exactement ${CHIEN_SIZE} cartes.`;
   if (new Set(ecart).size !== ecart.length) return 'Carte choisie deux fois.';
@@ -377,7 +377,7 @@ export function ecartError(hand: readonly string[], ecart: readonly string[]): s
   return null;
 }
 
-/** Plus faible d'abord : valeur en points, puis force. */
+/** Plus faible d’abord : valeur en points, puis force. */
 export function byLowValue(a: string, b: string): number {
   return cardHalfPoints(a) - cardHalfPoints(b) || cardStrength(a) - cardStrength(b) || a.localeCompare(b);
 }
@@ -411,10 +411,10 @@ export const CONTRACT_COEF: Record<Contract, number> = {
   'garde-contre': 6,
 };
 
-/** Points à faire selon le nombre d'oudlers du preneur (0 à 3). */
+/** Points à faire selon le nombre d’oudlers du preneur (0 à 3). */
 export const POINTS_NEEDED: readonly number[] = [56, 51, 41, 36];
 
-/** Contrats plus forts que l'enchère actuelle (tous si personne n'a encore annoncé). */
+/** Contrats plus forts que l’enchère actuelle (tous si personne n’a encore annoncé). */
 export function contractsAbove(highest: Contract | null): Contract[] {
   const from = highest ? CONTRACTS.indexOf(highest) + 1 : 0;
   return CONTRACTS.slice(from);
@@ -425,7 +425,7 @@ export function chienIsRevealed(contract: Contract): boolean {
   return contract === 'petite' || contract === 'garde';
 }
 
-/** Camp qui reçoit le chien (ou l'écart) : la défense seulement en Garde contre. */
+/** Camp qui reçoit le chien (ou l’écart) : la défense seulement en Garde contre. */
 export function chienSide(contract: Contract): Side {
   return contract === 'garde-contre' ? 'defence' : 'attack';
 }
@@ -434,7 +434,7 @@ export interface DealInput {
   contract: Contract;
   /** Toutes les cartes comptées pour le preneur : plis, écart ou chien, Excuse gardée. */
   attackCards: readonly string[];
-  /** Échange de l'Excuse, en demi-points ajoutés au preneur (+1, -1 ou 0). */
+  /** Échange de l’Excuse, en demi-points ajoutés au preneur (+1, -1 ou 0). */
   excuseTransfer: number;
   /** Camp qui a remporté le dernier pli contenant le Petit, sinon null. */
   petitAuBout: Side | null;
@@ -455,7 +455,7 @@ export interface DealScore {
   /** +10 pour le preneur, -10 pour la défense, 0 sinon (avant multiplicateur). */
   pab: number;
   chelem: number;
-  /** Résultat d'un défenseur, au signe près : le preneur marque 3 fois ce total, chaque défenseur -1 fois. */
+  /** Résultat d’un défenseur, au signe près : le preneur marque 3 fois ce total, chaque défenseur -1 fois. */
   total: number;
 }
 

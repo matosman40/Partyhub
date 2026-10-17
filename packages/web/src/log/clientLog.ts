@@ -1,7 +1,7 @@
 /**
  * Journal du navigateur : erreurs de script, promesses rejetées, écran de secours, appels API et
  * connexion temps réel. Les entrées sont mises en file, envoyées par lots à /api/logs/client, et
- * vidées quand la page se ferme. Un échec d'envoi ne doit jamais produire de nouvelle erreur.
+ * vidées quand la page se ferme. Un échec d’envoi ne doit jamais produire de nouvelle erreur.
  */
 
 export type ClientLogLevel = 'error' | 'warn' | 'info';
@@ -26,7 +26,7 @@ export interface ClientLogEntry {
 const ENDPOINT = '/api/logs/client';
 /** Au plus cette taille de file : au-delà, les plus anciennes entrées sont abandonnées et comptées. */
 export const MAX_QUEUE = 100;
-/** Taille d'un lot : le serveur accepte jusqu'à 25 entrées par requête. */
+/** Taille d’un lot : le serveur accepte jusqu’à 25 entrées par requête. */
 export const BATCH_SIZE = 10;
 const FLUSH_DELAY_MS = 5000;
 
@@ -42,12 +42,12 @@ let insideConsoleHook = false;
 let session = 'inconnue';
 let appVersion: string | undefined;
 
-/** Coupe un texte trop long et indique qu'il a été coupé. */
+/** Coupe un texte trop long et indique qu’il a été coupé. */
 export function clip(text: string, max: number): string {
   return text.length > max ? `${text.slice(0, max)}…` : text;
 }
 
-/** Message et pile d'appels d'une valeur lancée (Error, texte, objet quelconque). */
+/** Message et pile d’appels d’une valeur lancée (Error, texte, objet quelconque). */
 export function describeError(value: unknown): { message: string; stack?: string } {
   if (value instanceof Error) {
     const stack = value.stack ? clip(value.stack, MAX_STACK) : undefined;
@@ -67,7 +67,7 @@ function sessionId(): string {
   return Math.random().toString(36).slice(2, 14);
 }
 
-/** Champs communs : page, navigateur, taille d'écran. Lus au moment de l'erreur. */
+/** Champs communs : page, navigateur, taille d’écran. Lus au moment de l’erreur. */
 function context(): Pick<ClientLogEntry, 'path' | 'session' | 'app' | 'ua' | 'screen' | 'online'> {
   const hasWindow = typeof window !== 'undefined';
   return {
@@ -80,7 +80,7 @@ function context(): Pick<ClientLogEntry, 'path' | 'session' | 'app' | 'ua' | 'sc
   };
 }
 
-/** Ajoute une entrée à la file. Les champs de navigateur sont lus seulement s'ils existent. */
+/** Ajoute une entrée à la file. Les champs de navigateur sont lus seulement s’ils existent. */
 export function logClient(
   level: ClientLogLevel,
   kind: ClientLogKind,
@@ -132,7 +132,7 @@ function takeBatch(size: number): ClientLogEntry[] {
   return queue.splice(0, size);
 }
 
-/** Envoie un lot. En cas d'échec réseau ou serveur, le lot repart dans la file (sans boucle infinie). */
+/** Envoie un lot. En cas d’échec réseau ou serveur, le lot repart dans la file (sans boucle infinie). */
 export async function flush(): Promise<void> {
   if (sending || queue.length === 0 || typeof fetch === 'undefined') return;
   sending = true;

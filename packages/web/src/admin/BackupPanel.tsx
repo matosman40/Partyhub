@@ -14,7 +14,7 @@ interface RestoreSummary {
   skipped: string[];
 }
 
-/** Lit la réponse d'un envoi ou d'un téléchargement binaire, avec le message d'erreur du serveur. */
+/** Lit la réponse d’un envoi ou d’un téléchargement binaire, avec le message d’erreur du serveur. */
 async function readOrThrow(res: Response): Promise<void> {
   if (res.ok) return;
   const data = (await res.json().catch(() => ({}))) as { error?: string };
@@ -26,7 +26,7 @@ async function readOrThrow(res: Response): Promise<void> {
  * - JSON : jeux, textes et notices modifiés (léger, sans les fichiers de la médiathèque) ;
  * - ZIP : la même chose plus les fichiers de la médiathèque, avec leurs identifiants.
  * La restauration ajoute ce qui manque. Les doublons (définitions identiques) ne sont pas recréés.
- * Avec « remplacer », un jeu de même nom est mis à jour au lieu d'être copié.
+ * Avec « remplacer », un jeu de même nom est mis à jour au lieu d’être copié.
  */
 export function BackupPanel({ onChanged }: { onChanged: () => void }) {
   const [busy, setBusy] = useState(false);

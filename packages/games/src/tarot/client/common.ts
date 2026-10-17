@@ -2,7 +2,7 @@ import type { RankRow } from '../../client/ui.js';
 import { EXCUSE, isTrump, type Contract, type Side } from '../rules.js';
 import type { TarotSummary } from '../module.js';
 
-/** Vue publique du tarot, telle qu'émise par le serveur (jamais une main, ni le chien tant qu'il est caché). */
+/** Vue publique du tarot, telle qu’émise par le serveur (jamais une main, ni le chien tant qu’il est caché). */
 export interface TarotPub {
   phase: 'bidding' | 'ecart' | 'play' | 'round-over' | 'final';
   started: boolean;
@@ -33,7 +33,7 @@ export interface TarotPub {
   turnEndsAt: number | null;
 }
 
-/** Vue privée d'un joueur : sa main triée, les cartes jouables et ce qu'il peut faire maintenant. */
+/** Vue privée d’un joueur : sa main triée, les cartes jouables et ce qu’il peut faire maintenant. */
 export interface TarotMe {
   hand: { uid: string; entry: string }[];
   playable: string[];
@@ -45,7 +45,7 @@ export interface TarotMe {
   spectator: boolean;
 }
 
-/** Places autour de la table, dans l'ordre de jeu (sens inverse des aiguilles d'une montre, comme au tarot). */
+/** Places autour de la table, dans l’ordre de jeu (sens inverse des aiguilles d’une montre, comme au tarot). */
 export type SeatPos = 'bottom' | 'right' | 'top' | 'left';
 export const SEAT_POS: readonly SeatPos[] = ['bottom', 'right', 'top', 'left'];
 
@@ -53,7 +53,7 @@ export function seatPos(pub: TarotPub, id: string): SeatPos {
   return SEAT_POS[Math.max(0, pub.order.indexOf(id)) % SEAT_POS.length]!;
 }
 
-/** Classement par points, rangs partagés en cas d'égalité. */
+/** Classement par points, rangs partagés en cas d’égalité. */
 export function tarotRanking(pub: TarotPub): RankRow[] {
   const rows = pub.order.map((id) => ({ playerId: id, name: pub.names[id] ?? '?', points: pub.scores[id] ?? 0 }));
   rows.sort((a, b) => b.points - a.points || a.name.localeCompare(b.name, 'fr'));
@@ -75,7 +75,7 @@ export function signedHalf(half: number): string {
 const MAX_PER_ROW = 11;
 
 /**
- * Rangées de la main : les atouts (avec l'Excuse) d'un côté, les couleurs de l'autre, chacune coupée
+ * Rangées de la main : les atouts (avec l’Excuse) d’un côté, les couleurs de l’autre, chacune coupée
  * en parts égales si elle est trop longue. Une main de 18 à 24 cartes reste ainsi lisible sur 360 px.
  */
 export function handRows(ids: readonly string[]): string[][] {

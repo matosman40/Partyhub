@@ -6,7 +6,7 @@ const DURATION_CHOICES = Object.keys(DURATION_LABEL) as Duration[];
 const AI_CHOICES = Object.keys(AI_LABEL) as AiChoice[];
 
 /**
- * Panneau des filtres du catalogue. À gauche sur grand écran ; sur téléphone, il s'ouvre
+ * Panneau des filtres du catalogue. À gauche sur grand écran ; sur téléphone, il s’ouvre
  * depuis le bouton « Filtres » (le parent gère `hidden`).
  */
 export function CatalogFilterPanel({

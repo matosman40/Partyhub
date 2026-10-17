@@ -4,7 +4,7 @@ import { z } from 'zod';
  * Jeux de questions à partir de médias : « Devine le film », « Devine la chanson »…
  * Un extrait est une vidéo YouTube (identifiant, début, durée) ou un fichier de la
  * médiathèque. Le joueur tape la réponse sur son téléphone. Comme les jeux de cartes,
- * c'est une donnée : les jeux intégrés et ceux créés dans l'administration suivent
+ * c’est une donnée : les jeux intégrés et ceux créés dans l’administration suivent
  * le même format et le même moteur.
  */
 
@@ -26,7 +26,7 @@ export const MEDIA_KIND_PROMPT: Record<MediaKind, string> = {
 
 /**
  * Mode de jeu : « devine » (les joueurs tapent le titre) ou « sous-titres » (les joueurs
- * écrivent le sous-titre d'une scène en langue étrangère, puis votent pour le meilleur).
+ * écrivent le sous-titre d’une scène en langue étrangère, puis votent pour le meilleur).
  */
 export const MEDIA_MODES = ['devine', 'sous-titres'] as const;
 export type MediaMode = (typeof MEDIA_MODES)[number];
@@ -47,8 +47,8 @@ const ASSET_ID = /^[0-9a-f]{32}$/;
 const ITEM_ID = /^[A-Za-z0-9_-]{1,40}$/;
 
 /**
- * Extrait l'identifiant d'une vidéo YouTube depuis une URL (watch, youtu.be, shorts,
- * embed, live) ou depuis l'identifiant seul. Renvoie null si rien de valide.
+ * Extrait l’identifiant d’une vidéo YouTube depuis une URL (watch, youtu.be, shorts,
+ * embed, live) ou depuis l’identifiant seul. Renvoie null si rien de valide.
  */
 export function parseYoutubeId(input: string): string | null {
   const text = input.trim();
@@ -75,7 +75,7 @@ export function parseYoutubeId(input: string): string | null {
 
 /**
  * Lit un temps saisi par une personne : « 90 », « 1:30 », « 1:02:03 », « 1m30s ».
- * Renvoie le nombre de secondes, ou null si la saisie n'est pas un temps.
+ * Renvoie le nombre de secondes, ou null si la saisie n’est pas un temps.
  */
 export function parseTimeInput(input: string): number | null {
   const text = input.trim().toLowerCase();
@@ -120,7 +120,7 @@ export type MediaSource = z.infer<typeof mediaSourceSchema>;
 export const mediaItemSchema = z.object({
   id: z.string().regex(ITEM_ID, 'Identifiant d’extrait invalide.'),
   /**
-   * Réponse attendue (titre du film ou de la chanson). En mode « sous-titres », c'est la
+   * Réponse attendue (titre du film ou de la chanson). En mode « sous-titres », c’est la
    * traduction de référence, montrée à la révélation ; elle est alors facultative.
    */
   answer: z.string().trim().max(200).default(''),
@@ -132,9 +132,9 @@ export const mediaItemSchema = z.object({
    */
   detail: z.string().trim().max(160).default(''),
   source: mediaSourceSchema,
-  /** Début de l'extrait, en secondes. */
+  /** Début de l’extrait, en secondes. */
   startSec: z.number().int().min(0).max(43_200).default(0),
-  /** Durée de l'extrait, en secondes. */
+  /** Durée de l’extrait, en secondes. */
   durationSec: z.number().int().min(3).max(60).default(20),
 });
 
@@ -179,7 +179,7 @@ export const mediaQuizDefinitionSchema = z
 
 export type MediaQuizDefinition = z.infer<typeof mediaQuizDefinitionSchema>;
 
-/** Fichier d'export : un jeu complet, réimportable dans une autre installation. */
+/** Fichier d’export : un jeu complet, réimportable dans une autre installation. */
 export const MEDIA_EXPORT_FORMAT = 'partyhub-questions-medias';
 
 export const mediaExportSchema = z.object({

@@ -22,12 +22,12 @@ import {
 
 /**
  * Page de test : micro (niveau et enregistrement de 3 s), caméra (aperçu), mouvement (inclinaison et secousses)
- * et image (ouverte depuis l'appareil). Le navigateur demande l'autorisation au premier usage ; rien n'est envoyé au serveur.
+ * et image (ouverte depuis l’appareil). Le navigateur demande l’autorisation au premier usage ; rien n’est envoyé au serveur.
  */
 
 type PermissionName = 'microphone' | 'camera';
 
-/** État de l'autorisation, lu via la Permissions API quand le navigateur la propose. */
+/** État de l’autorisation, lu via la Permissions API quand le navigateur la propose. */
 function usePermission(name: PermissionName): [string, () => void] {
   const [state, setState] = useState('inconnue');
   const refresh = useCallback(() => {
@@ -303,7 +303,7 @@ function ImagePanel() {
   );
 }
 
-/** Lecture en direct de l'inclinaison et des secousses, rafraîchie 10 fois par seconde. */
+/** Lecture en direct de l’inclinaison et des secousses, rafraîchie 10 fois par seconde. */
 function MotionPanel() {
   const [access, setAccess] = useState<MotionAccess | null>(null);
   const [active, setActive] = useState(false);

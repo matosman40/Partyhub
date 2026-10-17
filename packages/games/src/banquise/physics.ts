@@ -1,17 +1,17 @@
 /**
  * Banquise : physique en deux dimensions sur une grille hexagonale, en fonctions pures et déterministes.
  *
- * Unités : une case vaut 1 de large (d'un côté plat à l'autre). Les cases sont des hexagones à pointe en haut ;
- * une ligne sur deux est décalée d'une demi-case. Le centre de la case (col, row) est en
+ * Unités : une case vaut 1 de large (d’un côté plat à l’autre). Les cases sont des hexagones à pointe en haut ;
+ * une ligne sur deux est décalée d’une demi-case. Le centre de la case (col, row) est en
  * (col + moitié si row impaire, row × √3/2). Un personnage est en (x, z) sur le plan, `y` étant sa hauteur au-dessus
  * de la surface de la glace. Tout ce qui est aléatoire passe par le générateur injecté, et tout ce qui dépend du
- * temps par `now` : rien ici ne lit l'horloge réelle. Les valeurs sont celles de docs/JEU-BANQUISE.md.
+ * temps par `now` : rien ici ne lit l’horloge réelle. Les valeurs sont celles de docs/JEU-BANQUISE.md.
  */
 
-/** Taille de la grille : l'îlot tient dedans, avec des bords arrondis (une ellipse de cases). */
+/** Taille de la grille : l’îlot tient dedans, avec des bords arrondis (une ellipse de cases). */
 export const COLS = 11;
 export const ROWS = 9;
-/** Hauteur d'une ligne d'hexagones : √3/2 de case. */
+/** Hauteur d’une ligne d’hexagones : √3/2 de case. */
 export const ROW_H = Math.sqrt(3) / 2;
 export const TICK_MS = 50;
 
@@ -28,7 +28,7 @@ export const PUSH_RANGE = 0.95;
 export const PUSH_LATERAL = 0.6;
 export const PUSH_HEIGHT = 0.7;
 export const PUSH_COOLDOWN_MS = 1200;
-/** Durée pendant laquelle l'attitude « poussée » reste affichée. */
+/** Durée pendant laquelle l’attitude « poussée » reste affichée. */
 export const PUSH_FX_MS = 400;
 export const BODY_HALF = 0.35;
 export const FOOT = 0.3;
@@ -59,11 +59,11 @@ export interface Body {
   alive: boolean;
   /** Instant à partir duquel une nouvelle poussée est permise. */
   pushReadyAt: number;
-  /** Jusqu'à quand le personnage affiche l'attitude de poussée. */
+  /** Jusqu’à quand le personnage affiche l’attitude de poussée. */
   pushingUntil: number;
-  /** Jusqu'à quand le personnage vient d'être poussé (affichage seulement). */
+  /** Jusqu’à quand le personnage vient d’être poussé (affichage seulement). */
   pushedUntil: number;
-  /** Instant de l'élimination, ou null. */
+  /** Instant de l’élimination, ou null. */
   diedAt: number | null;
 }
 
@@ -89,13 +89,13 @@ export function newBody(x: number, z: number, facing: -1 | 1): Body {
   };
 }
 
-/** Centre de la case (col, row), en unités de case. Les lignes impaires sont décalées d'une demi-case. */
+/** Centre de la case (col, row), en unités de case. Les lignes impaires sont décalées d’une demi-case. */
 export function cellCenter(col: number, row: number): { x: number; z: number } {
   return { x: col + (row & 1) * 0.5, z: row * ROW_H };
 }
 
 /**
- * Voisins d'une case en grille hexagonale (décalage « impair »). Une ligne paire et une ligne impaire n'ont pas
+ * Voisins d’une case en grille hexagonale (décalage « impair »). Une ligne paire et une ligne impaire n’ont pas
  * les mêmes voisins en diagonale.
  */
 const NEIGHBORS_EVEN: Array<[number, number]> = [
@@ -115,18 +115,18 @@ const NEIGHBORS_ODD: Array<[number, number]> = [
   [1, 1],
 ];
 
-/** Décalages (colonne, ligne) des six voisins d'une case de cette ligne. */
+/** Décalages (colonne, ligne) des six voisins d’une case de cette ligne. */
 export function banquiseNeighbors(row: number): Array<[number, number]> {
   return (row & 1) === 0 ? NEIGHBORS_EVEN : NEIGHBORS_ODD;
 }
 
-/** Centre de l'îlot, en unités de case. */
+/** Centre de l’îlot, en unités de case. */
 const CX = (COLS - 1) / 2 + 0.25;
 const CZ = ((ROWS - 1) * ROW_H) / 2;
 const RX = COLS / 2;
 const RZ = CZ + 0.6;
 
-/** Carré du rayon normalisé du centre de l'îlot : 0 au centre, 1 sur le contour. */
+/** Carré du rayon normalisé du centre de l’îlot : 0 au centre, 1 sur le contour. */
 function radius2(col: number, row: number): number {
   const c = cellCenter(col, row);
   const nx = (c.x - CX) / RX;
@@ -134,7 +134,7 @@ function radius2(col: number, row: number): number {
   return nx * nx + nz * nz;
 }
 
-/** Vrai si la case (col, row) fait partie de l'îlot : une ellipse de cases, donc un contour arrondi. */
+/** Vrai si la case (col, row) fait partie de l’îlot : une ellipse de cases, donc un contour arrondi. */
 export function inMask(col: number, row: number): boolean {
   return radius2(col, row) <= 1;
 }
@@ -145,7 +145,7 @@ function isInner(col: number, row: number): boolean {
 }
 
 /**
- * Case dont le centre est le plus proche du point (x, z) : c'est la case qui contient ce point, car les
+ * Case dont le centre est le plus proche du point (x, z) : c’est la case qui contient ce point, car les
  * hexagones sont la zone la plus proche de leur centre. Peut être hors de la grille.
  */
 export function nearestCell(x: number, z: number): { col: number; row: number } {
@@ -166,7 +166,7 @@ export function nearestCell(x: number, z: number): { col: number; row: number } 
   return best;
 }
 
-/** Glace sous le point (x, z) : hors de la grille, c'est de l'eau. */
+/** Glace sous le point (x, z) : hors de la grille, c’est de l’eau. */
 export function iceAt(ice: string, x: number, z: number): boolean {
   const { col, row } = nearestCell(x, z);
   if (col < 0 || col >= COLS || row < 0 || row >= ROWS) return false;
@@ -187,7 +187,7 @@ function clamp(v: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, v));
 }
 
-/** Rapproche `v` de `target` d'au plus `maxDelta`, sans le dépasser. */
+/** Rapproche `v` de `target` d’au plus `maxDelta`, sans le dépasser. */
 function approach(v: number, target: number, maxDelta: number): number {
   if (v < target) return Math.min(v + maxDelta, target);
   return Math.max(v - maxDelta, target);
@@ -219,7 +219,7 @@ export function aimVector(b: Body): { ax: number; az: number } {
 }
 
 /**
- * Avance un personnage de `dt` secondes. `windAccel` est l'accélération horizontale du vent
+ * Avance un personnage de `dt` secondes. `windAccel` est l’accélération horizontale du vent
  * (0 hors rafale). Renvoie un nouveau personnage ; un personnage éliminé ne bouge plus.
  */
 export function stepBody(b: Body, ice: string, now: number, dt: number, windAccel: number): Body {
@@ -296,8 +296,8 @@ export function push(pusher: Body, target: Body, now: number): { pusher: Body; t
 
 /**
  * Empêche les personnages de se traverser. Quand deux personnages se heurtent, leur vitesse le long
- * de la ligne qui les relie se partage : c'est ainsi qu'une poussée se transmet à la file. L'ordre de
- * traitement suit l'ordre du tableau, donc il doit être stable (le serveur le trie par identifiant).
+ * de la ligne qui les relie se partage : c’est ainsi qu’une poussée se transmet à la file. L’ordre de
+ * traitement suit l’ordre du tableau, donc il doit être stable (le serveur le trie par identifiant).
  */
 export function separate(bodies: Body[]): Body[] {
   const out = bodies.map((b) => ({ ...b }));
@@ -334,7 +334,7 @@ export function separate(bodies: Body[]): Body[] {
   return out;
 }
 
-/** Glace de départ d'un niveau : un îlot arrondi. Avec trous : quatre à six trous au centre. */
+/** Glace de départ d’un niveau : un îlot arrondi. Avec trous : quatre à six trous au centre. */
 export function makeIce(withHoles: boolean, random: () => number): string {
   const cells: string[] = [];
   for (let row = 0; row < ROWS; row++) {
@@ -357,7 +357,7 @@ export function makeIce(withHoles: boolean, random: () => number): string {
       const col = idx % COLS;
       const twin = row * COLS + col + 1;
       if (random() < 0.5 && col + 1 < COLS && inner.includes(twin) && cells[twin] === ICE) cells[twin] = WATER;
-      // Un trou qui couperait l'îlot en deux n'est pas gardé : il reste un seul morceau de glace.
+      // Un trou qui couperait l’îlot en deux n’est pas gardé : il reste un seul morceau de glace.
       if (keepMainIsland(cells.join('')) !== cells.join('')) {
         for (let i = 0; i < cells.length; i++) cells[i] = before[i]!;
       }
@@ -366,7 +366,7 @@ export function makeIce(withHoles: boolean, random: () => number): string {
   return cells.join('');
 }
 
-/** Nombre de trous (cases d'eau à l'intérieur de l'îlot). */
+/** Nombre de trous (cases d’eau à l’intérieur de l’îlot). */
 export function holeCount(ice: string): number {
   let n = 0;
   for (let i = 0; i < ice.length; i++) {
@@ -376,8 +376,8 @@ export function holeCount(ice: string): number {
 }
 
 /**
- * Positions de départ : `n` cases de glace, réparties en anneau autour du centre, à l'écart du bord.
- * Renvoie l'indice de chaque case (row * COLS + col).
+ * Positions de départ : `n` cases de glace, réparties en anneau autour du centre, à l’écart du bord.
+ * Renvoie l’indice de chaque case (row * COLS + col).
  */
 export function spawnCells(ice: string, n: number): number[] {
   const ring: number[] = [];
@@ -399,7 +399,7 @@ export function spawnCells(ice: string, n: number): number[] {
   return Array.from({ length: n }, (_, k) => pool[Math.floor(k * step)]!);
 }
 
-/** Garde seulement la plus grande partie de glace reliée ; le reste part à l'eau. */
+/** Garde seulement la plus grande partie de glace reliée ; le reste part à l’eau. */
 export function keepMainIsland(ice: string): string {
   const seen = new Array<boolean>(ice.length).fill(false);
   let best: number[] = [];
@@ -441,7 +441,7 @@ function isRim(ice: string, col: number, row: number): boolean {
   });
 }
 
-/** Fonte : une case de glace du bord, prise au hasard, passe à l'eau. Les morceaux coupés suivent. */
+/** Fonte : une case de glace du bord, prise au hasard, passe à l’eau. Les morceaux coupés suivent. */
 export function erode(ice: string, random: () => number): string {
   const rim: number[] = [];
   for (let i = 0; i < ice.length; i++) {
@@ -462,7 +462,7 @@ export interface Wind {
   until: number;
 }
 
-/** Accélération horizontale du vent à cet instant (0 hors rafale). Le vent ne souffle que sur l'axe x. */
+/** Accélération horizontale du vent à cet instant (0 hors rafale). Le vent ne souffle que sur l’axe x. */
 export function windAccel(wind: Wind | null): number {
   if (!wind || wind.phase !== 'gust') return 0;
   return wind.dir * wind.strength * WIND_ACCEL;

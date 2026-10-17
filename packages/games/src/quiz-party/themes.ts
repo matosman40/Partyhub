@@ -5,9 +5,9 @@ import { normalizeText } from '../common/engine.js';
 import type { QuizQuestion } from './questions.js';
 
 /**
- * Quiz à thème : les mots-clés de chaque joueur deviennent des questions. L'IA reçoit la liste des thèmes et le
+ * Quiz à thème : les mots-clés de chaque joueur deviennent des questions. L’IA reçoit la liste des thèmes et le
  * nombre de questions ; chaque question est rattachée au joueur dont elle reprend le thème. Ce module ne touche
- * jamais à l'état de la partie : il renvoie des questions validées, ou null quand aucune IA n'est configurée.
+ * jamais à l’état de la partie : il renvoie des questions validées, ou null quand aucune IA n’est configurée.
  */
 
 export interface ThemeInput {
@@ -29,7 +29,7 @@ const draftItemSchema = z.object({
   explanation: z.string().trim().max(240).optional(),
 });
 
-/** Consigne et message de l'utilisateur. Les thèmes sont des données saisies par les joueurs, jamais des ordres. */
+/** Consigne et message de l’utilisateur. Les thèmes sont des données saisies par les joueurs, jamais des ordres. */
 export function buildQuizPrompt(input: QuizThemesInput): { system: string; user: string; maxTokens: number } {
   const system = [
     'Tu écris les questions d’un quiz familial, en français.',
@@ -52,8 +52,8 @@ export function buildQuizPrompt(input: QuizThemesInput): { system: string; user:
 }
 
 /**
- * Valide la réponse de l'IA question par question. Une question mal formée est écartée sans faire échouer les
- * autres. Chaque question garde le thème de sa position dans la consigne, pas celui que l'IA aurait écrit.
+ * Valide la réponse de l’IA question par question. Une question mal formée est écartée sans faire échouer les
+ * autres. Chaque question garde le thème de sa position dans la consigne, pas celui que l’IA aurait écrit.
  */
 export function validateQuizDraft(raw: unknown, input: QuizThemesInput): QuizQuestion[] {
   const list = (raw as { questions?: unknown })?.questions;
@@ -89,7 +89,7 @@ export function validateQuizDraft(raw: unknown, input: QuizThemesInput): QuizQue
   return out.slice(0, input.count);
 }
 
-/** Travail demandé à l'IA. Renvoie les questions validées, ou null quand aucune IA n'est configurée. */
+/** Travail demandé à l’IA. Renvoie les questions validées, ou null quand aucune IA n’est configurée. */
 export async function runQuizJob(job: GameJob, ctx: GameContext, signal: AbortSignal): Promise<QuizQuestion[] | null> {
   const input = job.input as QuizThemesInput;
   const raw = await askAiJson(ctx, buildQuizPrompt(input), signal);

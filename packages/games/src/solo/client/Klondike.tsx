@@ -19,7 +19,7 @@ const RANKS = ['', 'A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'V', 'D', 
 const SUITS = ['♠', '♥', '♦', '♣'];
 const isRed = (suit: number | undefined) => suit === 1 || suit === 2;
 
-/** Sélection : l'emplacement d'origine (« w » ou « tN ») et l'indice de la carte dans la colonne. */
+/** Sélection : l’emplacement d’origine (« w » ou « tN ») et l’indice de la carte dans la colonne. */
 interface Selection {
   from: string;
   index: number;

@@ -1,8 +1,8 @@
 import { z } from 'zod';
 
 /**
- * Réglages des fournisseurs d'IA saisis dans l'administration. Stockés dans la base (clé « ai_settings ») :
- * la clé d'API est chiffrée (voir secrets.ts), elle n'est jamais renvoyée au navigateur.
+ * Réglages des fournisseurs d’IA saisis dans l’administration. Stockés dans la base (clé « ai_settings ») :
+ * la clé d’API est chiffrée (voir secrets.ts), elle n’est jamais renvoyée au navigateur.
  */
 
 export const AI_SETTINGS_KEY = 'ai_settings';
@@ -20,7 +20,7 @@ export type StoredAiSettings = Record<string, StoredProviderSettings>;
 
 const storedSchema = z.record(z.string().max(32), providerSettingsSchema);
 
-/** Lit les réglages stockés. Une valeur abîmée est ignorée : la configuration de l'environnement reste valable. */
+/** Lit les réglages stockés. Une valeur abîmée est ignorée : la configuration de l’environnement reste valable. */
 export function readStoredAi(raw: string | undefined): StoredAiSettings {
   if (!raw) return {};
   try {

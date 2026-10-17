@@ -2,7 +2,7 @@ import type { GameCategory, GameInfo } from '@partyhub/shared';
 import { CATEGORY_ORDER, MAX_PLAYER_CHOICE } from './labels.js';
 
 /**
- * Logique pure du catalogue : filtres, recherche, tri et lecture de l'URL.
+ * Logique pure du catalogue : filtres, recherche, tri et lecture de l’URL.
  * Aucune dépendance à React ni au navigateur, pour pouvoir la tester seule.
  */
 
@@ -16,7 +16,7 @@ export interface CatalogFilters {
   query: string;
   /** Catégories retenues ; vide = toutes. */
   categories: GameCategory[];
-  /** Nombre de joueurs souhaité ; le jeu doit l'accepter. null = indifférent. */
+  /** Nombre de joueurs souhaité ; le jeu doit l’accepter. null = indifférent. */
   players: number | null;
   duration: Duration;
   ai: AiChoice;
@@ -68,7 +68,7 @@ const AI_CHOICES: AiChoice[] = ['any', 'yes', 'no'];
 const SORTS: SortKey[] = ['name', 'duration', 'players', 'recent'];
 const VIEWS: ViewMode[] = ['cards', 'list'];
 
-/** Tranche de durée d'un jeu : moins de 10 min, de 10 à 25 min (bornes comprises), plus de 25 min. */
+/** Tranche de durée d’un jeu : moins de 10 min, de 10 à 25 min (bornes comprises), plus de 25 min. */
 export function durationBucket(minutes: number): Exclude<Duration, 'any'> {
   if (minutes < 10) return 'short';
   if (minutes <= 25) return 'medium';
@@ -80,7 +80,7 @@ export function normalize(text: string): string {
   return text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
 }
 
-/** Nombre de filtres actifs, recherche comprise (le tri et l'affichage ne comptent pas). */
+/** Nombre de filtres actifs, recherche comprise (le tri et l’affichage ne comptent pas). */
 export function countActiveFilters(f: CatalogFilters): number {
   return (
     (f.query.trim() ? 1 : 0) +
@@ -92,7 +92,7 @@ export function countActiveFilters(f: CatalogFilters): number {
   );
 }
 
-/** Remet les filtres à zéro, en gardant le tri et l'affichage choisis. */
+/** Remet les filtres à zéro, en gardant le tri et l’affichage choisis. */
 export function resetFilters(current: CatalogFilters): CatalogFilters {
   return { ...DEFAULT_FILTERS, sort: current.sort, view: current.view };
 }
@@ -140,8 +140,8 @@ function sortGames<T extends FilterableGame>(games: T[], sort: SortKey, recentRa
 }
 
 /**
- * Lit les filtres dans les paramètres d'URL. Une valeur inconnue revient à la valeur par défaut,
- * ce qui protège l'écran contre une URL modifiée à la main.
+ * Lit les filtres dans les paramètres d’URL. Une valeur inconnue revient à la valeur par défaut,
+ * ce qui protège l’écran contre une URL modifiée à la main.
  */
 export function parseFilters(params: URLSearchParams): CatalogFilters {
   const categories = [...new Set((params.get('cat') ?? '').split(','))].filter((c): c is GameCategory =>
@@ -161,7 +161,7 @@ export function parseFilters(params: URLSearchParams): CatalogFilters {
 }
 
 /**
- * Écrit les filtres dans les paramètres d'URL. Une valeur par défaut n'apparaît pas dans l'URL,
+ * Écrit les filtres dans les paramètres d’URL. Une valeur par défaut n’apparaît pas dans l’URL,
  * les paramètres étrangers sont conservés.
  */
 export function writeFilters(f: CatalogFilters, base: URLSearchParams = new URLSearchParams()): URLSearchParams {

@@ -3,7 +3,7 @@ import { hashText } from './avatars.js';
 
 /**
  * Personnage de joueur : un petit dessin articulé, choisi dans des listes fermées.
- * Tout est stocké par index : une valeur hors liste est refusée, rien de libre n'entre en base.
+ * Tout est stocké par index : une valeur hors liste est refusée, rien de libre n’entre en base.
  */
 export const CHARACTER_BODY_COLORS = [
   '#ff7a8f',
@@ -34,8 +34,8 @@ export const CHARACTER_ACCESSORIES = [
 ] as const;
 
 /**
- * Expression du visage au repos, choisie dans le profil et gardée d'une partie à l'autre. Les attitudes
- * (joie, tristesse, salut…) et les émotions ponctuelles du salon la remplacent le temps d'un moment.
+ * Expression du visage au repos, choisie dans le profil et gardée d’une partie à l’autre. Les attitudes
+ * (joie, tristesse, salut…) et les émotions ponctuelles du salon la remplacent le temps d’un moment.
  */
 export const CHARACTER_EXPRESSIONS = ['calme', 'souriant', 'rieur', 'clin', 'triste', 'etonne'] as const;
 export type CharacterExpression = (typeof CHARACTER_EXPRESSIONS)[number];
@@ -54,7 +54,7 @@ export interface CharacterSpec {
   hairColor: number;
   accessory: number;
   /**
-   * Identifiant d'un pack de sprites importé dans l'administration. Absent ou vide : le personnage
+   * Identifiant d’un pack de sprites importé dans l’administration. Absent ou vide : le personnage
    * dessiné ci-dessus est utilisé. Un pack supprimé retombe sur le personnage dessiné.
    */
   pack?: string | null;
@@ -64,9 +64,9 @@ export interface CharacterSpec {
   expression?: number;
 }
 
-/** Identifiant d'un pack : minuscules, chiffres et tirets (le même que dans l'URL). */
+/** Identifiant d’un pack : minuscules, chiffres et tirets (le même que dans l’URL). */
 export const CHARACTER_PACK_ID = /^[a-z0-9][a-z0-9-]{1,47}$/;
-/** Identifiant d'un look dans son pack. */
+/** Identifiant d’un look dans son pack. */
 export const CHARACTER_LOOK_ID = /^[a-z0-9][a-z0-9-]{0,47}$/;
 
 /** Planches reconnues dans un pack : visages (portraits), poses (corps entier), marche (4 images par direction). */
@@ -91,7 +91,7 @@ export interface CharacterPackAtlas {
   images: CharacterPackImage[];
 }
 
-/** Un look d'un personnage : ses planches (sans les fichiers, servis à part). */
+/** Un look d’un personnage : ses planches (sans les fichiers, servis à part). */
 export interface CharacterPackLook {
   id: string;
   name: string;
@@ -106,7 +106,7 @@ export interface CharacterPackInfo {
   looks: CharacterPackLook[];
 }
 
-/** Look à utiliser pour un personnage : celui demandé s'il existe, sinon le premier. */
+/** Look à utiliser pour un personnage : celui demandé s’il existe, sinon le premier. */
 export function resolveLook(pack: CharacterPackInfo, lookId: string | null | undefined): CharacterPackLook | null {
   return pack.looks.find((look) => look.id === lookId) ?? pack.looks[0] ?? null;
 }
@@ -141,7 +141,7 @@ export function defaultCharacterFor(seed: string): CharacterSpec {
   };
 }
 
-/** Couleurs réelles d'un personnage (les index sont déjà validés). */
+/** Couleurs réelles d’un personnage (les index sont déjà validés). */
 export function characterColors(spec: CharacterSpec) {
   return {
     body: CHARACTER_BODY_COLORS[spec.body] ?? CHARACTER_BODY_COLORS[0],

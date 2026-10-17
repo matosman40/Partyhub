@@ -3,7 +3,7 @@ import { isMuted, SoundToggle } from '@partyhub/games/client';
 import { loadSoundSettings, useActiveMusicSlot, useMuted, usePublicSounds } from '../sounds.js';
 
 /**
- * Lecteur de la musique de fond : une seule piste à la fois, celle de l'emplacement actif, en boucle.
+ * Lecteur de la musique de fond : une seule piste à la fois, celle de l’emplacement actif, en boucle.
  * Le navigateur peut refuser le démarrage avant tout geste : la lecture reprend au premier clic ou toucher.
  */
 export function MusicPlayer() {
@@ -26,7 +26,7 @@ export function MusicPlayer() {
     audioRef.current = audio;
 
     // Après un refus du navigateur, `paused` peut rester faux : on ne se fie pas à lui, on retente la lecture
-    // à chaque geste jusqu'à réussir, puis on retire les écouteurs.
+    // à chaque geste jusqu’à réussir, puis on retire les écouteurs.
     const detach = () => {
       document.removeEventListener('pointerdown', resume);
       document.removeEventListener('keydown', resume);
@@ -71,7 +71,7 @@ export function MusicPlayer() {
     }
   }, [muted]);
 
-  // Le bouton muet n'apparaît que lorsqu'une piste peut jouer, pour la couper sur place.
+  // Le bouton muet n’apparaît que lorsqu’une piste peut jouer, pour la couper sur place.
   if (!url) return null;
   return (
     <div className="music-toggle">

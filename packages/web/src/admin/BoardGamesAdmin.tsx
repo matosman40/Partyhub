@@ -266,7 +266,7 @@ function BoardGameEditor({
     }));
   }
 
-  /** Insère une case normale après `index` (jamais après l'arrivée). */
+  /** Insère une case normale après `index` (jamais après l’arrivée). */
   function insertAfter(index: number) {
     setDraft((d) => {
       if (d.cells.length >= MAX_CELLS) return d;

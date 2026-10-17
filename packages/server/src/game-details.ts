@@ -2,7 +2,7 @@ import { gameDetailsSchema, type GameDetails, type GameModule, type GameNotice }
 import type { Store } from './db/store.js';
 
 /**
- * Surcharges d'administration, pour tous les jeux (intégrés, cartes, médias, plateau et
+ * Surcharges d’administration, pour tous les jeux (intégrés, cartes, médias, plateau et
  * paquets importés) : nom, icône, description, notice et réglages par défaut.
  * Les règles et le nombre de joueurs du jeu ne changent jamais. Une présentation surchargée
  * est appliquée au catalogue, au salon, à la salle et aux titres affichés pendant la partie
@@ -10,7 +10,7 @@ import type { Store } from './db/store.js';
  * par défaut des nouvelles salles ; une salle déjà ouverte garde ses réglages.
  */
 
-/** Notice effective : surcharge de l'administration si elle existe, sinon celle du code. */
+/** Notice effective : surcharge de l’administration si elle existe, sinon celle du code. */
 export function effectiveNotice(store: Store, gameId: string, fallback: GameNotice): GameNotice {
   const raw = store.getNoticeOverride(gameId);
   if (!raw) return fallback;
@@ -21,7 +21,7 @@ export function effectiveNotice(store: Store, gameId: string, fallback: GameNoti
   }
 }
 
-/** Présentation surchargée d'un jeu, ou undefined si l'on garde celle du code. */
+/** Présentation surchargée d’un jeu, ou undefined si l’on garde celle du code. */
 export function detailsOverride(store: Store, gameId: string): GameDetails | undefined {
   const raw = store.getDetailsOverride(gameId);
   if (!raw) return undefined;
@@ -34,7 +34,7 @@ export function detailsOverride(store: Store, gameId: string): GameDetails | und
 }
 
 /**
- * Réglages par défaut remplacés par l'administrateur, validés contre le schéma du jeu.
+ * Réglages par défaut remplacés par l’administrateur, validés contre le schéma du jeu.
  * Un réglage invalide (par exemple après une mise à jour du paquet) est ignoré.
  */
 export function settingsOverride(store: Store, module: GameModule): Record<string, unknown> | undefined {
@@ -55,7 +55,7 @@ export function defaultDetails(module: GameModule): GameDetails {
 }
 
 /**
- * Renvoie le jeu avec ses surcharges appliquées. Sans surcharge, renvoie le jeu d'origine.
+ * Renvoie le jeu avec ses surcharges appliquées. Sans surcharge, renvoie le jeu d’origine.
  * Les états de jeu qui portent un nom et une icône (solo, sous-titres) reçoivent aussi
  * la présentation surchargée à la création de la salle.
  */

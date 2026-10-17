@@ -7,7 +7,7 @@ import { FinalHost, Ranking, TimerBar, WaitingScreen } from '../../client/ui.js'
 import { BoardCanvas } from './BoardCanvas.js';
 import { PLAYER_COLORS, type BoardUnitView, type BoardView, type Mount } from './render.js';
 
-/** Durée d'affichage de l'annonce de manche (« Manche n », puis « GO ! »). */
+/** Durée d’affichage de l’annonce de manche (« Manche n », puis « GO ! »). */
 const INTRO_STEP_MS = 900;
 
 const MOUNT: Record<Mount, { icon: string; label: string }> = {
@@ -69,7 +69,7 @@ export function BombesPartyHost({ publicState: pub, now }: HostViewProps) {
     timers.current = [];
   };
 
-  // Annonce de chaque manche, puis musique de fond tant qu'elle dure.
+  // Annonce de chaque manche, puis musique de fond tant qu’elle dure.
   useEffect(() => {
     if (pub?.phase !== 'play' || lastRound.current === pub.round) return;
     lastRound.current = pub.round;

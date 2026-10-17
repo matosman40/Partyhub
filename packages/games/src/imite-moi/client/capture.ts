@@ -1,11 +1,11 @@
 import { MEDIA_MAX_CHARS } from '../module.js';
 
 /**
- * Préparation des réponses sur le téléphone. Une photo est réduite jusqu'à passer sous la limite d'envoi
+ * Préparation des réponses sur le téléphone. Une photo est réduite jusqu’à passer sous la limite d’envoi
  * (une action Socket.IO fait au plus 64 Ko). Un son est enregistré à faible débit, pour rester petit.
  */
 
-/** Réductions essayées dans l'ordre : la première qui tient sous la limite est gardée. */
+/** Réductions essayées dans l’ordre : la première qui tient sous la limite est gardée. */
 const ATTEMPTS: ReadonlyArray<{ side: number; quality: number }> = [
   { side: 480, quality: 0.7 },
   { side: 400, quality: 0.6 },
@@ -33,7 +33,7 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   });
 }
 
-/** Dessine une source (image ou vidéo) réduite en JPEG, sous la limite d'envoi. Renvoie null si impossible. */
+/** Dessine une source (image ou vidéo) réduite en JPEG, sous la limite d’envoi. Renvoie null si impossible. */
 export function encodeSource(source: CanvasImageSource, width: number, height: number): string | null {
   if (width <= 0 || height <= 0) return null;
   for (const attempt of ATTEMPTS) {
@@ -58,7 +58,7 @@ export async function photoFromFile(file: File): Promise<string> {
   return url;
 }
 
-/** Image prise avec la caméra, à l'instant où elle est affichée dans la vidéo. */
+/** Image prise avec la caméra, à l’instant où elle est affichée dans la vidéo. */
 export function photoFromVideo(video: HTMLVideoElement): string {
   const url = encodeSource(video, video.videoWidth, video.videoHeight);
   if (!url) throw new Error('La caméra ne renvoie pas encore d’image. Réessayez dans un instant.');

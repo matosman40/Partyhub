@@ -1,5 +1,5 @@
 /**
- * Plateau du Promoteur : définitions pures (sans serveur), partagées avec l'affichage.
+ * Plateau du Promoteur : définitions pures (sans serveur), partagées avec l’affichage.
  * Le plateau est un anneau de 24 cases. Les couleurs de rues donnent droit aux maisons.
  */
 
@@ -13,13 +13,13 @@ export interface Square {
   kind: SquareKind;
   name: string;
   group?: Group;
-  /** Prix d'achat. */
+  /** Prix d’achat. */
   price?: number;
-  /** Loyer de base d'une rue (sans maison). */
+  /** Loyer de base d’une rue (sans maison). */
   rent?: number;
-  /** Coût d'une maison. */
+  /** Coût d’une maison. */
   house?: number;
-  /** Montant de l'impôt. */
+  /** Montant de l’impôt. */
   tax?: number;
 }
 
@@ -103,12 +103,12 @@ export const CHEST: Card[] = [
   { text: 'Remboursement d’assurance : 80 €', effect: { kind: 'money', amount: 80 } },
 ];
 
-/** Indices des cases d'une couleur donnée. */
+/** Indices des cases d’une couleur donnée. */
 export function groupSquares(group: Group): number[] {
   return BOARD.filter((sq) => sq.group === group).map((sq) => sq.index);
 }
 
-/** Position d'une case sur la grille 7 × 7 qui forme l'anneau du plateau (0 = coin bas-droit). */
+/** Position d’une case sur la grille 7 × 7 qui forme l’anneau du plateau (0 = coin bas-droit). */
 export function cellOf(i: number): { col: number; row: number } {
   if (i <= 6) return { col: 6 - i, row: 6 };
   if (i <= 12) return { col: 0, row: 12 - i };
@@ -116,7 +116,7 @@ export function cellOf(i: number): { col: number; row: number } {
   return { col: 6, row: i - 18 };
 }
 
-/** Case suivante sur l'anneau, dans le sens du jeu. */
+/** Case suivante sur l’anneau, dans le sens du jeu. */
 export function nextSquare(i: number): number {
   return (i + 1) % BOARD_SIZE;
 }

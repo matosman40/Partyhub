@@ -9,7 +9,7 @@ import { ProfileSwitcher } from '../profile/ProfileSwitcher.js';
 import { DrawerSection } from '../components/CornerMenu.js';
 import { DeviceChooser } from '../device/DeviceChooser.js';
 
-/** Nombre maximal de joueurs qu'un même téléphone peut tenir. */
+/** Nombre maximal de joueurs qu’un même téléphone peut tenir. */
 const MAX_SEATS = 6;
 
 const seatListKey = (code: string) => `ph:seats:${code}`;
@@ -60,7 +60,7 @@ function writeSeatProfiles(code: string, map: Record<string, string>): void {
 
 /**
  * Interface joueur (smartphone). Un téléphone peut tenir plusieurs joueurs : chacun a sa place,
- * sa manette et son profil de l'appareil. Le siège principal suit le profil actif.
+ * sa manette et son profil de l’appareil. Le siège principal suit le profil actif.
  */
 export function PlayerPage() {
   const { code: rawCode = '' } = useParams();
@@ -82,7 +82,7 @@ export function PlayerPage() {
   }
 
   useEffect(() => {
-    // Lien « jouer sur un autre appareil » : cette page reçoit la place d'un autre téléphone.
+    // Lien « jouer sur un autre appareil » : cette page reçoit la place d’un autre téléphone.
     const token = sharedPlaceToken(window.location.hash);
     if (token) {
       const current = readSeatList(code);
@@ -94,7 +94,7 @@ export function PlayerPage() {
         setSeats(next);
         setActive(id);
       }
-      // Le jeton ne reste pas dans l'adresse (historique, copie d'écran).
+      // Le jeton ne reste pas dans l’adresse (historique, copie d’écran).
       window.history.replaceState(null, '', window.location.pathname + window.location.search);
     }
     // Les sièges déjà joués sur cet appareil retrouvent leur place sans rien demander.
@@ -106,7 +106,7 @@ export function PlayerPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [code]);
 
-  // Un profil retiré de l'appareil libère son siège.
+  // Un profil retiré de l’appareil libère son siège.
   useEffect(() => {
     const known = new Set(profiles.map((p) => p.token));
     const stale = seats.filter((id) => id !== 'main' && seatTokens[id] && !known.has(seatTokens[id]!));
@@ -157,7 +157,7 @@ export function PlayerPage() {
   const usedTokens = new Set([activeProfile?.token, ...Object.values(seatTokens)]);
   const candidates = profiles.filter((p) => !usedTokens.has(p.token));
 
-  // Options de l'appareil : rangées dans le tiroir d'angle de chaque siège, hors de l'écran de jeu.
+  // Options de l’appareil : rangées dans le tiroir d’angle de chaque siège, hors de l’écran de jeu.
   const deviceMenu = (
     <>
       <DrawerSection title={`Salle ${code}`}>

@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { isAudioUnlocked, isMuted, play, setMuted, unlockAudio } from './audio.js';
 
 /**
- * Bouton son : le premier clic débloque l'audio du navigateur, les suivants
- * coupent ou rétablissent le son. Le choix est gardé sur l'appareil.
+ * Bouton son : le premier clic débloque l’audio du navigateur, les suivants
+ * coupent ou rétablissent le son. Le choix est gardé sur l’appareil.
  */
 export function SoundToggle() {
   const [muted, setMutedState] = useState(isMuted());

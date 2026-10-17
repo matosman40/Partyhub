@@ -12,7 +12,7 @@ export interface GagView {
   quips: { win: string; lose: string };
   durationMs: number;
   input: GagInput;
-  /** Graine du gag : la mouche s'en sert pour bouger de la même façon sur tous les écrans. */
+  /** Graine du gag : la mouche s’en sert pour bouger de la même façon sur tous les écrans. */
   seed: number;
 }
 

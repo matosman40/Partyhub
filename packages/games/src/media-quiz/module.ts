@@ -17,9 +17,9 @@ import { matchAnswer } from './answer.js';
 import { hostMediaOf } from './host-media.js';
 
 /**
- * Jeu de questions à partir d'extraits : on reconnaît le film ou la chanson et on tape
- * le titre sur son téléphone. Un jeu est créé à partir d'une définition (voir
- * mediaQuizDefinitionSchema) : les jeux intégrés et ceux de l'administration utilisent
+ * Jeu de questions à partir d’extraits : on reconnaît le film ou la chanson et on tape
+ * le titre sur son téléphone. Un jeu est créé à partir d’une définition (voir
+ * mediaQuizDefinitionSchema) : les jeux intégrés et ceux de l’administration utilisent
  * le même moteur.
  */
 
@@ -53,7 +53,7 @@ export interface MediaQuizState {
   icon: string;
   speedBonus: boolean;
   settings: MediaQuizSettings;
-  /** Extraits tirés pour cette partie, dans l'ordre de jeu. */
+  /** Extraits tirés pour cette partie, dans l’ordre de jeu. */
   questions: MediaItem[];
   phase: MediaPhase;
   index: number;
@@ -180,7 +180,7 @@ function publicView(s: MediaQuizState) {
   };
 }
 
-/** Vue de l'écran principal : c'est la seule qui contient le média à lire. */
+/** Vue de l’écran principal : c’est la seule qui contient le média à lire. */
 function hostView(s: MediaQuizState) {
   const q = currentItem(s);
   const pending =
@@ -215,8 +215,8 @@ function noticeFor(kind: MediaKind, answerSeconds: number) {
 }
 
 /**
- * Crée un jeu de questions à partir d'extraits. `options.id` est l'identifiant du jeu
- * dans le registre (préfixe « media- » pour les jeux créés dans l'administration).
+ * Crée un jeu de questions à partir d’extraits. `options.id` est l’identifiant du jeu
+ * dans le registre (préfixe « media- » pour les jeux créés dans l’administration).
  */
 export function createMediaQuiz(
   definition: MediaQuizDefinition,

@@ -1,6 +1,6 @@
 /**
- * Captures de la première partie d'un jeu, prises sur l'écran de la salle puis envoyées au serveur.
- * Le partage d'écran demande l'accord de l'hôte (un clic, un choix d'onglet) ; ensuite, les captures se prennent seules.
+ * Captures de la première partie d’un jeu, prises sur l’écran de la salle puis envoyées au serveur.
+ * Le partage d’écran demande l’accord de l’hôte (un clic, un choix d’onglet) ; ensuite, les captures se prennent seules.
  */
 
 /** Format de la fiche : toutes les captures ont le même cadrage 16:9. */
@@ -11,7 +11,7 @@ export const CAPTURE_QUALITY = 0.72;
 export const CAPTURE_MAX_BYTES = 400 * 1024;
 /** Moments de capture pendant la partie, en millisecondes après son lancement. */
 export const CAPTURE_DELAYS_MS = [15_000, 45_000];
-/** Capture de l'écran des résultats : laissé le temps de s'afficher après la fin de la partie. */
+/** Capture de l’écran des résultats : laissé le temps de s’afficher après la fin de la partie. */
 export const FINAL_CAPTURE_DELAY_MS = 2_500;
 
 export interface CropRect {
@@ -21,7 +21,7 @@ export interface CropRect {
   sh: number;
 }
 
-/** Recadrage centré à la proportion de destination : l'image ne se déforme jamais. */
+/** Recadrage centré à la proportion de destination : l’image ne se déforme jamais. */
 export function coverCrop(
   srcWidth: number,
   srcHeight: number,
@@ -37,7 +37,7 @@ export function coverCrop(
   return { sx: 0, sy: (srcHeight - sh) / 2, sw: srcWidth, sh };
 }
 
-/** Une image prise sur l'écran, en JPEG au format de la fiche. Null si l'écran n'a pas encore d'image. */
+/** Une image prise sur l’écran, en JPEG au format de la fiche. Null si l’écran n’a pas encore d’image. */
 export function grabFrame(video: HTMLVideoElement): Promise<Blob | null> {
   if (video.readyState < 2 || video.videoWidth === 0) return Promise.resolve(null);
   const canvas = document.createElement('canvas');
@@ -58,7 +58,7 @@ export type UploadOutcome =
   /** Échec ponctuel (réseau, image refusée) : on réessaiera au moment suivant. */
   | 'failed';
 
-/** Envoie une capture avec le jeton d'hôte de la salle. */
+/** Envoie une capture avec le jeton d’hôte de la salle. */
 export async function uploadGamePhoto(
   code: string,
   hostToken: string,
@@ -79,7 +79,7 @@ export async function uploadGamePhoto(
   }
 }
 
-/** Le partage d'écran doit être celui de cet onglet, pas de tout l'écran ni d'une autre fenêtre. */
+/** Le partage d’écran doit être celui de cet onglet, pas de tout l’écran ni d’une autre fenêtre. */
 export function isThisTab(settings: MediaTrackSettings): boolean {
   return (settings as { displaySurface?: string }).displaySurface === 'browser';
 }

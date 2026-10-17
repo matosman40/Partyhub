@@ -3,8 +3,8 @@ import { GAME_IMAGE_ID } from '@partyhub/shared';
 import { THEME_IDS } from './themes.js';
 
 /**
- * Formes attendues de l'IA (ou de l'histoire de secours), réglages de l'aventure, et personnages gardés
- * d'une partie à l'autre. Tout ce qui vient d'un modèle de langage ou d'un profil passe par ces schémas.
+ * Formes attendues de l’IA (ou de l’histoire de secours), réglages de l’aventure, et personnages gardés
+ * d’une partie à l’autre. Tout ce qui vient d’un modèle de langage ou d’un profil passe par ces schémas.
  */
 
 export const STATS = ['force', 'ruse', 'esprit', 'charme'] as const;
@@ -69,7 +69,7 @@ export const aventureSettingsSchema = z.object({
 
 export type AventureSettings = z.infer<typeof aventureSettingsSchema>;
 
-/** Actions de combat : chacune s'appuie sur une stat, et son effet est fixé par le moteur (pas par l'IA). */
+/** Actions de combat : chacune s’appuie sur une stat, et son effet est fixé par le moteur (pas par l’IA). */
 export const COMBAT_ACTIONS = ['frapper', 'feinter', 'soigner', 'parlementer'] as const;
 export type CombatActionId = (typeof COMBAT_ACTIONS)[number];
 
@@ -99,7 +99,7 @@ export const characterDraftSchema = z.object({
   look: z.string().trim().min(1).max(200).optional(),
 });
 
-/** Monde et fil conducteur : l'objectif et le secret donnent du sens à chaque scène. */
+/** Monde et fil conducteur : l’objectif et le secret donnent du sens à chaque scène. */
 export const worldSchema = z.object({
   title: z.string().trim().min(1).max(60),
   intro: z.string().trim().min(1).max(500),
@@ -107,7 +107,7 @@ export const worldSchema = z.object({
   secret: z.string().trim().min(1).max(200),
 });
 
-/** Personnage secondaire, rencontré au fil de l'histoire. Il est dessiné à partir de son nom. */
+/** Personnage secondaire, rencontré au fil de l’histoire. Il est dessiné à partir de son nom. */
 export const npcDraftSchema = z.object({
   name: z.string().trim().min(1).max(40),
   title: z.string().trim().min(1).max(40),
@@ -135,7 +135,7 @@ export const choiceDraftSchema = z.object({
   item: z.string().trim().min(1).max(40).nullable().optional(),
   /** Points de vie rendus au personnage en cas de réussite. */
   heal: z.number().int().min(0).max(2).default(0),
-  /** Points de vie perdus en cas d'échec. */
+  /** Points de vie perdus en cas d’échec. */
   risk: z.number().int().min(0).max(3).default(2),
   /** Effet sur le lien avec le personnage de la scène : -1, 0 ou +1, quel que soit le jet. */
   bond: z.number().int().min(-1).max(1).default(0),
@@ -150,7 +150,7 @@ export const enemyDraftSchema = z.object({
   defense: z.number().int().min(9).max(14),
   damage: z.number().int().min(1).max(3),
   onVictory: z.string().trim().min(1).max(220),
-  /** Objet trouvé sur l'ennemi après sa défaite. */
+  /** Objet trouvé sur l’ennemi après sa défaite. */
   loot: z.string().trim().min(1).max(40).nullable().optional(),
 });
 
@@ -181,7 +181,7 @@ export const epilogueDraftSchema = z.object({
   text: z.string().trim().min(1).max(1000),
 });
 
-/** Personnage gardé pour un profil : ce qui survit d'une partie à l'autre. */
+/** Personnage gardé pour un profil : ce qui survit d’une partie à l’autre. */
 export const savedCharacterSchema = z.object({
   libraryId: z.string().regex(/^lib-[a-z0-9]{8}$/),
   name: z.string().trim().min(1).max(40),
@@ -197,15 +197,15 @@ export const savedCharacterSchema = z.object({
   xp: z.number().int().min(0).max(100000),
   games: z.number().int().min(0).max(100000),
   victories: z.number().int().min(0).max(100000),
-  /** Portrait généré (identifiant d'image de la bibliothèque), ou null : le personnage est alors dessiné. */
+  /** Portrait généré (identifiant d’image de la bibliothèque), ou null : le personnage est alors dessiné. */
   portraitId: z.string().regex(GAME_IMAGE_ID).nullable().default(null),
   lastPlayed: z.number().finite(),
 });
 
-/** Personnages gardés par profil : les plus récents d'abord. */
+/** Personnages gardés par profil : les plus récents d’abord. */
 export const LIBRARY_MAX = 40;
 
-/** Contenu d'un profil pour ce jeu : une version, et au plus `LIBRARY_MAX` personnages. */
+/** Contenu d’un profil pour ce jeu : une version, et au plus `LIBRARY_MAX` personnages. */
 export const libraryDataSchema = z.object({
   version: z.literal(1),
   characters: z.array(savedCharacterSchema).max(LIBRARY_MAX),
@@ -221,7 +221,7 @@ export type SceneDraft = z.infer<typeof sceneDraftSchema>;
 export type EpilogueDraft = z.infer<typeof epilogueDraftSchema>;
 export type SavedCharacter = z.infer<typeof savedCharacterSchema>;
 
-/** Actions des joueurs et de l'écran principal. */
+/** Actions des joueurs et de l’écran principal. */
 export const pickSchema = z.object({ characterId: z.string().min(1).max(32) });
 export const voteSchema = z.object({ choiceId: z.string().min(1).max(16) });
 export const combatSchema = z.object({ action: z.enum(COMBAT_ACTIONS) });

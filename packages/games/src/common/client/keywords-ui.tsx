@@ -4,7 +4,7 @@ import { TimerBar } from '../../client/ui.js';
 
 /**
  * Affichage commun des mots-clés tirés à tour de rôle (quiz à thème, phrases à trous) : tableau des tours sur
- * l'écran principal, et formulaire de saisie sur le téléphone de celui qui parle.
+ * l’écran principal, et formulaire de saisie sur le téléphone de celui qui parle.
  */
 
 export interface KeywordTurnView {
@@ -65,8 +65,8 @@ export function KeywordTurnsBoard({
 }
 
 /**
- * Téléphone : saisie des mots-clés pour celui dont c'est le tour. Les autres voient seulement qui parle.
- * La validation (tour, nombre de mots) est faite par le serveur ; ici on ne fait que l'affichage.
+ * Téléphone : saisie des mots-clés pour celui dont c’est le tour. Les autres voient seulement qui parle.
+ * La validation (tour, nombre de mots) est faite par le serveur ; ici on ne fait que l’affichage.
  */
 export function KeywordForm({
   myTurn,

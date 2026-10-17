@@ -38,7 +38,7 @@ export function PromoteurPlayer({ publicState, playerState, now, send }: PlayerV
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Vibration à l'arrivée de son tour (si l'appareil sait vibrer).
+  // Vibration à l’arrivée de son tour (si l’appareil sait vibrer).
   const wasMyTurn = useRef(false);
   useEffect(() => {
     const mine = !!me?.isMyTurn;

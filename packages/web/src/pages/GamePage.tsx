@@ -11,7 +11,7 @@ import { useMusicSlot } from '../sounds.js';
 
 const SAME_CATEGORY_LIMIT = 6;
 
-/** Fiche d'un jeu (`/jeux/:gameId`) : charge le catalogue, puis affiche la fiche du jeu demandé. */
+/** Fiche d’un jeu (`/jeux/:gameId`) : charge le catalogue, puis affiche la fiche du jeu demandé. */
 export function GamePage() {
   const { gameId = '' } = useParams();
   const navigate = useNavigate();
@@ -48,7 +48,7 @@ export function GamePage() {
     return games.filter((g) => g.category === game.category && g.id !== game.id).slice(0, SAME_CATEGORY_LIMIT);
   }, [games, game]);
 
-  // Retour : l'historique ramène à la liste avec ses filtres ; une fiche ouverte directement revient à l'accueil.
+  // Retour : l’historique ramène à la liste avec ses filtres ; une fiche ouverte directement revient à l’accueil.
   function goBack() {
     if (location.key !== 'default') navigate(-1);
     else navigate('/');

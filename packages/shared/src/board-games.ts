@@ -4,11 +4,11 @@ import { CARD_THEMES, cardNoticeSchema } from './card-games.js';
 /**
  * Jeu de plateau de parcours : une piste de cases parcourue par des pions au dé.
  * Les jeux de plateau sont des données, comme les jeux de cartes : même format pour
- * les jeux intégrés et ceux créés dans l'administration.
+ * les jeux intégrés et ceux créés dans l’administration.
  */
 
 /**
- * Effet d'une case en fin de déplacement :
+ * Effet d’une case en fin de déplacement :
  * - normal : aucun effet ;
  * - avance : avance de `value` cases de plus ;
  * - recule : recule de `value` cases ;
@@ -44,7 +44,7 @@ export const boardRulesSchema = z.object({
   maxPlayers: z.number().int().min(2).max(8),
   /** Nombre de dés lancés à chaque tour : le total fait avancer le pion. */
   dice: z.number().int().min(1).max(2),
-  /** Durée d'un tour avant lancer automatique. 0 = sans limite. */
+  /** Durée d’un tour avant lancer automatique. 0 = sans limite. */
   turnSeconds: z.number().int().min(0).max(60),
 });
 

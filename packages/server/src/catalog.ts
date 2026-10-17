@@ -31,12 +31,12 @@ const ORIGIN_OF_SOURCE: Record<CustomSource | 'builtin', GameOrigin> = {
   packages: 'package',
 };
 
-/** Origine d'un jeu, lue dans la table qui le porte (code, cartes, médias, plateau ou paquet). */
+/** Origine d’un jeu, lue dans la table qui le porte (code, cartes, médias, plateau ou paquet). */
 export function originOf(id: string): GameOrigin {
   return ORIGIN_OF_SOURCE[sourceOf(id) ?? 'builtin'];
 }
 
-/** Catalogue public (jeux activés) ou complet pour l'administration. */
+/** Catalogue public (jeux activés) ou complet pour l’administration. */
 export function catalog(store: Store, includeDisabled: boolean): CatalogGame[] {
   return (
     allGames()
@@ -60,7 +60,7 @@ export function catalog(store: Store, includeDisabled: boolean): CatalogGame[] {
           listed: original.manifest.listed !== false,
         };
       })
-      // Un jeu non listé (plateau de test) n'est proposé qu'à l'administration.
+      // Un jeu non listé (plateau de test) n’est proposé qu’à l’administration.
       .filter((g) => includeDisabled || (g.enabled && g.listed))
   );
 }

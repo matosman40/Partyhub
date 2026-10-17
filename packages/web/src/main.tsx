@@ -5,6 +5,8 @@ import { Boundary } from './components/Boundary.js';
 import { CrashScreen } from './components/CrashScreen.js';
 import { applyTheme, loadTheme } from './theme/index.js';
 import { initDevice } from './device/device.js';
+import { unlockOnFirstGesture } from '@partyhub/games/client';
+import { registerOfflineShell } from './offline.js';
 import { installClientLogging } from './log/clientLog.js';
 import '@fontsource/dela-gothic-one/latin-400.css';
 import '@fontsource-variable/outfit';
@@ -21,6 +23,9 @@ import './styles/game-gallery.css';
 installClientLogging(__APP_VERSION__);
 applyTheme(loadTheme());
 initDevice();
+// Le son se débloque au premier toucher ou clic, où qu’il soit : salon, téléphone ou vue de jeu.
+unlockOnFirstGesture();
+registerOfflineShell();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

@@ -1,7 +1,7 @@
 /**
  * Codes de salle : des chiffres seulement, faciles à taper sur un téléphone et à lire sur un écran de TV.
- * L'administrateur choisit la longueur, de ROOM_CODE_MIN_LENGTH à ROOM_CODE_MAX_LENGTH chiffres. Une salle
- * garde le code qu'elle a reçu à sa création, même si la longueur change ensuite.
+ * L’administrateur choisit la longueur, de ROOM_CODE_MIN_LENGTH à ROOM_CODE_MAX_LENGTH chiffres. Une salle
+ * garde le code qu’elle a reçu à sa création, même si la longueur change ensuite.
  */
 export const ROOM_CODE_ALPHABET = '0123456789';
 export const ROOM_CODE_DEFAULT_LENGTH = 4;

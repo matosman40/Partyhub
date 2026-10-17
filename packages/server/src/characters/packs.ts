@@ -13,7 +13,7 @@ import {
 import { readZip, ZipError, type ZipFileEntry } from '../packages/zip.js';
 
 /**
- * Packs de personnages (sprites) importés depuis un zip dans l'administration.
+ * Packs de personnages (sprites) importés depuis un zip dans l’administration.
  *
  * Format attendu dans le zip (la racine peut être un dossier) :
  *   json/visages.json + atlas/visages.png   (obligatoire : portraits, ligne « neutre »)
@@ -55,7 +55,7 @@ const atlasJsonSchema = z.object({
   images: z.array(imageSchema).min(1).max(256),
 });
 
-/** Ce qu'il faut absolument trouver dans un pack pour qu'il soit utilisable. */
+/** Ce qu’il faut absolument trouver dans un pack pour qu’il soit utilisable. */
 const REQUIRED_IMAGE: Partial<Record<CharacterPackAtlasName, string>> = { visages: 'neutre', poses: 'repos' };
 const REQUIRED_ATLASES: CharacterPackAtlasName[] = ['visages', 'poses'];
 
@@ -66,7 +66,7 @@ export type PackValidation =
   | { ok: true; atlases: Partial<Record<CharacterPackAtlasName, { meta: CharacterPackAtlas; png: Uint8Array }>> }
   | { ok: false; issues: string[] };
 
-/** Dimensions d'un PNG, lues dans l'en-tête IHDR. Null si ce n'est pas un PNG. */
+/** Dimensions d’un PNG, lues dans l’en-tête IHDR. Null si ce n’est pas un PNG. */
 export function pngSize(data: Uint8Array): { width: number; height: number } | null {
   if (data.length < 24) return null;
   if (!PNG_SIGNATURE.every((byte, i) => data[i] === byte)) return null;
@@ -299,7 +299,7 @@ export class CharacterPackService {
     return !!this.db.prepare('SELECT 1 FROM character_looks WHERE pack_id = ? AND id = ?').get(packId, lookId);
   }
 
-  /** Image PNG d'une planche d'un look, ou null. */
+  /** Image PNG d’une planche d’un look, ou null. */
   atlasFile(packId: string, lookId: string, atlas: string): Buffer | null {
     const row = this.db
       .prepare('SELECT data FROM character_look_files WHERE pack_id = ? AND look_id = ? AND atlas = ?')

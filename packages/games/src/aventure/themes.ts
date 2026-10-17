@@ -1,12 +1,12 @@
 /**
- * Catalogue des thèmes d'aventure. Chaque thème donne le ton au modèle de langage, et un libellé au salon.
- * Les thèmes absurdes sont volontaires : l'histoire doit rester cohérente, même quand le décor ne l'est pas.
+ * Catalogue des thèmes d’aventure. Chaque thème donne le ton au modèle de langage, et un libellé au salon.
+ * Les thèmes absurdes sont volontaires : l’histoire doit rester cohérente, même quand le décor ne l’est pas.
  */
 
 export interface Theme {
   id: string;
   label: string;
-  /** Description donnée au modèle : décor, ton, ce qui fait le sel de l'histoire. */
+  /** Description donnée au modèle : décor, ton, ce qui fait le sel de l’histoire. */
   brief: string;
 }
 

@@ -2,7 +2,7 @@ import type { CardEntry, CardFamily, CardGameDefinition } from '@partyhub/shared
 import { WILD_FAMILY } from '@partyhub/shared';
 import type { RankRow } from '../../client/ui.js';
 
-/** Vue publique d'un jeu de cartes, telle qu'émise par le serveur. */
+/** Vue publique d’un jeu de cartes, telle qu’émise par le serveur. */
 export interface CardsPublic {
   phase: 'play' | 'pick-family' | 'round-over' | 'final';
   started: boolean;
@@ -60,7 +60,7 @@ export function handPoints(def: CardGameDefinition, hand: { entry: string }[]): 
 }
 
 /**
- * Main triée par grandeur, pour l'affichage : les cartes à chiffre d'abord, du plus petit au plus grand ;
+ * Main triée par grandeur, pour l’affichage : les cartes à chiffre d’abord, du plus petit au plus grand ;
  * les cartes sans chiffre (actions, jokers) ensuite, par points. À valeur égale : famille, puis ordre du paquet.
  */
 export function sortHandByValue<T extends { entry: string }>(def: CardGameDefinition, hand: readonly T[]): T[] {

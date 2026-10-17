@@ -31,9 +31,9 @@ export async function verifyPassword(password: string, stored: string): Promise<
 const hashSessionToken = (token: string) => createHash('sha256').update(token).digest('hex');
 
 /**
- * Sessions d'administration, stockées dans la table `admin_sessions`. Elles survivent à un
+ * Sessions d’administration, stockées dans la table `admin_sessions`. Elles survivent à un
  * redémarrage du serveur, et plusieurs processus qui partagent la même base les voient.
- * Seule l'empreinte du jeton est enregistrée.
+ * Seule l’empreinte du jeton est enregistrée.
  */
 export class AdminSessions {
   constructor(
@@ -84,7 +84,7 @@ export class LoginLimiter {
 
   /**
    * `max` tentatives par fenêtre et par clé (ici : adresse IP). Plusieurs joueurs
-   * d'un même réseau partagent une adresse : les limites pour les comptes sont donc plus larges.
+   * d’un même réseau partagent une adresse : les limites pour les comptes sont donc plus larges.
    */
   constructor(
     private readonly max = LOGIN_MAX_ATTEMPTS,

@@ -55,9 +55,9 @@ function Gallery({ name, photos }: { name: string; photos: string[] }) {
 }
 
 /**
- * Fiche d'un jeu, sur le modèle d'une page de boutique : en-tête aux couleurs du jeu avec les
+ * Fiche d’un jeu, sur le modèle d’une page de boutique : en-tête aux couleurs du jeu avec les
  * actions, puis les captures, la notice, la fiche technique et les autres jeux de la même catégorie.
- * Présentation seule : la page gère les appels à l'API et la navigation.
+ * Présentation seule : la page gère les appels à l’API et la navigation.
  */
 export function GameSheet({
   game,
@@ -75,7 +75,7 @@ export function GameSheet({
   recent: boolean;
   /** Autres jeux de la même catégorie, déjà filtrés et limités par la page. */
   sameCategory: CatalogGame[];
-  /** Adresses des captures du jeu (vide tant qu'il n'en a pas). */
+  /** Adresses des captures du jeu (vide tant qu’il n’en a pas). */
   photos?: string[];
   creating: boolean;
   trying: boolean;

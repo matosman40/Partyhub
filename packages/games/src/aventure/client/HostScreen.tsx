@@ -37,7 +37,7 @@ interface CombatView {
   progress: string[];
 }
 
-/** Vue publique de l'aventure (voir `getPublicState` dans le module). */
+/** Vue publique de l’aventure (voir `getPublicState` dans le module). */
 interface AventurePublic {
   phase: 'lobby' | 'preparing' | 'choose' | 'vote' | 'combat' | 'final';
   preparing: 'roster' | 'scene' | 'epilogue' | null;
@@ -47,7 +47,7 @@ interface AventurePublic {
   difficulty: string;
   tone: string;
   world: { title: string; intro: string; goal: string } | null;
-  /** Fond du monde : identifiant d'image, ou null. */
+  /** Fond du monde : identifiant d’image, ou null. */
   backgroundId: string | null;
   characters: SheetView[];
   npcs: (NpcView & { met: boolean })[];
@@ -68,7 +68,7 @@ interface AventurePublic {
   ranking: Parameters<typeof FinalHost>[0]['ranking'];
 }
 
-/** Vue réservée à l'écran principal : qui doit encore agir. */
+/** Vue réservée à l’écran principal : qui doit encore agir. */
 interface AventureHostOnly {
   canRegenerate: boolean;
   pending: string[];
@@ -230,7 +230,7 @@ function Vote({ pub, host, remaining }: { pub: AventurePublic; host: AventureHos
   );
 }
 
-/** Affrontement : l'ennemi, la manche en cours, et le bilan de la manche précédente. */
+/** Affrontement : l’ennemi, la manche en cours, et le bilan de la manche précédente. */
 function Combat({ pub, host, remaining }: { pub: AventurePublic; host: AventureHostOnly | null; remaining: number }) {
   const combat = pub.combat;
   if (!combat) return null;
@@ -260,7 +260,7 @@ function Combat({ pub, host, remaining }: { pub: AventurePublic; host: AventureH
   );
 }
 
-/** Pendant la révélation, le jet reste à l'écran : la suite arrive ensuite. */
+/** Pendant la révélation, le jet reste à l’écran : la suite arrive ensuite. */
 function preparingText(pub: AventurePublic): string {
   if (pub.reveal) return 'Le résultat est joué. La suite arrive…';
   return pub.preparing ? PREPARING_TEXT[pub.preparing] : 'Le conteur réfléchit…';
@@ -298,7 +298,7 @@ export function AventureHost({ publicState, hostState, now, onAction }: HostView
   if (pub.phase === 'final') return <Finale pub={pub} />;
   if (pub.phase === 'lobby') return <WaitingScreen title="En attente du lancement…" />;
 
-  // Le fond généré couvre l'écran, sous un voile sombre pour garder les textes lisibles.
+  // Le fond généré couvre l’écran, sous un voile sombre pour garder les textes lisibles.
   const background = pub.backgroundId
     ? {
         backgroundImage: `linear-gradient(rgba(12, 10, 28, 0.74), rgba(12, 10, 28, 0.9)), url("${artUrl(pub.backgroundId)}")`,

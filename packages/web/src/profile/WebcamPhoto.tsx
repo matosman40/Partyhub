@@ -20,7 +20,7 @@ export function webcamErrorMessage(err: unknown): string {
 
 /**
  * Prend la photo de profil avec la webcam : aperçu en miroir, compte à rebours de 3 secondes,
- * puis la photo est recadrée comme une photo choisie. La caméra s'éteint dès que c'est fini.
+ * puis la photo est recadrée comme une photo choisie. La caméra s’éteint dès que c’est fini.
  */
 export function WebcamPhoto({ onCapture, onCancel }: { onCapture: (dataUrl: string) => void; onCancel: () => void }) {
   const videoRef = useRef<HTMLVideoElement>(null);

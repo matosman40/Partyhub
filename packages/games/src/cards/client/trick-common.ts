@@ -1,6 +1,6 @@
 import type { CardGameDefinition } from '@partyhub/shared';
 
-/** Carte posée sur la table : qui l'a jouée, et son identifiant de carte (visible par tous). */
+/** Carte posée sur la table : qui l’a jouée, et son identifiant de carte (visible par tous). */
 export interface TrickPlayPublic {
   pid: string;
   entry: string;
@@ -29,7 +29,7 @@ export interface TrickPublic {
   turnEndsAt: number | null;
 }
 
-/** Vue d'un joueur : sa main et les cartes qu'il peut jouer maintenant. */
+/** Vue d’un joueur : sa main et les cartes qu’il peut jouer maintenant. */
 export interface TrickPlayerState {
   spectator: boolean;
   hand: { uid: string; entry: string }[];
@@ -37,7 +37,7 @@ export interface TrickPlayerState {
   playable: string[];
 }
 
-/** Nom affiché d'une famille, ou null. */
+/** Nom affiché d’une famille, ou null. */
 export function familyName(def: CardGameDefinition, id: string | null): string | null {
   if (!id) return null;
   return def.families.find((f) => f.id === id)?.label ?? id;

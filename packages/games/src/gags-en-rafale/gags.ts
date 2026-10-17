@@ -3,31 +3,31 @@ import { shuffle } from '../common/engine.js';
 /**
  * Gags en rafale : une succession de gags absurdes, très courts, façon jeux-éclair loufoques. Tout le monde joue
  * le même gag en même temps, seul ou à plusieurs. Ce fichier contient les gags, leurs règles et leur jugement.
- * Il est pur : le serveur, les tests et le téléphone s'y réfèrent. La position de la mouche est calculée par la
- * même fonction partout, pour que le téléphone et le serveur tombent d'accord.
+ * Il est pur : le serveur, les tests et le téléphone s’y réfèrent. La position de la mouche est calculée par la
+ * même fonction partout, pour que le téléphone et le serveur tombent d’accord.
  *
- * Le téléphone envoie une valeur (durée d'un glissement, instant d'un tap, durée d'un maintien…) et, pour la mouche,
- * l'endroit touché. Le serveur ne voit pas le geste : il borne la valeur par le temps écoulé, comme Micro-Défis.
+ * Le téléphone envoie une valeur (durée d’un glissement, instant d’un tap, durée d’un maintien…) et, pour la mouche,
+ * l’endroit touché. Le serveur ne voit pas le geste : il borne la valeur par le temps écoulé, comme Micro-Défis.
  * Les robots du mode test jouent avec les valeurs gagnantes ci-dessous, choisies pour rester possibles dans le
  * délai minimal de leur action (0,7 s après le début du gag).
  */
 
 export type GagId = 'crepe' | 'mouche' | 'ballon' | 'patience' | 'statue' | 'gratte';
 
-/** Ce que le joueur fait. Sert à l'écran principal et au téléphone pour choisir la scène. */
+/** Ce que le joueur fait. Sert à l’écran principal et au téléphone pour choisir la scène. */
 export type GagInput = 'swipe' | 'moving-target' | 'press-release' | 'wait' | 'still' | 'scratch';
 
 export interface Gag {
   id: GagId;
   name: string;
   icon: string;
-  /** Consigne affichée sur l'écran principal et sur le téléphone. */
+  /** Consigne affichée sur l’écran principal et sur le téléphone. */
   instruction: string;
   /** Précision courte, sous la consigne. */
   hint: string;
   /** Une phrase absurde, lue pendant la présentation du gag. */
   flavor: string;
-  /** Ce qu'on dit au bilan : une réussite, un raté. */
+  /** Ce qu’on dit au bilan : une réussite, un raté. */
   quips: { win: string; lose: string };
   durationMs: number;
   input: GagInput;
@@ -116,7 +116,7 @@ export const GAG_IDS = Object.keys(GAGS) as GagId[];
 /** Tolérance de réception : un message peut arriver après le calcul du téléphone (réseau). */
 export const LATENCY_SLACK_MS = 400;
 
-/** Glissement : distance minimale, en part de la hauteur de l'aire de jeu, et durée humaine minimale. */
+/** Glissement : distance minimale, en part de la hauteur de l’aire de jeu, et durée humaine minimale. */
 export const CREPE_SWIPE_RATIO = 0.33;
 export const CREPE_MIN_MS = 180;
 
@@ -138,7 +138,7 @@ export const SCRATCH_SHARE = 0.7;
 export const SUCCESS_POINTS = 100;
 export const SPEED_BONUS = 60;
 
-/** Ce qu'envoie un téléphone : une valeur (ms), et pour la mouche l'endroit touché (de 0 à 1). */
+/** Ce qu’envoie un téléphone : une valeur (ms), et pour la mouche l’endroit touché (de 0 à 1). */
 export interface Answer {
   value: number;
   x?: number;
@@ -157,7 +157,7 @@ function fraction(v: number): number {
 }
 
 /**
- * Position de la mouche à l'instant `t` (ms depuis le début du gag), de 0 à 1 sur chaque axe. Une courbe de Lissajous
+ * Position de la mouche à l’instant `t` (ms depuis le début du gag), de 0 à 1 sur chaque axe. Une courbe de Lissajous
  * dont les phases dépendent de la graine du gag : deux gags ne bougent jamais pareil.
  */
 export function flyAt(seed: number, t: number): { x: number; y: number } {
@@ -170,24 +170,24 @@ export function flyAt(seed: number, t: number): { x: number; y: number } {
   };
 }
 
-/** Vrai si le point touché à l'instant `t` écrase la mouche. Le téléphone et le serveur utilisent cette même règle. */
+/** Vrai si le point touché à l’instant `t` écrase la mouche. Le téléphone et le serveur utilisent cette même règle. */
 export function isFlyHit(seed: number, t: number, x: number, y: number): boolean {
   const fly = flyAt(seed, t);
   return Math.hypot(x - fly.x, y - fly.y) <= FLY_RADIUS;
 }
 
-/** Points d'une réussite : 100, plus jusqu'à 60 pour la rapidité. */
+/** Points d’une réussite : 100, plus jusqu’à 60 pour la rapidité. */
 function won(elapsed: number, gag: Gag): Judgement {
   const speed = Math.max(0, 1 - elapsed / gag.durationMs);
   return { success: true, points: SUCCESS_POINTS + Math.round(SPEED_BONUS * speed) };
 }
 
 /**
- * Juge la réponse d'un joueur. `elapsedMs` est le temps écoulé côté serveur depuis le début du gag, à la réception.
- * Une valeur impossible dans ce temps, ou un tap sur un gag d'attente, est un raté.
+ * Juge la réponse d’un joueur. `elapsedMs` est le temps écoulé côté serveur depuis le début du gag, à la réception.
+ * Une valeur impossible dans ce temps, ou un tap sur un gag d’attente, est un raté.
  */
 export function judge(gag: Gag, answer: Answer, elapsedMs: number, seed: number): Judgement {
-  // « Surtout, ne touchez pas » : toucher, c'est perdre. Ne rien faire réussit (voir silentOutcome).
+  // « Surtout, ne touchez pas » : toucher, c’est perdre. Ne rien faire réussit (voir silentOutcome).
   if (gag.input === 'wait') return LOSE;
   const elapsed = Math.max(0, elapsedMs);
   const slack = LATENCY_SLACK_MS;
@@ -221,7 +221,7 @@ export function judge(gag: Gag, answer: Answer, elapsedMs: number, seed: number)
   return success ? won(elapsed, gag) : LOSE;
 }
 
-/** Résultat de qui n'a rien envoyé quand le temps est écoulé : réussi pour un gag d'attente, raté sinon. */
+/** Résultat de qui n’a rien envoyé quand le temps est écoulé : réussi pour un gag d’attente, raté sinon. */
 export function silentOutcome(gag: Gag): Judgement {
   return gag.input === 'wait' ? won(gag.durationMs, gag) : LOSE;
 }
@@ -261,7 +261,7 @@ export function losingAnswer(gag: Gag): Answer {
 }
 
 /**
- * Suite des gags d'une partie : un tirage sans répétition (un sac que l'on vide, puis que l'on remplit),
+ * Suite des gags d’une partie : un tirage sans répétition (un sac que l’on vide, puis que l’on remplit),
  * sans jamais deux fois le même gag de suite.
  */
 export function buildSequence(count: number, random: () => number): GagId[] {

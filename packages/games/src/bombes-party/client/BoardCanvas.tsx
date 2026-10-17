@@ -137,7 +137,7 @@ export function BoardCanvas({
   const reduced = useRef(false);
   const lastCelebrate = useRef(0);
 
-  // Personnage importé de chaque joueur, par identifiant. La boucle d'affichage lit la valeur courante.
+  // Personnage importé de chaque joueur, par identifiant. La boucle d’affichage lit la valeur courante.
   const avatars = useContext(AvatarsContext);
   const { packs } = useCharacterPacks();
   const skins = useMemo(() => {
@@ -222,7 +222,7 @@ export function BoardCanvas({
     };
     let reported = false;
     const frame = (now: number) => {
-      // L'image suivante est planifiée avant de dessiner : une erreur de dessin ne fige jamais le plateau.
+      // L’image suivante est planifiée avant de dessiner : une erreur de dessin ne fige jamais le plateau.
       raf = requestAnimationFrame(frame);
       try {
         drawFrame(now);

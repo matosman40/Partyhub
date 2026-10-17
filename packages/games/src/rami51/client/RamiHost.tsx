@@ -9,7 +9,7 @@ import { useCardFlights, useChange } from '../../cards/client/cues.js';
 import { RAMI_DEFINITION, cardName, jokerText, meldPoints, meldTitle, type Meld } from '../rules.js';
 import { ramiEntry, ramiRanking, type RamiPub } from './common.js';
 
-/** Une combinaison posée : titre, points, cartes dans l'ordre (le joker indique la carte qu'il remplace). */
+/** Une combinaison posée : titre, points, cartes dans l’ordre (le joker indique la carte qu’il remplace). */
 function MeldView({ meld }: { meld: Meld }) {
   return (
     <div className="rami-meld">
@@ -42,7 +42,7 @@ export function RamiHost({ publicState, now }: HostViewProps) {
   const remaining = useRemaining(pub?.turnEndsAt ?? undefined, now);
   const rootRef = useRef<HTMLElement>(null);
 
-  // Sons et trajets : déclenchés par les changements d'état, avant les retours anticipés.
+  // Sons et trajets : déclenchés par les changements d’état, avant les retours anticipés.
   useChange(pub?.started ?? false, (_, started) => {
     if (started) play('start');
   });

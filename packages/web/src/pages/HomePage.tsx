@@ -32,8 +32,8 @@ function countLabel(n: number): string {
 }
 
 /**
- * Catalogue de l'accueil. Les filtres, le tri, la recherche et l'affichage sont dans l'URL :
- * revenir d'une fiche de jeu retrouve la même liste.
+ * Catalogue de l’accueil. Les filtres, le tri, la recherche et l’affichage sont dans l’URL :
+ * revenir d’une fiche de jeu retrouve la même liste.
  */
 export function HomePage() {
   useMusicSlot('accueil');
@@ -44,8 +44,8 @@ export function HomePage() {
   const [panelOpen, setPanelOpen] = useState(false);
   const [recentIds] = useState<string[]>(() => readRecent());
 
-  // Les filtres vivent dans l'écran (saisie instantanée) et sont reportés dans l'URL sans nouvelle entrée d'historique.
-  // L'URL n'est relue qu'au montage : un retour depuis une fiche remonte la page.
+  // Les filtres vivent dans l’écran (saisie instantanée) et sont reportés dans l’URL sans nouvelle entrée d’historique.
+  // L’URL n’est relue qu’au montage : un retour depuis une fiche remonte la page.
   const [filters, setFilters] = useState<CatalogFilters>(() => parseFilters(params));
   const activeCount = countActiveFilters(filters);
 

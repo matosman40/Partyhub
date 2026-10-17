@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import type { MediaKind } from '@partyhub/shared';
 
 /**
- * Lecteur de l'écran principal. Il ne sert qu'à l'hôte : les téléphones ne reçoivent
- * jamais l'adresse du média. Trois sources : fichier audio, fichier vidéo de la
+ * Lecteur de l’écran principal. Il ne sert qu’à l’hôte : les téléphones ne reçoivent
+ * jamais l’adresse du média. Trois sources : fichier audio, fichier vidéo de la
  * médiathèque, ou vidéo YouTube (API officielle du lecteur, chargée à la demande).
  */
 
@@ -16,7 +16,7 @@ export interface HostMedia {
 
 interface MediaStageProps {
   media: HostMedia | null;
-  /** Vrai pendant la phase de réponse : l'extrait joue. Faux à la révélation : il s'arrête. */
+  /** Vrai pendant la phase de réponse : l’extrait joue. Faux à la révélation : il s’arrête. */
   active: boolean;
   kind: MediaKind;
 }
@@ -91,7 +91,7 @@ export function MediaStage({ media, active, kind }: MediaStageProps) {
   const key = media ? `${media.key}:${replay}` : 'none';
   const isYouTube = media?.source.type === 'youtube';
 
-  // Lancement de l'extrait, et arrêt à la fin de sa durée.
+  // Lancement de l’extrait, et arrêt à la fin de sa durée.
   useEffect(() => {
     setError(null);
     setNeedsTap(false);
@@ -175,11 +175,11 @@ export function MediaStage({ media, active, kind }: MediaStageProps) {
       yt.current = null;
       holder.remove();
     };
-    // Une nouvelle clé = un nouvel extrait (ou un rejeu demandé par l'hôte).
+    // Une nouvelle clé = un nouvel extrait (ou un rejeu demandé par l’hôte).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
 
-  // Révélation : l'extrait s'arrête.
+  // Révélation : l’extrait s’arrête.
   useEffect(() => {
     if (active) return;
     window.clearTimeout(stopTimer.current);
@@ -191,7 +191,7 @@ export function MediaStage({ media, active, kind }: MediaStageProps) {
     return <div className="mq-stage mq-stage-empty" aria-hidden="true" />;
   }
 
-  // Image à l'écran pour un film ou une vidéo ; visuel sonore pour une chanson ou un fichier audio.
+  // Image à l’écran pour un film ou une vidéo ; visuel sonore pour une chanson ou un fichier audio.
   const showsPicture = media?.source.type === 'asset' ? media.source.mediaKind === 'video' : kind !== 'musique';
   const visual = showsPicture ? 'video' : 'sound';
 

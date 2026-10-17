@@ -3,7 +3,7 @@ import { CHARACTER_EXPRESSIONS, type CharacterExpression, type CharacterMood } f
 
 /**
  * Présence dans le salon : chaque personnage peut être déplacé et prendre une émotion.
- * Rien n'est enregistré en base : les positions vivent le temps de la salle, les émotions sont
+ * Rien n’est enregistré en base : les positions vivent le temps de la salle, les émotions sont
  * diffusées une fois puis oubliées.
  */
 
@@ -21,7 +21,7 @@ export const LOBBY_MOOD_INFO: Record<LobbyMood, { label: string; emoji: string }
 
 /**
  * Visages que le joueur peut montrer dans le salon : ceux de son profil, pendant quelques secondes.
- * Une attitude (saluer, danser…) change le corps ; un visage change seulement l'expression.
+ * Une attitude (saluer, danser…) change le corps ; un visage change seulement l’expression.
  */
 export const LOBBY_FACES = CHARACTER_EXPRESSIONS;
 
@@ -37,7 +37,7 @@ export const LOBBY_FACE_INFO: Record<CharacterExpression, { label: string; emoji
 /** Un choix envoyé par le téléphone : une attitude, ou un visage (jamais les deux). */
 export type LobbyMoodChoice = { mood: LobbyMood } | { face: CharacterExpression };
 
-/** Identifiant du jeu « plateau de test » : une salle où l'on essaie les déplacements, sans partie. */
+/** Identifiant du jeu « plateau de test » : une salle où l’on essaie les déplacements, sans partie. */
 export const PLATEAU_TEST_ID = 'plateau-test';
 
 /** Position relative (0 à 1) dans la zone du salon. */
@@ -59,7 +59,7 @@ export const lobbyMoodSchema = z.union([
   z.object({ face: z.enum(LOBBY_FACES) }).strict(),
 ]);
 
-/** Nouvelle place d'un personnage, diffusée seule à la salle (sans renvoyer toute la vue). */
+/** Nouvelle place d’un personnage, diffusée seule à la salle (sans renvoyer toute la vue). */
 export interface LobbyPositionEvent {
   playerId: string;
   position: LobbyPosition;
@@ -75,7 +75,7 @@ export interface LobbyMoodEvent {
   face: CharacterExpression | null;
 }
 
-/** Emoji de la bulle au-dessus d'un personnage : celui du visage, sinon celui de l'attitude. */
+/** Emoji de la bulle au-dessus d’un personnage : celui du visage, sinon celui de l’attitude. */
 export function lobbyEmoteEmoji(e: { mood: LobbyMood | null; face: CharacterExpression | null }): string {
   if (e.face) return LOBBY_FACE_INFO[e.face].emoji;
   return e.mood ? LOBBY_MOOD_INFO[e.mood].emoji : '';

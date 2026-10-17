@@ -20,9 +20,9 @@ import {
 } from './settings.js';
 
 /**
- * Configuration d'IA en vigueur. Les fournisseurs viennent de deux sources : les variables d'environnement (démarrage)
- * et l'administration (clés saisies dans l'interface, qui priment sur l'environnement pour un même fournisseur).
- * Les changements s'appliquent tout de suite, sans redémarrage ; les compteurs d'appels sont conservés.
+ * Configuration d’IA en vigueur. Les fournisseurs viennent de deux sources : les variables d’environnement (démarrage)
+ * et l’administration (clés saisies dans l’interface, qui priment sur l’environnement pour un même fournisseur).
+ * Les changements s’appliquent tout de suite, sans redémarrage ; les compteurs d’appels sont conservés.
  */
 
 export const AI_LABELS: Record<string, string> = {
@@ -37,8 +37,8 @@ export const AI_LABELS: Record<string, string> = {
 };
 
 /**
- * Modèle proposé quand l'administrateur n'en saisit pas un (fournisseurs sans modèle par défaut). Le bouton « Tester »
- * vérifie qu'il répond ; l'environnement, lui, exige toujours un modèle explicite.
+ * Modèle proposé quand l’administrateur n’en saisit pas un (fournisseurs sans modèle par défaut). Le bouton « Tester »
+ * vérifie qu’il répond ; l’environnement, lui, exige toujours un modèle explicite.
  */
 const SUGGESTED_MODELS: Record<string, string> = {
   groq: 'llama-3.3-70b-versatile',
@@ -50,15 +50,15 @@ const SUGGESTED_MODELS: Record<string, string> = {
 
 export type AiKeySource = 'admin' | 'env' | 'unreadable' | 'none';
 
-/** Ce que l'administration affiche : jamais la clé elle-même. */
+/** Ce que l’administration affiche : jamais la clé elle-même. */
 export interface AiProviderStatus {
   id: string;
   label: string;
   free: boolean;
   keySource: AiKeySource;
-  /** Interrupteur de l'administration (vrai par défaut). */
+  /** Interrupteur de l’administration (vrai par défaut). */
   enabled: boolean;
-  /** Le fournisseur répond dans la chaîne d'appel. */
+  /** Le fournisseur répond dans la chaîne d’appel. */
   active: boolean;
   /** Pourquoi le fournisseur ne répond pas, quand il est activé mais incomplet. */
   problem: string | null;
@@ -74,7 +74,7 @@ export interface AiStatus {
   providers: AiProviderStatus[];
   timeoutMs: number;
   maxCallsPerHour: number;
-  /** Ordre d'appel des fournisseurs actifs. */
+  /** Ordre d’appel des fournisseurs actifs. */
   chain: string[];
 }
 
@@ -181,8 +181,8 @@ export class AiRuntime implements AiClient {
   }
 
   /**
-   * Modifie les réglages d'un fournisseur. Une valeur `null` (ou vide) retire le réglage saisi ici, ce qui rend
-   * celui de l'environnement. La clé est chiffrée avant d'être stockée ; elle n'est jamais journalisée.
+   * Modifie les réglages d’un fournisseur. Une valeur `null` (ou vide) retire le réglage saisi ici, ce qui rend
+   * celui de l’environnement. La clé est chiffrée avant d’être stockée ; elle n’est jamais journalisée.
    */
   update(id: string, patch: AiProviderUpdate): { error?: string; changed: string[] } {
     const preset = PRESETS.find((p) => p.id === id);
@@ -265,7 +265,7 @@ export class AiRuntime implements AiClient {
     return this.config?.providers.map((p) => `${p.id}:${p.model}`).join(',') ?? '';
   }
 
-  /** Fournisseur par fournisseur : clé (administration d'abord), réglages, et ce qui manque pour appeler. */
+  /** Fournisseur par fournisseur : clé (administration d’abord), réglages, et ce qui manque pour appeler. */
   private resolve(stored: StoredAiSettings): Resolved[] {
     return PRESETS.map((preset) => {
       const settings = stored[preset.id] ?? {};
@@ -300,7 +300,7 @@ export class AiRuntime implements AiClient {
   }
 }
 
-/** Fournisseur à appeler : celui de l'environnement, avec les réglages saisis par-dessus, ou un fournisseur neuf. */
+/** Fournisseur à appeler : celui de l’environnement, avec les réglages saisis par-dessus, ou un fournisseur neuf. */
 function buildProvider(
   preset: ProviderPreset,
   env: AiProviderConfig | undefined,

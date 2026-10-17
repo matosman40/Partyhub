@@ -19,8 +19,8 @@ const FIELDS: Array<{ key: keyof PhrasesDraft; label: string; min: number; max: 
 ];
 
 /**
- * Réglages des phrases à trous. Les bornes sont aussi vérifiées par le serveur : le navigateur n'est qu'un confort.
- * La saisie est bornée à la perte de focus, pour qu'un champ vidé n'envoie jamais 0.
+ * Réglages des phrases à trous. Les bornes sont aussi vérifiées par le serveur : le navigateur n’est qu’un confort.
+ * La saisie est bornée à la perte de focus, pour qu’un champ vidé n’envoie jamais 0.
  */
 export function PhrasesSettings({ settings, disabled, onChange }: SettingsProps) {
   const current = settings as unknown as PhrasesDraft;

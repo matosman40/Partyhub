@@ -52,16 +52,16 @@ export interface QuizState {
   index: number;
   startedAt: number;
   answerEndsAt: number;
-  /** id -> pseudo, figé au début de la partie (plus les arrivées en salle d'attente). */
+  /** id -> pseudo, figé au début de la partie (plus les arrivées en salle d’attente). */
   players: Record<string, string>;
   points: Record<string, number>;
   answers: Record<string, { choice: number; elapsedMs: number }>;
   gains: Record<string, QuizGain>;
-  /** Tour de parole des mots-clés (phase « topics »), puis conservé pour l'affichage des thèmes. */
+  /** Tour de parole des mots-clés (phase « topics »), puis conservé pour l’affichage des thèmes. */
   topics: KeywordTurns | null;
   /** Identifiant du travail IA en cours (phase « generating »). */
   jobId: string | null;
-  /** Message affiché à l'écran principal quand les questions intégrées remplacent celles de l'IA. */
+  /** Message affiché à l’écran principal quand les questions intégrées remplacent celles de l’IA. */
   notice: string | null;
 }
 
@@ -167,8 +167,8 @@ function afterTopicTurn(s: QuizState, topics: KeywordTurns, ctx: GameContext): Q
 }
 
 /**
- * Ferme la phase des mots-clés. S'il n'y en a aucun, les questions intégrées sont tirées tout de suite.
- * Sinon, le travail IA est demandé : la salle l'exécute, puis `completeJob` lance le quiz.
+ * Ferme la phase des mots-clés. S’il n’y en a aucun, les questions intégrées sont tirées tout de suite.
+ * Sinon, le travail IA est demandé : la salle l’exécute, puis `completeJob` lance le quiz.
  */
 function closeTopics(s: QuizState, ctx: GameContext): QuizState {
   ctx.cancel(TOPIC_TIMEOUT);
@@ -269,9 +269,9 @@ export const quizParty: GameModule<QuizState, QuizSettings> = {
     notice: {
       goal: 'Répondre le plus vite et le plus juste aux questions pour marquer le plus de points.',
       steps: [
-        "L'hôte lance la partie depuis l'écran principal.",
+        'L’hôte lance la partie depuis l’écran principal.',
         'Avec les thèmes des joueurs, chacun propose à son tour quelques mots-clés sur son téléphone.',
-        "Chaque question s'affiche sur l'écran et sur votre téléphone.",
+        'Chaque question s’affiche sur l’écran et sur votre téléphone.',
         'Touchez la bonne réponse avant la fin du temps.',
         'Les points arrivent après la révélation : répondre vite rapporte un bonus.',
       ],
@@ -296,7 +296,7 @@ export const quizParty: GameModule<QuizState, QuizSettings> = {
     return {
       phase: 'ready',
       settings: parsed,
-      // Avec les thèmes des joueurs, les questions viennent de l'IA : rien à tirer maintenant.
+      // Avec les thèmes des joueurs, les questions viennent de l’IA : rien à tirer maintenant.
       questions: parsed.source === 'curated' ? pickQuestions(parsed.questionCount, ctx.random) : [],
       index: 0,
       startedAt: 0,
@@ -321,7 +321,7 @@ export const quizParty: GameModule<QuizState, QuizSettings> = {
   },
 
   onPlayerLeave(s: QuizState, p: PlayerRef, ctx: GameContext) {
-    // Si c'est à lui de parler, son tour passe tout de suite : la salle n'attend pas le minuteur.
+    // Si c’est à lui de parler, son tour passe tout de suite : la salle n’attend pas le minuteur.
     if (s.phase === 'topics' && s.topics && turnPlayer(s.topics) === p.id) {
       const connected = ctx.connectedPlayerIds().filter((id) => id !== p.id);
       const topics = passTurn(s.topics, ctx.now(), s.settings.topicSeconds, connected);
@@ -388,7 +388,7 @@ export const quizParty: GameModule<QuizState, QuizSettings> = {
     return s;
   },
 
-  // Travail demandé à l'IA : les thèmes des joueurs et le nombre de questions.
+  // Travail demandé à l’IA : les thèmes des joueurs et le nombre de questions.
   pendingJob(s: QuizState) {
     if (s.phase !== 'generating' || !s.topics || !s.jobId) return null;
     const input: QuizThemesInput = {
@@ -406,7 +406,7 @@ export const quizParty: GameModule<QuizState, QuizSettings> = {
     if (generated && generated.length > 0) {
       return beginQuestion({ ...s, questions: generated, index: 0, jobId: null, notice: null }, ctx);
     }
-    // Pas d'IA configurée, ou réponse inutilisable : le quiz intégré prend le relais, sans bloquer la salle.
+    // Pas d’IA configurée, ou réponse inutilisable : le quiz intégré prend le relais, sans bloquer la salle.
     const notice =
       outcome.ok && outcome.value === null
         ? 'IA non configurée : questions intégrées.'
@@ -476,7 +476,7 @@ export const quizParty: GameModule<QuizState, QuizSettings> = {
   },
 };
 
-/** Saisie d'un tour de parole : seul le joueur dont c'est le tour peut la proposer. */
+/** Saisie d’un tour de parole : seul le joueur dont c’est le tour peut la proposer. */
 function handleKeywords(s: QuizState, p: PlayerRef, payload: unknown, ctx: GameContext): GameResult<QuizState> {
   if (s.phase !== 'topics' || !s.topics) return fail('Aucun mot-clé attendu pour le moment');
   if (turnPlayer(s.topics) !== p.id) return fail('Ce n’est pas votre tour');

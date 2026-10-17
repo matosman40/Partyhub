@@ -119,6 +119,14 @@ jobs:
         env:
           BASE_URL: http://127.0.0.1:8282
         run: python scripts/a11y-games-browser.py
+      - name: Son sur l'écran principal et le téléphone (niveau mesuré)
+        env:
+          BASE_URL: http://127.0.0.1:8282
+        run: python scripts/audio-check-browser.py president quiz-party rami-51
+      - name: Mode hors ligne (coque de l'application sans réseau)
+        env:
+          BASE_URL: http://127.0.0.1:8282
+        run: python scripts/offline-check-browser.py
       - name: Journal du serveur en cas d'échec
         if: failure()
         run: cat "$RUNNER_TEMP/server.log" || true

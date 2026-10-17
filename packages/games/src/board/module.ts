@@ -12,9 +12,9 @@ import { directory, fail, ok } from '../common/engine.js';
 import { currentPlayer, logLine, playTurn, ranking, rollDice, type BoardState } from './rules.js';
 
 /**
- * Jeu de plateau de parcours, généré à partir d'une définition (cases, dés, règles).
- * Chaque tour : le joueur lance les dés, avance son pion, applique l'effet de la case
- * d'arrivée, puis le tour passe au joueur suivant. Le premier arrivé gagne.
+ * Jeu de plateau de parcours, généré à partir d’une définition (cases, dés, règles).
+ * Chaque tour : le joueur lance les dés, avance son pion, applique l’effet de la case
+ * d’arrivée, puis le tour passe au joueur suivant. Le premier arrivé gagne.
  */
 
 export type { BoardState } from './rules.js';
@@ -45,7 +45,7 @@ function reschedule(s: BoardState, ctx: GameContext): void {
   }
 }
 
-/** Crée un jeu de plateau jouable à partir d'une définition validée. */
+/** Crée un jeu de plateau jouable à partir d’une définition validée. */
 export function createBoardGame(
   def: BoardGameDefinition,
   options: { id: string },
@@ -133,7 +133,7 @@ export function createBoardGame(
     if (type !== 'roll') return fail('Action inconnue.');
     if (state.phase === 'lobby') return fail('La partie n’a pas encore commencé.');
     if (state.phase === 'final') return fail('La partie est terminée.');
-    if (currentPlayer(state) !== player.id) return fail("Ce n'est pas votre tour.");
+    if (currentPlayer(state) !== player.id) return fail('Ce n’est pas votre tour.');
 
     const s = structuredClone(state);
     playTurn(s, player.id, rollDice(s.def.rules.dice, ctx.random));

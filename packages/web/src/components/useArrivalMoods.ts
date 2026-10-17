@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import type { CharacterMood } from '@partyhub/shared';
 
-/** Durée du salut d'un personnage qui vient d'arriver. */
+/** Durée du salut d’un personnage qui vient d’arriver. */
 const WAVE_MS = 3000;
 
 /**
- * Personnages qui viennent d'arriver dans la salle : ils saluent quelques secondes.
+ * Personnages qui viennent d’arriver dans la salle : ils saluent quelques secondes.
  * Les joueurs déjà présents au premier affichage ne saluent pas.
  */
 export function useArrivalMoods(names: string[]): Record<string, CharacterMood> {

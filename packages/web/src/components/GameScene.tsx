@@ -5,7 +5,7 @@ import { logoFor } from './gameLogos.js';
 /**
  * Décor de fond de chaque jeu : une scène dessinée en SVG, dans les couleurs du jeu.
  * Chaque décor est déterministe (même jeu, même image) et se rogne (xMidYMid slice) à toutes les
- * proportions. Les jeux sans décor dessiné reçoivent l'un des décors génériques, choisi par identifiant.
+ * proportions. Les jeux sans décor dessiné reçoivent l’un des décors génériques, choisi par identifiant.
  */
 
 const W = 1600;
@@ -40,11 +40,11 @@ const span = (r: () => number, min: number, max: number) => min + (max - min) * 
 
 const pick = <T,>(r: () => number, items: readonly T[]): T => items[Math.floor(r() * items.length)] ?? items[0]!;
 
-/** Points d'une étoile à quatre branches, centrée sur (x, y). */
+/** Points d’une étoile à quatre branches, centrée sur (x, y). */
 const sparkle = (x: number, y: number, s: number) =>
   `M${x} ${y - s} Q${x} ${y} ${x + s} ${y} Q${x} ${y} ${x} ${y + s} Q${x} ${y} ${x - s} ${y} Q${x} ${y} ${x} ${y - s} Z`;
 
-/** Points d'une étoile à cinq branches. */
+/** Points d’une étoile à cinq branches. */
 function starPoints(cx: number, cy: number, outer: number, inner: number): string {
   const pts: string[] = [];
   for (let i = 0; i < 10; i++) {
@@ -715,7 +715,7 @@ const funambule: Scene = (c) => {
   );
 };
 
-/** Micro-Défis : une borne d'arcade au coucher du soleil, grille en perspective et soleil en halos. */
+/** Micro-Défis : une borne d’arcade au coucher du soleil, grille en perspective et soleil en halos. */
 const microDefis: Scene = (c) => {
   const horizon = H * 0.6;
   const cx = W / 2;
@@ -1104,12 +1104,12 @@ const SCENES: Record<string, Scene> = {
   boum,
 };
 
-/** Vrai quand le jeu a son propre décor (et non l'un des décors génériques). */
+/** Vrai quand le jeu a son propre décor (et non l’un des décors génériques). */
 export function hasDrawnScene(gameId: string): boolean {
   return Object.prototype.hasOwnProperty.call(SCENES, gameId);
 }
 
-/** Fond de scène du jeu, en SVG. À placer en premier enfant d'un conteneur positionné. */
+/** Fond de scène du jeu, en SVG. À placer en premier enfant d’un conteneur positionné. */
 export function GameScene({ gameId, name, className }: { gameId: string; name: string; className?: string }) {
   const spec = logoFor(gameId, name);
   const seed = hashText(gameId);

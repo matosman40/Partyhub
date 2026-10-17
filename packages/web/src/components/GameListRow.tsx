@@ -6,7 +6,7 @@ import { GameLogo } from './GameLogo.js';
 
 /**
  * Une ligne de la liste du catalogue : vignette, nom et repères. Un clic ouvre la fiche du jeu,
- * où l'on peut revenir avant de créer une salle.
+ * où l’on peut revenir avant de créer une salle.
  */
 export function GameListRow({ game }: { game: CatalogGame }) {
   return (

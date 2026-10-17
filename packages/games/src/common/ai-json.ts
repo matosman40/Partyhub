@@ -1,12 +1,12 @@
 import type { GameContext } from '@partyhub/shared';
 
 /**
- * Lecture des réponses JSON de l'IA, partagée par les jeux qui génèrent du contenu (Aventure, Quiz à thème,
- * Phrases à trous). Les messages d'erreur ne reprennent jamais le contenu renvoyé par le modèle.
+ * Lecture des réponses JSON de l’IA, partagée par les jeux qui génèrent du contenu (Aventure, Quiz à thème,
+ * Phrases à trous). Les messages d’erreur ne reprennent jamais le contenu renvoyé par le modèle.
  */
 
 /**
- * Extrait l'objet JSON d'une réponse, même entourée de texte ou de balises.
+ * Extrait l’objet JSON d’une réponse, même entourée de texte ou de balises.
  */
 export function parseJsonObject(text: string): unknown {
   const start = text.indexOf('{');
@@ -20,7 +20,7 @@ export function parseJsonObject(text: string): unknown {
 }
 
 /**
- * Demande une réponse JSON au client d'IA de la salle. Renvoie null quand aucun fournisseur n'est configuré :
+ * Demande une réponse JSON au client d’IA de la salle. Renvoie null quand aucun fournisseur n’est configuré :
  * le jeu prend alors son contenu de secours, sans erreur. Une réponse hors format lève une erreur.
  */
 export async function askAiJson(

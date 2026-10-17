@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } f
 import type { Dir } from './render.js';
 
 /**
- * Commandes tactiles, toujours visibles en bas de l'écran : une rangée de gestes du kangourou au-dessus,
+ * Commandes tactiles, toujours visibles en bas de l’écran : une rangée de gestes du kangourou au-dessus,
  * puis une croix de quatre grosses touches à gauche et le bouton A à droite. Une touche maintenue
  * répète le déplacement. Les gestes et le bouton A sont estompés hors de leur utilisation, mais jamais cachés.
  */
@@ -54,14 +54,14 @@ export function Gamepad({
   const moveRef = useRef(onMove);
   moveRef.current = onMove;
 
-  // Répétition tant qu'une touche reste enfoncée.
+  // Répétition tant qu’une touche reste enfoncée.
   useEffect(() => {
     if (!held || disabled) return;
     const id = window.setInterval(() => moveRef.current(held), REPEAT_MS);
     return () => window.clearInterval(id);
   }, [held, disabled]);
 
-  // Relâcher le doigt n'importe où arrête la répétition.
+  // Relâcher le doigt n’importe où arrête la répétition.
   useEffect(() => {
     const stop = () => setHeld(null);
     window.addEventListener('pointerup', stop);

@@ -4,9 +4,9 @@ import { directory, everyConnectedDone, fail, ok, rankEntries, shuffle } from '.
 import rawPrompts from './prompts.fr.json' with { type: 'json' };
 
 /**
- * Association express : chacun écrit le premier mot qui lui vient à l'esprit
+ * Association express : chacun écrit le premier mot qui lui vient à l’esprit
  * pour un mot donné, puis tout le monde vote (anonymement) pour le plus drôle.
- * Chaque vote reçu rapporte des points à l'auteur du mot.
+ * Chaque vote reçu rapporte des points à l’auteur du mot.
  */
 
 const PROMPTS: string[] = z.array(z.string().min(1)).min(1).parse(rawPrompts);
@@ -40,9 +40,9 @@ export interface AssociationState {
   points: Record<string, number>;
   /** auteur -> mot proposé pendant la manche en cours. */
   words: Record<string, string>;
-  /** Auteurs dans l'ordre d'affichage anonyme : seuls les mots sont montrés pendant le vote. */
+  /** Auteurs dans l’ordre d’affichage anonyme : seuls les mots sont montrés pendant le vote. */
   options: string[];
-  /** votant -> index de l'option choisie. */
+  /** votant -> index de l’option choisie. */
   votes: Record<string, number>;
   /** Points gagnés pendant la manche, révélés à la fin du vote. */
   gains: Record<string, number>;
@@ -73,7 +73,7 @@ function openWriting(s: AssociationState, ctx: GameContext): AssociationState {
 function openVote(s: AssociationState, ctx: GameContext): AssociationState {
   ctx.cancel(WRITE_TIMEOUT);
   const options = shuffle(Object.keys(s.words), ctx.random);
-  // Sans au moins deux mots, il n'y a rien à départager : on passe directement à la révélation.
+  // Sans au moins deux mots, il n’y a rien à départager : on passe directement à la révélation.
   if (options.length < 2) return reveal({ ...s, options }, ctx);
   const ms = VOTE_SECONDS * 1000;
   ctx.schedule(VOTE_TIMEOUT, ms);
@@ -129,10 +129,10 @@ export const association: GameModule<AssociationState, AssociationSettings> = {
     notice: {
       goal: 'Trouver le mot le plus drôle pour une consigne, et recueillir des votes.',
       steps: [
-        "Lisez le mot de la manche sur l'écran.",
+        'Lisez le mot de la manche sur l’écran.',
         'Écrivez sur votre téléphone le premier mot qui vous vient (24 caractères maximum).',
-        "Votez pour le mot le plus drôle, sans savoir qui l'a écrit.",
-        "Chaque vote reçu rapporte 100 points à l'auteur du mot.",
+        'Votez pour le mot le plus drôle, sans savoir qui l’a écrit.',
+        'Chaque vote reçu rapporte 100 points à l’auteur du mot.',
       ],
       tips: ['Vous ne pouvez pas voter pour votre propre mot.', 'Il faut au moins deux mots pour passer au vote.'],
     },

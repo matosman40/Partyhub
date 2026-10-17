@@ -11,7 +11,7 @@ export const CATEGORY_CLASS: Record<GameCategory, string> = {
   solo: 'solo',
 };
 
-/** Couleurs de l'identité visuelle du jeu, utilisées pour la vignette. */
+/** Couleurs de l’identité visuelle du jeu, utilisées pour la vignette. */
 export function artStyle(id: string, name: string): CSSProperties {
   const [a, b] = logoFor(id, name).sky;
   return { '--sky-a': a, '--sky-b': b } as CSSProperties;

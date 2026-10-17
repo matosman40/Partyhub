@@ -5,25 +5,25 @@ import { mediaQuizDefinitionSchema } from './media-quiz.js';
 import { gameDetailsSchema, noticeSchema } from './schemas.js';
 
 /**
- * Formats d'échange : un jeu exporté à part, ou une sauvegarde complète. Ces fichiers
- * peuvent venir d'une autre installation ; ils sont donc validés comme une saisie.
+ * Formats d’échange : un jeu exporté à part, ou une sauvegarde complète. Ces fichiers
+ * peuvent venir d’une autre installation ; ils sont donc validés comme une saisie.
  */
 
 /**
  * Un jeu de cartes exporté. Version 2 : les fichiers de la médiathèque que le jeu utilise (image du dos,
- * police) sont joints, en base64, pour qu'il fonctionne sur une autre installation. Version 3 : cartes à
+ * police) sont joints, en base64, pour qu’il fonctionne sur une autre installation. Version 3 : cartes à
  * texte, paires, rangs, mécanique (mémo) et polices ou motifs livrés. Les versions 1 et 2 restent acceptées
- * à l'import ; une version antérieure à 3 refuse un fichier 3 au lieu d'ignorer ces champs.
+ * à l’import ; une version antérieure à 3 refuse un fichier 3 au lieu d’ignorer ces champs.
  */
 export const CARD_EXPORT_FORMAT = 'partyhub-jeux-cartes';
 export const CARD_EXPORT_VERSION = 3 as const;
 
-/** Fichier joint à un jeu de cartes exporté. `id` est l'identifiant qu'il a dans la définition. */
+/** Fichier joint à un jeu de cartes exporté. `id` est l’identifiant qu’il a dans la définition. */
 export const cardExportAssetSchema = z.object({
   id: z.string().regex(/^[0-9a-f]{32}$/, 'Identifiant de fichier invalide.'),
   kind: z.enum(['image', 'font']),
   name: z.string().max(120).default('fichier'),
-  /** Contenu du fichier, en base64 (5 Mo d'image ou 2 Mo de police, codés). */
+  /** Contenu du fichier, en base64 (5 Mo d’image ou 2 Mo de police, codés). */
   data: z.string().min(1).max(7_000_000, 'Fichier joint trop volumineux.'),
 });
 

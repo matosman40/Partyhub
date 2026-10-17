@@ -1,6 +1,6 @@
 import type { CharacterMood } from '@partyhub/shared';
 
-/** Ce que l'écran de quiz connaît de la partie : phase, classement et résultats publics. */
+/** Ce que l’écran de quiz connaît de la partie : phase, classement et résultats publics. */
 export interface QuizMoodInput {
   phase: 'ready' | 'question' | 'reveal' | 'final';
   ranking: { name: string; rank: number }[];

@@ -1,5 +1,24 @@
 import { describe, expect, it } from 'vitest';
+import { cueYieldsToGame } from '@partyhub/games/client';
 import { allowCue, cueFor, phaseOf } from '../tv/gameCues.js';
+
+describe('Priorité au bruitage du jeu', () => {
+  it('cède quand le jeu vient de jouer son propre bruitage (il fait déjà le bilan)', () => {
+    expect(cueYieldsToGame('chip', 0)).toBe(true);
+    expect(cueYieldsToGame('click', 120)).toBe(true);
+    expect(cueYieldsToGame('start', 250)).toBe(true);
+  });
+
+  it('ne cède pas quand le bruitage du jeu est ancien', () => {
+    expect(cueYieldsToGame('chip', 300)).toBe(false);
+    expect(cueYieldsToGame('chip', 5000)).toBe(false);
+  });
+
+  it('ne cède jamais pour la fanfare finale, même juste après un son de jeu', () => {
+    expect(cueYieldsToGame('final', 0)).toBe(false);
+    expect(cueYieldsToGame('final', 100)).toBe(false);
+  });
+});
 
 /** Bruitages de l'écran principal : déduits du statut de la salle et de l'étape du jeu, sans réglage par jeu. */
 

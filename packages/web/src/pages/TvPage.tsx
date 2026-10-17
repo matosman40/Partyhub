@@ -37,8 +37,8 @@ const PromoteurStage = lazy(() => import('../three/PromoteurStage.js'));
 
 /**
  * Écran principal (TV ou ordinateur) : salon avec QR code, puis affichage de la partie.
- * Le socket s'authentifie avec le jeton d'hôte gardé dans cet onglet.
- * L'hôte peut aussi jouer depuis cet écran (« Je joue aussi ») et ajouter des robots.
+ * Le socket s’authentifie avec le jeton d’hôte gardé dans cet onglet.
+ * L’hôte peut aussi jouer depuis cet écran (« Je joue aussi ») et ajouter des robots.
  */
 export function TvPage() {
   const { code = '' } = useParams();
@@ -55,9 +55,9 @@ export function TvPage() {
   const [noticeOpen, setNoticeOpen] = useState(false);
   const [board3d, setBoard3d] = useState(read3DPreference);
   const [board3dFailed, setBoard3dFailed] = useState(false);
-  // Personnages qui viennent d'arriver saluent ; un jeu qui fournit ses propres humeurs les remplace.
+  // Personnages qui viennent d’arriver saluent ; un jeu qui fournit ses propres humeurs les remplace.
   const arrivals = useArrivalMoods(view ? view.lobby.players.map((p) => p.name) : []);
-  // Émotions du salon (par identifiant) et saluts d'arrivée (par pseudo) réunis par identifiant.
+  // Émotions du salon (par identifiant) et saluts d’arrivée (par pseudo) réunis par identifiant.
   const emotes = useLobbyMoods(getSocket());
   const positions = useLobbyPositions(getSocket());
   const lobbyPoses: Record<string, CharacterMood> = {
@@ -69,22 +69,22 @@ export function TvPage() {
       }),
     ),
   };
-  // Menu discret et commandes de partie : elles reviennent au moindre mouvement, puis s'effacent.
-  // Code pour ouvrir l'écran hôte sur un téléphone (affiché dans le salon, jamais envoyé aux joueurs).
+  // Menu discret et commandes de partie : elles reviennent au moindre mouvement, puis s’effacent.
+  // Code pour ouvrir l’écran hôte sur un téléphone (affiché dans le salon, jamais envoyé aux joueurs).
   const [handoff, setHandoff] = useState<HandoffCode | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [barFocused, setBarFocused] = useState(false);
   const active = useActivity(menuOpen || barFocused);
-  // Captures de la première partie de chaque jeu : tant que l'hôte a autorisé le partage, elles se prennent seules.
+  // Captures de la première partie de chaque jeu : tant que l’hôte a autorisé le partage, elles se prennent seules.
   const photos = useGamePhotoCapture({ code, hostToken, lobby: view?.lobby ?? null });
 
-  // Mise en page « console » : l'écran tient exactement dans la fenêtre (voir styles.css).
+  // Mise en page « console » : l’écran tient exactement dans la fenêtre (voir styles.css).
   useEffect(() => {
     document.documentElement.classList.add('is-tv');
     return () => document.documentElement.classList.remove('is-tv');
   }, []);
 
-  // L'écran de la salle reste allumé pendant toute la session (si le navigateur le permet).
+  // L’écran de la salle reste allumé pendant toute la session (si le navigateur le permet).
   useWakeLock(hostToken !== null && !closed);
 
   useEffect(() => {
@@ -122,7 +122,7 @@ export function TvPage() {
   useMusicSlot(musicForLobby(view?.lobby.status));
   // Bruitages de partie (début, bilan, fin) : tous les jeux qui annoncent leur étape en profitent.
   useGameCues(view?.lobby.status ?? null, phaseOf(view?.game?.public));
-  // Une coupure est annoncée sur l'écran : sinon, il reste figé sans que personne ne sache pourquoi.
+  // Une coupure est annoncée sur l’écran : sinon, il reste figé sans que personne ne sache pourquoi.
   const connection = useConnection(getSocket());
 
   if (!hostToken) {
@@ -165,11 +165,11 @@ export function TvPage() {
   const socket = getSocket();
   // Avatars de la salle par pseudo : les jeux affichent photo ou emoji sans rien transmettre de plus.
   const avatars = Object.fromEntries(lobby.players.map((p) => [p.name, p.avatar]));
-  // Équipe d'un joueur (nom, icône, couleur) : null sans équipes.
+  // Équipe d’un joueur (nom, icône, couleur) : null sans équipes.
   const teamNameOf = (index: number | null) => (index === null ? null : (lobby.series?.teams?.[index] ?? null));
   // Pastille du salon : réglage du championnat, ou manche en cours.
   const pill = inLobby ? championshipPill(lobby) : null;
-  // Plateau du Promoteur : vue 3D par défaut quand le navigateur sait l'afficher, 2D sinon ou en cas d'erreur.
+  // Plateau du Promoteur : vue 3D par défaut quand le navigateur sait l’afficher, 2D sinon ou en cas d’erreur.
   const can3d = lobby.game.id === 'promoteur' && !board3dFailed && supportsWebGL();
   const use3d = can3d && board3d;
   const flat = (
@@ -188,7 +188,7 @@ export function TvPage() {
   const sky = logoFor(lobby.game.id, lobby.game.name).sky;
   const skyStyle = { '--sky-a': sky[0], '--sky-b': sky[1] } as CSSProperties;
 
-  /** Action propre au jeu, demandée par l'écran principal (ex. générer des personnages). */
+  /** Action propre au jeu, demandée par l’écran principal (ex. générer des personnages). */
   function sendGameAction(type: string, payload?: unknown): Promise<{ ok: boolean; error?: string }> {
     return new Promise((resolve) => {
       if (!canSend(socket, setError)) {
@@ -226,7 +226,7 @@ export function TvPage() {
     });
   }
 
-  /** Championnat du salon (manches et équipes) : réglé avant la partie, il reste en place d'une manche à l'autre. */
+  /** Championnat du salon (manches et équipes) : réglé avant la partie, il reste en place d’une manche à l’autre. */
   function setChampionship(next: ChampionshipSettings) {
     if (!canSend(socket, setError)) return;
     socket.emit('host:championship', next, (res) => {

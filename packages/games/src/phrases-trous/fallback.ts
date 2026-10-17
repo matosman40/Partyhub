@@ -2,9 +2,9 @@ import { normalizeText, shuffle } from '../common/engine.js';
 import { BLANK } from './rules.js';
 
 /**
- * Phrases de secours : utilisées quand l'IA n'est pas configurée, injoignable ou répond hors format. Chaque phrase a
+ * Phrases de secours : utilisées quand l’IA n’est pas configurée, injoignable ou répond hors format. Chaque phrase a
  * un seul trou et une réponse. Les cartes de leurre ne complètent pas bien les trous : elles font rire quand on les
- * pose. Les mots-clés ne sont pas utilisés ici, mais le jeu le dit à l'écran principal.
+ * pose. Les mots-clés ne sont pas utilisés ici, mais le jeu le dit à l’écran principal.
  */
 
 export interface PhraseRound {
@@ -68,20 +68,20 @@ export function uniqueCards(cards: string[]): string[] {
   return out;
 }
 
-/** Contenu de secours : tirage au hasard parmi les phrases écrites à l'avance, avec des leurres. */
+/** Contenu de secours : tirage au hasard parmi les phrases écrites à l’avance, avec des leurres. */
 export function curatedContent(count: number, random: () => number): PhraseContent {
   const rounds = shuffle(CURATED, random).slice(0, Math.min(count, CURATED.length));
   const decoys = shuffle(DECOYS, random).slice(0, 12);
   return { rounds, pool: uniqueCards([...rounds.map((r) => r.answer), ...decoys]) };
 }
 
-/** Leurres écrits à l'avance qui ne figurent pas encore dans `have`, pour compléter un paquet trop mince. */
+/** Leurres écrits à l’avance qui ne figurent pas encore dans `have`, pour compléter un paquet trop mince. */
 export function spareDecoys(have: string[]): string[] {
   const taken = new Set(have.map(normalizeText));
   return DECOYS.filter((card) => !taken.has(normalizeText(card)));
 }
 
-/** Phrases de secours non encore utilisées, pour compléter une réponse de l'IA trop courte. */
+/** Phrases de secours non encore utilisées, pour compléter une réponse de l’IA trop courte. */
 export function spareCurated(used: PhraseRound[], count: number): PhraseRound[] {
   const usedKeys = new Set(used.map((r) => normalizeText(r.sentence)));
   return CURATED.filter((r) => !usedKeys.has(normalizeText(r.sentence))).slice(0, count);

@@ -272,7 +272,7 @@ export const GAME_LOGOS: Record<string, LogoSpec> = {
   },
 };
 
-/** Identité de repli : déterministe, à partir de l'identifiant et du nom du jeu. */
+/** Identité de repli : déterministe, à partir de l’identifiant et du nom du jeu. */
 export function fallbackLogo(id: string, name: string): LogoSpec {
   const h = hashText(id);
   const hue = h % 360;
@@ -290,7 +290,7 @@ export function fallbackLogo(id: string, name: string): LogoSpec {
   };
 }
 
-/** Identité d'un jeu : la sienne si elle est dessinée, sinon celle de repli. */
+/** Identité d’un jeu : la sienne si elle est dessinée, sinon celle de repli. */
 export function logoFor(id: string, name: string): LogoSpec {
   const spec = GAME_LOGOS[id];
   return spec ?? fallbackLogo(id, name);

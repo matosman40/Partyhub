@@ -21,7 +21,7 @@ export interface BoardState {
   scores: Record<string, number>;
   /** Joueurs qui passent leur prochain tour. */
   skip: Record<string, boolean>;
-  /** Joueurs arrivés, dans l'ordre d'arrivée. */
+  /** Joueurs arrivés, dans l’ordre d’arrivée. */
   finished: string[];
   phase: BoardPhase;
   turn: number;
@@ -75,8 +75,8 @@ export function nextTurn(state: BoardState): void {
 }
 
 /**
- * Joue le tour d'un joueur avec les dés donnés : déplacement, effet de la case
- * d'arrivée, puis tour suivant. Le premier arrivé met fin à la partie.
+ * Joue le tour d’un joueur avec les dés donnés : déplacement, effet de la case
+ * d’arrivée, puis tour suivant. Le premier arrivé met fin à la partie.
  */
 export function playTurn(state: BoardState, pid: string, dice: number[]): void {
   const last = state.def.cells.length - 1;
@@ -138,7 +138,7 @@ export interface RankRow {
 }
 
 /**
- * Classement : les arrivés d'abord (dans l'ordre d'arrivée), puis les autres par case
+ * Classement : les arrivés d’abord (dans l’ordre d’arrivée), puis les autres par case
  * atteinte. Deux joueurs sur la même case avec le même score partagent un rang.
  */
 export function ranking(state: BoardState): RankRow[] {

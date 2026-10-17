@@ -4,7 +4,7 @@ import { AvatarsContext, MoodsContext, type AvatarData } from './avatar-context.
 import { Character } from './character.js';
 
 /**
- * Briques d'interface communes à tous les jeux : avatar, classement,
+ * Briques d’interface communes à tous les jeux : avatar, classement,
  * barre de temps, carte à jouer. Elles ne contiennent aucune logique de jeu.
  */
 
@@ -18,8 +18,8 @@ function hueOf(name: string): number {
 }
 
 /**
- * Visage d'un avatar : photo si elle existe et charge (la photo est un choix explicite du joueur),
- * sinon son personnage, sinon l'emoji sur sa teinte (profils anciens).
+ * Visage d’un avatar : photo si elle existe et charge (la photo est un choix explicite du joueur),
+ * sinon son personnage, sinon l’emoji sur sa teinte (profils anciens).
  */
 function AvatarFace({
   info,
@@ -110,13 +110,13 @@ export function TimerBar({ remaining, total }: { remaining: number; total: numbe
       aria-valuemax={Math.max(0, Math.round(total))}
       aria-valuenow={Math.max(0, Math.round(remaining))}
     >
-      {/* Mise à l'échelle, et non largeur : la barre glisse sans recalculer la mise en page à chaque image. */}
+      {/* Mise à l’échelle, et non largeur : la barre glisse sans recalculer la mise en page à chaque image. */}
       <span style={{ transform: `scaleX(${pct / 100})` }} />
     </div>
   );
 }
 
-/** Écran d'attente côté téléphone (entre deux étapes ou avant le lancement). */
+/** Écran d’attente côté téléphone (entre deux étapes ou avant le lancement). */
 export function WaitingScreen({ title, text }: { title: string; text?: string }) {
   return (
     <section className="player-game fade-in">

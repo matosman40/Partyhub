@@ -1,6 +1,6 @@
 /**
- * Consignes et illustrations originales d'Imite-moi. Les visages sont dessinés ici, en SVG :
- * aucun asset externe, aucune image reprise d'un autre jeu.
+ * Consignes et illustrations originales d’Imite-moi. Les visages sont dessinés ici, en SVG :
+ * aucun asset externe, aucune image reprise d’un autre jeu.
  */
 
 export type Mode = 'galerie' | 'grimace' | 'cri';
@@ -76,7 +76,7 @@ const ART: Record<ArtKey, string> = {
   ),
 };
 
-/** Image d'une illustration, utilisable directement dans une balise img (data URL SVG). */
+/** Image d’une illustration, utilisable directement dans une balise img (data URL SVG). */
 export function artUrl(key: ArtKey): string {
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(ART[key])}`;
 }
@@ -94,7 +94,7 @@ export const MODE_INSTRUCTION: Record<Mode, string> = {
   cri: 'Enregistrez 3 secondes de son : imitez la scène.',
 };
 
-/** Consignes tirées au sort pour chaque mode. Une consigne ne revient qu'après que toutes les autres sont passées. */
+/** Consignes tirées au sort pour chaque mode. Une consigne ne revient qu’après que toutes les autres sont passées. */
 export const PROMPTS: Record<Mode, PromptDef[]> = {
   galerie: [
     { title: 'Trouvez une photo qui ressemble à ce lapin', art: 'lapin' },

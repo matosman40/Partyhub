@@ -4,7 +4,7 @@ import { api } from '../api.js';
 import { rememberDeviceProfile } from './session.js';
 
 /**
- * Création d'un profil avec le seul pseudo. Pas de mot de passe : le profil reste sur cet appareil,
+ * Création d’un profil avec le seul pseudo. Pas de mot de passe : le profil reste sur cet appareil,
  * et le jeton de session le retrouve. Le nouveau profil devient le profil actif.
  */
 export function CreateProfileForm({
@@ -13,7 +13,7 @@ export function CreateProfileForm({
   onCreated,
 }: {
   title?: string;
-  /** Faux : le nouveau profil ne remplace pas le profil actif (profil d'un autre joueur de l'appareil). */
+  /** Faux : le nouveau profil ne remplace pas le profil actif (profil d’un autre joueur de l’appareil). */
   activate?: boolean;
   onCreated: (profile: ProfileView, token: string) => void;
 }) {

@@ -2,7 +2,7 @@ import type { BoardView, PowerKind } from './render.js';
 
 /**
  * Événements de jeu déduits de la différence entre deux vues publiques.
- * Le navigateur ne reçoit aucun événement dédié : il reconstitue ce qui s'est
+ * Le navigateur ne reçoit aucun événement dédié : il reconstitue ce qui s’est
  * passé (bombe posée, explosion, caisse brisée, bonus pris…) pour le son et les effets.
  */
 export type FxEvent =
@@ -15,7 +15,7 @@ export type FxEvent =
   | { type: 'phase'; phase: string; winner: boolean }
   /** Une bombe qui arrive sur une case : lancée, frappée ou reposée. */
   | { type: 'slide'; x: number; y: number }
-  /** Points gagnés par le vainqueur d'une manche, affichés au-dessus de lui. */
+  /** Points gagnés par le vainqueur d’une manche, affichés au-dessus de lui. */
   | { type: 'score'; x: number; y: number; color: number; text: string };
 
 const key = (x: number, y: number) => `${x},${y}`;
@@ -26,7 +26,7 @@ export function diffEvents(prev: BoardView, next: BoardView): FxEvent[] {
   const prevBombs = new Set(prev.bombs.map((b) => b.id));
   for (const b of next.bombs) if (!prevBombs.has(b.id)) out.push({ type: 'place', x: b.x, y: b.y });
 
-  // Une bombe qui change de case et qui n'est pas portée par quelqu'un vient d'être lancée ou frappée.
+  // Une bombe qui change de case et qui n’est pas portée par quelqu’un vient d’être lancée ou frappée.
   const prevBombById = new Map(prev.bombs.map((b) => [b.id, b] as const));
   for (const b of next.bombs) {
     const before = prevBombById.get(b.id);

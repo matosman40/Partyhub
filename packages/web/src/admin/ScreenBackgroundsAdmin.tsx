@@ -3,7 +3,7 @@ import { api } from '../api.js';
 import { loadScreenBackgrounds, SCREEN_KEYS, SCREEN_LABELS, type ScreenKey } from '../screenBackgrounds.js';
 import type { AssetRecord } from './AssetLibrary.js';
 
-/** Fonds d'écran : une image de la médiathèque par écran, ou le décor d'origine. */
+/** Fonds d’écran : une image de la médiathèque par écran, ou le décor d’origine. */
 
 type Choice = Record<ScreenKey, string | null>;
 

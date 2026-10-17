@@ -80,7 +80,7 @@ function isNightRole(role: Role): boolean {
   return NIGHT_ROLES.includes(role);
 }
 
-/** Cibles possibles pour l'action du joueur dans la phase en cours. */
+/** Cibles possibles pour l’action du joueur dans la phase en cours. */
 function targetsFor(s: LoupsState, id: string): string[] {
   if (!s.alive.includes(id)) return [];
   if (s.phase === 'night') {
@@ -224,7 +224,7 @@ function afterReveal(s: LoupsState, ctx: GameContext): LoupsState {
   return startNight(s, ctx);
 }
 
-/** Temps écoulé ou action forcée de l'hôte : fait avancer la phase en cours. */
+/** Temps écoulé ou action forcée de l’hôte : fait avancer la phase en cours. */
 function advancePhase(s: LoupsState, ctx: GameContext): LoupsState {
   switch (s.phase) {
     case 'deal':

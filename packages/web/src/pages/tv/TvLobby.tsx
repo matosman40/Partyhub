@@ -6,14 +6,14 @@ import { LobbyHeads, LobbyPlateau } from '../../components/LobbyPlateau.js';
 import { TestModeBadge } from '../../components/TestModeBadge.js';
 import type { LobbyEmote } from '../../components/useLobbyMoods.js';
 
-/** Code affiché pour qu'un téléphone devienne l'hôte de la salle (valable quelques minutes, une fois). */
+/** Code affiché pour qu’un téléphone devienne l’hôte de la salle (valable quelques minutes, une fois). */
 export interface HandoffCode {
   code: string;
   expiresAt: number;
 }
 
 /**
- * Salon de l'écran hôte (TV, ordinateur, tablette ou téléphone de l'hôte) : le code pour rejoindre,
+ * Salon de l’écran hôte (TV, ordinateur, tablette ou téléphone de l’hôte) : le code pour rejoindre,
  * les joueurs, et le bouton de lancement toujours visible. Le plateau de test garde son décor.
  */
 export function TvLobby({

@@ -166,7 +166,7 @@ export function cardsFromCsv(
     if (ids.has(id)) return { ok: false, error: `Ligne ${line} : identifiant « ${id} » déjà utilisé.` };
     ids.add(id);
 
-    // Le symbole central : celui du CSV, sinon les premiers caractères du nom, sinon un point d'interrogation.
+    // Le symbole central : celui du CSV, sinon les premiers caractères du nom, sinon un point d’interrogation.
     const symbol = Array.from(field('symbol') || label || '?')
       .slice(0, 4)
       .join('');
@@ -189,8 +189,8 @@ export function cardsFromCsv(
 }
 
 /**
- * Ajoute les cartes d'un champ `csv` à la définition, puis retire ce champ. Accepte une définition seule
- * ou un fichier d'export (`definition` à l'intérieur). Sans champ `csv`, renvoie la valeur inchangée.
+ * Ajoute les cartes d’un champ `csv` à la définition, puis retire ce champ. Accepte une définition seule
+ * ou un fichier d’export (`definition` à l’intérieur). Sans champ `csv`, renvoie la valeur inchangée.
  */
 export function mergeCardCsv(input: unknown): { ok: true; value: unknown } | { ok: false; error: string } {
   if (!input || typeof input !== 'object') return { ok: true, value: input };

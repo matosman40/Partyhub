@@ -15,11 +15,11 @@ import {
 } from './gags.js';
 
 /**
- * Gags en rafale, dans l'esprit des jeux-éclair loufoques : une succession de gags très courts, les mêmes pour tout
+ * Gags en rafale, dans l’esprit des jeux-éclair loufoques : une succession de gags très courts, les mêmes pour tout
  * le monde, seul ou à plusieurs. Le téléphone est la manette : il glisse, il tape, il gonfle, il reste de marbre.
  *
- * Déroulement d'un gag : présentation (2,2 s), gag (4 à 6 s, ou plus tôt si tous les joueurs connectés ont répondu),
- * bilan (3 s). Une réussite rapporte 100 points, plus jusqu'à 60 pour la rapidité.
+ * Déroulement d’un gag : présentation (2,2 s), gag (4 à 6 s, ou plus tôt si tous les joueurs connectés ont répondu),
+ * bilan (3 s). Une réussite rapporte 100 points, plus jusqu’à 60 pour la rapidité.
  */
 
 export const gagsSettingsSchema = z.object({
@@ -37,7 +37,7 @@ const REVEAL_END = 'reveal-end';
 
 export type GagsPhase = 'ready' | 'intro' | 'play' | 'reveal' | 'final';
 
-/** Un gag tiré pour la partie, avec sa graine (la mouche s'en sert pour bouger). */
+/** Un gag tiré pour la partie, avec sa graine (la mouche s’en sert pour bouger). */
 export interface Planned {
   gag: GagId;
   seed: number;
@@ -73,7 +73,7 @@ function current(s: GagsState): Planned | null {
   return s.plan[s.round] ?? null;
 }
 
-/** Description publique d'un gag : tout pour l'afficher, rien sur la réponse attendue. */
+/** Description publique d’un gag : tout pour l’afficher, rien sur la réponse attendue. */
 function describe(planned: Planned) {
   const gag: Gag = GAGS[planned.gag];
   return {
@@ -120,7 +120,7 @@ function beginPlay(s: GagsState, ctx: GameContext): GagsState {
 }
 
 /**
- * Clôt le gag. Qui n'a rien envoyé est jugé d'après le gag : un gag d'attente réussit pour qui ne touche à rien,
+ * Clôt le gag. Qui n’a rien envoyé est jugé d’après le gag : un gag d’attente réussit pour qui ne touche à rien,
  * les autres ratent.
  */
 function finishPlay(s: GagsState, ctx: GameContext): GagsState {
@@ -309,7 +309,7 @@ export const gagsEnRafale: GameModule<GagsState, GagsSettings> = {
       endsAt: s.endsAt,
       revealEndsAt: s.revealEndsAt,
       players: Object.entries(s.players).map(([id, name]) => ({ id, name })),
-      // Qui a déjà répondu à ce gag (sans le résultat, qui ne s'affiche qu'au bilan).
+      // Qui a déjà répondu à ce gag (sans le résultat, qui ne s’affiche qu’au bilan).
       submitted: Object.keys(s.submissions),
       results: s.phase === 'reveal' ? resultsOf(s) : null,
       ranking: rankEntries(s.players, s.points),
@@ -338,7 +338,7 @@ export const gagsEnRafale: GameModule<GagsState, GagsSettings> = {
   },
 
   /**
-   * Robots du mode test : réussissent six fois sur dix. Un robot qui réussit un gag d'attente ne fait rien ;
+   * Robots du mode test : réussissent six fois sur dix. Un robot qui réussit un gag d’attente ne fait rien ;
    * sinon il joue la réponse gagnante, ou une réponse ratée.
    */
   suggest(s, playerId, random) {

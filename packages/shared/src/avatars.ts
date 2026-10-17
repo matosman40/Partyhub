@@ -1,4 +1,4 @@
-/** Emojis proposés comme avatar par défaut. Liste fermée : rien d'autre n'est accepté. */
+/** Emojis proposés comme avatar par défaut. Liste fermée : rien d’autre n’est accepté. */
 export const AVATAR_EMOJIS = [
   '🦊',
   '🐙',
@@ -20,7 +20,7 @@ export const AVATAR_EMOJIS = [
 
 export type AvatarEmoji = (typeof AVATAR_EMOJIS)[number];
 
-/** Teinte stable dérivée d'un texte (pseudo, identifiant) : même texte, même couleur partout. */
+/** Teinte stable dérivée d’un texte (pseudo, identifiant) : même texte, même couleur partout. */
 export function hashText(text: string): number {
   let h = 2166136261;
   for (let i = 0; i < text.length; i++) {

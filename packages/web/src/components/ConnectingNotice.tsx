@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-/** Au-delà de ce délai, l'attente n'est plus silencieuse : on explique et on propose de réessayer. */
+/** Au-delà de ce délai, l’attente n’est plus silencieuse : on explique et on propose de réessayer. */
 export const CONNECTING_SLOW_MS = 6000;
 
 /**

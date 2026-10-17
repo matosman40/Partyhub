@@ -14,7 +14,7 @@ export type PhotoCaptureStatus = 'off' | 'asking' | 'on';
 
 export interface GamePhotoCapture {
   status: PhotoCaptureStatus;
-  /** Ce que l'hôte doit savoir : partage refusé, mauvais onglet, partage arrêté. */
+  /** Ce que l’hôte doit savoir : partage refusé, mauvais onglet, partage arrêté. */
   note: string | null;
   /** Demande le partage de cet onglet (à appeler depuis un clic). */
   start: () => Promise<void>;
@@ -23,7 +23,7 @@ export interface GamePhotoCapture {
 
 /**
  * Captures prévues pour une partie : annulées dès que la salle change de jeu, revient au salon ou que le serveur
- * refuse. La capture de l'écran des résultats remplace les dernières captures prévues pendant la partie.
+ * refuse. La capture de l’écran des résultats remplace les dernières captures prévues pendant la partie.
  */
 interface Run {
   gameId: string;
@@ -33,9 +33,9 @@ interface Run {
 }
 
 /**
- * Captures automatiques de la première partie de chaque jeu, sur l'écran de la salle.
- * L'hôte autorise le partage une fois ; ensuite, pour chaque jeu encore sans captures, trois images
- * sont prises pendant la partie réelle (jamais pendant une partie d'essai).
+ * Captures automatiques de la première partie de chaque jeu, sur l’écran de la salle.
+ * L’hôte autorise le partage une fois ; ensuite, pour chaque jeu encore sans captures, trois images
+ * sont prises pendant la partie réelle (jamais pendant une partie d’essai).
  */
 export function useGamePhotoCapture({
   code,
@@ -58,7 +58,7 @@ export function useGamePhotoCapture({
     if (runRef.current === run) runRef.current = null;
   }, []);
 
-  /** Arrête le partage et les captures prévues, puis dit pourquoi à l'hôte. */
+  /** Arrête le partage et les captures prévues, puis dit pourquoi à l’hôte. */
   const finish = useCallback(
     (message: string | null) => {
       if (runRef.current) endRun(runRef.current);
@@ -76,7 +76,7 @@ export function useGamePhotoCapture({
       if (run.cancelled || !streamRef.current || !video || hostToken === null) return;
       const blob = await grabFrame(video);
       if (run.cancelled || !blob || blob.size > CAPTURE_MAX_BYTES) return;
-      // Le serveur refuse quand le jeu a déjà ses captures ou que la partie est finie : inutile d'insister.
+      // Le serveur refuse quand le jeu a déjà ses captures ou que la partie est finie : inutile d’insister.
       if ((await uploadGamePhoto(code, hostToken, blob)) === 'closed') endRun(run);
     },
     [code, hostToken, endRun],
@@ -122,7 +122,7 @@ export function useGamePhotoCapture({
     setStatus('on');
   }, [finish]);
 
-  // Une partie réelle (jamais un essai) : deux captures pendant la partie, une sur l'écran des résultats,
+  // Une partie réelle (jamais un essai) : deux captures pendant la partie, une sur l’écran des résultats,
   // pour un jeu encore sans captures.
   const realRoom = lobby !== null && !lobby.practice;
   const roomStatus = lobby?.status ?? null;
@@ -161,7 +161,7 @@ export function useGamePhotoCapture({
     if (current) endRun(current);
   }, [status, realRoom, roomStatus, gameId, hostToken, shoot, endRun]);
 
-  // Quitter la page libère l'écran partagé et annule les captures prévues.
+  // Quitter la page libère l’écran partagé et annule les captures prévues.
   useEffect(
     () => () => {
       if (runRef.current) endRun(runRef.current);

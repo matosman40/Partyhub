@@ -21,7 +21,7 @@ import { directory, fail, ok, rankEntries, shuffle } from '../common/engine.js';
  * - Si personne ne peut répondre, la carte centrale est écartée et une nouvelle est piochée.
  * - Si `turnSeconds` est positif, la carte centrale change aussi quand ce délai passe sans réponse.
  * - La manche finit quand une main est vide (son propriétaire la termine) ou quand plus aucune réponse
- *   n'est possible. La partie finit quand un joueur atteint l'objectif de points.
+ *   n’est possible. La partie finit quand un joueur atteint l’objectif de points.
  *
  * Les mains ne sont jamais dans la vue publique : seuls la carte centrale, les nombres de cartes et les
  * verrous sont partagés.
@@ -45,7 +45,7 @@ export interface RaceState {
   pile: RaceCard[];
   center: RaceCard | null;
   scores: Record<string, number>;
-  /** Joueur → instant (ms, horloge serveur) jusqu'auquel ses touches sont bloquées. */
+  /** Joueur → instant (ms, horloge serveur) jusqu’auquel ses touches sont bloquées. */
   locked: Record<string, number>;
   phase: RacePhase;
   round: number;
@@ -109,7 +109,7 @@ export function createRaceGame(def: CardGameDefinition, options: { id: string })
     return s.names[id] ?? '?';
   }
 
-  /** Vrai si un joueur connecté (ou n'importe qui, si personne n'est connecté) a une carte qui répond au centre. */
+  /** Vrai si un joueur connecté (ou n’importe qui, si personne n’est connecté) a une carte qui répond au centre. */
   function canAnswer(s: RaceState, ctx: GameContext): boolean {
     if (!s.center) return false;
     const entries = entryMap(s.def);
@@ -394,7 +394,7 @@ export function createRaceGame(def: CardGameDefinition, options: { id: string })
     return state.phase === 'final';
   }
 
-  /** Robot : touche une carte qui répond au centre, en laissant passer parfois l'occasion. */
+  /** Robot : touche une carte qui répond au centre, en laissant passer parfois l’occasion. */
   function suggest(state: RaceState, playerId: string, random: () => number) {
     if (!state.started || state.phase !== 'play' || !state.center) return null;
     if (!state.order.includes(playerId)) return null;

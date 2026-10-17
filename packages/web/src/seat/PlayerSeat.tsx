@@ -32,18 +32,19 @@ import { CornerMenu, DrawerSection } from '../components/CornerMenu.js';
 import { MyResult, TeamBadge, championshipSummary, hasChampionship, replayLabel } from '../components/Championship.js';
 import { getDevice } from '../device/device.js';
 import { SHARED_PLACE_PARAM } from './share.js';
+import { phaseOf, useGameCues } from '../tv/gameCues.js';
 
 /**
  * Un siège : un joueur avec sa propre connexion, son jeton et sa place dans la salle.
  * Un téléphone peut tenir plusieurs sièges (plusieurs joueurs sur le même appareil),
- * et l'écran principal peut en tenir un pour l'hôte qui joue aussi.
- * Le siège se reconnecte tout seul après une coupure grâce au jeton gardé sur l'appareil.
+ * et l’écran principal peut en tenir un pour l’hôte qui joue aussi.
+ * Le siège se reconnecte tout seul après une coupure grâce au jeton gardé sur l’appareil.
  */
 
 export interface Stored {
   token: string;
   name: string;
-  /** Profil avec lequel la place a été prise : une autre identité sur l'appareil ne la reprend pas. */
+  /** Profil avec lequel la place a été prise : une autre identité sur l’appareil ne la reprend pas. */
   profileId?: string;
 }
 
@@ -76,7 +77,7 @@ export function removeSeat(code: string, seatId: string): void {
   }
 }
 
-/** Jeton d'hôte gardé par cet onglet pour la salle (transféré depuis l'écran hôte), sans erreur si absent. */
+/** Jeton d’hôte gardé par cet onglet pour la salle (transféré depuis l’écran hôte), sans erreur si absent. */
 function readHostToken(code: string): string | null {
   try {
     return sessionStorage.getItem(`ph:host:${code}`);
@@ -96,7 +97,7 @@ export interface PlayerSeatProps {
   /** Vue réduite (écran principal) : pas de liste des joueurs dans le salon. */
   compact?: boolean;
   hidden?: boolean;
-  /** Options de l'appareil (changer de salle, ajouter un joueur…), rangées dans le tiroir. */
+  /** Options de l’appareil (changer de salle, ajouter un joueur…), rangées dans le tiroir. */
   deviceMenu?: ReactNode;
   onIdentity?: (seatId: string, name: string | null) => void;
   onProfileRejected?: () => void;
@@ -127,11 +128,11 @@ export function PlayerSeat({
   const [socialError, setSocialError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const { connected } = useConnection(socket);
-  // Case « Je suis prêt » : le choix s'affiche tout de suite, le salon le confirme ensuite.
+  // Case « Je suis prêt » : le choix s’affiche tout de suite, le salon le confirme ensuite.
   const [readyPending, setReadyPending] = useState<boolean | null>(null);
   const [ended, setEnded] = useState<string | null>(null);
-  // Jeton d'hôte de cet appareil (transféré par l'écran hôte) : le siège reste joueur, et ouvre
-  // en plus une connexion d'hôte pour lancer la partie depuis ce téléphone.
+  // Jeton d’hôte de cet appareil (transféré par l’écran hôte) : le siège reste joueur, et ouvre
+  // en plus une connexion d’hôte pour lancer la partie depuis ce téléphone.
   const [hostToken, setHostToken] = useState<string | null>(() => readHostToken(code));
   const [hostSocket, setHostSocket] = useState<AppSocket | null>(null);
   const [isHost, setIsHost] = useState(false);
@@ -162,7 +163,7 @@ export function PlayerSeat({
     const rejoin = () => {
       const stored = readSeat(code, seatId);
       if (!stored) return;
-      // Place prise avec un autre profil de l'appareil : elle n'est pas reprise, le joueur entre à nouveau.
+      // Place prise avec un autre profil de l’appareil : elle n’est pas reprise, le joueur entre à nouveau.
       const current = profileRef.current.profileId;
       if (stored.profileId && current && stored.profileId !== current) {
         removeSeat(code, seatId);
@@ -177,7 +178,7 @@ export function PlayerSeat({
           setEnded(null);
           onIdentity?.(seatId, stored.name);
         } else {
-          // Jeton non reconnu : le siège repart d'un formulaire vierge.
+          // Jeton non reconnu : le siège repart d’un formulaire vierge.
           removeSeat(code, seatId);
           setJoined(false);
           setView(null);
@@ -250,7 +251,7 @@ export function PlayerSeat({
     );
   }
 
-  // Le choix en attente est abandonné dès que le salon envoie l'état réel de la case.
+  // Le choix en attente est abandonné dès que le salon envoie l’état réel de la case.
   useEffect(() => {
     setReadyPending(null);
   }, [view?.you.ready]);
@@ -288,7 +289,7 @@ export function PlayerSeat({
     });
   }
 
-  // Une action ne part qu'en ligne : rien n'est gardé pour plus tard. Gardée pendant une coupure, elle arriverait
+  // Une action ne part qu’en ligne : rien n’est gardé pour plus tard. Gardée pendant une coupure, elle arriverait
   // avant la reconnexion et le salon la refuserait avec un message trompeur. Sans réponse dans le délai, le
   // bouton redevient utilisable.
   const send = (type: string, payload?: unknown) =>
@@ -315,8 +316,8 @@ export function PlayerSeat({
   }
 
   /**
-   * Capteurs du téléphone : relayés à l'écran pendant la partie seulement (le serveur filtre le reste).
-   * Volatile : un échantillon n'est pas gardé pendant une coupure, il serait périmé au retour.
+   * Capteurs du téléphone : relayés à l’écran pendant la partie seulement (le serveur filtre le reste).
+   * Volatile : un échantillon n’est pas gardé pendant une coupure, il serait périmé au retour.
    */
   function sendSensor(sample: SensorSample) {
     socket.volatile.emit('player:sensor', sample);
@@ -324,7 +325,7 @@ export function PlayerSeat({
 
   function sendLobbyMove(position: LobbyPosition) {
     if (!connected) return;
-    // Les refus de déplacement (débit, fin du salon) ne sont pas affichés : la place revient d'elle-même.
+    // Les refus de déplacement (débit, fin du salon) ne sont pas affichés : la place revient d’elle-même.
     socket.emit('player:lobby-move', position, () => undefined);
   }
 
@@ -359,6 +360,9 @@ export function PlayerSeat({
       {children}
     </section>
   );
+
+  // Bruitages du téléphone (début, bilan, fin) : un son propre au jeu passe avant, sans doublon.
+  useGameCues(view?.lobby.status ?? null, phaseOf(view?.game?.public));
 
   if (ended) {
     return wrapper(
@@ -442,7 +446,7 @@ export function PlayerSeat({
     </>
   );
 
-  /** L'hôte a ouvert « Lancer depuis mon téléphone » sur l'écran : le code donne accès aux commandes d'hôte. */
+  /** L’hôte a ouvert « Lancer depuis mon téléphone » sur l’écran : le code donne accès aux commandes d’hôte. */
   function claimHost(e: FormEvent) {
     e.preventDefault();
     setClaimError(null);
@@ -468,7 +472,7 @@ export function PlayerSeat({
     hostSocket.emit('host:start', (res) => setError(res.ok ? null : res.error));
   }
 
-  /** Commande d'hôte depuis ce téléphone (même règles que l'écran TV : elles passent par la connexion d'hôte). */
+  /** Commande d’hôte depuis ce téléphone (même règles que l’écran TV : elles passent par la connexion d’hôte). */
   function hostCommand(event: 'host:next' | 'host:end' | 'host:replay' | 'host:addBot') {
     if (!hostSocket || !canSend(hostSocket, setError)) return;
     const done = (res: { ok: true } | { ok: false; error: string }) => setError(res.ok ? null : res.error);
@@ -657,8 +661,8 @@ export function PlayerSeat({
 }
 
 /**
- * Lien et QR code pour ouvrir la même place sur un deuxième appareil (tablette, téléphone d'un proche).
- * Le jeton est dans le fragment de l'adresse (#place=…) : il n'est jamais envoyé au serveur.
+ * Lien et QR code pour ouvrir la même place sur un deuxième appareil (tablette, téléphone d’un proche).
+ * Le jeton est dans le fragment de l’adresse (#place=…) : il n’est jamais envoyé au serveur.
  */
 function SeatShare({ code, seatId }: { code: string; seatId: string }) {
   const token = readSeat(code, seatId)?.token ?? null;

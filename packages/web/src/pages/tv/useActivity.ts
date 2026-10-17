@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 
-/** Délai sans action au bout duquel les commandes discrètes s'effacent. */
+/** Délai sans action au bout duquel les commandes discrètes s’effacent. */
 export const IDLE_MS = 3500;
 
 /**
- * Minuterie d'inactivité : `wake()` relance le délai ; `onIdle` n'est appelé qu'une fois le délai
+ * Minuterie d’inactivité : `wake()` relance le délai ; `onIdle` n’est appelé qu’une fois le délai
  * écoulé sans nouvel appel. `stop()` annule la minuterie en attente.
  */
 export function createIdleTracker(
@@ -32,7 +32,7 @@ export function createIdleTracker(
 }
 
 /**
- * Vrai tant que l'écran a reçu une action récente (souris, toucher, clavier), ou tant qu'on le
+ * Vrai tant que l’écran a reçu une action récente (souris, toucher, clavier), ou tant qu’on le
  * demande (`keepVisible`, par exemple un tiroir ouvert). Sert à faire apparaître les commandes
  * au besoin, et à les laisser en retrait le reste du temps.
  */

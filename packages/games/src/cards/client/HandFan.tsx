@@ -2,7 +2,7 @@ import { useRef, type ReactNode } from 'react';
 
 export interface FanItem {
   uid: string;
-  /** Nom lu par les lecteurs d'écran. */
+  /** Nom lu par les lecteurs d’écran. */
   label: string;
   face: ReactNode;
   /** Carte jouable maintenant : elle se redresse et luit. */
@@ -25,18 +25,18 @@ interface HandFanProps {
 }
 
 /**
- * Main en éventail : les cartes s'étalent en arc, se chevauchent davantage
+ * Main en éventail : les cartes s’étalent en arc, se chevauchent davantage
  * quand la main grandit, et se redressent quand elles sont jouables.
- * Le calcul d'espacement se fait en CSS (voir styles.css, « Éventail »).
+ * Le calcul d’espacement se fait en CSS (voir styles.css, « Éventail »).
  */
 export function HandFan({ items, mode, waiting, disabled, label, onTap, pendingUid = null }: HandFanProps) {
   const n = items.length;
   const classes = ['hand-fan', mode === 'play' ? 'is-play' : '', waiting ? 'is-waiting' : ''].filter(Boolean).join(' ');
 
-  // Seules les cartes qui arrivent depuis le dernier affichage s'animent (distribution ou pioche),
-  // en file. Les cartes déjà en main ne bougent pas : une pioche n'attend plus la fin de la main.
+  // Seules les cartes qui arrivent depuis le dernier affichage s’animent (distribution ou pioche),
+  // en file. Les cartes déjà en main ne bougent pas : une pioche n’attend plus la fin de la main.
   // Le délai de chaque carte est fixé à son arrivée puis gardé : un rendu ultérieur ne le remet pas à zéro,
-  // sinon une animation en cours sauterait ou toute la file partirait d'un coup.
+  // sinon une animation en cours sauterait ou toute la file partirait d’un coup.
   const delays = useRef(new Map<string, number>());
   const known = delays.current;
   const next = new Map<string, number>();

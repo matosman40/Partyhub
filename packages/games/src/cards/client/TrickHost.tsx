@@ -8,7 +8,7 @@ import { useChange } from './cues.js';
 import { entryOf, rankingOf } from './common.js';
 import { familyName, type TrickPublic } from './trick-common.js';
 
-/** Écran principal du pli : la table, la couleur demandée, l'atout et les plis de chacun. */
+/** Écran principal du pli : la table, la couleur demandée, l’atout et les plis de chacun. */
 export function TrickHost({ publicState, now }: HostViewProps) {
   const pub = publicState as TrickPublic | null;
   const remaining = useRemaining(pub?.turnEndsAt ?? undefined, now);

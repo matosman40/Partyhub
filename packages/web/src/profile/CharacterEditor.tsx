@@ -60,7 +60,7 @@ const ACCESSORY_NAMES: Record<CharacterAccessory, string> = {
   bow: 'Nœud',
   flower: 'Fleur',
 };
-/** Noms des expressions au repos, dans l'ordre de la liste partagée (l'index est la valeur du personnage). */
+/** Noms des expressions au repos, dans l’ordre de la liste partagée (l’index est la valeur du personnage). */
 export const EXPRESSION_NAMES: Record<CharacterExpression, string> = {
   calme: 'Calme',
   souriant: 'Souriant',
@@ -102,7 +102,7 @@ export function CharacterEditor({
 }) {
   const [mood, setMood] = useState<CharacterMood>('idle');
   const packs = useCharacterPacks();
-  // Un pack supprimé depuis ne s'affiche plus : le personnage dessiné reprend la main.
+  // Un pack supprimé depuis ne s’affiche plus : le personnage dessiné reprend la main.
   const activePackInfo = spec.pack ? (packs.packs.find((pack) => pack.id === spec.pack) ?? null) : null;
   const activePack = !!activePackInfo;
   const activeLook = activePackInfo ? resolveLook(activePackInfo, spec.look) : null;

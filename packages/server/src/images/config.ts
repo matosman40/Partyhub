@@ -7,14 +7,14 @@ import {
 } from './providers.js';
 
 /**
- * Configuration des fournisseurs d'images, lue dans l'environnement du serveur. Les clés ne quittent jamais le
+ * Configuration des fournisseurs d’images, lue dans l’environnement du serveur. Les clés ne quittent jamais le
  * serveur. Sans clé, le fournisseur est absent : les jeux gardent alors leur rendu de secours, sans erreur.
  *
  * - CLOUDFLARE_ACCOUNT_ID et CLOUDFLARE_API_TOKEN : Cloudflare Workers AI (FLUX.1 schnell), gratuit dans la limite
- *   d'un quota quotidien.
+ *   d’un quota quotidien.
  * - MODELSCOPE_API_KEY : ModelScope (Qwen-Image). Service réservé à un usage non commercial.
- * - IMAGE_PROVIDERS : ordre d'appel, séparé par des virgules (par défaut : les fournisseurs dont la clé est présente).
- * - IMAGE_MAX_PER_DAY : nombre maximal d'images générées par jour, tous fournisseurs confondus.
+ * - IMAGE_PROVIDERS : ordre d’appel, séparé par des virgules (par défaut : les fournisseurs dont la clé est présente).
+ * - IMAGE_MAX_PER_DAY : nombre maximal d’images générées par jour, tous fournisseurs confondus.
  */
 
 export interface ImageProviderSettings {
@@ -22,7 +22,7 @@ export interface ImageProviderSettings {
   apiKey: string;
   /** Cloudflare : identifiant du compte. */
   accountId?: string;
-  /** Racine de l'API, pour les tests ou un proxy. */
+  /** Racine de l’API, pour les tests ou un proxy. */
   baseUrl?: string;
   /** ModelScope : modèle à utiliser. */
   model?: string;
@@ -30,7 +30,7 @@ export interface ImageProviderSettings {
 
 export interface ImagesConfig {
   providers: ImageProviderSettings[];
-  /** Plafond journalier d'images, tous fournisseurs confondus. */
+  /** Plafond journalier d’images, tous fournisseurs confondus. */
   maxPerDay: number;
   /** Délai maximal pour une image (tous fournisseurs confondus pour une même demande). */
   timeoutMs: number;
@@ -93,7 +93,7 @@ export function imagesFromEnv(env: NodeJS.ProcessEnv): ImagesConfig {
   };
 }
 
-/** Crée les fournisseurs dans l'ordre de la configuration. */
+/** Crée les fournisseurs dans l’ordre de la configuration. */
 export function buildImageProviders(config: ImagesConfig, fetchFn?: typeof fetch): ImageProvider[] {
   return config.providers.map((p): ImageProvider => {
     if (p.id === 'cloudflare') {

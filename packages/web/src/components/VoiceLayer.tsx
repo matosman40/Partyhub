@@ -6,9 +6,9 @@ import { PlayerAvatar } from './PlayerAvatar.js';
 import { VOICE_GAP_MS, VOICE_MUTED_HOLD_MS, enqueueVoice, voiceUrl } from './voiceQueue.js';
 
 /**
- * Voix des joueurs, jouées sur l'écran principal, une à la fois, dans l'ordre d'arrivée.
+ * Voix des joueurs, jouées sur l’écran principal, une à la fois, dans l’ordre d’arrivée.
  * Un bandeau indique qui parle. Si le navigateur bloque le son (aucun geste sur la page),
- * le bandeau propose d'activer le son : le tap sur ce bouton relance la voix.
+ * le bandeau propose d’activer le son : le tap sur ce bouton relance la voix.
  */
 export function VoiceLayer({ socket }: { socket: AppSocket }) {
   const [playing, setPlaying] = useState<VoiceEvent | null>(null);
@@ -45,7 +45,7 @@ export function VoiceLayer({ socket }: { socket: AppSocket }) {
       }
       const el = new Audio(voiceUrl(item.voiceId));
       audio = el;
-      // Une voix ne termine qu'une fois : le premier signal (fin, erreur) passe au suivant.
+      // Une voix ne termine qu’une fois : le premier signal (fin, erreur) passe au suivant.
       const finish = () => {
         if (audio !== el) return;
         audio = null;

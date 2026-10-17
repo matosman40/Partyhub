@@ -4,7 +4,7 @@ import { seededRandom } from './rng.js';
 import type { SoloEngine } from './engine.js';
 
 /**
- * Taquin : des tuiles numérotées à remettre dans l'ordre en les faisant glisser vers la case
+ * Taquin : des tuiles numérotées à remettre dans l’ordre en les faisant glisser vers la case
  * vide. Le mélange se fait par une suite de coups légaux depuis la grille résolue, donc
  * chaque grille est toujours soluble.
  */

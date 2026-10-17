@@ -18,8 +18,8 @@ import { getDevice } from '../device/device.js';
 import { useDevice } from '../device/useDevice.js';
 
 /**
- * Spectateur : regarde le plateau sans jouer (aucune action de jeu, aucun secret de l'hôte).
- * Sur tablette, ordinateur ou TV, on peut aussi « jouer » à côté : la manette s'ouvre dans
+ * Spectateur : regarde le plateau sans jouer (aucune action de jeu, aucun secret de l’hôte).
+ * Sur tablette, ordinateur ou TV, on peut aussi « jouer » à côté : la manette s’ouvre dans
  * une colonne, avec sa propre connexion, pendant que le plateau reste visible.
  */
 export function ObserverPage() {
@@ -140,7 +140,7 @@ export function ObserverPage() {
       {views && game && (
         <Suspense fallback={<p className="muted">Chargement du jeu…</p>}>
           <GameViewBoundary gameId={lobby.game.id} publicState={game.public}>
-            {/* Pas d'état d'hôte : le spectateur ne voit jamais les réponses secrètes ni les rôles cachés. */}
+            {/* Pas d’état d’hôte : le spectateur ne voit jamais les réponses secrètes ni les rôles cachés. */}
             <views.Host publicState={game.public} hostState={null} now={view.now} />
           </GameViewBoundary>
         </Suspense>

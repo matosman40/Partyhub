@@ -1,9 +1,9 @@
 import { z } from 'zod';
 
 /**
- * Mots-clés proposés à tour de rôle : chaque joueur en donne quelques-uns, et l'IA s'en sert comme thème.
- * Ce module ne connaît aucun jeu : il découpe la saisie et gère l'ordre de passage. Le minuteur de chaque tour
- * reste au moteur du jeu, qui l'arme et le relance avec `ctx.schedule`.
+ * Mots-clés proposés à tour de rôle : chaque joueur en donne quelques-uns, et l’IA s’en sert comme thème.
+ * Ce module ne connaît aucun jeu : il découpe la saisie et gère l’ordre de passage. Le minuteur de chaque tour
+ * reste au moteur du jeu, qui l’arme et le relance avec `ctx.schedule`.
  */
 
 export const KEYWORDS_MAX = 5;
@@ -37,7 +37,7 @@ export function parseKeywords(input: string): string[] {
   const seen = new Set<string>();
   const out: string[] = [];
   for (const raw of input.split(/[,;\n]+/)) {
-    // Coupé par caractères et non par unités de code : un emoji n'est jamais coupé en deux.
+    // Coupé par caractères et non par unités de code : un emoji n’est jamais coupé en deux.
     const word = Array.from(stripControls(raw).replace(/\s+/g, ' ').trim())
       .slice(0, KEYWORD_MAX_LENGTH)
       .join('')
@@ -55,11 +55,11 @@ export function parseKeywords(input: string): string[] {
 export interface KeywordTurns {
   /** Ordre de passage : identifiants des joueurs au lancement de la phase. */
   order: string[];
-  /** Rang du joueur dont c'est le tour. Égal à `order.length` quand tous les tours sont passés. */
+  /** Rang du joueur dont c’est le tour. Égal à `order.length` quand tous les tours sont passés. */
   turn: number;
-  /** Mots-clés proposés, par joueur. Un joueur absent ou passé n'apparaît pas. */
+  /** Mots-clés proposés, par joueur. Un joueur absent ou passé n’apparaît pas. */
   entries: Record<string, string[]>;
-  /** Fin du tour en cours (horloge serveur), 0 quand il n'y en a plus. */
+  /** Fin du tour en cours (horloge serveur), 0 quand il n’y en a plus. */
   endsAt: number;
 }
 
@@ -88,7 +88,7 @@ export function turnsDone(t: KeywordTurns): boolean {
   return t.turn >= t.order.length;
 }
 
-/** Enregistre les mots-clés du joueur dont c'est le tour, puis passe au suivant. */
+/** Enregistre les mots-clés du joueur dont c’est le tour, puis passe au suivant. */
 export function submitKeywords(
   t: KeywordTurns,
   words: string[],
@@ -108,7 +108,7 @@ export function passTurn(t: KeywordTurns, now: number, seconds: number, connecte
   return atTurn(t, next, now, seconds);
 }
 
-/** Thèmes utilisables, dans l'ordre de passage : seulement les joueurs qui ont donné au moins un mot-clé. */
+/** Thèmes utilisables, dans l’ordre de passage : seulement les joueurs qui ont donné au moins un mot-clé. */
 export function keywordThemes(
   t: KeywordTurns,
   names: Record<string, string>,

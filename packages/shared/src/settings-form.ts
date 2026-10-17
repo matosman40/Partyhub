@@ -1,12 +1,12 @@
 import { z } from 'zod';
 
-/** Bornes d'un réglage numérique, telles que le serveur les valide. */
+/** Bornes d’un réglage numérique, telles que le serveur les valide. */
 export interface SettingBounds {
   min: number;
   max: number;
 }
 
-/** Bornes des réglages numériques d'un jeu, par nom de réglage. */
+/** Bornes des réglages numériques d’un jeu, par nom de réglage. */
 export type SettingsBounds = Record<string, SettingBounds>;
 
 /** Retire les enveloppes (valeur par défaut, optionnel, nul) pour atteindre le type réel. */
@@ -25,8 +25,8 @@ function isRealBound(value: number | null): value is number {
 }
 
 /**
- * Bornes des réglages numériques d'un schéma d'objet. Le formulaire les affiche telles quelles :
- * une valeur valide n'est jamais ramenée d'office à une borne différente.
+ * Bornes des réglages numériques d’un schéma d’objet. Le formulaire les affiche telles quelles :
+ * une valeur valide n’est jamais ramenée d’office à une borne différente.
  */
 export function settingsBounds(schema: z.ZodTypeAny): SettingsBounds {
   if (!(schema instanceof z.ZodObject)) return {};

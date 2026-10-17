@@ -1,6 +1,6 @@
 import { describeError, logClient } from './log/clientLog.js';
 
-/** Appels HTTP vers l'API. Les erreurs remontent avec un message lisible en français. */
+/** Appels HTTP vers l’API. Les erreurs remontent avec un message lisible en français. */
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const method = init?.method ?? 'GET';
   // Seule la route (sans les paramètres) est journalisée : pas de code de salle ni de jeton.
@@ -28,7 +28,7 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
 
 /**
  * Identifiant aléatoire pour les commandes.
- * crypto.randomUUID n'existe que dans les contextes sécurisés (HTTPS ou localhost) :
+ * crypto.randomUUID n’existe que dans les contextes sécurisés (HTTPS ou localhost) :
  * il ne faut pas en dépendre sur un réseau local en HTTP.
  */
 export function newId(): string {

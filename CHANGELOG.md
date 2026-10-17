@@ -8,7 +8,9 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 
 - Identité visuelle complète du catalogue : chaque jeu listé a son propre logo et son décor. Huit jeux n'en avaient pas (Couleurs & chiffres, Blanc-manger coco, Sudoku, Solitaire, Taquin, Mots croisés, Imite-moi, BOUM !) ; ils recevaient un décor emprunté à un autre jeu, choisi au hasard.
 - Bruitages de l'écran principal pour tous les jeux : lancement de la partie, bilan de chaque manche (bruit de jetons), fin de partie (fanfare). Aucun jeu n'a rien à faire ; un premier état reçu, comme une reprise d'écran, ne sonne pas. L'administration peut remplacer chaque bruitage.
-- Application installable : manifeste (nom, couleurs, icônes 192, 512 et adaptative), icône iOS et balises de partage. Le mode hors ligne reste prévu pour la version 0.7.0.
+- Application installable : manifeste (nom, couleurs, icônes 192, 512 et adaptative), icône iOS et balises de partage.
+- Mode hors ligne : un service worker garde la coque de l’application (page, scripts, styles, polices, icônes). Sans réseau, l’application s’ouvre et explique qu’une partie demande la connexion. L’API et les connexions temps réel ne sont jamais mises en cache, et chaque build installe une nouvelle version qui purge l’ancienne.
+- Contrôles navigateur : `scripts/audio-check-browser.py` mesure le son réellement produit sur l’écran principal et sur le téléphone (niveau de sortie, sources démarrées), et `scripts/offline-check-browser.py` vérifie l’ouverture hors ligne. Tous deux sont dans la CI.
 - Contrôle qualité du catalogue (tests) : chaque jeu listé doit avoir une fiche complète (titre, description de 40 à 180 caractères, notice de 2 à 12 étapes), une icône unique, un logo et un décor dessinés.
 - Gags en rafale : nouveau jeu, seul ou à plusieurs, façon jeux-éclair loufoques. Six gags d’une seconde jouent sur le téléphone : lancer la crêpe, écraser une mouche qui bouge, gonfler un ballon, ne pas toucher un bouton rouge, faire la statue, gratter un ticket. Une réussite rapporte 100 points, plus jusqu’à 60 pour la rapidité. De 1 à 20 gags, 10 par défaut. Le prompt complet pour recréer le jeu est servi par l’application, à `/prompts/gags-en-rafale.md`.
 - Fiches de jeu, façon boutique : chaque jeu a sa page (`/jeux/<identifiant>`), avec un en-tête aux couleurs du jeu, la notice complète (but, déroulé, astuces), une fiche technique (type, joueurs, durée, IA, version, lancé ou non sur cet appareil) et les autres jeux de la même catégorie. « Créer la salle » et « Essayer seul » sont sur la fiche.
@@ -38,9 +40,16 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 - Accessibilité des vues de jeu : `scripts/a11y-games-browser.py` joue chaque jeu en salle d’entraînement (les robots jouent) et audite l’écran TV et le téléphone avec axe-core (WCAG 2 niveaux A et AA), au salon puis à 2, 5, 9 et 14 secondes de la partie. Le script échoue sur une violation grave ou critique, ou sur une erreur JavaScript. La CI le lance après l’audit des pages.
 - Garde-fou d’accessibilité (`aria-roles.test.ts`) : un élément générique (div, span, p) ne porte pas de nom (`aria-label`) sans rôle explicite.
 
+- Catalogue : la catégorie « Plateau » s’intitule désormais « Ambiance » (Réflexe, Gags en rafale, Micro-défis, Funambule, Bombes party…). Son identifiant interne ne change pas.
+- Textes : les apostrophes sont typographiques (’) dans les textes et les commentaires en français. Le message « Ce n’est pas votre tour. » suit la même règle.
+
 ### Corrigé
 
 - Accessibilité des vues de jeu : Sudoku, Taquin et Mots croisés déclaraient une grille (`role="grid"`) sans les cellules ni la navigation attendues ; ce sont désormais des groupes nommés. Solitaire annonce la carte cachée comme une image. Tarot : la main est accessible au clavier et le pli en cours est nommé. Poker, Rami 51, Président, Cartes, Promoteur, Plateau, Phrases à trous et Aventure : éléments nommés sans rôle, désormais annoncés comme images, groupes ou jauges. Administration (webcam, niveaux des appareils) et écran des appareils corrigés de la même façon.
+- Son, écran principal : le son se débloque au premier toucher ou clic de la page, et non plus seulement dans une vue de jeu. Le départ lancé depuis le salon de l’écran principal sonne désormais.
+- Son, téléphone : la couche de bruitages (départ, bilan, fin) joue aussi sur le téléphone. Un bruitage propre au jeu passe avant, sans doublon.
+- Son, double son : à la fin d’une manche, le bilan de la couche d’écran ne sonne plus en même temps que la victoire ou le ramassage du jeu. La fanfare finale reste toujours jouée.
+- Son, reprise d’écran : le premier état reçu après un rechargement ne joue plus le départ. Le hook ne comparait pas avec un état qui n’existait pas encore.
 
 ## [0.11.0] - 2026-10-17
 

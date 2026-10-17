@@ -5,7 +5,7 @@ import { GameLogo } from './GameLogo.js';
 import { artStyle, playersLabel } from '../catalog/display.js';
 
 /**
- * Fiche d'un jeu, façon boutique : vignette aux couleurs du jeu, nom, description et repères.
+ * Fiche d’un jeu, façon boutique : vignette aux couleurs du jeu, nom, description et repères.
  * Un clic ouvre la fiche complète. `compact` retire la description (bandeau « Joués récemment »).
  */
 export function GameCard({ game, compact = false }: { game: CatalogGame; compact?: boolean }) {

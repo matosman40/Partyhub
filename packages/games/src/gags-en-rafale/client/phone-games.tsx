@@ -17,7 +17,7 @@ import {
 
 /**
  * Les gags vus du téléphone. Chacun joue avec son geste, et appelle `onDone` une seule fois, avec la réponse à juger.
- * `localStart` est l'instant du début du gag sur ce téléphone (horloge recalée sur le serveur).
+ * `localStart` est l’instant du début du gag sur ce téléphone (horloge recalée sur le serveur).
  */
 
 export interface ChallengeProps {
@@ -31,7 +31,7 @@ function elapsedSince(localStart: number): number {
   return Math.max(0, performance.now() - localStart);
 }
 
-/** Position d'un pointeur dans une zone, de 0 à 1 sur chaque axe. */
+/** Position d’un pointeur dans une zone, de 0 à 1 sur chaque axe. */
 function relative(e: { clientX: number; clientY: number }, box: DOMRect): { x: number; y: number } {
   const x = (e.clientX - box.left) / Math.max(1, box.width);
   const y = (e.clientY - box.top) / Math.max(1, box.height);
@@ -47,7 +47,7 @@ function NoSensor({ text }: { text: string }) {
   );
 }
 
-/** Rafraîchit l'affichage dix fois par seconde, sans re-rendre à chaque mesure. */
+/** Rafraîchit l’affichage dix fois par seconde, sans re-rendre à chaque mesure. */
 function useDisplayTick(run: boolean): void {
   const [, setTick] = useState(0);
   useEffect(() => {
@@ -57,7 +57,7 @@ function useDisplayTick(run: boolean): void {
   }, [run]);
 }
 
-/** Crêpe : un glissement franc vers le haut, sur un tiers de l'aire de jeu. Le temps mis compte. */
+/** Crêpe : un glissement franc vers le haut, sur un tiers de l’aire de jeu. Le temps mis compte. */
 export function SwipeChallenge({ localStart, onDone }: ChallengeProps) {
   const pad = useRef<HTMLDivElement>(null);
   const start = useRef<{ y: number; height: number } | null>(null);
@@ -128,7 +128,7 @@ export function MoucheChallenge({ localStart, seed, onDone }: ChallengeProps) {
 
   function tap(e: ReactPointerEvent<HTMLDivElement>) {
     if (finished.current || !field.current) return;
-    // L'instant est arrondi avant le test : le serveur juge la valeur reçue, pas l'instant exact.
+    // L’instant est arrondi avant le test : le serveur juge la valeur reçue, pas l’instant exact.
     const value = Math.round(elapsedSince(localStart));
     const at = relative(e, field.current.getBoundingClientRect());
     if (isFlyHit(seed, value, at.x, at.y)) {
@@ -151,7 +151,7 @@ export function MoucheChallenge({ localStart, seed, onDone }: ChallengeProps) {
   );
 }
 
-/** Ce que dit le ballon pendant qu'on le gonfle : trop tôt, à point, ou trop tard. */
+/** Ce que dit le ballon pendant qu’on le gonfle : trop tôt, à point, ou trop tard. */
 export function balloonHint(heldMs: number): string {
   if (heldMs < BALLOON_MIN_MS) return 'Encore un peu…';
   if (heldMs <= BALLOON_MAX_MS) return 'À point ! Relâchez';
@@ -256,7 +256,7 @@ export function StillChallenge({ onDone }: Omit<ChallengeProps, 'localStart' | '
   useDisplayTick(signal !== 'no');
 
   if (signal === 'no') {
-    // Hors HTTPS, le navigateur bloque le mouvement : on le dit, plutôt que d'accuser le téléphone.
+    // Hors HTTPS, le navigateur bloque le mouvement : on le dit, plutôt que d’accuser le téléphone.
     const insecure = typeof window !== 'undefined' && window.isSecureContext === false;
     return (
       <NoSensor

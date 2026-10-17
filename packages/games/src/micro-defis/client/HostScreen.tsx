@@ -6,7 +6,7 @@ import { isFreshReading, useFreshnessTick, useSensors, type SensorReading } from
 import { PILE_WINDOW, pileMarker } from '../microgames.js';
 import type { MicroDefisPub, MicrogameView } from './types.js';
 
-/** Un échantillon plus vieux que ce délai n'est plus affiché : le joueur a lâché le téléphone ou il est hors portée. */
+/** Un échantillon plus vieux que ce délai n’est plus affiché : le joueur a lâché le téléphone ou il est hors portée. */
 const FRESH_MS = 1200;
 
 export function MicroDefisHost({ publicState, hostState, now }: HostViewProps) {
@@ -126,7 +126,7 @@ const FigureFace = memo(function FigureFace({ name }: { name: string }) {
   return <Avatar name={name} size="lg" />;
 });
 
-/** Un personnage qui suit l'inclinaison de son téléphone en direct, avec son effort. */
+/** Un personnage qui suit l’inclinaison de son téléphone en direct, avec son effort. */
 const PlayerFigure = memo(function PlayerFigure({
   name,
   reading,
@@ -162,7 +162,7 @@ const PlayerFigure = memo(function PlayerFigure({
   );
 });
 
-/** Le curseur du défi « Pile », animé avec l'horloge serveur. */
+/** Le curseur du défi « Pile », animé avec l’horloge serveur. */
 function PileBar({ startedAt, now }: { startedAt: number; now: number }) {
   const elapsed = useElapsed(startedAt, now, true);
   return (

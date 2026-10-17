@@ -22,7 +22,7 @@ function clamp(value: number, [min, max]: readonly [number, number]): number {
 }
 
 /**
- * Réglages de l'Aventure IA. Le serveur valide tout : le navigateur ne fait que borner la saisie.
+ * Réglages de l’Aventure IA. Le serveur valide tout : le navigateur ne fait que borner la saisie.
  */
 export function AventureSettings({ settings, disabled, onChange }: SettingsProps) {
   const { scenes, themeId, theme, tone, difficulte, voteSeconds } = settings as unknown as AventureDraft;

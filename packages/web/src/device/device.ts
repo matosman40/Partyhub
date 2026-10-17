@@ -8,9 +8,9 @@ import {
 } from '@partyhub/shared';
 
 /**
- * Type d'appareil détecté dans le navigateur. Le serveur ne voit que l'identifiant :
+ * Type d’appareil détecté dans le navigateur. Le serveur ne voit que l’identifiant :
  * ici on connaît aussi la taille de la fenêtre et le type de pointeur, plus fiables.
- * L'utilisateur peut corriger le choix (réglage gardé sur l'appareil).
+ * L’utilisateur peut corriger le choix (réglage gardé sur l’appareil).
  *
  * Le résultat pilote des attributs sur <html> (data-device, data-orientation, data-touch)
  * et la variable --ui-scale, lue par les feuilles de style.
@@ -20,7 +20,7 @@ const OVERRIDE_KEY = 'ph:device';
 
 export type DeviceChoice = Exclude<DeviceKind, 'unknown'> | 'auto';
 
-/** Choix proposés à l'utilisateur (« unknown » n'a pas de sens comme choix). */
+/** Choix proposés à l’utilisateur (« unknown » n’a pas de sens comme choix). */
 export const DEVICE_CHOICES: DeviceChoice[] = ['auto', 'phone', 'tablet', 'tv', 'desktop'];
 
 function isKind(value: string | null): value is DeviceKind {
@@ -71,7 +71,7 @@ function measure(): DeviceInfo {
 let current: DeviceInfo | null = null;
 const listeners = new Set<() => void>();
 
-/** Type retenu : le choix de l'utilisateur prime sur la détection. */
+/** Type retenu : le choix de l’utilisateur prime sur la détection. */
 function resolve(): DeviceInfo {
   const detected = measure();
   const choice = readDeviceChoice();
@@ -116,7 +116,7 @@ export function initDevice(): void {
   window.addEventListener('orientationchange', schedule);
 }
 
-/** Informations à transmettre au serveur à chaque connexion d'une place ou d'un spectateur. */
+/** Informations à transmettre au serveur à chaque connexion d’une place ou d’un spectateur. */
 export function getDevice(): DeviceInfo {
   if (!current) current = resolve();
   return current;
@@ -129,7 +129,7 @@ export function subscribeDevice(listener: () => void): () => void {
   };
 }
 
-/** Change le type d'appareil (choix manuel) ou revient à la détection automatique. */
+/** Change le type d’appareil (choix manuel) ou revient à la détection automatique. */
 export function setDeviceChoice(choice: DeviceChoice): void {
   writeDeviceChoice(choice);
   refresh();

@@ -11,7 +11,7 @@ const USAGE = `Usage :
   phgame pack <dossier-source> <fichier.phgame>   Construit un paquet : calcule tailles et empreintes, puis vérifie le résultat.
   phgame check <fichier.phgame>                    Vérifie un paquet et lance une partie de contrôle avec des robots.`;
 
-/** Liste les fichiers d'un dossier, en chemins relatifs POSIX. Les liens symboliques sont refusés. */
+/** Liste les fichiers d’un dossier, en chemins relatifs POSIX. Les liens symboliques sont refusés. */
 function listFiles(root: string, dir = ''): string[] {
   const out: string[] = [];
   const entries = fs.readdirSync(path.join(root, dir), { withFileTypes: true });
@@ -43,7 +43,7 @@ function pack(source: string, output: string): void {
     { name: 'manifest.json', data: Buffer.from(`${JSON.stringify(finalManifest, null, 2)}\n`, 'utf8') },
     ...entries,
   ]);
-  // Le paquet produit doit passer exactement les mêmes contrôles que ceux de l'administration.
+  // Le paquet produit doit passer exactement les mêmes contrôles que ceux de l’administration.
   const checked = validatePackage(archive);
   fs.writeFileSync(output, archive);
   console.log(`Paquet créé : ${output}`);

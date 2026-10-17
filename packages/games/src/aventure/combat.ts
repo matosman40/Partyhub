@@ -3,12 +3,12 @@ import type { Character, Combat, CombatLine, RoundOutcome, RoundReport } from '.
 
 /**
  * Combat tour par tour. Chaque manche, chaque personnage encore debout fait une action (frapper, feinter,
- * soigner, parlementer) : un d20 plus la stat liée à l'action, contre la défense de l'ennemi. Ensuite, l'ennemi
- * riposte sur un personnage au hasard, sauf si une action l'a dissuadé. Les effets sont fixés ici, jamais par l'IA.
+ * soigner, parlementer) : un d20 plus la stat liée à l’action, contre la défense de l’ennemi. Ensuite, l’ennemi
+ * riposte sur un personnage au hasard, sauf si une action l’a dissuadé. Les effets sont fixés ici, jamais par l’IA.
  */
 
 export const DIE_SIDES = 20;
-/** Au-delà de cette manche, l'ennemi s'enfuit : un combat ne dure jamais indéfiniment. */
+/** Au-delà de cette manche, l’ennemi s’enfuit : un combat ne dure jamais indéfiniment. */
 export const MAX_ROUNDS = 6;
 export const XP_PER_SUCCESS = 3;
 
@@ -25,7 +25,7 @@ export function pickAction(random: () => number): CombatActionId {
 
 interface RoundInput {
   characters: Character[];
-  /** Ordre d'arrivée des joueurs : c'est l'ordre dans lequel les actions se règlent. */
+  /** Ordre d’arrivée des joueurs : c’est l’ordre dans lequel les actions se règlent. */
   order: string[];
   combat: Combat;
   random: () => number;
@@ -39,7 +39,7 @@ export interface RoundResult {
   outcome: RoundOutcome;
 }
 
-/** Règle une manche complète. Les joueurs qui n'ont pas choisi tirent une action au hasard. */
+/** Règle une manche complète. Les joueurs qui n’ont pas choisi tirent une action au hasard. */
 export function resolveRound(input: RoundInput): RoundResult {
   const { combat, random } = input;
   const foe = combat.foe;
@@ -151,7 +151,7 @@ export function resolveRound(input: RoundInput): RoundResult {
   };
 }
 
-/** Le personnage le plus blessé encore debout, à soigner. Null si toute l'équipe est en forme. */
+/** Le personnage le plus blessé encore debout, à soigner. Null si toute l’équipe est en forme. */
 function lowestWounded(characters: Character[]): Character | null {
   const wounded = characters.filter((c) => c.ownerId !== null && c.pv > 0 && c.pv < c.pvMax);
   return wounded.reduce<Character | null>((best, c) => (best === null || c.pv < best.pv ? c : best), null);

@@ -17,8 +17,8 @@ export interface AssetRow {
   created_at: string;
 }
 
-/** Paquet .phgame installé. `manifest` contient le manifeste JSON tel qu'il a été validé. */
-/** Copie modifiable d'un paquet : le paquet, la version copiée et l'empreinte du contenu copié. */
+/** Paquet .phgame installé. `manifest` contient le manifeste JSON tel qu’il a été validé. */
+/** Copie modifiable d’un paquet : le paquet, la version copiée et l’empreinte du contenu copié. */
 export interface PackageCopyRow {
   gameId: string;
   packageId: string;
@@ -156,7 +156,7 @@ const SCHEMA = `
 /**
  * Une migration fait passer la base de `version - 1` à `version`. Règles :
  * - ne jamais modifier une migration déjà publiée ; en ajouter une nouvelle à la fin ;
- * - chaque migration s'exécute dans sa propre transaction : en cas d'erreur, rien n'est appliqué.
+ * - chaque migration s’exécute dans sa propre transaction : en cas d’erreur, rien n’est appliqué.
  */
 export interface Migration {
   version: number;
@@ -251,7 +251,7 @@ export const MIGRATIONS: Migration[] = [
     version: 6,
     description: 'Sessions d’administration stockées en base (0.8.0)',
     up(db) {
-      // Seule l'empreinte du jeton est stockée, comme pour les comptes joueurs.
+      // Seule l’empreinte du jeton est stockée, comme pour les comptes joueurs.
       db.exec(`
         CREATE TABLE IF NOT EXISTS admin_sessions (
           token_hash TEXT PRIMARY KEY,
@@ -390,7 +390,7 @@ export const MIGRATIONS: Migration[] = [
   },
 ];
 
-/** Entrée d'une banque BOUM ! telle qu'elle est stockée. */
+/** Entrée d’une banque BOUM ! telle qu’elle est stockée. */
 export interface BoumEntryRow {
   id: string;
   type: string;
@@ -435,7 +435,7 @@ function toBoumEntry(row: BoumEntryDbRow): BoumEntryRow {
   };
 }
 
-/** Source GitHub d'un paquet : un dépôt, sa dernière release et l'état de la dernière vérification. */
+/** Source GitHub d’un paquet : un dépôt, sa dernière release et l’état de la dernière vérification. */
 export interface PackageSourceRow {
   id: string;
   repo: string;
@@ -452,14 +452,14 @@ export interface PackageSourceRow {
 export const LATEST_SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1]!.version;
 
 export interface MigrationOptions {
-  /** Dossier où copier la base avant d'appliquer une migration sur une base existante. */
+  /** Dossier où copier la base avant d’appliquer une migration sur une base existante. */
   backupDir?: string;
 }
 
 export interface MigrationReport {
   from: number;
   to: number;
-  /** Copie de sécurité créée avant la migration, s'il y en a une. */
+  /** Copie de sécurité créée avant la migration, s’il y en a une. */
   backup?: string;
 }
 
@@ -475,7 +475,7 @@ function hasTables(db: Database.Database): boolean {
 }
 
 /**
- * Applique les migrations en attente, dans l'ordre. Refuse une base plus récente que ce programme,
+ * Applique les migrations en attente, dans l’ordre. Refuse une base plus récente que ce programme,
  * car un retour arrière pourrait la corrompre sans le savoir.
  */
 export function migrate(
@@ -518,7 +518,7 @@ export function migrate(
 export class Store {
   readonly db: Database.Database;
 
-  /** Résultat de la mise à jour du schéma à l'ouverture. */
+  /** Résultat de la mise à jour du schéma à l’ouverture. */
   readonly migration: MigrationReport;
 
   constructor(file: string, options: MigrationOptions & { migrations?: Migration[] } = {}) {
@@ -535,7 +535,7 @@ export class Store {
 
   /**
    * Copie cohérente de la base dans un nouveau fichier (VACUUM INTO). La copie se fait
-   * pendant que le serveur continue d'écrire : aucune transaction n'est perdue ni tronquée.
+   * pendant que le serveur continue d’écrire : aucune transaction n’est perdue ni tronquée.
    */
   backupTo(file: string): void {
     this.db.prepare('VACUUM INTO ?').run(file);
@@ -586,7 +586,7 @@ export class Store {
     this.setKv('test_mode', JSON.stringify(mode));
   }
 
-  /** Fond d'écran choisi pour chaque écran (identifiants de médiathèque). */
+  /** Fond d’écran choisi pour chaque écran (identifiants de médiathèque). */
   getScreenBackgrounds(): ScreenBackgrounds {
     return parseScreenBackgrounds(this.getKv('screen_backgrounds'));
   }
@@ -604,7 +604,7 @@ export class Store {
     this.setKv('sound_settings', JSON.stringify(settings));
   }
 
-  /** Un jeu est activé par défaut tant qu'aucun réglage ne le désactive. */
+  /** Un jeu est activé par défaut tant qu’aucun réglage ne le désactive. */
   isGameEnabled(gameId: string): boolean {
     const row = this.db.prepare('SELECT enabled FROM game_flags WHERE game_id = ?').get(gameId) as
       { enabled: number } | undefined;
@@ -627,7 +627,7 @@ export class Store {
       .run(key, by);
   }
 
-  /** Notice personnalisée d'un jeu, ou undefined si l'on garde celle du code. */
+  /** Notice personnalisée d’un jeu, ou undefined si l’on garde celle du code. */
   getNoticeOverride(gameId: string): string | undefined {
     const row = this.db.prepare('SELECT content FROM notices WHERE game_id = ?').get(gameId) as
       { content: string } | undefined;
@@ -646,7 +646,7 @@ export class Store {
     this.db.prepare('DELETE FROM notices WHERE game_id = ?').run(gameId);
   }
 
-  /** Nom, icône et description modifiés par l'administrateur (JSON), ou undefined. */
+  /** Nom, icône et description modifiés par l’administrateur (JSON), ou undefined. */
   getDetailsOverride(gameId: string): string | undefined {
     const row = this.db.prepare('SELECT content FROM game_details WHERE game_id = ?').get(gameId) as
       { content: string } | undefined;
@@ -665,7 +665,7 @@ export class Store {
     this.db.prepare('DELETE FROM game_details WHERE game_id = ?').run(gameId);
   }
 
-  /** Réglages par défaut remplacés par l'administrateur (JSON validé), ou undefined. */
+  /** Réglages par défaut remplacés par l’administrateur (JSON validé), ou undefined. */
   getSettingsOverride(gameId: string): string | undefined {
     const row = this.db.prepare('SELECT content FROM game_settings WHERE game_id = ?').get(gameId) as
       { content: string } | undefined;
@@ -684,7 +684,7 @@ export class Store {
     this.db.prepare('DELETE FROM game_settings WHERE game_id = ?').run(gameId);
   }
 
-  /** Efface tout ce que l'administration a ajouté à un jeu supprimé (notice, présentation, réglages). */
+  /** Efface tout ce que l’administration a ajouté à un jeu supprimé (notice, présentation, réglages). */
   clearGameOverrides(gameId: string): void {
     this.db.prepare('DELETE FROM notices WHERE game_id = ?').run(gameId);
     this.db.prepare('DELETE FROM game_details WHERE game_id = ?').run(gameId);
@@ -692,7 +692,7 @@ export class Store {
     this.db.prepare('DELETE FROM package_copies WHERE game_id = ?').run(gameId);
   }
 
-  /** Lien d'une copie modifiable vers le paquet dont elle vient. */
+  /** Lien d’une copie modifiable vers le paquet dont elle vient. */
   getPackageCopy(gameId: string): PackageCopyRow | undefined {
     const row = this.db.prepare('SELECT * FROM package_copies WHERE game_id = ?').get(gameId) as
       PackageCopyDbRow | undefined;
@@ -749,7 +749,7 @@ export class Store {
     return rows.map(toBoumEntry);
   }
 
-  /** Propositions d'un compte : en attente (`propose` ou relue) et depuis une date donnée. */
+  /** Propositions d’un compte : en attente (`propose` ou relue) et depuis une date donnée. */
   countBoumProposals(authorId: string, sinceIso?: string): { pending: number; sinceCount: number } {
     const pending = this.db
       .prepare("SELECT COUNT(*) AS n FROM boum_entries WHERE author_id = ? AND status IN ('propose', 'a_valider')")
@@ -769,7 +769,7 @@ export class Store {
     return rows.map(toBoumEntry);
   }
 
-  /** Compte supprimé : le texte reste, l'auteur devient anonyme. */
+  /** Compte supprimé : le texte reste, l’auteur devient anonyme. */
   anonymizeBoumAuthor(authorId: string): void {
     this.db
       .prepare("UPDATE boum_entries SET author_id = NULL, author_name = 'Joueur supprimé' WHERE author_id = ?")
@@ -831,7 +831,7 @@ export class Store {
     }[];
   }
 
-  /** Jeux de cartes créés dans l'administration (définition au format JSON). */
+  /** Jeux de cartes créés dans l’administration (définition au format JSON). */
   listCardGames(): { id: string; definition: string; updatedAt: string }[] {
     const rows = this.db.prepare('SELECT id, definition, updated_at FROM card_games ORDER BY updated_at').all() as {
       id: string;
@@ -855,7 +855,7 @@ export class Store {
     this.clearGameOverrides(id);
   }
 
-  /** Jeux de plateau créés dans l'administration (définition au format JSON). */
+  /** Jeux de plateau créés dans l’administration (définition au format JSON). */
   listBoardGames(): { id: string; definition: string; updatedAt: string }[] {
     const rows = this.db.prepare('SELECT id, definition, updated_at FROM board_games ORDER BY updated_at').all() as {
       id: string;
@@ -893,7 +893,7 @@ export class Store {
       .get(id) as PackageRow | undefined;
   }
 
-  /** Crée un paquet ou remplace sa version. La date d'installation d'origine est conservée. */
+  /** Crée un paquet ou remplace sa version. La date d’installation d’origine est conservée. */
   savePackage(row: PackageRow): void {
     this.db
       .prepare(
@@ -905,7 +905,7 @@ export class Store {
       .run(row);
   }
 
-  /** Versions conservées d'un paquet, hors de la version active. */
+  /** Versions conservées d’un paquet, hors de la version active. */
   listPackageArchives(id: string): PackageRow[] {
     return this.db
       .prepare(
@@ -933,7 +933,7 @@ export class Store {
   }
 
   /**
-   * Fait de `row` la version active. L'ancienne version active devient une archive. Tout se fait
+   * Fait de `row` la version active. L’ancienne version active devient une archive. Tout se fait
    * dans une seule transaction : un paquet ne se retrouve jamais sans version active.
    */
   activatePackage(row: PackageRow): void {

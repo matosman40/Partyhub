@@ -13,9 +13,9 @@ import {
 } from './fallback.js';
 
 /**
- * Phrases à trous écrites par l'IA à partir des mots-clés des joueurs. Chaque tour reprend le thème de sa position
+ * Phrases à trous écrites par l’IA à partir des mots-clés des joueurs. Chaque tour reprend le thème de sa position
  * dans la consigne. La réponse est validée phrase par phrase : une phrase mal formée est écartée, et le contenu de
- * secours complète le jeu si l'IA en donne trop peu.
+ * secours complète le jeu si l’IA en donne trop peu.
  */
 
 export const PHRASES_JOB_KIND = 'phrases-themes';
@@ -56,7 +56,7 @@ export function buildPhrasesPrompt(input: PhrasesThemesInput): { system: string;
 }
 
 /**
- * Valide la réponse de l'IA. Renvoie les tours et le paquet de cartes. Lève une erreur quand il n'y a pas assez de
+ * Valide la réponse de l’IA. Renvoie les tours et le paquet de cartes. Lève une erreur quand il n’y a pas assez de
  * phrases exploitables : le jeu prend alors son contenu de secours entier.
  */
 export function validatePhrasesDraft(raw: unknown, input: PhrasesThemesInput): PhraseContent {
@@ -73,7 +73,7 @@ export function validatePhrasesDraft(raw: unknown, input: PhrasesThemesInput): P
     if (reponse.includes(BLANK)) continue;
     const answerKey = normalizeText(reponse);
     if (!answerKey || seenAnswers.has(answerKey)) continue;
-    // Une réponse déjà visible dans la phrase rend le trou trivial : on l'écarte.
+    // Une réponse déjà visible dans la phrase rend le trou trivial : on l’écarte.
     if (normalizeText(phrase).includes(answerKey)) continue;
     seenAnswers.add(answerKey);
     rounds.push({ sentence: phrase, answer: reponse });
@@ -92,13 +92,13 @@ export function validatePhrasesDraft(raw: unknown, input: PhrasesThemesInput): P
     missing > 0 ? spareCurated(rounds, missing).filter((r) => !seenAnswers.has(normalizeText(r.answer))) : [];
   const all = [...rounds, ...spare].slice(0, input.rounds);
 
-  // Sans assez de cartes (l'IA n'a pas donné de leurres), on complète avec les leurres écrits à l'avance.
+  // Sans assez de cartes (l’IA n’a pas donné de leurres), on complète avec les leurres écrits à l’avance.
   let pool = uniqueCards([...all.map((r) => r.answer), ...extra]);
   if (pool.length < CURATED_CARDS_MIN) pool = uniqueCards([...pool, ...spareDecoys(pool)]);
   return { rounds: all, pool };
 }
 
-/** Travail demandé à l'IA. Renvoie le contenu validé, ou null quand aucune IA n'est configurée. */
+/** Travail demandé à l’IA. Renvoie le contenu validé, ou null quand aucune IA n’est configurée. */
 export async function runPhrasesJob(
   job: GameJob,
   ctx: GameContext,

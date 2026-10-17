@@ -8,7 +8,7 @@ import { HandFan } from './HandFan.js';
 import { cueTurn, useCardFlights, useChange } from './cues.js';
 import { entryOf, familyOf, rankingOf, sortHandByValue, type CardsPlayerState, type CardsPublic } from './common.js';
 
-/** Téléphone d'un jeu de cartes : la main, le tour en cours et les actions. */
+/** Téléphone d’un jeu de cartes : la main, le tour en cours et les actions. */
 export function CardsPlayer({ publicState, playerState, playerId, send }: PlayerViewProps) {
   const pub = publicState as CardsPublic | null;
   const me = playerState as CardsPlayerState | null;
@@ -17,7 +17,7 @@ export function CardsPlayer({ publicState, playerState, playerId, send }: Player
   const [pendingUid, setPendingUid] = useState<string | null>(null);
   const rootRef = useRef<HTMLElement>(null);
 
-  // Sons, vibration et trajets : déclenchés par les changements d'état (les hooks restent avant les retours anticipés).
+  // Sons, vibration et trajets : déclenchés par les changements d’état (les hooks restent avant les retours anticipés).
   const myTurn = !!me?.isMyTurn && pub?.phase === 'play';
   useChange(myTurn, (_, mine) => {
     if (mine) cueTurn();

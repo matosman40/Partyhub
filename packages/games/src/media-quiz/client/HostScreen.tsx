@@ -4,7 +4,7 @@ import { FinalHost, Ranking, TimerBar, WaitingScreen } from '../../client/ui.js'
 import { MediaStage } from './MediaStage.js';
 import { CaptionHost } from './CaptionHost.js';
 
-/** Écran principal d'un jeu de questions médias : l'extrait, le compte à rebours, la révélation. */
+/** Écran principal d’un jeu de questions médias : l’extrait, le compte à rebours, la révélation. */
 export function MediaQuizHost(props: HostViewProps) {
   const pub = props.publicState;
   if (pub?.mode === 'sous-titres') return <CaptionHost {...props} />;

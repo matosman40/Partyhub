@@ -28,7 +28,7 @@ import {
 /**
  * Banquise : trois niveaux sur un îlot de glace qui fond. Chaque joueur contrôle son personnage
  * (marche dans les quatre directions, saut, poussée). Le dernier resté sur la glace gagne le niveau. Règles et valeurs :
- * docs/JEU-BANQUISE.md. Toute la logique est sur le serveur ; le navigateur n'envoie que des intentions.
+ * docs/JEU-BANQUISE.md. Toute la logique est sur le serveur ; le navigateur n’envoie que des intentions.
  */
 
 export const banquiseSettingsSchema = z.object({});
@@ -90,19 +90,19 @@ export interface BanquiseState {
   names: Record<string, string>;
   points: Record<string, number>;
   wind: Wind | null;
-  /** Instant de la prochaine case fondue, ou null si la fonte n'a pas commencé. */
+  /** Instant de la prochaine case fondue, ou null si la fonte n’a pas commencé. */
   erodeAt: number | null;
-  /** Fin du compte à rebours ou de l'annonce de fin de niveau. */
+  /** Fin du compte à rebours ou de l’annonce de fin de niveau. */
   phaseEndsAt: number;
   /** Horloge du dernier pas de simulation. */
   lastTickAt: number;
-  /** Joueurs tombés pendant le niveau en cours, dans l'ordre de chute. */
+  /** Joueurs tombés pendant le niveau en cours, dans l’ordre de chute. */
   fallen: string[];
   /** Gagnants du niveau en cours (renseigné à la fin du niveau). */
   winners: string[];
   /** Gagnants de chaque niveau déjà joué. */
   history: Array<{ level: number; winners: string[] }>;
-  /** Compteur d'événements : clé stable pour les robots et les effets. */
+  /** Compteur d’événements : clé stable pour les robots et les effets. */
   seq: number;
 }
 
@@ -152,10 +152,10 @@ function startPlay(s: BanquiseState, now: number, ctx: GameContext): BanquiseSta
   return { ...s, phase: 'play', erodeAt: now + rule.erodeDelayMs, wind, seq: s.seq + 1 };
 }
 
-/** Fin de niveau : les gagnants reçoivent leurs points. Les personnages en l'air atterrissent d'abord. */
+/** Fin de niveau : les gagnants reçoivent leurs points. Les personnages en l’air atterrissent d’abord. */
 function endLevel(s: BanquiseState, now: number, winners: string[]): BanquiseState {
   const bodies = { ...s.bodies };
-  // Les personnages encore en l'air finissent leur saut sur la glace, sans commande, vent ni fonte.
+  // Les personnages encore en l’air finissent leur saut sur la glace, sans commande, vent ni fonte.
   for (const id of Object.keys(bodies)) {
     let b = { ...bodies[id]!, dirX: 0 as Dir, dirZ: 0 as Dir };
     for (let i = 0; i < 20 && b.alive && !b.grounded; i++) b = stepBody(b, s.ice, now, TICK_MS / 1000, 0);
@@ -277,14 +277,14 @@ function eliminate(s: BanquiseState, id: string, ctx: GameContext): BanquiseStat
   return checkLevelEnd(next, now, [id]);
 }
 
-/** Vrai si de l'eau se trouve juste devant le personnage, dans le sens de son mouvement. */
+/** Vrai si de l’eau se trouve juste devant le personnage, dans le sens de son mouvement. */
 function waterAhead(ice: string, b: Body): boolean {
   if (b.dirX === 0 && b.dirZ === 0) return false;
-  // À une case devant soi : le moment où un saut au-dessus d'un trou de deux cases réussit.
+  // À une case devant soi : le moment où un saut au-dessus d’un trou de deux cases réussit.
   return !iceAt(ice, b.x + b.dirX, b.z + b.dirZ);
 }
 
-/** Centre de l'îlot : moyenne des centres des cases de glace. */
+/** Centre de l’îlot : moyenne des centres des cases de glace. */
 function iceCenter(ice: string): { cx: number; cz: number } | null {
   let sx = 0;
   let sz = 0;
@@ -548,12 +548,12 @@ export const banquise: GameModule<BanquiseState, BanquiseSettings> = {
       }
     }
 
-    // 2. Sauter au-dessus d'un trou qui vient, dans le sens de la marche.
+    // 2. Sauter au-dessus d’un trou qui vient, dans le sens de la marche.
     if (me.grounded && waterAhead(s.ice, me)) {
       return { type: 'jump', key: `jump:${s.seq}` };
     }
 
-    // 3. Revenir vers le centre de la glace, à l'écart des bords.
+    // 3. Revenir vers le centre de la glace, à l’écart des bords.
     const center = iceCenter(s.ice);
     if (!center) return null;
     const dx: Dir = Math.abs(me.x - center.cx) < 0.5 ? 0 : me.x < center.cx ? 1 : -1;

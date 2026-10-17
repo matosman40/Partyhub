@@ -14,14 +14,14 @@ import { directory, fail, ok, rankEntries, shuffle } from '../common/engine.js';
 
 /**
  * Mécanique « pli » : chaque joueur reçoit sa main. Le joueur qui ouvre le pli pose une carte, puis les autres
- * jouent dans l'ordre. Il faut fournir la couleur demandée si on l'a. Le pli va à la plus forte carte de la
- * couleur demandée, ou à la plus forte carte d'atout si un atout a été joué. Le gagnant prend les points du pli
+ * jouent dans l’ordre. Il faut fournir la couleur demandée si on l’a. Le pli va à la plus forte carte de la
+ * couleur demandée, ou à la plus forte carte d’atout si un atout a été joué. Le gagnant prend les points du pli
  * et ouvre le suivant.
  *
- * - La force d'une carte est son `rank` (ou son symbole s'il est numérique, sinon 0).
+ * - La force d’une carte est son `rank` (ou son symbole s’il est numérique, sinon 0).
  * - Un joueur absent ou qui laisse passer le temps joue automatiquement sa carte la plus faible légale.
  * - La manche finit quand toutes les mains sont vides. Son gagnant est celui qui a remporté le plus de plis.
- * - La partie finit à la fin d'une manche où un joueur a atteint l'objectif de points.
+ * - La partie finit à la fin d’une manche où un joueur a atteint l’objectif de points.
  *
  * Les mains ne sont jamais dans la vue publique : seule la table (cartes jouées) est partagée.
  */
@@ -49,9 +49,9 @@ export interface TrickState {
   /** Plis remportés pendant la manche en cours. */
   tricksWon: Record<string, number>;
   round: number;
-  /** Index dans `order` du joueur dont c'est le tour (ou qui ouvrira le prochain pli). */
+  /** Index dans `order` du joueur dont c’est le tour (ou qui ouvrira le prochain pli). */
   turn: number;
-  /** Cartes posées dans le pli en cours, dans l'ordre de jeu. */
+  /** Cartes posées dans le pli en cours, dans l’ordre de jeu. */
   table: TrickPlay[];
   /** Couleur demandée par le pli en cours (celle de sa première carte). */
   ledFamily: string | null;
@@ -65,7 +65,7 @@ export interface TrickState {
 const TURN = 'turn';
 const NEXT_TRICK = 'next-trick';
 const NEXT_ROUND = 'next-round';
-/** Pause pour voir le pli terminé avant qu'il ne soit ramassé. */
+/** Pause pour voir le pli terminé avant qu’il ne soit ramassé. */
 export const TRICK_PAUSE_MS = 2000;
 const NEXT_ROUND_MS = 6000;
 /** Garde-fou : une partie ne dépasse pas ce nombre de manches. */
@@ -75,7 +75,7 @@ const actionSchemas = {
   play: z.object({ cardId: z.string().min(1).max(40) }),
 };
 
-/** Force d'une carte dans un pli : son `rank`, sinon sa valeur numérique, sinon 0. */
+/** Force d’une carte dans un pli : son `rank`, sinon sa valeur numérique, sinon 0. */
 export function trickRank(entry: CardEntry): number {
   if (entry.rank !== undefined) return entry.rank;
   const symbol = entry.symbol.trim();
@@ -83,9 +83,9 @@ export function trickRank(entry: CardEntry): number {
 }
 
 /**
- * Index, dans le pli, de la carte gagnante. Un atout l'emporte sur la couleur demandée ; à force égale, la
+ * Index, dans le pli, de la carte gagnante. Un atout l’emporte sur la couleur demandée ; à force égale, la
  * carte jouée la première gagne. La première carte est toujours de la couleur demandée, donc la liste de
- * candidats n'est jamais vide.
+ * candidats n’est jamais vide.
  */
 export function trickWinnerIndex(plays: { entry: CardEntry }[], ledFamily: string, trump: string | undefined): number {
   const indexed = plays.map((p, index) => ({ p, index }));
@@ -137,7 +137,7 @@ export function createTrickGame(
     return def.families.find((f) => f.id === id)?.label ?? id;
   }
 
-  /** Cartes qu'on peut jouer maintenant : toutes à l'ouverture, sinon la couleur demandée si on la possède. */
+  /** Cartes qu’on peut jouer maintenant : toutes à l’ouverture, sinon la couleur demandée si on la possède. */
   function legalCards(s: TrickState, pid: string): TrickCard[] {
     const hand = s.hands[pid] ?? [];
     if (s.table.length === 0 || s.ledFamily === null) return hand;
@@ -212,7 +212,7 @@ export function createTrickGame(
     ctx.schedule(NEXT_ROUND, NEXT_ROUND_MS);
   }
 
-  /** Pose une carte dans le pli. Ne fait pas avancer le tour : c'est le rôle de `settleTurns`. */
+  /** Pose une carte dans le pli. Ne fait pas avancer le tour : c’est le rôle de `settleTurns`. */
   function playCard(s: TrickState, pid: string, uid: string, ctx: GameContext, prefix = ''): void {
     const hand = s.hands[pid]!;
     const index = hand.findIndex((c) => c.uid === uid);
@@ -369,7 +369,7 @@ export function createTrickGame(
         const { cardId } = payload as { cardId: string };
         if (s.phase === 'round-over') return fail('La manche est terminée.');
         if (s.phase !== 'play') return fail('Le pli se termine, patientez.');
-        if (s.order[s.turn] !== player.id) return fail("Ce n'est pas votre tour.");
+        if (s.order[s.turn] !== player.id) return fail('Ce n’est pas votre tour.');
         const hand = s.hands[player.id] ?? [];
         const card = hand.find((c) => c.uid === cardId);
         if (!card) return fail('Cette carte n’est pas dans votre main.');
@@ -474,7 +474,7 @@ export function createTrickGame(
 
   /**
    * Robot : prend le pli avec la carte la plus faible qui gagne, sinon joue sa carte la plus faible. À
-   * l'ouverture, il joue sa carte la plus forte.
+   * l’ouverture, il joue sa carte la plus forte.
    */
   function suggest(state: TrickState, playerId: string) {
     if (!state.started || state.phase !== 'play' || state.order[state.turn] !== playerId) return null;

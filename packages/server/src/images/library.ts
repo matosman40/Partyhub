@@ -4,7 +4,7 @@ import type { Store } from '../db/store.js';
 import type { ImageMime, GeneratedImage } from './providers.js';
 
 /**
- * Bibliothèque d'images générées : portraits de personnages et fonds de décor, rangés par catégorie et par thème.
+ * Bibliothèque d’images générées : portraits de personnages et fonds de décor, rangés par catégorie et par thème.
  * Les images sont stockées en base (comme les voix de profil) : elles suivent les sauvegardes de la base.
  * Le plafond journalier se compte dans la table clé-valeur, pour survivre à un redémarrage.
  */
@@ -97,7 +97,7 @@ export class ImageLibrary {
     };
   }
 
-  /** Images d'une catégorie et d'un thème, les plus anciennes d'abord. */
+  /** Images d’une catégorie et d’un thème, les plus anciennes d’abord. */
   list(kind: GameImageKind, tag: string): StoredImage[] {
     const rows = this.store.db
       .prepare(`SELECT ${LIST_COLUMNS} FROM ai_images WHERE kind = ? AND tag = ? ORDER BY created_at, rowid`)
@@ -112,14 +112,14 @@ export class ImageLibrary {
     return row.n;
   }
 
-  /** Octets et type d'une image, pour la servir. Null si elle n'existe pas. */
+  /** Octets et type d’une image, pour la servir. Null si elle n’existe pas. */
   data(id: string): { bytes: Buffer; mime: ImageMime } | null {
     const row = this.store.db.prepare('SELECT mime, data FROM ai_images WHERE id = ?').get(id) as
       { mime: string; data: Buffer } | undefined;
     return row ? { bytes: row.data, mime: row.mime as ImageMime } : null;
   }
 
-  /** Nombre d'images générées aujourd'hui (jour UTC). */
+  /** Nombre d’images générées aujourd’hui (jour UTC). */
   usedToday(): number {
     const raw = this.store.getKv(`ai-images:usage:${dayKey(this.now())}`);
     const value = raw === undefined ? 0 : Number(raw);

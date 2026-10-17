@@ -1,6 +1,6 @@
 /**
- * Écran affiché à la place d'une page qui a planté. Il ne dépend pas du routeur : il sert aussi au
- * filet de sécurité posé au-dessus de l'application entière.
+ * Écran affiché à la place d’une page qui a planté. Il ne dépend pas du routeur : il sert aussi au
+ * filet de sécurité posé au-dessus de l’application entière.
  */
 export function CrashScreen({ error }: { error: Error }) {
   return (

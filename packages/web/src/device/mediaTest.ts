@@ -31,7 +31,7 @@ export function describeMediaError(err: unknown): string {
   }
 }
 
-/** Libellé français de l'état d'une autorisation (Permissions API). */
+/** Libellé français de l’état d’une autorisation (Permissions API). */
 export function permissionLabel(state: string): string {
   switch (state) {
     case 'granted':
@@ -45,7 +45,7 @@ export function permissionLabel(state: string): string {
   }
 }
 
-/** Taille lisible d'un fichier, en Ko ou Mo. */
+/** Taille lisible d’un fichier, en Ko ou Mo. */
 export function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} o`;
   if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} Ko`;
@@ -54,7 +54,7 @@ export function formatBytes(bytes: number): string {
 
 /**
  * Message quand le micro ou la caméra ne peuvent pas être demandés. Sur une adresse en HTTP (hors
- * localhost), le navigateur ne propose même pas l'API : le message doit donc dire pourquoi.
+ * localhost), le navigateur ne propose même pas l’API : le message doit donc dire pourquoi.
  */
 export function unavailableMessage(kind: 'micro' | 'caméra', secureContext: boolean): string {
   if (!secureContext) {

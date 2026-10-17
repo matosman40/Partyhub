@@ -9,9 +9,9 @@ export interface GameMenuItem {
 }
 
 /**
- * Actions d'un jeu regroupées sous un bouton « ⋯ ». Motif « bouton qui déplie » : aria-expanded et
+ * Actions d’un jeu regroupées sous un bouton « ⋯ ». Motif « bouton qui déplie » : aria-expanded et
  * aria-controls, sans rôle de menu (les flèches du clavier ne sont pas promises). Le menu se ferme
- * par Échap (le focus revient au bouton), par un clic ailleurs, ou au choix d'une action.
+ * par Échap (le focus revient au bouton), par un clic ailleurs, ou au choix d’une action.
  */
 export function GameMenu({ gameName, items }: { gameName: string; items: GameMenuItem[] }) {
   const [open, setOpen] = useState(false);

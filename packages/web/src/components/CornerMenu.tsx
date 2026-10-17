@@ -2,8 +2,8 @@ import { useEffect, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 
 /**
- * Menu discret dans un coin de l'écran : un petit bouton qui ouvre un tiroir. Les options et les
- * liens y sont rangés ; ils ne prennent plus de place sur l'écran quand on ne s'en sert pas.
+ * Menu discret dans un coin de l’écran : un petit bouton qui ouvre un tiroir. Les options et les
+ * liens y sont rangés ; ils ne prennent plus de place sur l’écran quand on ne s’en sert pas.
  */
 export function CornerMenu({
   open,
@@ -13,7 +13,7 @@ export function CornerMenu({
   children,
 }: {
   open: boolean;
-  /** Faux : le bouton s'estompe jusqu'au prochain mouvement (écran TV). */
+  /** Faux : le bouton s’estompe jusqu’au prochain mouvement (écran TV). */
   visible?: boolean;
   onOpen: () => void;
   onClose: () => void;
@@ -43,7 +43,7 @@ export function CornerMenu({
         <span aria-hidden="true" />
       </button>
       {open &&
-        // Hors de la page : les animations et les contextes d'empilement de l'écran ne doivent pas
+        // Hors de la page : les animations et les contextes d’empilement de l’écran ne doivent pas
         // faire passer le contenu de la page au-dessus du tiroir.
         createPortal(
           <>

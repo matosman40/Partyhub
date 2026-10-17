@@ -7,7 +7,7 @@ import type { SoloEngine } from './engine.js';
 /**
  * Mots croisés : une grille générée à partir de la graine, à partir de mots et de définitions
  * en français. Chaque joueur reçoit la même grille. Le serveur vérifie les lettres contre la
- * solution, qui n'est jamais envoyée sur le téléphone.
+ * solution, qui n’est jamais envoyée sur le téléphone.
  */
 
 const WORDS = z
@@ -15,7 +15,7 @@ const WORDS = z
   .min(10)
   .parse(rawWords);
 
-/** Nombre minimal de mots pour qu'une grille soit acceptée. */
+/** Nombre minimal de mots pour qu’une grille soit acceptée. */
 const MIN_WORDS = 10;
 const ATTEMPTS = 40;
 
@@ -45,7 +45,7 @@ interface Placed {
   across: boolean;
 }
 
-/** Côté maximal de la grille : au-delà, un mot n'est pas placé (une grille compacte se joue mieux). */
+/** Côté maximal de la grille : au-delà, un mot n’est pas placé (une grille compacte se joue mieux). */
 const MAX_SIDE = 15;
 /** Parmi les meilleurs emplacements (à quelques points près), on tire au hasard pour varier. */
 const SCORE_MARGIN = 3;
@@ -99,7 +99,7 @@ function attemptGrid(random: () => number): Placed[] {
     placed.push({ word, clue, row: r0, col: c0, across });
   };
 
-  // Premier mot : horizontal, à l'origine.
+  // Premier mot : horizontal, à l’origine.
   const ordered = [...WORDS].sort((a, b) => b.word.length - a.word.length);
   const pool = shuffleWith(ordered, random).sort((a, b) => b.word.length - a.word.length);
   const first = pool[0]!;
@@ -203,7 +203,7 @@ function buildGrid(placed: Placed[]): CrosswordGrid {
 
 const cache = new Map<number, CrosswordGrid>();
 
-/** Grille de la graine donnée : la même pour tous les joueurs d'une salle. */
+/** Grille de la graine donnée : la même pour tous les joueurs d’une salle. */
 export function generateCrossword(seed: number): CrosswordGrid {
   const hit = cache.get(seed);
   if (hit) return hit;

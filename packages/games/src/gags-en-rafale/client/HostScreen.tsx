@@ -83,7 +83,7 @@ function PlayStage({ pub, gag, now, pending }: { pub: GagsPub; gag: GagView; now
   );
 }
 
-/** La scène du gag sur l'écran principal. La mouche suit la même trajectoire que sur les téléphones. */
+/** La scène du gag sur l’écran principal. La mouche suit la même trajectoire que sur les téléphones. */
 function GagScene({ gag, startedAt, now }: { gag: GagView; startedAt: number; now: number }) {
   const elapsed = useElapsed(startedAt, now, gag.input === 'moving-target');
   if (gag.input === 'moving-target') {

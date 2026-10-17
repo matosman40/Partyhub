@@ -118,7 +118,7 @@ export function PhrasesHost({ publicState: pub, now }: HostViewProps) {
   );
 }
 
-/** Phrase avec son trou. Le trou reste vide tant que la carte n'est pas posée. */
+/** Phrase avec son trou. Le trou reste vide tant que la carte n’est pas posée. */
 function Sentence({ sentence }: { sentence: string }) {
   const parts = sentence.split(BLANK);
   return (

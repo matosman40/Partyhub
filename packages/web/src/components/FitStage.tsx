@@ -7,9 +7,9 @@ interface FitStageProps {
 }
 
 /**
- * Ajuste un écran de jeu à l'espace disponible : si le contenu est plus grand
+ * Ajuste un écran de jeu à l’espace disponible : si le contenu est plus grand
  * que la zone, il est réduit proportionnellement (jamais agrandi). Ainsi, la
- * scène tient toujours dans l'écran TV, quel que soit le jeu et la résolution.
+ * scène tient toujours dans l’écran TV, quel que soit le jeu et la résolution.
  */
 export function FitStage({ children, minScale = 0.45 }: FitStageProps) {
   const outer = useRef<HTMLDivElement>(null);
@@ -29,8 +29,8 @@ export function FitStage({ children, minScale = 0.45 }: FitStageProps) {
       i.style.zoom = String(Math.max(minScale, Math.floor(scale * 1000) / 1000));
     };
 
-    // Le recalcul est repoussé à l'image suivante : changer le zoom modifie la taille observée, et le faire dans le
-    // même cycle que l'observateur provoquerait l'avertissement « ResizeObserver loop » du navigateur.
+    // Le recalcul est repoussé à l’image suivante : changer le zoom modifie la taille observée, et le faire dans le
+    // même cycle que l’observateur provoquerait l’avertissement « ResizeObserver loop » du navigateur.
     let frame = 0;
     const schedule = () => {
       cancelAnimationFrame(frame);

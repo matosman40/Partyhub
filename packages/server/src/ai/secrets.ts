@@ -2,10 +2,10 @@ import { chmodSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
 
 /**
- * Chiffrement des clés d'API saisies dans l'administration. AES-256-GCM avec une clé locale, tirée au hasard
+ * Chiffrement des clés d’API saisies dans l’administration. AES-256-GCM avec une clé locale, tirée au hasard
  * au premier usage et gardée à côté de la base (mode 0600). Cela protège une copie de la base prise seule
- * (sauvegarde, export) ; cela ne protège pas contre quelqu'un qui lit tout le dossier de données.
- * Sans ce fichier, les clés chiffrées sont illisibles : l'administration demande de les ressaisir.
+ * (sauvegarde, export) ; cela ne protège pas contre quelqu’un qui lit tout le dossier de données.
+ * Sans ce fichier, les clés chiffrées sont illisibles : l’administration demande de les ressaisir.
  */
 
 const ALGORITHM = 'aes-256-gcm';
@@ -18,7 +18,7 @@ export class SecretBox {
 
   constructor(private readonly keyFile: string) {}
 
-  /** Chiffre une valeur. Crée la clé locale si elle n'existe pas encore. */
+  /** Chiffre une valeur. Crée la clé locale si elle n’existe pas encore. */
   seal(plain: string): string {
     const key = this.keyOrCreate();
     const iv = randomBytes(IV_BYTES);
@@ -28,7 +28,7 @@ export class SecretBox {
     return [VERSION, iv.toString('base64'), tag.toString('base64'), data.toString('base64')].join(':');
   }
 
-  /** Déchiffre une valeur. Renvoie null si elle est abîmée, d'une autre clé ou sans clé locale. */
+  /** Déchiffre une valeur. Renvoie null si elle est abîmée, d’une autre clé ou sans clé locale. */
   open(sealed: string): string | null {
     const key = this.existingKey();
     if (!key) return null;

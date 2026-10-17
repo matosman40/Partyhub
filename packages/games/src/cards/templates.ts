@@ -1,9 +1,9 @@
 import type { CardEntry, CardFamily, CardGameDefinition } from '@partyhub/shared';
 
 /**
- * Modèles livrés avec l'application : point de départ pour créer un jeu de cartes dans l'administration.
+ * Modèles livrés avec l’application : point de départ pour créer un jeu de cartes dans l’administration.
  * Chaque modèle est une définition complète, validée comme une définition saisie à la main. Un modèle
- * n'a aucun lien avec les jeux déjà créés : l'administrateur en fait une copie modifiable.
+ * n’a aucun lien avec les jeux déjà créés : l’administrateur en fait une copie modifiable.
  */
 
 export interface CardGameTemplate {

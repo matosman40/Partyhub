@@ -3,12 +3,12 @@ import { describeError, logClient } from '../log/clientLog.js';
 
 interface BoundaryProps {
   children: ReactNode;
-  /** Affiché à la place des enfants après une erreur de rendu. Une fonction reçoit l'erreur. */
+  /** Affiché à la place des enfants après une erreur de rendu. Une fonction reçoit l’erreur. */
   fallback: ReactNode | ((error: Error) => ReactNode);
   onError?: (error: Error, info: ErrorInfo) => void;
   /**
-   * Quand cette valeur change après une erreur, la zone essaie de nouveau de s'afficher
-   * (par exemple à la prochaine étape d'un jeu). Sans changement, le repli reste affiché.
+   * Quand cette valeur change après une erreur, la zone essaie de nouveau de s’afficher
+   * (par exemple à la prochaine étape d’un jeu). Sans changement, le repli reste affiché.
    */
   resetKey?: string;
 }
@@ -18,7 +18,7 @@ interface BoundaryState {
 }
 
 /**
- * Filet de sécurité : une erreur de rendu n'efface pas toute la page (écran noir) mais ne remplace que
+ * Filet de sécurité : une erreur de rendu n’efface pas toute la page (écran noir) mais ne remplace que
  * la zone concernée par le contenu de `fallback`.
  */
 export class Boundary extends Component<BoundaryProps, BoundaryState> {

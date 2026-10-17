@@ -3,17 +3,17 @@ import { fileURLToPath } from 'node:url';
 import { compileTrustProxy } from './trust-proxy.js';
 import { imagesFromEnv, type ImagesConfig } from './images/config.js';
 
-/** Protocole d'appel : Anthropic (Messages) ou compatible OpenAI (chat/completions). */
+/** Protocole d’appel : Anthropic (Messages) ou compatible OpenAI (chat/completions). */
 export type AiProtocol = 'anthropic' | 'openai';
 
 export interface AiProviderConfig {
-  /** Identifiant du fournisseur (anthropic, groq, …). Il sert aux journaux, jamais à l'authentification. */
+  /** Identifiant du fournisseur (anthropic, groq, …). Il sert aux journaux, jamais à l’authentification. */
   id: string;
   protocol: AiProtocol;
-  /** Clé du fournisseur. Lue ici seulement : elle n'est jamais envoyée au navigateur ni journalisée. */
+  /** Clé du fournisseur. Lue ici seulement : elle n’est jamais envoyée au navigateur ni journalisée. */
   apiKey: string;
   model: string;
-  /** Adresse complète de l'appel : racine du fournisseur plus son chemin. */
+  /** Adresse complète de l’appel : racine du fournisseur plus son chemin. */
   endpoint: string;
   /** Champ de longueur de réponse : OpenAI récent attend max_completion_tokens, les autres max_tokens. */
   maxTokensField: 'max_completion_tokens' | 'max_tokens';
@@ -21,24 +21,24 @@ export interface AiProviderConfig {
   jsonMode: boolean;
   /** Palier gratuit : sert à régler les plafonds, et apparaît dans les journaux. */
   free: boolean;
-  /** Nombre maximal d'appels sur 24 heures glissantes, pour rester dans un palier gratuit ou borner un coût. */
+  /** Nombre maximal d’appels sur 24 heures glissantes, pour rester dans un palier gratuit ou borner un coût. */
   maxCallsPerDay?: number;
 }
 
 export interface AiConfig {
-  /** Fournisseurs par ordre de préférence : le premier disponible répond, les suivants relaient en cas d'échec. */
+  /** Fournisseurs par ordre de préférence : le premier disponible répond, les suivants relaient en cas d’échec. */
   providers: AiProviderConfig[];
-  /** Délai maximal d'un appel, en millisecondes. */
+  /** Délai maximal d’un appel, en millisecondes. */
   timeoutMs: number;
-  /** Nombre maximal d'appels par heure, tous fournisseurs confondus. */
+  /** Nombre maximal d’appels par heure, tous fournisseurs confondus. */
   maxCallsPerHour: number;
 }
 
 export interface AppConfig {
   port: number;
   /**
-   * Fournisseurs d'images (Cloudflare, ModelScope) : clés de l'environnement, plafonds. `loadConfig` le renseigne
-   * toujours ; sans lui (serveur créé par programme), il n'y a simplement aucun fournisseur.
+   * Fournisseurs d’images (Cloudflare, ModelScope) : clés de l’environnement, plafonds. `loadConfig` le renseigne
+   * toujours ; sans lui (serveur créé par programme), il n’y a simplement aucun fournisseur.
    */
   images?: ImagesConfig;
   host: string;
@@ -46,18 +46,18 @@ export interface AppConfig {
   dbFile: string;
   staticDir: string;
   adminPassword?: string;
-  /** Jeton GitHub pour les sources privées et les limites d'appels (GITHUB_TOKEN). Jamais affiché ni sauvegardé. */
+  /** Jeton GitHub pour les sources privées et les limites d’appels (GITHUB_TOKEN). Jamais affiché ni sauvegardé. */
   githubToken?: string;
   /**
    * Jeux intégrés sur une installation neuve. `false` (défaut de la production) : ils restent dans le code
-   * mais sont désactivés, l'administrateur les active un par un. Absent : ils restent actifs (tests, usage en bibliothèque).
+   * mais sont désactivés, l’administrateur les active un par un. Absent : ils restent actifs (tests, usage en bibliothèque).
    */
   builtinGames?: boolean;
   logLevel: string;
   /** Journal fichier tournant (LOG_DIR, LOG_MAX_MB, LOG_FILES). Absent = sortie standard seulement (tests). */
   logFile?: { dir: string; maxBytes: number; maxFiles: number };
   secureCookies: boolean;
-  /** Proxys de confiance (TRUST_PROXY, syntaxe d'Express). Absent = « loopback ». */
+  /** Proxys de confiance (TRUST_PROXY, syntaxe d’Express). Absent = « loopback ». */
   trustProxy?: string;
   /** Limites de taille de la médiathèque, en octets (ASSET_MAX_*_MB). Absent = valeurs par défaut. */
   assetLimits?: { audio: number; video: number; image: number; font: number };
@@ -74,7 +74,7 @@ export interface AppConfig {
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
-/** Entier lu dans l'environnement, avec une valeur par défaut et des bornes. */
+/** Entier lu dans l’environnement, avec une valeur par défaut et des bornes. */
 function intFromEnv(name: string, raw: string | undefined, fallback: number, min: number, max: number): number {
   if (raw === undefined || raw.trim() === '') return fallback;
   const value = Number(raw.trim());
@@ -86,7 +86,7 @@ function intFromEnv(name: string, raw: string | undefined, fallback: number, min
 
 const MB = 1024 * 1024;
 
-/** Réglages d'appel par défaut, quand l'environnement n'en donne pas (l'administration peut configurer sans lui). */
+/** Réglages d’appel par défaut, quand l’environnement n’en donne pas (l’administration peut configurer sans lui). */
 export const AI_DEFAULTS = { timeoutMs: 30000, maxCallsPerHour: 300 } as const;
 
 /** BUILTIN_GAMES : « on » active les jeux intégrés sur une installation neuve ; « off » (défaut) les désactive. */
@@ -97,14 +97,14 @@ export function builtinGamesFromEnv(raw: string | undefined): boolean {
   throw new Error(`BUILTIN_GAMES invalide : « ${raw} » (on ou off)`);
 }
 
-/** Fournisseur connu : protocole, adresse par défaut, variable de clé et paramètres d'appel. */
+/** Fournisseur connu : protocole, adresse par défaut, variable de clé et paramètres d’appel. */
 export interface ProviderPreset {
   id: string;
   protocol: AiProtocol;
   keyEnv: string;
   /** Racine par défaut. Absente pour « custom », qui exige AI_CUSTOM_BASE_URL. */
   baseUrl?: string;
-  /** Chemin de l'appel, ajouté à la racine. */
+  /** Chemin de l’appel, ajouté à la racine. */
   path: string;
   /** Modèle par défaut. Sans lui, AI_<FOURNISSEUR>_MODEL est obligatoire. */
   defaultModel?: string;
@@ -114,8 +114,8 @@ export interface ProviderPreset {
 }
 
 /**
- * Fournisseurs connus, dans l'ordre de détection (sans AI_PROVIDER). Adresses et chemins vérifiés dans la documentation
- * des fournisseurs. Le mode JSON n'est activé que là où il est documenté ; ailleurs, la réponse texte est lue avec une
+ * Fournisseurs connus, dans l’ordre de détection (sans AI_PROVIDER). Adresses et chemins vérifiés dans la documentation
+ * des fournisseurs. Le mode JSON n’est activé que là où il est documenté ; ailleurs, la réponse texte est lue avec une
  * extraction tolérante du JSON. Tout autre service compatible OpenAI passe par « custom ».
  */
 export const PRESETS: ProviderPreset[] = [
@@ -203,7 +203,7 @@ export const PRESETS: ProviderPreset[] = [
 ];
 
 /**
- * Fournisseur construit à partir de sa clé et de réglages saisis dans l'administration. Même règles que l'environnement :
+ * Fournisseur construit à partir de sa clé et de réglages saisis dans l’administration. Même règles que l’environnement :
  * modèle et adresse vérifiés avant tout appel.
  */
 export function providerFromPreset(
@@ -244,7 +244,7 @@ function assertHttpUrl(name: string, value: string): void {
   throw new Error(`${name} invalide : « ${value} » (adresse http ou https)`);
 }
 
-/** Configuration d'un fournisseur, lue sous son préfixe AI_<FOURNISSEUR>_ et sous sa variable de clé. */
+/** Configuration d’un fournisseur, lue sous son préfixe AI_<FOURNISSEUR>_ et sous sa variable de clé. */
 function providerFromEnv(preset: ProviderPreset, env: NodeJS.ProcessEnv): AiProviderConfig {
   const prefix = `AI_${preset.id.toUpperCase()}`;
   const apiKey = (env[preset.keyEnv] ?? '').trim();
@@ -309,7 +309,7 @@ export function aiFromEnv(env: NodeJS.ProcessEnv): AiConfig | undefined {
   };
 }
 
-/** Lit la configuration depuis l'environnement. Échoue tôt si une valeur est invalide. */
+/** Lit la configuration depuis l’environnement. Échoue tôt si une valeur est invalide. */
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   const port = Number(env.PORT ?? 8282);
   if (!Number.isInteger(port) || port < 1 || port > 65535) {

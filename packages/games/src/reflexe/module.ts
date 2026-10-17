@@ -3,7 +3,7 @@ import type { GameContext, GameModule, PlayerRef } from '@partyhub/shared';
 import { addPoints, directory, everyConnectedDone, fail, ok, rankEntries } from '../common/engine.js';
 
 /**
- * Réflexe : l'écran passe au rouge (« attendez »), puis au vert au bout d'un
+ * Réflexe : l’écran passe au rouge (« attendez »), puis au vert au bout d’un
  * délai aléatoire. Le premier à toucher son téléphone marque le plus de points.
  * Toucher pendant le rouge = faux départ : aucun point pour cette manche.
  * Les temps de réaction sont mesurés par le serveur, jamais par le navigateur.
@@ -113,10 +113,10 @@ export const reflexe: GameModule<ReflexeState, ReflexeSettings> = {
     maxPlayers: 12,
     durationMin: 5,
     notice: {
-      goal: "Être le premier à toucher son téléphone quand l'écran passe au vert.",
+      goal: 'Être le premier à toucher son téléphone quand l’écran passe au vert.',
       steps: [
-        "L'écran passe au rouge : attendez.",
-        "Dès que l'écran devient vert, touchez votre téléphone.",
+        'L’écran passe au rouge : attendez.',
+        'Dès que l’écran devient vert, touchez votre téléphone.',
         'Le plus rapide marque 100 points, puis 70, 50, 30 et ainsi de suite.',
         'Toucher pendant le rouge est un faux départ : aucun point pour cette manche.',
       ],

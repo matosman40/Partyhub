@@ -9,7 +9,7 @@ import type { PackageService } from './service.js';
 
 const COPY_SUFFIX = ' (copie)';
 
-/** Nom d'une copie : « … (copie) », tronqué pour rester dans la limite de 40 caractères. */
+/** Nom d’une copie : « … (copie) », tronqué pour rester dans la limite de 40 caractères. */
 export function copyNameOf(name: string): string {
   return `${name.slice(0, 40 - COPY_SUFFIX.length)}${COPY_SUFFIX}`;
 }
@@ -24,14 +24,14 @@ export interface CopyServices {
 
 export type CopyResult = { ok: true; id: string; module: PackageModule; name: string } | { ok: false; error: string };
 
-/** Empreinte du contenu d'une définition, indépendante de l'ordre des clés. */
+/** Empreinte du contenu d’une définition, indépendante de l’ordre des clés. */
 export function definitionHash(definition: unknown): string {
   return createHash('sha256').update(canonical(definition)).digest('hex');
 }
 
 type Saved = { ok: true; id: string } | { ok: false; error: string };
 
-/** Définition courante d'un jeu de l'administration, lue dans le service de son module. */
+/** Définition courante d’un jeu de l’administration, lue dans le service de son module. */
 function currentDefinition(module: PackageModule, gameId: string, s: CopyServices): { name: string } | undefined {
   switch (module) {
     case 'cards':
@@ -43,7 +43,7 @@ function currentDefinition(module: PackageModule, gameId: string, s: CopyService
   }
 }
 
-/** Enregistre une définition dans le service de l'administration du module (création si id est null). */
+/** Enregistre une définition dans le service de l’administration du module (création si id est null). */
 function saveDefinition(module: PackageModule, id: string | null, definition: unknown, s: CopyServices): Saved {
   switch (module) {
     case 'cards':
@@ -56,10 +56,10 @@ function saveDefinition(module: PackageModule, id: string | null, definition: un
 }
 
 /**
- * Crée un jeu modifiable à partir d'un paquet actif : même définition, enregistrée dans le
- * service de l'administration correspondant au module (cartes, plateau ou questions). Le
+ * Crée un jeu modifiable à partir d’un paquet actif : même définition, enregistrée dans le
+ * service de l’administration correspondant au module (cartes, plateau ou questions). Le
  * paquet reste installé et inchangé. La copie garde le lien vers le paquet, la version copiée
- * et l'empreinte du contenu copié, pour savoir ensuite si elle a été modifiée.
+ * et l’empreinte du contenu copié, pour savoir ensuite si elle a été modifiée.
  */
 export function copyPackageToEditable(packageId: string, services: CopyServices): CopyResult {
   const read = services.packages.readActive(packageId);
@@ -79,24 +79,24 @@ export function copyPackageToEditable(packageId: string, services: CopyServices)
   return { ok: true, id: saved.id, module: pkg.module, name };
 }
 
-/** État d'une copie par rapport à son paquet d'origine. */
+/** État d’une copie par rapport à son paquet d’origine. */
 export interface PackageCopyStatus {
   gameId: string;
   packageId: string;
   module: PackageModule;
   name: string;
   copiedVersion: string;
-  /** Version active du paquet d'origine, ou null si le paquet n'est pas disponible. */
+  /** Version active du paquet d’origine, ou null si le paquet n’est pas disponible. */
   currentVersion: string | null;
   /** Vrai si la copie a été modifiée depuis sa création ou sa dernière mise à jour. */
   modified: boolean;
-  /** Vrai si le paquet d'origine a une version différente de celle copiée. */
+  /** Vrai si le paquet d’origine a une version différente de celle copiée. */
   updateAvailable: boolean;
-  /** Vrai si le paquet d'origine a été supprimé. */
+  /** Vrai si le paquet d’origine a été supprimé. */
   originMissing: boolean;
 }
 
-/** État de toutes les copies, avec leur paquet d'origine. */
+/** État de toutes les copies, avec leur paquet d’origine. */
 export function packageCopyStatuses(s: CopyServices): PackageCopyStatus[] {
   const statuses: PackageCopyStatus[] = [];
   for (const row of s.store.listPackageCopies()) {
@@ -122,8 +122,8 @@ export function packageCopyStatuses(s: CopyServices): PackageCopyStatus[] {
 export type UpdateCopyResult = { ok: true; version: string } | { ok: false; modified?: boolean; error: string };
 
 /**
- * Remplace le contenu d'une copie par la version active de son paquet, en gardant son nom.
- * Une copie modifiée n'est remplacée qu'avec `force` : ses modifications sont alors perdues.
+ * Remplace le contenu d’une copie par la version active de son paquet, en gardant son nom.
+ * Une copie modifiée n’est remplacée qu’avec `force` : ses modifications sont alors perdues.
  */
 export function updateCopyFromPackage(gameId: string, options: { force?: boolean }, s: CopyServices): UpdateCopyResult {
   const row: PackageCopyRow | undefined = s.store.getPackageCopy(gameId);

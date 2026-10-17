@@ -24,8 +24,8 @@ export const PHGAME_FORMAT_VERSION = 2;
 export type PackageModule = (typeof PARTYHUB_ENGINE.modules)[number];
 
 /**
- * Préfixe de l'identifiant du jeu dans le registre, selon le module. Les préfixes ne se recouvrent
- * jamais (« pkg- » n'est pas un début possible de « pkgb- » ni de « pkgq- »), donc deux paquets
+ * Préfixe de l’identifiant du jeu dans le registre, selon le module. Les préfixes ne se recouvrent
+ * jamais (« pkg- » n’est pas un début possible de « pkgb- » ni de « pkgq- »), donc deux paquets
  * de types différents ne peuvent pas partager un identifiant de jeu.
  */
 const GAME_ID_PREFIX: Record<PackageModule, string> = { cards: 'pkg-', board: 'pkgb-', quiz: 'pkgq-' };
@@ -115,7 +115,7 @@ export const manifestSchema = z
 
 export type PackageManifest = z.infer<typeof manifestSchema>;
 
-/** Vérifie un chemin à l'intérieur du paquet. Retourne la raison du refus, ou null. */
+/** Vérifie un chemin à l’intérieur du paquet. Retourne la raison du refus, ou null. */
 export function pathProblem(name: string, limits: Pick<PackageLimits, 'maxPathLength' | 'maxDepth'>): string | null {
   if (name.length === 0 || name.length > limits.maxPathLength) return `chemin trop long ou vide`;
   if (name.startsWith('/') || name.includes('\\') || name.includes('\0') || name.includes(':')) {
@@ -137,7 +137,7 @@ export function pathProblem(name: string, limits: Pick<PackageLimits, 'maxPathLe
   return null;
 }
 
-/** Vérifie la signature d'un fichier image (PNG, JPEG, WebP) et, pour le PNG, ses dimensions. */
+/** Vérifie la signature d’un fichier image (PNG, JPEG, WebP) et, pour le PNG, ses dimensions. */
 export function imageProblem(data: Uint8Array, ext: string, limits: PackageLimits): string | null {
   const isPng = data[0] === 0x89 && data[1] === 0x50 && data[2] === 0x4e && data[3] === 0x47;
   const isJpeg = data[0] === 0xff && data[1] === 0xd8 && data[2] === 0xff;
@@ -181,7 +181,7 @@ interface ValidatedBase {
 
 export type ValidatedPackage = ValidatedBase & DefinitionValue;
 
-/** Erreur de validation, avec la liste des problèmes à présenter à l'administrateur. */
+/** Erreur de validation, avec la liste des problèmes à présenter à l’administrateur. */
 export class PackageValidationError extends Error {
   constructor(readonly issues: string[]) {
     super(issues[0] ?? 'Paquet invalide.');
@@ -194,7 +194,7 @@ function sha256Hex(data: Uint8Array): string {
 
 /**
  * Vérifie la définition du jeu selon son module. Un jeu de questions ne peut référencer que des
- * vidéos YouTube : les fichiers de la médiathèque n'existent pas dans un paquet.
+ * vidéos YouTube : les fichiers de la médiathèque n’existent pas dans un paquet.
  */
 function checkDefinition(
   module: PackageModule,

@@ -10,9 +10,9 @@ import type {
 import { PlayerAvatar } from './PlayerAvatar.js';
 
 /**
- * Championnat d'un salon : podium de la dernière partie (pour tous les jeux), classement cumulé,
+ * Championnat d’un salon : podium de la dernière partie (pour tous les jeux), classement cumulé,
  * équipes, icônes de victoire et réglage avant la partie. Les calculs sont faits par le serveur ;
- * ici on n'affiche que ce qui est reçu.
+ * ici on n’affiche que ce qui est reçu.
  */
 
 const MEDALS = ['🥇', '🥈', '🥉'] as const;
@@ -22,14 +22,14 @@ export function hasChampionship(c: ChampionshipSettings): boolean {
   return c.length > 1 || c.teams >= 2;
 }
 
-/** « Partie unique » ou « 3 manches », suivi du nombre d'équipes s'il y en a. */
+/** « Partie unique » ou « 3 manches », suivi du nombre d’équipes s’il y en a. */
 export function championshipSummary(c: ChampionshipSettings): string {
   const manches = c.length === 1 ? 'Partie unique' : `${c.length} manches`;
   return c.teams >= 2 ? `${manches} · ${c.teams} équipes` : manches;
 }
 
 /**
- * Libellé du bouton « rejouer » : il annonce ce qui va se passer. Rejouer ramène au salon, où l'hôte
+ * Libellé du bouton « rejouer » : il annonce ce qui va se passer. Rejouer ramène au salon, où l’hôte
  * lance ensuite la manche avec « Lancer la partie ».
  */
 export function replayLabel(lobby: Pick<LobbyView, 'series' | 'championship'>): string {
@@ -179,7 +179,7 @@ export function ChampionshipPanel({ series }: { series: SeriesView }) {
   );
 }
 
-/** Colonne de droite de l'écran principal, à la fin d'une partie : podium puis championnat. */
+/** Colonne de droite de l’écran principal, à la fin d’une partie : podium puis championnat. */
 export function GameEndPanel({ lobby }: { lobby: LobbyView }) {
   return (
     <aside className="results-panel" aria-label="Résultats de la partie">
@@ -189,7 +189,7 @@ export function GameEndPanel({ lobby }: { lobby: LobbyView }) {
   );
 }
 
-/** Réglage du championnat, dans le menu de l'écran principal, avant la partie. */
+/** Réglage du championnat, dans le menu de l’écran principal, avant la partie. */
 export function ChampionshipSettingsForm({
   value,
   onChange,
@@ -226,7 +226,7 @@ export function ChampionshipSettingsForm({
   );
 }
 
-/** Équipe d'un joueur, en pastille. Rien tant que le salon n'a pas d'équipes. */
+/** Équipe d’un joueur, en pastille. Rien tant que le salon n’a pas d’équipes. */
 export function TeamBadge({ lobby, playerId }: { lobby: LobbyView; playerId: string }) {
   const index = lobby.players.find((p) => p.id === playerId)?.team ?? null;
   const team = index !== null ? lobby.series?.teams?.[index] : undefined;

@@ -6,7 +6,7 @@ import { useDeviceProfiles } from './useProfile.js';
 import { forgetDeviceProfile, switchDeviceProfile } from './session.js';
 
 /**
- * Profil de cet appareil : le profil actif s'affiche, et on en choisit un autre d'un geste.
+ * Profil de cet appareil : le profil actif s’affiche, et on en choisit un autre d’un geste.
  * Un profil de plus se crée sur place, sans quitter la page.
  */
 export function ProfileSwitcher({ onChange }: { onChange?: () => void }) {

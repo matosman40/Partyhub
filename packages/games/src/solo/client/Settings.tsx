@@ -12,7 +12,7 @@ const TimeLimit = fieldSettings([
   { key: 'timeLimitSec', label: 'Temps limite, en secondes (0 = sans limite)', min: 0, max: 3600 },
 ]);
 
-/** Réglages d'un jeu solo : temps limite commun, plus les choix propres au jeu. */
+/** Réglages d’un jeu solo : temps limite commun, plus les choix propres au jeu. */
 export function soloSettings(choices: SoloChoice[]): ComponentType<SettingsProps> {
   return function SoloSettings(props: SettingsProps) {
     return (

@@ -1,7 +1,7 @@
 /**
- * Captures d'écran des jeux, affichées dans la fiche. Deux sources :
+ * Captures d’écran des jeux, affichées dans la fiche. Deux sources :
  * - la première vraie partie de chaque jeu, gardée par le serveur (/api/game-photos) ;
- * - les captures des parties d'essai, générées par scripts/game-photos.py (public/game-photos/), en secours.
+ * - les captures des parties d’essai, générées par scripts/game-photos.py (public/game-photos/), en secours.
  * Pour un même jeu, les captures de la vraie partie priment.
  */
 
@@ -20,7 +20,7 @@ const BOT_FILE = /^[a-z0-9-]+\.jpg$/;
 const LIVE_FILE = /^\/api\/game-photos\/([a-z0-9-]+)\/([1-9][0-9]?\.jpg)$/;
 
 /**
- * Lit l'index des parties d'essai sans lui faire confiance : une entrée mal formée est ignorée, les autres restent.
+ * Lit l’index des parties d’essai sans lui faire confiance : une entrée mal formée est ignorée, les autres restent.
  * Les noms de fichiers doivent être simples, pour ne jamais sortir du dossier du jeu.
  */
 export function parsePhotoIndex(raw: unknown): PhotoIndex {
@@ -50,19 +50,19 @@ export function parseLivePhotos(raw: unknown): PhotoIndex {
   return { games: out };
 }
 
-/** Les captures de la première partie remplacent celles des parties d'essai, jeu par jeu. */
+/** Les captures de la première partie remplacent celles des parties d’essai, jeu par jeu. */
 export function mergePhotoIndexes(bots: PhotoIndex, live: PhotoIndex): PhotoIndex {
   return { games: { ...bots.games, ...live.games } };
 }
 
-/** Adresses des captures d'un jeu, dans l'ordre. Liste vide si le jeu n'en a pas. */
+/** Adresses des captures d’un jeu, dans l’ordre. Liste vide si le jeu n’en a pas. */
 export function photosFor(index: PhotoIndex, gameId: string): string[] {
   return index.games[gameId] ?? [];
 }
 
 /**
- * D'où viennent les captures d'un jeu : la première vraie partie (serveur) ou une partie d'essai (robots).
- * Un jeu n'a jamais des captures des deux sources : la première partie remplace les captures d'essai.
+ * D’où viennent les captures d’un jeu : la première vraie partie (serveur) ou une partie d’essai (robots).
+ * Un jeu n’a jamais des captures des deux sources : la première partie remplace les captures d’essai.
  */
 export function photoOrigin(urls: string[]): 'partie' | 'essai' {
   return urls[0]?.startsWith('/api/game-photos/') ? 'partie' : 'essai';
@@ -84,7 +84,7 @@ export async function loadLivePhotos(fetchImpl: typeof fetch = fetch): Promise<P
 
 /**
  * Charge les deux sources. Un échec (fichier absent, réseau coupé) ne bloque jamais la fiche :
- * le jeu s'affiche sans captures.
+ * le jeu s’affiche sans captures.
  */
 export async function loadPhotoIndex(fetchImpl: typeof fetch = fetch): Promise<PhotoIndex> {
   const [bots, live] = await Promise.all([

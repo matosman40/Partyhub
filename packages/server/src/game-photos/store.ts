@@ -5,15 +5,15 @@ import path from 'node:path';
  * Captures de la première partie de chaque jeu, montrées dans la fiche du jeu (ordinateur et téléphone).
  *
  * Une seule salle « source » par jeu : la première qui envoie une capture. Elle en envoie quelques-unes
- * pendant sa partie ; ensuite, plus aucune salle ne peut en ajouter pour ce jeu. Les parties d'essai (robots
- * seuls) n'en envoient pas : leurs images viennent de scripts/game-photos.py.
+ * pendant sa partie ; ensuite, plus aucune salle ne peut en ajouter pour ce jeu. Les parties d’essai (robots
+ * seuls) n’en envoient pas : leurs images viennent de scripts/game-photos.py.
  *
  * Fichiers : <dataDir>/game-photos/index.json, et <dataDir>/game-photos/<jeu>/<n>.jpg.
  */
 
 /** Nombre maximal de captures gardées pour un jeu. */
 export const GAME_PHOTO_MAX = 4;
-/** Taille maximale d'une capture : un JPEG 1280 × 720 de qualité moyenne tient largement dedans. */
+/** Taille maximale d’une capture : un JPEG 1280 × 720 de qualité moyenne tient largement dedans. */
 export const GAME_PHOTO_MAX_BYTES = 400 * 1024;
 
 const GAME_ID = /^[a-z0-9-]+$/;
@@ -38,7 +38,7 @@ export class GamePhotoStore {
     this.root = path.resolve(dataDir, 'game-photos');
   }
 
-  /** Adresses publiques des captures gardées, par jeu. Un jeu sans capture n'apparaît pas. */
+  /** Adresses publiques des captures gardées, par jeu. Un jeu sans capture n’apparaît pas. */
   urls(): Record<string, string[]> {
     const out: Record<string, string[]> = {};
     for (const [id, entry] of Object.entries(this.read().games)) {
@@ -47,7 +47,7 @@ export class GamePhotoStore {
     return out;
   }
 
-  /** Chemin d'une capture gardée, ou null : seul un fichier listé dans l'index est servi. */
+  /** Chemin d’une capture gardée, ou null : seul un fichier listé dans l’index est servi. */
   filePath(gameId: string, file: string): string | null {
     if (!GAME_ID.test(gameId) || !PHOTO_FILE.test(file)) return null;
     const entry = this.read().games[gameId];
@@ -102,7 +102,7 @@ export class GamePhotoStore {
   }
 }
 
-/** Relit l'index sans lui faire confiance : une entrée mal formée est ignorée. */
+/** Relit l’index sans lui faire confiance : une entrée mal formée est ignorée. */
 function sanitize(raw: unknown): PhotoIndex {
   const games: Record<string, GameEntry> = {};
   const source = (raw as { games?: unknown } | null)?.games;
@@ -134,7 +134,7 @@ function nextNumber(files: string[]): number {
   return files.reduce((max, f) => Math.max(max, Number.parseInt(f, 10)), 0) + 1;
 }
 
-/** Écrit dans un fichier temporaire puis renomme : un arrêt en cours d'écriture ne laisse pas de fichier cassé. */
+/** Écrit dans un fichier temporaire puis renomme : un arrêt en cours d’écriture ne laisse pas de fichier cassé. */
 function writeAtomic(file: string, data: string | Uint8Array): void {
   const tmp = `${file}.tmp`;
   writeFileSync(tmp, data);

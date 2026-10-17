@@ -2,15 +2,15 @@ import type { AiClient, AiRequest } from '@partyhub/shared';
 import { AI_DEFAULTS, type AiConfig, type AiProviderConfig } from '../config.js';
 
 /**
- * Client d'IA générative pour les jeux racontés. Plusieurs fournisseurs, appelés directement par `fetch`, sans SDK :
+ * Client d’IA générative pour les jeux racontés. Plusieurs fournisseurs, appelés directement par `fetch`, sans SDK :
  * Anthropic (Messages) et tout service compatible OpenAI (chat/completions). Le client ne sait rien des jeux : il
  * envoie une consigne et renvoie le texte brut.
  *
- * Choix du fournisseur : on essaie les fournisseurs dans l'ordre de la configuration. Un fournisseur qui a atteint son
+ * Choix du fournisseur : on essaie les fournisseurs dans l’ordre de la configuration. Un fournisseur qui a atteint son
  * plafond journalier est sauté ; un fournisseur en échec laisse la place au suivant.
  *
  * Garde-fous : délai maximal par appel, une seule nouvelle tentative par fournisseur sur erreur transitoire, limite
- * horaire globale, plafond journalier par fournisseur, et messages d'erreur qui ne contiennent jamais la clé ni le
+ * horaire globale, plafond journalier par fournisseur, et messages d’erreur qui ne contiennent jamais la clé ni le
  * corps de la réponse. Les compteurs vivent en mémoire : ils repartent à zéro au redémarrage du serveur.
  */
 
@@ -25,15 +25,15 @@ export class AiError extends Error {
   }
 }
 
-/** Journal minimal : on n'y écrit jamais le contenu des requêtes ni des réponses. */
+/** Journal minimal : on n’y écrit jamais le contenu des requêtes ni des réponses. */
 export interface AiLogger {
   warn(fields: Record<string, unknown>, message: string): void;
 }
 
 export interface AiClientOptions {
   /**
-   * Réglages en vigueur. Une fonction permet de les changer sans recréer le client : les compteurs d'appels
-   * (horaire et journaliers) restent ceux de la salle, même quand l'administrateur modifie une clé.
+   * Réglages en vigueur. Une fonction permet de les changer sans recréer le client : les compteurs d’appels
+   * (horaire et journaliers) restent ceux de la salle, même quand l’administrateur modifie une clé.
    */
   config: AiConfig | (() => AiConfig | undefined);
   fetch?: typeof fetch;
@@ -63,7 +63,7 @@ export function extractOpenAiText(data: unknown): string {
   return typeof content === 'string' ? content : '';
 }
 
-/** Requête HTTP d'un fournisseur. Ne lit rien : c'est `attempt` qui envoie la requête et lit la réponse. */
+/** Requête HTTP d’un fournisseur. Ne lit rien : c’est `attempt` qui envoie la requête et lit la réponse. */
 export function buildRequest(
   provider: AiProviderConfig,
   request: Pick<AiRequest, 'system' | 'user' | 'maxTokens'>,
@@ -149,7 +149,7 @@ export function createAiClient(options: AiClientOptions): AiClient {
     if (hourCalls.length >= limit) throw new AiError(HOURLY_LIMIT_MESSAGE, false);
   }
 
-  /** Compte un appel avant de l'envoyer ; refuse, sans rien envoyer, au-delà des limites. */
+  /** Compte un appel avant de l’envoyer ; refuse, sans rien envoyer, au-delà des limites. */
   function reserve(provider: AiProviderConfig): void {
     checkHourly();
     if (!hasDailyRoom(provider)) throw new AiError(DAILY_LIMIT_MESSAGE, false);
@@ -158,7 +158,7 @@ export function createAiClient(options: AiClientOptions): AiClient {
     dailyCallsOf(provider.id).push(at);
   }
 
-  /** Un appel HTTP, borné par le délai et par le signal d'annulation de la salle. */
+  /** Un appel HTTP, borné par le délai et par le signal d’annulation de la salle. */
   async function attempt(provider: AiProviderConfig, request: AiRequest): Promise<string> {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), current()?.timeoutMs ?? AI_DEFAULTS.timeoutMs);
@@ -230,7 +230,7 @@ export function createAiClient(options: AiClientOptions): AiClient {
         try {
           return await callProvider(provider, request);
         } catch (err) {
-          // Annulation de la salle : on s'arrête là, sans essayer le fournisseur suivant.
+          // Annulation de la salle : on s’arrête là, sans essayer le fournisseur suivant.
           if (!(err instanceof AiError) || request.signal?.aborted) throw err;
           last = err;
           options.logger?.warn(

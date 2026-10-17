@@ -79,7 +79,7 @@ export const avatarImageSchema = z
   .regex(/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/, 'Format d’image non reconnu');
 
 /**
- * Création d'un profil. Par défaut : le pseudo seul, sans mot de passe (le profil se garde sur cet appareil).
+ * Création d’un profil. Par défaut : le pseudo seul, sans mot de passe (le profil se garde sur cet appareil).
  * Les anciens comptes, créés avec un identifiant et un mot de passe, restent acceptés.
  */
 export const registerSchema = z
@@ -117,7 +117,7 @@ export const noticeSchema = z.object({
   tips: z.array(z.string().trim().min(1).max(240)).max(8),
 });
 
-/** Présentation d'un jeu intégré, modifiable par l'administrateur (le code du jeu reste le même). */
+/** Présentation d’un jeu intégré, modifiable par l’administrateur (le code du jeu reste le même). */
 export const gameDetailsSchema = z.object({
   name: z.string().trim().min(3, 'Le nom doit compter au moins 3 caractères.').max(40),
   icon: z.string().trim().min(1).max(8),
@@ -142,7 +142,7 @@ export const kickSchema = z.object({
   playerId: z.string().min(1).max(64),
 });
 
-/** Action de l'écran principal : type court, payload libre (validé ensuite par le jeu). */
+/** Action de l’écran principal : type court, payload libre (validé ensuite par le jeu). */
 export const hostGameActionSchema = z.object({
   type: z.string().min(1).max(40),
   payload: z.unknown().optional(),

@@ -1,9 +1,9 @@
 import { VOICE_MAX_BYTES, VOICE_MAX_PER_PROFILE, VOICE_MAX_SECONDS, type VoiceClip } from '@partyhub/shared';
 
-/** Formats d'enregistrement préférés, dans l'ordre. Le navigateur choisit le premier qu'il sait faire. */
+/** Formats d’enregistrement préférés, dans l’ordre. Le navigateur choisit le premier qu’il sait faire. */
 const RECORDING_TYPES = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus'];
 
-/** Premier format d'enregistrement accepté par le navigateur, ou '' (il choisira lui-même). */
+/** Premier format d’enregistrement accepté par le navigateur, ou '' (il choisira lui-même). */
 export function pickRecordingType(isSupported: (type: string) => boolean): string {
   return RECORDING_TYPES.find((type) => isSupported(type)) ?? '';
 }
@@ -18,7 +18,7 @@ export function defaultVoiceName(existing: readonly VoiceClip[]): string {
 }
 
 /**
- * Contrôle d'un fichier choisi avant envoi. La durée est inconnue (Infinity) pour certains
+ * Contrôle d’un fichier choisi avant envoi. La durée est inconnue (Infinity) pour certains
  * enregistrements : on ne refuse alors que sur la taille.
  */
 export function checkVoiceFile(size: number, durationSeconds: number): string | null {

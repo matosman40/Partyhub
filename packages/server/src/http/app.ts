@@ -78,7 +78,7 @@ import { PRESETS } from '../config.js';
 export interface AppDeps {
   config: AppConfig;
   logger: Logger;
-  /** Journal fichier consultable par l'administrateur. Absent = pas de consultation (tests). */
+  /** Journal fichier consultable par l’administrateur. Absent = pas de consultation (tests). */
   journal?: RotatingFile;
   store: Store;
   manager: RoomManager;
@@ -87,7 +87,7 @@ export interface AppDeps {
   cardGames: CardGameService;
   /** Banques de contenu de BOUM !. */
   boumBank: BoumBankService;
-  /** Jeux de plateau créés dans l'administration. */
+  /** Jeux de plateau créés dans l’administration. */
   boardGames: BoardGameService;
   /** Sources GitHub des paquets .phgame. */
   packageSources: PackageSourceService;
@@ -95,11 +95,11 @@ export interface AppDeps {
   mediaGames: MediaQuizService;
   /** Paquets .phgame installés (jeux déclaratifs). */
   packages: PackageService;
-  /** Packs de personnages (sprites) importés dans l'administration. */
+  /** Packs de personnages (sprites) importés dans l’administration. */
   characterPacks: CharacterPackService;
   /** Sauvegardes automatiques de la base. Absent = fonction non configurée. */
   dbBackups?: DbBackupScheduler;
-  /** IA générative : fournisseurs de l'environnement et de l'administration. */
+  /** IA générative : fournisseurs de l’environnement et de l’administration. */
   ai: AiRuntime;
   /** Images générées par IA (portraits, fonds) : servies publiquement par identifiant. */
   imageLibrary?: ImageLibrary;
@@ -139,7 +139,7 @@ export function createApp(deps: AppDeps): express.Express {
     characterPacks,
   } = deps;
   const app = express();
-  // Sessions d'administration stockées en base : elles survivent à un redémarrage.
+  // Sessions d’administration stockées en base : elles survivent à un redémarrage.
   const sessions = new AdminSessions(store.db);
   const limiter = new LoginLimiter();
   const registerLimiter = new LoginLimiter(40);
@@ -166,17 +166,17 @@ export function createApp(deps: AppDeps): express.Express {
     res.setHeader('Referrer-Policy', 'same-origin');
     res.setHeader('X-Frame-Options', 'SAMEORIGIN');
     // Capteurs (gyroscope, accéléromètre, magnétomètre) et appareils (micro, caméra) : réservés à ce site.
-    // Le navigateur refuse les capteurs hors HTTPS ; cet en-tête évite qu'une politique héritée les coupe.
+    // Le navigateur refuse les capteurs hors HTTPS ; cet en-tête évite qu’une politique héritée les coupe.
     res.setHeader(
       'Permissions-Policy',
       'accelerometer=(self), gyroscope=(self), magnetometer=(self), microphone=(self), camera=(self)',
     );
     // YouTube est autorisé uniquement pour les extraits des jeux de questions (API du lecteur,
-    // iframe du lecteur, oEmbed de l'administration). Tout le reste reste limité à ce site.
+    // iframe du lecteur, oEmbed de l’administration). Tout le reste reste limité à ce site.
     res.setHeader(
       'Content-Security-Policy',
       // blob: : aperçus créés par la page elle-même (image du test, enregistrement du micro, photo de profil).
-      // Une URL blob ne peut être créée que par ce site ; elle n'autorise pas de script ni de contenu externe.
+      // Une URL blob ne peut être créée que par ce site ; elle n’autorise pas de script ni de contenu externe.
       "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; " +
         "script-src 'self' https://www.youtube.com; frame-src https://www.youtube.com https://www.youtube-nocookie.com; " +
         "media-src 'self' data: blob:; connect-src 'self' ws: wss: https://www.youtube.com; object-src 'none'; " +
@@ -205,7 +205,7 @@ export function createApp(deps: AppDeps): express.Express {
     }
     const original = resolveGame(parsed.data.gameId);
     if (!original || !store.isGameEnabled(original.manifest.id)) {
-      res.status(404).json({ error: "Ce jeu n'est pas disponible." });
+      res.status(404).json({ error: 'Ce jeu n’est pas disponible.' });
       return;
     }
     const module = withOverrides(original, store);
@@ -216,7 +216,7 @@ export function createApp(deps: AppDeps): express.Express {
       return;
     }
     if (practice) {
-      // Mode test : des robots remplissent la salle, l'hôte peut jouer aussi depuis l'écran.
+      // Mode test : des robots remplissent la salle, l’hôte peut jouer aussi depuis l’écran.
       const bots = Math.min(3, room.effectiveMaxPlayers - 1);
       for (let i = 0; i < bots; i++) room.addBot();
       store.incrementStat('practice_rooms');
@@ -225,7 +225,7 @@ export function createApp(deps: AppDeps): express.Express {
     res.status(201).json({ code: room.code, hostToken: room.hostToken, game: gameInfo(module) });
   });
 
-  /** Vérifie qu'un code existe avant d'afficher le formulaire d'entrée. */
+  /** Vérifie qu’un code existe avant d’afficher le formulaire d’entrée. */
   api.get('/rooms/:code', (req, res) => {
     const parsed = roomCodeSchema.safeParse(req.params.code);
     const room = parsed.success ? manager.getByCode(parsed.data) : undefined;
@@ -236,7 +236,7 @@ export function createApp(deps: AppDeps): express.Express {
     });
   });
 
-  // Captures de la première partie d'un jeu : la salle source les envoie depuis son écran (jeton d'hôte),
+  // Captures de la première partie d’un jeu : la salle source les envoie depuis son écran (jeton d’hôte),
   // la fiche du jeu les affiche. Voir game-photos/store.ts.
   api.get('/game-photos', (_req, res) => {
     res.setHeader('Cache-Control', 'no-cache');
@@ -269,7 +269,7 @@ export function createApp(deps: AppDeps): express.Express {
       res.status(403).json({ error: 'Les parties d’essai ne gardent pas de captures.' });
       return;
     }
-    // Pendant la partie, ou sur l'écran des résultats qui la suit (dernière capture de la salle source).
+    // Pendant la partie, ou sur l’écran des résultats qui la suit (dernière capture de la salle source).
     if (room.status !== 'in_game' && room.status !== 'ended') {
       res.status(409).json({ error: 'Aucune partie en cours.' });
       return;
@@ -288,7 +288,7 @@ export function createApp(deps: AppDeps): express.Express {
     res.status(201).json({ count: result.count });
   });
 
-  // Ressources graphiques d'un paquet installé et activé. Lecture publique : rien de privé n'est exposé.
+  // Ressources graphiques d’un paquet installé et activé. Lecture publique : rien de privé n’est exposé.
   app.get(/^\/api\/packages\/([a-z0-9-]+)\/assets\/(.+)$/, (req, res) => {
     const id = String(req.params[0] ?? '');
     const asset = packages.asset(id, `assets/${String(req.params[1] ?? '')}`);
@@ -340,7 +340,7 @@ export function createApp(deps: AppDeps): express.Express {
   const profileOf = (req: Request) => (req as Request & { profileId: string }).profileId;
 
   /**
-   * Envoie un fichier en mémoire, avec les plages d'octets (Safari ne lance pas un son sans elles).
+   * Envoie un fichier en mémoire, avec les plages d’octets (Safari ne lance pas un son sans elles).
    */
   const sendBytes = (req: Request, res: Response, mime: string, data: Buffer) => {
     res.setHeader('Content-Type', mime);
@@ -367,7 +367,7 @@ export function createApp(deps: AppDeps): express.Express {
     res.end(data.subarray(start, end + 1));
   };
 
-  /** Réponse d'erreur métier, ou erreur interne. */
+  /** Réponse d’erreur métier, ou erreur interne. */
   const fail = (res: Response, err: unknown) => {
     if (err instanceof ProfileError) {
       res.status(err.status).json({ error: err.message });
@@ -484,7 +484,7 @@ export function createApp(deps: AppDeps): express.Express {
     res.json({ ok: true });
   });
 
-  /* Propositions de cartes BOUM ! : un joueur inscrit propose, l'administrateur valide. */
+  /* Propositions de cartes BOUM ! : un joueur inscrit propose, l’administrateur valide. */
   const boumProposalBody = z.object({
     type: z.string().max(40),
     level: z.string().max(10),
@@ -516,7 +516,7 @@ export function createApp(deps: AppDeps): express.Express {
     res.status(201).json({ proposal: result.value });
   });
 
-  /* Voix de profil (5 au maximum). L'envoi est lu brut : le son n'est jamais interprété comme du JSON. */
+  /* Voix de profil (5 au maximum). L’envoi est lu brut : le son n’est jamais interprété comme du JSON. */
   profileRoutes.get('/me/voices', withProfile, (req, res) => {
     res.setHeader('Cache-Control', 'no-cache');
     res.json({ voices: profiles.voices(profileOf(req)) });
@@ -610,7 +610,7 @@ export function createApp(deps: AppDeps): express.Express {
     res.send(image.bytes);
   });
 
-  /** Fonds d'écran affichés sur chaque écran (adresses des images de la médiathèque, ou null). */
+  /** Fonds d’écran affichés sur chaque écran (adresses des images de la médiathèque, ou null). */
   api.get('/screen-backgrounds', (_req, res) => {
     res.setHeader('Cache-Control', 'no-cache');
     res.json({ backgrounds: resolveBackgrounds(store.getScreenBackgrounds()) });
@@ -638,7 +638,7 @@ export function createApp(deps: AppDeps): express.Express {
     res.type(image.mime).send(image.data);
   });
 
-  /** Voix de profil jouée sur l'écran principal : publique (les écrans n'ont pas de compte), identifiant aléatoire. */
+  /** Voix de profil jouée sur l’écran principal : publique (les écrans n’ont pas de compte), identifiant aléatoire. */
   api.get('/voices/:id', (req, res) => {
     const voice = profiles.voiceAudio(req.params.id ?? '');
     if (!voice) {
@@ -760,8 +760,8 @@ export function createApp(deps: AppDeps): express.Express {
   });
 
   /**
-   * Nombre de salles ouvertes d'un jeu. Une modification ne s'applique qu'aux salles créées
-   * après elle : l'administration le signale.
+   * Nombre de salles ouvertes d’un jeu. Une modification ne s’applique qu’aux salles créées
+   * après elle : l’administration le signale.
    */
   const openRoomsOf = (gameId: string): number =>
     manager.all().filter((r) => {
@@ -769,7 +769,7 @@ export function createApp(deps: AppDeps): express.Express {
       return summary.gameId === gameId && summary.status !== 'ended';
     }).length;
 
-  /** Nom, icône et description d'un jeu intégré : surcharge de l'administration. */
+  /** Nom, icône et description d’un jeu intégré : surcharge de l’administration. */
   admin.put('/game-details/:id', (req, res) => {
     const id = req.params.id ?? '';
     const game = resolveGame(id);
@@ -790,14 +790,14 @@ export function createApp(deps: AppDeps): express.Express {
     res.json({ ok: true, openRooms: openRoomsOf(id) });
   });
 
-  /** Retour au nom, à l'icône et à la description d'origine. */
+  /** Retour au nom, à l’icône et à la description d’origine. */
   admin.delete('/game-details/:id', (req, res) => {
     store.clearDetailsOverride(req.params.id ?? '');
     res.json({ ok: true });
   });
 
   /**
-   * Réglages par défaut d'un jeu, quelle que soit son origine. Ils valent pour les nouvelles
+   * Réglages par défaut d’un jeu, quelle que soit son origine. Ils valent pour les nouvelles
    * salles ; les salles déjà ouvertes gardent leurs réglages.
    */
   admin.put('/games/:id/settings', (req, res) => {
@@ -833,7 +833,7 @@ export function createApp(deps: AppDeps): express.Express {
     res.json({ ok: true, settings: game.defaultSettings });
   });
 
-  /** Retour à la notice d'origine, définie dans le code du jeu. */
+  /** Retour à la notice d’origine, définie dans le code du jeu. */
   admin.delete('/notices/:id', (req, res) => {
     store.clearNoticeOverride(req.params.id ?? '');
     res.json({ ok: true });
@@ -979,7 +979,7 @@ export function createApp(deps: AppDeps): express.Express {
     res.json({ packages: packages.list() });
   });
 
-  /** Packs de personnages : import d'un zip (accord de la personne représentée obligatoire) et suppression. */
+  /** Packs de personnages : import d’un zip (accord de la personne représentée obligatoire) et suppression. */
   admin.post('/character-packs', express.raw({ type: () => true, limit: '9mb' }), (req, res) => {
     const body = req.body as unknown;
     if (!Buffer.isBuffer(body) || body.length === 0) {
@@ -1062,7 +1062,7 @@ export function createApp(deps: AppDeps): express.Express {
     res.json({ ok: true, closedRooms: closed });
   });
 
-  /** Versions d'un paquet (active et conservées) et retour arrière vers une version conservée. */
+  /** Versions d’un paquet (active et conservées) et retour arrière vers une version conservée. */
   admin.get('/packages/:id/versions', (req, res) => {
     const versions = packages.versions(req.params.id ?? '');
     if (!versions) {
@@ -1093,7 +1093,7 @@ export function createApp(deps: AppDeps): express.Express {
 
   const copyServices: CopyServices = { packages, cardGames, boardGames, mediaGames, store };
 
-  /** Copie modifiable d'un paquet actif : le paquet reste installé et inchangé. */
+  /** Copie modifiable d’un paquet actif : le paquet reste installé et inchangé. */
   admin.post('/packages/:id/copy', (req, res) => {
     const result = copyPackageToEditable(req.params.id ?? '', copyServices);
     if (!result.ok) {
@@ -1103,7 +1103,7 @@ export function createApp(deps: AppDeps): express.Express {
     res.status(201).json(result);
   });
 
-  /** État des copies : modifiée ou non, mise à jour disponible dans le paquet d'origine. */
+  /** État des copies : modifiée ou non, mise à jour disponible dans le paquet d’origine. */
   admin.get('/package-copies', (_req, res) => {
     res.json({ copies: packageCopyStatuses(copyServices) });
   });
@@ -1181,7 +1181,7 @@ export function createApp(deps: AppDeps): express.Express {
     res.json(exported);
   });
 
-  /** Import d'un fichier exporté. Refusé tant qu'un fichier de la médiathèque manque. */
+  /** Import d’un fichier exporté. Refusé tant qu’un fichier de la médiathèque manque. */
   admin.post('/media-games/import', (req, res) => {
     const parsed = mediaGames.parseImport(req.body);
     if (!parsed.ok) {
@@ -1203,7 +1203,7 @@ export function createApp(deps: AppDeps): express.Express {
     res.status(201).json({ ok: true, id: result.id });
   });
 
-  /** Export autonome : la définition et les fichiers qu'elle utilise (image du dos, police), en base64. */
+  /** Export autonome : la définition et les fichiers qu’elle utilise (image du dos, police), en base64. */
   admin.get('/card-games/:id/export', (req, res) => {
     const exported = cardGames.exportOf(req.params.id ?? '');
     if (!exported) {
@@ -1226,7 +1226,7 @@ export function createApp(deps: AppDeps): express.Express {
 
   /**
    * Import : toujours un nouveau jeu. Les fichiers joints sont recréés dans la médiathèque sous de nouveaux
-   * identifiants ; si le jeu n'est pas enregistré, ils sont retirés.
+   * identifiants ; si le jeu n’est pas enregistré, ils sont retirés.
    */
   admin.post('/card-games/import', (req, res) => {
     const parsed = cardGames.parseImport(req.body);
@@ -1284,7 +1284,7 @@ export function createApp(deps: AppDeps): express.Express {
     res.json(backup);
   });
 
-  /** « remplacer » : un jeu de même nom est mis à jour au lieu d'être copié (défaut : copie). */
+  /** « remplacer » : un jeu de même nom est mis à jour au lieu d’être copié (défaut : copie). */
   const conflictMode = (query: unknown): ConflictMode => (query === 'replace' ? 'replace' : 'add');
 
   admin.post('/backup/import', (req, res) => {
@@ -1364,7 +1364,7 @@ export function createApp(deps: AppDeps): express.Express {
     };
   };
 
-  /** Fonds d'écran : seuls les identifiants d'images encore présentes sont rendus publics. */
+  /** Fonds d’écran : seuls les identifiants d’images encore présentes sont rendus publics. */
   const resolveBackgrounds = (stored: ScreenBackgrounds): Record<string, string | null> =>
     Object.fromEntries(
       SCREEN_KEYS.map((key) => {
@@ -1382,9 +1382,9 @@ export function createApp(deps: AppDeps): express.Express {
   });
 
   /**
-   * Envoi d'un fichier de médiathèque, lu en flux : rien n'est gardé en mémoire.
-   * En cas de refus, la réponse part d'abord, puis la connexion est coupée pour ne pas
-   * lire la suite de l'envoi.
+   * Envoi d’un fichier de médiathèque, lu en flux : rien n’est gardé en mémoire.
+   * En cas de refus, la réponse part d’abord, puis la connexion est coupée pour ne pas
+   * lire la suite de l’envoi.
    */
   admin.post('/assets', (req, res) => {
     const rawName = typeof req.headers['x-file-name'] === 'string' ? req.headers['x-file-name'] : 'fichier';
@@ -1495,7 +1495,7 @@ export function createApp(deps: AppDeps): express.Express {
     });
   });
 
-  /** File « Propositions » : seules les propositions en attente, avec leur auteur (visible dans l'administration seulement). */
+  /** File « Propositions » : seules les propositions en attente, avec leur auteur (visible dans l’administration seulement). */
   admin.get('/boum/proposals', (_req, res) => {
     res.json({ entries: boumBank.list({ status: 'propose' }) });
   });
@@ -1626,7 +1626,7 @@ export function createApp(deps: AppDeps): express.Express {
   });
 
   /**
-   * Fournisseurs d'IA. Les clés ne sortent jamais du serveur : on sait seulement si une clé existe, et d'où elle vient.
+   * Fournisseurs d’IA. Les clés ne sortent jamais du serveur : on sait seulement si une clé existe, et d’où elle vient.
    */
   admin.get('/ai', (_req, res) => {
     res.json(deps.ai.status());
@@ -1681,11 +1681,11 @@ export function createApp(deps: AppDeps): express.Express {
     res.json({ ok: true });
   });
 
-  // Définitions de jeux (jusqu'à 60 extraits) : 512 Ko. Sauvegarde complète : 20 Mo.
+  // Définitions de jeux (jusqu’à 60 extraits) : 512 Ko. Sauvegarde complète : 20 Mo.
   app.use(
     '/api/admin',
     (req, res, next) => {
-      // L'envoi de médiathèque est lu en flux par sa route : pas de lecture JSON ici.
+      // L’envoi de médiathèque est lu en flux par sa route : pas de lecture JSON ici.
       // Les paquets sont lus bruts par leur propre route (archive ZIP, pas de JSON).
       if (
         req.method === 'POST' &&

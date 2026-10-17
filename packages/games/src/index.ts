@@ -27,7 +27,7 @@ import { aventureIa } from './aventure/module.js';
 
 /**
  * Registre explicite des jeux disponibles.
- * Ajouter un jeu = créer son dossier puis l'ajouter ICI (aucun chargement
+ * Ajouter un jeu = créer son dossier puis l’ajouter ICI (aucun chargement
  * dynamique depuis le disque ou la configuration). Voir docs/ADDING-A-GAME.md.
  */
 export const gameRegistry: GameModule[] = [

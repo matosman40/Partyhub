@@ -2,8 +2,8 @@ import type { ReactNode } from 'react';
 import { Boundary } from './Boundary.js';
 
 /**
- * Vue d'un jeu, sur l'écran principal, sur un téléphone ou en observation. Si elle plante, seule cette
- * zone le dit : la partie continue sur le serveur, et la vue reprend à l'étape suivante.
+ * Vue d’un jeu, sur l’écran principal, sur un téléphone ou en observation. Si elle plante, seule cette
+ * zone le dit : la partie continue sur le serveur, et la vue reprend à l’étape suivante.
  */
 export function GameViewBoundary({
   gameId,
@@ -21,7 +21,7 @@ export function GameViewBoundary({
   );
 }
 
-/** Message affiché à la place d'une vue de jeu en erreur. Il dit ce qui se passe, sans jargon. */
+/** Message affiché à la place d’une vue de jeu en erreur. Il dit ce qui se passe, sans jargon. */
 export function GameViewFallback() {
   return (
     <div className="game-view-error" role="alert">
@@ -31,7 +31,7 @@ export function GameViewFallback() {
   );
 }
 
-/** Identifie l'étape d'un jeu (jeu, étape et manche) : une vue en erreur reprend quand elle change. */
+/** Identifie l’étape d’un jeu (jeu, étape et manche) : une vue en erreur reprend quand elle change. */
 export function stepKeyOf(gameId: string, publicState: unknown): string {
   if (!publicState || typeof publicState !== 'object') return gameId;
   const { phase, round } = publicState as { phase?: unknown; round?: unknown };

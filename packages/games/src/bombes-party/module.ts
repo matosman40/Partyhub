@@ -6,7 +6,7 @@ import { addPoints, directory, fail, ok, rankEntries } from '../common/engine.js
  * Bombes party : chaque joueur contrôle un personnage sur une grille. Il pose
  * des bombes pour détruire les caisses et éliminer les autres. Une bombe
  * explose après un court délai, dans les quatre directions, et peut en faire
- * exploser d'autres. Les caisses détruites laissent parfois un bonus.
+ * exploser d’autres. Les caisses détruites laissent parfois un bonus.
  * Le dernier survivant gagne la manche. Toute la logique est sur le serveur.
  */
 
@@ -47,14 +47,14 @@ const WIN_POINTS = 100;
 const CRATE_RATIO = 0.7;
 const DROP_RATIO = 0.35;
 const SPEED_MAX = 2;
-/** Kangourou monté : une bombe se lance jusqu'à trois cases, et un coup la fait glisser jusqu'à quatre. */
+/** Kangourou monté : une bombe se lance jusqu’à trois cases, et un coup la fait glisser jusqu’à quatre. */
 const THROW_RANGE = 3;
 const KICK_RANGE = 4;
 /** Délai minimal entre deux gestes du kangourou (soulever, lancer, frapper). */
 const RIDE_COOLDOWN_MS = 300;
 /** Kangourous sauvages posés au début de chaque manche : on les monte pour gagner une vie. */
 const WILD_KANGAROOS = 2;
-/** Répartition des bonus tirés d'une caisse détruite. */
+/** Répartition des bonus tirés d’une caisse détruite. */
 const DROP_TABLE: Array<[PowerKind, number]> = [
   ['bomb', 30],
   ['flame', 30],
@@ -110,7 +110,7 @@ export interface Unit {
   mount: Mount | null;
   facing: Dir;
   lastMoveAt: number;
-  /** Bombe soulevée (identifiant), ou null. Elle suit le personnage jusqu'au lancer. */
+  /** Bombe soulevée (identifiant), ou null. Elle suit le personnage jusqu’au lancer. */
   carrying: string | null;
   /** Dernier geste du kangourou (soulever, lancer, frapper). */
   lastRideAt: number;
@@ -157,7 +157,7 @@ export interface BombesPartyState {
   powerups: Powerup[];
   winnerId: string | null;
   endsAt: number;
-  /** Compteur d'événements : sert de clé stable pour les robots. */
+  /** Compteur d’événements : sert de clé stable pour les robots. */
   seq: number;
 }
 
@@ -208,7 +208,7 @@ interface Blast {
   chained: Pt[];
 }
 
-/** Cases touchées par un souffle : s'arrête sur un mur, une caisse ou une autre bombe. */
+/** Cases touchées par un souffle : s’arrête sur un mur, une caisse ou une autre bombe. */
 function blastFrom(
   grid: string[],
   x: number,
@@ -270,7 +270,7 @@ function dangerCells(s: BombesPartyState): Set<string> {
   return danger;
 }
 
-/** Premier pas d'un plus court chemin vers une case satisfaisant `goal` (robots uniquement). */
+/** Premier pas d’un plus court chemin vers une case satisfaisant `goal` (robots uniquement). */
 function firstStep(
   s: BombesPartyState,
   sx: number,
@@ -395,7 +395,7 @@ function explode(s: BombesPartyState, startId: string, ctx: GameContext): Bombes
   const units: Record<string, Unit> = { ...s.units };
   const flames = s.flames.filter((f) => f.until > now);
   const queue = [startId];
-  /** Un joueur ne subit qu'un seul coup par explosion en chaîne. */
+  /** Un joueur ne subit qu’un seul coup par explosion en chaîne. */
   const hitIds = new Set<string>();
 
   while (queue.length > 0) {
@@ -414,7 +414,7 @@ function explode(s: BombesPartyState, startId: string, ctx: GameContext): Bombes
         const u = units[uid];
         if (!u || !u.alive || u.x !== c.x || u.y !== c.y || hitIds.has(uid)) continue;
         hitIds.add(uid);
-        // L'animal encaisse le premier coup ; sans animal, le joueur est éliminé. La bombe portée tombe sur place.
+        // L’animal encaisse le premier coup ; sans animal, le joueur est éliminé. La bombe portée tombe sur place.
         if (u.mount) units[uid] = { ...u, mount: null, carrying: null };
         else units[uid] = { ...u, alive: false, carrying: null };
       }
@@ -492,13 +492,13 @@ function move(s: BombesPartyState, playerId: string, dir: Dir, ctx: GameContext)
         next = { ...next, mount: 'kangaroo' };
         break;
       case 'dino':
-        // Un dinosaure ne porte pas de bombe : celle qu'on tenait tombe sur place.
+        // Un dinosaure ne porte pas de bombe : celle qu’on tenait tombe sur place.
         next = { ...next, mount: 'dino', carrying: null };
         break;
     }
   }
 
-  // Marcher dans une flamme : l'animal s'enfuit en premier, sinon c'est fatal. La bombe portée tombe.
+  // Marcher dans une flamme : l’animal s’enfuit en premier, sinon c’est fatal. La bombe portée tombe.
   if (s.flames.some((f) => f.x === tx && f.y === ty && f.until > now)) {
     next = next.mount ? { ...next, mount: null, carrying: null } : { ...next, alive: false, carrying: null };
   }
@@ -522,7 +522,7 @@ function frontOf(u: Pt & { facing: Dir }): Pt {
 
 /**
  * Dernière case où une bombe peut glisser dans une direction, sans dépasser `range` cases.
- * Elle s'arrête sur un mur, une caisse, une autre bombe ou un personnage vivant. Null : elle ne bouge pas.
+ * Elle s’arrête sur un mur, une caisse, une autre bombe ou un personnage vivant. Null : elle ne bouge pas.
  */
 function slideEnd(s: BombesPartyState, from: Pt, dir: Dir, range: number): Pt | null {
   const [dx, dy] = DIRS[dir];
@@ -845,7 +845,7 @@ export const bombesParty: GameModule<BombesPartyState, BombesPartySettings> = {
       return dir ? { type: 'move', payload: { dir }, key } : null;
     }
 
-    // 2. Poser une bombe si elle touche quelque chose et qu'une sortie existe.
+    // 2. Poser une bombe si elle touche quelque chose et qu’une sortie existe.
     const placed = s.bombs.filter((b) => b.owner === playerId).length;
     const bombHere = s.bombs.some((b) => b.x === me.x && b.y === me.y);
     if (placed < me.maxBombs && !bombHere && wouldHit(s, playerId, me.x, me.y, me.range) && random() < 0.6) {

@@ -1,6 +1,6 @@
 /**
- * Fournisseurs d'images : chacun transforme une description en octets d'image. Appelés directement par `fetch`,
- * sans SDK, comme le client de texte. Les clés restent sur le serveur ; les messages d'erreur ne contiennent jamais
+ * Fournisseurs d’images : chacun transforme une description en octets d’image. Appelés directement par `fetch`,
+ * sans SDK, comme le client de texte. Les clés restent sur le serveur ; les messages d’erreur ne contiennent jamais
  * la clé ni le corps de la réponse.
  */
 
@@ -21,7 +21,7 @@ export type ImageProviderId = 'cloudflare' | 'modelscope';
 
 export const IMAGE_PROVIDER_IDS: readonly ImageProviderId[] = ['cloudflare', 'modelscope'];
 
-/** Taille maximale d'une image acceptée, en octets. Au-delà, le fournisseur est considéré en échec. */
+/** Taille maximale d’une image acceptée, en octets. Au-delà, le fournisseur est considéré en échec. */
 export const MAX_IMAGE_BYTES = 3 * 1024 * 1024;
 
 export class ImageError extends Error {
@@ -36,7 +36,7 @@ export class ImageError extends Error {
 
 type FetchFn = typeof fetch;
 
-/** Reconnaît le format d'une image à ses premiers octets. Renvoie null pour tout ce qui n'est pas une image. */
+/** Reconnaît le format d’une image à ses premiers octets. Renvoie null pour tout ce qui n’est pas une image. */
 export function sniffImage(bytes: Buffer): ImageMime | null {
   if (bytes.length >= 8 && bytes[0] === 0x89 && bytes.subarray(1, 4).toString('ascii') === 'PNG') return 'image/png';
   if (bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return 'image/jpeg';
@@ -59,7 +59,7 @@ export function checkImage(bytes: Buffer): GeneratedImage {
   return { bytes, mime };
 }
 
-/** Attend `ms`, ou s'arrête tout de suite si le signal est annulé. */
+/** Attend `ms`, ou s’arrête tout de suite si le signal est annulé. */
 export function sleepUnlessAborted(ms: number, signal: AbortSignal): Promise<void> {
   return new Promise((resolve, reject) => {
     if (signal.aborted) {
@@ -98,7 +98,7 @@ const CLOUDFLARE_STEPS = 4;
 export interface CloudflareOptions {
   accountId: string;
   apiToken: string;
-  /** Racine de l'API, pour les tests. Par défaut : l'API publique de Cloudflare. */
+  /** Racine de l’API, pour les tests. Par défaut : l’API publique de Cloudflare. */
   baseUrl?: string;
   fetch?: FetchFn;
 }
@@ -128,7 +128,7 @@ export function createCloudflareProvider(options: CloudflareOptions): ImageProvi
       }
       if (!res.ok) throw httpError('Cloudflare', res.status);
       try {
-        // Selon le mode d'appel, Cloudflare renvoie l'image brute ou une enveloppe JSON avec l'image en base64.
+        // Selon le mode d’appel, Cloudflare renvoie l’image brute ou une enveloppe JSON avec l’image en base64.
         if ((res.headers.get('content-type') ?? '').startsWith('image/')) {
           return checkImage(Buffer.from(await res.arrayBuffer()));
         }

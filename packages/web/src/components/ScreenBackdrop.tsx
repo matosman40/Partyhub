@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { backgroundFor, loadScreenBackgrounds, screenForPath, useScreenBackgrounds } from '../screenBackgrounds.js';
 
 /**
- * Fond d'écran de la page affichée, choisi dans l'administration. Il passe sous le contenu ; la
+ * Fond d’écran de la page affichée, choisi dans l’administration. Il passe sous le contenu ; la
  * classe `has-screen-bg` sur <html> retire le dégradé et le décor SVG des écrans qui en ont un.
  */
 export function ScreenBackdrop() {

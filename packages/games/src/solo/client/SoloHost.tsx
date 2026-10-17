@@ -11,7 +11,7 @@ interface Standing {
   moves: number;
 }
 
-/** Temps d'une grille résolue : 2 min 05 s 310 ms → « 02:05.310 ». */
+/** Temps d’une grille résolue : 2 min 05 s 310 ms → « 02:05.310 ». */
 export function formatElapsed(ms: number): string {
   const total = Math.max(0, Math.round(ms));
   const minutes = Math.floor(total / 60_000);
@@ -20,7 +20,7 @@ export function formatElapsed(ms: number): string {
   return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(millis).padStart(3, '0')}`;
 }
 
-/** Écran principal d'un jeu solo : la progression de chacun, en direct, et le temps restant. */
+/** Écran principal d’un jeu solo : la progression de chacun, en direct, et le temps restant. */
 export function SoloHost({ publicState: pub, now }: HostViewProps) {
   const remaining = useRemaining(pub?.endsAt || undefined, now);
   if (!pub) return null;

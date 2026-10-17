@@ -122,7 +122,7 @@ export function CaptionPlayer({ publicState: pub, playerState: me, now, send }: 
     );
   }
 
-  // Phase d'écriture.
+  // Phase d’écriture.
   return (
     <section className="player-game fade-in" key={`w-${index}`}>
       <div className="round-info">

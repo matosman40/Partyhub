@@ -4,7 +4,7 @@
  * sont dans `sensors.ts`.
  */
 
-/** Inclinaison (en degrés) qui correspond au bord de l'échelle : ±1. */
+/** Inclinaison (en degrés) qui correspond au bord de l’échelle : ±1. */
 export const TILT_FULL_DEG = 35;
 
 export interface Point {
@@ -37,7 +37,7 @@ export function angleDelta(prev: number, next: number): number {
 
 /**
  * Rotation du téléphone à plat (axe `alpha`, cap), mesurée comme une rotation nette : un tour complet se fait
- * dans un sens (ou dans l'autre), et un aller-retour revient à zéro. Les petits bruits (moins d'un degré) sont
+ * dans un sens (ou dans l’autre), et un aller-retour revient à zéro. Les petits bruits (moins d’un degré) sont
  * ignorés. `feed` renvoie la valeur absolue de la rotation nette, en degrés.
  */
 export class SpinTracker {
@@ -69,7 +69,7 @@ export class SpinTracker {
 
 /**
  * Impulsions (secousses, tapotements) : chaque impulsion compte, après un délai minimal, et fait monter
- * une énergie qui retombe peu à peu. L'énergie sert à montrer l'effort en direct (de 0 à 1).
+ * une énergie qui retombe peu à peu. L’énergie sert à montrer l’effort en direct (de 0 à 1).
  */
 export class Pulses {
   count = 0;
@@ -83,14 +83,14 @@ export class Pulses {
     private readonly gain = 0.25,
   ) {}
 
-  /** Fait retomber l'énergie jusqu'à l'instant `t` (millisecondes, horloge quelconque mais croissante). */
+  /** Fait retomber l’énergie jusqu’à l’instant `t` (millisecondes, horloge quelconque mais croissante). */
   tick(t: number): void {
     const dt = Math.max(0, t - this.at);
     this.energy *= Math.pow(0.5, dt / this.halfLifeMs);
     this.at = t;
   }
 
-  /** Enregistre une impulsion à l'instant `t`. Renvoie vrai si elle a été comptée. */
+  /** Enregistre une impulsion à l’instant `t`. Renvoie vrai si elle a été comptée. */
   hit(t: number): boolean {
     this.tick(t);
     if (t - this.last < this.cooldownMs) return false;
@@ -117,7 +117,7 @@ function hasReading(a: { x: number | null; y: number | null; z: number | null } 
   return !!a && [a.x, a.y, a.z].some((v) => typeof v === 'number' && Number.isFinite(v));
 }
 
-/** Intensité d'une accélération en trois axes (les composantes absentes comptent pour zéro). */
+/** Intensité d’une accélération en trois axes (les composantes absentes comptent pour zéro). */
 function magnitudeOf(a: { x: number | null; y: number | null; z: number | null }): number {
   const x = a.x ?? 0;
   const y = a.y ?? 0;
@@ -180,7 +180,7 @@ export class HoldTimer {
   private since: number | null = null;
   private heldMs = 0;
 
-  /** Donne l'état courant à l'instant `t` ; renvoie la durée maintenue (ms). */
+  /** Donne l’état courant à l’instant `t` ; renvoie la durée maintenue (ms). */
   feed(inside: boolean, t: number): number {
     if (!inside) {
       this.since = null;
@@ -202,7 +202,7 @@ export class HoldTimer {
   }
 }
 
-/** Niveau sonore entre 0 et 1, à partir des échantillons d'un AnalyserNode (valeurs 0 à 255, centrées sur 128). */
+/** Niveau sonore entre 0 et 1, à partir des échantillons d’un AnalyserNode (valeurs 0 à 255, centrées sur 128). */
 export function levelFromBytes(samples: ArrayLike<number>): number {
   if (samples.length === 0) return 0;
   let sum = 0;
@@ -215,7 +215,7 @@ export function levelFromBytes(samples: ArrayLike<number>): number {
 }
 
 /**
- * Envoi limité en débit : `offer` renvoie vrai quand l'échantillon doit partir (au plus `hz` par seconde).
+ * Envoi limité en débit : `offer` renvoie vrai quand l’échantillon doit partir (au plus `hz` par seconde).
  * Le temps est passé en paramètre, donc le calcul reste testable.
  */
 export class Throttle {

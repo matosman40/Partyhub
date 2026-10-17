@@ -1,6 +1,6 @@
 import type { BoardCellKind } from '@partyhub/shared';
 
-/** Forme publique d'une partie de plateau, telle que renvoyée par `getPublicState`. */
+/** Forme publique d’une partie de plateau, telle que renvoyée par `getPublicState`. */
 export interface BoardCellPub {
   label: string;
   kind: BoardCellKind;
@@ -37,7 +37,7 @@ export interface BoardPub {
   ranking: BoardRanking[] | null;
 }
 
-/** Vue privée d'un joueur. */
+/** Vue privée d’un joueur. */
 export interface BoardMe {
   isMyTurn: boolean;
   canRoll: boolean;
@@ -47,7 +47,7 @@ export interface BoardMe {
   arrived: boolean;
 }
 
-/** Face d'un dé (⚀ à ⚅). */
+/** Face d’un dé (⚀ à ⚅). */
 export function faceOf(value: number): string {
   return String.fromCodePoint(0x2680 + Math.min(6, Math.max(1, value)) - 1);
 }

@@ -1,6 +1,6 @@
 /**
  * Banques de contenu de BOUM ! : types, niveaux et statuts. Pur : aucune dépendance au serveur
- * ni au navigateur, pour être partagé par le moteur, l'administration et les tests.
+ * ni au navigateur, pour être partagé par le moteur, l’administration et les tests.
  */
 
 export const BANK_TYPES = [
@@ -21,11 +21,11 @@ export const BANK_TYPES = [
 ] as const;
 export type BankType = (typeof BANK_TYPES)[number];
 
-/** Niveaux de contenu. `limite` n'existe que dans le pack Humour noir. */
+/** Niveaux de contenu. `limite` n’existe que dans le pack Humour noir. */
 export const LEVELS = ['doux', 'corse', 'limite'] as const;
 export type Level = (typeof LEVELS)[number];
 
-/** Libellés français des niveaux, tels qu'ils s'écrivent dans un fichier texte. */
+/** Libellés français des niveaux, tels qu’ils s’écrivent dans un fichier texte. */
 export const LEVEL_LABELS: Record<Level, string> = {
   doux: 'doux',
   corse: 'corsé',
@@ -42,13 +42,13 @@ export const STATUS_LABELS: Record<EntryStatus, string> = {
   retire: 'Retirée',
 };
 
-/** Ce qu'un type exige comme réponse : rien, un texte, un nombre entier ou un code pays. */
+/** Ce qu’un type exige comme réponse : rien, un texte, un nombre entier ou un code pays. */
 export type AnswerRule = 'none' | 'text' | 'int' | 'country';
 
 export interface BankTypeInfo {
   label: string;
   answer: AnswerRule;
-  /** Longueur maximale du texte de l'entrée. */
+  /** Longueur maximale du texte de l’entrée. */
   maxLength: number;
   /** Les niveaux `limite` sont acceptés pour ce type (pack Humour noir seulement). */
   limitAllowed: boolean;
@@ -71,9 +71,9 @@ export const BANK_TYPE_INFO: Record<BankType, BankTypeInfo> = {
   metier: { label: 'Métier à mimer', answer: 'none', maxLength: 120, limitAllowed: false },
 };
 
-/** Longueur maximale d'une réponse attendue (« trou » de la spécification). */
+/** Longueur maximale d’une réponse attendue (« trou » de la spécification). */
 export const ANSWER_MAX_LENGTH = 25;
-/** Longueur maximale d'une réponse chanson : artiste ou film, alternatives séparées par « / ». */
+/** Longueur maximale d’une réponse chanson : artiste ou film, alternatives séparées par « / ». */
 export const SONG_ANSWER_MAX_LENGTH = 120;
 
 export function isBankType(value: unknown): value is BankType {
@@ -88,7 +88,7 @@ export function isStatus(value: unknown): value is EntryStatus {
   return typeof value === 'string' && (STATUSES as readonly string[]).includes(value);
 }
 
-/** Entrée de banque telle qu'elle est stockée et exposée à l'administration. */
+/** Entrée de banque telle qu’elle est stockée et exposée à l’administration. */
 export interface BankEntry {
   id: string;
   type: BankType;
@@ -98,7 +98,7 @@ export interface BankEntry {
   status: EntryStatus;
   /** Motif de refus, pour les propositions refusées. */
   reason: string | null;
-  /** Compte auteur, ou null pour une entrée de l'administration. Jamais exposé en partie. */
+  /** Compte auteur, ou null pour une entrée de l’administration. Jamais exposé en partie. */
   authorId: string | null;
   authorName: string | null;
   createdAt: string;

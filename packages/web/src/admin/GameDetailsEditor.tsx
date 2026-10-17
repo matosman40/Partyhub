@@ -4,7 +4,7 @@ import { api } from '../api.js';
 import { openRoomsText } from './messages.js';
 
 /**
- * Nom, icône, description et durée estimée d'un jeu intégré ou importé. Les règles et le nombre
+ * Nom, icône, description et durée estimée d’un jeu intégré ou importé. Les règles et le nombre
  * de joueurs ne se modifient pas ici : seule la présentation change, partout où le jeu apparaît.
  */
 export function GameDetailsEditor({ game, onSaved }: { game: CatalogGame; onSaved: () => void }) {

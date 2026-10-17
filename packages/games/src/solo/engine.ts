@@ -12,7 +12,7 @@ import { directory, everyConnectedDone, fail, ok, rankEntries } from '../common/
 import { seedFrom } from './rng.js';
 
 /**
- * Jeux solo : chacun joue sa propre grille sur son téléphone ou sa tablette, et l'écran
+ * Jeux solo : chacun joue sa propre grille sur son téléphone ou sa tablette, et l’écran
  * principal affiche la progression et le classement en direct. Tous les joueurs reçoivent
  * la même grille (même graine), et le classement se fait sur le temps de résolution.
  *
@@ -23,13 +23,13 @@ import { seedFrom } from './rng.js';
 export interface SoloEngine<B> {
   /** Réglages propres au jeu, ajoutés au temps limite commun. */
   extraSettings: z.ZodRawShape;
-  /** Schéma d'un coup envoyé par le joueur. */
+  /** Schéma d’un coup envoyé par le joueur. */
   playSchema: z.ZodTypeAny;
   create(seed: number, settings: Record<string, unknown>): B;
   play(board: B, payload: any): GameResult<B>;
   progress(board: B): number;
   solved(board: B): boolean;
-  /** Vue du joueur : ce qu'il voit sur son écran, sans la solution. */
+  /** Vue du joueur : ce qu’il voit sur son écran, sans la solution. */
   view(board: B): unknown;
 }
 

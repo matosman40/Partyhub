@@ -3,7 +3,7 @@ import { BANK_TYPES, BANK_TYPE_INFO, LEVEL_LABELS, type BankType, type Level } f
 import { api } from '../api.js';
 import { authHeaders } from './session.js';
 
-/** Proposer une carte à BOUM ! : seul l'administrateur valide. Les invités n'ont pas cette section. */
+/** Proposer une carte à BOUM ! : seul l’administrateur valide. Les invités n’ont pas cette section. */
 
 type ProposalState = 'en_attente' | 'validee' | 'refusee';
 
@@ -29,7 +29,7 @@ const STATE_LABELS: Record<ProposalState, string> = {
   refusee: 'Refusée',
 };
 
-/** Le niveau « limite » reste réservé à l'administration. */
+/** Le niveau « limite » reste réservé à l’administration. */
 const PROPOSABLE_LEVELS: Level[] = ['doux', 'corse'];
 
 export function ProposeBoumCard() {

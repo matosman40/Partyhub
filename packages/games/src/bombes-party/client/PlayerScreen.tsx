@@ -64,7 +64,7 @@ export function BombesPartyPlayer({ publicState: pub, playerState: me, send }: P
     });
   };
 
-  // Clavier (flèches, WASD, Espace / Entrée / X, Q E F). Ignoré quand l'écran est masqué
+  // Clavier (flèches, WASD, Espace / Entrée / X, Q E F). Ignoré quand l’écran est masqué
   // (plusieurs sièges peuvent coexister dans le même navigateur).
   const keyRef = useRef({ move, bomb, rideWith });
   keyRef.current = { move, bomb, rideWith };
@@ -89,13 +89,13 @@ export function BombesPartyPlayer({ publicState: pub, playerState: me, send }: P
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  // Pluie de confettis à la fin d'une manche gagnée par ce joueur.
+  // Pluie de confettis à la fin d’une manche gagnée par ce joueur.
   const wonRound = phase === 'round-over' && (me?.gained ?? 0) > 0;
   useEffect(() => {
     if (wonRound) setCelebrate((c) => c + 1);
   }, [wonRound]);
 
-  // Le premier appui sur l'écran débloque le son du navigateur.
+  // Le premier appui sur l’écran débloque le son du navigateur.
   const onPointerDown = () => unlockAudio();
 
   if (!pub) return null;

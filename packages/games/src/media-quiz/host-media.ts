@@ -1,8 +1,8 @@
 import type { MediaItem } from '@partyhub/shared';
 
 /**
- * Ce que l'écran principal doit lire pour un extrait. Seule cette vue contient la
- * source du média : les téléphones ne reçoivent jamais l'identifiant du fichier ni la vidéo.
+ * Ce que l’écran principal doit lire pour un extrait. Seule cette vue contient la
+ * source du média : les téléphones ne reçoivent jamais l’identifiant du fichier ni la vidéo.
  */
 export function hostMediaOf(item: MediaItem, key: number) {
   const source =

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { BackButton } from '../components/BackButton.js';
 import { detectPlatform, type Platform } from '../certificate/platform.js';
 
-/** Fichier servi par Caddy : le certificat racine de l'autorité interne. */
+/** Fichier servi par Caddy : le certificat racine de l’autorité interne. */
 export const CERTIFICATE_URL = '/certificat/racine.crt';
 export const CERTIFICATE_FILE_NAME = 'partyhub-autorite-locale.crt';
 
@@ -60,8 +60,8 @@ const INSTALL_STEPS: Record<Platform, { title: string; steps: string[] }> = {
 const ORDER: Platform[] = ['ios', 'android', 'windows', 'mac', 'linux'];
 
 /**
- * Page d'installation du certificat, accessible même avant qu'il ne soit reconnu : Caddy le sert
- * directement, sans passer par l'application. Les instructions de l'appareil détecté sont ouvertes.
+ * Page d’installation du certificat, accessible même avant qu’il ne soit reconnu : Caddy le sert
+ * directement, sans passer par l’application. Les instructions de l’appareil détecté sont ouvertes.
  */
 export function CertificatePage({ platform: forced }: { platform?: Platform }) {
   const [detected] = useState<Platform>(

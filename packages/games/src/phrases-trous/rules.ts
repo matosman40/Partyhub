@@ -19,7 +19,7 @@ export function completesHole(card: string, answer: string): boolean {
 }
 
 /**
- * Complète la main d'un joueur jusqu'à `size` cartes, en évitant les doublons tant que le paquet le permet.
+ * Complète la main d’un joueur jusqu’à `size` cartes, en évitant les doublons tant que le paquet le permet.
  * Les cartes déjà en main sont conservées : seules les cartes manquantes sont piochées.
  */
 export function dealHand(pool: string[], size: number, random: () => number, hand: string[] = []): string[] {
@@ -32,7 +32,7 @@ export function dealHand(pool: string[], size: number, random: () => number, han
   return out;
 }
 
-/** Retire une occurrence de la carte jouée. Renvoie la main sans modifier l'original. */
+/** Retire une occurrence de la carte jouée. Renvoie la main sans modifier l’original. */
 export function removeCard(hand: string[], card: string): string[] {
   const index = hand.indexOf(card);
   if (index < 0) return hand;

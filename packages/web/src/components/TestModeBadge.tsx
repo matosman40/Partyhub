@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { testModeLabel, type TestMode } from '@partyhub/shared';
 import { api } from '../api.js';
 
-/** Réglage du mode test, lu une fois à l'ouverture. Absent tant qu'il n'est pas arrivé ou en cas d'échec. */
+/** Réglage du mode test, lu une fois à l’ouverture. Absent tant qu’il n’est pas arrivé ou en cas d’échec. */
 export function useTestMode(): TestMode | null {
   const [mode, setMode] = useState<TestMode | null>(null);
   useEffect(() => {

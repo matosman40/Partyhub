@@ -12,10 +12,10 @@ import {
 } from './microgames.js';
 
 /**
- * Micro-Défis, dans l'esprit des jeux-éclair à la WarioWare : une succession de défis très courts, les mêmes pour
+ * Micro-Défis, dans l’esprit des jeux-éclair à la WarioWare : une succession de défis très courts, les mêmes pour
  * tout le monde. Le téléphone est la manette : il secoue, il penche, il tourne, il souffle, il tapote.
  *
- * Déroulement d'une manche : présentation du défi (2,5 s), défi (5 à 6 s, ou plus tôt si tous ont fini),
+ * Déroulement d’une manche : présentation du défi (2,5 s), défi (5 à 6 s, ou plus tôt si tous ont fini),
  * bilan (3,5 s). Les points viennent de la réussite et de la rapidité.
  * La valeur envoyée par le téléphone est jugée par `judge` (voir microgames.ts) : le serveur ne croit jamais
  * un résultat impossible dans le temps écoulé.
@@ -68,7 +68,7 @@ function currentGame(s: MicroDefisState): Microgame | null {
   return id ? MICROGAMES[id] : null;
 }
 
-/** Description publique d'un défi : tout ce qu'il faut pour l'afficher, rien sur la réponse. */
+/** Description publique d’un défi : tout ce qu’il faut pour l’afficher, rien sur la réponse. */
 function describe(game: Microgame) {
   return {
     id: game.id,
@@ -110,7 +110,7 @@ function beginPlay(s: MicroDefisState, ctx: GameContext): MicroDefisState {
   return { ...s, phase: 'play', startedAt: now, endsAt: now + game.durationMs, introEndsAt: 0 };
 }
 
-/** Clôt le défi : les joueurs sans réponse ratent, puis le bilan s'affiche. */
+/** Clôt le défi : les joueurs sans réponse ratent, puis le bilan s’affiche. */
 function finishPlay(s: MicroDefisState, ctx: GameContext): MicroDefisState {
   ctx.cancel(PLAY_END);
   ctx.schedule(REVEAL_END, REVEAL_MS);
@@ -283,7 +283,7 @@ export const microDefis: GameModule<MicroDefisState, MicroDefisSettings> = {
       endsAt: s.endsAt,
       revealEndsAt: s.revealEndsAt,
       players: Object.entries(s.players).map(([id, name]) => ({ id, name })),
-      // Qui a déjà joué ce défi (sans le résultat, qui ne s'affiche qu'au bilan).
+      // Qui a déjà joué ce défi (sans le résultat, qui ne s’affiche qu’au bilan).
       submitted: Object.keys(s.submissions),
       results: s.phase === 'reveal' ? resultsOf(s) : null,
       ranking: rankEntries(s.players, s.points),

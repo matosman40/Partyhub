@@ -19,7 +19,7 @@ export function GagsPlayer({ publicState, playerState, playerId, now, send }: Pl
   const pub = publicState as GagsPub | null;
   const me = playerState as GagsMine | null;
   const [error, setError] = useState<string | null>(null);
-  // Instant du début du gag sur ce téléphone : l'horloge serveur moins le trajet de la vue.
+  // Instant du début du gag sur ce téléphone : l’horloge serveur moins le trajet de la vue.
   const localStart = useLocalStart(pub?.startedAt ?? 0, now);
 
   if (!pub) return null;
@@ -69,7 +69,7 @@ export function GagsPlayer({ publicState, playerState, playerId, now, send }: Pl
     );
   }
 
-  // Bilan : le verdict de ce joueur, puis la réplique du gag (la même que sur l'écran principal).
+  // Bilan : le verdict de ce joueur, puis la réplique du gag (la même que sur l’écran principal).
   const gained = me?.mine?.points ?? 0;
   const won = Boolean(me?.mine?.success);
   return (
@@ -83,7 +83,7 @@ export function GagsPlayer({ publicState, playerState, playerId, now, send }: Pl
   );
 }
 
-/** Présentation du gag, avec le bouton d'autorisation du mouvement (iOS demande un appui pour les capteurs). */
+/** Présentation du gag, avec le bouton d’autorisation du mouvement (iOS demande un appui pour les capteurs). */
 function IntroPhone({ pub, gag }: { pub: GagsPub; gag: GagView }) {
   const [note, setNote] = useState<string | null>(null);
   const needsMotion = gag.input === 'still';

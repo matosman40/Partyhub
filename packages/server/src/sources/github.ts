@@ -2,8 +2,8 @@ import { DEFAULT_PACKAGE_LIMITS } from '../packages/format.js';
 import { compareVersions, isValidVersion } from '../packages/semver.js';
 
 /**
- * Client minimal de l'API GitHub pour les releases. Seules les releases publiques ou accessibles
- * avec le jeton du serveur sont lues. Les réponses sont limitées à des hôtes connus, pour qu'une
+ * Client minimal de l’API GitHub pour les releases. Seules les releases publiques ou accessibles
+ * avec le jeton du serveur sont lues. Les réponses sont limitées à des hôtes connus, pour qu’une
  * redirection ne puisse pas envoyer le téléchargement ailleurs.
  */
 
@@ -26,7 +26,7 @@ export function isValidRepo(value: string): boolean {
   return name !== '.' && name !== '..';
 }
 
-/** Identifiant de jeu, tel que dans le manifeste (et dans le nom du dossier d'un dépôt commun). */
+/** Identifiant de jeu, tel que dans le manifeste (et dans le nom du dossier d’un dépôt commun). */
 const GAME_ID = /^[a-z0-9][a-z0-9-]{1,47}$/;
 
 export interface SourceRef {
@@ -34,14 +34,14 @@ export interface SourceRef {
   repo: string;
   /**
    * Jeu choisi dans un dépôt commun, ou null pour un dépôt dédié à un seul jeu. Dans un dépôt
-   * commun, chaque version est un tag `<jeu>-vX.Y.Z` et son fichier s'appelle `<jeu>.phgame`.
+   * commun, chaque version est un tag `<jeu>-vX.Y.Z` et son fichier s’appelle `<jeu>.phgame`.
    */
   game: string | null;
 }
 
 /**
  * Lit une source : « auteur/nom » (un jeu par dépôt) ou « auteur/depot/jeu » (dépôt commun).
- * Renvoie null si la forme n'est pas admise.
+ * Renvoie null si la forme n’est pas admise.
  */
 export function parseSource(value: string): SourceRef | null {
   const parts = value.split('/');
@@ -187,7 +187,7 @@ export async function latestRelease(
   return parseRelease((await res.json()) as ReleaseData, game);
 }
 
-/** Télécharge le paquet et lit l'empreinte attendue. La comparaison est faite par l'appelant. */
+/** Télécharge le paquet et lit l’empreinte attendue. La comparaison est faite par l’appelant. */
 export async function downloadArchive(
   release: Release,
   options: GitHubOptions,

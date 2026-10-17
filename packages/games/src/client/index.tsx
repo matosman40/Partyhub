@@ -32,14 +32,17 @@ export {
 } from './media.js';
 export type { MediaPrefs } from './media.js';
 export {
+  cueYieldsToGame,
   isMuted,
   onMuteChange,
   play as playSfx,
+  playCue,
   setMuted,
   setSfxFiles,
   startMusic,
   stopMusic,
   unlockAudio,
+  unlockOnFirstGesture,
 } from './audio.js';
 export { SoundToggle } from './SoundToggle.js';
 export {
@@ -66,7 +69,7 @@ export {
   TILT_FULL_DEG,
   tiltFrom,
 } from './sensors-core.js';
-// Banques BOUM ! : libellés, types et règles de saisie, partagés avec l'administration et le profil.
+// Banques BOUM ! : libellés, types et règles de saisie, partagés avec l’administration et le profil.
 export { BANK_TYPES, BANK_TYPE_INFO, LEVELS, LEVEL_LABELS, STATUSES, STATUS_LABELS } from '../boum/bank/types.js';
 export type { AnswerRule, BankType, EntryStatus, Level } from '../boum/bank/types.js';
 export type { ImportCandidate, ImportPreview, ImportRejection } from '../boum/bank/validate.js';
@@ -80,7 +83,7 @@ export type { CardsPublic, CardsPlayerState } from '../cards/client/common.js';
 
 /*
  * Chaque jeu est chargé à la demande (découpage du bundle) : le navigateur ne télécharge
- * le code d'un jeu que lorsqu'on le règle, l'affiche ou le joue. Les vues rendues par les
+ * le code d’un jeu que lorsqu’on le règle, l’affiche ou le joue. Les vues rendues par les
  * pages doivent donc être sous une frontière Suspense.
  */
 

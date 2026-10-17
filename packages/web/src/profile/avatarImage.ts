@@ -1,6 +1,6 @@
 /**
- * Photo de profil : carré centré (jusqu'à 256 px), encodé en JPEG assez léger pour le serveur
- * (60 000 caractères au plus). Vient d'un fichier choisi ou d'une image de la webcam.
+ * Photo de profil : carré centré (jusqu’à 256 px), encodé en JPEG assez léger pour le serveur
+ * (60 000 caractères au plus). Vient d’un fichier choisi ou d’une image de la webcam.
  */
 const MAX_CHARS = 60_000;
 
@@ -21,7 +21,7 @@ function loadImage(file: File): Promise<HTMLImageElement> {
 }
 
 /**
- * Encode une source d'image (photo ou image vidéo) en data URL de profil. `mirror` retourne l'image
+ * Encode une source d’image (photo ou image vidéo) en data URL de profil. `mirror` retourne l’image
  * comme dans un miroir : la photo prise à la webcam ressemble à ce que la personne voyait.
  */
 export function sourceToAvatarDataUrl(

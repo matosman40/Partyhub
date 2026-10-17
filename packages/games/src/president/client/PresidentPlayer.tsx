@@ -42,7 +42,7 @@ export function PresidentPlayer({ publicState, playerState, playerId, send }: Pl
     setError(null);
   }, [pub?.pileCount, pub?.round, pub?.current]);
 
-  // Sons et vibration : déclenchés par les changements d'état, avant les retours anticipés.
+  // Sons et vibration : déclenchés par les changements d’état, avant les retours anticipés.
   const myTurn = !!me?.isMyTurn && pub?.phase === 'play';
   useChange(myTurn, (_, mine) => {
     if (mine) cueTurn();
@@ -95,7 +95,7 @@ export function PresidentPlayer({ publicState, playerState, playerId, send }: Pl
 
   function toggle(uid: string) {
     if (!me?.isMyTurn) {
-      setError("Ce n'est pas votre tour.");
+      setError('Ce n’est pas votre tour.');
       return;
     }
     const entry = entryOf(pub!.def, uid);

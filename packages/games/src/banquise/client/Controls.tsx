@@ -2,7 +2,7 @@ import { useEffect, useRef, type MouseEvent as ReactMouseEvent, type PointerEven
 
 /**
  * Commandes tactiles : une croix de quatre flèches maintenues (gauche, droite, haut, bas), puis Saut et Pousser.
- * Relâcher le doigt n'importe où arrête la marche. Les boutons restent visibles, estompés hors jeu.
+ * Relâcher le doigt n’importe où arrête la marche. Les boutons restent visibles, estompés hors jeu.
  */
 
 export type Side = 'left' | 'right' | 'up' | 'down';
@@ -37,7 +37,7 @@ export function BanquiseControls({ disabled, canJump, pushCooldownMs, onHold, on
   const holdRef = useRef(onHold);
   holdRef.current = onHold;
 
-  // Un doigt levé, n'importe où, relâche les deux flèches.
+  // Un doigt levé, n’importe où, relâche les deux flèches.
   useEffect(() => {
     const release = () => {
       for (const side of SIDES) holdRef.current(side, false);

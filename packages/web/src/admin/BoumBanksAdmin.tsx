@@ -39,7 +39,7 @@ interface Draft {
   level: Level;
   text: string;
   answer: string;
-  /** Vrai quand on modifie une proposition : elle est validée juste après l'enregistrement. */
+  /** Vrai quand on modifie une proposition : elle est validée juste après l’enregistrement. */
   validateAfter: boolean;
 }
 
@@ -63,7 +63,7 @@ function draftFrom(entry: BankEntryView, validateAfter = false): Draft {
   };
 }
 
-/** Aperçu d'une entrée tel qu'il s'affiche sur l'écran ou le téléphone. */
+/** Aperçu d’une entrée tel qu’il s’affiche sur l’écran ou le téléphone. */
 export function EntryPreview({ type, text, answer }: { type: BankType; text: string; answer: string | null }) {
   const info = BANK_TYPE_INFO[type];
   const parts = text.split('___');

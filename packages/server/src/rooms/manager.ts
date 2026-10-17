@@ -17,7 +17,7 @@ export interface SweepPolicy {
 const MAX_CODE_ATTEMPTS = 200;
 
 /**
- * Registre des salles actives. Garantit l'unicité des codes tant qu'une salle
+ * Registre des salles actives. Garantit l’unicité des codes tant qu’une salle
  * est ouverte et isole les salles les unes des autres (aucun accès croisé).
  */
 export class RoomManager {
@@ -28,7 +28,7 @@ export class RoomManager {
     private readonly env: RoomEnv,
     private readonly hooks: ManagerHooks,
     private readonly maxRooms = 200,
-    /** Longueur du code, lue à chaque création : elle suit le réglage de l'administration. */
+    /** Longueur du code, lue à chaque création : elle suit le réglage de l’administration. */
     private readonly codeLength: () => number = () => ROOM_CODE_DEFAULT_LENGTH,
   ) {}
 
@@ -106,7 +106,7 @@ export class RoomManager {
     return count;
   }
 
-  /** Suppression manuelle depuis l'administration : toutes les salles sans connexion. */
+  /** Suppression manuelle depuis l’administration : toutes les salles sans connexion. */
   purgeIdle(): number {
     return this.closeWhere((room) => !room.hasSockets, 'admin');
   }

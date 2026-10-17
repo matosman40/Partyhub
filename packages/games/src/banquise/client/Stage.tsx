@@ -6,11 +6,11 @@ import { SPRITE_H } from '../../bombes-party/client/sprites.js';
 import { actorLeft, boardLayout, drawBoard, drawShadow, drawSpriteActor, groundY } from './board.js';
 
 /**
- * Scène de la banquise, commune à l'écran principal et au téléphone. Le plan est dessiné sur canvas
+ * Scène de la banquise, commune à l’écran principal et au téléphone. Le plan est dessiné sur canvas
  * comme les niveaux 3D de Bomberman (vue de trois quarts, plaques avec leur face avant). Les personnages
- * marchent sur le plan dans les quatre directions ; ils sont dessinés du fond vers l'avant. Ce sont les sprites
+ * marchent sur le plan dans les quatre directions ; ils sont dessinés du fond vers l’avant. Ce sont les sprites
  * de couleur de Bomberman, ou le personnage importé quand le joueur en a choisi un.
- * Les noms et l'éclaboussure restent en HTML, posés aux mêmes coordonnées que le canvas.
+ * Les noms et l’éclaboussure restent en HTML, posés aux mêmes coordonnées que le canvas.
  */
 
 export interface BanquiseBodyView {
@@ -98,7 +98,7 @@ export function BanquiseStage({ view, youId, label }: { view: BanquiseView; youI
 
   const L = useMemo(() => boardLayout(cssWidth), [cssWidth]);
 
-  // Personnage importé de chaque joueur (par identifiant), lu par la boucle d'affichage.
+  // Personnage importé de chaque joueur (par identifiant), lu par la boucle d’affichage.
   const skins = useMemo(() => {
     const map = new Map<string, PackSkin>();
     for (const b of view.bodies) {
@@ -115,7 +115,7 @@ export function BanquiseStage({ view, youId, label }: { view: BanquiseView; youI
   const skinsRef = useRef(skins);
   skinsRef.current = skins;
 
-  // Boucle d'affichage : la position suit le serveur en douceur, et les marqueurs HTML suivent le canvas.
+  // Boucle d’affichage : la position suit le serveur en douceur, et les marqueurs HTML suivent le canvas.
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -156,7 +156,7 @@ export function BanquiseStage({ view, youId, label }: { view: BanquiseView; youI
           if (Math.abs(s.x - prevX) + Math.abs(s.z - prevZ) > 0.002) s.walkUntil = now + 160;
           placed.push({ b, s, walking: now < s.walkUntil, step: Math.floor(now / 140) % 2 });
         }
-        // Du fond vers l'avant : un personnage plus bas sur l'écran recouvre ceux qui sont derrière.
+        // Du fond vers l’avant : un personnage plus bas sur l’écran recouvre ceux qui sont derrière.
         placed.sort((p, q) => p.s.z - q.s.z);
         for (const p of placed) {
           drawShadow(ctx, LL, {

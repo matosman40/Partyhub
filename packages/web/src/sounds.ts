@@ -4,8 +4,8 @@ import type { MusicSlot, SfxName } from '@partyhub/shared';
 import { api } from './api.js';
 
 /**
- * Sons choisis dans l'administration : musique de fond des menus, de l'accueil et de la fin de partie,
- * et bruitages des jeux. Chaque appareil joue ce qui concerne la page qu'il affiche.
+ * Sons choisis dans l’administration : musique de fond des menus, de l’accueil et de la fin de partie,
+ * et bruitages des jeux. Chaque appareil joue ce qui concerne la page qu’il affiche.
  */
 
 export interface PublicSounds {
@@ -24,7 +24,7 @@ function publishSounds(next: PublicSounds | null): void {
   for (const listener of soundListeners) listener();
 }
 
-/** Charge les sons publics. Un échec laisse les bruitages d'origine et la musique coupée. */
+/** Charge les sons publics. Un échec laisse les bruitages d’origine et la musique coupée. */
 export async function loadSoundSettings(): Promise<void> {
   try {
     const res = await api<{ sounds: PublicSounds }>('/api/sound-settings');
@@ -48,8 +48,8 @@ export function usePublicSounds(): PublicSounds | null {
 }
 
 /*
- * Demandes de musique : chaque page réclame un emplacement pendant qu'elle est affichée. La dernière
- * réclamation encore vivante l'emporte ; quand une page se ferme, elle libère sa place.
+ * Demandes de musique : chaque page réclame un emplacement pendant qu’elle est affichée. La dernière
+ * réclamation encore vivante l’emporte ; quand une page se ferme, elle libère sa place.
  */
 
 interface Claim {
@@ -102,7 +102,7 @@ export function useActiveMusicSlot(): MusicSlot | null {
   );
 }
 
-/** Slot de musique d'un salon, selon son état : menus avant la partie, fin de partie aux résultats. */
+/** Slot de musique d’un salon, selon son état : menus avant la partie, fin de partie aux résultats. */
 export function musicForLobby(status: string | undefined): MusicSlot | null {
   if (status === 'ended') return 'fin';
   if (status === 'waiting' || status === 'full') return 'menus';

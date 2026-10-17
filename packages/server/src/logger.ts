@@ -21,7 +21,7 @@ const REDACTED_PATHS = [
 
 /**
  * Journalisation structurée. Chaque ligne est un objet JSON : `level`, `time`, `msg`, puis les champs
- * propres à l'événement (`event`, `source`, `req`, `room`…). Sortie standard, et fichier tournant si fourni.
+ * propres à l’événement (`event`, `source`, `req`, `room`…). Sortie standard, et fichier tournant si fourni.
  * Règle : ne jamais passer en paramètre un contenu de réponse, un jeton ou un mot de passe.
  */
 export function createLogger(level: string, silent = false, file?: RotatingFile): Logger {
@@ -33,7 +33,7 @@ export function createLogger(level: string, silent = false, file?: RotatingFile)
       level,
       base: { app: 'partyhub' },
       timestamp: pino.stdTimeFunctions.isoTime,
-      // Le niveau est écrit en toutes lettres (« error ») : plus simple à filtrer qu'un code numérique.
+      // Le niveau est écrit en toutes lettres (« error ») : plus simple à filtrer qu’un code numérique.
       formatters: { level: (label) => ({ level: label }) },
       redact: { paths: REDACTED_PATHS, censor: '[masqué]' },
     },

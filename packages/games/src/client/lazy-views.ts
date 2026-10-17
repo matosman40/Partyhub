@@ -2,11 +2,11 @@ import { lazy } from 'react';
 import type { GameClientViews } from './types.js';
 
 /**
- * Vues d'un jeu chargées à la première utilisation : le code d'un jeu n'est téléchargé
- * que lorsqu'on le règle, l'affiche ou le joue. Les composants sont créés une seule fois,
+ * Vues d’un jeu chargées à la première utilisation : le code d’un jeu n’est téléchargé
+ * que lorsqu’on le règle, l’affiche ou le joue. Les composants sont créés une seule fois,
  * donc leur identité reste stable entre deux rendus.
  *
- * Les composants renvoyés suspendent le rendu le temps du téléchargement : l'appelant
+ * Les composants renvoyés suspendent le rendu le temps du téléchargement : l’appelant
  * doit les rendre sous une frontière `Suspense`.
  */
 export function lazyViews(load: () => Promise<GameClientViews>): GameClientViews {

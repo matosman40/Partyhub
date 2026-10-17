@@ -14,7 +14,7 @@ export function RacePlayer({ publicState, playerState, playerId, now, send }: Pl
   const pub = publicState as RacePublic | null;
   const me = playerState as RacePlayerState | null;
   const [error, setError] = useState<string | null>(null);
-  // Évite d'envoyer deux fois la même touche pendant l'aller-retour réseau.
+  // Évite d’envoyer deux fois la même touche pendant l’aller-retour réseau.
   const pending = useRef(false);
 
   const lockEndsAt = me && me.lockedUntil > now ? me.lockedUntil : undefined;

@@ -85,8 +85,8 @@ const OBSERVER_AVATAR: AvatarInfo = {
 /**
  * Pont entre le registre des salles et Socket.IO.
  * - Chaque socket reçoit uniquement la vue qui lui est destinée.
- * - Les commandes de l'hôte ne sont acceptées que d'un socket hôte authentifié.
- * - Les commandes joueur ne sont acceptées que d'un socket rattaché à ce joueur.
+ * - Les commandes de l’hôte ne sont acceptées que d’un socket hôte authentifié.
+ * - Les commandes joueur ne sont acceptées que d’un socket rattaché à ce joueur.
  * - Discussion et réactions sont relayées à la salle, sans être conservées.
  */
 export class RealtimeHub {
@@ -174,8 +174,8 @@ export class RealtimeHub {
   }
 
   /**
-   * Type d'appareil d'une connexion : celui qu'elle déclare (taille de fenêtre, pointeur),
-   * sinon celui que suggère son identifiant navigateur. Le serveur ne voit pas l'écran.
+   * Type d’appareil d’une connexion : celui qu’elle déclare (taille de fenêtre, pointeur),
+   * sinon celui que suggère son identifiant navigateur. Le serveur ne voit pas l’écran.
    */
   private kindOf(socket: TypedSocket, declared?: DeviceInfo): DeviceKind {
     if (declared) return declared.kind;
@@ -202,12 +202,12 @@ export class RealtimeHub {
     const limiter = new RateLimiter(COMMANDS_PER_WINDOW, WINDOW_MS);
     const chatLimiter = new RateLimiter(CHAT_PER_WINDOW, CHAT_WINDOW_MS);
     const reactionLimiter = new RateLimiter(REACTIONS_PER_WINDOW, CHAT_WINDOW_MS);
-    // Déplacements : jusqu'à 30 par seconde (glisser suit le doigt) ; émotions : 6 toutes les 4 secondes.
+    // Déplacements : jusqu’à 30 par seconde (glisser suit le doigt) ; émotions : 6 toutes les 4 secondes.
     const lobbyMoveLimiter = new RateLimiter(30, 1000);
     // Capteurs : débit propre à la socket (pas de compte dans les commandes), relayé sans accusé.
     const sensorLimiter = new RateLimiter(SENSOR_MAX_PER_SECOND, 1000);
     const lobbyMoodLimiter = new RateLimiter(() => 6 * this.cadence(), 4000);
-    // Voix : une toutes les quelques secondes et par socket ; la salle a aussi sa file d'attente côté écran.
+    // Voix : une toutes les quelques secondes et par socket ; la salle a aussi sa file d’attente côté écran.
     // Le mode test multiplie ces deux cadences par son facteur.
     const voiceLimiter = new RateLimiter(() => 3 * this.cadence(), 10_000);
     const ip = clientIp(this.trust, socket.handshake.address, socket.handshake.headers['x-forwarded-for']);
@@ -220,8 +220,8 @@ export class RealtimeHub {
     const invalid = (ack: Ack, error = 'Données invalides.') => ack({ ok: false, error });
 
     /**
-     * Retrouve la salle d'un code saisi par une personne. Code inconnu : réponse ralentie si cette
-     * adresse en essaie beaucoup d'autres ; les salles valides ne sont jamais concernées.
+     * Retrouve la salle d’un code saisi par une personne. Code inconnu : réponse ralentie si cette
+     * adresse en essaie beaucoup d’autres ; les salles valides ne sont jamais concernées.
      */
     const roomOrRefuse = (rawCode: string, ack: Ack): Room | undefined => {
       const found = this.mgr.getByCode(rawCode);
@@ -573,7 +573,7 @@ export class RealtimeHub {
       const parsed = voicePlaySchema.safeParse(p);
       if (!parsed.success) return invalid(ack);
       if (!voiceLimiter.take()) return ack({ ok: false, error: 'Doucement : une voix toutes les quelques secondes.' });
-      // Seules les voix du profil du joueur sont jouées : une voix d'un autre joueur est refusée.
+      // Seules les voix du profil du joueur sont jouées : une voix d’un autre joueur est refusée.
       const profileId = current.room.profileOf(current.playerId);
       const voice = profileId && this.profiles ? this.profiles.ownedVoice(profileId, parsed.data.id) : undefined;
       if (!voice) return invalid(ack, 'Cette voix n’est pas dans votre profil.');

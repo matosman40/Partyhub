@@ -2,14 +2,14 @@ import { useSyncExternalStore } from 'react';
 import { api } from './api.js';
 
 /**
- * Fonds d'écran choisis dans l'administration : une image de la médiathèque par écran.
- * Les adresses publiques viennent de /api/screen-backgrounds ; sans réponse, le décor d'origine reste.
+ * Fonds d’écran choisis dans l’administration : une image de la médiathèque par écran.
+ * Les adresses publiques viennent de /api/screen-backgrounds ; sans réponse, le décor d’origine reste.
  */
 
 export const SCREEN_KEYS = ['home', 'join', 'tv', 'player', 'spectator', 'profile'] as const;
 export type ScreenKey = (typeof SCREEN_KEYS)[number];
 
-/** Adresse publique d'image (ou null pour le décor d'origine), par écran. */
+/** Adresse publique d’image (ou null pour le décor d’origine), par écran. */
 export type ScreenBackgroundUrls = Record<ScreenKey, string | null>;
 
 export const SCREEN_LABELS: Record<ScreenKey, string> = {
@@ -36,7 +36,7 @@ function subscribe(listener: () => void): () => void {
   };
 }
 
-/** Charge les fonds publics. Un échec laisse le décor d'origine partout. */
+/** Charge les fonds publics. Un échec laisse le décor d’origine partout. */
 export async function loadScreenBackgrounds(): Promise<void> {
   try {
     const res = await api<{ backgrounds: ScreenBackgroundUrls }>('/api/screen-backgrounds');
@@ -65,7 +65,7 @@ export function screenForPath(pathname: string): ScreenKey | null {
   return null;
 }
 
-/** Adresse de l'image d'un écran, ou null si l'écran garde son décor d'origine. */
+/** Adresse de l’image d’un écran, ou null si l’écran garde son décor d’origine. */
 export function backgroundFor(backgrounds: ScreenBackgroundUrls | null, screen: ScreenKey | null): string | null {
   if (!backgrounds || !screen) return null;
   return backgrounds[screen];

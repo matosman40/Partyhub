@@ -1,6 +1,6 @@
 /**
  * Générateur pseudo-aléatoire à graine (mulberry32). Une même graine donne toujours la
- * même suite : tous les joueurs d'une salle reçoivent donc la même grille, et les tests
+ * même suite : tous les joueurs d’une salle reçoivent donc la même grille, et les tests
  * sont reproductibles.
  */
 export function seededRandom(seed: number): () => number {
@@ -14,7 +14,7 @@ export function seededRandom(seed: number): () => number {
   };
 }
 
-/** Mélange de Fisher-Yates à partir d'un générateur (nouveau tableau). */
+/** Mélange de Fisher-Yates à partir d’un générateur (nouveau tableau). */
 export function shuffleWith<T>(items: readonly T[], random: () => number): T[] {
   const out = [...items];
   for (let i = out.length - 1; i > 0; i--) {

@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 
 /**
- * Lecture d'un QR code avec la caméra arrière, quand le navigateur sait le faire
+ * Lecture d’un QR code avec la caméra arrière, quand le navigateur sait le faire
  * (API BarcodeDetector : Chrome et Android, pas Safari ni Firefox). Sinon, ou si la
- * caméra est refusée, le composant l'indique et l'utilisateur saisit le code à la main.
+ * caméra est refusée, le composant l’indique et l’utilisateur saisit le code à la main.
  */
 
 interface DetectedCode {

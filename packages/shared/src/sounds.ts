@@ -1,12 +1,12 @@
 import { z } from 'zod';
 
 /**
- * Sons de PartyHub : musique de fond des menus, de l'accueil et de la fin de partie, et bruitages
+ * Sons de PartyHub : musique de fond des menus, de l’accueil et de la fin de partie, et bruitages
  * des jeux. Chaque emplacement reçoit un fichier audio de la médiathèque, ou rien (silence pour la
- * musique, son synthétisé d'origine pour les bruitages).
+ * musique, son synthétisé d’origine pour les bruitages).
  */
 
-/** Bruitages joués par les jeux. Les noms sont les clés du réglage et de l'effet sonore. */
+/** Bruitages joués par les jeux. Les noms sont les clés du réglage et de l’effet sonore. */
 export const SFX_NAMES = [
   'place',
   'explode',
@@ -95,7 +95,7 @@ export const EMPTY_SOUND_SETTINGS: SoundSettings = {
 
 /**
  * Lit le réglage enregistré, champ par champ : un emplacement illisible devient vide, les autres
- * gardent leur valeur. Une valeur qui n'est pas du JSON redonne le réglage vide.
+ * gardent leur valeur. Une valeur qui n’est pas du JSON redonne le réglage vide.
  */
 export function parseSoundSettings(raw: string | undefined): SoundSettings {
   const out = structuredClone(EMPTY_SOUND_SETTINGS);

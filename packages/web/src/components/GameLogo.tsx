@@ -2,8 +2,8 @@ import type { CSSProperties, ReactNode } from 'react';
 import { logoFor, type LogoMark, type LogoSpec } from './gameLogos.js';
 
 /**
- * Logo d'un jeu : titre en lettres épaisses avec relief, et une marque propre au jeu.
- * Le dessin est un SVG : il reste net à toutes les tailles et le texte n'est jamais déformé.
+ * Logo d’un jeu : titre en lettres épaisses avec relief, et une marque propre au jeu.
+ * Le dessin est un SVG : il reste net à toutes les tailles et le texte n’est jamais déformé.
  */
 
 const W = 640;
@@ -192,7 +192,7 @@ export function GameLogo({ gameId, name, className }: { gameId: string; name: st
   const baseline2 = baseline1 + size2 * 0.95;
 
   const lineStyle: CSSProperties = { fontFamily: 'var(--display)', letterSpacing: '0.01em' };
-  // Relief : copies décalées vers le bas, dans la couleur de l'encre, sous le titre.
+  // Relief : copies décalées vers le bas, dans la couleur de l’encre, sous le titre.
   const title = (text: string, y: number, size: number) => (
     <g key={`${text}-${y}`}>
       {[14, 10, 6].map((dy) => (

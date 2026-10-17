@@ -54,7 +54,7 @@ export function matchesCandidate(input: string, candidate: string): boolean {
   return tolerance > 0 && editDistance(typedCompact, expectedCompact) <= tolerance;
 }
 
-/** Vrai si la saisie correspond à la réponse ou à l'une de ses formulations acceptées. */
+/** Vrai si la saisie correspond à la réponse ou à l’une de ses formulations acceptées. */
 export function matchAnswer(input: string, item: { answer: string; aliases: string[] }): boolean {
   return [item.answer, ...item.aliases].some((candidate) => matchesCandidate(input, candidate));
 }

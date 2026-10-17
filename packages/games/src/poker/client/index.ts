@@ -3,7 +3,7 @@ import { fieldSettings } from '../../client/settings.js';
 import { PokerHost } from './PokerHost.js';
 import { PokerPlayer } from './PokerPlayer.js';
 
-/** Vues du poker Texas : réglages du salon, table sur l'écran principal, cartes et actions sur le téléphone. */
+/** Vues du poker Texas : réglages du salon, table sur l’écran principal, cartes et actions sur le téléphone. */
 export const pokerViews: GameClientViews = {
   Settings: fieldSettings([
     { key: 'startingChips', label: 'Jetons de départ', min: 100, max: 10000 },

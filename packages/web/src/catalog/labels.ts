@@ -3,13 +3,13 @@ import type { GameCategory } from '@partyhub/shared';
 /** Libellés des catégories. Source unique : le catalogue et les filtres les lisent ici. */
 export const CATEGORY_LABEL: Record<GameCategory, string> = {
   cartes: 'Cartes',
-  plateau: 'Plateau',
+  plateau: 'Ambiance',
   quiz: 'Quiz',
   role: 'Rôle',
   solo: 'Solo',
 };
 
-/** Ordre d'affichage des catégories dans les filtres : les jeux de groupe d'abord. */
+/** Ordre d’affichage des catégories dans les filtres : les jeux de groupe d’abord. */
 export const CATEGORY_ORDER: GameCategory[] = ['quiz', 'role', 'plateau', 'cartes', 'solo'];
 
 /** Nombre de joueurs maximal proposé dans le filtre. */

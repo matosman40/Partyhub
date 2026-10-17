@@ -3,7 +3,7 @@ import { REACTION_EMOJIS, type ChatMessage } from '@partyhub/shared';
 import type { AppSocket } from '../realtime.js';
 import { PlayerAvatar } from './PlayerAvatar.js';
 
-/** Boutons de réaction : un tap envoie l'emoji à toute la salle. */
+/** Boutons de réaction : un tap envoie l’emoji à toute la salle. */
 export function EmoteBar({ onPick, disabled = false }: { onPick: (emoji: string) => void; disabled?: boolean }) {
   return (
     <div className="emote-bar" role="group" aria-label="Réactions">
@@ -92,8 +92,8 @@ interface FloatingReaction {
 }
 
 /**
- * Réactions reçues de la salle, affichées en flottant sur l'écran principal.
- * Elles disparaissent d'elles-mêmes ; rien n'est gardé après.
+ * Réactions reçues de la salle, affichées en flottant sur l’écran principal.
+ * Elles disparaissent d’elles-mêmes ; rien n’est gardé après.
  */
 export function ReactionLayer({ socket }: { socket: AppSocket }) {
   const [items, setItems] = useState<FloatingReaction[]>([]);

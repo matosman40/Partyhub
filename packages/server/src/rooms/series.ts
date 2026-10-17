@@ -9,7 +9,7 @@ import type {
 } from '@partyhub/shared';
 
 /**
- * Championnat d'un salon : une série de manches (le même jeu ou des jeux successifs), des points selon le rang,
+ * Championnat d’un salon : une série de manches (le même jeu ou des jeux successifs), des points selon le rang,
  * des équipes équilibrées, des rangs de progression et des icônes de victoire. Le module ne connaît ni la salle ni
  * les sockets : il reçoit le classement de chaque partie et calcule la vue affichée.
  */
@@ -42,7 +42,7 @@ export interface PlayerTally {
   played: number;
   wins: number;
   podiums: number;
-  /** Victoires d'affilée en cours, et la plus longue série. */
+  /** Victoires d’affilée en cours, et la plus longue série. */
   streak: number;
   bestStreak: number;
 }
@@ -84,8 +84,8 @@ export function seriesFinished(series: SeriesRecord): boolean {
 }
 
 /**
- * Répartit les joueurs en équipes équilibrées. Une équipe déjà attribuée est gardée tant qu'elle existe, pour qu'un
- * joueur reste dans la même équipe d'une manche à l'autre ; les nouveaux vont dans l'équipe la moins fournie.
+ * Répartit les joueurs en équipes équilibrées. Une équipe déjà attribuée est gardée tant qu’elle existe, pour qu’un
+ * joueur reste dans la même équipe d’une manche à l’autre ; les nouveaux vont dans l’équipe la moins fournie.
  */
 export function assignTeams(
   playerIds: string[],
@@ -114,7 +114,7 @@ export function assignTeams(
   return out;
 }
 
-/** Enregistre le classement d'une partie terminée dans le championnat. */
+/** Enregistre le classement d’une partie terminée dans le championnat. */
 export function recordGame(series: SeriesRecord, game: string, ranking: ScoreEntry[]): void {
   for (const entry of ranking) {
     const tally = series.tallies[entry.playerId] ?? {

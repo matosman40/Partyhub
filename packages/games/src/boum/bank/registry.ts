@@ -2,7 +2,7 @@ import type { BankType, Level } from './types.js';
 
 /**
  * Instantané des entrées validées, lu par le moteur à la création de chaque salle. Le serveur le
- * remplace à chaque modification de la banque : une salle déjà ouverte garde le contenu qu'elle a lu.
+ * remplace à chaque modification de la banque : une salle déjà ouverte garde le contenu qu’elle a lu.
  */
 
 export interface BankSnapshotEntry {

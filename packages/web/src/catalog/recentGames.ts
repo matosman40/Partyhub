@@ -1,7 +1,7 @@
 /**
  * Jeux joués récemment, mémorisés sur cet appareil seulement (localStorage).
  * Chaque accès passe par un try/catch : navigation privée, stockage bloqué ou plein
- * ne doivent jamais empêcher l'accueil de s'afficher.
+ * ne doivent jamais empêcher l’accueil de s’afficher.
  */
 
 export const RECENT_KEY = 'ph:recent-games';
@@ -20,7 +20,7 @@ function defaultStorage(): StorageLike | null {
   }
 }
 
-/** Identifiants des jeux récents, du plus récent au plus ancien. Liste vide si rien n'est lisible. */
+/** Identifiants des jeux récents, du plus récent au plus ancien. Liste vide si rien n’est lisible. */
 export function readRecent(storage: StorageLike | null = defaultStorage()): string[] {
   if (!storage) return [];
   try {

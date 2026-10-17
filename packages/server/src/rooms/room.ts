@@ -27,9 +27,9 @@ import { gameInfo } from '../catalog.js';
 import { guestAvatar } from '../avatars.js';
 import { assignTeams, createSeries, recordGame, seriesFinished, seriesView, type SeriesRecord } from './series.js';
 
-/** Résultat d'une commande sans données particulières. */
+/** Résultat d’une commande sans données particulières. */
 export type Outcome = { ok: true } | { ok: false; error: string };
-/** Résultat d'une commande qui renvoie des données. */
+/** Résultat d’une commande qui renvoie des données. */
 export type Result<T extends object> = ({ ok: true } & T) | { ok: false; error: string };
 
 export interface RoomPlayer {
@@ -55,13 +55,13 @@ export interface RoomEnv {
   logger: Logger;
   maxPlayers: () => number;
   graceMs: () => number;
-  /** Notice affichée pour un jeu (défaut du code ou surcharge de l'administration). */
+  /** Notice affichée pour un jeu (défaut du code ou surcharge de l’administration). */
   notice: (gameId: string) => GameNotice;
-  /** Client d'IA générative, absent si aucune clé n'est configurée. Seul le lanceur de travaux s'en sert. */
+  /** Client d’IA générative, absent si aucune clé n’est configurée. Seul le lanceur de travaux s’en sert. */
   ai?: AiClient;
-  /** Données par profil, par jeu (personnages gardés d'une partie à l'autre). */
+  /** Données par profil, par jeu (personnages gardés d’une partie à l’autre). */
   gameData?: (gameId: string) => ProfileDataStore;
-  /** Images générées (portraits, fonds), absent si aucun fournisseur d'images n'est configuré. */
+  /** Images générées (portraits, fonds), absent si aucun fournisseur d’images n’est configuré. */
   images?: GameImages;
 }
 
@@ -82,7 +82,7 @@ export interface RoomOptions {
 }
 
 const MAX_SEEN_COMMANDS = 200;
-/** Nombre maximal d'observateurs par salle : ils regardent, sans peser sur la partie. */
+/** Nombre maximal d’observateurs par salle : ils regardent, sans peser sur la partie. */
 export const MAX_OBSERVERS = 20;
 const BOT_NAMES = ['Robo', 'Bip', 'Clic', 'Zed', 'Pixel', 'Ouistiti'];
 const BOT_MIN_DELAY_MS = 700;
@@ -94,10 +94,10 @@ export function newToken(): string {
 
 /**
  * Une salle : hôte, joueurs (humains ou robots), jeu sélectionné et état de la partie.
- * Le serveur est l'unique autorité : les vues envoyées aux clients sont
- * construites ici, à partir de l'état complet.
+ * Le serveur est l’unique autorité : les vues envoyées aux clients sont
+ * construites ici, à partir de l’état complet.
  */
-/** Durée et nombre d'essais d'un code de transfert d'hôte. */
+/** Durée et nombre d’essais d’un code de transfert d’hôte. */
 export const HANDOFF_MS = 3 * 60_000;
 export const HANDOFF_TRIES = 5;
 
@@ -114,25 +114,25 @@ export class Room {
   readonly hostSockets = new Set<string>();
   /** Sous-ensemble des sockets hôte : les écrans principaux (ils jouent les voix des joueurs). */
   private readonly screens = new Set<string>();
-  /** Observateurs : socket -> type d'appareil. Ils ne jouent pas et ne comptent pas dans la partie. */
+  /** Observateurs : socket -> type d’appareil. Ils ne jouent pas et ne comptent pas dans la partie. */
   readonly observers = new Map<string, DeviceKind>();
-  /** Type d'appareil déclaré par chaque socket (hôte, joueur ou observateur). */
+  /** Type d’appareil déclaré par chaque socket (hôte, joueur ou observateur). */
   private readonly socketDevice = new Map<string, DeviceKind>();
   /**
-   * Championnat du salon : manches, équipes et classement cumulé. Il reprend d'une partie à l'autre
-   * (rejouer) jusqu'à sa dernière manche, puis repart à zéro.
+   * Championnat du salon : manches, équipes et classement cumulé. Il reprend d’une partie à l’autre
+   * (rejouer) jusqu’à sa dernière manche, puis repart à zéro.
    */
   private series: SeriesRecord = createSeries(1, 0);
-  /** Classement de la dernière partie terminée : le podium s'affiche pour n'importe quel jeu. */
+  /** Classement de la dernière partie terminée : le podium s’affiche pour n’importe quel jeu. */
   private lastResult: LastResultView | null = null;
 
   private settings: Record<string, unknown>;
   private state: unknown;
   private readonly timers = new Map<string, NodeJS.Timeout>();
   private readonly botTimers = new Map<string, { key: string; timer: NodeJS.Timeout }>();
-  /** Travail du jeu en cours (ex. génération) : son identifiant et le moyen de l'annuler. */
+  /** Travail du jeu en cours (ex. génération) : son identifiant et le moyen de l’annuler. */
   private running: { id: string; controller: AbortController } | null = null;
-  /** Dernier travail terminé : un identifiant déjà traité n'est jamais relancé. */
+  /** Dernier travail terminé : un identifiant déjà traité n’est jamais relancé. */
   private finishedJobId: string | null = null;
   private readonly ctx: import('@partyhub/shared').GameContext;
 
@@ -175,12 +175,12 @@ export class Room {
     );
   }
 
-  /** Observateurs présents, par type d'appareil. */
+  /** Observateurs présents, par type d’appareil. */
   observerSummary(): ObserverSummary {
     return { count: this.observers.size, devices: [...this.observers.values()] };
   }
 
-  /** Types d'appareils connectés, pour une place donnée. */
+  /** Types d’appareils connectés, pour une place donnée. */
   private devicesOf(p: RoomPlayer): DeviceKind[] {
     return [...p.sockets].map((sid) => this.socketDevice.get(sid) ?? 'unknown');
   }
@@ -194,7 +194,7 @@ export class Room {
   }
 
   /**
-   * Met à jour l'avatar des joueurs liés à ce profil (photo ajoutée, retirée ou non partagée).
+   * Met à jour l’avatar des joueurs liés à ce profil (photo ajoutée, retirée ou non partagée).
    * La salle est prévenue seulement si quelque chose a changé.
    */
   refreshAvatar(profileId: string, avatar: AvatarInfo): void {
@@ -230,7 +230,7 @@ export class Room {
 
   /**
    * Vrai si les capteurs de ce joueur sont relayés : une partie en cours et un joueur présent.
-   * Hors partie, rien n'est relayé (le salon n'a pas besoin de mouvements).
+   * Hors partie, rien n’est relayé (le salon n’a pas besoin de mouvements).
    */
   acceptsSensors(playerId: string): boolean {
     return this.status === 'in_game' && this.players.has(playerId);
@@ -253,13 +253,13 @@ export class Room {
     return ids;
   }
 
-  /** Nom et apparence d'un expéditeur de message, ou null si la personne n'est plus là. */
+  /** Nom et apparence d’un expéditeur de message, ou null si la personne n’est plus là. */
   senderOf(playerId: string): { name: string; avatar: AvatarInfo } | null {
     const p = this.players.get(playerId);
     return p ? { name: p.name, avatar: p.avatar } : null;
   }
 
-  /** Nom affiché d'un observateur dans la discussion (« Observateur 2 »), ou null s'il est parti. */
+  /** Nom affiché d’un observateur dans la discussion (« Observateur 2 »), ou null s’il est parti. */
   observerName(socketId: string): string | null {
     if (!this.observers.has(socketId)) return null;
     const index = [...this.observers.keys()].indexOf(socketId);
@@ -275,7 +275,7 @@ export class Room {
   // Vues destinées aux clients
   // ---------------------------------------------------------------------------
 
-  /** Équipe d'un joueur, ou null sans équipes. */
+  /** Équipe d’un joueur, ou null sans équipes. */
   private teamOf(playerId: string): number | null {
     if (this.series.teamCount < 2) return null;
     return this.series.teams[playerId] ?? null;
@@ -324,7 +324,7 @@ export class Room {
     };
   }
 
-  /** Vue d'un observateur : salon et état public uniquement (jamais l'état réservé à l'hôte). */
+  /** Vue d’un observateur : salon et état public uniquement (jamais l’état réservé à l’hôte). */
   observerView(): ObserverRoomView {
     return {
       now: this.env.now(),
@@ -365,7 +365,7 @@ export class Room {
   }
 
   /**
-   * Répartit les joueurs présents en équipes équilibrées. Un joueur garde son équipe d'une manche à l'autre,
+   * Répartit les joueurs présents en équipes équilibrées. Un joueur garde son équipe d’une manche à l’autre,
    * et seuls les joueurs présents comptent dans la répartition.
    */
   private refreshTeams(): void {
@@ -381,7 +381,7 @@ export class Room {
   /**
    * Un joueur entre dans la salle, ou reprend sa place :
    * - avec son jeton de place (même appareil) ;
-   * - avec son profil (autre appareil) : la place du profil est retrouvée s'il est déjà dans la salle.
+   * - avec son profil (autre appareil) : la place du profil est retrouvée s’il est déjà dans la salle.
    * La reconnexion est toujours acceptée, même en pleine partie.
    */
   join(
@@ -444,7 +444,7 @@ export class Room {
     return { ok: true, playerId: p.id, token: p.token };
   }
 
-  /** Retire un socket (hôte, joueur ou observateur). Une absence n'efface jamais un joueur tout de suite. */
+  /** Retire un socket (hôte, joueur ou observateur). Une absence n’efface jamais un joueur tout de suite. */
   removeSocket(socketId: string): void {
     let changed = this.hostSockets.delete(socketId);
     this.screens.delete(socketId);
@@ -463,8 +463,8 @@ export class Room {
   }
 
   /**
-   * Transfert de l'accès hôte à un autre appareil (téléphone) : l'écran hôte affiche un code court,
-   * valable quelques minutes, à usage unique. Le téléphone qui le saisit reçoit le jeton d'hôte.
+   * Transfert de l’accès hôte à un autre appareil (téléphone) : l’écran hôte affiche un code court,
+   * valable quelques minutes, à usage unique. Le téléphone qui le saisit reçoit le jeton d’hôte.
    */
   private handoff: { code: string; expiresAt: number; attempts: number } | null = null;
 
@@ -502,7 +502,7 @@ export class Room {
 
   /**
    * Un observateur rejoint la salle : il voit le plateau et la discussion, sans jouer.
-   * Le nombre d'observateurs est limité pour éviter qu'une salle publique ne serve de diffusion.
+   * Le nombre d’observateurs est limité pour éviter qu’une salle publique ne serve de diffusion.
    */
   joinObserver(socketId: string, kind: DeviceKind = 'unknown'): Outcome {
     if (this.observers.has(socketId)) return { ok: true };
@@ -523,7 +523,7 @@ export class Room {
     this.hooks.onChange(this);
   }
 
-  /** En salle d'attente, un joueur absent trop longtemps est retiré. */
+  /** En salle d’attente, un joueur absent trop longtemps est retiré. */
   private scheduleAbsence(p: RoomPlayer): void {
     if (!this.inLobby) return;
     this.clearGrace(p);
@@ -566,7 +566,7 @@ export class Room {
   }
 
   /**
-   * Place d'un personnage dans le salon (avant la partie uniquement). Pas de nouvelle vue complète :
+   * Place d’un personnage dans le salon (avant la partie uniquement). Pas de nouvelle vue complète :
    * la place est diffusée seule par le hub, pour ne pas renvoyer la salle à chaque pas.
    */
   setLobbyPosition(playerId: string, position: LobbyPosition): Result<{ position: LobbyPosition }> {
@@ -577,7 +577,7 @@ export class Room {
     return { ok: true, position: clamped };
   }
 
-  /** Une émotion n'est possible que dans le salon ; le serveur la diffuse, rien n'est gardé. */
+  /** Une émotion n’est possible que dans le salon ; le serveur la diffuse, rien n’est gardé. */
   lobbyMoodAllowed(playerId: string): Outcome {
     if (!this.players.has(playerId)) return { ok: false, error: 'Joueur inconnu.' };
     if (!this.inLobby) return { ok: false, error: 'Les émotions ne servent qu’avant la partie.' };
@@ -641,7 +641,7 @@ export class Room {
   }
 
   // ---------------------------------------------------------------------------
-  // Commandes de l'hôte
+  // Commandes de l’hôte
   // ---------------------------------------------------------------------------
 
   configure(settings: Record<string, unknown>): Outcome {
@@ -658,7 +658,7 @@ export class Room {
   }
 
   /**
-   * Règle le championnat du salon : nombre de manches et d'équipes. Un réglage identique ne remet rien à zéro ;
+   * Règle le championnat du salon : nombre de manches et d’équipes. Un réglage identique ne remet rien à zéro ;
    * un réglage différent ouvre un nouveau championnat, donc sans classement.
    */
   setChampionship(settings: ChampionshipSettings): Outcome {
@@ -703,7 +703,7 @@ export class Room {
     this.status = 'waiting';
     this.clearTimers();
     this.state = this.module.initialize(this.settings, this.playerRefs(), this.ctx);
-    // Un championnat terminé s'achève ici : la manche suivante ouvre un nouveau championnat.
+    // Un championnat terminé s’achève ici : la manche suivante ouvre un nouveau championnat.
     if (seriesFinished(this.series)) {
       this.series = createSeries(this.series.length, this.series.teamCount);
     }
@@ -714,7 +714,7 @@ export class Room {
   }
 
   /**
-   * Action de l'écran principal (ex. « générer des personnages ») : elle n'est attribuée à aucun joueur.
+   * Action de l’écran principal (ex. « générer des personnages ») : elle n’est attribuée à aucun joueur.
    * Le schéma déclaré par le jeu valide le payload, comme pour les actions des joueurs.
    */
   hostAction(type: string, payload: unknown): Outcome {
@@ -723,7 +723,7 @@ export class Room {
     if (!hostActions || !handleHostAction || !Object.hasOwn(hostActions, type)) {
       return { ok: false, error: 'Action inconnue.' };
     }
-    // Sans payload, l'action reçoit un objet vide : « régénérer » n'a rien à transmettre.
+    // Sans payload, l’action reçoit un objet vide : « régénérer » n’a rien à transmettre.
     const parsed = hostActions[type]!.safeParse(payload ?? {});
     if (!parsed.success) return { ok: false, error: 'Données invalides.' };
 
@@ -801,7 +801,7 @@ export class Room {
     }
   }
 
-  /** Un robot joue : la décision est recalculée au moment d'agir, pas au moment de la planifier. */
+  /** Un robot joue : la décision est recalculée au moment d’agir, pas au moment de la planifier. */
   private botAct(botId: string): void {
     this.botTimers.delete(botId);
     if (this.status !== 'in_game') return;
@@ -860,7 +860,7 @@ export class Room {
 
   /**
    * Partie terminée : son classement devient le podium affiché, et il entre dans le championnat du salon
-   * tant que celui-ci n'est pas terminé.
+   * tant que celui-ci n’est pas terminé.
    */
   private recordFinishedGame(): void {
     const ranking = this.finalScores();
@@ -903,7 +903,7 @@ export class Room {
   // ---------------------------------------------------------------------------
 
   /**
-   * Lance le travail que le jeu demande, s'il y en a un, et abandonne celui qui ne l'est plus.
+   * Lance le travail que le jeu demande, s’il y en a un, et abandonne celui qui ne l’est plus.
    * Un seul travail à la fois par salle. Son résultat revient par `completeJob`, comme une mutation normale :
    * un résultat tardif (salle terminée, travail remplacé) est ignoré.
    */

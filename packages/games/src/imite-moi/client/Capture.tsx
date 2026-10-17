@@ -20,7 +20,7 @@ function mediaMessage(err: unknown, kind: 'micro' | 'caméra'): string {
 
 /**
  * Photo sur le téléphone : la galerie (fonctionne aussi en HTTP) ou la caméra avec un compte à rebours
- * (HTTPS requis). Le joueur voit l'aperçu, peut reprendre, puis envoie.
+ * (HTTPS requis). Le joueur voit l’aperçu, peut reprendre, puis envoie.
  */
 export function PhotoCapture({
   mode,
@@ -156,7 +156,7 @@ export function PhotoCapture({
   );
 }
 
-/** Son sur le téléphone : un enregistrement de 3 secondes au micro, qu'on peut écouter avant d'envoyer. */
+/** Son sur le téléphone : un enregistrement de 3 secondes au micro, qu’on peut écouter avant d’envoyer. */
 export function SoundRecorder({ busy, onSubmit }: { busy: boolean; onSubmit: (dataUrl: string) => void }) {
   const [prefs] = useMediaPrefs();
   const [preview, setPreview] = useState<string | null>(null);

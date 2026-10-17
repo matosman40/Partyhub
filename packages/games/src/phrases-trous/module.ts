@@ -19,7 +19,7 @@ import { curatedContent, type PhraseContent, type PhraseRound } from './fallback
 import { completesHole, dealHand, fillSentence, removeCard } from './rules.js';
 
 /**
- * Phrases à trous : l'IA écrit des phrases à trou à partir des mots-clés de chacun. À chaque tour, tout le monde
+ * Phrases à trous : l’IA écrit des phrases à trou à partir des mots-clés de chacun. À chaque tour, tout le monde
  * pose une carte de sa main dans le trou. Les phrases complétées sont ensuite votées, sans savoir qui les a
  * écrites. Une carte qui complète juste le trou rapporte un bonus. Après le dernier tour, le plus de points gagne.
  */
@@ -59,11 +59,11 @@ export interface PhrasesState {
   settings: PhrasesSettings;
   players: Record<string, string>;
   points: Record<string, number>;
-  /** Tour de parole des mots-clés, conservé ensuite pour l'affichage des thèmes. */
+  /** Tour de parole des mots-clés, conservé ensuite pour l’affichage des thèmes. */
   topics: KeywordTurns | null;
   jobId: string | null;
   notice: string | null;
-  /** Tours du jeu : une phrase et sa réponse (cachée tant que le tour n'est pas révélé). */
+  /** Tours du jeu : une phrase et sa réponse (cachée tant que le tour n’est pas révélé). */
   rounds: PhraseRound[];
   /** Cartes du jeu. Chaque main est tirée dedans et complétée après chaque tour. */
   pool: string[];
@@ -74,7 +74,7 @@ export interface PhrasesState {
   fills: Record<string, string>;
   /** Joueurs dont la carte a été choisie automatiquement, faute de temps. */
   auto: Record<string, boolean>;
-  /** Auteurs des phrases dans l'ordre de vote anonyme. */
+  /** Auteurs des phrases dans l’ordre de vote anonyme. */
   options: string[];
   /** Votant -> indice de la phrase choisie. */
   votes: Record<string, number>;
@@ -106,7 +106,7 @@ function afterTopicTurn(s: PhrasesState, topics: KeywordTurns, ctx: GameContext)
   return { ...s, topics };
 }
 
-/** Sans aucun mot-clé, les phrases intégrées sont tirées tout de suite. Sinon, l'IA écrit les phrases. */
+/** Sans aucun mot-clé, les phrases intégrées sont tirées tout de suite. Sinon, l’IA écrit les phrases. */
 function closeTopics(s: PhrasesState, ctx: GameContext): PhrasesState {
   ctx.cancel(TOPIC_TIMEOUT);
   const themes = s.topics ? keywordThemes(s.topics, s.players) : [];
@@ -412,7 +412,7 @@ export const phrasesTrous: GameModule<PhrasesState, PhrasesSettings> = {
     return s;
   },
 
-  // Travail demandé à l'IA : les thèmes des joueurs et le nombre de tours.
+  // Travail demandé à l’IA : les thèmes des joueurs et le nombre de tours.
   pendingJob(s: PhrasesState) {
     if (s.phase !== 'generating' || !s.topics || !s.jobId) return null;
     const input: PhrasesThemesInput = {
@@ -428,7 +428,7 @@ export const phrasesTrous: GameModule<PhrasesState, PhrasesSettings> = {
     if (s.phase !== 'generating' || s.jobId !== jobId) return s;
     const generated = outcome.ok ? (outcome.value as PhraseContent | null) : null;
     if (generated && generated.rounds.length > 0) return startGame({ ...s, notice: null }, generated, ctx);
-    // Pas d'IA configurée, ou réponse inutilisable : le jeu reprend ses phrases intégrées, sans bloquer la salle.
+    // Pas d’IA configurée, ou réponse inutilisable : le jeu reprend ses phrases intégrées, sans bloquer la salle.
     const notice =
       outcome.ok && outcome.value === null
         ? 'IA non configurée : phrases intégrées.'
@@ -455,7 +455,7 @@ export const phrasesTrous: GameModule<PhrasesState, PhrasesSettings> = {
     return {
       points: s.points[playerId] ?? 0,
       rank,
-      // La main n'est visible que pendant la pose : elle ne sert à rien ensuite.
+      // La main n’est visible que pendant la pose : elle ne sert à rien ensuite.
       hand: s.phase === 'fill' ? (s.hands[playerId] ?? []) : [],
       played: s.fills[playerId] ?? null,
       myVote: s.votes[playerId] ?? null,
@@ -514,7 +514,7 @@ export const phrasesTrous: GameModule<PhrasesState, PhrasesSettings> = {
   },
 };
 
-/** Saisie d'un tour de parole : seul le joueur dont c'est le tour peut la proposer. */
+/** Saisie d’un tour de parole : seul le joueur dont c’est le tour peut la proposer. */
 function handleKeywords(s: PhrasesState, p: PlayerRef, payload: unknown, ctx: GameContext): GameResult<PhrasesState> {
   if (s.phase !== 'topics' || !s.topics) return fail('Aucun mot-clé attendu pour le moment');
   if (turnPlayer(s.topics) !== p.id) return fail('Ce n’est pas votre tour');

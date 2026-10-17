@@ -4,7 +4,7 @@ import { boardGameDefinitionSchema, type BoardGameDefinition } from '@partyhub/s
 import type { Store } from '../db/store.js';
 import { setCustomGames } from '../games-registry.js';
 
-/** Préfixe des identifiants de jeux de plateau créés dans l'administration. */
+/** Préfixe des identifiants de jeux de plateau créés dans l’administration. */
 export const BOARD_GAME_PREFIX = 'board-';
 
 export interface BoardGameRecord {
@@ -44,7 +44,7 @@ export class BoardGameService {
     return this.store.listBoardGames().some((row) => row.id === id);
   }
 
-  /** Crée un jeu (id absent) ou remplace la définition d'un jeu existant. */
+  /** Crée un jeu (id absent) ou remplace la définition d’un jeu existant. */
   save(id: string | null, input: unknown): { ok: true; id: string } | { ok: false; error: string } {
     const parsed = boardGameDefinitionSchema.safeParse(input);
     if (!parsed.success) {
@@ -66,7 +66,7 @@ export class BoardGameService {
     return true;
   }
 
-  /** Copie d'un plateau, nommée « … (copie) ». */
+  /** Copie d’un plateau, nommée « … (copie) ». */
   duplicate(id: string): { ok: true; id: string } | { ok: false; error: string } {
     const original = this.list().find((r) => r.id === id);
     if (!original) return { ok: false, error: 'Jeu inconnu.' };

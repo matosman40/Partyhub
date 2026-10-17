@@ -12,7 +12,7 @@ interface QuizDraft {
 
 /**
  * Réglages de Quiz Party. Les valeurs saisies sont validées par le serveur :
- * le navigateur n'est qu'un confort de saisie, et borne les nombres à la perte de focus.
+ * le navigateur n’est qu’un confort de saisie, et borne les nombres à la perte de focus.
  */
 export function QuizSettings({ settings, disabled, onChange }: SettingsProps) {
   const current = settings as unknown as QuizDraft;

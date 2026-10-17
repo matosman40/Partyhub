@@ -1,14 +1,14 @@
 import { useEffect, useRef } from 'react';
 import type { RoomStatus, SfxName } from '@partyhub/shared';
-import { playSfx } from '@partyhub/games/client';
+import { playCue } from '@partyhub/games/client';
 
 /**
- * Bruitages de l'écran principal, sans rien demander aux jeux : le lancement de la partie, chaque bilan,
- * et la fin. Les jeux annoncent leur étape dans leur état public (`phase`) : un changement d'étape
+ * Bruitages de l’écran principal, sans rien demander aux jeux : le lancement de la partie, chaque bilan,
+ * et la fin. Les jeux annoncent leur étape dans leur état public (`phase`) : un changement d’étape
  * fait un clic, un bilan (manche, pli, niveau révélé) un bruit de jetons, la fin une fanfare.
  *
- * Le premier état reçu ne joue rien : une reprise d'écran (rechargement en pleine partie) ne doit pas
- * faire de bruit. Deux bruitages ne se suivent pas de moins d'une demi-seconde, et un même bruitage
+ * Le premier état reçu ne joue rien : une reprise d’écran (rechargement en pleine partie) ne doit pas
+ * faire de bruit. Deux bruitages ne se suivent pas de moins d’une demi-seconde, et un même bruitage
  * (la fin de partie arrive parfois en deux messages) ne se répète pas avant trois secondes.
  */
 
@@ -25,7 +25,7 @@ export interface CueState {
   phase: string | null;
 }
 
-/** Étape annoncée par l'état public d'un jeu, ou null quand le jeu n'en annonce pas. */
+/** Étape annoncée par l’état public d’un jeu, ou null quand le jeu n’en annonce pas. */
 export function phaseOf(publicState: unknown): string | null {
   if (!publicState || typeof publicState !== 'object') return null;
   const phase = (publicState as { phase?: unknown }).phase;
@@ -56,12 +56,14 @@ export function allowCue(last: LastCue | null, name: SfxName, now: number): bool
   return !(last.name === name && gap < SAME_GAP_MS);
 }
 
-/** Joue le bruitage qui correspond au changement de statut ou d'étape de la salle. */
+/** Joue le bruitage qui correspond au changement de statut ou d’étape de la salle. */
 export function useGameCues(status: RoomStatus | null, phase: string | null): void {
   const prev = useRef<CueState | null>(null);
   const last = useRef<LastCue | null>(null);
 
   useEffect(() => {
+    // Tant que la salle n’a rien envoyé, il n’y a rien à comparer : le premier état reçu ne joue pas.
+    if (status === null) return;
     const next: CueState = { status, phase };
     const cue = cueFor(prev.current, next);
     prev.current = next;
@@ -69,6 +71,6 @@ export function useGameCues(status: RoomStatus | null, phase: string | null): vo
     const now = performance.now();
     if (!allowCue(last.current, cue, now)) return;
     last.current = { name: cue, at: now };
-    playSfx(cue);
+    playCue(cue);
   }, [status, phase]);
 }

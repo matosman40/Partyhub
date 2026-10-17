@@ -8,13 +8,13 @@ import { CardFace } from './CardFace.js';
 import { useCardFlights, useChange } from './cues.js';
 import { entryOf, familyOf, handPoints, rankingOf, type CardsPublic } from './common.js';
 
-/** Écran principal d'un jeu de cartes : table, pioche, défausse et joueurs. */
+/** Écran principal d’un jeu de cartes : table, pioche, défausse et joueurs. */
 export function CardsHost({ publicState, now }: HostViewProps) {
   const pub = publicState as CardsPublic | null;
   const remaining = useRemaining(pub?.turnEndsAt ?? undefined, now);
   const rootRef = useRef<HTMLElement>(null);
 
-  // Sons et trajets : déclenchés par les changements d'état, avant les retours anticipés.
+  // Sons et trajets : déclenchés par les changements d’état, avant les retours anticipés.
   useChange(pub?.started ?? false, (_, started) => {
     if (started) play('start');
   });

@@ -49,7 +49,7 @@ export interface PackageRecord {
 
 interface Loaded {
   record: PackageRecord;
-  /** Ressources graphiques seulement (assets/), servies par l'API publique. */
+  /** Ressources graphiques seulement (assets/), servies par l’API publique. */
   assets: Map<string, Uint8Array>;
 }
 
@@ -57,7 +57,7 @@ export type InstallResult =
   | { ok: true; id: string; gameId: string; version: string; unchanged: boolean; active: boolean }
   | { ok: false; error: string; issues?: string[] };
 
-/** Une version connue d'un paquet : la version active ou une version conservée pour un retour arrière. */
+/** Une version connue d’un paquet : la version active ou une version conservée pour un retour arrière. */
 export interface PackageVersionRecord {
   version: string;
   sha256: string;
@@ -79,7 +79,7 @@ function sha256Of(data: Uint8Array): string {
 /**
  * Gère les paquets `.phgame` installés. Chaque archive est conservée dans
  * `<dataDir>/games/<id>/<version>/package.phgame` et revalidée à chaque démarrage :
- * une archive modifiée à la main passe en état « erreur » au lieu d'être jouée.
+ * une archive modifiée à la main passe en état « erreur » au lieu d’être jouée.
  */
 export class PackageService {
   private loaded = new Map<string, Loaded>();
@@ -150,7 +150,7 @@ export class PackageService {
   }
 
   /**
-   * Installe un paquet. Une version plus récente devient la version active, et l'ancienne reste
+   * Installe un paquet. Une version plus récente devient la version active, et l’ancienne reste
    * conservée. Une version plus ancienne est conservée sans être activée : elle sert au retour
    * arrière. Refuse un paquet invalide, un paquet qui ne se lance pas, et une version déjà connue
    * dont le contenu diffère.
@@ -241,7 +241,7 @@ export class PackageService {
 
   /**
    * Rend active une version conservée : retour arrière, ou passage à une version plus récente
-   * déjà importée. L'archive est revalidée avant ; une archive altérée ne remplace jamais la version active.
+   * déjà importée. L’archive est revalidée avant ; une archive altérée ne remplace jamais la version active.
    */
   activate(id: string, version: string): { ok: true; version: string } | { ok: false; error: string } {
     const current = this.store.getPackage(id);
@@ -261,7 +261,7 @@ export class PackageService {
     return { ok: true, version };
   }
 
-  /** Toutes les versions connues d'un paquet, la plus récente d'abord. Undefined si le paquet est inconnu. */
+  /** Toutes les versions connues d’un paquet, la plus récente d’abord. Undefined si le paquet est inconnu. */
   versions(id: string): PackageVersionRecord[] | undefined {
     const current = this.store.getPackage(id);
     if (!current) return undefined;
@@ -277,8 +277,8 @@ export class PackageService {
   }
 
   /**
-   * Paquet actif relu et revalidé, pour en faire une copie modifiable. L'archive installée
-   * n'est jamais modifiée : la copie est un jeu distinct, enregistré comme les jeux de l'administration.
+   * Paquet actif relu et revalidé, pour en faire une copie modifiable. L’archive installée
+   * n’est jamais modifiée : la copie est un jeu distinct, enregistré comme les jeux de l’administration.
    */
   readActive(id: string): { ok: true; pkg: ValidatedPackage } | { ok: false; error: string } {
     const entry = this.loaded.get(id);
@@ -306,7 +306,7 @@ export class PackageService {
 
   /**
    * Supprime une version conservée, pour libérer de la place. La version active ne se supprime
-   * pas : il faut d'abord activer une autre version (sinon le paquet n'aurait plus de jeu).
+   * pas : il faut d’abord activer une autre version (sinon le paquet n’aurait plus de jeu).
    */
   removeArchivedVersion(id: string, version: string): { ok: true; version: string } | { ok: false; error: string } {
     const current = this.store.getPackage(id);
@@ -334,7 +334,7 @@ export class PackageService {
     return true;
   }
 
-  /** Ressource graphique d'un paquet actif. Retourne null pour tout autre cas (y compris un chemin inconnu). */
+  /** Ressource graphique d’un paquet actif. Retourne null pour tout autre cas (y compris un chemin inconnu). */
   asset(id: string, name: string): { bytes: Uint8Array; contentType: string } | null {
     const entry = this.loaded.get(id);
     if (!entry || entry.record.status !== 'actif') return null;

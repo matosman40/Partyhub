@@ -2,8 +2,8 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { api } from '../api.js';
 
 /**
- * Fournisseurs d'IA : clés saisies ici, modèle, adresse (« Autre service »), interrupteur et test.
- * Le serveur ne renvoie jamais une clé : on voit seulement si elle existe et d'où elle vient.
+ * Fournisseurs d’IA : clés saisies ici, modèle, adresse (« Autre service »), interrupteur et test.
+ * Le serveur ne renvoie jamais une clé : on voit seulement si elle existe et d’où elle vient.
  */
 
 type KeySource = 'admin' | 'env' | 'unreadable' | 'none';

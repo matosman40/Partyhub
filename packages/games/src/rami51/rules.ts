@@ -4,13 +4,13 @@ import type { CardGameDefinition, GameNotice } from '@partyhub/shared';
  * Règles pures du Rami 51 : paquet de 108 cartes, valeurs, combinaisons (brelans,
  * carrés, suites) avec la place exacte de chaque joker, ouverture, compléments,
  * échange de joker et pénalités. Le serveur et le téléphone utilisent les mêmes
- * fonctions : une combinaison refusée sur le téléphone l'est aussi sur le serveur.
+ * fonctions : une combinaison refusée sur le téléphone l’est aussi sur le serveur.
  *
  * Identifiants : une carte est « rang + couleur » (« 7h » = 7 de cœur, « qs » = dame
  * de pique, « 10d », « ac »…), le joker est « jk ». Deux jeux sont mélangés : chaque
  * carte physique a un identifiant unique (« 7h-1 », « 7h-2 », « jk-3 »).
  *
- * Rangs : 1 (as) à 13 (roi). Dans une suite, la place d'une carte va de 1 (as bas,
+ * Rangs : 1 (as) à 13 (roi). Dans une suite, la place d’une carte va de 1 (as bas,
  * A-2-3) à 14 (as haut, D-R-A) ; une suite ne fait jamais le tour (R-A-2 interdit).
  */
 
@@ -24,7 +24,7 @@ export interface SuitInfo {
   red: boolean;
 }
 
-/** Couleurs dans l'ordre d'affichage (noir et rouge alternés). */
+/** Couleurs dans l’ordre d’affichage (noir et rouge alternés). */
 export const SUITS: readonly SuitInfo[] = [
   { id: 's', label: 'Pique', glyph: '♠', color: '#16162e', red: false },
   { id: 'h', label: 'Cœur', glyph: '♥', color: '#d6293a', red: true },
@@ -60,7 +60,7 @@ export const HAND_SIZE = 13;
 export const DECK_SIZE = 108;
 export const MAX_RUN = 13;
 
-/** Une carte physique : identifiant unique et carte du paquet qu'elle représente. */
+/** Une carte physique : identifiant unique et carte du paquet qu’elle représente. */
 export interface RamiCard {
   uid: string;
   entry: string;
@@ -91,7 +91,7 @@ export function suitInfo(id: SuitId | null | undefined): SuitInfo | undefined {
   return id ? SUIT_BY_ID.get(id) : undefined;
 }
 
-/** Libellé court d'une place (1 et 14 : as ; 11 à 13 : V, D, R). */
+/** Libellé court d’une place (1 et 14 : as ; 11 à 13 : V, D, R). */
 export function posLabel(pos: number): string {
   if (pos === 1 || pos === 14) return 'A';
   return RANK_SHORT[pos - 1] ?? '?';
@@ -105,7 +105,7 @@ export function cardLabel(entry: string): string {
   return `${RANK_SHORT[info.rank - 1]}${suitInfo(info.suit)?.glyph ?? ''}`;
 }
 
-/** « sept de cœur », « dame de pique », « joker » (lecteurs d'écran). */
+/** « sept de cœur », « dame de pique », « joker » (lecteurs d’écran). */
 export function cardName(entry: string): string {
   const info = INFO.get(entry);
   if (!info) return 'carte';
@@ -113,12 +113,12 @@ export function cardName(entry: string): string {
   return `${RANK_NAMES[info.rank - 1]} de ${suitInfo(info.suit)?.label.toLowerCase() ?? ''}`;
 }
 
-/** Libellé d'une place dans une couleur : « 7♥ », « A♠ ». */
+/** Libellé d’une place dans une couleur : « 7♥ », « A♠ ». */
 function placeLabel(pos: number, suit: SuitId): string {
   return `${posLabel(pos)}${suitInfo(suit)?.glyph ?? ''}`;
 }
 
-/** Nom pluriel d'un rang, pour « brelan de 7 », « carré de rois ». */
+/** Nom pluriel d’un rang, pour « brelan de 7 », « carré de rois ». */
 export function rankPlural(pos: number): string {
   if (pos === 1 || pos === 14) return 'as';
   if (pos === 11) return 'valets';
@@ -131,7 +131,7 @@ export function rankPlural(pos: number): string {
 // Valeurs
 // ---------------------------------------------------------------------------
 
-/** Valeur d'une carte posée selon sa place : as bas 1, as haut 11, figures 10, sinon sa valeur. */
+/** Valeur d’une carte posée selon sa place : as bas 1, as haut 11, figures 10, sinon sa valeur. */
 export function positionValue(pos: number): number {
   if (pos === 1) return 1;
   if (pos === 14) return 11;
@@ -139,7 +139,7 @@ export function positionValue(pos: number): number {
   return pos;
 }
 
-/** Pénalité d'une carte restée en main : joker 20, as 11, figures 10, sinon sa valeur. */
+/** Pénalité d’une carte restée en main : joker 20, as 11, figures 10, sinon sa valeur. */
 export function penaltyValue(entry: string): number {
   const info = INFO.get(entry);
   if (!info) return 0;
@@ -208,7 +208,7 @@ export const RAMI_DEFINITION: CardGameDefinition = {
   notice: RAMI_NOTICE,
 };
 
-/** Les 108 cartes, dans l'ordre (à mélanger). */
+/** Les 108 cartes, dans l’ordre (à mélanger). */
 export function fullDeck(): RamiCard[] {
   const cards: RamiCard[] = [];
   for (const copy of [1, 2]) {
@@ -226,13 +226,13 @@ export function fullDeck(): RamiCard[] {
 
 export type MeldKind = 'set' | 'run';
 
-/** Carte d'une combinaison posée. */
+/** Carte d’une combinaison posée. */
 export interface MeldCard {
   uid: string;
   entry: string;
-  /** Place tenue : 1 (as bas) à 14 (as haut). Pour un joker, celle de la carte qu'il remplace. */
+  /** Place tenue : 1 (as bas) à 14 (as haut). Pour un joker, celle de la carte qu’il remplace. */
   pos: number;
-  /** Joker seulement : couleur(s) qu'il représente (une dans une suite, les couleurs manquantes d'un brelan). */
+  /** Joker seulement : couleur(s) qu’il représente (une dans une suite, les couleurs manquantes d’un brelan). */
   stands?: SuitId[];
 }
 
@@ -241,7 +241,7 @@ export interface Meld {
   id: string;
   owner: string;
   kind: MeldKind;
-  /** Ordre d'affichage : suite croissante ; brelan ou carré par couleur, joker en dernier. */
+  /** Ordre d’affichage : suite croissante ; brelan ou carré par couleur, joker en dernier. */
   cards: MeldCard[];
 }
 
@@ -317,7 +317,7 @@ interface RunItem {
 
 type RunAttempt = { ok: true; cards: MeldCard[]; points: number } | { ok: false; error: string; missing: number };
 
-/** Essaie une place pour chaque carte naturelle ; le joker (s'il est libre) suit la règle de placement. */
+/** Essaie une place pour chaque carte naturelle ; le joker (s’il est libre) suit la règle de placement. */
 function placeRun(naturals: RunItem[], positions: number[], joker: RunItem | null, suit: SuitId): RunAttempt {
   const taken = new Set<number>();
   for (const p of positions) {
@@ -383,7 +383,7 @@ function placements(choices: number[][]): number[][] {
   return out;
 }
 
-/** Suite d'une seule couleur. Les cartes déjà posées gardent leur place (`fixed`). */
+/** Suite d’une seule couleur. Les cartes déjà posées gardent leur place (`fixed`). */
 function solveRun(items: RunItem[], suit: SuitId): MeldCheck {
   if (items.length > MAX_RUN) return fail('Une suite compte au plus 13 cartes.');
   const naturals = items.filter((i) => !i.joker);
@@ -417,8 +417,8 @@ function solveRun(items: RunItem[], suit: SuitId): MeldCheck {
 }
 
 /**
- * Vrai si les rangs ne se suivent ni avec l'as en bas ni avec l'as en haut,
- * mais se suivraient en passant du roi à l'as puis au 2 (suite qui fait le tour).
+ * Vrai si les rangs ne se suivent ni avec l’as en bas ni avec l’as en haut,
+ * mais se suivraient en passant du roi à l’as puis au 2 (suite qui fait le tour).
  */
 function wrapsAround(ranks: number[], jokers: number): boolean {
   if (ranks.length === 0) return false;
@@ -432,7 +432,7 @@ function wrapsAround(ranks: number[], jokers: number): boolean {
 
 /**
  * Valide une nouvelle combinaison et donne la place de chaque carte (joker compris),
- * sa valeur et sa nature. Les cartes peuvent être données dans n'importe quel ordre.
+ * sa valeur et sa nature. Les cartes peuvent être données dans n’importe quel ordre.
  */
 export function checkMeld(cards: readonly RamiCard[]): MeldCheck {
   if (cards.length === 0) return fail('Choisissez des cartes.');
@@ -460,12 +460,12 @@ export function checkMeld(cards: readonly RamiCard[]): MeldCheck {
   );
 }
 
-/** Valeur d'une combinaison posée (le joker vaut la carte qu'il remplace). */
+/** Valeur d’une combinaison posée (le joker vaut la carte qu’il remplace). */
 export function meldPoints(cards: readonly MeldCard[]): number {
   return cards.reduce((sum, c) => sum + positionValue(c.pos), 0);
 }
 
-/** Couleur d'une suite posée. */
+/** Couleur d’une suite posée. */
 export function runSuit(meld: Pick<Meld, 'cards'>): SuitId | null {
   for (const c of meld.cards) {
     const info = INFO.get(c.entry);
@@ -543,7 +543,7 @@ export function checkLayoff(meld: Pick<Meld, 'kind' | 'cards'>, added: readonly 
   return solveRun(items, suit);
 }
 
-/** Description du joker d'une combinaison : « 7♥ », ou « 7♦ ou 7♣ » dans un brelan. */
+/** Description du joker d’une combinaison : « 7♥ », ou « 7♦ ou 7♣ » dans un brelan. */
 export function jokerText(card: MeldCard): string {
   const stands = card.stands ?? [];
   if (stands.length === 0) return posLabel(card.pos);
@@ -594,7 +594,7 @@ export interface OpeningCheck {
   melds: MeldCheck[];
 }
 
-/** Ouverture : une ou plusieurs combinaisons posées d'un coup, `threshold` points au moins, dont une tierce franche. */
+/** Ouverture : une ou plusieurs combinaisons posées d’un coup, `threshold` points au moins, dont une tierce franche. */
 export function checkOpening(groups: readonly (readonly RamiCard[])[], threshold: number): OpeningCheck {
   const melds = groups.map((g) => checkMeld(g));
   let points = 0;
@@ -618,7 +618,7 @@ export function checkOpening(groups: readonly (readonly RamiCard[])[], threshold
   return result(null);
 }
 
-/** Titre d'une combinaison : « Suite 5 à 9 ♥ », « Brelan de 7 », « Carré de rois ». */
+/** Titre d’une combinaison : « Suite 5 à 9 ♥ », « Brelan de 7 », « Carré de rois ». */
 export function meldTitle(kind: MeldKind, cards: readonly MeldCard[]): string {
   if (cards.length === 0) return '';
   if (kind === 'set') return `${cards.length === 4 ? 'Carré' : 'Brelan'} de ${rankPlural(cards[0]!.pos)}`;
@@ -628,7 +628,7 @@ export function meldTitle(kind: MeldKind, cards: readonly MeldCard[]): string {
 
 export type SortMode = 'suit' | 'rank';
 
-/** Tri de la main pour l'affichage : par couleur puis valeur, ou par valeur puis couleur ; jokers à la fin. */
+/** Tri de la main pour l’affichage : par couleur puis valeur, ou par valeur puis couleur ; jokers à la fin. */
 export function sortCards<T extends { uid: string; entry: string }>(cards: readonly T[], mode: SortMode): T[] {
   const key = (c: T): [number, number, string] => {
     const info = INFO.get(c.entry);

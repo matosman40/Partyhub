@@ -1,9 +1,9 @@
 import type { CardGameDefinition } from '@partyhub/shared';
 
 /**
- * Règles pures du Président : paquet de 52 cartes, valeurs, validation d'un pli.
+ * Règles pures du Président : paquet de 52 cartes, valeurs, validation d’un pli.
  * Le serveur et le téléphone utilisent les mêmes fonctions : une carte refusée
- * sur le téléphone l'est aussi sur le serveur, et inversement.
+ * sur le téléphone l’est aussi sur le serveur, et inversement.
  */
 
 export const RANKS = ['3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A', '2'] as const;
@@ -27,8 +27,8 @@ export function rankOf(entry: { label: string }): number {
 }
 
 /**
- * Main triée du plus faible au plus fort, pour l'affichage seulement : le jeu ne change pas.
- * À rang égal, l'ordre des couleurs du paquet.
+ * Main triée du plus faible au plus fort, pour l’affichage seulement : le jeu ne change pas.
+ * À rang égal, l’ordre des couleurs du paquet.
  */
 export function sortHandByRank<T extends { entry: string }>(hand: readonly T[]): T[] {
   const deck = new Map(PRESIDENT_DEFINITION.cards.map((c, order) => [c.id, { rank: rankOf(c), order }]));
@@ -75,7 +75,7 @@ export const PRESIDENT_DEFINITION: CardGameDefinition = {
 /**
  * Vrai si `cards` forment un coup valable sur le pli en cours :
  * même rang, nombre égal au pli, rang supérieur — ou coup de brûlage (10 ou carré).
- * Sur une table vide, n'importe quel groupe de même rang est valable.
+ * Sur une table vide, n’importe quel groupe de même rang est valable.
  */
 export function validatePlay(
   pileRank: number,

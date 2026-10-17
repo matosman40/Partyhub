@@ -5,7 +5,7 @@ import { EXPRESSION_NAMES } from '../profile/CharacterEditor.js';
 
 /**
  * Expression au repos du personnage, réglée depuis la salle. Le choix est enregistré sur le profil :
- * la salle et l'écran le montrent tout de suite, et la prochaine entrée le retrouve.
+ * la salle et l’écran le montrent tout de suite, et la prochaine entrée le retrouve.
  */
 export function ExpressionRow({ character, token }: { character: CharacterSpec; token: string }) {
   const [busy, setBusy] = useState(false);

@@ -15,7 +15,7 @@ export function TarotHost({ publicState, now }: HostViewProps) {
   const remaining = useRemaining(pub?.turnEndsAt ?? undefined, now);
   const rootRef = useRef<HTMLElement>(null);
 
-  // Sons et trajets : déclenchés par les changements d'état, avant les retours anticipés.
+  // Sons et trajets : déclenchés par les changements d’état, avant les retours anticipés.
   useChange(pub?.started ?? false, (_, started) => {
     if (started) play('start');
   });
@@ -110,7 +110,7 @@ export function TarotHost({ publicState, now }: HostViewProps) {
   );
 }
 
-/** Texte sous le nom : l'enchère pendant les enchères, puis le camp. */
+/** Texte sous le nom : l’enchère pendant les enchères, puis le camp. */
 function seatNote(pub: TarotPub, id: string): string {
   if (pub.phase === 'bidding') {
     const bid = pub.bids.find((b) => b.playerId === id);
@@ -160,7 +160,7 @@ function Seat({ pub, id }: { pub: TarotPub; id: string }) {
   );
 }
 
-/** Centre du tapis : enchères, chien retourné pendant l'écart, ou le pli (le dernier pli une fois ramassé). */
+/** Centre du tapis : enchères, chien retourné pendant l’écart, ou le pli (le dernier pli une fois ramassé). */
 function Center({ pub }: { pub: TarotPub }) {
   if (pub.phase === 'bidding') {
     const best = pub.highest ? pub.bids.find((b) => b.contract === pub.highest) : null;
