@@ -7,7 +7,7 @@ import type { Store, AssetRow } from '../db/store.js';
 /**
  * Médiathèque : fichiers audio, vidéo et images réutilisables par les jeux.
  * Le type est déduit du contenu réel (signature des octets), jamais du nom du fichier
- * ni de l'en-tête envoyé par le navigateur.
+ * ni de l’en-tête envoyé par le navigateur.
  */
 
 export type AssetKind = 'audio' | 'video' | 'image' | 'font';
@@ -29,12 +29,12 @@ function startsWith(buf: Buffer, offset: number, text: string): boolean {
 }
 
 /**
- * Reconnaît un fichier à partir de ses premiers octets. Renvoie null si le format n'est
+ * Reconnaît un fichier à partir de ses premiers octets. Renvoie null si le format n’est
  * pas accepté (texte, HTML, exécutable…).
  */
 export function sniffMedia(buf: Buffer): SniffedMedia | null {
   if (buf.length < 12) return null;
-  // WAV et WebP partagent l'en-tête RIFF : le format est dans les octets 8 à 12.
+  // WAV et WebP partagent l’en-tête RIFF : le format est dans les octets 8 à 12.
   if (startsWith(buf, 0, 'RIFF')) {
     if (startsWith(buf, 8, 'WAVE')) return { kind: 'audio', mime: 'audio/wav' };
     if (startsWith(buf, 8, 'WEBP')) return { kind: 'image', mime: 'image/webp' };
@@ -71,7 +71,7 @@ export function sniffMedia(buf: Buffer): SniffedMedia | null {
   return null;
 }
 
-/** Identifiant d'un fichier : 16 octets aléatoires en hexadécimal. */
+/** Identifiant d’un fichier : 16 octets aléatoires en hexadécimal. */
 const ASSET_ID = /^[0-9a-f]{32}$/;
 
 export type ImportResult = { ok: true; status: 'added' | 'present' } | { ok: false; error: string };
@@ -99,7 +99,7 @@ function toRecord(row: AssetRow): AssetRecord {
 /** Nom affichable : sans chemin, sans caractères de contrôle, 120 caractères au plus. */
 export function cleanFileName(raw: string): string {
   const base = path.basename(raw.replace(/\\/g, '/'));
-  // Les caractères de contrôle sont justement ce que l'on retire ici.
+  // Les caractères de contrôle sont justement ce que l’on retire ici.
   // eslint-disable-next-line no-control-regex
   const clean = base.replace(/[\u0000-\u001f\u007f]/g, '').trim();
   return (clean || 'fichier').slice(0, 120);
@@ -129,13 +129,13 @@ export class AssetService {
   ) {
     this.dir = path.join(dataDir, 'assets');
     mkdirSync(this.dir, { recursive: true });
-    // Restes d'un envoi interrompu par un arrêt du serveur.
+    // Restes d’un envoi interrompu par un arrêt du serveur.
     for (const name of readdirSync(this.dir)) {
       if (name.startsWith(TEMP_PREFIX)) rmSync(path.join(this.dir, name), { force: true });
     }
   }
 
-  /** Limites appliquées par format, en octets (affichées dans l'administration). */
+  /** Limites appliquées par format, en octets (affichées dans l’administration). */
   get limitsByKind(): Record<AssetKind, number> {
     return { ...this.limits };
   }
@@ -154,7 +154,7 @@ export class AssetService {
     return row ? toRecord(row) : undefined;
   }
 
-  /** Chemin du fichier sur le disque. L'identifiant est vérifié avant tout usage. */
+  /** Chemin du fichier sur le disque. L’identifiant est vérifié avant tout usage. */
   filePath(id: string): string {
     return path.join(this.dir, id);
   }
@@ -162,8 +162,8 @@ export class AssetService {
   /**
    * Reçoit un fichier en flux : les octets vont directement dans un fichier temporaire, sans
    * être gardés en mémoire. Le format est reconnu sur les premiers octets, puis la taille
-   * maximale du format est appliquée pendant la lecture. En cas d'échec, le fichier temporaire
-   * est supprimé et la lecture de l'envoi s'arrête.
+   * maximale du format est appliquée pendant la lecture. En cas d’échec, le fichier temporaire
+   * est supprimé et la lecture de l’envoi s’arrête.
    */
   receive(input: Readable, originalName: string, declaredBytes?: number): Promise<ReceiveResult> {
     if (declaredBytes !== undefined && declaredBytes > this.maxBytes) {
@@ -206,7 +206,7 @@ export class AssetService {
         }
       };
 
-      /** Commence l'écriture une fois le format connu, avec les octets déjà lus. */
+      /** Commence l’écriture une fois le format connu, avec les octets déjà lus. */
       const begin = (bytes: Buffer): boolean => {
         const result = sniffMedia(bytes);
         if (!result) {
@@ -293,10 +293,10 @@ export class AssetService {
     });
   }
 
-  /** Supprime un fichier. La vérification « encore utilisé ? » est faite par l'appelant. */
+  /** Supprime un fichier. La vérification « encore utilisé ? » est faite par l’appelant. */
   /**
-   * Restaure un fichier d'une sauvegarde avec son identifiant d'origine : les jeux le référencent
-   * par cet identifiant. Un fichier déjà présent n'est jamais remplacé.
+   * Restaure un fichier d’une sauvegarde avec son identifiant d’origine : les jeux le référencent
+   * par cet identifiant. Un fichier déjà présent n’est jamais remplacé.
    */
   importRecord(record: AssetRecord, bytes: Buffer): ImportResult {
     if (!ASSET_ID.test(record.id)) return { ok: false, error: `Identifiant de fichier invalide (« ${record.name} »).` };

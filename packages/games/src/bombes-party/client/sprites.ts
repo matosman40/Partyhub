@@ -56,7 +56,7 @@ export const FRAMES = {
 };
 
 /**
- * Profil : on part de la face et on ne garde qu'un œil, décalé vers le côté
+ * Profil : on part de la face et on ne garde qu’un œil, décalé vers le côté
  * où le personnage regarde. Le dos ne change pas.
  */
 export function withFacing(rows: readonly string[], facing: string | undefined): readonly string[] {

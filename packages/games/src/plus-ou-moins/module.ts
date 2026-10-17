@@ -4,9 +4,9 @@ import { addPoints, directory, everyConnectedDone, fail, ok, rankEntries, shuffl
 
 /**
  * Plus ou moins : un jeu de cartes à 52 cartes. Une carte est affichée sur
- * l'écran principal ; chacun parie en secret si la suivante sera plus haute
- * ou plus basse. L'as est la carte la plus haute. Une égalité ne rapporte rien
- * à personne. Le paquet est mélangé sur le serveur : la carte suivante n'est
+ * l’écran principal ; chacun parie en secret si la suivante sera plus haute
+ * ou plus basse. L’as est la carte la plus haute. Une égalité ne rapporte rien
+ * à personne. Le paquet est mélangé sur le serveur : la carte suivante n’est
  * jamais envoyée avant la révélation.
  */
 
@@ -59,7 +59,7 @@ export interface PlusOuMoinsState {
   players: Record<string, string>;
   points: Record<string, number>;
   bets: Record<string, Bet>;
-  /** Résultat par joueur : correct = null en cas d'égalité. */
+  /** Résultat par joueur : correct = null en cas d’égalité. */
   results: Record<string, { correct: boolean | null; gained: number }>;
   endsAt: number;
 }
@@ -142,14 +142,14 @@ export const plusOuMoins: GameModule<PlusOuMoinsState, PlusOuMoinsSettings> = {
     notice: {
       goal: 'Prévoir si la carte suivante sera plus haute ou plus basse.',
       steps: [
-        "Une carte est affichée sur l'écran.",
+        'Une carte est affichée sur l’écran.',
         'Sur votre téléphone, pariez « plus haut » ou « plus bas ».',
         'La carte suivante est révélée : chaque bon pari rapporte 100 points.',
-        "L'as est la carte la plus haute. Une égalité ne rapporte rien à personne.",
+        'L’as est la carte la plus haute. Une égalité ne rapporte rien à personne.',
       ],
       tips: [
-        "Les paris restent secrets jusqu'à la révélation.",
-        "Le paquet est mélangé sur le serveur, la carte suivante n'est jamais envoyée avant.",
+        'Les paris restent secrets jusqu’à la révélation.',
+        'Le paquet est mélangé sur le serveur, la carte suivante n’est jamais envoyée avant.',
       ],
     },
   },

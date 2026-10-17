@@ -1,6 +1,6 @@
 import type { CombatActionId, SceneKind, StatKey } from './schemas.js';
 
-/** Types de l'état de l'aventure, partagés par le moteur, la progression et le combat. */
+/** Types de l’état de l’aventure, partagés par le moteur, la progression et le combat. */
 
 export interface Character {
   id: string;
@@ -17,24 +17,24 @@ export interface Character {
   flaw: string;
   /** Objet de départ. */
   item: string;
-  /** Objets gagnés pendant l'aventure (quatre au plus, les plus anciens partent d'abord). */
+  /** Objets gagnés pendant l’aventure (quatre au plus, les plus anciens partent d’abord). */
   bag: string[];
-  /** Niveau actuel, dérivé de l'expérience et appliqué au fil des gains. */
+  /** Niveau actuel, dérivé de l’expérience et appliqué au fil des gains. */
   level: number;
   /** Expérience totale. */
   xp: number;
   /** Expérience au début de cette partie : le classement ne compte que ce qui a été gagné ici. */
   xpStart: number;
-  /** Parties jouées et gagnées avec ce personnage, gardées d'une partie à l'autre. */
+  /** Parties jouées et gagnées avec ce personnage, gardées d’une partie à l’autre. */
   games: number;
   victories: number;
-  /** Portrait généré (identifiant d'image), ou null : le personnage est alors dessiné à partir de son nom. */
+  /** Portrait généré (identifiant d’image), ou null : le personnage est alors dessiné à partir de son nom. */
   portraitId: string | null;
-  /** Joueur qui incarne ce personnage, ou null (compagnon de l'aventure, il ne vote pas). */
+  /** Joueur qui incarne ce personnage, ou null (compagnon de l’aventure, il ne vote pas). */
   ownerId: string | null;
 }
 
-/** Personnage secondaire rencontré dans l'histoire. Il est dessiné à partir de son nom. */
+/** Personnage secondaire rencontré dans l’histoire. Il est dessiné à partir de son nom. */
 export interface Npc {
   name: string;
   title: string;
@@ -49,14 +49,14 @@ export interface Choice {
   label: string;
   stat: StatKey;
   difficulty: number;
-  /** Ce qui arrive si le jet réussit, et si le jet échoue. Gardé secret jusqu'à la résolution du vote. */
+  /** Ce qui arrive si le jet réussit, et si le jet échoue. Gardé secret jusqu’à la résolution du vote. */
   onSuccess: string;
   onFailure: string;
   /** Objet gagné en cas de réussite. */
   item: string | null;
   /** Points de vie rendus en cas de réussite. */
   heal: number;
-  /** Points de vie perdus en cas d'échec. */
+  /** Points de vie perdus en cas d’échec. */
   risk: number;
   /** Effet sur le lien avec le personnage de la scène, quel que soit le jet. */
   bond: number;
@@ -76,7 +76,7 @@ export interface SceneState {
   choices: Choice[];
 }
 
-/** Résultat d'un vote : le choix retenu, le jet, la conséquence, et ce que chacun y gagne. */
+/** Résultat d’un vote : le choix retenu, le jet, la conséquence, et ce que chacun y gagne. */
 export interface Resolution {
   sceneTitle: string;
   choiceLabel: string;
@@ -109,7 +109,7 @@ export interface Foe {
   /** Dégâts de sa riposte. */
   damage: number;
   onVictory: string;
-  /** Objet trouvé sur l'ennemi après sa défaite. */
+  /** Objet trouvé sur l’ennemi après sa défaite. */
   loot: string | null;
 }
 
@@ -136,7 +136,7 @@ export interface RoundReport {
   foeHp: number;
   foeHpMax: number;
   outcome: RoundOutcome;
-  /** Ce qui suit la fin du combat (victoire ou fuite de l'ennemi). */
+  /** Ce qui suit la fin du combat (victoire ou fuite de l’ennemi). */
   consequence: string | null;
 }
 
@@ -145,9 +145,9 @@ export interface Combat {
   sceneTitle: string;
   /** Manche en cours (à partir de 1). */
   round: number;
-  /** `act` : chacun choisit son action. `reveal` : le bilan de la manche s'affiche. */
+  /** `act` : chacun choisit son action. `reveal` : le bilan de la manche s’affiche. */
   step: 'act' | 'reveal';
-  /** Action choisie par joueur pour la manche en cours : secrète jusqu'à la résolution. */
+  /** Action choisie par joueur pour la manche en cours : secrète jusqu’à la résolution. */
   actions: Record<string, CombatActionId>;
   report: RoundReport | null;
   /** Vrai une fois le combat terminé (victoire, fuite ou défaite). */
@@ -156,7 +156,7 @@ export interface Combat {
   progress: string[];
 }
 
-/** Une ligne du déroulé, gardée pour que la suite de l'histoire en tienne compte. */
+/** Une ligne du déroulé, gardée pour que la suite de l’histoire en tienne compte. */
 export interface Recap {
   sceneTitle: string;
   text: string;

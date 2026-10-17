@@ -1,7 +1,7 @@
 import type { PokerCard } from '../rules.js';
 import { RANK_LABEL, SUIT_SYMBOL, cardLabel } from '../rules.js';
 
-/** Vue publique du poker, telle qu'émise par getPublicState (voir poker/module.ts). */
+/** Vue publique du poker, telle qu’émise par getPublicState (voir poker/module.ts). */
 export interface PokerSeatPublic {
   id: string;
   inHand: boolean;
@@ -42,7 +42,7 @@ export interface PokerPublic {
   turnEndsAt: number | null;
 }
 
-/** Vue privée d'un joueur : ses cartes et ce qu'il peut faire maintenant. */
+/** Vue privée d’un joueur : ses cartes et ce qu’il peut faire maintenant. */
 export interface PokerPlayerState {
   spectator: boolean;
   holes: PokerCard[];
@@ -69,8 +69,8 @@ export const CHIP_COLOURS: Record<number, string> = {
 };
 
 /**
- * Jetons à empiler pour un montant : les plus gros d'abord, au plus 8 pièces pour rester lisible.
- * Ce n'est qu'un aperçu : le montant exact est toujours écrit à côté.
+ * Jetons à empiler pour un montant : les plus gros d’abord, au plus 8 pièces pour rester lisible.
+ * Ce n’est qu’un aperçu : le montant exact est toujours écrit à côté.
  */
 export function chipsFor(amount: number): number[] {
   const denominations = [500, 100, 25, 5, 1];

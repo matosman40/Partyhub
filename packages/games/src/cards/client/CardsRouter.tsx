@@ -9,7 +9,7 @@ import { TrickHost } from './TrickHost.js';
 import { TrickPlayer } from './TrickPlayer.js';
 
 /**
- * Chaque mécanique de carte a ses propres vues ; l'état public indique laquelle utiliser.
+ * Chaque mécanique de carte a ses propres vues ; l’état public indique laquelle utiliser.
  * Les jeux à la défausse (sans `kind`) gardent les vues historiques.
  */
 const kindOf = (publicState: unknown): string | undefined => (publicState as { kind?: string } | null)?.kind;

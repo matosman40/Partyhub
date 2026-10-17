@@ -34,7 +34,7 @@ function isTyping(target: EventTarget | null): boolean {
   return el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable;
 }
 
-/** Téléphone : la banquise, votre personnage, et les commandes en bas de l'écran. */
+/** Téléphone : la banquise, votre personnage, et les commandes en bas de l’écran. */
 export function BanquisePlayer({ publicState, playerState, playerId, send }: PlayerViewProps) {
   const pub = publicState as BanquiseView | undefined;
   const me = playerState as
@@ -91,7 +91,7 @@ export function BanquisePlayer({ publicState, playerState, playerId, send }: Pla
     });
   };
 
-  // Hors d'une manche, plus aucune direction maintenue.
+  // Hors d’une manche, plus aucune direction maintenue.
   useEffect(() => {
     if (canControl) return;
     held.current = { left: false, right: false, up: false, down: false };

@@ -6,13 +6,13 @@ interface QrProps {
   size?: number;
 }
 
-/** QR code généré localement : aucun service externe n'est sollicité. */
+/** QR code généré localement : aucun service externe n’est sollicité. */
 export function Qr({ value, size = 320 }: QrProps) {
   const [src, setSrc] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
-    // Généré à la densité de pixels de l'écran : net même affiché en grand (TV 4K, DPR élevé).
+    // Généré à la densité de pixels de l’écran : net même affiché en grand (TV 4K, DPR élevé).
     const density = Math.min(3, Math.max(1, typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1));
     QRCode.toDataURL(value, {
       width: Math.round(size * density),

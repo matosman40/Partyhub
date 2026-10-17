@@ -44,15 +44,15 @@ import { THEMES, themeById } from './themes.js';
 import type { Character, Choice, Combat, Foe, Npc, Recap, Resolution, SceneState } from './types.js';
 
 /**
- * L'Aventure IA : une histoire racontée en direct, en parties courtes. Chaque joueur incarne un personnage.
- * L'équipe a un objectif et un secret ; elle rencontre des personnages secondaires avec qui elle parle, qu'elle
+ * L’Aventure IA : une histoire racontée en direct, en parties courtes. Chaque joueur incarne un personnage.
+ * L’équipe a un objectif et un secret ; elle rencontre des personnages secondaires avec qui elle parle, qu’elle
  * peut gagner ou froisser. Une scène est un choix, un dialogue, une énigme, une halte ou un affrontement tour par
- * tour. Chaque choix dit déjà ce qui arrive en cas de réussite ou d'échec : le jet ne fait que trancher.
- * Les personnages progressent (niveaux, objets) et sont gardés dans le profil du joueur pour d'autres parties.
+ * tour. Chaque choix dit déjà ce qui arrive en cas de réussite ou d’échec : le jet ne fait que trancher.
+ * Les personnages progressent (niveaux, objets) et sont gardés dans le profil du joueur pour d’autres parties.
  *
- * Le moteur reste synchrone et déterministe. Les textes viennent d'un travail asynchrone (`pendingJob`) :
- * la salle l'exécute hors du moteur, puis `completeJob` intègre le résultat, ou l'histoire de secours si
- * l'IA n'est pas configurée ou répond mal.
+ * Le moteur reste synchrone et déterministe. Les textes viennent d’un travail asynchrone (`pendingJob`) :
+ * la salle l’exécute hors du moteur, puis `completeJob` intègre le résultat, ou l’histoire de secours si
+ * l’IA n’est pas configurée ou répond mal.
  */
 
 export type { Character, Choice, Combat, Foe, Npc, Recap, Resolution, RoundReport, SceneState } from './types.js';
@@ -61,7 +61,7 @@ const CHOOSE_MS = 60_000;
 const CHOOSE_TIMEOUT = 'choose-timeout';
 const VOTE_TIMEOUT = 'vote-timeout';
 const COMBAT_TIMEOUT = 'combat-timeout';
-/** Le jet et le bilan d'une manche restent affichés cette durée avant la suite. */
+/** Le jet et le bilan d’une manche restent affichés cette durée avant la suite. */
 const REVEAL_MS = 5000;
 const REVEAL_TIMEOUT = 'reveal-timeout';
 const ROUND_MS = 30_000;
@@ -85,25 +85,25 @@ export interface AventureState {
   settings: AventureSettings;
   /** Pseudo de chaque joueur, par identifiant. */
   players: Record<string, string>;
-  /** Ordre d'arrivée des joueurs. */
+  /** Ordre d’arrivée des joueurs. */
   order: string[];
   /** Thème retenu pour cette aventure (identifiant du catalogue), ou null pour un thème libre. */
   themeKey: string | null;
   world: WorldInput | null;
-  /** Fond du monde : identifiant d'image de la bibliothèque, ou null (pas de décor généré). */
+  /** Fond du monde : identifiant d’image de la bibliothèque, ou null (pas de décor généré). */
   backgroundId: string | null;
   characters: Character[];
-  /** Personnages secondaires de l'histoire, et ceux déjà rencontrés (par nom). */
+  /** Personnages secondaires de l’histoire, et ceux déjà rencontrés (par nom). */
   npcs: Npc[];
   met: string[];
-  /** Intrigue de secours utilisée (index), ou null quand le monde vient de l'IA. */
+  /** Intrigue de secours utilisée (index), ou null quand le monde vient de l’IA. */
   arc: number | null;
   /** Origine du dernier contenu généré : IA ou histoire de secours. */
   mode: ContentMode | null;
   /** Numéro de la scène en cours (0 avant la première). */
   sceneNumber: number;
   scene: SceneState | null;
-  /** Joueur -> choix. Les voix restent secrètes jusqu'à la résolution. */
+  /** Joueur -> choix. Les voix restent secrètes jusqu’à la résolution. */
   votes: Record<string, string>;
   resolution: Resolution | null;
   combat: Combat | null;
@@ -119,13 +119,13 @@ export interface AventureState {
   job: GameJob | null;
   jobSeq: number;
   endsAt: number;
-  /** Vrai pendant la révélation d'un jet ou d'une manche : la suite ne s'affiche pas encore. */
+  /** Vrai pendant la révélation d’un jet ou d’une manche : la suite ne s’affiche pas encore. */
   reveal: boolean;
   /** Texte prêt, qui attend la fin de la révélation. */
   queued: Queued | null;
 }
 
-/** Valeur d'une stat : entière de 1 à 6, somme totale comprise entre 10 et 14. */
+/** Valeur d’une stat : entière de 1 à 6, somme totale comprise entre 10 et 14. */
 export function normalizeStats(stats: Record<StatKey, number>): Record<StatKey, number> {
   const out = { ...stats };
   let total = STATS.reduce((sum, k) => sum + out[k], 0);
@@ -228,7 +228,7 @@ function ownedCharacters(s: AventureState): Character[] {
   return s.characters.filter((c) => c.ownerId !== null);
 }
 
-/** Libère les personnages d'un joueur : un personnage de bibliothèque repart chez lui, les autres redeviennent libres. */
+/** Libère les personnages d’un joueur : un personnage de bibliothèque repart chez lui, les autres redeviennent libres. */
 function releaseOwned(s: AventureState, playerId: string): AventureState {
   const characters = s.characters.flatMap((c) => {
     if (c.ownerId !== playerId) return [c];
@@ -293,19 +293,19 @@ function publicSheet(c: Character, players: Record<string, string>) {
   };
 }
 
-/** Ajoute un personnage secondaire à la liste de l'histoire, ou le retrouve par son nom. */
+/** Ajoute un personnage secondaire à la liste de l’histoire, ou le retrouve par son nom. */
 function withNpc(npcs: Npc[], draft: NpcDraft): Npc[] {
   if (npcs.some((n) => sameName(n.name, draft.name))) return npcs;
   return [...npcs, { name: draft.name, title: draft.title, emoji: draft.emoji, attitude: draft.attitude, bond: 0 }];
 }
 
-/** Un travail de texte est demandé : la salle l'exécute, puis `completeJob` reprend la main. */
+/** Un travail de texte est demandé : la salle l’exécute, puis `completeJob` reprend la main. */
 function askJob(s: AventureState, kind: GameJob['kind'], input: JobInput): AventureState {
   const seq = s.jobSeq + 1;
   return { ...s, phase: 'preparing', job: { id: `job-${seq}`, kind, input }, jobSeq: seq };
 }
 
-/** Thème de l'aventure : un thème du catalogue (au hasard pour `auto`), et le texte libre s'il y en a un. */
+/** Thème de l’aventure : un thème du catalogue (au hasard pour `auto`), et le texte libre s’il y en a un. */
 function themeFor(s: AventureState, random: () => number): { key: string | null; text: string } {
   const preset =
     s.settings.themeId === 'auto' ? (pickOne(THEMES, random) ?? null) : (themeById(s.settings.themeId) ?? null);
@@ -530,10 +530,10 @@ function endAdventure(s: AventureState, ctx: GameContext): AventureState {
   );
 }
 
-/* Bibliothèque : les personnages de chaque profil, gardés d'une partie à l'autre. */
+/* Bibliothèque : les personnages de chaque profil, gardés d’une partie à l’autre. */
 
 /**
- * Relit la bibliothèque d'un profil. Une fiche abîmée est écartée seule : les autres gardent leur place, et la
+ * Relit la bibliothèque d’un profil. Une fiche abîmée est écartée seule : les autres gardent leur place, et la
  * sauvegarde suivante ne les efface pas.
  */
 function readLibrary(ctx: GameContext, profileId: string): SavedCharacter[] {
@@ -566,7 +566,7 @@ function newLibraryId(ctx: GameContext): string {
 
 /**
  * Sauvegarde les personnages joués par des joueurs qui ont un profil. Un personnage garde son identifiant de
- * bibliothèque d'une sauvegarde à l'autre. La liste est relue avant d'être écrite : un autre salon du même profil
+ * bibliothèque d’une sauvegarde à l’autre. La liste est relue avant d’être écrite : un autre salon du même profil
  * ne perd pas ses personnages.
  */
 function saveLibraries(s: AventureState, ctx: GameContext): AventureState {
@@ -607,7 +607,7 @@ function saveLibraries(s: AventureState, ctx: GameContext): AventureState {
   return { ...s, characters };
 }
 
-/** Compte la partie une seule fois : parties jouées pour chaque personnage, victoires si l'aventure est gagnée. */
+/** Compte la partie une seule fois : parties jouées pour chaque personnage, victoires si l’aventure est gagnée. */
 function recordGame(s: AventureState, ctx: GameContext): AventureState {
   if (s.recorded) return s;
   const won = s.victory === true;
@@ -617,7 +617,7 @@ function recordGame(s: AventureState, ctx: GameContext): AventureState {
   return saveLibraries({ ...s, characters, recorded: true }, ctx);
 }
 
-/** Gains d'un choix réussi ou raté : expérience, objet, soin, blessure, lien avec le personnage de la scène. */
+/** Gains d’un choix réussi ou raté : expérience, objet, soin, blessure, lien avec le personnage de la scène. */
 function applyChoiceEffects(
   s: AventureState,
   actor: Character,
@@ -656,8 +656,8 @@ function applyChoiceEffects(
 }
 
 /**
- * Clôture du vote. Le choix le plus soutenu l'emporte (égalité tranchée au hasard, aucun vote : choix au hasard).
- * Le personnage du premier joueur qui a voté ce choix tente sa chance, et la conséquence prévue s'applique.
+ * Clôture du vote. Le choix le plus soutenu l’emporte (égalité tranchée au hasard, aucun vote : choix au hasard).
+ * Le personnage du premier joueur qui a voté ce choix tente sa chance, et la conséquence prévue s’applique.
  */
 function resolveVote(s: AventureState, ctx: GameContext): AventureState {
   ctx.cancel(VOTE_TIMEOUT);
@@ -814,7 +814,7 @@ function resolveCombatRound(s: AventureState, ctx: GameContext): AventureState {
   return askScene(ended, ctx);
 }
 
-/** Fin de la révélation : une manche suivante, ou le texte prêt qui s'affiche maintenant. */
+/** Fin de la révélation : une manche suivante, ou le texte prêt qui s’affiche maintenant. */
 function releaseReveal(s: AventureState, ctx: GameContext): AventureState {
   ctx.cancel(REVEAL_TIMEOUT);
   if (s.combat && !s.combat.over && s.combat.step === 'reveal') return startRound(s, ctx);
@@ -826,7 +826,7 @@ function releaseReveal(s: AventureState, ctx: GameContext): AventureState {
     : applyEpilogue(next, s.queued.draft, s.queued.mode, ctx);
 }
 
-/** Classement : expérience gagnée pendant la partie, plus un bonus si l'aventure est gagnée. */
+/** Classement : expérience gagnée pendant la partie, plus un bonus si l’aventure est gagnée. */
 function rankingOf(s: AventureState) {
   const points: Record<string, number> = Object.fromEntries(s.order.map((id) => [id, 0]));
   for (const c of s.characters) {
@@ -844,14 +844,14 @@ function durationOf(s: AventureState): number {
   return 0;
 }
 
-/** Le thème tel qu'il s'affiche : son libellé du catalogue, sinon le texte libre, sinon « au choix du conteur ». */
+/** Le thème tel qu’il s’affiche : son libellé du catalogue, sinon le texte libre, sinon « au choix du conteur ». */
 function themeLabelOf(s: AventureState): string {
   const preset = themeById(s.themeKey);
   if (preset) return preset.label;
   return s.settings.theme.trim() || 'Au choix du conteur';
 }
 
-/** Ajoute un joueur qui arrive dans la salle : son profil, et les personnages qu'il a gardés. */
+/** Ajoute un joueur qui arrive dans la salle : son profil, et les personnages qu’il a gardés. */
 function withProfile(s: AventureState, p: PlayerRef, ctx: GameContext): AventureState {
   if (!p.profileId) return s;
   return {
@@ -862,8 +862,8 @@ function withProfile(s: AventureState, p: PlayerRef, ctx: GameContext): Aventure
 }
 
 /**
- * Revalide une réponse de l'IA avant de l'intégrer : les valeurs par défaut s'appliquent (soin, risque, lien),
- * et une réponse hors format devient null, ce qui fait basculer sur l'histoire de secours.
+ * Revalide une réponse de l’IA avant de l’intégrer : les valeurs par défaut s’appliquent (soin, risque, lien),
+ * et une réponse hors format devient null, ce qui fait basculer sur l’histoire de secours.
  */
 /** Le travail de bibliothèque (roster) renvoie son contenu avec ses images ; les autres renvoient le contenu seul. */
 function unwrapJob(kind: JobInput['kind'], value: unknown): { value: unknown; images: RosterImages | null } {
@@ -893,13 +893,14 @@ export const aventureIa: GameModule<AventureState, AventureSettings> = {
     category: 'role',
     name: 'Aventure IA',
     description:
-      'Une aventure courte et racontée en direct : chacun incarne un personnage, parle aux habitants, vote les choix, affronte les ennemis tour par tour, et garde son personnage pour la prochaine partie.',
+      'Une aventure racontée en direct : chacun incarne un personnage, vote les choix et affronte les ennemis tour par tour.',
     icon: '🐉',
     version: '1.2.0',
     apiVersion: 1,
     minPlayers: 2,
     maxPlayers: MAX_CHARACTERS,
     durationMin: 12,
+    ai: true,
     notice: {
       goal: 'Atteindre l’objectif de l’aventure, sans que tous les personnages tombent.',
       steps: [
@@ -1137,7 +1138,7 @@ export const aventureIa: GameModule<AventureState, AventureSettings> = {
       theme: themeLabelOf(s),
       difficulty: DIFFICULTY_LABELS[s.settings.difficulte],
       tone: TONE_LABELS[s.settings.tone],
-      // Le secret de l'histoire reste caché jusqu'à l'épilogue.
+      // Le secret de l’histoire reste caché jusqu’à l’épilogue.
       world: s.world ? { title: s.world.title, intro: s.world.intro, goal: s.world.goal } : null,
       backgroundId: s.backgroundId,
       characters: s.characters.map((c) => publicSheet(c, s.players)),
@@ -1212,7 +1213,7 @@ export const aventureIa: GameModule<AventureState, AventureSettings> = {
       canAct: s.phase === 'combat' && s.combat !== null && s.combat.step === 'act' && alive && !acted,
       acted,
       myAction: s.combat?.actions[playerId] ?? null,
-      /** Personnages gardés dans son profil : il peut en reprendre un au début de l'aventure. */
+      /** Personnages gardés dans son profil : il peut en reprendre un au début de l’aventure. */
       library: (s.library[playerId] ?? []).map((l) => ({
         libraryId: l.libraryId,
         name: l.name,

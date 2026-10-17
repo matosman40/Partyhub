@@ -123,7 +123,7 @@ describe('déroulement d’une partie', () => {
     let state = started(game, game.initialize(game.defaultSettings, [alice, bob], ctx), ctx);
 
     const refused = game.handleAction(state, bob, 'roll', undefined, ctx);
-    expect(refused).toEqual({ ok: false, error: "Ce n'est pas votre tour." });
+    expect(refused).toEqual({ ok: false, error: 'Ce n’est pas votre tour.' });
 
     state = roll(game, state, alice, ctx);
     expect(state.positions.a).toBe(5);

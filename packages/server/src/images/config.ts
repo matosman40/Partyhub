@@ -7,14 +7,15 @@ import {
 } from './providers.js';
 
 /**
- * Configuration des fournisseurs d'images, lue dans l'environnement du serveur. Les clés ne quittent jamais le
+ * Configuration des fournisseurs d’images, lue dans l’environnement du serveur. Les clés ne quittent jamais le
  * serveur. Sans clé, le fournisseur est absent : les jeux gardent alors leur rendu de secours, sans erreur.
  *
  * - CLOUDFLARE_ACCOUNT_ID et CLOUDFLARE_API_TOKEN : Cloudflare Workers AI (FLUX.1 schnell), gratuit dans la limite
- *   d'un quota quotidien.
- * - MODELSCOPE_API_KEY : ModelScope (Qwen-Image). Service réservé à un usage non commercial.
- * - IMAGE_PROVIDERS : ordre d'appel, séparé par des virgules (par défaut : les fournisseurs dont la clé est présente).
- * - IMAGE_MAX_PER_DAY : nombre maximal d'images générées par jour, tous fournisseurs confondus.
+ *   d’un quota quotidien.
+ * - MODELSCOPE_API_KEY : ModelScope (Qwen-Image). Service réservé à un usage non commercial : il n’est actif
+ *   que si MODELSCOPE_ALLOW_NONCOMMERCIAL=1 est défini (défaut : désactivé, pour une utilisation commerciale).
+ * - IMAGE_PROVIDERS : ordre d’appel, séparé par des virgules (par défaut : les fournisseurs dont la clé est présente).
+ * - IMAGE_MAX_PER_DAY : nombre maximal d’images générées par jour, tous fournisseurs confondus.
  */
 
 export interface ImageProviderSettings {
@@ -22,7 +23,7 @@ export interface ImageProviderSettings {
   apiKey: string;
   /** Cloudflare : identifiant du compte. */
   accountId?: string;
-  /** Racine de l'API, pour les tests ou un proxy. */
+  /** Racine de l’API, pour les tests ou un proxy. */
   baseUrl?: string;
   /** ModelScope : modèle à utiliser. */
   model?: string;
@@ -30,7 +31,7 @@ export interface ImageProviderSettings {
 
 export interface ImagesConfig {
   providers: ImageProviderSettings[];
-  /** Plafond journalier d'images, tous fournisseurs confondus. */
+  /** Plafond journalier d’images, tous fournisseurs confondus. */
   maxPerDay: number;
   /** Délai maximal pour une image (tous fournisseurs confondus pour une même demande). */
   timeoutMs: number;
@@ -47,6 +48,12 @@ function intFromEnv(name: string, raw: string | undefined, fallback: number, min
   return value;
 }
 
+/** ModelScope n'est utilisable que dans un cadre non commercial, déclaré explicitement. */
+export function modelScopeAllowed(env: NodeJS.ProcessEnv): boolean {
+  const flag = (env.MODELSCOPE_ALLOW_NONCOMMERCIAL ?? '').trim().toLowerCase();
+  return flag === '1' || flag === 'true';
+}
+
 function settingsFor(id: ImageProviderId, env: NodeJS.ProcessEnv): ImageProviderSettings | null {
   if (id === 'cloudflare') {
     const accountId = env.CLOUDFLARE_ACCOUNT_ID?.trim();
@@ -54,6 +61,7 @@ function settingsFor(id: ImageProviderId, env: NodeJS.ProcessEnv): ImageProvider
     if (!accountId || !apiKey) return null;
     return { id, apiKey, accountId, baseUrl: env.CLOUDFLARE_API_BASE?.trim() || undefined };
   }
+  if (!modelScopeAllowed(env)) return null;
   const apiKey = env.MODELSCOPE_API_KEY?.trim();
   if (!apiKey) return null;
   return {
@@ -76,6 +84,11 @@ export function imagesFromEnv(env: NodeJS.ProcessEnv): ImagesConfig {
       if (!(IMAGE_PROVIDER_IDS as readonly string[]).includes(id)) {
         throw new Error(`IMAGE_PROVIDERS invalide : « ${id} » (${IMAGE_PROVIDER_IDS.join(', ')})`);
       }
+      if (id === 'modelscope' && !modelScopeAllowed(env)) {
+        throw new Error(
+          'IMAGE_PROVIDERS demande « modelscope » : ce service est réservé à un usage non commercial (MODELSCOPE_ALLOW_NONCOMMERCIAL=1 pour l’activer).',
+        );
+      }
       const settings = settingsFor(id as ImageProviderId, env);
       if (!settings) throw new Error(`IMAGE_PROVIDERS demande « ${id} », mais sa clé est absente.`);
       return settings;
@@ -93,7 +106,7 @@ export function imagesFromEnv(env: NodeJS.ProcessEnv): ImagesConfig {
   };
 }
 
-/** Crée les fournisseurs dans l'ordre de la configuration. */
+/** Crée les fournisseurs dans l’ordre de la configuration. */
 export function buildImageProviders(config: ImagesConfig, fetchFn?: typeof fetch): ImageProvider[] {
   return config.providers.map((p): ImageProvider => {
     if (p.id === 'cloudflare') {

@@ -23,7 +23,7 @@ import {
  * Robots du tarot (mode test). Ils jouent toujours une carte permise, avec des règles
  * simples : enchère selon la force de la main, écart qui crée des coupes, et jeu économe
  * (gagner à moindre frais un pli qui rapporte, sinon jouer petit, ne pas gâcher le Petit).
- * Ils ne connaissent que ce qu'un joueur voit : leur main, les plis joués, et l'écart
+ * Ils ne connaissent que ce qu’un joueur voit : leur main, les plis joués, et l’écart
  * pour le preneur (les atouts écartés pour les autres).
  */
 
@@ -37,18 +37,18 @@ export interface PlayedCard {
 /** Ce que voit un robot au moment de jouer une carte. */
 export interface BotView {
   hand: readonly string[];
-  /** Pli en cours, dans l'ordre de jeu. */
+  /** Pli en cours, dans l’ordre de jeu. */
   trick: readonly PlayedCard[];
   me: string;
   taker: string | null;
-  /** Les quatre joueurs, dans l'ordre de jeu. */
+  /** Les quatre joueurs, dans l’ordre de jeu. */
   order: readonly string[];
-  /** Cartes sorties du jeu à sa connaissance : plis terminés, et écart s'il est connu. */
+  /** Cartes sorties du jeu à sa connaissance : plis terminés, et écart s’il est connu. */
   seen: readonly string[];
 }
 
 /**
- * Force d'une main pour les enchères : bouts, atouts (les gros comptent double), rois et
+ * Force d’une main pour les enchères : bouts, atouts (les gros comptent double), rois et
  * figures, longues et coupes.
  */
 export function handStrength(hand: readonly string[]): number {
@@ -58,7 +58,7 @@ export function handStrength(hand: readonly string[]): number {
   score += trumps.filter((id) => rankOf(id) >= 16).length * 2;
   if (hand.includes(VINGT_ET_UN)) score += 12;
   if (hand.includes(EXCUSE)) score += 10;
-  // Le Petit ne vaut que s'il est protégé par assez d'atouts.
+  // Le Petit ne vaut que s’il est protégé par assez d’atouts.
   if (hand.includes(PETIT)) score += count >= 6 ? 8 : count >= 4 ? 5 : 1;
   for (const suit of SUIT_IDS) {
     const cards = hand.filter((id) => familyOf(id) === suit);
@@ -86,7 +86,7 @@ const BID_THRESHOLDS: readonly [Contract, number][] = [
   ['petite', 52],
 ];
 
-/** Enchère d'un robot : le contrat que sa main permet, s'il dépasse l'enchère actuelle ; sinon il passe. */
+/** Enchère d’un robot : le contrat que sa main permet, s’il dépasse l’enchère actuelle ; sinon il passe. */
 export function botBid(hand: readonly string[], highest: Contract | null): Contract | null {
   const strength = handStrength(hand);
   const wanted = BID_THRESHOLDS.find(([, min]) => strength >= min)?.[0] ?? null;
@@ -96,7 +96,7 @@ export function botBid(hand: readonly string[], highest: Contract | null): Contr
 }
 
 /**
- * Écart d'un robot : vider d'abord les couleurs courtes sans roi (pour couper ensuite),
+ * Écart d’un robot : vider d’abord les couleurs courtes sans roi (pour couper ensuite),
  * puis compléter avec les cartes les plus faibles. Toujours valable.
  */
 export function botEcart(hand: readonly string[]): string[] {
@@ -151,7 +151,7 @@ function takerLead(view: BotView, options: readonly string[]): string {
   return lowestTrump(options);
 }
 
-/** Entame d'un défenseur : la plus petite carte de sa couleur la plus longue (le preneur devra couper). */
+/** Entame d’un défenseur : la plus petite carte de sa couleur la plus longue (le preneur devra couper). */
 function defenceLead(options: readonly string[]): string {
   const suited = options.filter((id) => !isTrump(id));
   if (suited.length > 0) {
@@ -178,7 +178,7 @@ export function botPlay(view: BotView): string {
   const cards = trick.map((p) => p.cardId);
   const legal = legalCards(hand, cards);
   if (legal.length === 1) return legal[0]!;
-  // Au dernier pli, l'Excuse irait au camp gagnant : on la joue avant.
+  // Au dernier pli, l’Excuse irait au camp gagnant : on la joue avant.
   if (legal.includes(EXCUSE) && hand.length <= 2) return EXCUSE;
   const options = legal.filter((id) => id !== EXCUSE);
   const isTaker = me === taker;
@@ -214,7 +214,7 @@ export function botPlay(view: BotView): string {
   }
 
   const dump = lowest(options);
-  // Plutôt l'Excuse que de donner une grosse carte (roi, dame, Petit…) à l'adversaire.
+  // Plutôt l’Excuse que de donner une grosse carte (roi, dame, Petit…) à l’adversaire.
   if (legal.includes(EXCUSE) && cardHalfPoints(dump) >= 5) return EXCUSE;
   return dump;
 }

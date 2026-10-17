@@ -4,7 +4,7 @@ import { useRemaining } from '../../client/hooks.js';
 import { Avatar, FinalHost, LETTERS, Ranking, TimerBar, WaitingScreen } from '../../client/ui.js';
 import { CountryMap } from './CountryMap.js';
 
-/** Position, en millisecondes depuis le premier coup, de chaque coup d'un rythme. */
+/** Position, en millisecondes depuis le premier coup, de chaque coup d’un rythme. */
 function beatOffsets(intervals: readonly number[]): number[] {
   const offsets = [0];
   for (const gap of intervals) offsets.push(offsets[offsets.length - 1]! + gap);

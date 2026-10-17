@@ -15,8 +15,8 @@ import { FONT, avatarTexture, centreTexture, dieFaceTexture, hueOf, tileTexture 
 
 /**
  * Plateau du Promoteur en 3D (écran TV uniquement). Même données et même disposition
- * que la vue 2D : seule la présentation change. Les pions sautent d'une case à l'autre,
- * les dés roulent puis s'arrêtent sur la valeur décidée par le serveur.
+ * que la vue 2D : seule la présentation change. Les pions sautent d’une case à l’autre,
+ * les dés roulent puis s’arrêtent sur la valeur décidée par le serveur.
  */
 
 const CELL = 1;
@@ -29,14 +29,14 @@ const STEP_S = 0.17;
 const DIE = 0.6;
 const ROLL_S = 0.9;
 
-/** Position monde d'un pion : centre de la case, décalé s'il partage la case. */
+/** Position monde d’un pion : centre de la case, décalé s’il partage la case. */
 function worldOf(index: number, slot: number): THREE.Vector3 {
   const { col, row } = cellOf(index);
   const [dx, dy] = STACK_OFFSETS[slot % STACK_OFFSETS.length] ?? [0, 0];
   return new THREE.Vector3((col - 3 + dx) * CELL, PAWN_BASE + PAWN_H / 2, (row - 3 + dy) * CELL);
 }
 
-/** Valeurs des faces d'un dé (faces opposées : somme 7). Ordre : +x, -x, +y, -y, +z, -z. */
+/** Valeurs des faces d’un dé (faces opposées : somme 7). Ordre : +x, -x, +y, -y, +z, -z. */
 const DIE_FACES: number[] = [1, 6, 2, 5, 3, 4];
 const DIE_NORMALS: THREE.Vector3[] = [
   new THREE.Vector3(1, 0, 0),
@@ -77,7 +77,7 @@ function Tile({ tile, owner, pending }: { tile: TilePub; owner: PlayerPub | unde
   const { col, row } = cellOf(tile.index);
   const topTex = useMemo(
     () => tileTexture(tile, owner, pending),
-    // Les seules données qui changent l'aspect de la case.
+    // Les seules données qui changent l’aspect de la case.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [tile.name, tile.price, tile.group, tile.houses, tile.owner, owner?.name, pending],
   );
@@ -198,7 +198,7 @@ function Pawn({
   );
 }
 
-/** Un dé : tourne sur lui-même à chaque lancer, puis s'arrête face à la valeur du serveur. */
+/** Un dé : tourne sur lui-même à chaque lancer, puis s’arrête face à la valeur du serveur. */
 function Die({
   value,
   rollKey,
@@ -234,7 +234,7 @@ function Die({
     [faces, materials],
   );
 
-  // Nouveau lancer : on repart de l'orientation actuelle vers la nouvelle valeur.
+  // Nouveau lancer : on repart de l’orientation actuelle vers la nouvelle valeur.
   useEffect(() => {
     const g = group.current;
     if (!g) return;
@@ -251,7 +251,7 @@ function Die({
     if (r.t < 1) r.t = Math.min(1, r.t + delta / ROLL_S);
     const e = 1 - Math.pow(1 - r.t, 3);
     const base = new THREE.Quaternion().slerpQuaternions(r.from, r.to, e);
-    // Tumble qui s'amortit : la rotation supplémentaire disparaît à l'arrivée.
+    // Tumble qui s’amortit : la rotation supplémentaire disparaît à l’arrivée.
     const spin = new THREE.Quaternion().setFromAxisAngle(r.axis, (1 - e) * Math.PI * 4);
     g.quaternion.copy(spin).multiply(base);
     g.position.y = DIE / 2 + TILE_H + Math.sin(Math.PI * r.t) * 0.7;
@@ -357,7 +357,7 @@ export interface PromoteurBoard3DProps {
   shown: Record<string, number>;
 }
 
-/** Scène 3D du plateau. Les positions affichées (`shown`) sont calculées par l'appelant. */
+/** Scène 3D du plateau. Les positions affichées (`shown`) sont calculées par l’appelant. */
 export default function PromoteurBoard3D({ pub, shown }: PromoteurBoard3DProps) {
   const avatars = useContext(AvatarsContext);
   const reduced = usePrefersReducedMotion();

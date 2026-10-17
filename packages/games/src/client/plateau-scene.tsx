@@ -2,8 +2,8 @@ import { useId } from 'react';
 
 /**
  * Décor du plateau, en coordonnées 1600 × 1000 : la zone du plateau a toujours ce format, donc les
- * positions des personnages (en fractions) et le décor restent alignés à toutes les tailles d'écran.
- * Un seul thème pour l'instant (« prairie ») ; un jeu peut en fournir d'autres plus tard.
+ * positions des personnages (en fractions) et le décor restent alignés à toutes les tailles d’écran.
+ * Un seul thème pour l’instant (« prairie ») ; un jeu peut en fournir d’autres plus tard.
  */
 
 function seeded(seed: number) {
@@ -23,7 +23,7 @@ interface Dot {
 
 const FLOWER_COLORS = ['#ffffff', '#ffd23f', '#ff8fb1', '#b9a4ff', '#ff9f43'];
 
-// Tirage fixe (graine constante) : le décor ne change jamais d'un rendu à l'autre.
+// Tirage fixe (graine constante) : le décor ne change jamais d’un rendu à l’autre.
 const FLOWERS: Dot[] = (() => {
   const rnd = seeded(20261015);
   return Array.from({ length: 64 }, () => ({

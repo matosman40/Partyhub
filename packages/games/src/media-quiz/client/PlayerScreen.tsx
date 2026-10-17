@@ -3,7 +3,7 @@ import type { PlayerViewProps } from '../../client/types.js';
 import { useRemaining } from '../../client/hooks.js';
 import { CaptionPlayer } from './CaptionPlayer.js';
 
-/** Téléphone : on tape le titre pendant que l'extrait joue sur l'écran principal. */
+/** Téléphone : on tape le titre pendant que l’extrait joue sur l’écran principal. */
 export function MediaQuizPlayer(props: PlayerViewProps) {
   if (props.publicState?.mode === 'sous-titres') return <CaptionPlayer {...props} />;
   return <MediaQuizQuizPlayer {...props} />;

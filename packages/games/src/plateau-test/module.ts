@@ -3,9 +3,9 @@ import { PLATEAU_TEST_ID, type GameModule } from '@partyhub/shared';
 
 /**
  * Plateau de test : une salle où chacun déplace son personnage sur le plateau et envoie une
- * émotion, pour essayer le salon et ses déplacements. Il n'y a pas de partie : le bouton de
- * lancement n'est pas affiché, et le serveur refuse le lancement. Le jeu n'est pas listé au
- * catalogue : il s'ouvre depuis le bouton « Essayer le plateau » de l'accueil.
+ * émotion, pour essayer le salon et ses déplacements. Il n’y a pas de partie : le bouton de
+ * lancement n’est pas affiché, et le serveur refuse le lancement. Le jeu n’est pas listé au
+ * catalogue : il s’ouvre depuis le bouton « Essayer le plateau » de l’accueil.
  */
 
 export type PlateauTestState = Record<string, never>;

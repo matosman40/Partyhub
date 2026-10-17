@@ -1,7 +1,7 @@
 import { crc32, deflateRawSync, inflateRawSync } from 'node:zlib';
 
 /**
- * Lecture et écriture d'archives ZIP restreintes, pour les paquets .phgame.
+ * Lecture et écriture d’archives ZIP restreintes, pour les paquets .phgame.
  *
  * Volontairement limitées : méthodes 0 (stockée) et 8 (deflate) seulement ; pas de chiffrement,
  * pas de ZIP64, pas de multi-volumes, pas de liens symboliques, pas de dossiers. Toute archive
@@ -23,8 +23,8 @@ export interface ZipReadLimits {
   maxRatio: number;
   ratioCheckBytes: number;
   /**
-   * Accepte les entrées de dossier (« dossier/ ») que créent Finder et l'Explorateur. Refusé par défaut
-   * (paquets de jeux) ; les dossiers sont alors simplement ignorés par l'appelant.
+   * Accepte les entrées de dossier (« dossier/ ») que créent Finder et l’Explorateur. Refusé par défaut
+   * (paquets de jeux) ; les dossiers sont alors simplement ignorés par l’appelant.
    */
   allowDirectories?: boolean;
 }
@@ -40,7 +40,7 @@ const MODE_TYPE_MASK = 0o170000;
 const MODE_REGULAR = 0o100000;
 const MODE_SYMLINK = 0o120000;
 
-/** Lit toutes les entrées d'une archive, en contrôlant les tailles et les sommes CRC. */
+/** Lit toutes les entrées d’une archive, en contrôlant les tailles et les sommes CRC. */
 export function readZip(
   bytes: Uint8Array,
   limits: ZipReadLimits,

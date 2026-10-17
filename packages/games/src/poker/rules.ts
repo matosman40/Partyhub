@@ -1,5 +1,5 @@
 /**
- * Règles pures du poker Texas hold'em : paquet, valeur d'une main (meilleure combinaison parmi 7 cartes),
+ * Règles pures du poker Texas hold'em : paquet, valeur d’une main (meilleure combinaison parmi 7 cartes),
  * pots principal et latéraux, et répartition des pots entre les meilleures mains.
  */
 
@@ -56,12 +56,12 @@ export function cardLabel(card: PokerCard): string {
 export interface HandValue {
   /** Indice dans HAND_NAMES (0 = carte haute, 8 = quinte flush). */
   category: number;
-  /** Valeurs de comparaison : la catégorie, puis les départages dans l'ordre. */
+  /** Valeurs de comparaison : la catégorie, puis les départages dans l’ordre. */
   score: number[];
   name: string;
 }
 
-/** Valeur d'une main de 5 cartes. Le tableau renvoyé se compare lexicographiquement. */
+/** Valeur d’une main de 5 cartes. Le tableau renvoyé se compare lexicographiquement. */
 function scoreFive(cards: PokerCard[]): number[] {
   const ranks = cards.map((c) => c.rank).sort((a, b) => b - a);
   const flush = cards.every((c) => c.suit === cards[0]!.suit);
@@ -75,7 +75,7 @@ function scoreFive(cards: PokerCard[]): number[] {
 
   const counts = new Map<number, number>();
   for (const r of ranks) counts.set(r, (counts.get(r) ?? 0) + 1);
-  // Groupes triés : d'abord par nombre de cartes, puis par valeur.
+  // Groupes triés : d’abord par nombre de cartes, puis par valeur.
   const groups = [...counts.entries()].sort((a, b) => b[1] - a[1] || b[0] - a[0]);
   const byCount = groups.map((g) => g[0]);
   const shape = groups.map((g) => g[1]).join('');
@@ -140,7 +140,7 @@ export interface Pot {
 
 /**
  * Pots à partir des mises totales de chacun. Un pot par palier de mise : le pot principal contient ce que
- * chacun a mis jusqu'au plus petit tapis, les pots latéraux le reste. Un joueur ne gagne que les pots auxquels
+ * chacun a mis jusqu’au plus petit tapis, les pots latéraux le reste. Un joueur ne gagne que les pots auxquels
  * il a contribué. Une mise non suivie (plus haute que tous les autres) revient à son auteur, car il est seul
  * éligible au palier qui la contient.
  */
@@ -169,7 +169,7 @@ export interface PotAward {
 
 /**
  * Répartit chaque pot entre les meilleures mains de ses joueurs éligibles. Les égalités se partagent ; le
- * reliquat d'un pot (quand il ne se divise pas) va aux premiers gagnants à partir du bouton.
+ * reliquat d’un pot (quand il ne se divise pas) va aux premiers gagnants à partir du bouton.
  */
 export function settlePots(
   pots: Pot[],

@@ -7,7 +7,7 @@ import rawPrompts from './prompts.fr.json' with { type: 'json' };
  * Plutôt qui ? : une question du type « Qui ... ? » est posée. Chacun vote
  * en secret pour un joueur (soi-même compris). Les votants qui ont suivi
  * la majorité (ceux qui ont voté pour un joueur ayant reçu le plus de voix)
- * gagnent des points : on récompense l'intuition collective.
+ * gagnent des points : on récompense l’intuition collective.
  */
 
 const PROMPTS: string[] = z.array(z.string().min(1)).min(1).parse(rawPrompts);
@@ -41,7 +41,7 @@ export interface PlutotQuiState {
   endsAt: number;
 }
 
-/** Joueurs qui ont reçu le plus de voix (plusieurs si égalité, aucun si personne n'a voté). */
+/** Joueurs qui ont reçu le plus de voix (plusieurs si égalité, aucun si personne n’a voté). */
 function topTargets(votes: Record<string, string>): string[] {
   const counts = new Map<string, number>();
   for (const target of Object.values(votes)) {
@@ -106,14 +106,14 @@ export const plutotQui: GameModule<PlutotQuiState, PlutotQuiSettings> = {
     notice: {
       goal: 'Voter comme la majorité, sur des questions du type « Qui… ? ».',
       steps: [
-        "Une question « Qui… ? » s'affiche sur l'écran.",
+        'Une question « Qui… ? » s’affiche sur l’écran.',
         'Votez en secret pour la personne qui correspond le mieux (vous pouvez vous désigner).',
         'Les votants qui ont choisi la personne la plus désignée gagnent 100 points.',
-        "En cas d'égalité, chaque personne en tête compte.",
+        'En cas d’égalité, chaque personne en tête compte.',
       ],
       tips: [
-        "Les votes restent cachés jusqu'à la révélation.",
-        "Fonctionne à deux, mais s'anime vraiment à partir de quatre joueurs.",
+        'Les votes restent cachés jusqu’à la révélation.',
+        'Fonctionne à deux, mais s’anime vraiment à partir de quatre joueurs.',
       ],
     },
   },

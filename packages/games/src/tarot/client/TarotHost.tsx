@@ -15,7 +15,7 @@ export function TarotHost({ publicState, now }: HostViewProps) {
   const remaining = useRemaining(pub?.turnEndsAt ?? undefined, now);
   const rootRef = useRef<HTMLElement>(null);
 
-  // Sons et trajets : déclenchés par les changements d'état, avant les retours anticipés.
+  // Sons et trajets : déclenchés par les changements d’état, avant les retours anticipés.
   useChange(pub?.started ?? false, (_, started) => {
     if (started) play('start');
   });
@@ -110,7 +110,7 @@ export function TarotHost({ publicState, now }: HostViewProps) {
   );
 }
 
-/** Texte sous le nom : l'enchère pendant les enchères, puis le camp. */
+/** Texte sous le nom : l’enchère pendant les enchères, puis le camp. */
 function seatNote(pub: TarotPub, id: string): string {
   if (pub.phase === 'bidding') {
     const bid = pub.bids.find((b) => b.playerId === id);
@@ -144,7 +144,7 @@ function Seat({ pub, id }: { pub: TarotPub; id: string }) {
         <span className="seat-name">
           {name}
           {pub.dealer === id && (
-            <span className="tarot-dealer" title="Donneur" aria-label="Donneur">
+            <span className="tarot-dealer" title="Donneur" role="img" aria-label="Donneur">
               D
             </span>
           )}
@@ -152,7 +152,7 @@ function Seat({ pub, id }: { pub: TarotPub; id: string }) {
         <span className="seat-score">{pub.scores[id] ?? 0} pts</span>
         {(note || leads) && <span className="tarot-seat-note">{leads ? 'Entame' : note}</span>}
       </div>
-      <span className="seat-count" aria-label={`${pub.counts[id] ?? 0} cartes en main`}>
+      <span className="seat-count" role="img" aria-label={`${pub.counts[id] ?? 0} cartes en main`}>
         <b>{pub.counts[id] ?? 0}</b>
         <span className="muted small">cartes</span>
       </span>
@@ -160,7 +160,7 @@ function Seat({ pub, id }: { pub: TarotPub; id: string }) {
   );
 }
 
-/** Centre du tapis : enchères, chien retourné pendant l'écart, ou le pli (le dernier pli une fois ramassé). */
+/** Centre du tapis : enchères, chien retourné pendant l’écart, ou le pli (le dernier pli une fois ramassé). */
 function Center({ pub }: { pub: TarotPub }) {
   if (pub.phase === 'bidding') {
     const best = pub.highest ? pub.bids.find((b) => b.contract === pub.highest) : null;
@@ -196,7 +196,7 @@ function Center({ pub }: { pub: TarotPub }) {
   const winner = done ? pub.lastTrick!.winner : null;
 
   return (
-    <div className="tarot-trick" aria-label={done ? 'Dernier pli' : 'Pli en cours'}>
+    <div className="tarot-trick" role="group" aria-label={done ? 'Dernier pli' : 'Pli en cours'}>
       {cards.map((c) => (
         <div
           key={c.cardId}

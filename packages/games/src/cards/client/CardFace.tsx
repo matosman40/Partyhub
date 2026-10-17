@@ -44,7 +44,7 @@ export interface CardFaceProps {
   entry?: CardEntry;
   /** Force le dos de carte (pioche). */
   back?: boolean;
-  /** Pour les lecteurs d'écran. */
+  /** Pour les lecteurs d’écran. */
   label?: string;
 }
 
@@ -107,7 +107,7 @@ export function wrapLines(text: string, perLine: number, maxLines: number): stri
 }
 
 /**
- * Texte d'une carte à texte : un panneau posé sur la zone centrale, lisible sur chaque thème.
+ * Texte d’une carte à texte : un panneau posé sur la zone centrale, lisible sur chaque thème.
  * La taille baisse avec la longueur du texte pour rester dans le panneau.
  */
 function TextPanel({ text, dark }: { text: string; dark: boolean }) {

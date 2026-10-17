@@ -12,14 +12,14 @@ export interface JournalEntry {
   source: string;
   event: string;
   message: string;
-  /** Champs propres à l'entrée (salle, chemin, navigateur, pile d'appels…). */
+  /** Champs propres à l’entrée (salle, chemin, navigateur, pile d’appels…). */
   details: Record<string, unknown>;
 }
 
 export interface JournalQuery {
   minLevel?: JournalMinLevel;
   source?: string;
-  /** Sous-chaîne recherchée dans l'événement, le message et les détails. */
+  /** Sous-chaîne recherchée dans l’événement, le message et les détails. */
   text?: string;
   limit?: number;
 }
@@ -34,7 +34,7 @@ export interface JournalGroup {
 
 export interface JournalResult {
   entries: JournalEntry[];
-  /** Nombre d'entrées correspondant aux filtres, avant la limite. */
+  /** Nombre d’entrées correspondant aux filtres, avant la limite. */
   matched: number;
   /** Entrées regroupées par type (même événement, même message aux chiffres près). */
   groups: JournalGroup[];
@@ -90,7 +90,7 @@ export function groupEntries(entries: JournalEntry[], limit = 15): JournalGroup[
       current.count += 1;
       if (entry.time > current.lastSeen) current.lastSeen = entry.time;
     } else {
-      // Le message affiché est celui d'une vraie occurrence ; seule la clé efface les chiffres.
+      // Le message affiché est celui d’une vraie occurrence ; seule la clé efface les chiffres.
       groups.set(key, {
         level: entry.level,
         event: entry.event,
@@ -104,8 +104,8 @@ export function groupEntries(entries: JournalEntry[], limit = 15): JournalGroup[
 }
 
 /**
- * Lit tout le journal (tous les fichiers tournants) et applique les filtres. Les plus récentes d'abord.
- * Lecture synchrone : un journal borné (quelques dizaines de Mo) reste rapide à relire pour l'administrateur.
+ * Lit tout le journal (tous les fichiers tournants) et applique les filtres. Les plus récentes d’abord.
+ * Lecture synchrone : un journal borné (quelques dizaines de Mo) reste rapide à relire pour l’administrateur.
  */
 export function readJournal(journal: RotatingFile, query: JournalQuery = {}): JournalResult {
   const files = journal.files();

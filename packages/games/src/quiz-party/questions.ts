@@ -16,7 +16,7 @@ const questionSchema = z
     explanation: z.string().optional(),
   })
   .refine((q) => q.answer < q.choices.length, {
-    message: "L'index de la bonne réponse dépasse le nombre de choix",
+    message: 'L’index de la bonne réponse dépasse le nombre de choix',
   });
 
 export type QuizQuestion = z.infer<typeof questionSchema>;

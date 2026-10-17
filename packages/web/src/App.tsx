@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { HomePage } from './pages/HomePage.js';
+import { GamePage } from './pages/GamePage.js';
 import { JoinPage } from './pages/JoinPage.js';
 import { ScreenBackdrop } from './components/ScreenBackdrop.js';
 import { MusicPlayer } from './components/MusicPlayer.js';
@@ -11,7 +12,7 @@ import { ProfileGate } from './profile/ProfileGate.js';
 
 /*
  * Pages ouvertes seulement quand on en a besoin : un téléphone qui crée son profil ou rejoint une salle ne
- * télécharge pas le code de l'écran principal, de l'administration ni des pages secondaires.
+ * télécharge pas le code de l’écran principal, de l’administration ni des pages secondaires.
  */
 const TvPage = lazy(() => import('./pages/TvPage.js').then((m) => ({ default: m.TvPage })));
 const PlayerPage = lazy(() => import('./pages/PlayerPage.js').then((m) => ({ default: m.PlayerPage })));
@@ -31,8 +32,8 @@ function NotFound() {
 }
 
 /**
- * Les pages sont protégées une par une : une erreur dans une page affiche l'écran « n'a pas pu
- * s'afficher » au lieu d'un écran noir. La clé par chemin remet la protection à zéro à chaque page.
+ * Les pages sont protégées une par une : une erreur dans une page affiche l’écran « n’a pas pu
+ * s’afficher » au lieu d’un écran noir. La clé par chemin remet la protection à zéro à chaque page.
  */
 function RoutedPages() {
   const location = useLocation();
@@ -52,6 +53,15 @@ function RoutedPages() {
             element={
               <ProfileGate>
                 <HomePage />
+              </ProfileGate>
+            }
+          />
+          {/* Fiche d’un jeu : même règle que l’accueil, il faut un profil. */}
+          <Route
+            path="/jeux/:gameId"
+            element={
+              <ProfileGate>
+                <GamePage />
               </ProfileGate>
             }
           />

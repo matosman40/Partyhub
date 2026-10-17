@@ -9,7 +9,7 @@ import { useCardFlights, useChange } from '../../cards/client/cues.js';
 import { RAMI_DEFINITION, cardName, jokerText, meldPoints, meldTitle, type Meld } from '../rules.js';
 import { ramiEntry, ramiRanking, type RamiPub } from './common.js';
 
-/** Une combinaison posée : titre, points, cartes dans l'ordre (le joker indique la carte qu'il remplace). */
+/** Une combinaison posée : titre, points, cartes dans l’ordre (le joker indique la carte qu’il remplace). */
 function MeldView({ meld }: { meld: Meld }) {
   return (
     <div className="rami-meld">
@@ -42,7 +42,7 @@ export function RamiHost({ publicState, now }: HostViewProps) {
   const remaining = useRemaining(pub?.turnEndsAt ?? undefined, now);
   const rootRef = useRef<HTMLElement>(null);
 
-  // Sons et trajets : déclenchés par les changements d'état, avant les retours anticipés.
+  // Sons et trajets : déclenchés par les changements d’état, avant les retours anticipés.
   useChange(pub?.started ?? false, (_, started) => {
     if (started) play('start');
   });
@@ -106,7 +106,7 @@ export function RamiHost({ publicState, now }: HostViewProps) {
                 <span className="seat-name">
                   {name}
                   {pub.dealer === id && (
-                    <span className="dealer-btn" title="Donneur" aria-label="Donneur">
+                    <span className="dealer-btn" title="Donneur" role="img" aria-label="Donneur">
                       D
                     </span>
                   )}
@@ -115,7 +115,7 @@ export function RamiHost({ publicState, now }: HostViewProps) {
                   {pub.opened[id] ? 'Ouvert' : 'Pas ouvert'} · {pub.scores[id] ?? 0} pts
                 </span>
               </div>
-              <span className="seat-count" aria-label={`${pub.counts[id] ?? 0} cartes en main`}>
+              <span className="seat-count" role="img" aria-label={`${pub.counts[id] ?? 0} cartes en main`}>
                 <b>{pub.counts[id] ?? 0}</b>
                 <span className="muted small">cartes</span>
               </span>
@@ -126,13 +126,13 @@ export function RamiHost({ publicState, now }: HostViewProps) {
 
       <div className="rami-felt table-mat">
         <div className="rami-stock">
-          <div className="cards-pile" aria-label={`${pub.drawCount} cartes en pioche`}>
+          <div className="cards-pile" role="img" aria-label={`${pub.drawCount} cartes en pioche`}>
             <div className="pile-back">
               <CardFace def={RAMI_DEFINITION} back />
             </div>
             <span className="pile-count">{pub.drawCount}</span>
           </div>
-          <div className="cards-discard" aria-label="Défausse">
+          <div className="cards-discard" role="group" aria-label="Défausse">
             {pub.discardTop && (
               <div className="discard-card" key={pub.discardTop.uid} data-uid={pub.discardTop.uid} data-zone="table">
                 <CardFace
@@ -145,7 +145,7 @@ export function RamiHost({ publicState, now }: HostViewProps) {
           </div>
         </div>
 
-        <div className="rami-melds" aria-label="Combinaisons posées">
+        <div className="rami-melds" role="group" aria-label="Combinaisons posées">
           {owners.length === 0 ? (
             <p className="rami-empty">Aucune combinaison posée.</p>
           ) : (

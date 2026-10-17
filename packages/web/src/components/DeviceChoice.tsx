@@ -13,7 +13,7 @@ const LABELS: Record<DeviceChoice, string> = {
 
 /**
  * Affichage de cet appareil : la détection peut se tromper (tablette prise pour un ordinateur,
- * téléviseur navigateur…). Le choix est gardé sur l'appareil et s'applique à toutes les pages.
+ * téléviseur navigateur…). Le choix est gardé sur l’appareil et s’applique à toutes les pages.
  */
 export function DeviceChoice() {
   const [choice, setChoice] = useState<DeviceChoice>(() => readDeviceChoice());

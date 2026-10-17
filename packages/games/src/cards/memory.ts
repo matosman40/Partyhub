@@ -15,16 +15,16 @@ import { directory, fail, ok, rankEntries, shuffle } from '../common/engine.js';
 /**
  * Mécanique « mémo » : toutes les cartes sont face cachée. À son tour, on retourne deux cartes.
  * Une paire trouvée rapporte ses points et le joueur rejoue ; sinon les cartes se retournent après un court
- * délai et c'est au joueur suivant. La partie se termine quand toutes les paires sont trouvées.
+ * délai et c’est au joueur suivant. La partie se termine quand toutes les paires sont trouvées.
  *
- * Les cartes cachées n'ont pas d'identité dans l'état public : seules les cartes retournées ou trouvées
+ * Les cartes cachées n’ont pas d’identité dans l’état public : seules les cartes retournées ou trouvées
  * sont envoyées avec leur contenu. Les identifiants de plateau ne disent rien de la carte.
  */
 
 export interface MemoryCard {
   uid: string;
   entry: string;
-  /** Joueur qui a trouvé la paire, ou null tant qu'elle n'est pas trouvée. */
+  /** Joueur qui a trouvé la paire, ou null tant qu’elle n’est pas trouvée. */
   owner: string | null;
 }
 
@@ -40,7 +40,7 @@ export interface MemoryState {
   board: MemoryCard[];
   /** Uids retournés pendant le tour (0 à 2). */
   open: string[];
-  /** Index dans `order` du joueur dont c'est le tour. */
+  /** Index dans `order` du joueur dont c’est le tour. */
   turn: number;
   phase: MemoryPhase;
   pairs: number;
@@ -60,8 +60,8 @@ const actionSchemas = {
 };
 
 /**
- * Clé de paire : l'étiquette « pair » si elle existe, sinon l'identifiant de la carte. Les deux espaces
- * sont séparés par un préfixe, pour qu'une étiquette ne puisse pas entrer en collision avec un identifiant.
+ * Clé de paire : l’étiquette « pair » si elle existe, sinon l’identifiant de la carte. Les deux espaces
+ * sont séparés par un préfixe, pour qu’une étiquette ne puisse pas entrer en collision avec un identifiant.
  */
 export function pairKey(entry: Pick<CardEntry, 'id' | 'pair'>): string {
   return entry.pair !== undefined ? `pair:${entry.pair}` : `id:${entry.id}`;
@@ -118,7 +118,7 @@ export function createMemoryGame(
     }
   }
 
-  /** Joueur suivant, en sautant les déconnectés s'il en reste de connectés. */
+  /** Joueur suivant, en sautant les déconnectés s’il en reste de connectés. */
   function nextTurn(s: MemoryState, ctx: GameContext): number {
     const connected = new Set(ctx.connectedPlayerIds());
     let idx = (s.turn + 1) % s.order.length;
@@ -194,7 +194,7 @@ export function createMemoryGame(
 
   function flip(s: MemoryState, pid: string, cardId: string, ctx: GameContext): GameResult<MemoryState> {
     if (s.phase === 'peek') return fail('Patientez, les cartes se retournent.');
-    if (s.order[s.turn] !== pid) return fail("Ce n'est pas votre tour.");
+    if (s.order[s.turn] !== pid) return fail('Ce n’est pas votre tour.');
     const card = s.board.find((c) => c.uid === cardId);
     if (!card) return fail('Cette carte n’est pas sur le plateau.');
     if (card.owner) return fail('Cette paire est déjà trouvée.');
@@ -217,7 +217,7 @@ export function createMemoryGame(
       s.matches += 1;
       s.open = [];
       s.lastEvent = `${name} trouve la paire « ${cardName(first)} » (+${first.points}).`;
-      // Fin quand toutes les paires sont trouvées, ou dès qu'un joueur atteint l'objectif de points.
+      // Fin quand toutes les paires sont trouvées, ou dès qu’un joueur atteint l’objectif de points.
       if (s.matches >= s.pairs || (s.scores[pid] ?? 0) >= s.settings.targetScore) finish(s, ctx);
       else beginTurn(s, ctx);
       return ok(s);
@@ -309,7 +309,7 @@ export function createMemoryGame(
       current,
       pairs: state.pairs,
       matches: state.matches,
-      /** Cartes du plateau : le contenu n'est donné que pour les cartes visibles ou trouvées. */
+      /** Cartes du plateau : le contenu n’est donné que pour les cartes visibles ou trouvées. */
       board: state.board.map((c) => {
         const visible = c.owner !== null || state.open.includes(c.uid) || state.phase === 'final';
         return { uid: c.uid, entry: visible ? (entries.get(c.entry)?.id ?? null) : null, owner: c.owner };

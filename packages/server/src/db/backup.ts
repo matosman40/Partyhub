@@ -6,7 +6,7 @@ import type { Store } from './store.js';
 /**
  * Sauvegarde automatique de la base SQLite.
  *
- * Chaque sauvegarde est une copie cohérente (VACUUM INTO) nommée d'après sa date en UTC :
+ * Chaque sauvegarde est une copie cohérente (VACUUM INTO) nommée d’après sa date en UTC :
  * partyhub-AAAAMMJJ-HHMMSS.db. Seules les plus récentes sont conservées.
  *
  * La base contient des données personnelles (pseudos, statistiques, photos de profil) :
@@ -79,7 +79,7 @@ export class DbBackupScheduler {
     return this.config;
   }
 
-  /** Crée une sauvegarde maintenant, puis applique la rotation. Ne lève jamais d'erreur. */
+  /** Crée une sauvegarde maintenant, puis applique la rotation. Ne lève jamais d’erreur. */
   runNow(): BackupOutcome {
     try {
       mkdirSync(this.config.dir, { recursive: true, mode: 0o700 });
@@ -100,8 +100,8 @@ export class DbBackupScheduler {
   }
 
   /**
-   * Démarre la sauvegarde périodique. Si la plus récente date de plus d'un intervalle
-   * (ou s'il n'y en a pas), une sauvegarde est faite tout de suite.
+   * Démarre la sauvegarde périodique. Si la plus récente date de plus d’un intervalle
+   * (ou s’il n’y en a pas), une sauvegarde est faite tout de suite.
    */
   start(): void {
     if (!this.enabled || this.timer) return;

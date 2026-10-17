@@ -4,7 +4,7 @@ import { describeMediaError, levelFromBytes, unavailableMessage } from './mediaT
 
 /**
  * Choix du micro et de la caméra pour cet appareil, avec un test rapide. Le choix est gardé dans le
- * navigateur et sert à tous les jeux. Les noms des appareils n'apparaissent qu'après une autorisation.
+ * navigateur et sert à tous les jeux. Les noms des appareils n’apparaissent qu’après une autorisation.
  */
 
 interface DeviceList {
@@ -25,7 +25,7 @@ function optionLabel(device: MediaDeviceInfo, fallback: string, index: number): 
 }
 
 interface Props {
-  /** Affichage resserré pour le tiroir d'angle du téléphone. */
+  /** Affichage resserré pour le tiroir d’angle du téléphone. */
   compact?: boolean;
 }
 
@@ -163,7 +163,14 @@ export function DeviceChooser({ compact = false }: Props) {
       {micChosenMissing && (
         <p className="muted small">Le micro choisi n’est plus branché : l’appareil par défaut est utilisé.</p>
       )}
-      <div className="devtest-meter" aria-label="Niveau du micro">
+      <div
+        className="devtest-meter"
+        role="meter"
+        aria-label="Niveau du micro"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(level * 100)}
+      >
         <span style={{ width: `${Math.round(level * 100)}%` }} />
       </div>
       <div className="devtest-actions">

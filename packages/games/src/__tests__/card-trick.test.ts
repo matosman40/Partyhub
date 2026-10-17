@@ -241,7 +241,7 @@ describe('Pli : déroulement', () => {
       ledFamily: null,
       turn: 0,
     });
-    expect(play(mod, s, 'p2', 'x1', env.ctx)).toEqual({ ok: false, error: "Ce n'est pas votre tour." });
+    expect(play(mod, s, 'p2', 'x1', env.ctx)).toEqual({ ok: false, error: 'Ce n’est pas votre tour.' });
     expect(play(mod, s, 'p1', 'x1', env.ctx).ok).toBe(false);
     expect(mod.handleAction(s, { id: 'p9', name: 'Ana' }, 'play', { cardId: 'a1' }, env.ctx).ok).toBe(false);
   });

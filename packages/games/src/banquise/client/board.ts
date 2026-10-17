@@ -6,9 +6,9 @@ import { SPRITE_H, SPRITE_W } from '../../bombes-party/client/sprites.js';
  * Plan de la banquise, vu de trois quarts : une grille hexagonale de cubes de glace bleue, chacun avec sa face
  * avant épaisse, posés sur une mer profonde. Certaines cases ont une neige sur le dessus, les trous sont des eaux
  * noires, et des morceaux de banquise flottent autour. Une case de la physique est un hexagone à pointe en haut ;
- * une ligne sur deux est décalée d'une demi-case.
+ * une ligne sur deux est décalée d’une demi-case.
  *
- * Positions : (x, z) sur le plan, comme dans la physique. Un personnage plus loin en z (plus haut sur l'écran)
+ * Positions : (x, z) sur le plan, comme dans la physique. Un personnage plus loin en z (plus haut sur l’écran)
  * est dessiné avant les autres, pour que les premiers plans le recouvrent.
  */
 
@@ -20,17 +20,17 @@ const TOP_MARGIN = 0.8;
 const SQUASH = 0.8;
 /** Écart entre deux hexagones voisins, en part de leur taille : un joint sombre apparaît entre eux. */
 const INSET = 0.92;
-/** Hauteur de la face avant d'un cube, en part de la largeur d'une case. */
+/** Hauteur de la face avant d’un cube, en part de la largeur d’une case. */
 const THICK = 0.5;
-/** Taille maximale d'une case (px CSS) : au-delà, le plan reste centré dans son cadre. */
+/** Taille maximale d’une case (px CSS) : au-delà, le plan reste centré dans son cadre. */
 const MAX_T = 48;
-/** Rayon d'un hexagone à pointe en haut, en cases : 1 / √3. */
+/** Rayon d’un hexagone à pointe en haut, en cases : 1 / √3. */
 const HEX_R = 1 / Math.sqrt(3);
 /** Nombre de morceaux de banquise flottants dans la mer. */
 const CHUNK_COUNT = 16;
 
 export interface BoardLayout {
-  /** Largeur d'une case (px CSS). Un saut se mesure en multiples de cette valeur. */
+  /** Largeur d’une case (px CSS). Un saut se mesure en multiples de cette valeur. */
   T: number;
   /** Pixel logique : un seizième de case, comme un pixel de Bomberman. */
   S: number;
@@ -40,12 +40,12 @@ export interface BoardLayout {
   padY: number;
   /** Décalage horizontal du plan dans le cadre, pour le centrer (px). */
   ox: number;
-  /** Pas vertical entre deux lignes d'hexagones (px). */
+  /** Pas vertical entre deux lignes d’hexagones (px). */
   rowStep: number;
-  /** Demi-largeur et demi-hauteur d'un dessus d'hexagone (px). */
+  /** Demi-largeur et demi-hauteur d’un dessus d’hexagone (px). */
   hexW: number;
   hexH: number;
-  /** Hauteur de la face avant d'un cube (px). */
+  /** Hauteur de la face avant d’un cube (px). */
   thick: number;
   width: number;
   height: number;
@@ -74,17 +74,17 @@ export function boardLayout(cssWidth: number): BoardLayout {
   };
 }
 
-/** Ordonnée, dans le plan, du centre d'une position z (en cases). */
+/** Ordonnée, dans le plan, du centre d’une position z (en cases). */
 function planY(L: BoardLayout, z: number): number {
   return L.padY + L.hexH + (z / ROW_H) * L.rowStep;
 }
 
-/** Abscisse, en pixels, d'un personnage en `x` (cases). */
+/** Abscisse, en pixels, d’un personnage en `x` (cases). */
 export function actorLeft(L: BoardLayout, x: number): number {
   return L.ox + L.pad + (x + 0.5) * L.T;
 }
 
-/** Ligne de sol, en pixels, d'un personnage en `z` : ses pieds, dans la partie basse de sa case. */
+/** Ligne de sol, en pixels, d’un personnage en `z` : ses pieds, dans la partie basse de sa case. */
 export function groundY(L: BoardLayout, z: number): number {
   return planY(L, z) + L.hexH * 0.35;
 }
@@ -108,7 +108,7 @@ const FACE_RIGHT_LO = '#1a4aa0';
 const HOLE = '#0a1f55';
 const HOLE_RIM = '#4aa8f0';
 
-/** Chemin d'un hexagone à pointe en haut, centré en (cx, cy). */
+/** Chemin d’un hexagone à pointe en haut, centré en (cx, cy). */
 function hexPath(g: CanvasRenderingContext2D, cx: number, cy: number, hw: number, hh: number): void {
   g.beginPath();
   g.moveTo(cx, cy - hh);
@@ -156,7 +156,7 @@ function drawSea(g: CanvasRenderingContext2D, L: BoardLayout, now: number): void
   g.fillStyle = sea;
   g.fillRect(0, 0, L.width, L.height);
 
-  // Reflets de lumière sous l'eau : de petites taches claires qui dérivent.
+  // Reflets de lumière sous l’eau : de petites taches claires qui dérivent.
   g.fillStyle = CAUSTIC;
   for (let i = 0; i < 14; i++) {
     const x = ((hash(i, 11) + now / 14000) % 1) * L.width;
@@ -194,14 +194,14 @@ function drawSea(g: CanvasRenderingContext2D, L: BoardLayout, now: number): void
   }
 }
 
-/** Centre, dans le plan (sans le décalage du cadre), d'une case. */
+/** Centre, dans le plan (sans le décalage du cadre), d’une case. */
 function cellPos(L: BoardLayout, col: number, row: number): { x: number; y: number } {
   const c = cellCenter(col, row);
   return { x: L.pad + (c.x + 0.5) * L.T, y: planY(L, c.z) };
 }
 
 /**
- * Face avant d'un cube : deux pans sous les arêtes basses de l'hexagone, prolongés vers le bas.
+ * Face avant d’un cube : deux pans sous les arêtes basses de l’hexagone, prolongés vers le bas.
  * Le pan gauche est plus clair, le droit plus sombre, comme la lumière des niveaux de Bomberman.
  */
 function drawSkirt(g: CanvasRenderingContext2D, L: BoardLayout, cx: number, cy: number): void {
@@ -232,7 +232,7 @@ function drawSkirt(g: CanvasRenderingContext2D, L: BoardLayout, cx: number, cy: 
   g.fill();
 }
 
-/** Dessus d'un cube : glace claire, liseré sombre sur le bord, neige sur certaines cases. */
+/** Dessus d’un cube : glace claire, liseré sombre sur le bord, neige sur certaines cases. */
 function drawTop(g: CanvasRenderingContext2D, L: BoardLayout, col: number, row: number, cx: number, cy: number): void {
   const { hexW: hw, hexH: hh } = L;
   const grad = g.createLinearGradient(0, cy - hh, 0, cy + hh);
@@ -276,8 +276,8 @@ export interface ActorDraw {
 }
 
 /**
- * Dessine le plan : mer, puis l'îlot ligne par ligne, du fond vers l'avant. Une case de glace a sa face avant ;
- * une case d'eau à l'intérieur de l'îlot est un trou ; une case hors de l'îlot reste de la mer.
+ * Dessine le plan : mer, puis l’îlot ligne par ligne, du fond vers l’avant. Une case de glace a sa face avant ;
+ * une case d’eau à l’intérieur de l’îlot est un trou ; une case hors de l’îlot reste de la mer.
  */
 export function drawBoard(g: CanvasRenderingContext2D, L: BoardLayout, ice: string, now: number, dpr: number): void {
   g.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -313,7 +313,7 @@ export function drawShadow(g: CanvasRenderingContext2D, L: BoardLayout, a: Actor
   g.restore();
 }
 
-/** Sprite de couleur, debout sur ses pieds. Un pas le fait rebondir d'un pixel. */
+/** Sprite de couleur, debout sur ses pieds. Un pas le fait rebondir d’un pixel. */
 export function drawSpriteActor(g: CanvasRenderingContext2D, L: BoardLayout, a: ActorDraw): void {
   const bounce = a.walking && a.step ? L.S : 0;
   const top = groundY(L, a.z) - a.lift * L.T - bounce - SPRITE_H * L.S;

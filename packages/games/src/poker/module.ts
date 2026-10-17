@@ -15,10 +15,10 @@ import { buildPots, cardLabel, fullDeck, settlePots, type PokerCard } from './ru
 /**
  * Poker Texas hold'em, à 2 à 8 joueurs, avec jetons. Chaque donne : blindes, deux cartes privées, puis
  * quatre tours de mise (avant le flop, flop, turn, river). Relance minimale = la dernière relance (au moins
- * la grosse blinde). Un tapis peut mettre un joueur à l'abri d'une relance : les pots latéraux distribuent
+ * la grosse blinde). Un tapis peut mettre un joueur à l’abri d’une relance : les pots latéraux distribuent
  * alors chaque palier aux seuls joueurs qui y ont contribué.
  *
- * La partie dure `hands` donnes, ou jusqu'à ce qu'un seul joueur ait encore des jetons. Le classement se fait
+ * La partie dure `hands` donnes, ou jusqu’à ce qu’un seul joueur ait encore des jetons. Le classement se fait
  * sur les jetons. Les cartes privées ne sortent jamais de la vue du joueur, sauf au showdown.
  */
 
@@ -26,7 +26,7 @@ const TURN = 'turn';
 const ABSENT = 'absent';
 const NEXT_HAND = 'next-hand';
 const NEXT_HAND_MS = 7000;
-/** Délai avant de jouer à la place d'un joueur absent (laisse le temps à la vue de se mettre à jour). */
+/** Délai avant de jouer à la place d’un joueur absent (laisse le temps à la vue de se mettre à jour). */
 const ABSENT_MS = 400;
 
 export const pokerSettingsSchema = z.object({
@@ -77,7 +77,7 @@ export interface PokerState {
   acted: Record<string, boolean>;
   /** Plus haute mise de la rue. */
   currentBet: number;
-  /** Taille minimale d'une relance. */
+  /** Taille minimale d’une relance. */
   minRaise: number;
   /** Faux après une relance incomplète (tapis court) : ceux qui ont déjà agi ne peuvent plus relancer. */
   reopen: boolean;
@@ -112,7 +112,7 @@ function canAct(s: PokerState, pid: string): boolean {
   );
 }
 
-/** Joueur suivant, dans l'ordre des tours, qui peut agir. -1 s'il n'y en a pas. */
+/** Joueur suivant, dans l’ordre des tours, qui peut agir. -1 s’il n’y en a pas. */
 function nextActor(s: PokerState, from: number): number {
   const n = s.order.length;
   for (let k = 1; k <= n; k++) {
@@ -122,7 +122,7 @@ function nextActor(s: PokerState, from: number): number {
   return -1;
 }
 
-/** La rue est finie quand plus personne ne doit agir, ou quand il ne reste qu'un joueur sans personne à qui répondre. */
+/** La rue est finie quand plus personne ne doit agir, ou quand il ne reste qu’un joueur sans personne à qui répondre. */
 function streetComplete(s: PokerState): boolean {
   const actors = s.order.filter((p) => canAct(s, p));
   if (actors.length === 0) return true;
@@ -134,7 +134,7 @@ function streetComplete(s: PokerState): boolean {
   return false;
 }
 
-/** Met des jetons dans le pot de la rue. Le joueur passe à tapis s'il ne lui reste rien. */
+/** Met des jetons dans le pot de la rue. Le joueur passe à tapis s’il ne lui reste rien. */
 function post(s: PokerState, pid: string, amount: number): number {
   const pay = Math.min(amount, s.chips[pid] ?? 0);
   s.chips[pid] = (s.chips[pid] ?? 0) - pay;
@@ -326,14 +326,14 @@ function endUncontested(s: PokerState, ctx: GameContext): void {
 }
 
 /**
- * Relance à `total` (mise totale de la rue). Renvoie un message d'erreur, ou null si la mise est acceptée.
+ * Relance à `total` (mise totale de la rue). Renvoie un message d’erreur, ou null si la mise est acceptée.
  * La relance est complète si elle égale au moins la relance minimale ; une relance plus petite ne vaut que
  * pour un tapis, et ferme la relance aux joueurs qui ont déjà agi.
  */
 function raiseTo(s: PokerState, pid: string, total: number): string | null {
   const streetBet = s.streetBet[pid] ?? 0;
   const maxTotal = streetBet + (s.chips[pid] ?? 0);
-  if (total > maxTotal) return "Vous n'avez pas assez de jetons.";
+  if (total > maxTotal) return 'Vous n’avez pas assez de jetons.';
   if (total <= s.currentBet) return `La mise doit dépasser ${s.currentBet} jetons.`;
   const isAllIn = total === maxTotal;
   const raise = total - s.currentBet;
@@ -352,7 +352,7 @@ function raiseTo(s: PokerState, pid: string, total: number): string | null {
   return null;
 }
 
-/** Applique une action de mise. Renvoie un message d'erreur, ou null. */
+/** Applique une action de mise. Renvoie un message d’erreur, ou null. */
 function act(s: PokerState, pid: string, type: string, payload: unknown): string | null {
   const name = who(s, pid);
   const streetBet = s.streetBet[pid] ?? 0;
@@ -530,7 +530,7 @@ export const pokerTexas: GameModule<PokerState, PokerSettings> = {
     if (!state.started || !state.order.includes(player.id)) return fail('Vous ne participez pas à cette partie.');
     if (state.phase === 'final') return fail('La partie est terminée.');
     if (state.phase !== 'betting') return fail('Aucune mise en cours.');
-    if (state.order[state.toAct] !== player.id) return fail("Ce n'est pas votre tour.");
+    if (state.order[state.toAct] !== player.id) return fail('Ce n’est pas votre tour.');
     if (!['fold', 'check', 'call', 'bet', 'allin'].includes(type)) return fail('Action inconnue.');
     const s = structuredClone(state);
     const err = act(s, player.id, type, payload);

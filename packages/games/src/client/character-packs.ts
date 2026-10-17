@@ -2,7 +2,7 @@ import { useEffect, useSyncExternalStore } from 'react';
 import type { CharacterPackInfo } from '@partyhub/shared';
 
 /**
- * Liste des packs de personnages (sprites importés dans l'administration).
+ * Liste des packs de personnages (sprites importés dans l’administration).
  * Chargée une seule fois par page, partagée par tous les personnages affichés.
  * Sans réseau ou pack supprimé, le personnage dessiné prend le relais.
  */
@@ -46,7 +46,7 @@ export function loadCharacterPacks(): Promise<void> {
   return pending;
 }
 
-/** Recharge la liste (après un import ou une suppression dans l'administration). */
+/** Recharge la liste (après un import ou une suppression dans l’administration). */
 export function refreshCharacterPacks(): Promise<void> {
   publish({ ...state, status: 'idle' });
   return loadCharacterPacks();
@@ -71,7 +71,7 @@ export function useCharacterPacks(): CharacterPackState {
   return snapshot;
 }
 
-/** Pack correspondant à un identifiant, ou null tant qu'il n'est pas chargé ou s'il n'existe plus. */
+/** Pack correspondant à un identifiant, ou null tant qu’il n’est pas chargé ou s’il n’existe plus. */
 export function usePackInfo(id: string | null | undefined): CharacterPackInfo | null {
   const { packs } = useCharacterPacks();
   if (!id) return null;

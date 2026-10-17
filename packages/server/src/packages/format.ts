@@ -3,9 +3,11 @@ import {
   boardGameDefinitionSchema,
   cardGameDefinitionSchema,
   mediaQuizDefinitionSchema,
+  recipeDefinitionSchema,
   type BoardGameDefinition,
   type CardGameDefinition,
   type MediaQuizDefinition,
+  type RecipeDefinition,
 } from '@partyhub/shared';
 import { PARTYHUB_ENGINE } from './engine.js';
 import { readZip, ZipError, type ZipFileEntry, type ZipReadLimits } from './zip.js';
@@ -16,19 +18,22 @@ import { compareVersions, isValidVersion } from './semver.js';
  * Format .phgame. Voir docs/PHGAME.md.
  * - Version 1 : jeux de cartes.
  * - Version 2 : jeux de cartes, jeux de plateau et jeux de questions (médias YouTube seulement).
+ * - Version 3 : recettes (module « recipe ») : règles déclaratives, écrans par rôle, génération IA avec repli.
  */
-export const PHGAME_FORMAT_VERSIONS = [1, 2] as const;
-export const PHGAME_FORMAT_VERSION = 2;
+export const PHGAME_FORMAT_VERSIONS = [1, 2, 3] as const;
+export const PHGAME_FORMAT_VERSION = 3;
+/** Première version du moteur qui comprend le format 3. */
+export const RECIPE_MIN_ENGINE_VERSION = '0.12.0';
 
 /** Module de jeu porté par un paquet. Un paquet en porte exactement un. */
 export type PackageModule = (typeof PARTYHUB_ENGINE.modules)[number];
 
 /**
- * Préfixe de l'identifiant du jeu dans le registre, selon le module. Les préfixes ne se recouvrent
- * jamais (« pkg- » n'est pas un début possible de « pkgb- » ni de « pkgq- »), donc deux paquets
+ * Préfixe de l’identifiant du jeu dans le registre, selon le module. Les préfixes ne se recouvrent
+ * jamais (« pkg- » n’est pas un début possible de « pkgb- » ni de « pkgq- »), donc deux paquets
  * de types différents ne peuvent pas partager un identifiant de jeu.
  */
-const GAME_ID_PREFIX: Record<PackageModule, string> = { cards: 'pkg-', board: 'pkgb-', quiz: 'pkgq-' };
+const GAME_ID_PREFIX: Record<PackageModule, string> = { cards: 'pkg-', board: 'pkgb-', quiz: 'pkgq-', recipe: 'pkgr-' };
 
 export function packageGameId(packageId: string, module: PackageModule = 'cards'): string {
   return `${GAME_ID_PREFIX[module]}${packageId}`;
@@ -46,10 +51,16 @@ export interface PackageLimits {
   maxJsonBytes: number;
   maxManifestBytes: number;
   maxImageSide: number;
+  /** Poids maximal d'une image, en octets. */
+  maxImageBytes: number;
 }
 
+/**
+ * Budgets d'un paquet : il doit rester petit. Les données pèsent quelques Ko ; les images sont le seul
+ * élément lourd, donc bornées une à une. Voir claude/architecture-jeux-importables.md, section 6.
+ */
 export const DEFAULT_PACKAGE_LIMITS: PackageLimits = {
-  maxArchiveBytes: 16 * 1024 * 1024,
+  maxArchiveBytes: 8 * 1024 * 1024,
   maxEntries: 200,
   maxEntryBytes: 4 * 1024 * 1024,
   maxTotalBytes: 32 * 1024 * 1024,
@@ -57,9 +68,10 @@ export const DEFAULT_PACKAGE_LIMITS: PackageLimits = {
   ratioCheckBytes: 1024 * 1024,
   maxPathLength: 200,
   maxDepth: 4,
-  maxJsonBytes: 1024 * 1024,
-  maxManifestBytes: 64 * 1024,
-  maxImageSide: 2048,
+  maxJsonBytes: 256 * 1024,
+  maxManifestBytes: 8 * 1024,
+  maxImageSide: 1024,
+  maxImageBytes: 200 * 1024,
 };
 
 const ID = /^[a-z0-9][a-z0-9-]{1,47}$/;
@@ -77,7 +89,7 @@ const TOP_DIRS: Record<string, readonly string[]> = {
 export const manifestSchema = z
   .object({
     format: z.literal('phgame'),
-    formatVersion: z.union([z.literal(1), z.literal(2)]),
+    formatVersion: z.union([z.literal(1), z.literal(2), z.literal(3)]),
     id: z.string().regex(ID, 'Identifiant : minuscules, chiffres et tirets (2 à 48 caractères).'),
     name: z.string().trim().min(2).max(40),
     version: z.string().max(64).refine(isValidVersion, 'Version attendue au format X.Y.Z.'),
@@ -91,7 +103,7 @@ export const manifestSchema = z
     requires: z.object({
       modules: z
         .array(z.enum(PARTYHUB_ENGINE.modules))
-        .length(1, 'Un paquet déclare exactement un module de jeu (cards, board ou quiz).'),
+        .length(1, 'Un paquet déclare exactement un module de jeu (cards, board, quiz ou recipe).'),
     }),
     entry: z.literal('game/definition.json'),
     cover: z.string().optional(),
@@ -115,7 +127,7 @@ export const manifestSchema = z
 
 export type PackageManifest = z.infer<typeof manifestSchema>;
 
-/** Vérifie un chemin à l'intérieur du paquet. Retourne la raison du refus, ou null. */
+/** Vérifie un chemin à l’intérieur du paquet. Retourne la raison du refus, ou null. */
 export function pathProblem(name: string, limits: Pick<PackageLimits, 'maxPathLength' | 'maxDepth'>): string | null {
   if (name.length === 0 || name.length > limits.maxPathLength) return `chemin trop long ou vide`;
   if (name.startsWith('/') || name.includes('\\') || name.includes('\0') || name.includes(':')) {
@@ -137,7 +149,89 @@ export function pathProblem(name: string, limits: Pick<PackageLimits, 'maxPathLe
   return null;
 }
 
-/** Vérifie la signature d'un fichier image (PNG, JPEG, WebP) et, pour le PNG, ses dimensions. */
+export interface Dimensions {
+  width: number;
+  height: number;
+}
+
+function sizeOf(width: number, height: number): Dimensions | null {
+  return width > 0 && height > 0 ? { width, height } : null;
+}
+
+/** PNG : dimensions dans l’en-tête IHDR, en gros-boutiste, octets 16 à 23. */
+function pngDimensions(view: DataView): Dimensions | null {
+  return sizeOf(view.getUint32(16), view.getUint32(20));
+}
+
+/**
+ * JPEG : on parcourt les segments jusqu’à celui de début de cadre (SOF), qui porte la hauteur et la largeur.
+ * Les octets de remplissage et les marqueurs sans longueur sont sautés.
+ */
+function jpegDimensions(view: DataView): Dimensions | null {
+  let pos = 2;
+  while (pos + 4 <= view.byteLength) {
+    if (view.getUint8(pos) !== 0xff) return null;
+    const marker = view.getUint8(pos + 1);
+    if (marker === 0xff) {
+      pos += 1;
+      continue;
+    }
+    // Fin d’image, ou début des données de pixels avant tout cadre : pas de dimensions.
+    if (marker === 0xd9 || marker === 0xda) return null;
+    if (marker === 0x01 || (marker >= 0xd0 && marker <= 0xd7)) {
+      pos += 2;
+      continue;
+    }
+    const length = view.getUint16(pos + 2);
+    if (length < 2) return null;
+    const isFrame = marker >= 0xc0 && marker <= 0xcf && marker !== 0xc4 && marker !== 0xc8 && marker !== 0xcc;
+    if (isFrame) return sizeOf(view.getUint16(pos + 7), view.getUint16(pos + 5));
+    pos += 2 + length;
+  }
+  return null;
+}
+
+/** WebP : dimensions dans le premier morceau (VP8, VP8L ou VP8X), selon son format de codage. */
+function webpDimensions(view: DataView): Dimensions | null {
+  const chunk = String.fromCharCode(view.getUint8(12), view.getUint8(13), view.getUint8(14), view.getUint8(15));
+  if (chunk === 'VP8 ') {
+    return sizeOf(view.getUint16(26, true) & 0x3fff, view.getUint16(28, true) & 0x3fff);
+  }
+  if (chunk === 'VP8L') {
+    if (view.getUint8(20) !== 0x2f) return null;
+    const bits = view.getUint32(21, true);
+    return sizeOf((bits & 0x3fff) + 1, ((bits >>> 14) & 0x3fff) + 1);
+  }
+  if (chunk === 'VP8X') {
+    const width = 1 + (view.getUint8(24) | (view.getUint8(25) << 8) | (view.getUint8(26) << 16));
+    const height = 1 + (view.getUint8(27) | (view.getUint8(28) << 8) | (view.getUint8(29) << 16));
+    return sizeOf(width, height);
+  }
+  return null;
+}
+
+/**
+ * Dimensions d’une image, lues dans ses en-têtes sans la décoder (PNG, JPEG, WebP). Null quand elles sont
+ * introuvables, nulles, ou quand le fichier est tronqué.
+ */
+export function imageDimensions(data: Uint8Array): Dimensions | null {
+  const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
+  try {
+    if (data[0] === 0x89 && data[1] === 0x50 && data[2] === 0x4e && data[3] === 0x47) return pngDimensions(view);
+    if (data[0] === 0xff && data[1] === 0xd8 && data[2] === 0xff) return jpegDimensions(view);
+    if (data[0] === 0x52 && data[1] === 0x49 && data[2] === 0x46 && data[3] === 0x46) return webpDimensions(view);
+    return null;
+  } catch {
+    // Lecture hors du fichier : en-tête tronqué.
+    return null;
+  }
+}
+
+/**
+ * Vérifie la signature d’une image (PNG, JPEG, WebP), puis ses dimensions. Le côté le plus long est borné pour
+ * les trois formats : une image très haute en définition pèse peu sur le disque, mais coûte cher à décoder
+ * dans le navigateur.
+ */
 export function imageProblem(data: Uint8Array, ext: string, limits: PackageLimits): string | null {
   const isPng = data[0] === 0x89 && data[1] === 0x50 && data[2] === 0x4e && data[3] === 0x47;
   const isJpeg = data[0] === 0xff && data[1] === 0xd8 && data[2] === 0xff;
@@ -152,17 +246,19 @@ export function imageProblem(data: Uint8Array, ext: string, limits: PackageLimit
     data[11] === 0x50;
   if (ext === '.png') {
     if (!isPng) return 'fichier .png invalide';
-    const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
     if (data.length < 24) return 'fichier .png tronqué';
-    const width = view.getUint32(16);
-    const height = view.getUint32(20);
-    if (width === 0 || height === 0 || width > limits.maxImageSide || height > limits.maxImageSide) {
-      return `image trop grande (côté maximal ${limits.maxImageSide} px)`;
-    }
+  } else if (ext === '.jpg' || ext === '.jpeg') {
+    if (!isJpeg) return 'fichier JPEG invalide';
+  } else if (ext === '.webp') {
+    if (!isWebp) return 'fichier WebP invalide';
+  } else {
     return null;
   }
-  if (ext === '.jpg' || ext === '.jpeg') return isJpeg ? null : 'fichier JPEG invalide';
-  if (ext === '.webp') return isWebp ? null : 'fichier WebP invalide';
+  const size = imageDimensions(data);
+  if (!size) return 'dimensions de l’image illisibles';
+  if (size.width > limits.maxImageSide || size.height > limits.maxImageSide) {
+    return `image trop grande (côté maximal ${limits.maxImageSide} px)`;
+  }
   return null;
 }
 
@@ -170,7 +266,8 @@ export function imageProblem(data: Uint8Array, ext: string, limits: PackageLimit
 export type DefinitionValue =
   | { module: 'cards'; definition: CardGameDefinition }
   | { module: 'board'; definition: BoardGameDefinition }
-  | { module: 'quiz'; definition: MediaQuizDefinition };
+  | { module: 'quiz'; definition: MediaQuizDefinition }
+  | { module: 'recipe'; definition: RecipeDefinition };
 
 interface ValidatedBase {
   manifest: PackageManifest;
@@ -181,7 +278,7 @@ interface ValidatedBase {
 
 export type ValidatedPackage = ValidatedBase & DefinitionValue;
 
-/** Erreur de validation, avec la liste des problèmes à présenter à l'administrateur. */
+/** Erreur de validation, avec la liste des problèmes à présenter à l’administrateur. */
 export class PackageValidationError extends Error {
   constructor(readonly issues: string[]) {
     super(issues[0] ?? 'Paquet invalide.');
@@ -194,7 +291,7 @@ function sha256Hex(data: Uint8Array): string {
 
 /**
  * Vérifie la définition du jeu selon son module. Un jeu de questions ne peut référencer que des
- * vidéos YouTube : les fichiers de la médiathèque n'existent pas dans un paquet.
+ * vidéos YouTube : les fichiers de la médiathèque n’existent pas dans un paquet.
  */
 function checkDefinition(
   module: PackageModule,
@@ -238,6 +335,11 @@ function checkDefinition(
       );
       if (issues.length > 0) return { issues };
       return { issues: [], value: { module: 'quiz', definition: parsed.data } };
+    }
+    case 'recipe': {
+      const parsed = recipeDefinitionSchema.safeParse(raw);
+      if (!parsed.success) return { issues: fromZod(parsed.error) };
+      return { issues: [], value: { module: 'recipe', definition: parsed.data } };
     }
   }
 }
@@ -305,6 +407,15 @@ export function validatePackage(bytes: Uint8Array, limits: PackageLimits = DEFAU
   if (manifest.formatVersion === 1 && module !== 'cards') {
     issues.push(`Le format 1 ne porte que des jeux de cartes : le module « ${module} » demande le format 2.`);
   }
+  if (module === 'recipe' && manifest.formatVersion !== 3) {
+    issues.push('Une recette demande le format 3.');
+  }
+  if (manifest.formatVersion === 3) {
+    if (module !== 'recipe') issues.push(`Le format 3 ne porte que des recettes : « ${module} » n’en est pas une.`);
+    if (compareVersions(manifest.engine.minVersion, RECIPE_MIN_ENGINE_VERSION) < 0) {
+      issues.push(`Le format 3 demande PartyHub ${RECIPE_MIN_ENGINE_VERSION} au minimum.`);
+    }
+  }
 
   // Fichiers déclarés : présents, sans doublon, de la bonne taille et de la bonne empreinte.
   const declared = new Map<string, (typeof manifest.files)[number]>();
@@ -355,7 +466,11 @@ export function validatePackage(bytes: Uint8Array, limits: PackageLimits = DEFAU
   for (const name of files.keys()) {
     if (!name.startsWith('assets/')) continue;
     const dot = name.lastIndexOf('.');
-    const problem = imageProblem(files.get(name)!, name.slice(dot).toLowerCase(), limits);
+    const data = files.get(name)!;
+    if (data.byteLength > limits.maxImageBytes) {
+      issues.push(`« ${name} » : image trop lourde (maximum ${Math.round(limits.maxImageBytes / 1024)} Ko).`);
+    }
+    const problem = imageProblem(data, name.slice(dot).toLowerCase(), limits);
     if (problem) issues.push(`« ${name} » : ${problem}.`);
   }
   if (manifest.cover !== undefined && !(manifest.cover.startsWith('assets/') && declared.has(manifest.cover))) {

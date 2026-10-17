@@ -5,13 +5,13 @@ import { HoldTimer, Pulses, ShakeDetector, SpinTracker } from '../../client/sens
 import { PILE_WINDOW, pileMarker } from '../microgames.js';
 
 /**
- * Les cinq manières de jouer un défi sur le téléphone. Chacune mesure avec son capteur, envoie son état à l'écran
+ * Les cinq manières de jouer un défi sur le téléphone. Chacune mesure avec son capteur, envoie son état à l’écran
  * principal (pour le faire voir en direct), et appelle `onDone` une seule fois, avec la valeur à juger.
  */
 
-/** Niveau du micro à partir duquel on considère qu'on souffle (de 0 à 1). */
+/** Niveau du micro à partir duquel on considère qu’on souffle (de 0 à 1). */
 export const BLOW_LEVEL = 0.2;
-/** Tolérance autour du centre pour l'équilibre (de 0 à 1 sur chaque axe). */
+/** Tolérance autour du centre pour l’équilibre (de 0 à 1 sur chaque axe). */
 export const BALANCE_ZONE = 0.2;
 
 interface GameProps {
@@ -31,7 +31,7 @@ function NoSensor({ text }: { text: string }) {
 /** Délai au bout duquel un téléphone qui ne donne pas le cap est signalé : le défi ne peut alors pas être réussi. */
 const NO_ANGLE_MS = 2000;
 
-/** Rafraîchit l'affichage dix fois par seconde, sans re-rendre à chaque mesure. */
+/** Rafraîchit l’affichage dix fois par seconde, sans re-rendre à chaque mesure. */
 function useDisplayTick(run: boolean): number {
   const [tick, setTick] = useState(0);
   useEffect(() => {
@@ -42,7 +42,7 @@ function useDisplayTick(run: boolean): number {
   return tick;
 }
 
-/** Secouez : douze secousses. L'accéléromètre compte les impulsions. */
+/** Secouez : douze secousses. L’accéléromètre compte les impulsions. */
 export function ShakeChallenge({ target, onDone }: GameProps) {
   const [detector] = useState(() => new ShakeDetector(12, 160));
   const count = useRef(0);
@@ -144,7 +144,7 @@ export function SpinChallenge({ target, onDone }: GameProps) {
   useEffect(() => {
     const id = window.setInterval(() => {
       setDegrees(latest.current);
-      // Certains navigateurs ne donnent pas le cap : on le dit, au lieu d'attendre sans fin.
+      // Certains navigateurs ne donnent pas le cap : on le dit, au lieu d’attendre sans fin.
       setNoAngle(!angleSeen.current && performance.now() - mountedAt.current > NO_ANGLE_MS);
     }, 100);
     return () => window.clearInterval(id);
@@ -170,7 +170,7 @@ export function BlowChallenge({ target, onDone }: GameProps) {
   const onDoneRef = useRef(onDone);
   const broadcast = useSensorBroadcast(SENSOR_SEND_HZ);
 
-  // `onDone` peut changer d'identité à chaque rendu : on le lit dans une référence, sans relancer l'effet.
+  // `onDone` peut changer d’identité à chaque rendu : on le lit dans une référence, sans relancer l’effet.
   useEffect(() => {
     onDoneRef.current = onDone;
   });
@@ -211,14 +211,14 @@ export function BlowChallenge({ target, onDone }: GameProps) {
   );
 }
 
-/** Tapote vite : vingt tapotements. Chaque tapotement est compté au plus toutes les 70 ms, comme le serveur l'exige. */
+/** Tapote vite : vingt tapotements. Chaque tapotement est compté au plus toutes les 70 ms, comme le serveur l’exige. */
 export function TapChallenge({ target, onDone }: GameProps) {
   const [pulses] = useState(() => new Pulses(70));
   const [count, setCount] = useState(0);
   const finished = useRef(false);
   const broadcast = useSensorBroadcast(SENSOR_SEND_HZ);
 
-  // Le compteur suit chaque tapotement, sans attendre le rafraîchissement de l'affichage.
+  // Le compteur suit chaque tapotement, sans attendre le rafraîchissement de l’affichage.
   function tap() {
     if (finished.current) return;
     const t = performance.now();
@@ -244,7 +244,7 @@ export function TapChallenge({ target, onDone }: GameProps) {
 }
 
 /**
- * Pile au bon moment : un curseur va et vient, un seul appui compte. La valeur est l'instant de l'appui.
+ * Pile au bon moment : un curseur va et vient, un seul appui compte. La valeur est l’instant de l’appui.
  * Le curseur est déplacé directement dans le document (sans re-rendu à chaque image) ; le bouton se désactive
  * quand le défi est terminé.
  */

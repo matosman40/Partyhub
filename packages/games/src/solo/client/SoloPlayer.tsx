@@ -21,7 +21,7 @@ const BOARDS: Record<string, ComponentType<SoloBoardProps>> = {
   'mots-croises': CrosswordView,
 };
 
-/** Téléphone d'un jeu solo : la grille du joueur, son avancement et le temps restant. */
+/** Téléphone d’un jeu solo : la grille du joueur, son avancement et le temps restant. */
 export function SoloPlayer({ publicState: pub, playerState: me, now, send }: PlayerViewProps) {
   const remaining = useRemaining(pub?.endsAt || undefined, now);
   if (!pub) return null;

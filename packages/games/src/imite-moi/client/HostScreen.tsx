@@ -6,7 +6,7 @@ interface Shown {
   dataUrl: string;
 }
 
-/** Une réponse : photo ou son. Le son se lance au clic sur l'écran principal. */
+/** Une réponse : photo ou son. Le son se lance au clic sur l’écran principal. */
 function Answer({ item, alt }: { item: Shown; alt: string }) {
   if (!item.dataUrl) return <span className="muted">Pas de réponse</span>;
   if (item.kind === 'sound') return <audio className="imite-audio" controls src={item.dataUrl} />;

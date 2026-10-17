@@ -8,10 +8,10 @@ import { rankingOf } from '../../cards/client/common.js';
 import { ChipStack, PokerCardFace } from './PokerCards.js';
 import type { PokerPublic } from './common.js';
 
-/** Angle de chaque siège autour de la table ; le premier est en bas, comme un joueur qui regarde l'écran. */
+/** Angle de chaque siège autour de la table ; le premier est en bas, comme un joueur qui regarde l’écran. */
 function seatPosition(index: number, count: number): { left: number; top: number } {
   const angle = ((90 + (index * 360) / count) * Math.PI) / 180;
-  // Rayon vertical un peu réduit : le siège du bas reste au-dessus de la barre de commandes de l'hôte.
+  // Rayon vertical un peu réduit : le siège du bas reste au-dessus de la barre de commandes de l’hôte.
   return { left: 50 + 45 * Math.cos(angle), top: 50 + 34 * Math.sin(angle) };
 }
 
@@ -65,7 +65,7 @@ export function PokerHost({ publicState, now }: HostViewProps) {
 
       <div className="poker-table">
         <div className="poker-felt">
-          <div className="poker-board" aria-label="Cartes communes">
+          <div className="poker-board" role="group" aria-label="Cartes communes">
             {[0, 1, 2, 3, 4].map((i) => {
               const card = pub.board[i];
               return card ? <PokerCardFace key={i} card={card} /> : <PokerCardFace key={i} empty />;
@@ -98,7 +98,7 @@ export function PokerHost({ publicState, now }: HostViewProps) {
           return (
             <div key={pid} className={cls} data-seat={pid} style={{ left: `${pos.left}%`, top: `${pos.top}%` }}>
               {pub.dealerId === pid && (
-                <span className="poker-dealer" aria-label="Bouton">
+                <span className="poker-dealer" role="img" aria-label="Bouton">
                   D
                 </span>
               )}

@@ -1,8 +1,8 @@
 /**
- * Son sans fichier par défaut : effets et musique synthétisés avec la Web Audio API. L'administration
+ * Son sans fichier par défaut : effets et musique synthétisés avec la Web Audio API. L’administration
  * peut remplacer un bruitage par un fichier de la médiathèque (voir setSfxFiles). Le contexte audio ne
- * démarre qu'après un geste de l'utilisateur (règle des navigateurs) : tant qu'il n'est pas débloqué,
- * les appels sont simplement ignorés. Le choix muet/son est gardé sur l'appareil.
+ * démarre qu’après un geste de l’utilisateur (règle des navigateurs) : tant qu’il n’est pas débloqué,
+ * les appels sont simplement ignorés. Le choix muet/son est gardé sur l’appareil.
  */
 
 import type { SfxName } from '@partyhub/shared';
@@ -75,6 +75,21 @@ export function unlockAudio(): void {
   context();
 }
 
+/**
+ * Débloque le son au premier geste de l’utilisateur, où qu’il soit sur la page : salon, menu, téléphone ou
+ * vue de jeu. Sans cela, le départ lancé depuis le salon de l’écran principal reste muet tant que personne
+ * n’a touché la vue de jeu.
+ */
+export function unlockOnFirstGesture(target: Document = document): void {
+  if (unlocked) return;
+  const events = ['pointerdown', 'keydown'] as const;
+  const once = () => {
+    unlockAudio();
+    for (const type of events) target.removeEventListener(type, once, true);
+  };
+  for (const type of events) target.addEventListener(type, once, true);
+}
+
 export function isAudioUnlocked(): boolean {
   return unlocked;
 }
@@ -85,7 +100,7 @@ export function isMuted(): boolean {
 
 const muteListeners = new Set<(value: boolean) => void>();
 
-/** Prévient quand le bouton muet change (la musique de menu s'arrête ou reprend avec lui). */
+/** Prévient quand le bouton muet change (la musique de menu s’arrête ou reprend avec lui). */
 export function onMuteChange(listener: (value: boolean) => void): () => void {
   muteListeners.add(listener);
   return () => {
@@ -106,8 +121,8 @@ const sfxBuffers = new Map<string, AudioBuffer>();
 const sfxPending = new Set<string>();
 
 /**
- * Règle les fichiers de bruitage (adresses publiques, ou null pour le son d'origine). Un fichier
- * encore en chargement laisse jouer le son d'origine, sans bloquer l'effet.
+ * Règle les fichiers de bruitage (adresses publiques, ou null pour le son d’origine). Un fichier
+ * encore en chargement laisse jouer le son d’origine, sans bloquer l’effet.
  */
 export function setSfxFiles(files: Partial<Record<Sfx, string | null>>): void {
   const next: Partial<Record<Sfx, string>> = {};
@@ -125,7 +140,7 @@ function loadSfxFile(c: AudioContext, url: string): void {
     .then((bytes) => c.decodeAudioData(bytes))
     .then((buffer) => sfxBuffers.set(url, buffer))
     .catch(() => {
-      /* fichier illisible : le son d'origine reste joué */
+      /* fichier illisible : le son d’origine reste joué */
     })
     .finally(() => sfxPending.delete(url));
 }
@@ -198,18 +213,23 @@ const midi = (n: number) => 440 * Math.pow(2, (n - 69) / 12);
 // Dédoublonnage : le téléviseur et son siège, sur le même appareil, reçoivent le même événement.
 const lastPlayed = new Map<Sfx, number>();
 
-/** Joue un effet sonore. Ignoré si le son est coupé ou pas encore débloqué. */
-export function play(name: Sfx): void {
-  if (muted || !unlocked) return;
+/** Instant du dernier bruitage joué par un jeu : la couche de l’écran principal s’efface devant lui. */
+let gameSoundAt = Number.NEGATIVE_INFINITY;
+/** Délai pendant lequel un bruitage de jeu prime sur celui de la couche de l’écran principal. */
+const GAME_PRIORITY_MS = 300;
+
+/** Planifie un effet sonore. Vrai quand il sonne, faux quand il est ignoré (coupé, déjà joué, pas débloqué). */
+function scheduleSound(name: Sfx): boolean {
+  if (muted || !unlocked) return false;
   const now = performance.now();
-  if (now - (lastPlayed.get(name) ?? 0) < 60) return;
+  if (now - (lastPlayed.get(name) ?? 0) < 60) return false;
   lastPlayed.set(name, now);
   const c = context();
-  if (!c || !sfxBus) return;
+  if (!c || !sfxBus) return false;
   const t = c.currentTime + 0.005;
   const bus = sfxBus;
   const file = sfxUrls[name];
-  if (file && playSfxFile(c, bus, file)) return;
+  if (file && playSfxFile(c, bus, file)) return true;
   switch (name) {
     case 'place':
       tone(c, bus, 'sine', 620, t, 0.14, 0.35, 300);
@@ -262,6 +282,26 @@ export function play(name: Sfx): void {
       tone(c, bus, 'sine', 2400, t, 0.03, 0.06);
       break;
   }
+  return true;
+}
+
+/** Joue un effet sonore d’un jeu. Ignoré si le son est coupé ou pas encore débloqué. */
+export function play(name: Sfx): void {
+  if (scheduleSound(name)) gameSoundAt = performance.now();
+}
+
+/**
+ * Vrai quand un bruitage de la couche d’écran cède la place : un bruitage de jeu vient de sonner (il fait
+ * déjà le bilan), donc on ne double pas. La fanfare finale sonne toujours. Fonction pure.
+ */
+export function cueYieldsToGame(name: Sfx, msSinceGameSound: number): boolean {
+  return name !== 'final' && msSinceGameSound < GAME_PRIORITY_MS;
+}
+
+/** Joue un bruitage de la couche d’écran principal (début, bilan, fin), sauf s’il cède à un jeu. */
+export function playCue(name: Sfx): void {
+  if (cueYieldsToGame(name, performance.now() - gameSoundAt)) return;
+  scheduleSound(name);
 }
 
 // ---------------------------------------------------------------------------
@@ -283,7 +323,7 @@ function scheduleStep(c: AudioContext, at: number, i: number): void {
   if (i % 4 === 2 && noise) burst(c, musicBus, at, 0.05, 0.25, 'highpass', 6000, 3000);
 }
 
-/** Démarre la musique de fond (à l'écran principal). */
+/** Démarre la musique de fond (à l’écran principal). */
 export function startMusic(): void {
   if (timer !== null) return;
   const c = context();

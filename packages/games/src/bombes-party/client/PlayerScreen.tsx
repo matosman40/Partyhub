@@ -4,13 +4,8 @@ import { unlockAudio } from '../../client/audio.js';
 import { SoundToggle } from '../../client/SoundToggle.js';
 import { FinalScreen, WaitingScreen } from '../../client/ui.js';
 import { BoardCanvas } from './BoardCanvas.js';
-import { Gamepad } from './Gamepad.js';
-import type { BoardView, Dir, Mount } from './render.js';
-
-const MOUNT_ICON: Record<Mount, { icon: string; label: string }> = {
-  kangaroo: { icon: '🦘', label: 'Kangourou' },
-  dino: { icon: '🦖', label: 'Dinosaure' },
-};
+import { Gamepad, type RideAction, type RideOptions } from './Gamepad.js';
+import type { BoardView, Dir } from './render.js';
 
 const KEY_DIR: Record<string, Dir> = {
   ArrowUp: 'up',
@@ -27,6 +22,9 @@ const KEY_DIR: Record<string, Dir> = {
   D: 'right',
 };
 const BOMB_KEYS = new Set([' ', 'Enter', 'x', 'X']);
+/** Gestes du kangourou au clavier : Q soulève, E lance, F frappe. */
+const RIDE_KEYS: Record<string, RideAction> = { q: 'lift', Q: 'lift', e: 'throw', E: 'throw', f: 'kick', F: 'kick' };
+const NO_RIDE: RideOptions = { lift: false, kick: false, throw: false };
 
 function isTyping(target: EventTarget | null): boolean {
   const el = target as HTMLElement | null;
@@ -41,6 +39,7 @@ export function BombesPartyPlayer({ publicState: pub, playerState: me, send }: P
 
   const phase: string | undefined = pub?.phase;
   const canAct = phase === 'play' && !!me?.alive;
+  const ride: RideOptions | null = me?.mount === 'kangaroo' ? ((me.ride as RideOptions | undefined) ?? NO_RIDE) : null;
 
   const move = (dir: Dir) => {
     if (!canAct) return;
@@ -57,18 +56,30 @@ export function BombesPartyPlayer({ publicState: pub, playerState: me, send }: P
     });
   };
 
-  // Clavier (flèches, WASD, Espace / Entrée / X). Ignoré quand l'écran est masqué
+  const rideWith = (action: RideAction) => {
+    if (!canAct) return;
+    setError(null);
+    void send(action).then((res) => {
+      if (!res.ok) setError(res.error ?? 'Geste refusé');
+    });
+  };
+
+  // Clavier (flèches, WASD, Espace / Entrée / X, Q E F). Ignoré quand l’écran est masqué
   // (plusieurs sièges peuvent coexister dans le même navigateur).
-  const keyRef = useRef({ move, bomb });
-  keyRef.current = { move, bomb };
+  const keyRef = useRef({ move, bomb, rideWith });
+  keyRef.current = { move, bomb, rideWith };
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (isTyping(e.target) || e.ctrlKey || e.metaKey || e.altKey) return;
       if (rootRef.current?.offsetParent === null) return;
       const dir = KEY_DIR[e.key];
+      const action = RIDE_KEYS[e.key];
       if (dir) {
         e.preventDefault();
         keyRef.current.move(dir);
+      } else if (action && !e.repeat) {
+        e.preventDefault();
+        keyRef.current.rideWith(action);
       } else if (BOMB_KEYS.has(e.key) && !e.repeat) {
         e.preventDefault();
         keyRef.current.bomb();
@@ -78,13 +89,13 @@ export function BombesPartyPlayer({ publicState: pub, playerState: me, send }: P
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  // Pluie de confettis à la fin d'une manche gagnée par ce joueur.
+  // Pluie de confettis à la fin d’une manche gagnée par ce joueur.
   const wonRound = phase === 'round-over' && (me?.gained ?? 0) > 0;
   useEffect(() => {
     if (wonRound) setCelebrate((c) => c + 1);
   }, [wonRound]);
 
-  // Le premier appui sur l'écran débloque le son du navigateur.
+  // Le premier appui sur l’écran débloque le son du navigateur.
   const onPointerDown = () => unlockAudio();
 
   if (!pub) return null;
@@ -109,7 +120,7 @@ export function BombesPartyPlayer({ publicState: pub, playerState: me, send }: P
   // Commandes fixes en bas : visibles en permanence pendant la manche.
   const dock = (
     <div className="control-dock">
-      <Gamepad onMove={move} onBomb={bomb} disabled={!canAct} />
+      <Gamepad onMove={move} onBomb={bomb} onRide={rideWith} ride={ride} disabled={!canAct} />
     </div>
   );
 
@@ -126,33 +137,13 @@ export function BombesPartyPlayer({ publicState: pub, playerState: me, send }: P
     );
   }
 
-  const mount = me?.mount ? MOUNT_ICON[me.mount as Mount] : null;
-  const speedLevel = me?.speed ?? 0;
-
   return (
     <section ref={rootRef} className="player-game fade-in" onPointerDownCapture={onPointerDown}>
       {board}
       {footer}
 
       {me?.alive ? (
-        <>
-          <ul className="hud-chips" aria-label="Vos bonus">
-            <li className="hud-chip" title="Bombes posées / maximum">
-              <span aria-hidden="true">💣</span> {me.placed} / {me.maxBombs}
-            </li>
-            <li className="hud-chip" title="Portée des explosions">
-              <span aria-hidden="true">🔥</span> {me.range}
-            </li>
-            <li className="hud-chip" title="Vitesse">
-              <span aria-hidden="true">👟</span> {speedLevel}
-            </li>
-            {mount && (
-              <li className="hud-chip is-mount" title={mount.label}>
-                <span aria-hidden="true">{mount.icon}</span> {mount.label}
-              </li>
-            )}
-          </ul>
-        </>
+        me.carrying && <p className="muted ride-hint">Bombe soulevée : lancez-la ou frappez-la.</p>
       ) : (
         <>
           <p className="big">Éliminé</p>

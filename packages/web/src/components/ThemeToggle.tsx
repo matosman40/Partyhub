@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { applyTheme, loadTheme, saveTheme, type ThemeName } from '../theme/index.js';
 
-/** Bouton clair/sombre. La préférence est retenue sur l'appareil. */
+/** Bouton clair/sombre. La préférence est retenue sur l’appareil. */
 export function ThemeToggle() {
   const [theme, setTheme] = useState<ThemeName>(() => loadTheme());
 

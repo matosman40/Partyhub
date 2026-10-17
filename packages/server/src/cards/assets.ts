@@ -4,8 +4,8 @@ import type { CardExportAsset, CardGameDefinition } from '@partyhub/shared';
 import type { AssetKind, AssetService } from '../assets/service.js';
 
 /**
- * Fichiers de la médiathèque qu'un jeu de cartes utilise : l'image du dos et la police.
- * Un export les joint pour qu'ils voyagent avec le jeu ; un import les recrée ici.
+ * Fichiers de la médiathèque qu’un jeu de cartes utilise : l’image du dos et la police.
+ * Un export les joint pour qu’ils voyagent avec le jeu ; un import les recrée ici.
  */
 type CardAssetKind = Extract<AssetKind, 'image' | 'font'>;
 

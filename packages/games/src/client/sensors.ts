@@ -5,18 +5,18 @@ import { Throttle, levelFromBytes, shakeMagnitude, tiltFrom, type Neutral, type 
 
 /**
  * Capteurs du téléphone pour les jeux : gyroscope (inclinaison), accéléromètre (secousses) et micro (souffle).
- * Chaque fonction est sans effet si l'appareil ne sait pas faire : le jeu reçoit alors un état « indisponible »
+ * Chaque fonction est sans effet si l’appareil ne sait pas faire : le jeu reçoit alors un état « indisponible »
  * et propose une autre manière de jouer. Les détections pures sont dans `sensors-core.ts`.
  */
 
 export type MotionAccess = 'granted' | 'denied' | 'unavailable' | 'insecure';
 
-/** Vrai si le navigateur publie des événements d'orientation ou de mouvement. */
+/** Vrai si le navigateur publie des événements d’orientation ou de mouvement. */
 export function motionAvailable(): boolean {
   return typeof window !== 'undefined' && ('DeviceOrientationEvent' in window || 'DeviceMotionEvent' in window);
 }
 
-/** Vrai sur iPhone et iPad (iOS 13 et plus) : l'accès aux capteurs doit être demandé par un geste. */
+/** Vrai sur iPhone et iPad (iOS 13 et plus) : l’accès aux capteurs doit être demandé par un geste. */
 export function motionNeedsPermission(): boolean {
   return (
     typeof window !== 'undefined' &&
@@ -26,8 +26,8 @@ export function motionNeedsPermission(): boolean {
 }
 
 /**
- * Demande l'accès aux capteurs. À appeler depuis un geste de l'utilisateur (un bouton) : iOS l'exige.
- * Android et ordinateurs n'ont pas de demande : l'accès est accordé dès que la page est en HTTPS.
+ * Demande l’accès aux capteurs. À appeler depuis un geste de l’utilisateur (un bouton) : iOS l’exige.
+ * Android et ordinateurs n’ont pas de demande : l’accès est accordé dès que la page est en HTTPS.
  */
 export async function requestMotionAccess(): Promise<MotionAccess> {
   if (typeof window === 'undefined') return 'unavailable';
@@ -48,7 +48,7 @@ export async function requestMotionAccess(): Promise<MotionAccess> {
   }
 }
 
-/** Un échantillon de capteurs, à chaque mesure d'orientation du téléphone. */
+/** Un échantillon de capteurs, à chaque mesure d’orientation du téléphone. */
 export interface MotionFrame {
   /** Inclinaison relative à la pose neutre, de -1 à 1 sur chaque axe. */
   tilt: Point;
@@ -62,13 +62,13 @@ export interface MotionFrame {
 
 export type SignalState = 'unknown' | 'yes' | 'no';
 
-/** Délai sans mesure au-delà duquel on considère que le téléphone n'a pas de capteur utilisable. */
+/** Délai sans mesure au-delà duquel on considère que le téléphone n’a pas de capteur utilisable. */
 const SIGNAL_TIMEOUT_MS = 1500;
 
 /**
- * Écoute l'orientation et l'accélération tant que `active` est vrai, et envoie chaque mesure à `onFrame`.
+ * Écoute l’orientation et l’accélération tant que `active` est vrai, et envoie chaque mesure à `onFrame`.
  * La pose neutre est prise à la première mesure : le téléphone doit être tenu comme au départ.
- * `recalibrate()` la reprend à la mesure suivante. `signal` passe à « no » si rien n'arrive.
+ * `recalibrate()` la reprend à la mesure suivante. `signal` passe à « no » si rien n’arrive.
  */
 export function useMotionFeed(
   active: boolean,
@@ -135,7 +135,7 @@ export type MicStatus = 'idle' | 'starting' | 'ready' | 'denied' | 'unavailable'
 
 /**
  * Niveau du micro (0 à 1), tant que `active` est vrai. Le micro est demandé à ce moment-là, puis arrêté
- * dès que `active` redevient faux : le flux n'est jamais envoyé au serveur.
+ * dès que `active` redevient faux : le flux n’est jamais envoyé au serveur.
  */
 export function useMicLevel(active: boolean): { status: MicStatus; level: number } {
   const [status, setStatus] = useState<MicStatus>('idle');
@@ -200,15 +200,15 @@ export function useMicLevel(active: boolean): { status: MicStatus; level: number
   return { status, level };
 }
 
-/** Dernier échantillon connu d'un joueur, avec l'instant de réception sur l'écran principal. */
+/** Dernier échantillon connu d’un joueur, avec l’instant de réception sur l’écran principal. */
 export interface SensorReading extends SensorSample {
   at: number;
 }
 
-/** Échantillons de chaque joueur, indexés par identifiant. Fourni par l'écran principal. */
+/** Échantillons de chaque joueur, indexés par identifiant. Fourni par l’écran principal. */
 export const SensorsContext = createContext<Record<string, SensorReading>>({});
 
-/** Envoi d'un échantillon depuis le téléphone. Fourni par la place du joueur ; absent hors partie. */
+/** Envoi d’un échantillon depuis le téléphone. Fourni par la place du joueur ; absent hors partie. */
 export const SensorSenderContext = createContext<((sample: SensorSample) => void) | null>(null);
 
 /** Échantillons reçus de tous les joueurs (écran principal). */
@@ -217,8 +217,8 @@ export function useSensors(): Record<string, SensorReading> {
 }
 
 /**
- * Une mesure est fraîche tant qu'elle a moins de `maxAgeMs` : au-delà, le téléphone s'est tu ou il est hors de
- * portée, et le joueur n'est plus suivi.
+ * Une mesure est fraîche tant qu’elle a moins de `maxAgeMs` : au-delà, le téléphone s’est tu ou il est hors de
+ * portée, et le joueur n’est plus suivi.
  */
 export function isFreshReading(reading: SensorReading | undefined, now: number, maxAgeMs: number): boolean {
   return reading !== undefined && now - reading.at < maxAgeMs;
@@ -237,12 +237,12 @@ export function useFreshnessTick(everyMs = 250): void {
 }
 
 /**
- * Envoie l'état des capteurs au serveur, au plus `hz` fois par seconde, pour l'afficher sur l'écran principal.
+ * Envoie l’état des capteurs au serveur, au plus `hz` fois par seconde, pour l’afficher sur l’écran principal.
  * Renvoie une fonction à appeler à chaque mesure : elle ignore les envois trop rapprochés.
  */
 export function useSensorBroadcast(hz = 10): (sample: SensorSample, t: number) => void {
   const send = useContext(SensorSenderContext);
-  // L'envoi est lu dans une référence : la fonction renvoyée garde la même identité, même si la place du joueur
+  // L’envoi est lu dans une référence : la fonction renvoyée garde la même identité, même si la place du joueur
   // en fournit une nouvelle à chaque rendu. Les effets qui en dépendent ne se relancent pas pour rien.
   const sendRef = useRef(send);
   useEffect(() => {

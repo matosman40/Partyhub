@@ -16,13 +16,13 @@ export interface RacePublic {
   center: { uid: string; entry: string } | null;
   counts: Record<string, number>;
   pileCount: number;
-  /** Joueur → instant serveur (ms) jusqu'auquel ses touches sont bloquées. */
+  /** Joueur → instant serveur (ms) jusqu’auquel ses touches sont bloquées. */
   locked: Record<string, number>;
   lastEvent: string;
   turnEndsAt: number | null;
 }
 
-/** Vue d'un joueur : sa main et son verrou éventuel. */
+/** Vue d’un joueur : sa main et son verrou éventuel. */
 export interface RacePlayerState {
   spectator: boolean;
   hand: { uid: string; entry: string }[];

@@ -6,7 +6,7 @@ import { isValidRoomCode, ROOM_CODE_MAX_LENGTH } from '@partyhub/shared';
 import { QrScanner, canScanQr } from '../components/QrScanner.js';
 import { useMusicSlot } from '../sounds.js';
 
-/** Extrait le code de salle d'un QR code (lien /j/CODE) ou d'un code saisi à la main. */
+/** Extrait le code de salle d’un QR code (lien /j/CODE) ou d’un code saisi à la main. */
 export function codeFromScan(value: string): string | null {
   const fromLink = value.match(/\/j\/([0-9]{4,6})(?:[/?#]|$)/);
   if (fromLink?.[1]) return fromLink[1];

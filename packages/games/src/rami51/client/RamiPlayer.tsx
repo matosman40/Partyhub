@@ -59,7 +59,7 @@ export function RamiPlayer({ publicState, playerState, playerId, send }: PlayerV
     });
   }, [handKey]);
 
-  // Sons et vibration : déclenchés par les changements d'état, avant les retours anticipés.
+  // Sons et vibration : déclenchés par les changements d’état, avant les retours anticipés.
   useChange(myTurn, (_, mine) => {
     if (mine) cueTurn();
   });
@@ -290,7 +290,7 @@ export function RamiPlayer({ publicState, playerState, playerId, send }: PlayerV
 
       <div className="table-mat hand-mat">
         <div className="cards-table-row rami-stock-row">
-          <div className="rami-back" aria-label={`${pub.drawCount} cartes en pioche`}>
+          <div className="rami-back" role="img" aria-label={`${pub.drawCount} cartes en pioche`}>
             <CardFace def={RAMI_DEFINITION} back />
           </div>
           <div className="cards-top">
@@ -355,7 +355,7 @@ export function RamiPlayer({ publicState, playerState, playerId, send }: PlayerV
         )}
       </div>
 
-      {/* Avant l'ouverture : combinaisons en préparation */}
+      {/* Avant l’ouverture : combinaisons en préparation */}
       {!me.opened && (
         <div className="rami-staging">
           {groups.length > 0 && (
@@ -398,7 +398,7 @@ export function RamiPlayer({ publicState, playerState, playerId, send }: PlayerV
         </div>
       )}
 
-      {/* Après l'ouverture */}
+      {/* Après l’ouverture */}
       {me.opened && (
         <div className="rami-actions rami-actions-3">
           <button

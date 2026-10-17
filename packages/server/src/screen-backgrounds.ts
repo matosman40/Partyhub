@@ -1,14 +1,14 @@
 import { z } from 'zod';
 
 /**
- * Fonds d'écran : une image de la médiathèque par écran de l'application (ou aucune, pour garder
- * le décor d'origine). Les identifiants désignent des fichiers de la médiathèque.
+ * Fonds d’écran : une image de la médiathèque par écran de l’application (ou aucune, pour garder
+ * le décor d’origine). Les identifiants désignent des fichiers de la médiathèque.
  */
 
 export const SCREEN_KEYS = ['home', 'join', 'tv', 'player', 'spectator', 'profile'] as const;
 export type ScreenKey = (typeof SCREEN_KEYS)[number];
 
-/** Identifiant d'image de médiathèque, ou null pour le décor d'origine. */
+/** Identifiant d’image de médiathèque, ou null pour le décor d’origine. */
 export type ScreenBackgrounds = Record<ScreenKey, string | null>;
 
 export const EMPTY_SCREEN_BACKGROUNDS: ScreenBackgrounds = {
@@ -20,7 +20,7 @@ export const EMPTY_SCREEN_BACKGROUNDS: ScreenBackgrounds = {
   profile: null,
 };
 
-/** Un écran : identifiant d'image, ou null (décor d'origine, aussi quand la clé est absente). */
+/** Un écran : identifiant d’image, ou null (décor d’origine, aussi quand la clé est absente). */
 const screenValue = z.string().min(1).max(64).nullable().default(null);
 
 export const screenBackgroundsSchema = z.object({
@@ -32,7 +32,7 @@ export const screenBackgroundsSchema = z.object({
   profile: screenValue,
 });
 
-/** Lit la valeur enregistrée ; tout ce qui ne se lit pas redonne l'état vide. */
+/** Lit la valeur enregistrée ; tout ce qui ne se lit pas redonne l’état vide. */
 export function parseScreenBackgrounds(raw: string | undefined): ScreenBackgrounds {
   if (!raw) return { ...EMPTY_SCREEN_BACKGROUNDS };
   try {
@@ -43,7 +43,7 @@ export function parseScreenBackgrounds(raw: string | undefined): ScreenBackgroun
   }
 }
 
-/** Adresse publique d'une image de médiathèque. */
+/** Adresse publique d’une image de médiathèque. */
 export function screenBackgroundUrl(assetId: string): string {
   return `/api/assets/${assetId}`;
 }

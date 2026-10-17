@@ -15,6 +15,7 @@ function player(over: Partial<PublicPlayer> & { id: string; name: string }): Pub
     bot: false,
     profile: false,
     devices: [],
+    team: null,
     avatar: { hue: 200, emoji: '🙂', imageUrl: null },
     ...over,
   };

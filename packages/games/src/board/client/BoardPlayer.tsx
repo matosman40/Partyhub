@@ -4,7 +4,7 @@ import { FinalScreen, TimerBar, WaitingScreen } from '../../client/ui.js';
 import { useRemaining } from '../../client/hooks.js';
 import type { BoardMe, BoardPub } from './common.js';
 
-/** Téléphone d'un jeu de plateau : bouton de lancer quand c'est à soi de jouer. */
+/** Téléphone d’un jeu de plateau : bouton de lancer quand c’est à soi de jouer. */
 export function BoardPlayer({ publicState, playerState, playerId, now, send }: PlayerViewProps) {
   const pub = publicState as BoardPub;
   const me = playerState as BoardMe | null;

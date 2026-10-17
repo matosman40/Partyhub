@@ -8,7 +8,7 @@ let shared: AppSocket | null = null;
 
 /**
  * Journalise les coupures réelles (refus du serveur, réseau, transport). Les déconnexions voulues
- * (fermeture de l'onglet, changement de page) ne sont pas des erreurs.
+ * (fermeture de l’onglet, changement de page) ne sont pas des erreurs.
  */
 function watch(socket: AppSocket): AppSocket {
   socket.on('connect_error', (err) => {
@@ -23,8 +23,8 @@ function watch(socket: AppSocket): AppSocket {
 }
 
 /**
- * Reconnexion : la première tentative part au bout de 0,5 s, puis l'attente croît sans dépasser 1,5 s. Au-delà,
- * un téléphone revenu sur le réseau restait jusqu'à 4 s sans répondre (mesuré : 3,4 s après le rétablissement).
+ * Reconnexion : la première tentative part au bout de 0,5 s, puis l’attente croît sans dépasser 1,5 s. Au-delà,
+ * un téléphone revenu sur le réseau restait jusqu’à 4 s sans répondre (mesuré : 3,4 s après le rétablissement).
  */
 function options(autoConnect: boolean) {
   return {
@@ -36,7 +36,7 @@ function options(autoConnect: boolean) {
   };
 }
 
-/** Connexion partagée de la page (écran principal ou page d'accueil). */
+/** Connexion partagée de la page (écran principal ou page d’accueil). */
 export function getSocket(): AppSocket {
   if (!shared) shared = watch(io(options(true)));
   return shared;
@@ -45,7 +45,7 @@ export function getSocket(): AppSocket {
 /**
  * Connexion dédiée à un siège. Un même appareil peut tenir plusieurs joueurs
  * (chacun a son propre socket, donc son propre jeton et sa propre place).
- * La connexion n'est ouverte qu'à l'appel de `connect()`.
+ * La connexion n’est ouverte qu’à l’appel de `connect()`.
  */
 export function createSocket(): AppSocket {
   return watch(io(options(false)));

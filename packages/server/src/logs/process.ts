@@ -1,7 +1,7 @@
 import type { Logger } from '../logger.js';
 
 /**
- * Journalise les erreurs qui échappent à tout le reste, avant que le processus ne s'arrête.
+ * Journalise les erreurs qui échappent à tout le reste, avant que le processus ne s’arrête.
  * Une exception non gérée arrête le serveur (le conteneur le relance) ; une promesse rejetée non gérée
  * est journalisée et le serveur continue.
  */

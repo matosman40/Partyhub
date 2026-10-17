@@ -22,12 +22,12 @@ import {
 
 /**
  * Page de test : micro (niveau et enregistrement de 3 s), caméra (aperçu), mouvement (inclinaison et secousses)
- * et image (ouverte depuis l'appareil). Le navigateur demande l'autorisation au premier usage ; rien n'est envoyé au serveur.
+ * et image (ouverte depuis l’appareil). Le navigateur demande l’autorisation au premier usage ; rien n’est envoyé au serveur.
  */
 
 type PermissionName = 'microphone' | 'camera';
 
-/** État de l'autorisation, lu via la Permissions API quand le navigateur la propose. */
+/** État de l’autorisation, lu via la Permissions API quand le navigateur la propose. */
 function usePermission(name: PermissionName): [string, () => void] {
   const [state, setState] = useState('inconnue');
   const refresh = useCallback(() => {
@@ -148,7 +148,14 @@ function MicPanel() {
     <section className="card stack devtest-card" aria-labelledby="devtest-mic">
       <h2 id="devtest-mic">Micro</h2>
       <p className="muted small">Autorisation : {permission}</p>
-      <div className="devtest-meter" aria-label="Niveau du micro">
+      <div
+        className="devtest-meter"
+        role="meter"
+        aria-label="Niveau du micro"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(level * 100)}
+      >
         <span style={{ width: `${Math.round(level * 100)}%` }} />
       </div>
       <div className="devtest-actions">
@@ -296,7 +303,7 @@ function ImagePanel() {
   );
 }
 
-/** Lecture en direct de l'inclinaison et des secousses, rafraîchie 10 fois par seconde. */
+/** Lecture en direct de l’inclinaison et des secousses, rafraîchie 10 fois par seconde. */
 function MotionPanel() {
   const [access, setAccess] = useState<MotionAccess | null>(null);
   const [active, setActive] = useState(false);
@@ -403,7 +410,14 @@ function MotionPanel() {
           <p className="small">
             Secousses : <strong>{shakes}</strong>
           </p>
-          <div className="devtest-meter" aria-label="Énergie des secousses">
+          <div
+            className="devtest-meter"
+            role="meter"
+            aria-label="Énergie des secousses"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={Math.round(energy * 100)}
+          >
             <span style={{ width: `${Math.round(energy * 100)}%` }} />
           </div>
         </>

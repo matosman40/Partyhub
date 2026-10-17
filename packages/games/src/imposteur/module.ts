@@ -13,9 +13,9 @@ import {
 import rawContent from './content.fr.json' with { type: 'json' };
 
 /**
- * L'Imposteur : chaque manche, un joueur tiré au sort ne connaît pas le mot
+ * L’Imposteur : chaque manche, un joueur tiré au sort ne connaît pas le mot
  * secret (il ne voit que la catégorie). Chacun donne un indice, puis tout le
- * monde vote pour démasquer l'imposteur. Si l'imposteur est démasqué, il peut
+ * monde vote pour démasquer l’imposteur. Si l’imposteur est démasqué, il peut
  * tenter de deviner le mot pour marquer des points.
  */
 
@@ -71,11 +71,11 @@ export interface ImposteurState {
   impostorId: string | null;
   players: Record<string, string>;
   points: Record<string, number>;
-  /** joueur -> indice écrit pendant la manche (ordre d'arrivée conservé). */
+  /** joueur -> indice écrit pendant la manche (ordre d’arrivée conservé). */
   clues: Record<string, string>;
   /** votant -> joueur désigné comme imposteur. */
   votes: Record<string, string>;
-  /** Joueur majoritairement désigné, ou null en cas d'égalité ou sans vote. */
+  /** Joueur majoritairement désigné, ou null en cas d’égalité ou sans vote. */
   accused: string | null;
   guess: string | null;
   guessed: boolean;
@@ -116,7 +116,7 @@ function openVote(s: ImposteurState, ctx: GameContext): ImposteurState {
   return { ...s, phase: 'vote', endsAt: ctx.now() + ms };
 }
 
-/** Clôture du vote : décide si l'imposteur est démasqué, puis passe à la suite. */
+/** Clôture du vote : décide si l’imposteur est démasqué, puis passe à la suite. */
 function resolveVote(s: ImposteurState, ctx: GameContext): ImposteurState {
   ctx.cancel(VOTE_TIMEOUT);
   const counts = new Map<string, number>();
@@ -186,7 +186,7 @@ export const imposteur: GameModule<ImposteurState, ImposteurSettings> = {
   manifest: {
     id: 'imposteur',
     category: 'role',
-    name: "L'Imposteur",
+    name: 'L’Imposteur',
     description: 'Un imposteur se cache parmi vous. Donnez des indices, puis démasquez-le.',
     icon: '🕵️',
     version: '1.0.0',
@@ -195,16 +195,16 @@ export const imposteur: GameModule<ImposteurState, ImposteurSettings> = {
     maxPlayers: 10,
     durationMin: 15,
     notice: {
-      goal: "Démasquer l'imposteur, qui ne connaît pas le mot secret.",
+      goal: 'Démasquer l’imposteur, qui ne connaît pas le mot secret.',
       steps: [
         'Chacun reçoit son rôle sur son téléphone : le mot secret, ou « imposteur » avec la catégorie.',
         'Donnez un indice court, en 24 caractères maximum.',
-        "Votez pour désigner l'imposteur.",
-        "Si l'imposteur est démasqué, il peut tenter de deviner le mot secret.",
+        'Votez pour désigner l’imposteur.',
+        'Si l’imposteur est démasqué, il peut tenter de deviner le mot secret.',
       ],
       tips: [
-        "Si l'imposteur n'est pas démasqué, il gagne 300 points.",
-        "Les membres de l'équipe gagnent 100 points chacun quand ils désignent le bon joueur.",
+        'Si l’imposteur n’est pas démasqué, il gagne 300 points.',
+        'Les membres de l’équipe gagnent 100 points chacun quand ils désignent le bon joueur.',
       ],
     },
   },
@@ -339,7 +339,7 @@ export const imposteur: GameModule<ImposteurState, ImposteurSettings> = {
     }
 
     const secret = current(s);
-    // Indices publics : nom et texte, dans l'ordre d'arrivée.
+    // Indices publics : nom et texte, dans l’ordre d’arrivée.
     const clues = Object.entries(s.clues).map(([id, text]) => ({
       playerId: id,
       name: s.players[id] ?? '?',
@@ -424,7 +424,7 @@ export const imposteur: GameModule<ImposteurState, ImposteurSettings> = {
       points: s.points[playerId] ?? 0,
       rank,
       role: inRound && s.impostorId ? (isImpostor ? 'impostor' : 'crew') : null,
-      // Le mot secret ne quitte le serveur que pour les membres de l'équipe, et à la révélation.
+      // Le mot secret ne quitte le serveur que pour les membres de l’équipe, et à la révélation.
       word: inRound && secret ? (isImpostor && !revealed ? null : secret.word) : null,
       category: secret && inRound ? secret.category : null,
       myClue: s.clues[playerId] ?? null,

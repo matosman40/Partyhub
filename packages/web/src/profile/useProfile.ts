@@ -16,7 +16,7 @@ export function useDeviceProfiles(): { active: DeviceProfile | null; list: Devic
   return state;
 }
 
-/** Profil actif seulement (null tant qu'aucun profil n'est créé sur cet appareil). */
+/** Profil actif seulement (null tant qu’aucun profil n’est créé sur cet appareil). */
 export function useActiveProfile(): DeviceProfile | null {
   return useDeviceProfiles().active;
 }

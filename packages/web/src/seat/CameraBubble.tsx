@@ -4,9 +4,9 @@ import { authHeaders } from '../profile/session.js';
 import { WebcamPhoto, webcamAvailable } from '../profile/WebcamPhoto.js';
 
 /**
- * Caméra en bulle, depuis le téléphone d'un joueur connecté à son profil : la bulle ouvre la prise de
- * photo par webcam, et la photo devient l'image du profil. La webcam demande une page sécurisée (https) :
- * sans elle, la bulle explique pourquoi elle ne s'ouvre pas.
+ * Caméra en bulle, depuis le téléphone d’un joueur connecté à son profil : la bulle ouvre la prise de
+ * photo par webcam, et la photo devient l’image du profil. La webcam demande une page sécurisée (https) :
+ * sans elle, la bulle explique pourquoi elle ne s’ouvre pas.
  */
 export function CameraBubble({ token }: { token?: string | null }) {
   const [open, setOpen] = useState(false);

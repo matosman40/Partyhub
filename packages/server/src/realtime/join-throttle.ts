@@ -1,15 +1,15 @@
 /**
  * Ralentit les codes de salle inconnus, par adresse.
  *
- * Un code à 4 caractères laisse 810 000 combinaisons : sans frein, quelqu'un peut énumérer les
- * salles ouvertes. Le compteur ne retient que les codes DIFFÉRENTS d'une même adresse :
- * - jusqu'à `freeCodes` codes différents en `windowMs`, la réponse est immédiate ;
+ * Un code à 4 caractères laisse 810 000 combinaisons : sans frein, quelqu’un peut énumérer les
+ * salles ouvertes. Le compteur ne retient que les codes DIFFÉRENTS d’une même adresse :
+ * - jusqu’à `freeCodes` codes différents en `windowMs`, la réponse est immédiate ;
  * - au-delà, les codes inconnus reçoivent leur réponse à un rythme fixe, un créneau toutes les
  *   `intervalMs`, quel que soit le nombre de connexions ouvertes en parallèle ;
- * - si l'attente dépasse `maxWaitMs`, la tentative est refusée tout de suite.
+ * - si l’attente dépasse `maxWaitMs`, la tentative est refusée tout de suite.
  *
- * Les connexions réussies ne sont jamais ralenties. Une adresse partagée (réseau d'une salle,
- * passerelle Docker) ne peut donc pas empêcher les autres joueurs d'entrer : seuls les codes
+ * Les connexions réussies ne sont jamais ralenties. Une adresse partagée (réseau d’une salle,
+ * passerelle Docker) ne peut donc pas empêcher les autres joueurs d’entrer : seuls les codes
  * inconnus sont freinés.
  */
 
@@ -21,7 +21,7 @@ export interface JoinThrottleOptions {
   intervalMs: number;
   /** Attente maximale ; au-delà, la tentative est refusée sans attendre. */
   maxWaitMs: number;
-  /** Nombre maximal d'adresses suivies à la fois (protège la mémoire). */
+  /** Nombre maximal d’adresses suivies à la fois (protège la mémoire). */
   maxKeys: number;
   now?: () => number;
 }
@@ -61,7 +61,7 @@ export class JoinThrottle {
     this.now = options.now ?? Date.now;
   }
 
-  /** Nombre d'adresses suivies en ce moment (borné par `maxKeys`). */
+  /** Nombre d’adresses suivies en ce moment (borné par `maxKeys`). */
   get trackedKeys(): number {
     return this.entries.size;
   }
@@ -84,7 +84,7 @@ export class JoinThrottle {
       return { wait: 0 };
     }
 
-    // Au-delà de la franchise : un créneau par intervalle, réservé dans l'ordre d'arrivée.
+    // Au-delà de la franchise : un créneau par intervalle, réservé dans l’ordre d’arrivée.
     const slot = Math.max(now, entry.nextSlot);
     const wait = slot - now;
     if (wait > this.options.maxWaitMs) return { refused: true };
@@ -92,7 +92,7 @@ export class JoinThrottle {
     return { wait };
   }
 
-  /** Libère la place : d'abord les entrées périmées, puis les plus anciennes. */
+  /** Libère la place : d’abord les entrées périmées, puis les plus anciennes. */
   private makeRoom(now: number): void {
     if (this.entries.size < this.options.maxKeys) return;
     for (const [key, entry] of this.entries) {

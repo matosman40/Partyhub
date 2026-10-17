@@ -1,7 +1,7 @@
 import type { RankRow } from '../../client/ui.js';
 import type { Group } from '../board.js';
 
-/** Vue publique du Promoteur, telle que l'envoie le serveur. */
+/** Vue publique du Promoteur, telle que l’envoie le serveur. */
 export interface PlayerPub {
   id: string;
   name: string;

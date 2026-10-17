@@ -10,6 +10,7 @@ import {
   drawScene,
   layoutFor,
   PLAYER_COLORS,
+  textParticle,
   updateParticles,
   type BoardView,
   type Layout,
@@ -75,6 +76,20 @@ function spawnEvent(ev: FxEvent, L: Layout, list: Particle[], reduced: boolean):
       const color = PLAYER_COLORS[ev.color % PLAYER_COLORS.length] ?? '#ff4f8b';
       burstParticles(list, cx, cy, 'spark', n(32), color, 260, 4, 0.9);
       burstParticles(list, cx, cy, 'ring', 1, color, 0, L.T * 1.4, 0.5);
+      textParticle(list, cx, cy - L.T * 0.5, 'KO', color, Math.round(L.T * 0.8), 1.2);
+      break;
+    }
+    case 'score': {
+      const { cx, cy } = center(ev.x, ev.y);
+      const color = PLAYER_COLORS[ev.color % PLAYER_COLORS.length] ?? '#ffd23f';
+      burstParticles(list, cx, cy, 'spark', n(24), '#ffd23f', 240, 3, 0.8);
+      burstParticles(list, cx, cy, 'ring', 1, '#ffd23f', 0, L.T * 1.2, 0.5);
+      textParticle(list, cx, cy - L.T * 0.8, ev.text, color, Math.round(L.T * 0.9), 1.6);
+      break;
+    }
+    case 'slide': {
+      const { cx, cy } = center(ev.x, ev.y);
+      burstParticles(list, cx, cy, 'dust', n(5), 'rgba(236,235,227,0.6)', 60, 2.5, 0.35);
       break;
     }
     case 'hit': {
@@ -122,7 +137,7 @@ export function BoardCanvas({
   const reduced = useRef(false);
   const lastCelebrate = useRef(0);
 
-  // Personnage importé de chaque joueur, par identifiant. La boucle d'affichage lit la valeur courante.
+  // Personnage importé de chaque joueur, par identifiant. La boucle d’affichage lit la valeur courante.
   const avatars = useContext(AvatarsContext);
   const { packs } = useCharacterPacks();
   const skins = useMemo(() => {
@@ -184,30 +199,40 @@ export function BoardCanvas({
   useEffect(() => {
     let raf = 0;
     let last = performance.now();
-    const frame = (now: number) => {
+    const drawFrame = (now: number) => {
       const canvas = canvasRef.current;
       const v = viewRef.current;
-      if (canvas && v) {
-        const dpr = window.devicePixelRatio || 1;
-        const cssW = canvas.clientWidth || 360;
-        const L = layoutFor(cssW, v.width, v.height);
-        const bw = Math.round(cssW * dpr);
-        const bh = Math.round(L.height * dpr);
-        if (canvas.width !== bw || canvas.height !== bh) {
-          canvas.width = bw;
-          canvas.height = bh;
-        }
-        canvas.style.height = `${L.height}px`;
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-          const dt = Math.min(0.05, (now - last) / 1000);
-          updateParticles(particles.current, dt);
-          drawScene(ctx, L, v, { now, particles: particles.current, dpr, skins: skinsRef.current });
+      if (!canvas || !v) return;
+      const dpr = window.devicePixelRatio || 1;
+      const cssW = canvas.clientWidth || 360;
+      const L = layoutFor(cssW, v.width, v.height);
+      const bw = Math.round(cssW * dpr);
+      const bh = Math.round(L.height * dpr);
+      if (canvas.width !== bw || canvas.height !== bh) {
+        canvas.width = bw;
+        canvas.height = bh;
+      }
+      canvas.style.height = `${L.height}px`;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const dt = Math.min(0.05, (now - last) / 1000);
+      updateParticles(particles.current, dt);
+      drawScene(ctx, L, v, { now, particles: particles.current, dpr, skins: skinsRef.current });
+    };
+    let reported = false;
+    const frame = (now: number) => {
+      // L’image suivante est planifiée avant de dessiner : une erreur de dessin ne fige jamais le plateau.
+      raf = requestAnimationFrame(frame);
+      try {
+        drawFrame(now);
+      } catch (err) {
+        if (!reported) {
+          reported = true;
+          console.error('Plateau : erreur de dessin', err);
         }
       }
       last = now;
-      raf = requestAnimationFrame(frame);
     };
     raf = requestAnimationFrame(frame);
     return () => cancelAnimationFrame(raf);

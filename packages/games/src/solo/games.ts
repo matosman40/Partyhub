@@ -50,7 +50,7 @@ export const solitaire = createSoloGame<KlondikeBoard>({
 export const taquin = createSoloGame<TaquinBoard>({
   id: 'taquin',
   name: 'Taquin',
-  icon: '🧩',
+  icon: '🔀',
   description: 'Remettez les tuiles dans l’ordre en les faisant glisser vers la case vide.',
   durationMin: 10,
   notice: {

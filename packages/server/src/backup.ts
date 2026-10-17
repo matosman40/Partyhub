@@ -12,13 +12,13 @@ import { formatBytes, readZip, writeZip, ZipError, type ZipFileEntry, type ZipRe
 /**
  * Sauvegarde et restauration : jeux de cartes, jeux de questions médias, jeux de plateau,
  * présentation (nom, icône, description, notice) des jeux intégrés modifiés, et, dans
- * l'archive complète, les fichiers de la médiathèque.
+ * l’archive complète, les fichiers de la médiathèque.
  */
 
-/** Identifiants des jeux intégrés (ceux du code, jamais ceux de l'administration). */
+/** Identifiants des jeux intégrés (ceux du code, jamais ceux de l’administration). */
 const BUILTIN_IDS = gameRegistry.map((g) => g.manifest.id);
 
-/** Taille maximale d'une archive complète (médiathèque comprise). */
+/** Taille maximale d’une archive complète (médiathèque comprise). */
 export const ARCHIVE_MAX_BYTES = 512 * 1024 * 1024;
 
 export function buildBackup(
@@ -66,7 +66,7 @@ export interface RestoreSummary {
   boardGames: number;
   details: number;
   notices: number;
-  /** Jeux déjà présents à l'identique : non recréés. */
+  /** Jeux déjà présents à l’identique : non recréés. */
   duplicates: number;
   /** Jeux remplacés (même nom, mode « remplacer »). Compris dans les totaux ci-dessus. */
   replaced: number;
@@ -110,8 +110,8 @@ interface Existing {
 }
 
 /**
- * Restaure les définitions d'un type de jeu. Une définition identique à une existante est
- * ignorée ; en mode « remplacer », un jeu de même nom est mis à jour au lieu d'être copié.
+ * Restaure les définitions d’un type de jeu. Une définition identique à une existante est
+ * ignorée ; en mode « remplacer », un jeu de même nom est mis à jour au lieu d’être copié.
  */
 function restoreKind(
   defs: { name: string }[],
@@ -216,7 +216,7 @@ export function buildArchive(backup: Backup, assets: AssetService): Uint8Array {
   const total = records.reduce((sum, r) => sum + r.size, 0);
   if (total > ARCHIVE_MAX_BYTES) {
     throw new ArchiveTooLargeError(
-      `La médiathèque pèse ${formatBytes(total)} : au-delà de ${formatBytes(ARCHIVE_MAX_BYTES)}, l'archive complète est trop lourde. Copiez le dossier des médias à part.`,
+      `La médiathèque pèse ${formatBytes(total)} : au-delà de ${formatBytes(ARCHIVE_MAX_BYTES)}, l’archive complète est trop lourde. Copiez le dossier des médias à part.`,
     );
   }
   const enc = (text: string) => new TextEncoder().encode(text);
@@ -256,7 +256,7 @@ export function readArchive(bytes: Uint8Array): ParsedArchive {
 }
 
 /**
- * Restaure une archive complète : les fichiers d'abord (les jeux de médias les référencent),
+ * Restaure une archive complète : les fichiers d’abord (les jeux de médias les référencent),
  * puis les définitions. Les fichiers déjà présents ne sont jamais remplacés.
  */
 export function restoreArchive(
@@ -280,7 +280,7 @@ export function restoreArchive(
   for (const record of parsed.assets) {
     const data = parsed.files.get(record.id);
     if (!data) {
-      summary.skipped.push(`« ${record.name} » : fichier absent de l'archive.`);
+      summary.skipped.push(`« ${record.name} » : fichier absent de l’archive.`);
       continue;
     }
     const result = deps.assets.importRecord(record, data);

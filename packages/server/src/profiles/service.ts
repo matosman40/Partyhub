@@ -1,5 +1,6 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { resolveGame } from '../games-registry.js';
+import { withOverrides } from '../game-details.js';
 import {
   characterSchema,
   defaultAvatarFor,
@@ -20,7 +21,7 @@ import { purgeGameData } from './game-data.js';
 
 const SESSION_TTL_MS = 90 * 24 * 60 * 60 * 1000;
 
-/** Erreur métier : le message est destiné à l'utilisateur, le statut à la réponse HTTP. */
+/** Erreur métier : le message est destiné à l’utilisateur, le statut à la réponse HTTP. */
 export class ProfileError extends Error {
   constructor(
     readonly status: number,
@@ -55,9 +56,15 @@ const hashToken = (token: string) => createHash('sha256').update(token).digest('
 
 /**
  * Comptes joueurs : inscription, connexion, sessions à durée limitée, avatar et statistiques.
- * Les jetons de session ne sont jamais stockés en clair (seule leur empreinte SHA-256 l'est).
+ * Les jetons de session ne sont jamais stockés en clair (seule leur empreinte SHA-256 l’est).
  */
 export class ProfileService {
+  /** Nom d’un jeu tel qu’il s’affiche (renommage de l’administrateur compris), ou son identifiant s’il n’existe plus. */
+  private gameName(gameId: string): string {
+    const original = resolveGame(gameId);
+    return original ? withOverrides(original, this.store).manifest.name : gameId;
+  }
+
   constructor(
     private readonly store: Store,
     private readonly now: () => number = () => Date.now(),
@@ -72,7 +79,7 @@ export class ProfileService {
   }
 
   /**
-   * Personnage du profil. Un JSON absent ou invalide (jamais écrit par l'application) donne
+   * Personnage du profil. Un JSON absent ou invalide (jamais écrit par l’application) donne
    * le personnage généré à partir du pseudo, comme pour un invité.
    */
   private characterOf(row: ProfileRow): CharacterSpec {
@@ -98,8 +105,8 @@ export class ProfileService {
   }
 
   /**
-   * Avatar tel que les autres joueurs de la salle le voient : la photo n'est envoyée
-   * que si le titulaire l'a explicitement autorisée. Sinon, l'emoji sur sa couleur.
+   * Avatar tel que les autres joueurs de la salle le voient : la photo n’est envoyée
+   * que si le titulaire l’a explicitement autorisée. Sinon, l’emoji sur sa couleur.
    */
   private roomAvatarOf(row: ProfileRow): AvatarInfo {
     const shared = row.avatar_shared === 1 && !!row.avatar_image;
@@ -151,7 +158,7 @@ export class ProfileService {
 
   async login(username: string, password: string) {
     const row = this.db.prepare('SELECT * FROM profiles WHERE username = ?').get(username) as ProfileRow | undefined;
-    // Un profil « nom seul » n'a pas de mot de passe : il ne se connecte pas par identifiant.
+    // Un profil « nom seul » n’a pas de mot de passe : il ne se connecte pas par identifiant.
     const valid = row !== undefined && row.password_hash !== '' && (await verifyPassword(password, row.password_hash));
     if (!row || !valid) {
       throw new ProfileError(401, 'Identifiant ou mot de passe incorrect.');
@@ -170,8 +177,8 @@ export class ProfileService {
       this.db.prepare('DELETE FROM profile_sessions WHERE token_hash = ?').run(hashToken(token));
       return undefined;
     }
-    // Session glissante : un profil « nom seul » n'a que ce jeton pour revenir, il ne doit pas expirer
-    // pendant qu'on s'en sert. Prolongée dès que la moitié de la durée est passée.
+    // Session glissante : un profil « nom seul » n’a que ce jeton pour revenir, il ne doit pas expirer
+    // pendant qu’on s’en sert. Prolongée dès que la moitié de la durée est passée.
     if (row.expires_at - this.now() < SESSION_TTL_MS / 2) {
       this.db
         .prepare('UPDATE profile_sessions SET expires_at = ? WHERE token_hash = ?')
@@ -184,7 +191,7 @@ export class ProfileService {
     this.db.prepare('DELETE FROM profile_sessions WHERE token_hash = ?').run(hashToken(token));
   }
 
-  /** Profil utilisable par la salle (nom et avatar figés au moment de l'entrée). */
+  /** Profil utilisable par la salle (nom et avatar figés au moment de l’entrée). */
   playerProfile(profileId: string): PlayerProfile | undefined {
     const row = this.rowById(profileId);
     if (!row) return undefined;
@@ -235,7 +242,7 @@ export class ProfileService {
       this.db.prepare('UPDATE profiles SET avatar_shared = ? WHERE id = ?').run(patch.avatarShared ? 1 : 0, profileId);
     }
     if (patch.avatarImage !== undefined) {
-      // Chaque changement d'image change la version : les navigateurs rechargent l'image.
+      // Chaque changement d’image change la version : les navigateurs rechargent l’image.
       this.db
         .prepare('UPDATE profiles SET avatar_image = ?, avatar_version = avatar_version + 1 WHERE id = ?')
         .run(patch.avatarImage, profileId);
@@ -262,9 +269,9 @@ export class ProfileService {
   }
 
   delete(profileId: string): void {
-    // Les voix partent avec le profil (la clé étrangère l'assure aussi, mais on ne compte pas dessus).
+    // Les voix partent avec le profil (la clé étrangère l’assure aussi, mais on ne compte pas dessus).
     this.db.prepare('DELETE FROM voice_clips WHERE profile_id = ?').run(profileId);
-    // Les données de jeu (personnages gardés d'une partie à l'autre) aussi.
+    // Les données de jeu (personnages gardés d’une partie à l’autre) aussi.
     purgeGameData(this.store, profileId);
     this.db.prepare('DELETE FROM profiles WHERE id = ?').run(profileId);
   }
@@ -278,7 +285,7 @@ export class ProfileService {
     return rows.map((r) => ({ id: r.id, name: r.name, createdAt: r.created_at }));
   }
 
-  /** Ajoute une voix si le profil n'en a pas encore cinq et si le son est bien un format audio connu. */
+  /** Ajoute une voix si le profil n’en a pas encore cinq et si le son est bien un format audio connu. */
   addVoice(profileId: string, name: string, data: Buffer): VoiceClip {
     const mime = sniffAudioMime(data);
     if (!mime) {
@@ -292,7 +299,7 @@ export class ProfileService {
     }
     const id = randomUUID();
     const createdAt = new Date(this.now()).toISOString();
-    // Le contrôle du nombre et l'insertion se font dans une même transaction.
+    // Le contrôle du nombre et l’insertion se font dans une même transaction.
     const insert = this.db.transaction(() => {
       const count = (
         this.db.prepare('SELECT COUNT(*) AS n FROM voice_clips WHERE profile_id = ?').get(profileId) as { n: number }
@@ -329,7 +336,7 @@ export class ProfileService {
     return row;
   }
 
-  /** Son d'une voix, pour la route publique /api/voices/:id (les écrans n'ont pas de compte). */
+  /** Son d’une voix, pour la route publique /api/voices/:id (les écrans n’ont pas de compte). */
   voiceAudio(voiceId: string): { mime: string; data: Buffer } | undefined {
     const row = this.db.prepare('SELECT mime, data FROM voice_clips WHERE id = ?').get(voiceId) as
       { mime: string; data: Buffer } | undefined;
@@ -365,7 +372,8 @@ export class ProfileService {
       .all(profileId) as { game_id: string; played: number; wins: number; points: number }[];
     const perGame = rows.map((r) => ({
       gameId: r.game_id,
-      name: resolveGame(r.game_id)?.manifest.name ?? r.game_id,
+      // Nom affiché : celui que l’administrateur a donné au jeu, s’il l’a renommé.
+      name: this.gameName(r.game_id),
       played: r.played,
       wins: r.wins,
       points: r.points,

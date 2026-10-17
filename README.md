@@ -9,7 +9,8 @@ Sur une installation neuve, les jeux intégrés sont désactivés : l'administra
 
 | Jeu                        | Catégorie | Principe                                                                          |
 | -------------------------- | --------- | --------------------------------------------------------------------------------- |
-| 🧠 **Quiz Party**          | Quiz      | Questions à choix multiples, points et bonus de rapidité.                         |
+| 🧠 **Quiz Party**          | Quiz      | Questions à choix multiples, points et bonus de rapidité. Les mots-clés de chacun peuvent devenir les questions (IA). |
+| 🧩 **Phrases à trous**     | Quiz      | L’IA écrit des phrases à trou. Chacun pose une carte dans le trou, puis tout le monde vote anonymement. |
 | 💭 **Association express** | Soirée    | Écrivez le premier mot qui vous vient, puis votez anonymement pour le plus drôle. |
 | 👉 **Plutôt qui ?**        | Soirée    | « Qui est le plus susceptible de… ? » Votez en secret et suivez la majorité.      |
 | 🕵️ **L'Imposteur**         | Soirée    | Un imposteur ignore le mot secret : donnez des indices, puis démasquez-le.        |
@@ -20,10 +21,12 @@ Sur une installation neuve, les jeux intégrés sont désactivés : l'administra
 
 ## Fonctionnalités
 
-- Catalogue sur l'écran principal, création de salle avec code court et QR code.
+- Catalogue sur l'écran principal : fiche par jeu, filtres (joueurs, type, durée, IA, jeux récents), recherche, affichage en fiches ou en liste, création de salle avec code court et QR code.
 - Salle d'attente avec joueurs connectés, joueurs prêts, réglages du jeu et bouton de lancement.
 - Interface smartphone : pseudo, réponses tactiles, retour immédiat, reconnexion automatique.
 - Reconnexion après coupure : un joueur absent garde sa place et ses points pendant le délai de grâce.
+- Championnat du salon, pour tous les jeux multijoueurs : de 1 à 10 manches, 2 à 4 équipes, rangs de
+  progression (Recrue à Légende), icônes de victoire et podium de fin de partie.
 - Administration protégée par mot de passe : activer ou désactiver les jeux, consulter les salles,
   supprimer les salles inactives, régler les limites.
 - Persistance SQLite (réglages, jeux activés, statistiques) dans un volume Docker.
@@ -125,7 +128,7 @@ la bonne réponse n'apparaît qu'à la révélation, et les réponses privées r
 6. Répondre depuis les téléphones. Vérifier que l'écran principal affiche la révélation dès que tous ont répondu.
 7. Couper le Wi-Fi d'un téléphone quelques secondes, le rétablir : le joueur doit retrouver sa place sans changer de score.
 8. Vérifier le classement après chaque question puis le classement final, avec les égalités.
-9. Cliquer sur **Rejouer avec les mêmes joueurs**, puis sur **Retour au catalogue**.
+9. Cliquer sur **Rejouer avec les mêmes joueurs** (ou sur **Manche suivante** si un championnat est réglé dans le menu), puis sur **Retour au catalogue**.
 10. Ouvrir `/admin`, se connecter, vérifier la salle dans la liste, puis désactiver Quiz Party : la salle en cours doit être fermée.
 
 ## Variables d'environnement
@@ -191,6 +194,7 @@ Les images (portraits des personnages, fonds de décor) sont générées par une
 | ----------------------------------------------- | ----------------------------- | ----------------------------------------------------------------------------------------- |
 | `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN` | vide                          | Cloudflare Workers AI (FLUX.1 schnell), gratuit dans la limite d'un quota quotidien.      |
 | `MODELSCOPE_API_KEY`                            | vide                          | ModelScope (Qwen-Image). Usage non commercial uniquement, avec un compte Alibaba vérifié. |
+| `MODELSCOPE_ALLOW_NONCOMMERCIAL`                | vide (désactivé)              | Mettre `1` pour déclarer un usage non commercial. Sans cela, ModelScope reste désactivé.  |
 | `IMAGE_PROVIDERS`                               | ceux dont la clé est présente | Ordre d'appel, séparé par des virgules (ex. `cloudflare,modelscope`).                     |
 | `IMAGE_MAX_PER_DAY`                             | `150`                         | Nombre maximal d'images par jour, tous fournisseurs confondus (1 à 100000).               |
 | `IMAGE_TIMEOUT_MS`                              | `60000`                       | Délai maximal pour une image, de 5000 à 300000 ms.                                        |

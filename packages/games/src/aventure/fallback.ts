@@ -12,15 +12,15 @@ import { PIGEONS_ARC } from './fallback-pigeons.js';
 import { VAISSEAU_ARC } from './fallback-vaisseau.js';
 
 /**
- * Histoire de secours : utilisée quand l'IA n'est pas configurée, injoignable ou répond hors format.
+ * Histoire de secours : utilisée quand l’IA n’est pas configurée, injoignable ou répond hors format.
  * Chaque aventure de secours suit une intrigue écrite à la main : un monde, un objectif, des personnages
- * rencontrés et une suite de scènes qui se répondent. Les conséquences de chaque choix sont écrites d'avance,
- * donc l'histoire reste cohérente même sans IA. Les pouvoirs sont narratifs : aucun ne modifie les jets.
+ * rencontrés et une suite de scènes qui se répondent. Les conséquences de chaque choix sont écrites d’avance,
+ * donc l’histoire reste cohérente même sans IA. Les pouvoirs sont narratifs : aucun ne modifie les jets.
  */
 
 type Arc = FallbackArc;
 
-/** Quelles scènes de l'intrigue jouer, selon la durée choisie : toujours l'ouverture et le dénouement. */
+/** Quelles scènes de l’intrigue jouer, selon la durée choisie : toujours l’ouverture et le dénouement. */
 const SCENE_PICKS: Record<number, readonly number[]> = {
   3: [0, 3, 5],
   4: [0, 1, 3, 5],
@@ -697,7 +697,7 @@ const ARCS: Arc[] = [
   VAISSEAU_ARC,
 ];
 
-/** Scènes de secours pour une histoire venue de l'IA : à défaut d'intrigue écrite, elles restent sobres et ne citent aucun nom. */
+/** Scènes de secours pour une histoire venue de l’IA : à défaut d’intrigue écrite, elles restent sobres et ne citent aucun nom. */
 const GENERIC_SCENES: SceneSeed[] = [
   {
     title: 'Un chemin qui se divise',
@@ -761,7 +761,7 @@ const GENERIC_VICTORY: EpilogueDraft = {
   text: 'Le groupe arrive enfin au bout de son voyage, fourbu mais uni. Les histoires de cette aventure seront racontées longtemps au coin du feu.',
 };
 
-/** Complète une scène de secours : son type se déduit de son contenu quand l'intrigue ne le précise pas. */
+/** Complète une scène de secours : son type se déduit de son contenu quand l’intrigue ne le précise pas. */
 function normalizeScene(seed: SceneSeed): SceneDraft {
   const kind = seed.kind ?? (seed.enemy ? 'combat' : seed.npc ? 'dialogue' : 'choix');
   return sceneDraftSchema.parse({ ...seed, kind });
@@ -782,7 +782,7 @@ const GENERIC_DEFEAT: EpilogueDraft = {
   text: 'Rien ne s’est passé comme prévu, mais chacun est reparti sur ses jambes. Parfois, la plus grande aventure est de savoir quand partir.',
 };
 
-/** Tire `count` éléments distincts d'une réserve, avec le générateur injecté. */
+/** Tire `count` éléments distincts d’une réserve, avec le générateur injecté. */
 function pickDistinct<T>(pool: readonly T[], count: number, random: () => number): T[] {
   const left = [...pool];
   const out: T[] = [];
@@ -793,7 +793,7 @@ function pickDistinct<T>(pool: readonly T[], count: number, random: () => number
   return out;
 }
 
-/** Une aventure de secours : son monde, ses personnages secondaires, et l'indice de l'intrigue choisie (null pour une histoire de l'IA). */
+/** Une aventure de secours : son monde, ses personnages secondaires, et l’indice de l’intrigue choisie (null pour une histoire de l’IA). */
 export function fallbackRoster(
   random: () => number,
   themeKey: string | null = null,
@@ -811,7 +811,7 @@ export function fallbackRoster(
   };
 }
 
-/** Scène n° `sceneNumber` sur `total`. Dans une intrigue écrite, elle suit l'ordre de l'histoire. */
+/** Scène n° `sceneNumber` sur `total`. Dans une intrigue écrite, elle suit l’ordre de l’histoire. */
 export function fallbackScene(
   random: () => number,
   arc: number | null,

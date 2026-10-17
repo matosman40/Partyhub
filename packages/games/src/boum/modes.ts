@@ -2,7 +2,7 @@ import type { BankType } from './bank/types.js';
 
 /**
  * Modes de BOUM ! (phases 1 : texte, vote, cartes). Chaque mode dit de quelle banque il tire,
- * combien d'entrées validées il lui faut, et s'il fait partie du pack Humour noir.
+ * combien d’entrées validées il lui faut, et s’il fait partie du pack Humour noir.
  */
 
 export type Family = 'image' | 'son' | 'tactile' | 'texte' | 'carte' | 'telephone';
@@ -16,7 +16,7 @@ export const FAMILY_LABELS: Record<Family, string> = {
   telephone: 'Téléphone',
 };
 
-/** Couleur d'accent de chaque famille (jetons de la spécification). Le pack Humour noir a la sienne. */
+/** Couleur d’accent de chaque famille (jetons de la spécification). Le pack Humour noir a la sienne. */
 export const FAMILY_COLORS: Record<Family | 'noir', string> = {
   image: '#3ab4ff',
   son: '#b26bff',
@@ -38,7 +38,7 @@ export const FAMILY_COLORS: Record<Family | 'noir', string> = {
  * - `detecteur` : un plaideur se défend, les autres le notent ;
  * - `mime` : un joueur mime un métier sans parler, les autres tapent le nom du métier ;
  * - `pays` : chacun choisit un pays sur la carte, selon la distance au bon pays ;
- * - `chanson` : un joueur chante un court extrait sans musique, les autres trouvent l'artiste ou le film.
+ * - `chanson` : un joueur chante un court extrait sans musique, les autres trouvent l’artiste ou le film.
  */
 export type ModeKind =
   | 'reponse'
@@ -81,14 +81,14 @@ export type ModeId =
 
 export interface ModeNeed {
   type: BankType;
-  /** Nombre minimal d'entrées validées, aux niveaux autorisés pour la salle, pour que le mode soit tirable. */
+  /** Nombre minimal d’entrées validées, aux niveaux autorisés pour la salle, pour que le mode soit tirable. */
   minValid: number;
 }
 
 export interface ModeDef {
   id: ModeId;
   title: string;
-  /** Consigne affichée sur l'écran principal et le téléphone. */
+  /** Consigne affichée sur l’écran principal et le téléphone. */
   brief: string;
   family: Family;
   kind: ModeKind;

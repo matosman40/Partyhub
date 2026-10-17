@@ -99,7 +99,7 @@ export function PokerPlayer({ publicState, playerState, playerId, now, send }: P
         <p className="muted poker-clock">{Math.ceil(remaining / 1000)} s pour agir</p>
       )}
 
-      <div className="poker-hole" aria-label="Vos cartes">
+      <div className="poker-hole" role="group" aria-label="Vos cartes">
         {holes.length > 0 ? (
           holes.map((card, i) => <PokerCardFace key={i} card={card} />)
         ) : (
@@ -110,7 +110,7 @@ export function PokerPlayer({ publicState, playerState, playerId, now, send }: P
         )}
       </div>
 
-      <div className="poker-board-mini" aria-label="Cartes communes">
+      <div className="poker-board-mini" role="group" aria-label="Cartes communes">
         {[0, 1, 2, 3, 4].map((i) => {
           const card = pub.board[i];
           return card ? <PokerCardFace key={i} card={card} small /> : <PokerCardFace key={i} small empty />;

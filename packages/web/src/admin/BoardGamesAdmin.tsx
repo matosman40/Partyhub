@@ -266,7 +266,7 @@ function BoardGameEditor({
     }));
   }
 
-  /** Insère une case normale après `index` (jamais après l'arrivée). */
+  /** Insère une case normale après `index` (jamais après l’arrivée). */
   function insertAfter(index: number) {
     setDraft((d) => {
       if (d.cells.length >= MAX_CELLS) return d;
@@ -455,7 +455,7 @@ function BoardGameEditor({
             })}
           </tbody>
         </table>
-        <div className="bd-track" aria-label="Aperçu du parcours">
+        <div className="bd-track" role="group" aria-label="Aperçu du parcours">
           {cells.map((cell, i) => (
             <div
               key={i}

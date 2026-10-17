@@ -19,7 +19,7 @@ import { createTrickGame, type TrickState } from './trick.js';
 /**
  * Moteur générique des jeux de cartes. Une définition (familles, cartes,
  * règles) suffit à produire un jeu complet : donne, pioche, défausse, effets,
- * manches et score. Les jeux intégrés et ceux créés dans l'administration
+ * manches et score. Les jeux intégrés et ceux créés dans l’administration
  * passent tous par ici.
  *
  * Règles communes :
@@ -42,7 +42,7 @@ export interface CardGameState {
   def: CardGameDefinition;
   settings: CardSettings;
   started: boolean;
-  /** Ordre des tours : joueurs de la partie, dans l'ordre d'arrivée. */
+  /** Ordre des tours : joueurs de la partie, dans l’ordre d’arrivée. */
   order: string[];
   names: Record<string, string>;
   hands: Record<string, CardInstance[]>;
@@ -50,12 +50,12 @@ export interface CardGameState {
   draw: CardInstance[];
   /** Défausse : la dernière carte est celle du dessus. */
   discard: CardInstance[];
-  /** Famille active (celle qu'il faut suivre). */
+  /** Famille active (celle qu’il faut suivre). */
   family: string;
   direction: 1 | -1;
-  /** Index dans `order` du joueur dont c'est le tour. */
+  /** Index dans `order` du joueur dont c’est le tour. */
   turn: number;
-  /** Le joueur dont c'est le tour a déjà pioché. */
+  /** Le joueur dont c’est le tour a déjà pioché. */
   drew: boolean;
   phase: CardPhase;
   /** Joueur qui doit choisir une famille (après un joker). */
@@ -107,7 +107,7 @@ function buildDeck(def: CardGameDefinition, random: () => number): CardInstance[
   return shuffle(cards, random);
 }
 
-/** Vrai si la carte peut être posée sur la défausse dans l'état donné. */
+/** Vrai si la carte peut être posée sur la défausse dans l’état donné. */
 export function canPlayCard(state: Pick<CardGameState, 'def' | 'family' | 'discard'>, entry: CardEntry): boolean {
   if (entry.family === WILD_FAMILY) return true;
   if (entry.family === state.family) return true;
@@ -127,7 +127,7 @@ function rawSeat(s: CardGameState, from: number, steps: number): number {
   return mod(from + s.direction * steps, s.order.length);
 }
 
-/** Tour suivant en sautant les joueurs déconnectés (s'il en reste de connectés). */
+/** Tour suivant en sautant les joueurs déconnectés (s’il en reste de connectés). */
 function seatAfter(s: CardGameState, from: number, steps: number, ctx: GameContext): number {
   const connected = new Set(ctx.connectedPlayerIds());
   let idx = rawSeat(s, from, steps);
@@ -305,7 +305,7 @@ function majorityFamily(s: CardGameState, playerId: string): string {
   return best;
 }
 
-/** Crée un jeu jouable à partir d'une définition validée. */
+/** Crée un jeu jouable à partir d’une définition validée. */
 export function createCardGame(
   def: CardGameDefinition,
   options: { id: string },
@@ -410,7 +410,7 @@ export function createCardGame(
     switch (type) {
       case 'play': {
         if (s.phase !== 'play') return fail('Choisissez une famille avant de jouer.');
-        if (!myTurn) return fail("Ce n'est pas votre tour.");
+        if (!myTurn) return fail('Ce n’est pas votre tour.');
         const { cardId } = payload as { cardId: string };
         const index = s.hands[pid]!.findIndex((c) => c.uid === cardId);
         if (index < 0) return fail('Cette carte n’est plus dans votre main.');
@@ -421,7 +421,7 @@ export function createCardGame(
       }
       case 'draw': {
         if (s.phase !== 'play') return fail('Choisissez une famille avant de piocher.');
-        if (!myTurn) return fail("Ce n'est pas votre tour.");
+        if (!myTurn) return fail('Ce n’est pas votre tour.');
         if (s.drew) return fail('Vous avez déjà pioché.');
         const card = takeCard(s, ctx);
         if (card) s.hands[pid]!.push(card);
@@ -431,7 +431,7 @@ export function createCardGame(
       }
       case 'pass': {
         if (s.phase !== 'play') return fail('Choisissez une famille avant de passer.');
-        if (!myTurn) return fail("Ce n'est pas votre tour.");
+        if (!myTurn) return fail('Ce n’est pas votre tour.');
         if (!s.drew) return fail('Piochez une carte avant de passer.');
         s.lastEvent = `${who(s, pid)} passe.`;
         endTurn(s, 1, ctx);

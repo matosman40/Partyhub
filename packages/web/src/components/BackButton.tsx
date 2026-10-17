@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 
 /**
  * Bouton « retour » : un lien vers une page, ou une action locale (ex. revenir à un menu sans quitter
- * la page). Toujours du même style pour que l'on sache où le trouver.
+ * la page). Toujours du même style pour que l’on sache où le trouver.
  */
 export function BackButton({ to, onClick, children }: { to?: string; onClick?: () => void; children: ReactNode }) {
   const content = (

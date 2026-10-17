@@ -32,7 +32,7 @@ function subsets<T>(items: T[], size: number): T[][] {
 
 /**
  * Combinaisons possibles dans une main : brelans, carrés et suites naturels,
- * et, si `withJokers`, celles qu'un joker complète (deux vraies cartes au moins).
+ * et, si `withJokers`, celles qu’un joker complète (deux vraies cartes au moins).
  */
 export function meldCandidates(hand: readonly RamiCard[], withJokers: boolean): Candidate[] {
   const out: Candidate[] = [];
@@ -66,7 +66,7 @@ export function meldCandidates(hand: readonly RamiCard[], withJokers: boolean): 
     }
   }
 
-  // Suites : une carte par place dans chaque couleur, l'as en bas (1) comme en haut (14).
+  // Suites : une carte par place dans chaque couleur, l’as en bas (1) comme en haut (14).
   for (const suit of SUITS) {
     const at = new Map<number, RamiCard>();
     for (const card of hand) {
@@ -129,7 +129,7 @@ function bestCombination(
 }
 
 /**
- * Ouverture d'un robot : combinaisons disjointes (sans joker d'abord, puis avec)
+ * Ouverture d’un robot : combinaisons disjointes (sans joker d’abord, puis avec)
  * qui atteignent le seuil avec une tierce franche, en gardant une carte pour la défausse.
  */
 export function planOpening(hand: readonly RamiCard[], threshold: number): RamiCard[][] | null {
@@ -147,7 +147,7 @@ export function planOpening(hand: readonly RamiCard[], threshold: number): RamiC
   return null;
 }
 
-/** Après l'ouverture : la plus grande combinaison à poser (naturelle d'abord), en gardant une carte. */
+/** Après l’ouverture : la plus grande combinaison à poser (naturelle d’abord), en gardant une carte. */
 export function planMeld(hand: readonly RamiCard[]): RamiCard[] | null {
   for (const withJokers of [false, true]) {
     if (withJokers && !hand.some(isJoker)) break;
@@ -160,7 +160,7 @@ export function planMeld(hand: readonly RamiCard[]): RamiCard[] | null {
 }
 
 /**
- * Une carte à ajouter sur la table (la plus chère d'abord). Le joker n'est placé
+ * Une carte à ajouter sur la table (la plus chère d’abord). Le joker n’est placé
  * que pour finir une petite main, où il coûterait 20 points.
  */
 export function planLayoff(
@@ -192,9 +192,9 @@ function near(a: RamiCard, b: RamiCard): boolean {
 }
 
 /**
- * Défausse d'un robot : la carte la plus chère qui n'appartient à aucune ébauche de combinaison.
+ * Défausse d’un robot : la carte la plus chère qui n’appartient à aucune ébauche de combinaison.
  * Si toutes les cartes sont liées, on lâche la moins liée et la moins chère : garder les grosses
- * cartes permet d'atteindre le seuil d'ouverture au lieu d'amasser des petites cartes.
+ * cartes permet d’atteindre le seuil d’ouverture au lieu d’amasser des petites cartes.
  */
 export function planDiscard(hand: readonly RamiCard[]): RamiCard {
   const naturals = hand.filter((c) => !isJoker(c));

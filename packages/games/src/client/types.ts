@@ -2,14 +2,14 @@ import type { ComponentType } from 'react';
 import type { SettingsBounds } from '@partyhub/shared';
 
 /**
- * Contrat d'affichage d'un jeu côté navigateur.
+ * Contrat d’affichage d’un jeu côté navigateur.
  * Chaque jeu fournit trois composants :
  * - Settings : réglages affichés dans le salon (TV, avant le lancement) ;
  * - Host : écran principal (TV / ordinateur) ;
  * - Player : interface du smartphone.
  *
  * Les états reçus sont ceux produits par getPublicState / getHostState /
- * getPlayerState côté serveur : le navigateur n'a jamais la bonne réponse
+ * getPlayerState côté serveur : le navigateur n’a jamais la bonne réponse
  * avant la phase de révélation.
  */
 
@@ -24,11 +24,11 @@ export interface SettingsProps {
 export interface HostViewProps {
   publicState: any;
   hostState: any;
-  /** Horodatage serveur au moment de l'émission de la vue. */
+  /** Horodatage serveur au moment de l’émission de la vue. */
   now: number;
   /**
-   * Envoie une action de l'écran principal au jeu (ex. générer des personnages). Absent quand la vue
-   * n'est pas celle de l'hôte (spectateur) : le jeu n'affiche alors pas les boutons correspondants.
+   * Envoie une action de l’écran principal au jeu (ex. générer des personnages). Absent quand la vue
+   * n’est pas celle de l’hôte (spectateur) : le jeu n’affiche alors pas les boutons correspondants.
    */
   onAction?: (type: string, payload?: unknown) => Promise<{ ok: boolean; error?: string }>;
 }

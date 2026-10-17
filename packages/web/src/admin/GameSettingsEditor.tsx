@@ -7,8 +7,8 @@ import { openRoomsText } from './messages.js';
 type Settings = Record<string, unknown>;
 
 /**
- * Réglages par défaut d'un jeu, quelle que soit son origine (intégré, cartes, médias, plateau
- * ou paquet importé). Le formulaire est celui que l'hôte voit dans son salon. Les nouvelles
+ * Réglages par défaut d’un jeu, quelle que soit son origine (intégré, cartes, médias, plateau
+ * ou paquet importé). Le formulaire est celui que l’hôte voit dans son salon. Les nouvelles
  * salles partent de ces valeurs ; une salle déjà ouverte garde les siennes.
  */
 export function GameSettingsEditor({ game, onSaved }: { game: CatalogGame; onSaved: () => void }) {

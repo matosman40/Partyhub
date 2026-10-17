@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { PackFigure, refreshCharacterPacks, useCharacterPacks } from '@partyhub/games/client';
 import { api } from '../api.js';
 
-/** Nom proposé d'après le fichier : « 86b0…-PartyHub-sprites-Dewi-Sri.zip » → « Dewi Sri ». */
+/** Nom proposé d’après le fichier : « 86b0…-PartyHub-sprites-Dewi-Sri.zip » → « Dewi Sri ». */
 export function suggestPackName(fileName: string): string {
   const base = fileName.replace(/\.zip$/i, '');
   const afterSprites = /sprites?[-_ ]+(.+)$/i.exec(base);
@@ -19,7 +19,7 @@ export function suggestPackName(fileName: string): string {
 
 /**
  * Personnages illustrés : un personnage peut avoir plusieurs looks (une planche complète chacun).
- * L'import crée un personnage, ou ajoute un look à un personnage existant ; les looks se retirent un à un.
+ * L’import crée un personnage, ou ajoute un look à un personnage existant ; les looks se retirent un à un.
  */
 export function CharacterPacksAdmin({ onChanged }: { onChanged?: () => void }) {
   const { packs, status } = useCharacterPacks();
@@ -120,7 +120,7 @@ export function CharacterPacksAdmin({ onChanged }: { onChanged?: () => void }) {
   async function removePack(id: string, label: string) {
     if (
       !window.confirm(
-        `Supprimer le personnage « ${label} » et tous ses looks ? Les joueurs qui l'ont choisi retrouvent le personnage dessiné.`,
+        `Supprimer le personnage « ${label} » et tous ses looks ? Les joueurs qui l’ont choisi retrouvent le personnage dessiné.`,
       )
     ) {
       return;

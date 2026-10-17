@@ -3,7 +3,7 @@ import type { GameContext, GameResult, PlayerRef, ScoreEntry } from '@partyhub/s
 /**
  * Outils partagés par les jeux : résultats, mélange, normalisation de texte,
  * classement et attente des joueurs connectés. Aucun de ces outils ne touche
- * au réseau ni à l'horloge réelle : tout passe par le contexte du jeu.
+ * au réseau ni à l’horloge réelle : tout passe par le contexte du jeu.
  */
 
 export function ok<S>(state: S): GameResult<S> {
@@ -30,7 +30,7 @@ export function shuffle<T>(items: readonly T[], random: () => number): T[] {
 }
 
 /**
- * Forme comparable d'un texte libre : sans casse, sans accents, sans ponctuation.
+ * Forme comparable d’un texte libre : sans casse, sans accents, sans ponctuation.
  * « Éléphant ! » et « elephant » donnent la même valeur.
  */
 export function normalizeText(text: string): string {
@@ -56,7 +56,7 @@ export function rankEntries(names: Record<string, string>, points: Record<string
   }));
 }
 
-/** Ajoute des points à un joueur, sans modifier l'objet d'origine. */
+/** Ajoute des points à un joueur, sans modifier l’objet d’origine. */
 export function addPoints(points: Record<string, number>, id: string, delta: number): Record<string, number> {
   return { ...points, [id]: (points[id] ?? 0) + delta };
 }

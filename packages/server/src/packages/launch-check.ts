@@ -1,4 +1,4 @@
-import type { GameContext, GameModule, PlayerRef } from '@partyhub/shared';
+import type { GameContext, GameModule, JobOutcome, PlayerRef } from '@partyhub/shared';
 
 export type LaunchCheckResult = { ok: true; actions: number } | { ok: false; error: string };
 
@@ -65,9 +65,20 @@ function playOne(mod: GameModule, seed: number, maxSteps: number): LaunchCheckRe
     while (!mod.isFinished(state)) {
       if (++steps > maxSteps) return fail(`non terminée après ${maxSteps} pas`);
 
+      // Travail asynchrone (IA) : le contrôle ne l'exécute pas. Il simule son résultat sans fournisseur :
+      // « IA non configurée » une partie sur deux, « erreur » l'autre, pour tester les deux replis.
+      const job = mod.pendingJob?.(state) ?? null;
+      if (job && mod.completeJob) {
+        const outcome: JobOutcome =
+          seed % 2 === 0 ? { ok: true, value: null } : { ok: false, error: 'résultat simulé pour le contrôle' };
+        state = mod.completeJob(state, job.id, outcome, ctx);
+        idle = 0;
+        continue;
+      }
+
       let acted = false;
       for (const player of players) {
-        const suggestion = mod.suggest?.(state, player.id, random) ?? null;
+        const suggestion = mod.suggest?.(state, player.id, random, clock.t) ?? null;
         if (!suggestion) continue;
         const result = mod.handleAction(state, player, suggestion.type, suggestion.payload, ctx);
         if (!result.ok) return fail(`action « ${suggestion.type} » refusée : ${result.error}`);

@@ -3,7 +3,7 @@ import type { CardEntry } from '@partyhub/shared';
 import { RAMI_DEFINITION, type Meld, type RamiCard } from '../rules.js';
 import type { RamiRoundResult } from '../module.js';
 
-/** Vue publique du Rami 51, telle qu'émise par le serveur (jamais une main avant la fin de la manche). */
+/** Vue publique du Rami 51, telle qu’émise par le serveur (jamais une main avant la fin de la manche). */
 export interface RamiPub {
   phase: 'play' | 'round-over' | 'final';
   started: boolean;
@@ -28,7 +28,7 @@ export interface RamiPub {
   turnEndsAt: number | null;
 }
 
-/** Vue privée d'un joueur : sa main et ce qu'il peut faire maintenant. */
+/** Vue privée d’un joueur : sa main et ce qu’il peut faire maintenant. */
 export interface RamiMe {
   hand: RamiCard[];
   spectator: boolean;
@@ -48,7 +48,7 @@ export function ramiEntry(id: string): CardEntry | undefined {
   return ENTRIES.get(id);
 }
 
-/** Classement croissant : le plus petit total est premier, rangs partagés en cas d'égalité. */
+/** Classement croissant : le plus petit total est premier, rangs partagés en cas d’égalité. */
 export function ramiRanking(pub: RamiPub): RankRow[] {
   const rows = pub.order.map((id) => ({ playerId: id, name: pub.names[id] ?? '?', points: pub.scores[id] ?? 0 }));
   rows.sort((a, b) => a.points - b.points || a.name.localeCompare(b.name, 'fr'));

@@ -1,10 +1,10 @@
 /**
  * Rendu du plateau sur canvas. Décors et sprites sont peints en code ; un joueur qui a choisi un
  * personnage importé est dessiné avec sa case (voir skins.ts).
- * Vue de dessus, comme les Bomberman d'origine. Une case vaut 16 « pixels logiques » :
+ * Vue de dessus, comme les Bomberman d’origine. Une case vaut 16 « pixels logiques » :
  * chaque décor est peint une seule fois à cette taille, puis agrandi sans lissage, ce qui
- * garde les contours nets à toutes les tailles d'écran. Les personnages glissent d'une case
- * à l'autre au rythme du serveur et marchent pendant le déplacement.
+ * garde les contours nets à toutes les tailles d’écran. Les personnages glissent d’une case
+ * à l’autre au rythme du serveur et marchent pendant le déplacement.
  */
 
 import { FRAMES, SPRITE_H, SPRITE_W, withFacing } from './sprites.js';
@@ -24,6 +24,12 @@ export interface BoardUnitView {
   mount?: Mount | null;
   speed?: number;
   facing?: Dir;
+  /** Bombe soulevée par le kangourou. */
+  carrying?: boolean;
+  range?: number;
+  maxBombs?: number;
+  /** Bombes que le joueur a posées et qui n’ont pas encore explosé. */
+  placed?: number;
 }
 
 /** Vue publique du plateau, telle que la reçoit le navigateur. */
@@ -39,15 +45,15 @@ export interface BoardView {
   winnerName?: string | null;
 }
 
-/** Une case logique : 16 pixels, la résolution des décors d'origine. */
+/** Une case logique : 16 pixels, la résolution des décors d’origine. */
 export const TILE_PX = 16;
 /** Marge autour du plateau, en cases. */
 const PAD_TILES = 0.25;
 
 export interface Layout {
-  /** Taille d'une case, en pixels CSS. */
+  /** Taille d’une case, en pixels CSS. */
   T: number;
-  /** Hauteur d'une case au sol : identique à T, la vue est de dessus. */
+  /** Hauteur d’une case au sol : identique à T, la vue est de dessus. */
   tileD: number;
   pad: number;
   width: number;
@@ -98,7 +104,7 @@ const FIRE = { edge: '#e5461b', body: '#ff9a1f', core: '#ffe066', hot: '#fff8dc'
 // Particules
 // ---------------------------------------------------------------------------
 
-export type ParticleKind = 'spark' | 'dust' | 'smoke' | 'ring' | 'confetti';
+export type ParticleKind = 'spark' | 'dust' | 'smoke' | 'ring' | 'confetti' | 'text';
 
 export interface Particle {
   kind: ParticleKind;
@@ -112,6 +118,8 @@ export interface Particle {
   size: number;
   rot: number;
   vr: number;
+  /** Texte d’une particule « text » (points, KO). */
+  text?: string;
 }
 
 export function updateParticles(list: Particle[], dt: number): void {
@@ -162,33 +170,62 @@ export function burstParticles(
   }
 }
 
-function drawParticles(ctx: CanvasRenderingContext2D, list: Particle[]): void {
+/** Texte qui s’élève puis s’efface, au-dessus d’une case : « +100 », « KO ». */
+export function textParticle(
+  list: Particle[],
+  x: number,
+  y: number,
+  text: string,
+  color: string,
+  size: number,
+  life: number,
+): void {
+  list.push({ kind: 'text', x, y, vx: 0, vy: -70, life, max: life, color, size, rot: 0, vr: 0, text });
+}
+
+/**
+ * Cercle dont le rayon reste positif. Le canvas lève une erreur sur un rayon négatif, et cette erreur
+ * arrêtait toute la boucle de dessin : le plateau se figeait dès qu’un personnage tombait.
+ */
+function circle(g: Ctx, x: number, y: number, r: number): void {
+  g.beginPath();
+  g.arc(x, y, Math.max(0, r), 0, Math.PI * 2);
+}
+
+/** Dessine les particules. Leur fraction de vie reste entre 0 et 1, même si le hasard a dépassé la durée prévue. */
+export function drawParticles(ctx: CanvasRenderingContext2D, list: Particle[]): void {
   for (const p of list) {
-    const k = Math.max(0, p.life / p.max);
+    const k = Math.min(1, Math.max(0, p.life / p.max));
     ctx.save();
     ctx.globalAlpha = k;
     if (p.kind === 'spark') {
       ctx.globalCompositeOperation = 'lighter';
       ctx.fillStyle = p.color;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.size * (0.4 + k * 0.6), 0, Math.PI * 2);
+      circle(ctx, p.x, p.y, p.size * (0.4 + k * 0.6));
       ctx.fill();
     } else if (p.kind === 'dust') {
       ctx.fillStyle = p.color;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.size * (0.5 + k * 0.5), 0, Math.PI * 2);
+      circle(ctx, p.x, p.y, p.size * (0.5 + k * 0.5));
       ctx.fill();
     } else if (p.kind === 'smoke') {
       ctx.fillStyle = p.color;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.size * (2.2 - k * 1.2), 0, Math.PI * 2);
+      circle(ctx, p.x, p.y, p.size * (2.2 - k * 1.2));
       ctx.fill();
     } else if (p.kind === 'ring') {
       ctx.strokeStyle = p.color;
       ctx.lineWidth = 3 * k + 0.5;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.size * (1 - k) + 4, 0, Math.PI * 2);
+      circle(ctx, p.x, p.y, p.size * (1 - k) + 4);
       ctx.stroke();
+    } else if (p.kind === 'text') {
+      // Texte qui monte et s’efface : points gagnés, KO.
+      ctx.font = `800 ${Math.round(p.size)}px "Archivo Variable", Archivo, system-ui, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = INK;
+      ctx.fillStyle = p.color;
+      ctx.strokeText(p.text ?? '', p.x, p.y);
+      ctx.fillText(p.text ?? '', p.x, p.y);
     } else {
       ctx.translate(p.x, p.y);
       ctx.rotate(p.rot);
@@ -207,7 +244,7 @@ type Ctx = CanvasRenderingContext2D;
 
 const images = new Map<string, HTMLCanvasElement>();
 
-/** Image peinte une seule fois, puis réutilisée à chaque image d'animation. */
+/** Image peinte une seule fois, puis réutilisée à chaque image d’animation. */
 export function image(key: string, w: number, h: number, paint: (g: Ctx) => void): HTMLCanvasElement {
   const hit = images.get(key);
   if (hit) return hit;
@@ -242,7 +279,7 @@ function disc(g: Ctx, x: number, y: number, r: number, color: string): void {
 function grassImage(parity: number, variant: number): HTMLCanvasElement {
   return image(`grass:${parity}:${variant}`, TILE_PX, TILE_PX, (g) => {
     rect(g, 0, 0, TILE_PX, TILE_PX, parity ? GRASS_A : GRASS_B);
-    // Touches d'herbe, placées de façon fixe pour chaque variante : pas de répétition visible.
+    // Touches d’herbe, placées de façon fixe pour chaque variante : pas de répétition visible.
     for (let i = 0; i < 7; i++) {
       const px = 1 + Math.floor(hash(variant * 31 + i, 1) * 13);
       const py = 1 + Math.floor(hash(variant * 17 + i, 2) * 13);
@@ -275,7 +312,7 @@ function softImage(): HTMLCanvasElement {
     rect(g, 1, 1, 14, 14, SOFT);
     rect(g, 1, 1, 14, 1, SOFT_HI);
     rect(g, 1, 1, 1, 14, SOFT_HI);
-    // Planches et clous : une caisse, pour qu'on la distingue des blocs de pierre.
+    // Planches et clous : une caisse, pour qu’on la distingue des blocs de pierre.
     rect(g, 5, 1, 1, 14, SOFT_JOINT);
     rect(g, 10, 1, 1, 14, SOFT_JOINT);
     rect(g, 1, 8, 14, 1, SOFT_JOINT);
@@ -306,7 +343,7 @@ function flameKind(x: number, y: number, has: (x: number, y: number) => boolean)
   return 'center';
 }
 
-/** Une bande de feu, du bord vers le cœur. La frange du haut et du bas ondule d'une image à l'autre. */
+/** Une bande de feu, du bord vers le cœur. La frange du haut et du bas ondule d’une image à l’autre. */
 function flameBar(g: Ctx, x0: number, x1: number, f: number): void {
   const top = f ? 3 : 4;
   const bot = f ? 13 : 12;
@@ -317,7 +354,7 @@ function flameBar(g: Ctx, x0: number, x1: number, f: number): void {
   rect(g, x0, 7, w, 2, FIRE.hot);
 }
 
-/** Pointe arrondie au bout d'un bras. */
+/** Pointe arrondie au bout d’un bras. */
 function flameTip(g: Ctx, cx: number, cy: number, r: number): void {
   disc(g, cx, cy, r, FIRE.edge);
   disc(g, cx - 0.8, cy, r * 0.7, FIRE.body);
@@ -368,7 +405,7 @@ function paintBomb(g: Ctx, color: string, f: number): void {
   // Reflet.
   rect(g, 5, 7, 2, 1, '#9b9bc0');
   rect(g, 5, 8, 1, 1, '#9b9bc0');
-  // Mèche qui monte vers la droite ; l'étincelle prend la couleur du joueur, une image sur deux.
+  // Mèche qui monte vers la droite ; l’étincelle prend la couleur du joueur, une image sur deux.
   rect(g, 8, 4, 1, 1, '#c9a46a');
   rect(g, 9, 3, 1, 1, '#c9a46a');
   rect(g, 10, 2, 1, 1, '#c9a46a');
@@ -449,6 +486,64 @@ export function unitImage(
 }
 
 // ---------------------------------------------------------------------------
+// Kangourous : petites créatures dessinées de profil, à monter. Un seul dessin, à l’échelle de la case.
+// ---------------------------------------------------------------------------
+
+const KANGA = '#c98d4f';
+const KANGA_DARK = '#8d5a2b';
+const KANGA_LIGHT = '#f2d19a';
+
+/** Forme pleine, avec éventuelle rotation (en radians). */
+function blob(g: Ctx, x: number, y: number, rx: number, ry: number, color: string, rot = 0): void {
+  g.fillStyle = color;
+  g.beginPath();
+  g.ellipse(x, y, rx, ry, rot, 0, Math.PI * 2);
+  g.fill();
+}
+
+/**
+ * Kangourou de profil, posé sur `bottom`, `h` pixels de haut, face à droite (à gauche si `flip`).
+ * Le dessin tient dans une grille de 16 × 14 unités : `step` avance une patte, pour la marche.
+ */
+export function drawKangaroo(g: Ctx, cx: number, bottom: number, h: number, flip: boolean, step: number): void {
+  const u = h / 14;
+  const stride = step ? 0.7 : -0.7;
+  g.save();
+  g.translate(cx, bottom);
+  if (flip) g.scale(-1, 1);
+  g.scale(u, u);
+  g.translate(-8, -14);
+  // Queue, qui pend vers l’arrière.
+  g.strokeStyle = KANGA_DARK;
+  g.lineWidth = 1.8;
+  g.lineCap = 'round';
+  g.beginPath();
+  g.moveTo(4.2, 9.2);
+  g.quadraticCurveTo(0.4, 9.8, 1.2, 13.2);
+  g.stroke();
+  // Pattes arrière, puissantes, et pied.
+  blob(g, 6.4 + stride, 12.1, 2.5, 1.8, KANGA_DARK);
+  blob(g, 7.4 + stride, 13.45, 2.8, 0.7, KANGA_DARK);
+  // Corps, cou et tête.
+  blob(g, 7.4, 8.4, 4.4, 3.2, KANGA, -0.3);
+  blob(g, 11.2, 4.8, 2.5, 2.3, KANGA);
+  // Ventre clair, oreilles, museau et œil.
+  blob(g, 8, 9.4, 2.4, 1.7, KANGA_LIGHT);
+  blob(g, 10.2, 1.4, 0.8, 2.1, KANGA, -0.2);
+  blob(g, 11.7, 1.6, 0.8, 2, KANGA, 0.15);
+  blob(g, 13.2, 5.5, 1.2, 0.9, KANGA_LIGHT);
+  disc(g, 12.1, 4.2, 0.55, INK);
+  // Petit bras replié.
+  g.strokeStyle = KANGA_DARK;
+  g.lineWidth = 1;
+  g.beginPath();
+  g.moveTo(10.2, 7.6);
+  g.lineTo(11.4, 8.6 - stride * 0.3);
+  g.stroke();
+  g.restore();
+}
+
+// ---------------------------------------------------------------------------
 // Sol et blocs : peints une seule fois, rafraîchis seulement quand la grille change.
 // ---------------------------------------------------------------------------
 
@@ -495,10 +590,10 @@ interface Trail {
   deadAt?: number;
 }
 
-/** Mémorise la position affichée de chaque joueur, pour glisser d'une case à l'autre. */
+/** Mémorise la position affichée de chaque joueur, pour glisser d’une case à l’autre. */
 const trails = new Map<string, Trail>();
 
-/** Durée d'un pas : la même que le serveur (plus court avec un bonus de vitesse). */
+/** Durée d’un pas : la même que le serveur (plus court avec un bonus de vitesse). */
 function stepMs(u: BoardUnitView): number {
   return Math.max(85, 150 - (u.speed ?? 0) * 22 - (u.mount === 'dino' ? 20 : 0));
 }
@@ -522,6 +617,7 @@ function drawUnit(
   index: number,
   onBomb: boolean,
   skin: PackSkin | undefined,
+  victory: boolean,
 ): void {
   const dur = stepMs(u);
   let tr = trails.get(u.playerId);
@@ -542,7 +638,7 @@ function drawUnit(
   else tr.deadAt ??= now;
   const walking = v.t < 1;
   const step = walking ? Math.floor(now / (dur / 2)) % 2 : 0;
-  // Respiration d'un pixel quand il ne bouge pas, décalée d'un personnage à l'autre.
+  // Respiration d’un pixel quand il ne bouge pas, décalée d’un personnage à l’autre.
   const breath = walking || !u.alive ? 0 : Math.floor(now / 450 + index) % 2;
 
   const o = cellOrigin(L, v.x, v.y);
@@ -550,9 +646,13 @@ function drawUnit(
   const sprite = unitImage(u.color, pose, step, u.facing);
   const w = SPRITE_W * S;
   const h = SPRITE_H * S;
+  // Le kangourou monté porte le personnage : celui-ci est posé sur son dos, et il saute quand il gagne.
+  const riding = u.alive && u.mount === 'kangaroo';
+  const rideLift = riding ? 4 * S : 0;
+  const bounce = victory && u.alive ? Math.abs(Math.sin(now / 150 + index)) * 3 * S : 0;
   // Centré dans la case, pieds sur le bord bas.
   const x0 = Math.round(o.x + ((TILE_PX - SPRITE_W) / 2) * S);
-  const y0 = Math.round(o.y + (TILE_PX - SPRITE_H - 1) * S - breath * S + (u.alive ? 0 : 2 * S));
+  const y0 = Math.round(o.y + (TILE_PX - SPRITE_H - 1) * S - breath * S - rideLift - bounce + (u.alive ? 0 : 2 * S));
 
   ctx.save();
   ctx.fillStyle = 'rgba(0,0,0,0.35)';
@@ -560,7 +660,18 @@ function drawUnit(
   ctx.ellipse(o.x + 8 * S, o.y + 15 * S, 5 * S, 1.5 * S, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // Mort : clignotement, puis le personnage s'efface au sol.
+  if (riding) {
+    drawKangaroo(
+      ctx,
+      o.x + L.T / 2,
+      o.y + (TILE_PX - 1) * S - bounce * 0.5,
+      12 * S,
+      u.facing === 'left',
+      walking ? step : 0,
+    );
+  }
+
+  // Mort : clignotement, puis le personnage s’efface au sol.
   let visible = true;
   if (!u.alive) {
     const since = now - (tr.deadAt ?? now);
@@ -575,8 +686,9 @@ function drawUnit(
   if (visible) {
     if (skin && skinReady(skin)) {
       const skinH = (SPRITE_H + 1) * S;
-      // Le pas le plus haut rebondit d'un pixel.
-      const bottom = o.y + (TILE_PX - 1) * S - breath * S - (walking && step ? S : 0) + (u.alive ? 0 : 2 * S);
+      // Le pas le plus haut rebondit d’un pixel.
+      const bottom =
+        o.y + (TILE_PX - 1) * S - breath * S - rideLift - bounce - (walking && step ? S : 0) + (u.alive ? 0 : 2 * S);
       drawSkin(ctx, skin, o.x + L.T / 2, bottom, skinH, u.facing === 'left');
       headTop = bottom - skinH;
     } else {
@@ -584,14 +696,28 @@ function drawUnit(
     }
   }
 
-  if (u.mount) {
+  // Le dinosaure reste un emoji ; le kangourou est dessiné au-dessous du personnage.
+  if (u.mount === 'dino') {
     ctx.font = `${Math.round(L.T * 0.55)}px system-ui, "Apple Color Emoji", "Segoe UI Emoji", sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(MOUNT_ICON[u.mount], o.x + L.T * 0.82, o.y + L.T * 0.3);
+    ctx.fillText(MOUNT_ICON.dino, o.x + L.T * 0.82, o.y + L.T * 0.3);
   }
 
-  // Initiale du pseudo au-dessus de la tête.
+  // Bombe soulevée : au-dessus de la tête, prête à être lancée.
+  const carrySize = L.T * 0.62;
+  const carried = u.carrying && u.alive;
+  if (carried) {
+    ctx.drawImage(
+      bombImage(u.color, Math.floor(now / 90) % 2),
+      o.x + (L.T - carrySize) / 2,
+      headTop - carrySize * 0.85,
+      carrySize,
+      carrySize,
+    );
+  }
+
+  // Initiale du pseudo au-dessus de la tête (ou de la bombe soulevée).
   ctx.fillStyle = '#ecebe3';
   ctx.strokeStyle = INK;
   ctx.lineWidth = 3;
@@ -600,7 +726,7 @@ function drawUnit(
   ctx.textBaseline = 'bottom';
   const label = u.name.trim().charAt(0).toUpperCase() || '?';
   const lx = o.x + L.T / 2;
-  const ly = headTop - S * 0.5;
+  const ly = headTop - S * 0.5 - (carried ? carrySize * 0.85 : 0);
   ctx.strokeText(label, lx, ly);
   ctx.fillText(label, lx, ly);
   ctx.restore();
@@ -618,14 +744,34 @@ function drawFlame(
   now: number,
 ): void {
   const kind = flameKind(f.x, f.y, has);
-  // Scintillement : chaque case a son propre rythme, pour que le feu ne batte pas à l'unisson.
+  // Scintillement : chaque case a son propre rythme, pour que le feu ne batte pas à l’unisson.
   const frame = (Math.floor(now / 110) + f.x * 3 + f.y * 5) % 2;
   const o = cellOrigin(L, f.x, f.y);
   ctx.drawImage(flameImage(kind, frame), o.x, o.y, L.T, L.T);
 }
 
-function drawBomb(ctx: Ctx, L: Layout, b: BoardView['bombs'][number], now: number): void {
-  const o = cellOrigin(L, b.x, b.y);
+/** Position affichée de chaque bombe : elle glisse d’une case à l’autre quand on la lance, la frappe ou la soulève. */
+const bombTrails = new Map<string, Trail>();
+const BOMB_GLIDE_MS = 170;
+
+function bombPosition(b: BoardView['bombs'][number], now: number): { x: number; y: number } {
+  let tr = bombTrails.get(b.id);
+  if (!tr) {
+    tr = { x: b.x, y: b.y, fromX: b.x, fromY: b.y, movedAt: -1e9 };
+    bombTrails.set(b.id, tr);
+  } else if (tr.x !== b.x || tr.y !== b.y) {
+    const cur = glide(tr, now, BOMB_GLIDE_MS);
+    tr.fromX = cur.x;
+    tr.fromY = cur.y;
+    tr.x = b.x;
+    tr.y = b.y;
+    tr.movedAt = now;
+  }
+  return glide(tr, now, BOMB_GLIDE_MS);
+}
+
+function drawBomb(ctx: Ctx, L: Layout, b: BoardView['bombs'][number], at: { x: number; y: number }, now: number): void {
+  const o = cellOrigin(L, at.x, at.y);
   const remain = Math.max(0, b.endsAt - now);
   const urgency = 1 - Math.min(1, remain / 2500);
   // Plus la mèche se consume, plus la bombe palpite vite.
@@ -637,10 +783,27 @@ function drawBomb(ctx: Ctx, L: Layout, b: BoardView['bombs'][number], now: numbe
 
 function drawPowerup(ctx: Ctx, L: Layout, S: number, p: BoardView['powerups'][number], now: number): void {
   const o = cellOrigin(L, p.x, p.y);
-  // Léger battement d'un pixel : le bonus attire l'œil sans texte.
+  if (p.kind === 'kangaroo') {
+    // Un kangourou sauvage sautille sur place, à monter : il attire l'œil sans texte.
+    const hop = Math.abs(Math.sin(now / 240 + p.x * 1.7 + p.y)) * 3 * S;
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.beginPath();
+    ctx.ellipse(o.x + L.T / 2, o.y + L.T - 2 * S, 5 * S, 1.5 * S, 0, 0, Math.PI * 2);
+    ctx.fill();
+    drawKangaroo(
+      ctx,
+      o.x + L.T / 2,
+      o.y + (TILE_PX - 1) * S - hop,
+      12 * S,
+      p.x % 2 === 1,
+      Math.floor(now / 240 + p.x) % 2,
+    );
+    return;
+  }
+  // Léger battement d’un pixel : le bonus attire l'œil sans texte.
   const bob = Math.round(Math.sin(now / 280 + p.x * 2 + p.y)) * S;
   ctx.drawImage(powerImage(p.kind), o.x, o.y + bob, L.T, L.T);
-  if (p.kind === 'kangaroo' || p.kind === 'dino') {
+  if (p.kind === 'dino') {
     ctx.save();
     ctx.font = `${Math.round(L.T * 0.55)}px system-ui, "Apple Color Emoji", "Segoe UI Emoji", sans-serif`;
     ctx.textAlign = 'center';
@@ -653,7 +816,7 @@ function drawPowerup(ctx: Ctx, L: Layout, S: number, p: BoardView['powerups'][nu
 export interface SceneOptions {
   now: number;
   particles: Particle[];
-  /** Densité de pixels de l'écran : le plateau est peint net à cette résolution. */
+  /** Densité de pixels de l’écran : le plateau est peint net à cette résolution. */
   dpr?: number;
   /** Personnages importés, par identifiant de joueur. Absent pour les joueurs au sprite peint. */
   skins?: ReadonlyMap<string, PackSkin>;
@@ -683,13 +846,34 @@ export function drawScene(ctx: Ctx, L: Layout, view: BoardView, opts: SceneOptio
   for (const f of view.flames) drawFlame(ctx, L, f, has, now);
 
   for (const p of view.powerups) drawPowerup(ctx, L, S, p, now);
-  for (const b of view.bombs) drawBomb(ctx, L, b, now);
 
-  // Personnages : de l'arrière vers l'avant, comme dans les vrais jeux de cases.
-  const bombCells = new Set(view.bombs.map((b) => `${b.x},${b.y}`));
+  // Une bombe soulevée est dessinée au-dessus de son porteur, pas dans sa case.
+  const carrierCells = new Set(view.units.filter((u) => u.alive && u.carrying).map((u) => `${u.x},${u.y}`));
+  const seenBombs = new Set<string>();
+  for (const b of view.bombs) {
+    seenBombs.add(b.id);
+    const at = bombPosition(b, now);
+    if (!carrierCells.has(`${b.x},${b.y}`)) drawBomb(ctx, L, b, at, now);
+  }
+  for (const id of [...bombTrails.keys()]) if (!seenBombs.has(id)) bombTrails.delete(id);
+
+  // Personnages : de l’arrière vers l’avant, comme dans les vrais jeux de cases.
+  const bombCells = new Set(view.bombs.filter((b) => !carrierCells.has(`${b.x},${b.y}`)).map((b) => `${b.x},${b.y}`));
+  // Au gagnant de la manche : il saute sur place.
+  const winner = view.phase === 'round-over' ? (view.winnerName ?? null) : null;
   const order = view.units.map((u, i) => ({ u, i })).sort((a, b) => a.u.y - b.u.y || a.i - b.i);
   for (const { u, i } of order) {
-    drawUnit(ctx, L, S, u, now, i, bombCells.has(`${u.x},${u.y}`), opts.skins?.get(u.playerId));
+    drawUnit(
+      ctx,
+      L,
+      S,
+      u,
+      now,
+      i,
+      bombCells.has(`${u.x},${u.y}`),
+      opts.skins?.get(u.playerId),
+      winner !== null && u.name === winner,
+    );
   }
 
   ctx.save();

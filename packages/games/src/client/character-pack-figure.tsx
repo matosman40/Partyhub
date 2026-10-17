@@ -7,7 +7,7 @@ import type {
 } from '@partyhub/shared';
 
 /**
- * Affichage d'un look de pack de sprites. La case de la planche est découpée par un viewBox SVG : le dessin
+ * Affichage d’un look de pack de sprites. La case de la planche est découpée par un viewBox SVG : le dessin
  * se redimensionne comme le personnage dessiné (même balise racine, même ratio).
  *
  * Correspondance attitude → case, selon les noms proposés dans le pack (voir docs/PERSONNAGES-PACK.md).
@@ -25,7 +25,7 @@ export const PACK_BUST_FACE: Record<CharacterMood, string> = {
 
 /**
  * Visages demandés (émotions du salon, expression du profil) → case de la planche « visages ».
- * Une case absente du pack retombe sur l'attitude du moment.
+ * Une case absente du pack retombe sur l’attitude du moment.
  */
 export const PACK_FACE_CASE: Record<CharacterExpression, string> = {
   calme: 'neutre',
@@ -47,7 +47,7 @@ export const PACK_FULL_POSE: Record<CharacterMood, string> = {
 
 const DEFAULT_CASE: Record<CharacterPackAtlasName, string> = { visages: 'neutre', poses: 'repos', marche: 'face1' };
 
-/** Adresse PNG d'une planche d'un look. Revalidée à chaque affichage : un look peut être remplacé. */
+/** Adresse PNG d’une planche d’un look. Revalidée à chaque affichage : un look peut être remplacé. */
 export function packAtlasUrl(packId: string, lookId: string, atlas: CharacterPackAtlasName): string {
   return `/api/character-packs/${encodeURIComponent(packId)}/looks/${encodeURIComponent(lookId)}/atlas/${atlas}.png`;
 }
@@ -56,7 +56,7 @@ export interface PackFigureProps {
   pack: CharacterPackInfo;
   look: CharacterPackLook;
   mood?: CharacterMood;
-  /** Visage à montrer sur le portrait (absent : celui de l'attitude). */
+  /** Visage à montrer sur le portrait (absent : celui de l’attitude). */
   face?: CharacterExpression;
   framing?: 'full' | 'bust';
   label?: string;

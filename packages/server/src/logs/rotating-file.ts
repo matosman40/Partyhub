@@ -12,8 +12,8 @@ export interface RotatingFileOptions {
 }
 
 /**
- * Fichier de journal qui tourne : quand il dépasse `maxBytes`, il devient `<nom>.1`, l'ancien `.1`
- * devient `.2`, et ainsi de suite. Écritures synchrones : une erreur fatale est écrite avant l'arrêt.
+ * Fichier de journal qui tourne : quand il dépasse `maxBytes`, il devient `<nom>.1`, l’ancien `.1`
+ * devient `.2`, et ainsi de suite. Écritures synchrones : une erreur fatale est écrite avant l’arrêt.
  */
 export class RotatingFile {
   readonly file: string;
@@ -43,7 +43,7 @@ export class RotatingFile {
     return existsSync(this.file) ? [...rotated, this.file] : rotated;
   }
 
-  /** Supprime tout l'historique (fichier courant compris). */
+  /** Supprime tout l’historique (fichier courant compris). */
   clear(): void {
     for (const file of this.files()) rmSync(file, { force: true });
     this.size = 0;

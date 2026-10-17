@@ -16,7 +16,7 @@ type Status = 'checking' | 'ready' | 'create' | 'offline';
 
 /**
  * Vérifie le profil actif auprès du serveur. Un jeton refusé (session perdue) retire le profil de
- * l'appareil, et on essaie le suivant. Sans profil valable, il faut créer le sien.
+ * l’appareil, et on essaie le suivant. Sans profil valable, il faut créer le sien.
  */
 async function resolveProfile(): Promise<'ready' | 'create' | 'offline'> {
   for (let attempt = 0; attempt < 20; attempt++) {
@@ -48,8 +48,8 @@ async function resolveProfile(): Promise<'ready' | 'create' | 'offline'> {
 }
 
 /**
- * Porte d'entrée : sans profil valable sur cet appareil, on demande d'abord un nom.
- * Les écrans du joueur (accueil, saisie du code, téléphone) ne s'ouvrent qu'ensuite.
+ * Porte d’entrée : sans profil valable sur cet appareil, on demande d’abord un nom.
+ * Les écrans du joueur (accueil, saisie du code, téléphone) ne s’ouvrent qu’ensuite.
  */
 export function ProfileGate({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<Status>('checking');
@@ -66,7 +66,7 @@ export function ProfileGate({ children }: { children: ReactNode }) {
     };
   }, [attempt]);
 
-  // Le dernier profil de l'appareil vient d'être retiré : on redemande un nom.
+  // Le dernier profil de l’appareil vient d’être retiré : on redemande un nom.
   useEffect(() => {
     const onChanged = () => {
       if (!activeDeviceProfile() && readDeviceProfiles().length === 0) setStatus('create');

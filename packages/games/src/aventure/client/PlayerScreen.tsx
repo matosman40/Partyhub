@@ -36,7 +36,7 @@ interface CombatView {
   progress: string[];
 }
 
-/** Vue publique de l'aventure (voir `getPublicState` dans le module). */
+/** Vue publique de l’aventure (voir `getPublicState` dans le module). */
 interface AventurePublic {
   phase: 'lobby' | 'preparing' | 'choose' | 'vote' | 'combat' | 'final';
   preparing: 'roster' | 'scene' | 'epilogue' | null;
@@ -64,7 +64,7 @@ interface AventurePublic {
   ranking: { playerId: string; points: number; rank: number }[];
 }
 
-/** Un personnage gardé dans le profil du joueur, qu'il peut reprendre au début de l'aventure. */
+/** Un personnage gardé dans le profil du joueur, qu’il peut reprendre au début de l’aventure. */
 interface LibraryView {
   libraryId: string;
   name: string;
@@ -78,7 +78,7 @@ interface LibraryView {
   inPlay: boolean;
 }
 
-/** Vue privée d'un joueur (voir `getPlayerState` dans le module). */
+/** Vue privée d’un joueur (voir `getPlayerState` dans le module). */
 interface AventurePlayerState {
   characterId: string | null;
   ko: boolean;
@@ -98,13 +98,13 @@ const PREPARING_TEXT: Record<NonNullable<AventurePublic['preparing']>, string> =
   epilogue: 'Le conteur écrit le dénouement…',
 };
 
-/** Choix d'un joueur, envoyé au salon et affiché avant sa confirmation. */
+/** Choix d’un joueur, envoyé au salon et affiché avant sa confirmation. */
 interface Sent {
   kind: 'pick' | 'library' | 'vote' | 'combat';
   id: string;
 }
 
-/** Erreur d'un choix, avec l'étape où il a été fait : une étape suivante n'affiche pas l'erreur de la précédente. */
+/** Erreur d’un choix, avec l’étape où il a été fait : une étape suivante n’affiche pas l’erreur de la précédente. */
 interface ActError {
   text: string;
   step: string;
@@ -122,14 +122,14 @@ export function AventurePlayer({ publicState, playerState, playerId, now, send, 
   const remaining = useRemaining(pub?.endsAt, now);
   const [error, setError] = useState<ActError | null>(null);
   const [busy, setBusy] = useState(false);
-  // Choix envoyé, affiché tout de suite : le salon le confirme ensuite (il arrive avec l'état de la partie), ou le
-  // retire avec une erreur. Sans cela, chaque appui ne se voyait qu'après l'aller-retour, soit 160 ms sur 4G.
+  // Choix envoyé, affiché tout de suite : le salon le confirme ensuite (il arrive avec l’état de la partie), ou le
+  // retire avec une erreur. Sans cela, chaque appui ne se voyait qu’après l’aller-retour, soit 160 ms sur 4G.
   const [sent, setSent] = useState<Sent | null>(null);
   // Un nouveau choix, une nouvelle scène ou une nouvelle manche remettent à zéro le choix envoyé.
   useEffect(() => {
     setSent(null);
   }, [pub?.phase, pub?.sceneNumber, me?.characterId, me?.myVote, me?.myAction]);
-  // Au rétablissement de la connexion, le message « connexion perdue » n'a plus lieu d'être.
+  // Au rétablissement de la connexion, le message « connexion perdue » n’a plus lieu d’être.
   useEffect(() => {
     if (connected) setError(null);
   }, [connected]);
@@ -137,7 +137,7 @@ export function AventurePlayer({ publicState, playerState, playerId, now, send, 
   if (!pub) return <WaitingScreen title="En attente de l’aventure…" />;
 
   const mine = pub.characters.find((c) => c.ownerId === playerId) ?? null;
-  // Un refus n'est montré que dans l'étape où le choix a été fait : arrivé trop tard, il ne reste pas à l'écran.
+  // Un refus n’est montré que dans l’étape où le choix a été fait : arrivé trop tard, il ne reste pas à l’écran.
   const step = `${pub.phase}:${pub.sceneNumber}`;
   const shownError = error?.step === step ? error.text : null;
 
@@ -369,7 +369,7 @@ export function AventurePlayer({ publicState, playerState, playerId, now, send, 
     );
   }
 
-  // Préparation : l'histoire s'écrit, le dernier résultat reste affiché.
+  // Préparation : l’histoire s’écrit, le dernier résultat reste affiché.
   return (
     <section className="player-game fade-in aventure">
       <p className="big">{preparingText(pub)}</p>

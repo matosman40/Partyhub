@@ -4,12 +4,12 @@ import { directory, everyConnectedDone, fail, ok, rankEntries, shuffle } from '.
 import { MODE_INSTRUCTION, MODE_LABEL, PROMPTS, artUrl, type ArtKey, type Mode, type PromptDef } from './prompts.js';
 
 /**
- * Imite-moi : une consigne apparaît sur l'écran principal (une illustration à imiter, ou un son).
+ * Imite-moi : une consigne apparaît sur l’écran principal (une illustration à imiter, ou un son).
  * Chaque joueur envoie sa réponse depuis son téléphone : une photo de la galerie ou prise avec la caméra,
  * ou un enregistrement de 3 secondes au micro. Puis tout le monde vote pour la plus réussie, sans savoir qui
- * l'a envoyée. Chaque vote reçu rapporte 100 points à son auteur.
+ * l’a envoyée. Chaque vote reçu rapporte 100 points à son auteur.
  *
- * Les photos et les sons vivent uniquement dans l'état de la partie, en mémoire : ils ne sont ni enregistrés
+ * Les photos et les sons vivent uniquement dans l’état de la partie, en mémoire : ils ne sont ni enregistrés
  * en base, ni journalisés, et disparaissent avec la partie.
  */
 
@@ -27,8 +27,8 @@ const LEVEL_MODES: Record<Level, Mode[]> = {
 };
 
 /**
- * Taille maximale d'une réponse encodée, en caractères. Une action Socket.IO est limitée à 64 Ko côté serveur :
- * le téléphone réduit donc sa photo (ou son enregistrement) sous cette taille avant de l'envoyer.
+ * Taille maximale d’une réponse encodée, en caractères. Une action Socket.IO est limitée à 64 Ko côté serveur :
+ * le téléphone réduit donc sa photo (ou son enregistrement) sous cette taille avant de l’envoyer.
  */
 export const MEDIA_MAX_CHARS = 60_000;
 const IMAGE_URL = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/]+={0,2}$/;
@@ -70,7 +70,7 @@ export interface Entry {
 
 export interface ImiteState {
   settings: ImiteSettings;
-  /** Manches tirées pour cette partie, dans l'ordre de jeu. */
+  /** Manches tirées pour cette partie, dans l’ordre de jeu. */
   plan: Round[];
   phase: ImitePhase;
   index: number;
@@ -79,9 +79,9 @@ export interface ImiteState {
   points: Record<string, number>;
   /** joueur -> réponse envoyée pendant la manche en cours. */
   entries: Record<string, Entry>;
-  /** Auteurs dans l'ordre d'affichage anonyme du vote. */
+  /** Auteurs dans l’ordre d’affichage anonyme du vote. */
   options: string[];
-  /** votant -> index de l'option choisie. */
+  /** votant -> index de l’option choisie. */
   votes: Record<string, number>;
   /** Points gagnés pendant la manche, révélés à la fin du vote. */
   gains: Record<string, number>;
@@ -91,7 +91,7 @@ function kindOf(mode: Mode): EntryKind {
   return mode === 'cri' ? 'sound' : 'photo';
 }
 
-/** Consignes tirées au sort, mode par mode. Une consigne ne revient qu'après les autres de son mode. */
+/** Consignes tirées au sort, mode par mode. Une consigne ne revient qu’après les autres de son mode. */
 function planRounds(level: Level, count: number, random: () => number): Round[] {
   const modes = LEVEL_MODES[level];
   const pools: Record<Mode, PromptDef[]> = {

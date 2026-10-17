@@ -5,7 +5,7 @@ import type { AppSocket } from '../realtime.js';
 /** Une émotion reste affichée quelques secondes, puis le personnage revient au repos. */
 export const LOBBY_MOOD_MS = 2600;
 
-/** Émotion en cours d'un joueur. L'identifiant change à chaque envoi, même pour une émotion répétée. */
+/** Émotion en cours d’un joueur. L’identifiant change à chaque envoi, même pour une émotion répétée. */
 export interface LobbyEmote {
   id: string;
   /** Attitude du corps, ou null quand seul le visage change. */
@@ -19,7 +19,7 @@ export function poseOf(emote: Pick<LobbyEmote, 'mood'>): CharacterMood {
   return emote.mood ?? 'idle';
 }
 
-/** Émotions en cours, par identifiant de joueur. Rien n'est gardé au-delà de LOBBY_MOOD_MS. */
+/** Émotions en cours, par identifiant de joueur. Rien n’est gardé au-delà de LOBBY_MOOD_MS. */
 export function useLobbyMoods(socket: AppSocket | null): Record<string, LobbyEmote> {
   const [emotes, setEmotes] = useState<Record<string, LobbyEmote>>({});
 

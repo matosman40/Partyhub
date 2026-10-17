@@ -1,10 +1,27 @@
 import { z } from 'zod';
-import type { GameContext, GameModule, GameResult, PlayerRef, ScoreEntry } from '@partyhub/shared';
+import type { GameContext, GameModule, GameResult, JobOutcome, PlayerRef, ScoreEntry } from '@partyhub/shared';
 import { QUESTIONS, type QuizQuestion } from './questions.js';
+import { QUIZ_JOB_KIND, runQuizJob, type QuizThemesInput } from './themes.js';
+import {
+  BOT_KEYWORDS,
+  TOPIC_SECONDS_DEFAULT,
+  keywordThemes,
+  keywordsPayloadSchema,
+  openKeywordTurns,
+  parseKeywords,
+  passTurn,
+  submitKeywords,
+  turnPlayer,
+  turnsDone,
+  type KeywordTurns,
+} from '../common/keywords.js';
 
 export const quizSettingsSchema = z.object({
+  /** « curated » : questions intégrées. « players » : les mots-clés des joueurs deviennent des questions (IA). */
+  source: z.enum(['curated', 'players']).default('curated'),
   questionCount: z.number().int().min(1).max(20).default(5),
   answerSeconds: z.number().int().min(5).max(60).default(20),
+  topicSeconds: z.number().int().min(10).max(60).default(TOPIC_SECONDS_DEFAULT),
   speedBonus: z.boolean().default(true),
 });
 
@@ -16,10 +33,11 @@ const REVEAL_DELAY_MS = 7000;
 
 const ANSWER_TIMEOUT = 'answer-timeout';
 const REVEAL_NEXT = 'reveal-next';
+const TOPIC_TIMEOUT = 'topic-timeout';
 
 const answerSchema = z.object({ choice: z.number().int().min(0).max(3) });
 
-export type QuizPhase = 'ready' | 'question' | 'reveal' | 'final';
+export type QuizPhase = 'ready' | 'topics' | 'generating' | 'question' | 'reveal' | 'final';
 
 export interface QuizGain {
   correct: boolean;
@@ -34,11 +52,17 @@ export interface QuizState {
   index: number;
   startedAt: number;
   answerEndsAt: number;
-  /** id -> pseudo, figé au début de la partie (plus les arrivées en salle d'attente). */
+  /** id -> pseudo, figé au début de la partie (plus les arrivées en salle d’attente). */
   players: Record<string, string>;
   points: Record<string, number>;
   answers: Record<string, { choice: number; elapsedMs: number }>;
   gains: Record<string, QuizGain>;
+  /** Tour de parole des mots-clés (phase « topics »), puis conservé pour l’affichage des thèmes. */
+  topics: KeywordTurns | null;
+  /** Identifiant du travail IA en cours (phase « generating »). */
+  jobId: string | null;
+  /** Message affiché à l’écran principal quand les questions intégrées remplacent celles de l’IA. */
+  notice: string | null;
 }
 
 function ok<S>(state: S): GameResult<S> {
@@ -124,18 +148,69 @@ function advance(s: QuizState, ctx: GameContext): QuizState {
 function finish(s: QuizState, ctx: GameContext): QuizState {
   ctx.cancel(ANSWER_TIMEOUT);
   ctx.cancel(REVEAL_NEXT);
+  ctx.cancel(TOPIC_TIMEOUT);
   return { ...s, phase: 'final' };
+}
+
+/** Ouvre le tour de parole des mots-clés. Sans joueur connecté, on passe directement à la suite. */
+function openTopics(s: QuizState, ctx: GameContext): QuizState {
+  const seconds = s.settings.topicSeconds;
+  const topics = openKeywordTurns(Object.keys(s.players), ctx.now(), seconds, ctx.connectedPlayerIds());
+  return afterTopicTurn({ ...s, phase: 'topics' }, topics, ctx);
+}
+
+/** Après chaque tour : le suivant, ou la fin de la phase des mots-clés. */
+function afterTopicTurn(s: QuizState, topics: KeywordTurns, ctx: GameContext): QuizState {
+  if (turnsDone(topics)) return closeTopics({ ...s, topics }, ctx);
+  ctx.schedule(TOPIC_TIMEOUT, s.settings.topicSeconds * 1000);
+  return { ...s, topics };
+}
+
+/**
+ * Ferme la phase des mots-clés. S’il n’y en a aucun, les questions intégrées sont tirées tout de suite.
+ * Sinon, le travail IA est demandé : la salle l’exécute, puis `completeJob` lance le quiz.
+ */
+function closeTopics(s: QuizState, ctx: GameContext): QuizState {
+  ctx.cancel(TOPIC_TIMEOUT);
+  const themes = s.topics ? keywordThemes(s.topics, s.players) : [];
+  if (themes.length === 0) {
+    const questions = pickQuestions(s.settings.questionCount, ctx.random);
+    return beginQuestion(
+      { ...s, questions, index: 0, jobId: null, notice: 'Aucun mot-clé proposé : questions intégrées.' },
+      ctx,
+    );
+  }
+  return { ...s, phase: 'generating', jobId: `quiz-${ctx.now()}`, notice: null };
+}
+
+function topicsView(s: QuizState) {
+  if (!s.topics) return null;
+  const t = s.topics;
+  return {
+    endsAt: t.endsAt,
+    turnMs: s.settings.topicSeconds * 1000,
+    current: turnPlayer(t) !== null ? (s.players[turnPlayer(t)!] ?? null) : null,
+    turns: t.order.map((id, i) => ({
+      name: s.players[id] ?? '?',
+      keywords: t.entries[id] ?? [],
+      state: i < t.turn ? 'done' : i === t.turn ? 'current' : 'waiting',
+    })),
+  };
 }
 
 function publicView(s: QuizState) {
   const base = {
     phase: s.phase,
     index: s.index,
-    total: s.questions.length,
+    total: s.questions.length || s.settings.questionCount,
     playerCount: Object.keys(s.players).length,
     ranking: rankPlayers(s),
+    notice: s.notice,
+    topics: topicsView(s),
   };
 
+  if (s.phase === 'topics') return { ...base, question: null, endsAt: s.topics?.endsAt ?? 0 };
+  if (s.phase === 'generating') return { ...base, question: null, endsAt: 0 };
   if (s.phase === 'ready' || s.phase === 'final') {
     return { ...base, question: null };
   }
@@ -150,6 +225,7 @@ function publicView(s: QuizState) {
       ...base,
       question,
       answerEndsAt: s.answerEndsAt,
+      endsAt: s.answerEndsAt,
       answerMs: s.settings.answerSeconds * 1000,
       answeredCount: Object.keys(s.answers).length,
     };
@@ -180,25 +256,29 @@ export const quizParty: GameModule<QuizState, QuizSettings> = {
   manifest: {
     id: 'quiz-party',
     name: 'Quiz Party',
-    description: 'Questions à choix multiples, points et bonus de rapidité.',
+    description:
+      'Questions à choix multiples, points et bonus de rapidité. Peut aussi partir des mots-clés de chaque joueur : l’IA écrit alors les questions.',
     icon: '🧠',
     category: 'quiz',
-    version: '1.0.0',
+    version: '1.1.0',
     apiVersion: 1,
     minPlayers: 1,
     maxPlayers: 12,
     durationMin: 10,
+    ai: true,
     notice: {
       goal: 'Répondre le plus vite et le plus juste aux questions pour marquer le plus de points.',
       steps: [
-        "L'hôte lance la partie depuis l'écran principal.",
-        "Chaque question s'affiche sur l'écran et sur votre téléphone.",
+        'L’hôte lance la partie depuis l’écran principal.',
+        'Avec les thèmes des joueurs, chacun propose à son tour quelques mots-clés sur son téléphone.',
+        'Chaque question s’affiche sur l’écran et sur votre téléphone.',
         'Touchez la bonne réponse avant la fin du temps.',
         'Les points arrivent après la révélation : répondre vite rapporte un bonus.',
       ],
       tips: [
         'Une mauvaise réponse ne retire aucun point.',
-        'Le nombre de questions et le temps se règlent dans le salon, avant le lancement.',
+        'Le nombre de questions, le temps et la source des questions se règlent dans le salon, avant le lancement.',
+        'Sans IA configurée, le jeu reprend ses questions intégrées et le dit à l’écran.',
       ],
     },
   },
@@ -208,6 +288,7 @@ export const quizParty: GameModule<QuizState, QuizSettings> = {
 
   actions: {
     answer: answerSchema,
+    keywords: keywordsPayloadSchema,
   },
 
   initialize(settings, players, ctx) {
@@ -215,7 +296,8 @@ export const quizParty: GameModule<QuizState, QuizSettings> = {
     return {
       phase: 'ready',
       settings: parsed,
-      questions: pickQuestions(parsed.questionCount, ctx.random),
+      // Avec les thèmes des joueurs, les questions viennent de l’IA : rien à tirer maintenant.
+      questions: parsed.source === 'curated' ? pickQuestions(parsed.questionCount, ctx.random) : [],
       index: 0,
       startedAt: 0,
       answerEndsAt: 0,
@@ -223,6 +305,9 @@ export const quizParty: GameModule<QuizState, QuizSettings> = {
       points: Object.fromEntries(players.map((p) => [p.id, 0])),
       answers: {},
       gains: {},
+      topics: null,
+      jobId: null,
+      notice: null,
     };
   },
 
@@ -235,7 +320,13 @@ export const quizParty: GameModule<QuizState, QuizSettings> = {
     };
   },
 
-  onPlayerLeave(s: QuizState, p: PlayerRef) {
+  onPlayerLeave(s: QuizState, p: PlayerRef, ctx: GameContext) {
+    // Si c’est à lui de parler, son tour passe tout de suite : la salle n’attend pas le minuteur.
+    if (s.phase === 'topics' && s.topics && turnPlayer(s.topics) === p.id) {
+      const connected = ctx.connectedPlayerIds().filter((id) => id !== p.id);
+      const topics = passTurn(s.topics, ctx.now(), s.settings.topicSeconds, connected);
+      return afterTopicTurn(s, topics, ctx);
+    }
     if (s.phase !== 'ready') return s;
     const players = { ...s.players };
     const points = { ...s.points };
@@ -247,11 +338,13 @@ export const quizParty: GameModule<QuizState, QuizSettings> = {
   start(s: QuizState, ctx: GameContext) {
     if (s.phase !== 'ready') return fail('La partie a déjà commencé');
     if (Object.keys(s.players).length === 0) return fail('Aucun joueur dans la salle');
+    if (s.settings.source === 'players') return ok(openTopics(s, ctx));
     if (s.questions.length === 0) return fail('Aucune question disponible');
     return ok(beginQuestion(s, ctx));
   },
 
   handleAction(s: QuizState, p: PlayerRef, type, payload, ctx: GameContext) {
+    if (type === 'keywords') return handleKeywords(s, p, payload, ctx);
     if (type !== 'answer') return fail('Action inconnue');
     if (s.phase !== 'question') return fail('Aucune question en cours');
     if (!(p.id in s.players)) return fail('Joueur inconnu dans cette partie');
@@ -278,13 +371,48 @@ export const quizParty: GameModule<QuizState, QuizSettings> = {
   onTimer(s: QuizState, key: string, ctx: GameContext) {
     if (key === ANSWER_TIMEOUT && s.phase === 'question') return reveal(s, ctx);
     if (key === REVEAL_NEXT && s.phase === 'reveal') return advance(s, ctx);
+    if (key === TOPIC_TIMEOUT && s.phase === 'topics' && s.topics) {
+      const topics = passTurn(s.topics, ctx.now(), s.settings.topicSeconds, ctx.connectedPlayerIds());
+      return afterTopicTurn(s, topics, ctx);
+    }
     return s;
   },
 
   nextRound(s: QuizState, ctx: GameContext) {
+    if (s.phase === 'topics' && s.topics) {
+      const topics = passTurn(s.topics, ctx.now(), s.settings.topicSeconds, ctx.connectedPlayerIds());
+      return afterTopicTurn(s, topics, ctx);
+    }
     if (s.phase === 'question') return reveal(s, ctx);
     if (s.phase === 'reveal') return advance(s, ctx);
     return s;
+  },
+
+  // Travail demandé à l’IA : les thèmes des joueurs et le nombre de questions.
+  pendingJob(s: QuizState) {
+    if (s.phase !== 'generating' || !s.topics || !s.jobId) return null;
+    const input: QuizThemesInput = {
+      themes: keywordThemes(s.topics, s.players).map(({ name, keywords }) => ({ name, keywords })),
+      count: s.settings.questionCount,
+    };
+    return { id: s.jobId, kind: QUIZ_JOB_KIND, input };
+  },
+
+  runJob: runQuizJob,
+
+  completeJob(s: QuizState, jobId: string, outcome: JobOutcome, ctx: GameContext) {
+    if (s.phase !== 'generating' || s.jobId !== jobId) return s;
+    const generated = outcome.ok && Array.isArray(outcome.value) ? (outcome.value as QuizQuestion[]) : null;
+    if (generated && generated.length > 0) {
+      return beginQuestion({ ...s, questions: generated, index: 0, jobId: null, notice: null }, ctx);
+    }
+    // Pas d’IA configurée, ou réponse inutilisable : le quiz intégré prend le relais, sans bloquer la salle.
+    const notice =
+      outcome.ok && outcome.value === null
+        ? 'IA non configurée : questions intégrées.'
+        : 'L’IA n’a pas pu écrire les questions : questions intégrées.';
+    const questions = pickQuestions(s.settings.questionCount, ctx.random);
+    return beginQuestion({ ...s, questions, index: 0, jobId: null, notice }, ctx);
   },
 
   calculateScores(s: QuizState) {
@@ -303,6 +431,7 @@ export const quizParty: GameModule<QuizState, QuizSettings> = {
     const a = s.answers[playerId];
     const g = s.gains[playerId];
     const rank = rankPlayers(s).find((e) => e.playerId === playerId)?.rank ?? null;
+    const myTurn = s.phase === 'topics' && s.topics !== null && turnPlayer(s.topics) === playerId;
     return {
       points: s.points[playerId] ?? 0,
       rank,
@@ -310,11 +439,16 @@ export const quizParty: GameModule<QuizState, QuizSettings> = {
       myChoice: a ? a.choice : null,
       correct: g ? g.correct : null,
       gained: g ? g.gained : null,
+      myTurn,
     };
   },
 
   getHostState(s: QuizState) {
     const q = currentQuestion(s);
+    if (s.phase === 'topics' && s.topics) {
+      const id = turnPlayer(s.topics);
+      return { pending: id ? [s.players[id] ?? '?'] : [], explanation: null };
+    }
     return {
       pending:
         s.phase === 'question'
@@ -329,10 +463,27 @@ export const quizParty: GameModule<QuizState, QuizSettings> = {
   isFinished(s: QuizState) {
     return s.phase === 'final';
   },
-  suggest(s, playerId, random) {
+
+  suggest(s: QuizState, playerId: string, random: () => number) {
+    if (s.phase === 'topics' && s.topics && turnPlayer(s.topics) === playerId) {
+      const words = BOT_KEYWORDS[Math.floor(random() * BOT_KEYWORDS.length)] ?? BOT_KEYWORDS[0]!;
+      return { type: 'keywords', payload: { words }, key: `topic-${s.topics.turn}` };
+    }
     if (s.phase !== 'question' || s.answers[playerId]) return null;
     const q = s.questions[s.index];
     if (!q) return null;
     return { type: 'answer', payload: { choice: Math.floor(random() * q.choices.length) }, key: `q${s.index}` };
   },
 };
+
+/** Saisie d’un tour de parole : seul le joueur dont c’est le tour peut la proposer. */
+function handleKeywords(s: QuizState, p: PlayerRef, payload: unknown, ctx: GameContext): GameResult<QuizState> {
+  if (s.phase !== 'topics' || !s.topics) return fail('Aucun mot-clé attendu pour le moment');
+  if (turnPlayer(s.topics) !== p.id) return fail('Ce n’est pas votre tour');
+  const parsed = keywordsPayloadSchema.safeParse(payload);
+  if (!parsed.success) return fail('Saisie invalide');
+  const words = parseKeywords(parsed.data.words);
+  if (words.length === 0) return fail('Indiquez au moins un mot-clé');
+  const topics = submitKeywords(s.topics, words, ctx.now(), s.settings.topicSeconds, ctx.connectedPlayerIds());
+  return ok(afterTopicTurn(s, topics, ctx));
+}

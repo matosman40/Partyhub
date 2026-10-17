@@ -8,7 +8,7 @@ avant toute installation.
 
 | Type | Contenu | État |
 |---|---|---|
-| **Déclaratif** | Des données seulement, rendues par le moteur de PartyHub : jeu de cartes, jeu de plateau, jeu de questions (liens YouTube). | **Disponible** : cartes depuis 0.5.0, plateau et questions depuis 0.7.0 (format 2). |
+| **Déclaratif** | Des données seulement, rendues par le moteur de PartyHub : jeu de cartes, jeu de plateau, jeu de questions (liens YouTube), recette (règles d'une famille connue, avec écrans et IA optionnelle). | **Disponible** : cartes depuis 0.5.0, plateau et questions depuis 0.7.0 (format 2), recettes depuis 0.12.0 (format 3). |
 | **JavaScript** | Du code de jeu exécuté dans un bac à sable séparé du serveur. | **Non implémenté.** Prévu dans la feuille de route (`docs/ROADMAP.md`). |
 | **Émulation rétro** | Ressources et code d'une console ou d'un ordinateur ancien. | **Non pris en charge.** Hors périmètre. |
 
@@ -61,12 +61,14 @@ Chaque paquet porte **exactement un module de jeu**, déclaré dans `requires.mo
 |---|---|---|
 | `formatVersion: 1` | `cards` | 0.5.0 et suivantes |
 | `formatVersion: 2` | `cards`, `board`, `quiz` | 0.7.0 et suivantes |
+| `formatVersion: 3` | `recipe` | 0.12.0 et suivantes |
 
 | Module | Définition | Catégorie | Contraintes |
 |---|---|---|---|
 | `cards` | Jeu de cartes (familles, cartes, effets, règles) | cartes | Pas de dos ni de police de la médiathèque. |
 | `board` | Plateau de 8 à 60 cases, dés, règles, effets des cases | plateau | Première case normale, dernière case d'arrivée. Aucune ressource externe. |
 | `quiz` | Extraits à reconnaître, réponses, durée, mode | quiz | Vidéo **YouTube seulement** : identifiant et plage de lecture. Aucun fichier de la médiathèque. |
+| `recipe` | Recette (voir la section suivante) : règles, consignes, écrans, IA facultative | quiz | Format 3. Une recette ne contient aucun code. |
 
 Exemple de manifeste pour un plateau (format 2) :
 
@@ -92,9 +94,63 @@ Les exemples fournis : `examples/exemple-plateau/` et `examples/exemple-quiz/` (
 `examples/exemple-cartes/`. Chaque paquet d'exemple pèse environ 1,4 Ko : un plateau ou une liste de questions tient dans un
 paquet très léger. Le poids d'un paquet vient surtout de ses images : un jeu sans image reste minuscule.
 
-Un identifiant de jeu dépend du module : `pkg-` pour les cartes, `pkgb-` pour les plateaux, `pkgq-` pour les questions. Un
-paquet de plateau et un paquet de cartes ne peuvent donc jamais partager le même identifiant de jeu. Une mise à jour qui
-change le module d'un paquet installé est refusée : il faut un autre identifiant.
+Un identifiant de jeu dépend du module : `pkg-` pour les cartes, `pkgb-` pour les plateaux, `pkgq-` pour les questions,
+`pkgr-` pour les recettes. Un paquet de plateau et un paquet de cartes ne peuvent donc jamais partager le même identifiant de
+jeu. Une mise à jour qui change le module d'un paquet installé est refusée : il faut un autre identifiant.
+
+## Recettes (format 3)
+
+Une recette décrit un jeu avec les règles déjà connues du moteur. Le paquet fournit les textes, les règles, la disposition des
+écrans et, si on le souhaite, des consignes écrites par l'IA. Aujourd'hui, une seule recette existe : `vote-sur-consigne`
+(chacun écrit un mot pour une consigne, puis tout le monde vote pour le plus drôle, sans savoir qui l'a écrit).
+
+Exemple complet : `examples/exemple-recette/` (1,4 Ko). Le manifeste déclare `"formatVersion": 3`, `"requires": { "modules": ["recipe"] }`
+et `"engine": { "minVersion": "0.12.0", "api": 1 }`. La définition, `game/definition.json` :
+
+```json
+{
+  "recipe": "vote-sur-consigne",
+  "name": "Le plus…",
+  "description": "Écrivez le premier mot qui vous vient, puis votez pour le plus drôle.",
+  "icon": "💭",
+  "rules": { "manches": 4, "ecriture": 40, "vote": 25, "pointsParVote": 100, "motMax": 24 },
+  "consignes": ["Le plus susceptible d’oublier son téléphone en vacances", "Le plus bruyant au cinéma"],
+  "ecrans": {
+    "tv": { "ecriture": ["consigne", "minuteur", "attente"] },
+    "joueur": { "ecriture": ["consigne", "saisie-texte", "minuteur"] }
+  }
+}
+```
+
+- **`rules`** : toutes les valeurs sont facultatives. `manches` (1 à 10), `ecriture` et `vote` en secondes, `pointsParVote`
+  (0 à 500), `motMax` (4 à 40 caractères).
+- **`consignes`** : au moins une consigne, 90 caractères au plus chacune, 100 au plus. Pas de doublon, sans tenir compte de la
+  casse. Elles tirent au sort les manches.
+- **`ai`** (facultatif) : `{ "theme": "années 80", "nombre": 6, "consigne": "…" }`. Quand `ai` est déclaré, la partie passe
+  d'abord par une phase de génération. Si un fournisseur d'IA répond, il écrit les consignes sur ce thème ; sinon, ou en cas
+  d'échec, le jeu prend la liste `consignes` et l'écran l'indique. Chaque consigne écrite par l'IA est vérifiée : une consigne
+  trop longue, en double, qui contient une adresse, du balisage ou un terme refusé, est écartée. Sans assez de consignes
+  valides, le repli du paquet sert. Un paquet demande au plus 10 générations par heure ; au-delà, la partie prend ses consignes
+  sans appeler l'IA. Le modèle de consigne peut contenir `{{theme}}` et `{{nombre}}`.
+- **`ecrans`** (facultatif) : la liste des blocs à afficher, dans l'ordre, pour chaque phase qui se personnalise. Sur l'écran
+  principal : `ecriture`, `vote`, `resultat`, `final` ; sur le téléphone : `ecriture`, `vote`, `resultat`. Les phases `pret` et
+  `generation` de l'écran principal, et `pret`, `generation` et `final` du téléphone, ont un écran fixe : les personnaliser
+  fait refuser le paquet. Sans liste, la disposition par défaut sert.
+  Blocs admis : `titre`, `consigne`, `minuteur`, `attente`, `saisie-texte`, `vote`, `resultat`, `classement`. Un bloc ne
+  s'affiche que là où il a un sens (`saisie-texte` seulement sur le téléphone, pendant l'écriture), et un même bloc ne figure
+  qu'une fois par phase. Une autre place fait refuser le paquet, avec le chemin exact du bloc.
+- **`appareils`** (facultatif) : besoins déclarés, `camera`, `micro`, `mouvement`, `vibreur`, `qr`, chacun `requis` ou
+  `facultatif`. Ils sont validés, mais aucune recette actuelle n'utilise d'appareil : ils seront exploités avec les blocs de
+  photo, de son et de capteurs.
+
+La définition est stricte : une clé inconnue fait refuser le paquet, pour qu'une faute de frappe ne soit jamais ignorée en
+silence. Les écrans, les textes et les règles d'une recette sont donc tous décrits dans le paquet ; aucun code n'est exécuté.
+
+**Limites actuelles des recettes** : pas de copie modifiable dans l'administration (une recette reste un paquet) ; les
+consignes de l'IA viennent du thème de l'auteur, pas des mots des joueurs ; pas de script (prévu après revue de sécurité).
+Le filtre des consignes de l'IA repose sur une liste de termes refusés (`packages/games/src/recipes/moderation.ts`) : c'est une
+première version, à relire avant une sortie publique. Les mots tapés par les joueurs ne sont pas filtrés. Aucune classe d'âge
+n'est encore déclarée pour un paquet.
 
 ## Règles de validation
 
@@ -102,19 +158,22 @@ Un paquet est refusé dès qu'une règle n'est pas respectée. Les anomalies du 
 
 - **Archive** : ZIP standard uniquement. Refusés : chiffrement, compression autre que « stockée » ou « deflate », liens
   symboliques, entrées en double, archives multi-volumes, dossiers vides ou répertoires inattendus.
-- **Taille et compression** : 16 Mio au plus pour le fichier, 200 entrées au plus, 4 Mio par fichier, 32 Mio au total,
-  et un taux de compression limité à 100 pour se protéger des archives piégées.
+- **Taille et compression** : 8 Mio au plus pour le fichier, 200 entrées au plus, 4 Mio par fichier, 32 Mio au total,
+  et un taux de compression limité à 100 pour se protéger des archives piégées. Budgets par élément : manifeste 8 Ko,
+  définition 256 Ko, image 200 Ko.
 - **Chemins** : relatifs, sans `..`, sans caractère interdit, quatre niveaux au plus. Seuls les dossiers `game/`, `assets/`,
   `data/` et `licenses/` sont admis, avec leurs extensions.
 - **Manifeste** : JSON strict. Une clé inconnue est une erreur. Identifiant en minuscules, version au format `X.Y.Z`.
+  Un paquet de format 3 demande un moteur 0.12.0 au minimum, et seule une recette peut utiliser ce format.
 - **Empreintes** : chaque fichier de l'archive doit être déclaré, avec la bonne taille et le bon SHA-256. Un fichier
   déclaré mais absent, ou présent mais non déclaré, est refusé.
 - **Moteur** : la version minimale du moteur doit être égale ou inférieure à celle du serveur, et l'API doit être `1`.
 - **Licences** : chaque ressource de `assets/` doit être couverte par une licence ou une attribution listée dans le manifeste.
-- **Images** : la signature doit correspondre à l'extension. Pour les PNG, les côtés ne dépassent pas 2048 px (les JPEG et WebP sont contrôlés sur leur signature seulement).
+- **Images** : la signature doit correspondre à l'extension. Pour les trois formats (PNG, JPEG, WebP), les dimensions sont lues
+  dans l'en-tête et le côté le plus long ne dépasse pas 1024 px ; chaque image pèse 200 Ko au plus.
 - **Définition** : `game/definition.json` est validé avec les mêmes règles que les jeux créés dans l'administration, selon le
   module (cartes, plateau ou questions). Un paquet de questions ne peut référencer que des vidéos YouTube.
-- **Module** : exactement un module par paquet, admis par le format (version 1 : cartes seulement).
+- **Module** : exactement un module par paquet, admis par le format (version 1 : cartes seulement ; version 3 : recettes seulement).
 - **Lancement de contrôle** : avant installation, deux parties complètes sont jouées par des robots. Un jeu qui ne démarre pas,
   qui refuse une action légale, qui reste bloqué ou dont les vues ne se sérialisent pas est refusé.
 
@@ -206,6 +265,9 @@ Le modèle de publication pour un dépôt de jeu est décrit dans [PUBLIER-UN-JE
 
 ## Ce qui n'est pas encore inclus
 
+- Scripts JavaScript dans un paquet : prévus pour la version 1.1, après une revue de sécurité. Les recettes couvrent les
+  jeux de texte et de vote ; les jeux à règles libres restent du code intégré en attendant.
+- Blocs d'écran de capteurs, de photo et de son dans les recettes : ajoutés avec les recettes qui en ont besoin.
 - Cache hors ligne et lancement sans réseau des paquets installés : prévus avec l'application installable (version 0.7.0).
 - Transfert d'un paquet entre téléphones : prévu avec la reprise d'écran (version 0.7.0).
 - Jeux JavaScript dans un bac à sable : prévus dans une version ultérieure (voir la feuille de route).

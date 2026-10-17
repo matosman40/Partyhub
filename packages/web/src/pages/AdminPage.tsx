@@ -51,7 +51,7 @@ interface RoomSummary {
   lastActivity: string;
 }
 
-/** Résume les types d'appareils d'une salle, par exemple « 📱 2 · 💻 1 ». */
+/** Résume les types d’appareils d’une salle, par exemple « 📱 2 · 💻 1 ». */
 function deviceSummary(devices: Record<string, number>): string {
   const parts = Object.entries(devices)
     .filter(([, count]) => count > 0)
@@ -127,7 +127,7 @@ const lines = (text: string) =>
     .map((l) => l.trim())
     .filter((l) => l.length > 0);
 
-/** Notice d'un jeu : but, étapes (une par ligne), astuces. Restauration de la notice d'origine possible. */
+/** Notice d’un jeu : but, étapes (une par ligne), astuces. Restauration de la notice d’origine possible. */
 function NoticeEditor({ game, onSaved }: { game: CatalogGame; onSaved: () => void }) {
   const [goal, setGoal] = useState(game.notice.goal);
   const [steps, setSteps] = useState(game.notice.steps.join('\n'));
@@ -325,7 +325,7 @@ function TestModeForm() {
   );
 }
 
-/** Rubriques du menu de l'administration. Le choix est dans l'adresse (?section=…) : le bouton précédent fonctionne. */
+/** Rubriques du menu de l’administration. Le choix est dans l’adresse (?section=…) : le bouton précédent fonctionne. */
 const ADMIN_CATEGORIES = [
   {
     id: 'salles',

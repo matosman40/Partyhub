@@ -1,4 +1,4 @@
-import { createBoardGame, createCardGame, createMediaGame } from '@partyhub/games';
+import { createBoardGame, createCardGame, createMediaGame, createRecipeGame } from '@partyhub/games';
 import type { GameModule } from '@partyhub/shared';
 import { packageGameId, type ValidatedPackage } from './format.js';
 
@@ -12,5 +12,7 @@ export function createPackageGame(pkg: ValidatedPackage): GameModule {
       return createBoardGame(pkg.definition, { id });
     case 'quiz':
       return createMediaGame(pkg.definition, { id });
+    case 'recipe':
+      return createRecipeGame(pkg.definition, { id });
   }
 }

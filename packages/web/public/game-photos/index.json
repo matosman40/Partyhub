@@ -1,0 +1,107 @@
+{
+  "generatedAt": "2026-10-17T12:30:52+00:00",
+  "games": {
+    "association": [
+      "lobby.jpg",
+      "partie.jpg"
+    ],
+    "aventure-ia": [
+      "lobby.jpg",
+      "partie.jpg"
+    ],
+    "banquise": [
+      "lobby.jpg",
+      "partie.jpg"
+    ],
+    "bombes-party": [
+      "lobby.jpg",
+      "partie.jpg"
+    ],
+    "boum": [
+      "lobby.jpg",
+      "partie.jpg"
+    ],
+    "cartes-coco": [
+      "lobby.jpg",
+      "partie.jpg"
+    ],
+    "cartes-couleurs": [
+      "lobby.jpg",
+      "partie.jpg"
+    ],
+    "funambule": [
+      "lobby.jpg",
+      "partie.jpg"
+    ],
+    "imite-moi": [
+      "lobby.jpg",
+      "partie.jpg"
+    ],
+    "imposteur": [
+      "lobby.jpg",
+      "partie.jpg"
+    ],
+    "loups-village": [
+      "lobby.jpg"
+    ],
+    "micro-defis": [
+      "lobby.jpg",
+      "partie.jpg"
+    ],
+    "mots-croises": [
+      "lobby.jpg",
+      "partie.jpg"
+    ],
+    "phrases-trous": [
+      "lobby.jpg",
+      "partie.jpg"
+    ],
+    "plus-ou-moins": [
+      "lobby.jpg",
+      "partie.jpg"
+    ],
+    "plutot-qui": [
+      "lobby.jpg",
+      "partie.jpg"
+    ],
+    "poker-texas": [
+      "lobby.jpg",
+      "partie.jpg"
+    ],
+    "president": [
+      "lobby.jpg",
+      "partie.jpg"
+    ],
+    "promoteur": [
+      "lobby.jpg",
+      "partie.jpg"
+    ],
+    "quiz-party": [
+      "lobby.jpg",
+      "partie.jpg"
+    ],
+    "rami-51": [
+      "lobby.jpg",
+      "partie.jpg"
+    ],
+    "reflexe": [
+      "lobby.jpg",
+      "partie.jpg"
+    ],
+    "solitaire": [
+      "lobby.jpg",
+      "partie.jpg"
+    ],
+    "sudoku": [
+      "lobby.jpg",
+      "partie.jpg"
+    ],
+    "taquin": [
+      "lobby.jpg",
+      "partie.jpg"
+    ],
+    "tarot": [
+      "lobby.jpg"
+    ]
+  }
+}

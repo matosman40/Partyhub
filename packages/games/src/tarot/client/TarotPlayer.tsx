@@ -46,7 +46,7 @@ export function TarotPlayer({ publicState, playerState, playerId, now, send }: P
     setPicked(phase === 'play' && me?.isMyTurn && me.playable.length === 1 ? me.playable[0]! : null);
   }, [phase, pub?.dealCount, pub?.trickCount, pub?.trick.length, pub?.current, me?.isMyTurn]);
 
-  // Sons, vibration et trajets : déclenchés par les changements d'état (avant les retours anticipés).
+  // Sons, vibration et trajets : déclenchés par les changements d’état (avant les retours anticipés).
   useChange(myTurn, (_, mine) => {
     if (mine) cueTurn();
   });
@@ -226,7 +226,7 @@ export function TarotPlayer({ publicState, playerState, playerId, now, send }: P
 
           {pub.phase === 'play' && (
             <div className="table-mat tarot-phone-trick">
-              <div className="tarot-strip" aria-label="Pli en cours">
+              <div className="tarot-strip" role="group" aria-label="Pli en cours">
                 {pub.order.map((id) => {
                   const card = pub.trick.find((p) => p.playerId === id)?.cardId;
                   return (

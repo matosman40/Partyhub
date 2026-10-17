@@ -103,7 +103,7 @@ export function CrosswordView({ board, disabled, send }: SoloBoardProps) {
       <div
         className="solo-crossword-grid"
         style={{ gridTemplateColumns: `repeat(${view.cols}, minmax(0, 1fr))` }}
-        role="grid"
+        role="group"
         aria-label="Grille de mots croisés"
       >
         {view.black.map((isBlack, i) =>

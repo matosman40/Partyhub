@@ -183,7 +183,7 @@ describe('Poker : déroulé d’une donne', () => {
   it('refuse une action hors de son tour', () => {
     const { s0, env } = setup();
     const r = pokerTexas.handleAction(s0, { id: 'p2', name: 'Tom' }, 'check', undefined, env.ctx);
-    expect(r).toEqual({ ok: false, error: "Ce n'est pas votre tour." });
+    expect(r).toEqual({ ok: false, error: 'Ce n’est pas votre tour.' });
   });
 
   it('une relance doit être au moins égale à la relance minimale', () => {

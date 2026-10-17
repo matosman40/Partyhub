@@ -7,14 +7,14 @@ const PRESET_FAMILIES: Record<CardFontPreset, string> = {
   titre: 'Luckiest Guy',
 };
 
-/** Pile de polices d'une police livrée avec l'application, prête pour un style CSS. */
+/** Pile de polices d’une police livrée avec l’application, prête pour un style CSS. */
 export function presetFontFamily(preset: CardFontPreset): string {
   return `"${PRESET_FAMILIES[preset]}", sans-serif`;
 }
 
 /**
  * Police de la médiathèque, chargée une seule fois par identifiant. Retourne le nom de famille
- * CSS à utiliser. L'identifiant vient du serveur et ne contient que des caractères hexadécimaux.
+ * CSS à utiliser. L’identifiant vient du serveur et ne contient que des caractères hexadécimaux.
  */
 export function assetFontFamily(assetId: string): string {
   const family = `ph-font-${assetId}`;

@@ -37,9 +37,9 @@ import {
 
 /**
  * Tarot à quatre. Chaque donne : distribution (18 cartes chacun, 6 au chien), un seul
- * tour d'enchères, écart du preneur (Petite et Garde), puis 18 plis. Le preneur joue
+ * tour d’enchères, écart du preneur (Petite et Garde), puis 18 plis. Le preneur joue
  * seul contre les trois autres ; la marque est à somme nulle (le preneur marque trois
- * fois ce que perd chaque défenseur). La partie s'arrête après le nombre de donnes
+ * fois ce que perd chaque défenseur). La partie s’arrête après le nombre de donnes
  * prévu ; une donne annulée (Petit sec, tout le monde passe) ne compte pas.
  */
 
@@ -54,29 +54,29 @@ export interface TarotBid {
 }
 
 export interface TarotTrick {
-  /** Cartes dans l'ordre de jeu. */
+  /** Cartes dans l’ordre de jeu. */
   cards: PlayedCard[];
   winner: string;
 }
 
-/** Bilan d'une donne, affiché à tous à la fin de la donne. */
+/** Bilan d’une donne, affiché à tous à la fin de la donne. */
 export interface TarotSummary extends DealScore {
   round: number;
   taker: string;
   contract: Contract;
   petitAuBout: Side | null;
-  /** Échange de l'Excuse, en demi-points ajoutés au preneur. */
+  /** Échange de l’Excuse, en demi-points ajoutés au preneur. */
   excuseTransfer: number;
   tricks: Record<Side, number>;
   deltas: Record<string, number>;
-  /** Le chien d'origine, montré à tous à la fin de la donne. */
+  /** Le chien d’origine, montré à tous à la fin de la donne. */
   chien: string[];
 }
 
 export interface TarotState {
   started: boolean;
   settings: TarotSettings;
-  /** Les quatre joueurs, dans l'ordre de jeu. */
+  /** Les quatre joueurs, dans l’ordre de jeu. */
   order: string[];
   names: Record<string, string>;
   scores: Record<string, number>;
@@ -87,7 +87,7 @@ export interface TarotState {
   dealCount: number;
   dealer: string | null;
   hands: Record<string, string[]>;
-  /** Chien d'origine (il reste ici même après avoir été pris ou mis de côté). */
+  /** Chien d’origine (il reste ici même après avoir été pris ou mis de côté). */
   chien: string[];
   bids: TarotBid[];
   /** Joueur qui doit agir (enchère, écart ou carte). */
@@ -96,9 +96,9 @@ export interface TarotState {
   contract: Contract | null;
   /** Écart du preneur (privé : seuls ses atouts sont montrés). */
   ecart: string[];
-  /** Atouts mis à l'écart : ils sont montrés à tous. */
+  /** Atouts mis à l’écart : ils sont montrés à tous. */
   ecartAtouts: string[];
-  /** Cartes des plis terminés, dans l'ordre (information publique, utile aux robots). */
+  /** Cartes des plis terminés, dans l’ordre (information publique, utile aux robots). */
   played: string[];
   trick: PlayedCard[];
   /** Joueur qui a entamé le pli en cours. */
@@ -125,7 +125,7 @@ export type TarotSettings = z.infer<typeof tarotSettingsSchema>;
 const TURN = 'turn';
 const NEXT_ROUND = 'next-round';
 const NEXT_ROUND_MS = 12000;
-/** L'écart (6 cartes parmi 24) dispose d'un temps double. */
+/** L’écart (6 cartes parmi 24) dispose d’un temps double. */
 const ECART_FACTOR = 2;
 
 const cardId = z.string().min(1).max(12);
@@ -177,7 +177,7 @@ function stopTurn(s: TarotState, ctx: GameContext): void {
   s.turnEndsAt = null;
 }
 
-/** Mélange et distribue. Renvoie le joueur qui a le Petit sec, s'il y en a un. */
+/** Mélange et distribue. Renvoie le joueur qui a le Petit sec, s’il y en a un. */
 function distribute(s: TarotState, ctx: GameContext): string | null {
   const deck = shuffle(TAROT_DECK, ctx.random);
   s.hands = {};
@@ -189,7 +189,7 @@ function distribute(s: TarotState, ctx: GameContext): string | null {
   return s.order.find((id) => hasPetitSec(s.hands[id]!)) ?? null;
 }
 
-/** Nouvelle distribution par `dealer`. `reason` explique l'annulation de la donne précédente. */
+/** Nouvelle distribution par `dealer`. `reason` explique l’annulation de la donne précédente. */
 function startDeal(s: TarotState, ctx: GameContext, dealer: string, reason = ''): void {
   ctx.cancel(NEXT_ROUND);
   s.dealer = dealer;
@@ -266,7 +266,7 @@ function applyBid(s: TarotState, pid: string, contract: Contract | null, ctx: Ga
     : `${prefix}${who(s, pid)} passe.`;
   while (s.bids.length < PLAYERS) {
     const next = nextPlayer(s, s.bids[s.bids.length - 1]!.playerId);
-    // Après une Garde contre, plus personne ne peut monter : les joueurs restants passent d'office.
+    // Après une Garde contre, plus personne ne peut monter : les joueurs restants passent d’office.
     if (contractsAbove(highestBid(s)?.contract ?? null).length === 0) {
       s.bids.push({ playerId: next, contract: null });
       continue;
@@ -299,7 +299,7 @@ function applyPlay(s: TarotState, pid: string, card: string, ctx: GameContext, p
   resolveTrick(s, ctx, played);
 }
 
-/** Pli complet : le gagnant ramasse (sauf l'Excuse, qui reste à son camp avant le dernier pli). */
+/** Pli complet : le gagnant ramasse (sauf l’Excuse, qui reste à son camp avant le dernier pli). */
 function resolveTrick(s: TarotState, ctx: GameContext, played: string): void {
   const cards = s.trick.map((p) => p.cardId);
   const winner = s.trick[trickWinner(cards)]!.playerId;
@@ -310,7 +310,7 @@ function resolveTrick(s: TarotState, ctx: GameContext, played: string): void {
     if (p.cardId === EXCUSE && !last) {
       const owner = sideOf(s, p.playerId);
       s.piles[owner].push(EXCUSE);
-      // Le camp de l'Excuse cède un demi-point au camp qui a gagné le pli.
+      // Le camp de l’Excuse cède un demi-point au camp qui a gagné le pli.
       if (owner !== side) s.excuseTransfer += owner === 'attack' ? -1 : 1;
     } else {
       s.piles[side].push(p.cardId);
@@ -370,7 +370,7 @@ function endDeal(s: TarotState, ctx: GameContext): void {
   }
 }
 
-/** Carte jouée d'office (temps écoulé) : la plus petite carte permise. */
+/** Carte jouée d’office (temps écoulé) : la plus petite carte permise. */
 function lowestLegal(s: TarotState, id: string): string {
   return [
     ...legalCards(
@@ -380,7 +380,7 @@ function lowestLegal(s: TarotState, id: string): string {
   ].sort(byLowValue)[0]!;
 }
 
-/** Action automatique du joueur dont c'est le tour : passe, écart des plus faibles cartes ou plus petite carte permise. */
+/** Action automatique du joueur dont c’est le tour : passe, écart des plus faibles cartes ou plus petite carte permise. */
 function autoMove(state: TarotState, ctx: GameContext, prefix: string): TarotState {
   if (!state.started || !state.turn) return state;
   const s = structuredClone(state);
@@ -537,7 +537,7 @@ export function createTarotGame(): GameModule<TarotState, TarotSettings> {
     return autoMove(state, ctx, 'Temps écoulé : ');
   }
 
-  /** Étape suivante (hôte) : lance la donne suivante après un bilan. Ne joue jamais à la place de quelqu'un. */
+  /** Étape suivante (hôte) : lance la donne suivante après un bilan. Ne joue jamais à la place de quelqu’un. */
   function nextRound(state: TarotState, ctx: GameContext): TarotState {
     return startNextRound(state, ctx);
   }
@@ -561,7 +561,7 @@ export function createTarotGame(): GameModule<TarotState, TarotSettings> {
 
   function getPublicState(state: TarotState) {
     const active = state.phase === 'bidding' || state.phase === 'ecart' || state.phase === 'play';
-    // Le chien n'est montré que pendant l'écart (Petite et Garde) et à la fin de la donne.
+    // Le chien n’est montré que pendant l’écart (Petite et Garde) et à la fin de la donne.
     const dealDone = state.summary !== null && state.summary.round === state.round;
     return {
       phase: state.phase,
@@ -630,7 +630,7 @@ export function createTarotGame(): GameModule<TarotState, TarotSettings> {
     }
     if (state.phase === 'ecart') return { type: 'ecart', payload: { cardIds: botEcart(hand) }, key };
     if (state.phase === 'play') {
-      // Le robot ne voit que ce qu'un joueur voit : plis joués, son écart s'il est preneur, sinon les atouts écartés.
+      // Le robot ne voit que ce qu’un joueur voit : plis joués, son écart s’il est preneur, sinon les atouts écartés.
       const seen = [...state.played, ...(playerId === state.taker ? state.ecart : state.ecartAtouts)];
       const cardId = botPlay({ hand, trick: state.trick, me: playerId, taker: state.taker, order: state.order, seen });
       return { type: 'play', payload: { cardId }, key };

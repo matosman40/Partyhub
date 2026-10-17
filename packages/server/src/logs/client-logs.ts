@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { Logger } from '../logger.js';
 
-/** Format d'une erreur envoyée par le navigateur. Tout champ est borné : rien ne peut gonfler le journal. */
+/** Format d’une erreur envoyée par le navigateur. Tout champ est borné : rien ne peut gonfler le journal. */
 const extraValue = z.union([z.string().max(300), z.number(), z.boolean(), z.null()]);
 
 export const clientEntrySchema = z.object({
@@ -50,7 +50,7 @@ export class BatchLimiter {
 
 /**
  * Écrit les erreurs du navigateur dans le même journal que le serveur, avec `source: "client"`.
- * `ip` sert au diagnostic ; aucun contenu de réponse, jeton ou mot de passe n'est attendu ici.
+ * `ip` sert au diagnostic ; aucun contenu de réponse, jeton ou mot de passe n’est attendu ici.
  */
 export function recordClientEntries(logger: Logger, entries: ClientEntry[], ip: string): void {
   for (const entry of entries) {

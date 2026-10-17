@@ -1,5 +1,5 @@
 /**
- * Rôles des Loups du village : définitions pures, partagées avec l'affichage.
+ * Rôles des Loups du village : définitions pures, partagées avec l’affichage.
  */
 
 export type Role = 'villageois' | 'loup' | 'voyante' | 'gardienne';

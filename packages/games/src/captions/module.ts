@@ -12,10 +12,10 @@ import { directory, everyConnectedDone, fail, ok, rankEntries, shuffle } from '.
 import { hostMediaOf } from '../media-quiz/host-media.js';
 
 /**
- * Sous-titres (« use your word ») : l'écran principal joue une scène en langue étrangère.
- * Chacun écrit la réplique qu'il imagine, puis tout le monde vote, sans savoir qui a écrit
- * quoi. Chaque vote reçu rapporte des points à l'auteur. La traduction de référence,
- * si l'administrateur l'a fournie, est révélée à la fin.
+ * Sous-titres (« use your word ») : l’écran principal joue une scène en langue étrangère.
+ * Chacun écrit la réplique qu’il imagine, puis tout le monde vote, sans savoir qui a écrit
+ * quoi. Chaque vote reçu rapporte des points à l’auteur. La traduction de référence,
+ * si l’administrateur l’a fournie, est révélée à la fin.
  */
 
 export const captionSettingsSchema = z.object({
@@ -44,7 +44,7 @@ export interface CaptionState {
   icon: string;
   kind: MediaKind;
   settings: CaptionSettings;
-  /** Scènes tirées pour cette partie, dans l'ordre de jeu. */
+  /** Scènes tirées pour cette partie, dans l’ordre de jeu. */
   questions: MediaItem[];
   phase: CaptionPhase;
   index: number;
@@ -53,9 +53,9 @@ export interface CaptionState {
   points: Record<string, number>;
   /** auteur -> réplique écrite pendant la scène en cours. */
   captions: Record<string, string>;
-  /** Auteurs dans l'ordre d'affichage anonyme. */
+  /** Auteurs dans l’ordre d’affichage anonyme. */
   options: string[];
-  /** votant -> index de l'option choisie. */
+  /** votant -> index de l’option choisie. */
   votes: Record<string, number>;
   /** Points gagnés pendant la scène, révélés à la fin du vote. */
   gains: Record<string, number>;
@@ -184,7 +184,7 @@ function publicView(s: CaptionState) {
   return { ...base, endsAt: s.endsAt, results, answer: q.answer };
 }
 
-/** Vue de l'écran principal : le média et la liste des joueurs qu'on attend. */
+/** Vue de l’écran principal : le média et la liste des joueurs qu’on attend. */
 function hostView(s: CaptionState) {
   const q = scene(s);
   const pending =
@@ -217,7 +217,7 @@ function noticeFor() {
   };
 }
 
-/** Crée un jeu de sous-titres à partir d'une définition de médias en mode « sous-titres ». */
+/** Crée un jeu de sous-titres à partir d’une définition de médias en mode « sous-titres ». */
 export function createCaptionGame(
   definition: MediaQuizDefinition,
   options: { id: string },

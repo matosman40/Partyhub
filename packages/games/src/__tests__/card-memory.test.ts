@@ -136,7 +136,7 @@ describe('Mémo : déroulement des tours', () => {
     const { mod, env, state: s0 } = setup();
     const [a1] = uidsOf(s0, 'a');
     const notMine = mod.handleAction(s0, { id: 'p2', name: 'Tom' }, 'flip', { cardId: a1 }, env.ctx);
-    expect(notMine).toEqual({ ok: false, error: "Ce n'est pas votre tour." });
+    expect(notMine).toEqual({ ok: false, error: 'Ce n’est pas votre tour.' });
 
     const s1 = act(mod, s0, 'p1', a1!, env.ctx);
     const twice = mod.handleAction(s1, { id: 'p1', name: 'Léa' }, 'flip', { cardId: a1 }, env.ctx);

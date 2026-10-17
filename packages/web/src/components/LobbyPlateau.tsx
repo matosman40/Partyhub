@@ -25,13 +25,13 @@ export function LobbyPlateau({
   label,
 }: {
   players: PublicPlayer[];
-  /** Pose de chaque personnage, par identifiant (émotions et saluts d'arrivée). */
+  /** Pose de chaque personnage, par identifiant (émotions et saluts d’arrivée). */
   poses: Record<string, CharacterMood>;
   /** Émotions en bulle, par identifiant. */
   emotes: Record<string, LobbyEmote>;
   /** Dernières places diffusées (plus fraîches que la vue de la salle), par identifiant. */
   positions?: Record<string, LobbyPosition>;
-  /** Identifiant du joueur de cet appareil (absent sur l'écran principal). */
+  /** Identifiant du joueur de cet appareil (absent sur l’écran principal). */
   me?: string;
   onMove?: (position: LobbyPosition) => void;
   label: string;
@@ -81,7 +81,7 @@ export function LobbyHeads({
   /** Identifiant du joueur de cet appareil. */
   me?: string;
   emotes: Record<string, LobbyEmote>;
-  /** Grand sur l'écran principal : les visages doivent se lire de loin. */
+  /** Grand sur l’écran principal : les visages doivent se lire de loin. */
   size?: 'md' | 'lg';
 }) {
   if (players.length === 0) {
@@ -126,7 +126,7 @@ export function LobbyHeads({
 }
 
 /**
- * Boutons d'émotion : une attitude (le corps bouge) ou un visage (l'expression change), pendant quelques
+ * Boutons d’émotion : une attitude (le corps bouge) ou un visage (l’expression change), pendant quelques
  * secondes, pour toute la salle. Le visage habituel revient ensuite.
  */
 export function LobbyMoodBar({ onPick }: { onPick: (choice: LobbyMoodChoice) => void }) {

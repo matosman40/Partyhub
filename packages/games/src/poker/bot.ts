@@ -1,8 +1,8 @@
 import { evaluateHand, type PokerCard } from './rules.js';
 
 /**
- * Force d'une main entre 0 et 1, pour les robots. Avant le flop, elle vient des deux cartes privées ; après,
- * de la meilleure combinaison, pondérée par la catégorie (une paire vaut plus qu'une carte haute, etc.).
+ * Force d’une main entre 0 et 1, pour les robots. Avant le flop, elle vient des deux cartes privées ; après,
+ * de la meilleure combinaison, pondérée par la catégorie (une paire vaut plus qu’une carte haute, etc.).
  */
 
 /** Force de base par catégorie (carte haute à quinte flush). */

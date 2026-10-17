@@ -31,14 +31,14 @@ import {
 /**
  * Rami 51 (deux jeux de 52 cartes et 4 jokers, 2 à 5 joueurs). À son tour, on pioche
  * (pioche ou dessus de la défausse), on pose éventuellement, puis on défausse. Pour
- * ouvrir, on pose d'un coup au moins `openingPoints` points dont une tierce franche.
- * La manche s'arrête quand un joueur défausse sa dernière carte ; les autres marquent
+ * ouvrir, on pose d’un coup au moins `openingPoints` points dont une tierce franche.
+ * La manche s’arrête quand un joueur défausse sa dernière carte ; les autres marquent
  * leurs cartes en main (doublées en cas de rami sec). Le plus petit total gagne quand
  * un total atteint `targetScore`.
  *
  * Deux photos du tour sont gardées : au début du tour et juste après la pioche.
  * « Annuler » revient à la seconde (ou à la première si la carte venait de la défausse
- * et que rien n'a été posé) ; le temps écoulé s'en sert aussi.
+ * et que rien n’a été posé) ; le temps écoulé s’en sert aussi.
  */
 
 const TURN = 'turn';
@@ -87,13 +87,13 @@ export interface RamiState {
   round: number;
   /** Donneur de la manche (index dans `order`). */
   dealer: number;
-  /** Joueur dont c'est le tour (index dans `order`). */
+  /** Joueur dont c’est le tour (index dans `order`). */
   turn: number;
-  /** Pioche faite ce tour, et d'où. */
+  /** Pioche faite ce tour, et d’où. */
   drawn: DrawSource | null;
   /** Cartes à poser sur la table avant de défausser (prise de la défausse, joker récupéré). */
   mustUse: string[];
-  /** Le joueur a ouvert pendant ce tour (rami sec s'il finit). */
+  /** Le joueur a ouvert pendant ce tour (rami sec s’il finit). */
   openedThisTurn: boolean;
   /** Poses faites depuis la pioche. */
   tableActions: number;
@@ -106,7 +106,7 @@ export interface RamiState {
   result: RamiRoundResult | null;
   lastEvent: string;
   turnEndsAt: number | null;
-  /** Compteur d'actions : change à chaque coup (clé des décisions des robots). */
+  /** Compteur d’actions : change à chaque coup (clé des décisions des robots). */
   seq: number;
 }
 
@@ -195,7 +195,7 @@ function beginTurn(s: RamiState, index: number, ctx: GameContext): void {
   armTimer(s, ctx);
 }
 
-/** Pioche vide : la défausse, sauf sa carte du dessus, est mélangée. Faux si c'est impossible. */
+/** Pioche vide : la défausse, sauf sa carte du dessus, est mélangée. Faux si c’est impossible. */
 function refillDraw(s: RamiState, ctx: GameContext): boolean {
   if (s.draw.length > 0) return true;
   if (s.discard.length < 2) return false;
@@ -235,7 +235,7 @@ function dealRound(s: RamiState, ctx: GameContext): void {
   beginTurn(s, first, ctx);
 }
 
-/** Joueur au plus petit total (premier dans l'ordre en cas d'égalité). */
+/** Joueur au plus petit total (premier dans l’ordre en cas d’égalité). */
 function leader(s: RamiState): string {
   return s.order.reduce((best, id) => ((s.scores[id] ?? 0) < (s.scores[best] ?? 0) ? id : best), s.order[0]!);
 }
@@ -293,7 +293,7 @@ function finishTurn(s: RamiState, ctx: GameContext): void {
   beginTurn(s, (s.turn + 1) % s.order.length, ctx);
 }
 
-/** Cartes de la main désignées par leurs identifiants, ou un message d'erreur. */
+/** Cartes de la main désignées par leurs identifiants, ou un message d’erreur. */
 function pickFromHand(hand: RamiCard[], ids: readonly string[]): RamiCard[] | string {
   if (new Set(ids).size !== ids.length) return 'Une carte est choisie deux fois.';
   const cards: RamiCard[] = [];
@@ -321,7 +321,7 @@ function addMeld(s: RamiState, pid: string, kind: Meld['kind'], cards: MeldCard[
   return meld;
 }
 
-/** Message d'obligation non remplie avant la défausse, ou null. */
+/** Message d’obligation non remplie avant la défausse, ou null. */
 function pendingObligation(s: RamiState, pid: string): string | null {
   if (s.mustUse.length === 0) return null;
   const hand = s.hands[pid] ?? [];
@@ -331,7 +331,7 @@ function pendingObligation(s: RamiState, pid: string): string | null {
   return `Posez d’abord ${the(first)} pris dans la défausse.`;
 }
 
-/** Applique une action du joueur dont c'est le tour. Renvoie un message d'erreur ou null. */
+/** Applique une action du joueur dont c’est le tour. Renvoie un message d’erreur ou null. */
 function apply(s: RamiState, pid: string, type: string, payload: unknown, ctx: GameContext): string | null {
   const name = who(s, pid);
   const hand = s.hands[pid] ?? [];
@@ -482,7 +482,7 @@ function apply(s: RamiState, pid: string, type: string, payload: unknown, ctx: G
   return 'Action inconnue.';
 }
 
-/** Carte la plus chère de la main, hors joker (le joker seulement s'il ne reste que lui). */
+/** Carte la plus chère de la main, hors joker (le joker seulement s’il ne reste que lui). */
 function highestCard(hand: readonly RamiCard[]): RamiCard | undefined {
   let best: RamiCard | undefined;
   for (const card of hand) {
@@ -678,7 +678,7 @@ export function createRamiGame(): GameModule<RamiState, RamiSettings> {
       scores: state.scores,
       dealer: state.started ? (state.order[state.dealer] ?? null) : null,
       current: playing ? currentId(state) : null,
-      /** Le joueur dont c'est le tour a pioché (et d'où) : visible de tous à la table. */
+      /** Le joueur dont c’est le tour a pioché (et d’où) : visible de tous à la table. */
       drawn: playing ? state.drawn : null,
       counts: Object.fromEntries(state.order.map((id) => [id, state.hands[id]?.length ?? 0])),
       opened: Object.fromEntries(state.order.map((id) => [id, !!state.opened[id]])),
@@ -688,7 +688,7 @@ export function createRamiGame(): GameModule<RamiState, RamiSettings> {
       drawCount: state.draw.length,
       roundWinner: state.roundWinner,
       ramiSec: state.ramiSec,
-      // Les mains ne sont révélées qu'en fin de manche.
+      // Les mains ne sont révélées qu’en fin de manche.
       result: state.phase !== 'play' ? state.result : null,
       lastEvent: state.lastEvent,
       turnEndsAt: state.turnEndsAt,

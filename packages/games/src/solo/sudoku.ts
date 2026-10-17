@@ -12,7 +12,7 @@ import type { SoloEngine } from './engine.js';
 export const DIFFICULTY = ['facile', 'moyen', 'difficile'] as const;
 export type Difficulty = (typeof DIFFICULTY)[number];
 
-/** Nombre d'indices (cases données au départ) selon la difficulté. */
+/** Nombre d’indices (cases données au départ) selon la difficulté. */
 const GIVENS: Record<Difficulty, number> = { facile: 40, moyen: 32, difficile: 26 };
 
 export interface SudokuBoard {
@@ -48,7 +48,7 @@ function canPlace(grid: number[], i: number, v: number): boolean {
   return PEERS[i]!.every((j) => grid[j] !== v);
 }
 
-/** Nombre de solutions, arrêté à `limit` (suffit pour vérifier l'unicité). */
+/** Nombre de solutions, arrêté à `limit` (suffit pour vérifier l’unicité). */
 export function countSolutions(grid: number[], limit = 2): number {
   const g = [...grid];
   let found = 0;

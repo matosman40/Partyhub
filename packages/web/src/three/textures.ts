@@ -140,7 +140,7 @@ export function tileTexture(tile: TilePub, owner: PlayerPub | undefined, pending
   return texture(c);
 }
 
-/** Face d'un dé : fond clair et points noirs, disposition classique. */
+/** Face d’un dé : fond clair et points noirs, disposition classique. */
 export function dieFaceTexture(value: number): THREE.CanvasTexture {
   const S = 256;
   const [c, ctx] = canvas(S);
@@ -189,7 +189,7 @@ export function dieFaceTexture(value: number): THREE.CanvasTexture {
   return texture(c);
 }
 
-/** Pion : photo recadrée en cercle si elle est autorisée, sinon l'emoji sur sa teinte. */
+/** Pion : photo recadrée en cercle si elle est autorisée, sinon l’emoji sur sa teinte. */
 export function avatarTexture(avatar: AvatarData, name: string): THREE.CanvasTexture {
   const S = 256;
   const [c, ctx] = canvas(S);

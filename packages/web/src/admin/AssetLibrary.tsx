@@ -25,7 +25,7 @@ const KIND_LABEL: Record<AssetRecord['kind'], string> = {
   font: 'Police',
 };
 
-/** Type de fichier déduit du type MIME ou de l'extension (le serveur contrôle le contenu réel). */
+/** Type de fichier déduit du type MIME ou de l’extension (le serveur contrôle le contenu réel). */
 function kindOf(file: File): AssetRecord['kind'] {
   if (file.type.startsWith('audio/')) return 'audio';
   if (file.type.startsWith('image/')) return 'image';
@@ -63,7 +63,7 @@ export function AssetLibrary({ onChanged }: { onChanged?: () => void }) {
 
   async function upload(file: File) {
     setError(null);
-    // Contrôle indicatif avant envoi, d'après le type déclaré. Le serveur reste seul juge.
+    // Contrôle indicatif avant envoi, d’après le type déclaré. Le serveur reste seul juge.
     const kind = kindOf(file);
     const limitBytes = limits?.[kind];
     if (limitBytes !== undefined && file.size > limitBytes) {

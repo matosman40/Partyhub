@@ -3,7 +3,7 @@ import type { BankType, Level } from './bank/types.js';
 
 /**
  * Tirage des manches de BOUM ! : éligibilité (salle, pack, banques), absence de répétition tant
- * que le pool n'est pas épuisé, et variété des familles. Pur : le hasard est injecté.
+ * que le pool n’est pas épuisé, et variété des familles. Pur : le hasard est injecté.
  */
 
 export interface RoomRules {
@@ -14,7 +14,7 @@ export interface RoomRules {
   corse: boolean;
 }
 
-/** Niveaux d'entrées utilisables dans une salle. `limite` n'existe que avec le pack. */
+/** Niveaux d’entrées utilisables dans une salle. `limite` n’existe que avec le pack. */
 export function allowedLevels(rules: RoomRules): Level[] {
   const levels: Level[] = ['doux'];
   if (rules.corse) levels.push('corse');
@@ -22,7 +22,7 @@ export function allowedLevels(rules: RoomRules): Level[] {
   return levels;
 }
 
-/** Nombre d'entrées validées d'un type, aux niveaux donnés. */
+/** Nombre d’entrées validées d’un type, aux niveaux donnés. */
 export type CountValid = (type: BankType, levels: readonly Level[]) => number;
 
 /** Modes tirables dans cette salle, avec leur banque suffisante. */
@@ -41,8 +41,8 @@ export function familiesOf(modes: readonly ModeDef[]): Set<Family> {
 }
 
 /**
- * Tire les modes d'une partie. Règles, dans l'ordre de priorité :
- * 1. pas de répétition tant que le pool éligible n'est pas épuisé (il se recharge ensuite) ;
+ * Tire les modes d’une partie. Règles, dans l’ordre de priorité :
+ * 1. pas de répétition tant que le pool éligible n’est pas épuisé (il se recharge ensuite) ;
  * 2. pas deux modes de la même famille de suite ;
  * 3. préférer une famille pas encore jouée.
  * Quand le pool ne contient pas assez de familles (phase 1 : texte et cartes seulement), les règles 2

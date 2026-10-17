@@ -14,7 +14,7 @@ export function PresidentHost({ publicState, now }: HostViewProps) {
   const remaining = useRemaining(pub?.turnEndsAt ?? undefined, now);
   const rootRef = useRef<HTMLElement>(null);
 
-  // Sons et trajets : déclenchés par les changements d'état, avant les retours anticipés.
+  // Sons et trajets : déclenchés par les changements d’état, avant les retours anticipés.
   useChange(pub?.started ?? false, (_, started) => {
     if (started) play('start');
   });
@@ -96,7 +96,7 @@ export function PresidentHost({ publicState, now }: HostViewProps) {
 
       <div className="pres-table table-mat">
         {pile.length > 0 ? (
-          <div className="pres-pile" aria-label={`Pli : ${pub.pileCount} carte(s)`}>
+          <div className="pres-pile" role="img" aria-label={`Pli : ${pub.pileCount} carte(s)`}>
             {pile.map((c, i) => (
               <div
                 key={c.uid}

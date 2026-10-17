@@ -2,7 +2,7 @@ import type { CardEntry, CardFamily, CardGameDefinition } from '@partyhub/shared
 
 /**
  * Jeux de cartes intégrés, décrits comme des données. Ils empruntent le même
- * moteur et le même rendu que les jeux créés dans l'administration : ils
+ * moteur et le même rendu que les jeux créés dans l’administration : ils
  * servent aussi de modèles à dupliquer.
  */
 
@@ -47,7 +47,7 @@ const couleursCards: CardEntry[] = [
 export const cartesCouleurs: CardGameDefinition = {
   name: 'Couleurs & chiffres',
   description: 'Le classique : suivez la couleur ou le chiffre, et videz votre main le premier.',
-  icon: '🃏',
+  icon: '🌈',
   theme: 'arcade',
   families: couleursFamilies,
   cards: couleursCards,

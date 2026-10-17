@@ -55,7 +55,7 @@ export interface PromoteurState {
   /** Vrai si le joueur courant relance après avoir résolu sa case (doubles). */
   repeat: boolean;
   dice: [number, number] | null;
-  /** Case en attente de décision d'achat. */
+  /** Case en attente de décision d’achat. */
   pending: number | null;
   chanceOrder: number[];
   chanceIndex: number;
@@ -110,7 +110,7 @@ function ownsGroup(s: PromoteurState, id: string, group: NonNullable<Square['gro
   return groupSquares(group).every((i) => s.owners[key(i)] === id);
 }
 
-/** Loyer dû pour une case appartenant à quelqu'un, selon le jet de dés. */
+/** Loyer dû pour une case appartenant à quelqu’un, selon le jet de dés. */
 function rentOf(s: PromoteurState, index: number, diceSum: number): number {
   const sq = squareAt(index);
   const ownerId = s.owners[key(index)] ?? '';
@@ -125,7 +125,7 @@ function rentOf(s: PromoteurState, index: number, diceSum: number): number {
   return sq.group && ownsGroup(s, ownerId, sq.group) ? base * 2 : base;
 }
 
-/** Valeur d'un joueur : liquidités, prix d'achat de ses rues et valeur de ses maisons. */
+/** Valeur d’un joueur : liquidités, prix d’achat de ses rues et valeur de ses maisons. */
 function worthOf(s: PromoteurState, id: string): number {
   let total = s.cash[id] ?? 0;
   for (const i of ownedBy(s, id)) {
@@ -140,7 +140,7 @@ function worthMap(s: PromoteurState): Record<string, number> {
   return Object.fromEntries(s.order.map((id) => [id, worthOf(s, id)]));
 }
 
-/** Motif pour lequel une maison ne peut pas être construite (null si c'est possible). */
+/** Motif pour lequel une maison ne peut pas être construite (null si c’est possible). */
 function buildError(s: PromoteurState, id: string, index: number): string | null {
   const sq = squareAt(index);
   if (sq.kind !== 'street' || !sq.group) return 'Ce n’est pas une rue constructible';
@@ -263,7 +263,7 @@ function drawCard(s: PromoteurState, id: string, kind: 'chance' | 'chest', diceS
   return sendToJail(n, id);
 }
 
-/** Résout la case d'arrivée : achat possible, loyer, impôt, carte ou prison. */
+/** Résout la case d’arrivée : achat possible, loyer, impôt, carte ou prison. */
 function land(s: PromoteurState, id: string, diceSum: number, allowCards: boolean): PromoteurState {
   const index = s.pos[id] ?? 0;
   const sq = squareAt(index);
@@ -347,12 +347,12 @@ function endTurn(s: PromoteurState, ctx: GameContext): PromoteurState {
   return beginRoll({ ...s, current: next, round, doubles: 0, repeat: false, dice: null });
 }
 
-/** Ferme la décision d'achat (acheter ou laisser) puis enchaîne le tour. */
+/** Ferme la décision d’achat (acheter ou laisser) puis enchaîne le tour. */
 function resolvePending(s: PromoteurState, ctx: GameContext): PromoteurState {
   return afterAction({ ...s, phase: 'roll', pending: null }, ctx);
 }
 
-/** Après la résolution d'une case : relance (doubles) ou tour suivant. */
+/** Après la résolution d’une case : relance (doubles) ou tour suivant. */
 function afterAction(s: PromoteurState, ctx: GameContext): PromoteurState {
   if (s.phase === 'decide') return s;
   const id = s.current;
@@ -406,7 +406,7 @@ function rollDice(s: PromoteurState, ctx: GameContext): PromoteurState {
   return afterAction(n, ctx);
 }
 
-/** Enchaîne les étapes : minuteur de tour relancé quand la phase ou l'étape change. */
+/** Enchaîne les étapes : minuteur de tour relancé quand la phase ou l’étape change. */
 function settle(prev: PromoteurState, next: PromoteurState, ctx: GameContext): PromoteurState {
   if (next.phase === 'final' || next.phase === 'ready') {
     ctx.cancel(TURN);
@@ -420,7 +420,7 @@ function settle(prev: PromoteurState, next: PromoteurState, ctx: GameContext): P
   return { ...next, endsAt: ctx.now() + ms };
 }
 
-/** Temps écoulé (ou action forcée de l'hôte) : le joueur lance les dés ou laisse la case. */
+/** Temps écoulé (ou action forcée de l’hôte) : le joueur lance les dés ou laisse la case. */
 function autoTurn(s: PromoteurState, ctx: GameContext): PromoteurState {
   if (s.phase === 'roll') return settle(s, rollDice(s, ctx), ctx);
   if (s.phase === 'decide') return settle(s, resolvePending(s, ctx), ctx);

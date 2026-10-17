@@ -6,7 +6,7 @@ import type { SoloEngine } from './engine.js';
 /**
  * Solitaire (Klondike) : sept colonnes, quatre fondations et une pioche. Les colonnes se
  * construisent en alternance de couleur et en ordre décroissant ; les fondations se
- * remplissent par couleur, de l'As au Roi. Le joueur tape une carte, puis sa destination.
+ * remplissent par couleur, de l’As au Roi. Le joueur tape une carte, puis sa destination.
  */
 
 export const SUITS = ['♠', '♥', '♦', '♣'] as const;
@@ -117,7 +117,7 @@ function draw(board: KlondikeBoard): GameResult<KlondikeBoard> {
 
 function move(board: KlondikeBoard, from: string, count: number, to: string): GameResult<KlondikeBoard> {
   if (from === to) return fail('La carte est déjà à cet endroit');
-  // Le plateau de départ n'est jamais modifié : on travaille sur une copie, et un coup refusé
+  // Le plateau de départ n’est jamais modifié : on travaille sur une copie, et un coup refusé
   // renvoie simplement une erreur.
   const next = cloneBoard(board);
 

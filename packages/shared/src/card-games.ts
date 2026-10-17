@@ -1,19 +1,19 @@
 import { z } from 'zod';
 
 /**
- * Définition d'un jeu de cartes. Un jeu de cartes est une donnée : les jeux
+ * Définition d’un jeu de cartes. Un jeu de cartes est une donnée : les jeux
  * intégrés (« Couleurs & chiffres », « Blanc-manger coco ») et ceux créés dans
- * l'administration utilisent exactement le même format et le même moteur.
+ * l’administration utilisent exactement le même format et le même moteur.
  */
 
 export const CARD_THEMES = ['arcade', 'coco', 'nuit', 'classique'] as const;
 export type CardTheme = (typeof CARD_THEMES)[number];
 
 /**
- * Effet d'une carte :
+ * Effet d’une carte :
  * - none : aucun effet ;
  * - skip : le joueur suivant passe son tour ;
- * - reverse : le sens de jeu s'inverse (à deux, agit comme un passe) ;
+ * - reverse : le sens de jeu s’inverse (à deux, agit comme un passe) ;
  * - draw2 / draw4 : le joueur suivant pioche 2 ou 4 cartes et passe ;
  * - wild : le joueur choisit la famille active.
  */
@@ -48,16 +48,16 @@ export const cardEntrySchema = z.object({
   /** Identifiant de famille, ou « wild ». */
   family: z.string().min(1).max(16),
   effect: z.enum(CARD_EFFECTS),
-  /** Nombre d'exemplaires dans le paquet. */
+  /** Nombre d’exemplaires dans le paquet. */
   count: z.number().int().min(1).max(20),
   /** Valeur en points si la carte reste en main en fin de manche (au mémo : points de la paire trouvée). */
   points: z.number().int().min(0).max(100),
   /** Texte imprimé sur la carte : phrases, questions, mots (jeux à texte). */
   text: z.string().trim().max(240).optional(),
-  /** Rang d'ordre de grandeur, pour trier la main. Absent : on prend le chiffre du symbole, puis les points. */
+  /** Rang d’ordre de grandeur, pour trier la main. Absent : on prend le chiffre du symbole, puis les points. */
   rank: z.number().int().min(0).max(999).optional(),
   /**
-   * Paire (mémo) : deux cartes de même paire forment une paire. Absent : la paire est l'identifiant
+   * Paire (mémo) : deux cartes de même paire forment une paire. Absent : la paire est l’identifiant
    * de la carte, donc deux exemplaires de la même carte (count 2) forment une paire.
    */
   pair: z.string().trim().min(1).max(40).optional(),
@@ -73,7 +73,7 @@ export type CardMechanic = (typeof CARD_MECHANICS)[number];
 /** Au mémo, nombre maximal de cartes sur le plateau (un écran de téléphone en tient environ 60). */
 export const MEMORY_MAX_CARDS = 60;
 
-/** Plafond d'exemplaires pour la ressemblance et les plis, pour garder une table lisible. */
+/** Plafond d’exemplaires pour la ressemblance et les plis, pour garder une table lisible. */
 export const RACE_TRICK_MAX_CARDS = 120;
 
 export const cardRulesSchema = z.object({
@@ -87,7 +87,7 @@ export const cardRulesSchema = z.object({
   turnSeconds: z.number().int().min(0).max(60),
   /** Mécanique (absent : shedding, comme les définitions précédentes). */
   mechanic: z.enum(CARD_MECHANICS).optional(),
-  /** Atout (plis) : famille qui bat les autres couleurs. Absent : pas d'atout. */
+  /** Atout (plis) : famille qui bat les autres couleurs. Absent : pas d’atout. */
   trump: z.string().trim().min(1).max(16).optional(),
 });
 
@@ -97,7 +97,7 @@ export const cardNoticeSchema = z.object({
   tips: z.array(z.string().trim().min(1).max(300)).max(6),
 });
 
-/** Polices livrées avec l'application : pas de fichier à envoyer pour les utiliser. */
+/** Polices livrées avec l’application : pas de fichier à envoyer pour les utiliser. */
 export const CARD_FONT_PRESETS = ['lisible', 'symboles', 'titre'] as const;
 export type CardFontPreset = (typeof CARD_FONT_PRESETS)[number];
 
@@ -137,7 +137,7 @@ export const cardGameBaseSchema = z.object({
     .string()
     .regex(/^[0-9a-f]{32}$/, 'Police invalide.')
     .optional(),
-  /** Police livrée avec l'application. Ignorée quand une police de la médiathèque est choisie. */
+  /** Police livrée avec l’application. Ignorée quand une police de la médiathèque est choisie. */
   fontPreset: z.enum(CARD_FONT_PRESETS).optional(),
 });
 
@@ -184,7 +184,7 @@ export const cardGameDefinitionSchema = cardGameBaseSchema.superRefine((def, ctx
     ctx.addIssue({ code: 'custom', path: ['rules', 'minPlayers'], message: 'Le minimum dépasse le maximum.' });
   }
 
-  // L'atout n'existe qu'aux plis : ailleurs, il ne ferait que tromper l'administrateur.
+  // L’atout n’existe qu’aux plis : ailleurs, il ne ferait que tromper l’administrateur.
   if (def.rules.trump !== undefined && def.rules.mechanic !== 'trick') {
     ctx.addIssue({
       code: 'custom',
@@ -194,7 +194,7 @@ export const cardGameDefinitionSchema = cardGameBaseSchema.superRefine((def, ctx
   }
 
   if (def.rules.mechanic === 'race' || def.rules.mechanic === 'trick') {
-    // Ressemblance et plis : pas d'effets ni de jokers, un atout éventuel, et assez de cartes pour distribuer.
+    // Ressemblance et plis : pas d’effets ni de jokers, un atout éventuel, et assez de cartes pour distribuer.
     const race = def.rules.mechanic === 'race';
     for (const [i, c] of def.cards.entries()) {
       if (c.effect !== 'none' || c.family === WILD_FAMILY) {
@@ -279,7 +279,7 @@ export type CardRules = z.infer<typeof cardRulesSchema>;
 export type CardGameDefinition = z.infer<typeof cardGameDefinitionSchema>;
 export type CardBack = z.infer<typeof cardBackSchema>;
 
-/** Réglages qu'un hôte peut modifier dans le salon, pour tout jeu de cartes. */
+/** Réglages qu’un hôte peut modifier dans le salon, pour tout jeu de cartes. */
 export function cardSettingsSchema(defaults: { targetScore: number; turnSeconds: number }) {
   return z.object({
     targetScore: z.number().int().min(50).max(2000).default(defaults.targetScore),

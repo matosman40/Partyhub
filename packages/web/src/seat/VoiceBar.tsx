@@ -6,13 +6,13 @@ import type { AppSocket } from '../realtime.js';
 import { authHeaders } from '../profile/session.js';
 import { voiceUrl } from '../components/voiceQueue.js';
 
-/** En-têtes du profil du siège (ou du profil actif de l'appareil, à défaut). */
+/** En-têtes du profil du siège (ou du profil actif de l’appareil, à défaut). */
 const headersFor = (token?: string | null): Record<string, string> =>
   token ? { Authorization: `Bearer ${token}` } : authHeaders();
 
 /**
  * Voix du profil, depuis le téléphone. « Écouter » joue la voix sur ce téléphone seulement ;
- * le nom de la voix l'envoie à l'écran principal. Sans voix enregistrée, la barre n'apparaît pas.
+ * le nom de la voix l’envoie à l’écran principal. Sans voix enregistrée, la barre n’apparaît pas.
  */
 export function VoiceBar({ socket, token }: { socket: AppSocket; token?: string | null }) {
   const [voices, setVoices] = useState<VoiceClip[]>([]);
@@ -26,7 +26,7 @@ export function VoiceBar({ socket, token }: { socket: AppSocket; token?: string 
         if (alive) setVoices(r.voices);
       })
       .catch(() => {
-        // Sans liste, la barre ne s'affiche pas : le reste de la page reste utilisable.
+        // Sans liste, la barre ne s’affiche pas : le reste de la page reste utilisable.
       });
     return () => {
       alive = false;

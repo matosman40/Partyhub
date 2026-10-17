@@ -25,8 +25,8 @@ import { ProposeBoumCard } from '../profile/ProposeBoumCard.js';
 import { VoicesSection } from '../profile/VoicesSection.js';
 
 /**
- * Profil : compte réutilisable d'un appareil à l'autre. Le profil garde le pseudo,
- * l'image, l'avatar et les statistiques ; on se reconnecte pour les retrouver.
+ * Profil : compte réutilisable d’un appareil à l’autre. Le profil garde le pseudo,
+ * l’image, l’avatar et les statistiques ; on se reconnecte pour les retrouver.
  */
 
 interface Session {
@@ -54,7 +54,7 @@ export function ProfilePage() {
         if (alive) setSession(r);
       })
       .catch((err: Error & { status?: number }) => {
-        // Seule une session refusée retire le profil de l'appareil ; une panne réseau ne le fait pas.
+        // Seule une session refusée retire le profil de l’appareil ; une panne réseau ne le fait pas.
         if (alive && err.status === 401) forgetDeviceProfile(active.token);
       })
       .finally(() => {
@@ -165,7 +165,7 @@ export function ProfilePage() {
             type="button"
             className="btn ghost small"
             onClick={() => {
-              // Sans mot de passe, retirer le profil de l'appareil le rend inaccessible : on le demande.
+              // Sans mot de passe, retirer le profil de l’appareil le rend inaccessible : on le demande.
               if (
                 !profile.hasPassword &&
                 !window.confirm(
@@ -329,7 +329,7 @@ export function ProfilePage() {
             ).then(() => {
               const removed = activeDeviceProfile();
               if (removed) forgetDeviceProfile(removed.token);
-              // S'il reste un autre profil sur l'appareil, la page le charge toute seule (effet ci-dessus).
+              // S’il reste un autre profil sur l’appareil, la page le charge toute seule (effet ci-dessus).
               setSession(null);
               setMessage({ ok: true, text: 'Profil supprimé.' });
             });

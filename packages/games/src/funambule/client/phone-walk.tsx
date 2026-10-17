@@ -41,8 +41,8 @@ export function WalkChallenge({
   };
 
   // Le funambule suit le téléphone à chaque mesure : sa position et son inclinaison sont écrites directement sur le
-  // personnage, en pixels calculés à partir des mesures en cache. Aucune mise en page n'est lue, l'état de React
-  // n'est pas sollicité, et rien n'est écrit tant que la position ne bouge pas.
+  // personnage, en pixels calculés à partir des mesures en cache. Aucune mise en page n’est lue, l’état de React
+  // n’est pas sollicité, et rien n’est écrit tant que la position ne bouge pas.
   const placeWalker = useCallback((lean: number) => {
     const dot = dotRef.current;
     if (!dot) return;
@@ -90,7 +90,7 @@ export function WalkChallenge({
       if (latest.current.t >= WALK_MS) finish(WALK_MS);
     }, 100);
     return () => window.clearInterval(id);
-    // `finish` ne lit que des références stables : l'effet n'a pas besoin de se relancer.
+    // `finish` ne lit que des références stables : l’effet n’a pas besoin de se relancer.
   }, []);
 
   if (signal === 'no') {

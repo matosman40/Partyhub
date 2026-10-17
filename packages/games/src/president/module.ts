@@ -29,18 +29,18 @@ export interface PresidentState {
   pile: PCard[];
   pileRank: number;
   pileCount: number;
-  /** Joueur dont c'est le tour (index dans `order`). */
+  /** Joueur dont c’est le tour (index dans `order`). */
   turn: number;
   /** Dernier joueur à avoir posé dans le pli. */
   leader: string | null;
   /** Joueurs ayant passé depuis la dernière pose. */
   passed: string[];
-  /** Joueurs sortis de la manche, dans l'ordre d'arrivée. */
+  /** Joueurs sortis de la manche, dans l’ordre d’arrivée. */
   finished: string[];
   round: number;
   phase: PresidentPhase;
   scores: Record<string, number>;
-  /** Rôles de la dernière manche (président, vice-président…), pour l'affichage. */
+  /** Rôles de la dernière manche (président, vice-président…), pour l’affichage. */
   roles: Record<string, string>;
   lastEvent: string;
   turnEndsAt: number | null;
@@ -82,12 +82,12 @@ function who(s: PresidentState, id: string): string {
   return s.names[id] ?? '?';
 }
 
-/** Joueurs encore en jeu, dans l'ordre des tours. */
+/** Joueurs encore en jeu, dans l’ordre des tours. */
 function active(s: PresidentState): string[] {
   return s.order.filter((id) => !s.finished.includes(id));
 }
 
-/** Joueur actif suivant `from` (dans l'ordre circulaire, sans les joueurs sortis). */
+/** Joueur actif suivant `from` (dans l’ordre circulaire, sans les joueurs sortis). */
 function nextActive(s: PresidentState, from: string): string {
   const players = s.order;
   const start = players.indexOf(from);
@@ -188,7 +188,7 @@ function dealRound(s: PresidentState, ctx: GameContext, startId: string | null):
   return s;
 }
 
-/** Fin d'une manche : rangs, points et préparation de la suivante. */
+/** Fin d’une manche : rangs, points et préparation de la suivante. */
 function endRound(s: PresidentState, ctx: GameContext): void {
   const n = s.order.length;
   s.finished.forEach((id, i) => {
@@ -208,7 +208,7 @@ function endRound(s: PresidentState, ctx: GameContext): void {
   }
 }
 
-/** Vide le pli et redonne la main au dernier joueur qui a posé (ou au suivant s'il est sorti). */
+/** Vide le pli et redonne la main au dernier joueur qui a posé (ou au suivant s’il est sorti). */
 function endTrick(s: PresidentState, ctx: GameContext): void {
   s.pile = [];
   s.pileRank = 0;
@@ -334,7 +334,7 @@ export function createPresidentGame(): GameModule<PresidentState, PresidentSetti
     const pid = player.id;
     if (!s.started || !s.hands[pid]) return fail('Vous ne participez pas à cette manche.');
     if (s.phase !== 'play') return fail('La manche est terminée.');
-    if (currentId(s) !== pid || s.finished.includes(pid)) return fail("Ce n'est pas votre tour.");
+    if (currentId(s) !== pid || s.finished.includes(pid)) return fail('Ce n’est pas votre tour.');
 
     if (type === 'pass') {
       if (s.pileCount === 0) return fail('Table vide : vous devez poser une carte.');
@@ -388,7 +388,7 @@ export function createPresidentGame(): GameModule<PresidentState, PresidentSetti
         }
       }
 
-      // Après un brûlage, le joueur rejoue tout de suite (si la main n'est pas vide).
+      // Après un brûlage, le joueur rejoue tout de suite (si la main n’est pas vide).
       const again = check.burns && !s.finished.includes(pid);
       setTurn(s, again ? pid : nextActive(s, pid), ctx);
       return ok(s);

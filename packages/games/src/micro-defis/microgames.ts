@@ -1,23 +1,23 @@
 /**
  * Micro-défis : chaque défi dure quelques secondes, tous les joueurs le font en même temps sur leur téléphone.
- * Ce fichier contient les règles de chaque défi et leur jugement. Il est pur : le serveur et les tests s'y
- * réfèrent, et le téléphone calcule exactement les mêmes valeurs (la pose de l'horloge et le marqueur du
+ * Ce fichier contient les règles de chaque défi et leur jugement. Il est pur : le serveur et les tests s’y
+ * réfèrent, et le téléphone calcule exactement les mêmes valeurs (la pose de l’horloge et le marqueur du
  * défi « Pile » sont donnés ici).
  *
- * Un téléphone envoie une valeur (nombre de secousses, durée d'un maintien, angle parcouru…). Le serveur ne
+ * Un téléphone envoie une valeur (nombre de secousses, durée d’un maintien, angle parcouru…). Le serveur ne
  * peut pas voir le mouvement : il borne la valeur par ce qui est possible dans le temps écoulé.
  */
 
 export type MicrogameId = 'secousse' | 'equilibre' | 'tour' | 'souffle' | 'tapote' | 'pile';
 
-/** Capteur du téléphone qu'un défi utilise. `tap` et `timing` n'ont besoin d'aucun capteur. */
+/** Capteur du téléphone qu’un défi utilise. `tap` et `timing` n’ont besoin d’aucun capteur. */
 export type MicrogameSensor = 'shake' | 'tilt' | 'spin' | 'mic' | 'tap' | 'timing';
 
 export interface Microgame {
   id: MicrogameId;
   name: string;
   icon: string;
-  /** Consigne affichée sur l'écran principal et sur le téléphone, à l'impératif. */
+  /** Consigne affichée sur l’écran principal et sur le téléphone, à l’impératif. */
   instruction: string;
   /** Précision courte, sous la consigne. */
   hint: string;
@@ -27,7 +27,7 @@ export interface Microgame {
   target: number;
 }
 
-/** Les six défis, par identifiant. La phase de jeu d'un défi se termine à `durationMs`, même si personne n'a réussi. */
+/** Les six défis, par identifiant. La phase de jeu d’un défi se termine à `durationMs`, même si personne n’a réussi. */
 export const MICROGAMES: Record<MicrogameId, Microgame> = {
   secousse: {
     id: 'secousse',
@@ -93,13 +93,13 @@ export const MICROGAMES: Record<MicrogameId, Microgame> = {
 
 export const MICROGAME_IDS = Object.keys(MICROGAMES) as MicrogameId[];
 
-/** Période d'un aller-retour du curseur du défi « Pile », en millisecondes. */
+/** Période d’un aller-retour du curseur du défi « Pile », en millisecondes. */
 export const PILE_PERIOD_MS = 1200;
 /** Demi-largeur de la zone gagnante, sur une échelle de 0 à 1. */
 export const PILE_WINDOW = 0.09;
 
 /**
- * Position du curseur du défi « Pile » à l'instant `t` (ms depuis le début du défi), de 0 à 1.
+ * Position du curseur du défi « Pile » à l’instant `t` (ms depuis le début du défi), de 0 à 1.
  * Un aller-retour régulier : 0 → 1 → 0 sur `PILE_PERIOD_MS`.
  */
 export function pileMarker(t: number): number {
@@ -115,7 +115,7 @@ export interface Judgement {
   points: number;
 }
 
-/** Points d'une réussite : 100, plus jusqu'à 60 pour la rapidité. */
+/** Points d’une réussite : 100, plus jusqu’à 60 pour la rapidité. */
 export const SUCCESS_POINTS = 100;
 export const SPEED_BONUS = 60;
 
@@ -158,7 +158,7 @@ export function judge(game: Microgame, value: number, elapsedMs: number): Judgem
 }
 
 /**
- * Suite des défis d'une partie : un tirage sans répétition (un sac que l'on vide, puis que l'on remplit),
+ * Suite des défis d’une partie : un tirage sans répétition (un sac que l’on vide, puis que l’on remplit),
  * sans jamais deux fois le même défi de suite.
  */
 export function buildSequence(count: number, random: () => number): MicrogameId[] {

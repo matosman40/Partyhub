@@ -36,6 +36,15 @@ export const GAME_LOGOS: Record<string, LogoSpec> = {
     mark: 'bubble',
     tilt: -4,
   },
+  'phrases-trous': {
+    lines: ['Phrases', 'à trous'],
+    fill: '#c3a6ff',
+    edge: '#ff9ad5',
+    ink: '#1a0f2e',
+    sky: ['#0c3a4f', '#031019'],
+    mark: 'frame',
+    tilt: -3,
+  },
   'bombes-party': {
     lines: ['Bombes', 'party'],
     fill: '#ff8a3d',
@@ -44,6 +53,15 @@ export const GAME_LOGOS: Record<string, LogoSpec> = {
     sky: ['#4a0f12', '#0c0303'],
     mark: 'fuse',
     tilt: -2,
+  },
+  'gags-en-rafale': {
+    lines: ['Gags', 'en rafale'],
+    fill: '#9dff4a',
+    edge: '#ff3dcf',
+    ink: '#0c0519',
+    sky: ['#2d0b4a', '#080214'],
+    mark: 'star',
+    tilt: -4,
   },
   'micro-defis': {
     lines: ['Micro', 'Défis'],
@@ -189,9 +207,72 @@ export const GAME_LOGOS: Record<string, LogoSpec> = {
     mark: 'duo',
     tilt: -2,
   },
+  'cartes-couleurs': {
+    lines: ['Couleurs', '& chiffres'],
+    fill: '#ff9ecf',
+    edge: '#42e0c2',
+    ink: '#2a0a22',
+    sky: ['#5b1f5e', '#1c0620'],
+    mark: 'deck',
+    tilt: -2,
+  },
+  'cartes-coco': {
+    lines: ['Blanc-manger', 'coco'],
+    fill: '#fff6e0',
+    edge: '#8a5a2b',
+    ink: '#2b1d10',
+    sky: ['#0f6b5a', '#06261f'],
+    mark: 'moon',
+    tilt: -3,
+  },
+  sudoku: {
+    lines: ['Sudoku'],
+    fill: '#e0fbfc',
+    edge: '#ee6c4d',
+    ink: '#14213d',
+    sky: ['#293241', '#0d1117'],
+    mark: 'frame',
+    tilt: -2,
+  },
+  solitaire: {
+    lines: ['Solitaire'],
+    fill: '#f6f7eb',
+    edge: '#e63946',
+    ink: '#0b2233',
+    sky: ['#3d5a80', '#101e33'],
+    mark: 'deck',
+    tilt: -2,
+  },
+  taquin: {
+    lines: ['Taquin'],
+    fill: '#ffc6ff',
+    edge: '#3a0ca3',
+    ink: '#1b0836',
+    sky: ['#4361ee', '#14206b'],
+    mark: 'arrows',
+    tilt: -3,
+  },
+  'mots-croises': {
+    lines: ['Mots', 'croisés'],
+    fill: '#f7e7c1',
+    edge: '#2a9d8f',
+    ink: '#1f1a10',
+    sky: ['#5c4a2e', '#1d160a'],
+    mark: 'frame',
+    tilt: -3,
+  },
+  'imite-moi': {
+    lines: ['Imite-moi !'],
+    fill: '#c7f9cc',
+    edge: '#ff5e5b',
+    ink: '#2a1020',
+    sky: ['#7a1f5c', '#2a0820'],
+    mark: 'star',
+    tilt: -4,
+  },
 };
 
-/** Identité de repli : déterministe, à partir de l'identifiant et du nom du jeu. */
+/** Identité de repli : déterministe, à partir de l’identifiant et du nom du jeu. */
 export function fallbackLogo(id: string, name: string): LogoSpec {
   const h = hashText(id);
   const hue = h % 360;
@@ -209,7 +290,7 @@ export function fallbackLogo(id: string, name: string): LogoSpec {
   };
 }
 
-/** Identité d'un jeu : la sienne si elle est dessinée, sinon celle de repli. */
+/** Identité d’un jeu : la sienne si elle est dessinée, sinon celle de repli. */
 export function logoFor(id: string, name: string): LogoSpec {
   const spec = GAME_LOGOS[id];
   return spec ?? fallbackLogo(id, name);

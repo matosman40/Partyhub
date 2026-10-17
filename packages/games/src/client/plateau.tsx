@@ -11,13 +11,13 @@ import { PrairieScene } from './plateau-scene.js';
 
 /**
  * Plateau : une zone où chaque personnage a sa place, se déplace et prend une émotion en bulle.
- * C'est la base du salon et de tout jeu qui met des joueurs sur un plan.
+ * C’est la base du salon et de tout jeu qui met des joueurs sur un plan.
  *
- * - Sur le plateau de son appareil, le personnage « à moi » se glisse au doigt, se place d'un
+ * - Sur le plateau de son appareil, le personnage « à moi » se glisse au doigt, se place d’un
  *   tap sur un endroit libre, ou se déplace aux flèches du clavier.
  * - Les autres personnages glissent doucement vers la place que le serveur annonce.
  * - Un personnage plus bas sur le plateau est plus proche, donc un peu plus grand et devant.
- * Les positions sont des fractions (0 à 1) : le plateau garde son format, quelle que soit la taille d'écran.
+ * Les positions sont des fractions (0 à 1) : le plateau garde son format, quelle que soit la taille d’écran.
  */
 
 /** Pas du clavier, en fraction de la zone. */
@@ -59,7 +59,7 @@ export interface PlateauProps {
   figures: PlateauFigure[];
   /** Déplacement de son propre personnage. Absent : le plateau est seulement affiché. */
   onMove?: (position: LobbyPosition) => void;
-  /** Nom du plateau pour les lecteurs d'écran. */
+  /** Nom du plateau pour les lecteurs d’écran. */
   label: string;
   emptyText?: string;
   className?: string;
@@ -85,7 +85,7 @@ export function Plateau({ figures, onMove, label, emptyText, className }: Platea
   const ownX = own?.position.x;
   const ownY = own?.position.y;
 
-  // Le serveur a rattrapé la position envoyée : la place locale n'est plus utile.
+  // Le serveur a rattrapé la position envoyée : la place locale n’est plus utile.
   useEffect(() => {
     if (dragging.current || !mine || ownX === undefined || ownY === undefined) return;
     if (Math.abs(ownX - mine.x) < 0.004 && Math.abs(ownY - mine.y) < 0.004) setMine(null);
@@ -161,7 +161,7 @@ export function Plateau({ figures, onMove, label, emptyText, className }: Platea
   }
 
   function onFigureKeyUp(e: KeyboardEvent<HTMLLIElement>) {
-    // Le dernier pas d'une série de flèches est toujours envoyé, même si le débit l'a retenu.
+    // Le dernier pas d’une série de flèches est toujours envoyé, même si le débit l’a retenu.
     if (!onMove || !ARROWS[e.key] || !mine) return;
     onMove(mine);
   }

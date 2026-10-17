@@ -1,6 +1,6 @@
 import { Suspense, lazy, useEffect, useState, type CSSProperties } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import type { CharacterMood, ChatMessage, HostRoomView } from '@partyhub/shared';
+import type { ChampionshipSettings, CharacterMood, ChatMessage, HostRoomView } from '@partyhub/shared';
 import { DEVICE_KIND_ICONS, DEVICE_KIND_LABELS } from '@partyhub/shared';
 import { getSocket } from '../realtime.js';
 import { viewsFor } from '../games.js';
@@ -19,13 +19,17 @@ import { NoticeDialog } from '../components/NoticeDialog.js';
 import { PlayerSeat } from '../seat/PlayerSeat.js';
 import { FitStage } from '../components/FitStage.js';
 import { Boundary } from '../components/Boundary.js';
+import { GameViewBoundary } from '../components/GameView.js';
 import { read3DPreference, supportsWebGL, write3DPreference } from '../three/prefs.js';
-import { AvatarsContext, MoodsContext, useWakeLock, type PromoteurPub } from '@partyhub/games/client';
+import { AvatarsContext, MoodsContext, PauseContext, useWakeLock, type PromoteurPub } from '@partyhub/games/client';
 import { TvLobby, type HandoffCode } from './tv/TvLobby.js';
 import { CornerMenu, DrawerSection } from '../components/CornerMenu.js';
+import { ChampionshipSettingsForm, GameEndPanel, championshipPill, replayLabel } from '../components/Championship.js';
 import { useActiveProfile } from '../profile/useProfile.js';
 import { useActivity } from './tv/useActivity.js';
+import { useGamePhotoCapture } from '../tv/useGamePhotoCapture.js';
 import { musicForLobby, useMusicSlot } from '../sounds.js';
+import { phaseOf, useGameCues } from '../tv/gameCues.js';
 import { canSend, OFFLINE_ACTION_ERROR, useConnection } from '../connection.js';
 
 /** Plateau 3D du Promoteur : chargé seulement quand il est affiché (Three.js reste hors du premier chargement). */
@@ -33,8 +37,8 @@ const PromoteurStage = lazy(() => import('../three/PromoteurStage.js'));
 
 /**
  * Écran principal (TV ou ordinateur) : salon avec QR code, puis affichage de la partie.
- * Le socket s'authentifie avec le jeton d'hôte gardé dans cet onglet.
- * L'hôte peut aussi jouer depuis cet écran (« Je joue aussi ») et ajouter des robots.
+ * Le socket s’authentifie avec le jeton d’hôte gardé dans cet onglet.
+ * L’hôte peut aussi jouer depuis cet écran (« Je joue aussi ») et ajouter des robots.
  */
 export function TvPage() {
   const { code = '' } = useParams();
@@ -51,9 +55,9 @@ export function TvPage() {
   const [noticeOpen, setNoticeOpen] = useState(false);
   const [board3d, setBoard3d] = useState(read3DPreference);
   const [board3dFailed, setBoard3dFailed] = useState(false);
-  // Personnages qui viennent d'arriver saluent ; un jeu qui fournit ses propres humeurs les remplace.
+  // Personnages qui viennent d’arriver saluent ; un jeu qui fournit ses propres humeurs les remplace.
   const arrivals = useArrivalMoods(view ? view.lobby.players.map((p) => p.name) : []);
-  // Émotions du salon (par identifiant) et saluts d'arrivée (par pseudo) réunis par identifiant.
+  // Émotions du salon (par identifiant) et saluts d’arrivée (par pseudo) réunis par identifiant.
   const emotes = useLobbyMoods(getSocket());
   const positions = useLobbyPositions(getSocket());
   const lobbyPoses: Record<string, CharacterMood> = {
@@ -65,20 +69,22 @@ export function TvPage() {
       }),
     ),
   };
-  // Menu discret et commandes de partie : elles reviennent au moindre mouvement, puis s'effacent.
-  // Code pour ouvrir l'écran hôte sur un téléphone (affiché dans le salon, jamais envoyé aux joueurs).
+  // Menu discret et commandes de partie : elles reviennent au moindre mouvement, puis s’effacent.
+  // Code pour ouvrir l’écran hôte sur un téléphone (affiché dans le salon, jamais envoyé aux joueurs).
   const [handoff, setHandoff] = useState<HandoffCode | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [barFocused, setBarFocused] = useState(false);
   const active = useActivity(menuOpen || barFocused);
+  // Captures de la première partie de chaque jeu : tant que l’hôte a autorisé le partage, elles se prennent seules.
+  const photos = useGamePhotoCapture({ code, hostToken, lobby: view?.lobby ?? null });
 
-  // Mise en page « console » : l'écran tient exactement dans la fenêtre (voir styles.css).
+  // Mise en page « console » : l’écran tient exactement dans la fenêtre (voir styles.css).
   useEffect(() => {
     document.documentElement.classList.add('is-tv');
     return () => document.documentElement.classList.remove('is-tv');
   }, []);
 
-  // L'écran de la salle reste allumé pendant toute la session (si le navigateur le permet).
+  // L’écran de la salle reste allumé pendant toute la session (si le navigateur le permet).
   useWakeLock(hostToken !== null && !closed);
 
   useEffect(() => {
@@ -114,7 +120,9 @@ export function TvPage() {
 
   // Musique de la salle : menus avant la partie, fin de partie aux résultats, silence pendant le jeu.
   useMusicSlot(musicForLobby(view?.lobby.status));
-  // Une coupure est annoncée sur l'écran : sinon, il reste figé sans que personne ne sache pourquoi.
+  // Bruitages de partie (début, bilan, fin) : tous les jeux qui annoncent leur étape en profitent.
+  useGameCues(view?.lobby.status ?? null, phaseOf(view?.game?.public));
+  // Une coupure est annoncée sur l’écran : sinon, il reste figé sans que personne ne sache pourquoi.
   const connection = useConnection(getSocket());
 
   if (!hostToken) {
@@ -157,16 +165,22 @@ export function TvPage() {
   const socket = getSocket();
   // Avatars de la salle par pseudo : les jeux affichent photo ou emoji sans rien transmettre de plus.
   const avatars = Object.fromEntries(lobby.players.map((p) => [p.name, p.avatar]));
-  // Plateau du Promoteur : vue 3D par défaut quand le navigateur sait l'afficher, 2D sinon ou en cas d'erreur.
+  // Équipe d’un joueur (nom, icône, couleur) : null sans équipes.
+  const teamNameOf = (index: number | null) => (index === null ? null : (lobby.series?.teams?.[index] ?? null));
+  // Pastille du salon : réglage du championnat, ou manche en cours.
+  const pill = inLobby ? championshipPill(lobby) : null;
+  // Plateau du Promoteur : vue 3D par défaut quand le navigateur sait l’afficher, 2D sinon ou en cas d’erreur.
   const can3d = lobby.game.id === 'promoteur' && !board3dFailed && supportsWebGL();
   const use3d = can3d && board3d;
   const flat = (
     <RoomSensors socket={socket}>
       <FitStage>
         {views && game && (
-          <Suspense fallback={<p className="muted">Chargement du jeu…</p>}>
-            <views.Host publicState={game.public} hostState={game.host} now={view.now} onAction={sendGameAction} />
-          </Suspense>
+          <GameViewBoundary gameId={lobby.game.id} publicState={game.public}>
+            <Suspense fallback={<p className="muted">Chargement du jeu…</p>}>
+              <views.Host publicState={game.public} hostState={game.host} now={view.now} onAction={sendGameAction} />
+            </Suspense>
+          </GameViewBoundary>
         )}
       </FitStage>
     </RoomSensors>
@@ -174,7 +188,7 @@ export function TvPage() {
   const sky = logoFor(lobby.game.id, lobby.game.name).sky;
   const skyStyle = { '--sky-a': sky[0], '--sky-b': sky[1] } as CSSProperties;
 
-  /** Action propre au jeu, demandée par l'écran principal (ex. générer des personnages). */
+  /** Action propre au jeu, demandée par l’écran principal (ex. générer des personnages). */
   function sendGameAction(type: string, payload?: unknown): Promise<{ ok: boolean; error?: string }> {
     return new Promise((resolve) => {
       if (!canSend(socket, setError)) {
@@ -197,6 +211,12 @@ export function TvPage() {
     else socket.emit('host:replay', done);
   }
 
+  /** Met la partie en pause ou la reprend : les décomptes, les robots et les actions des joueurs suivent. */
+  function setPause(paused: boolean) {
+    if (!canSend(socket, setError)) return;
+    socket.emit('host:pause', { paused }, (res) => setError(res.ok ? null : res.error));
+  }
+
   function createHandoff() {
     if (!canSend(socket, setError)) return;
     socket.emit('host:handoff', (res) => {
@@ -208,6 +228,14 @@ export function TvPage() {
   function configure(gameSettings: Record<string, unknown>) {
     if (!canSend(socket, setError)) return;
     socket.emit('host:configure', { gameSettings }, (res) => {
+      if (!res.ok) setError(res.error);
+    });
+  }
+
+  /** Championnat du salon (manches et équipes) : réglé avant la partie, il reste en place d’une manche à l’autre. */
+  function setChampionship(next: ChampionshipSettings) {
+    if (!canSend(socket, setError)) return;
+    socket.emit('host:championship', next, (res) => {
       if (!res.ok) setError(res.error);
     });
   }
@@ -288,6 +316,11 @@ export function TvPage() {
               <li key={p.id}>
                 <PlayerAvatar avatar={p.avatar} name={p.name} size="sm" />
                 <span className="corner-name">{p.name}</span>
+                {teamNameOf(p.team) && (
+                  <span className="team-chip" style={{ '--team': teamNameOf(p.team)?.color } as CSSProperties}>
+                    <span aria-hidden="true">{teamNameOf(p.team)?.icon}</span> Équipe {teamNameOf(p.team)?.name}
+                  </span>
+                )}
                 {p.devices.length > 0 && (
                   <span className="device-icons" title={p.devices.map((d) => DEVICE_KIND_LABELS[d]).join(', ')}>
                     {p.devices.map((d) => DEVICE_KIND_ICONS[d]).join(' ')}
@@ -339,6 +372,12 @@ export function TvPage() {
         </DrawerSection>
       )}
 
+      {inLobby && (
+        <DrawerSection title="Championnat">
+          <ChampionshipSettingsForm value={lobby.championship} onChange={setChampionship} />
+        </DrawerSection>
+      )}
+
       {can3d && game && (
         <DrawerSection title="Affichage">
           <button type="button" className="btn ghost small" onClick={toggle3d} aria-pressed={board3d}>
@@ -346,6 +385,33 @@ export function TvPage() {
           </button>
         </DrawerSection>
       )}
+
+      <DrawerSection title="Photos de la partie">
+        <p className="muted small">
+          À la première partie de chaque jeu, deux captures de l’écran sont prises pendant la partie, une troisième sur
+          l’écran des résultats. Elles montrent les pseudos et les personnages de la salle. Le navigateur demande de
+          partager cet onglet.
+        </p>
+        {photos.status === 'on' ? (
+          <button type="button" className="btn ghost small" onClick={photos.stop}>
+            Arrêter les captures
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="btn ghost small"
+            onClick={() => void photos.start()}
+            disabled={photos.status === 'asking'}
+          >
+            {photos.status === 'asking' ? 'Choix de l’onglet…' : 'Activer les captures'}
+          </button>
+        )}
+        {photos.note && (
+          <p className="small" role="status">
+            {photos.note}
+          </p>
+        )}
+      </DrawerSection>
 
       <DrawerSection title="Discussion">
         <ChatPanel messages={chat} onSend={sendChat} error={chatError} />
@@ -386,93 +452,114 @@ export function TvPage() {
   return (
     <AvatarsContext.Provider value={avatars}>
       <MoodsContext.Provider value={arrivals}>
-        <main className={`stage ${inLobby ? 'is-lobby' : 'is-game'}`} style={skyStyle}>
-          <GameScene
-            gameId={lobby.game.id}
-            name={lobby.game.name}
-            className={`stage-scene${inLobby ? '' : ' is-quiet'}`}
-          />
-          <ReactionLayer socket={socket} />
-          <VoiceLayer socket={socket} />
-
-          {error && (
-            <p className="stage-toast" role="alert" onClick={() => setError(null)}>
-              {error}
-            </p>
-          )}
-          {connection.lost && !connection.connected && (
-            <p className="stage-toast" role="status">
-              Connexion au serveur perdue. Reconnexion en cours…
-            </p>
-          )}
-
-          {inLobby ? (
-            <TvLobby
-              lobby={lobby}
-              joinUrl={joinUrl}
-              canStart={canStart}
-              poses={lobbyPoses}
-              emotes={emotes}
-              positions={positions}
-              onStart={() => emitAck('host:start')}
-              handoff={handoff}
-              onHandoff={createHandoff}
-              onAddBot={addBot}
+        <PauseContext.Provider value={lobby.paused}>
+          <main
+            className={`stage ${inLobby ? 'is-lobby' : 'is-game'}${lobby.status === 'ended' ? ' has-results' : ''}`}
+            style={skyStyle}
+          >
+            <GameScene
+              gameId={lobby.game.id}
+              name={lobby.game.name}
+              className={`stage-scene${inLobby ? '' : ' is-quiet'}`}
             />
-          ) : (
-            <>
-              <div className={`stage-mini${active ? ' is-visible' : ''}`} aria-hidden={!active}>
-                <GameLogo gameId={lobby.game.id} name={lobby.game.name} className="stage-mini-logo" />
-                <span>Salle {lobby.code}</span>
-              </div>
+            <ReactionLayer socket={socket} />
+            <VoiceLayer socket={socket} />
 
-              <div className="stage-game">
-                {use3d && game?.public ? (
-                  <Boundary fallback={flat} onError={() => setBoard3dFailed(true)}>
-                    <Suspense fallback={flat}>
-                      <PromoteurStage pub={game.public as PromoteurPub} now={view.now} flat={flat} />
-                    </Suspense>
-                  </Boundary>
-                ) : (
-                  flat
+            {error && (
+              <p className="stage-toast" role="alert" onClick={() => setError(null)}>
+                {error}
+              </p>
+            )}
+            {connection.lost && !connection.connected && (
+              <p className="stage-toast" role="status">
+                Connexion au serveur perdue. Reconnexion en cours…
+              </p>
+            )}
+
+            {pill && <p className="champ-pill">{pill}</p>}
+            {inLobby ? (
+              <TvLobby
+                lobby={lobby}
+                joinUrl={joinUrl}
+                canStart={canStart}
+                poses={lobbyPoses}
+                emotes={emotes}
+                positions={positions}
+                onStart={() => emitAck('host:start')}
+                handoff={handoff}
+                onHandoff={createHandoff}
+                onAddBot={addBot}
+              />
+            ) : (
+              <>
+                <div className={`stage-mini${active ? ' is-visible' : ''}`} aria-hidden={!active}>
+                  <GameLogo gameId={lobby.game.id} name={lobby.game.name} className="stage-mini-logo" />
+                  <span>Salle {lobby.code}</span>
+                </div>
+
+                <div className="stage-game">
+                  {use3d && game?.public ? (
+                    <Boundary fallback={flat} onError={() => setBoard3dFailed(true)}>
+                      <Suspense fallback={flat}>
+                        <PromoteurStage pub={game.public as PromoteurPub} now={view.now} flat={flat} />
+                      </Suspense>
+                    </Boundary>
+                  ) : (
+                    flat
+                  )}
+                </div>
+
+                {lobby.status === 'ended' && <GameEndPanel lobby={lobby} />}
+
+                {lobby.paused && lobby.status === 'in_game' && (
+                  <div className="stage-pause" role="status">
+                    <p className="stage-pause-title">Partie en pause</p>
+                    <p className="muted">Les décomptes et les actions sont suspendus.</p>
+                    <button type="button" className="btn primary" onClick={() => setPause(false)}>
+                      Reprendre la partie
+                    </button>
+                  </div>
                 )}
-              </div>
 
-              <div
-                className={`stage-bar${active ? ' is-visible' : ''}`}
-                onFocus={() => setBarFocused(true)}
-                onBlur={() => setBarFocused(false)}
-              >
-                {lobby.status === 'in_game' && (
-                  <>
-                    <button type="button" className="btn primary" onClick={() => emitAck('host:next')}>
-                      Étape suivante
-                    </button>
-                    <button type="button" className="btn ghost" onClick={() => emitAck('host:end')}>
-                      Arrêter la partie
-                    </button>
-                  </>
-                )}
-                {lobby.status === 'ended' && (
-                  <>
-                    <button type="button" className="btn primary" onClick={() => emitAck('host:replay')}>
-                      Rejouer avec les mêmes joueurs
-                    </button>
-                    <button type="button" className="btn ghost" onClick={backToCatalog}>
-                      Retour au catalogue
-                    </button>
-                  </>
-                )}
-              </div>
-            </>
-          )}
+                <div
+                  className={`stage-bar${active ? ' is-visible' : ''}`}
+                  onFocus={() => setBarFocused(true)}
+                  onBlur={() => setBarFocused(false)}
+                >
+                  {lobby.status === 'in_game' && (
+                    <>
+                      <button type="button" className="btn primary" onClick={() => emitAck('host:next')}>
+                        Étape suivante
+                      </button>
+                      <button type="button" className="btn ghost" onClick={() => setPause(!lobby.paused)}>
+                        {lobby.paused ? 'Reprendre la partie' : 'Mettre en pause'}
+                      </button>
+                      <button type="button" className="btn ghost" onClick={() => emitAck('host:end')}>
+                        Arrêter la partie
+                      </button>
+                    </>
+                  )}
+                  {lobby.status === 'ended' && (
+                    <>
+                      <button type="button" className="btn primary" onClick={() => emitAck('host:replay')}>
+                        {replayLabel(lobby)}
+                      </button>
+                      <button type="button" className="btn ghost" onClick={backToCatalog}>
+                        Retour au catalogue
+                      </button>
+                    </>
+                  )}
+                </div>
+              </>
+            )}
 
-          <CornerMenu open={menuOpen} visible={active} onOpen={() => setMenuOpen(true)} onClose={closeMenu}>
-            {menu}
-          </CornerMenu>
+            <CornerMenu open={menuOpen} visible={active} onOpen={() => setMenuOpen(true)} onClose={closeMenu}>
+              {menu}
+            </CornerMenu>
 
-          {noticeOpen && <NoticeDialog game={lobby.game} onClose={() => setNoticeOpen(false)} />}
-        </main>
+            {noticeOpen && <NoticeDialog game={lobby.game} onClose={() => setNoticeOpen(false)} />}
+          </main>
+        </PauseContext.Provider>
       </MoodsContext.Provider>
     </AvatarsContext.Provider>
   );

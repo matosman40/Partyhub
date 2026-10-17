@@ -30,6 +30,7 @@ import { AiRuntime } from './ai/runtime.js';
 import { IMAGES_DEFAULTS, buildImageProviders } from './images/config.js';
 import { createGameImages } from './images/game-images.js';
 import { ImageLibrary } from './images/library.js';
+import { GamePhotoStore } from './game-photos/store.js';
 import { DbBackupScheduler } from './db/backup.js';
 import { compileTrustProxy } from './trust-proxy.js';
 import type { JoinThrottleOptions } from './realtime/join-throttle.js';
@@ -47,7 +48,7 @@ export interface PartyServer {
 export interface ServerOptions {
   config: AppConfig;
   logger: Logger;
-  /** Journal fichier (consultable depuis l'administration). Absent = sortie standard seulement. */
+  /** Journal fichier (consultable depuis l’administration). Absent = sortie standard seulement. */
   journal?: RotatingFile;
   /** Période du nettoyage des salles (0 = désactivé, utile aux tests). */
   sweepEveryMs?: number;
@@ -79,7 +80,7 @@ async function ensureAdminPassword(store: Store, config: AppConfig, logger: Logg
 
 export async function createServer(opts: ServerOptions): Promise<PartyServer> {
   const { config, logger } = opts;
-  // Avant toute migration d'une base existante, une copie de sécurité est créée dans DATA_DIR/migrations.
+  // Avant toute migration d’une base existante, une copie de sécurité est créée dans DATA_DIR/migrations.
   const store = new Store(config.dbFile, { backupDir: path.join(config.dataDir, 'migrations') });
   const migration = store.migration;
   if (migration.to !== migration.from) {
@@ -90,7 +91,7 @@ export async function createServer(opts: ServerOptions): Promise<PartyServer> {
   }
   // Installation neuve (aucun mot de passe administrateur encore créé) : jeux intégrés désactivés si configuré.
   // Une installation existante garde ses réglages, même si elle a été mise à jour.
-  // Un outil non listé (plateau de test) reste actif : le bouton de l'accueil doit toujours fonctionner.
+  // Un outil non listé (plateau de test) reste actif : le bouton de l’accueil doit toujours fonctionner.
   if (config.builtinGames === false && store.getKv('admin_password_hash') === undefined) {
     const games = gameRegistry.filter((game) => game.manifest.listed !== false);
     for (const game of games) store.setGameEnabled(game.manifest.id, false);
@@ -112,11 +113,13 @@ export async function createServer(opts: ServerOptions): Promise<PartyServer> {
   const characterPacks = new CharacterPackService(store.db);
   const hub = new RealtimeHub(compileTrustProxy(config.trustProxy ?? 'loopback'), opts.joinThrottle);
   hub.setCadence(() => appliedCadence(store.getTestMode()));
-  // Les fournisseurs viennent de l'environnement et de l'administration (clés saisies dans l'interface).
+  // Les fournisseurs viennent de l’environnement et de l’administration (clés saisies dans l’interface).
   const aiRuntime = new AiRuntime(store, config.ai, config.dataDir, logger);
   // Images générées (portraits, fonds) : une bibliothèque partagée par les jeux, alimentée par les fournisseurs
   // configurés (Cloudflare, ModelScope). Sans fournisseur, les jeux gardent leur rendu de secours.
   const imageLibrary = new ImageLibrary(store);
+  // Captures de la première partie de chaque jeu (fiche du jeu), rangées dans le dossier de données.
+  const gamePhotos = new GamePhotoStore(config.dataDir);
   const imageConfig = config.images ?? { providers: [], ...IMAGES_DEFAULTS };
   const gameImages = createGameImages({
     providers: buildImageProviders(imageConfig),
@@ -151,7 +154,7 @@ export async function createServer(opts: ServerOptions): Promise<PartyServer> {
         const gameId = room.module.manifest.id;
         store.incrementStat('games_completed');
         store.incrementStat(`games_completed:${gameId}`);
-        // Les parties d'essai ne comptent pas dans les statistiques des profils.
+        // Les parties d’essai ne comptent pas dans les statistiques des profils.
         if (room.practice) return;
         for (const entry of room.finalScores()) {
           const player = room.players.get(entry.playerId);
@@ -171,6 +174,7 @@ export async function createServer(opts: ServerOptions): Promise<PartyServer> {
     logger,
     ai: aiRuntime,
     imageLibrary,
+    gamePhotos,
     journal: opts.journal,
     store,
     manager,

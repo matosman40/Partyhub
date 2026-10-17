@@ -2,7 +2,7 @@ import { findGame, gameRegistry } from '@partyhub/games';
 import type { GameModule } from '@partyhub/shared';
 
 /**
- * Registre complet du serveur : jeux intégrés (code) et jeux créés dans l'administration
+ * Registre complet du serveur : jeux intégrés (code) et jeux créés dans l’administration
  * (base de données) : jeux de cartes et jeux de questions médias. Chaque source remplace
  * ses jeux en bloc à chaque modification via `setCustomGames`.
  */
@@ -27,7 +27,7 @@ export function resolveGame(id: string): GameModule | undefined {
   return undefined;
 }
 
-/** Table qui porte un jeu : code de l'application (« builtin ») ou source administrée. */
+/** Table qui porte un jeu : code de l’application (« builtin ») ou source administrée. */
 export function sourceOf(id: string): CustomSource | 'builtin' | undefined {
   if (findGame(id)) return 'builtin';
   for (const [source, games] of customBySource) {

@@ -344,18 +344,20 @@ describe('Ressemblance : robots', () => {
       center: c('k0', 'r1'),
       pile: [],
     });
-    expect(mod.suggest?.(s, 'p1', () => 0.9)).toMatchObject({ type: 'tap', payload: { cardId: 'a1' } });
-    expect(mod.suggest?.(s, 'p1', () => 0.1)).toBeNull();
+    expect(mod.suggest?.(s, 'p1', () => 0.9, 0)).toMatchObject({ type: 'tap', payload: { cardId: 'a1' } });
+    expect(mod.suggest?.(s, 'p1', () => 0.1, 0)).toBeNull();
   });
 
   it('le robot ne joue rien sans carte qui réponde, pendant un verrou, ou hors partie', () => {
     const { mod, base } = build();
     const none = situation(base, { hands: { p1: [c('a2', 'b2')], p2: [] }, center: c('k0', 'r1'), pile: [] });
-    expect(mod.suggest?.(none, 'p1', () => 0.9)).toBeNull();
+    expect(mod.suggest?.(none, 'p1', () => 0.9, 0)).toBeNull();
 
+    // Le verrou s’écrit sur l’horloge de la partie (ctx.now) : le robot le compare à `now`, pas à Date.now().
     const yes = situation(base, { hands: { p1: [c('a1', 'r1')], p2: [] }, center: c('k0', 'r1'), pile: [] });
-    const locked = situation(yes, { locked: { p1: Date.now() + 60_000 } });
-    expect(mod.suggest?.(locked, 'p1', () => 0.9)).toBeNull();
-    expect(mod.suggest?.(yes, 'p9', () => 0.9)).toBeNull();
+    const locked = situation(yes, { locked: { p1: 60_000 } });
+    expect(mod.suggest?.(locked, 'p1', () => 0.9, 0)).toBeNull();
+    expect(mod.suggest?.(locked, 'p1', () => 0.9, 60_000)).toMatchObject({ type: 'tap' });
+    expect(mod.suggest?.(yes, 'p9', () => 0.9, 0)).toBeNull();
   });
 });

@@ -1,11 +1,13 @@
 import type { GameModule } from '@partyhub/shared';
 import { quizParty } from './quiz-party/module.js';
+import { phrasesTrous } from './phrases-trous/module.js';
 import { association } from './association/module.js';
 import { plutotQui } from './plutot-qui/module.js';
 import { imposteur } from './imposteur/module.js';
 import { plusOuMoins } from './plus-ou-moins/module.js';
 import { reflexe } from './reflexe/module.js';
 import { microDefis } from './micro-defis/module.js';
+import { gagsEnRafale } from './gags-en-rafale/module.js';
 import { funambule } from './funambule/module.js';
 import { bombesParty } from './bombes-party/module.js';
 import { createCardGame } from './cards/engine.js';
@@ -25,11 +27,12 @@ import { aventureIa } from './aventure/module.js';
 
 /**
  * Registre explicite des jeux disponibles.
- * Ajouter un jeu = créer son dossier puis l'ajouter ICI (aucun chargement
+ * Ajouter un jeu = créer son dossier puis l’ajouter ICI (aucun chargement
  * dynamique depuis le disque ou la configuration). Voir docs/ADDING-A-GAME.md.
  */
 export const gameRegistry: GameModule[] = [
   quizParty,
+  phrasesTrous,
   association,
   plutotQui,
   imposteur,
@@ -37,6 +40,7 @@ export const gameRegistry: GameModule[] = [
   plusOuMoins,
   reflexe,
   microDefis,
+  gagsEnRafale,
   funambule,
   bombesParty,
   createCardGame(cardGamePresets['cartes-couleurs'], { id: 'cartes-couleurs' }),
@@ -62,6 +66,7 @@ export function findGame(id: string): GameModule | undefined {
 }
 
 export { quizParty } from './quiz-party/module.js';
+export { phrasesTrous } from './phrases-trous/module.js';
 export type { QuizSettings, QuizState } from './quiz-party/module.js';
 export { association } from './association/module.js';
 export { plutotQui } from './plutot-qui/module.js';
@@ -73,6 +78,10 @@ export { microDefis, microDefisSettingsSchema } from './micro-defis/module.js';
 export type { MicroDefisState, MicroDefisSettings } from './micro-defis/module.js';
 export { MICROGAMES, MICROGAME_IDS, judge as judgeMicrogame, pileMarker } from './micro-defis/microgames.js';
 export type { Microgame, MicrogameId } from './micro-defis/microgames.js';
+export { gagsEnRafale, gagsSettingsSchema } from './gags-en-rafale/module.js';
+export type { GagsState, GagsSettings } from './gags-en-rafale/module.js';
+export { GAGS, GAG_IDS, judge as judgeGag, flyAt } from './gags-en-rafale/gags.js';
+export type { Gag, GagId } from './gags-en-rafale/gags.js';
 export { funambule, funambuleSettingsSchema } from './funambule/module.js';
 export type { FunambuleState, FunambuleSettings, FunambulePhase } from './funambule/module.js';
 export { judgeWalk, windAt, windStrength, FallDetector, WALK_MS } from './funambule/rules.js';
@@ -222,3 +231,4 @@ export {
   rollDice as boardRollDice,
   currentPlayer as boardCurrentPlayer,
 } from './board/rules.js';
+export { createRecipeGame } from './recipes/index.js';

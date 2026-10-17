@@ -18,8 +18,8 @@ export function MicroDefisPlayer({ publicState, playerState, playerId, now, send
   const pub = publicState as MicroDefisPub | null;
   const me = playerState as MicroDefisMine | null;
   const [error, setError] = useState<string | null>(null);
-  // Instant du début du défi sur ce téléphone : l'horloge serveur moins le trajet de la vue (le curseur « Pile »
-  // s'aligne ainsi sur le serveur, à quelques millisecondes près).
+  // Instant du début du défi sur ce téléphone : l’horloge serveur moins le trajet de la vue (le curseur « Pile »
+  // s’aligne ainsi sur le serveur, à quelques millisecondes près).
   const startedAt = pub?.startedAt ?? 0;
   const localStart = useLocalStart(startedAt, now);
 
@@ -78,7 +78,7 @@ export function MicroDefisPlayer({ publicState, playerState, playerId, now, send
   );
 }
 
-/** Présentation du défi, avec le bouton d'autorisation (iOS demande un appui pour les capteurs). */
+/** Présentation du défi, avec le bouton d’autorisation (iOS demande un appui pour les capteurs). */
 function IntroPhone({ pub, game }: { pub: MicroDefisPub; game: MicrogameView }) {
   const [note, setNote] = useState<string | null>(null);
   const needsMotion = game.sensor === 'shake' || game.sensor === 'tilt' || game.sensor === 'spin';

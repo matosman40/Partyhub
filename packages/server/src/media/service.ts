@@ -10,7 +10,7 @@ import type { AssetService } from '../assets/service.js';
 import type { Store } from '../db/store.js';
 import { setCustomGames } from '../games-registry.js';
 
-/** Préfixe des identifiants des jeux de questions médias créés dans l'administration. */
+/** Préfixe des identifiants des jeux de questions médias créés dans l’administration. */
 export const MEDIA_GAME_PREFIX = 'media-';
 
 export interface MediaGameRecord {
@@ -110,7 +110,7 @@ export class MediaQuizService {
     return errors;
   }
 
-  /** Crée un jeu (id absent) ou remplace la définition d'un jeu existant. */
+  /** Crée un jeu (id absent) ou remplace la définition d’un jeu existant. */
   save(id: string | null, input: unknown): { ok: true; id: string } | { ok: false; error: string } {
     const parsed = mediaQuizDefinitionSchema.safeParse(input);
     if (!parsed.success) {
@@ -135,7 +135,7 @@ export class MediaQuizService {
     return true;
   }
 
-  /** Copie d'un jeu, nommée « … (copie) » : on repart d'une base modifiable. */
+  /** Copie d’un jeu, nommée « … (copie) » : on repart d’une base modifiable. */
   duplicate(id: string): { ok: true; id: string } | { ok: false; error: string } {
     const original = this.get(id);
     if (!original) return { ok: false, error: 'Jeu inconnu.' };

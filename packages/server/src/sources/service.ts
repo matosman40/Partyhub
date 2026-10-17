@@ -8,7 +8,7 @@ import { GitHubError, downloadArchive, latestRelease, parseSource, type GitHubOp
 /**
  * Sources GitHub des paquets : chaque source est un dépôt dont la dernière release contient un
  * `.phgame` et son `.sha256`. Une seule version par jeu est installée : la mise à jour remplace
- * l'ancienne, comme pour un import manuel. Un dépôt ne peut pas prendre un paquet qui n'est pas le sien.
+ * l’ancienne, comme pour un import manuel. Un dépôt ne peut pas prendre un paquet qui n’est pas le sien.
  */
 
 export interface PackageSourceRecord {
@@ -74,7 +74,7 @@ export class PackageSourceService {
     private readonly options: PackageSourceOptions = {},
   ) {}
 
-  /** Vrai si le serveur dispose d'un jeton GitHub. Le jeton lui-même n'est jamais exposé. */
+  /** Vrai si le serveur dispose d’un jeton GitHub. Le jeton lui-même n’est jamais exposé. */
   get tokenConfigured(): boolean {
     return Boolean(this.options.token);
   }

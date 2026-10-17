@@ -18,7 +18,7 @@ export function TarotCard({ id }: { id: string }) {
   return <CardFace def={TAROT_DEFINITION} entry={tarotEntry(id)} label={cardName(id)} />;
 }
 
-/** Petite carte, pour le chien, l'écart et le dernier pli. Sans data-uid : elle ne vole pas. */
+/** Petite carte, pour le chien, l’écart et le dernier pli. Sans data-uid : elle ne vole pas. */
 export function MiniCard({ id, className = '' }: { id: string; className?: string }) {
   return (
     <span className={`tarot-mini ${className}`.trim()}>
@@ -50,14 +50,14 @@ interface HandRowsProps {
   onTap: (uid: string) => void;
   playable?: ReadonlySet<string>;
   selected?: readonly string[];
-  /** Cartes qu'on ne peut pas choisir (écart) : atténuées. */
+  /** Cartes qu’on ne peut pas choisir (écart) : atténuées. */
   locked?: ReadonlySet<string>;
-  /** Cartes qui viennent du chien : repérées d'un trait doré. */
+  /** Cartes qui viennent du chien : repérées d’un trait doré. */
   fromChien?: ReadonlySet<string>;
   pendingUid?: string | null;
 }
 
-/** La main sur plusieurs rangées d'éventails : atouts d'abord, puis les couleurs. */
+/** La main sur plusieurs rangées d’éventails : atouts d’abord, puis les couleurs. */
 export function HandRows({
   ids,
   mode,
@@ -72,7 +72,7 @@ export function HandRows({
 }: HandRowsProps) {
   const rows = handRows(ids);
   return (
-    <div className="tarot-hand">
+    <div className="tarot-hand" role="group" aria-label="Votre main" tabIndex={0}>
       {rows.map((row, index) => (
         <HandFan
           key={index}
@@ -111,7 +111,7 @@ interface SummaryProps {
   playerId?: string;
 }
 
-/** Bilan d'une donne : calcul de la marque, puis points de chaque joueur et total. */
+/** Bilan d’une donne : calcul de la marque, puis points de chaque joueur et total. */
 export function SummaryPanel({ pub, compact = false, playerId }: SummaryProps) {
   const sm = pub.summary;
   if (!sm) return null;

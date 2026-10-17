@@ -1,8 +1,8 @@
 import { z } from 'zod';
 
 /**
- * Mode test : un curseur de cadence règle combien d'émotions et de voix un joueur peut envoyer dans le même
- * laps de temps. Hors mode test, la cadence normale s'applique. Réservé à l'administration.
+ * Mode test : un curseur de cadence règle combien d’émotions et de voix un joueur peut envoyer dans le même
+ * laps de temps. Hors mode test, la cadence normale s’applique. Réservé à l’administration.
  */
 export const TEST_MODE_FACTORS = [1, 2, 4, 10] as const;
 export type TestModeFactor = (typeof TEST_MODE_FACTORS)[number];

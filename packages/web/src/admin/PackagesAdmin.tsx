@@ -8,6 +8,7 @@ export interface PackageRecord {
   version: string;
   description: string;
   author: string;
+  module: 'cards' | 'board' | 'quiz' | 'recipe';
   sha256: string;
   size: number;
   enabled: boolean;
@@ -16,7 +17,7 @@ export interface PackageRecord {
   installedAt: string;
 }
 
-/** Copie modifiable d'un paquet, avec son état par rapport au paquet d'origine. */
+/** Copie modifiable d’un paquet, avec son état par rapport au paquet d’origine. */
 interface PackageCopy {
   gameId: string;
   packageId: string;
@@ -36,7 +37,7 @@ interface PackageVersion {
   active: boolean;
 }
 
-/** Section de l'administration où retrouver la copie modifiable, selon le type de jeu. */
+/** Section de l’administration où retrouver la copie modifiable, selon le type de jeu. */
 const COPY_SECTION: Record<'cards' | 'board' | 'quiz', string> = {
   cards: 'Jeux de cartes',
   board: 'Jeux de plateau',
@@ -93,7 +94,7 @@ export function PackagesAdmin({ onChanged }: { onChanged: () => void }) {
     setNotice(null);
     setBusy(true);
     try {
-      // Le fichier part tel quel (archive binaire) : le helper JSON de l'API ne convient pas ici.
+      // Le fichier part tel quel (archive binaire) : le helper JSON de l’API ne convient pas ici.
       const res = await fetch('/api/admin/packages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/zip' },
@@ -370,7 +371,7 @@ export function PackagesAdmin({ onChanged }: { onChanged: () => void }) {
               >
                 Versions
               </button>
-              {r.status === 'actif' && (
+              {r.status === 'actif' && r.module !== 'recipe' && (
                 <button type="button" className="btn ghost small" onClick={() => copy(r)}>
                   Créer une copie modifiable
                 </button>

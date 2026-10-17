@@ -7,7 +7,7 @@ import type { Character } from './types.js';
  */
 
 export const MAX_LEVEL = 5;
-/** Expérience totale nécessaire pour atteindre chaque niveau (l'index est le niveau). */
+/** Expérience totale nécessaire pour atteindre chaque niveau (l’index est le niveau). */
 export const LEVEL_XP: readonly number[] = [0, 0, 15, 40, 75, 120];
 export const MAX_BAG = 4;
 const MAX_PV_MAX = 14;
@@ -66,14 +66,14 @@ export function syncLevel(c: Character): Progressed<Character> {
   return { character, lines };
 }
 
-/** Ajoute de l'expérience, puis applique les niveaux gagnés. */
+/** Ajoute de l’expérience, puis applique les niveaux gagnés. */
 export function gainXp(c: Character, amount: number): Progressed<Character> {
   if (amount <= 0) return { character: c, lines: [] };
   const grown = syncLevel({ ...c, xp: c.xp + amount });
   return { character: grown.character, lines: [`${c.name} gagne ${amount} d’expérience.`, ...grown.lines] };
 }
 
-/** Met un objet dans le sac. Le sac est plein : l'objet le plus ancien part. */
+/** Met un objet dans le sac. Le sac est plein : l’objet le plus ancien part. */
 export function gainItem(c: Character, item: string): Progressed<Character> {
   const bag = [...c.bag, item].slice(-MAX_BAG);
   return { character: { ...c, bag }, lines: [`${c.name} trouve : ${item}.`] };

@@ -11,9 +11,9 @@ import { usePackInfo } from './character-packs.js';
 import { PackFigure } from './character-pack-figure.js';
 
 /**
- * Personnage dessiné en SVG, d'après le rig validé : un corps articulé (bras, jambes, tête)
- * dont la pose change avec l'humeur. Le trait noir est un trait plus épais posé sous la couleur.
- * Aucune donnée libre n'arrive ici : tout passe par les index validés de `CharacterSpec`.
+ * Personnage dessiné en SVG, d’après le rig validé : un corps articulé (bras, jambes, tête)
+ * dont la pose change avec l’humeur. Le trait noir est un trait plus épais posé sous la couleur.
+ * Aucune donnée libre n’arrive ici : tout passe par les index validés de `CharacterSpec`.
  */
 
 const INK = '#1a1030';
@@ -39,7 +39,7 @@ interface Pose {
   sparkles?: boolean;
 }
 
-/** Visage de chaque expression du profil (au repos). « calme » reprend le visage de l'attitude de repos. */
+/** Visage de chaque expression du profil (au repos). « calme » reprend le visage de l’attitude de repos. */
 const EXPRESSION_FACE: Record<CharacterExpression, Pick<Pose, 'eyes' | 'brow' | 'mouth'>> = {
   calme: { eyes: 'open', brow: 'neutral', mouth: 'smile' },
   souriant: { eyes: 'open', brow: 'happy', mouth: 'grin' },
@@ -50,8 +50,8 @@ const EXPRESSION_FACE: Record<CharacterExpression, Pick<Pose, 'eyes' | 'brow' | 
 };
 
 /**
- * Visage à montrer : celui qui est demandé (émotion du salon), sinon l'expression du profil.
- * L'expression du profil ne se voit qu'au repos : une attitude (joie, danse…) garde son visage.
+ * Visage à montrer : celui qui est demandé (émotion du salon), sinon l’expression du profil.
+ * L’expression du profil ne se voit qu’au repos : une attitude (joie, danse…) garde son visage.
  */
 export function faceOf(
   spec: CharacterSpec,
@@ -132,7 +132,7 @@ const POSES: Record<CharacterMood, Pose> = {
 const rad = (deg: number) => (deg * Math.PI) / 180;
 const f = (n: number) => n.toFixed(1);
 
-/** Deux segments articulés : renvoie le tracé et la position de l'extrémité. */
+/** Deux segments articulés : renvoie le tracé et la position de l’extrémité. */
 function limb(x0: number, y0: number, a1: number, l1: number, a2: number, l2: number) {
   const x1 = x0 + l1 * Math.sin(rad(a1));
   const y1 = y0 + l1 * Math.cos(rad(a1));
@@ -429,9 +429,9 @@ function Star({ x, y }: { x: number; y: number }) {
 export interface CharacterProps {
   spec: CharacterSpec;
   mood?: CharacterMood;
-  /** Visage demandé pour un instant (émotion du salon). Absent : l'expression du profil, au repos. */
+  /** Visage demandé pour un instant (émotion du salon). Absent : l’expression du profil, au repos. */
   face?: CharacterExpression;
-  /** `bust` : tête et buste, pour les bulles d'avatar. `full` : personnage entier. */
+  /** `bust` : tête et buste, pour les bulles d’avatar. `full` : personnage entier. */
   framing?: 'full' | 'bust';
   /** Texte alternatif ; absent, le personnage est décoratif. */
   label?: string;
@@ -443,7 +443,7 @@ const FRAMES = {
   bust: { viewBox: '10 -46 200 200', ratio: 1 },
 } as const;
 
-/** Personnage dessiné (listes fermées). Le point d'entrée public est `Character`, qui gère aussi les packs. */
+/** Personnage dessiné (listes fermées). Le point d’entrée public est `Character`, qui gère aussi les packs. */
 function DrawnCharacter({ spec, mood = 'idle', framing = 'full', label, className, face }: CharacterProps) {
   const uid = useId().replace(/[^a-zA-Z0-9]/g, '');
   const c = characterColors(spec);
@@ -549,7 +549,7 @@ function DrawnCharacter({ spec, mood = 'idle', framing = 'full', label, classNam
           );
         })}
 
-      {/* tête, en rotation selon l'humeur */}
+      {/* tête, en rotation selon l’humeur */}
       <g transform={`rotate(${P.tilt} ${CX} ${hy + 40})`}>
         <circle cx={CX} cy={hy} r={50} fill={`url(#${headId})`} stroke={INK} strokeWidth={4} />
         <circle cx={CX} cy={hy} r={50} fill={`url(#${hatchId})`} />

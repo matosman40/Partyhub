@@ -4,7 +4,7 @@ import { vibrate } from '../../client/device.js';
 
 /**
  * Sons, vibrations et trajets des jeux de cartes.
- * Tout se déclenche à partir des changements d'état déjà reçus : aucun message réseau
+ * Tout se déclenche à partir des changements d’état déjà reçus : aucun message réseau
  * supplémentaire, et rien ne joue au premier affichage.
  */
 
@@ -12,7 +12,7 @@ function reduceMotion(): boolean {
   return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
-/** Appelle `onChange` quand `value` change d'un affichage à l'autre. */
+/** Appelle `onChange` quand `value` change d’un affichage à l’autre. */
 export function useChange<T>(value: T, onChange: (before: T, after: T) => void): void {
   const last = useRef(value);
   const latest = useRef(onChange);
@@ -36,15 +36,15 @@ export function cueTurn(): void {
 interface Snapshot {
   /** Position de chaque carte visible, avec sa zone (« hand » ou « table »). */
   cards: Map<string, { rect: DOMRect; zone: string }>;
-  /** Siège dont c'était le tour à l'affichage précédent : celui qui vient de jouer. */
+  /** Siège dont c’était le tour à l’affichage précédent : celui qui vient de jouer. */
   turn: DOMRect | null;
 }
 
-/** Fait voler une carte de `from` jusqu'à sa place réelle. */
+/** Fait voler une carte de `from` jusqu’à sa place réelle. */
 function fly(el: HTMLElement, from: DOMRect): void {
   const target = el.querySelector<HTMLElement>('[data-fly-target]') ?? el;
   if (typeof target.animate !== 'function') return;
-  // On coupe d'abord l'animation d'entrée par défaut, sinon la place mesurée serait celle du début du retournement.
+  // On coupe d’abord l’animation d’entrée par défaut, sinon la place mesurée serait celle du début du retournement.
   target.style.animation = 'none';
   const to = target.getBoundingClientRect();
   if (to.width === 0 || from.width === 0) return;

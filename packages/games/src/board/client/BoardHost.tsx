@@ -4,7 +4,7 @@ import { useRemaining } from '../../client/hooks.js';
 import { BOARD_CELL_LABELS } from '@partyhub/shared';
 import { badgeOf, faceOf, type BoardPub } from './common.js';
 
-/** Écran principal d'un jeu de plateau : piste, pions, dernier lancer et classement. */
+/** Écran principal d’un jeu de plateau : piste, pions, dernier lancer et classement. */
 export function BoardHost({ publicState, now }: HostViewProps) {
   const pub = publicState as BoardPub;
   const remaining = useRemaining(pub.turnEndsAt ?? undefined, now);
@@ -56,7 +56,7 @@ export function BoardHost({ publicState, now }: HostViewProps) {
           <div className="bd-dice" aria-live="polite">
             <div className="bd-faces">
               {pub.lastRoll.dice.map((d, i) => (
-                <span key={i} className="bd-die" aria-label={`Dé : ${d}`}>
+                <span key={i} className="bd-die" role="img" aria-label={`Dé : ${d}`}>
                   {faceOf(d)}
                 </span>
               ))}

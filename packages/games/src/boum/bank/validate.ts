@@ -11,7 +11,7 @@ import {
 import { COUNTRY_CODES } from './countries.js';
 
 /**
- * Validation des entrées de banque, commune à l'import, à l'édition et aux propositions.
+ * Validation des entrées de banque, commune à l’import, à l’édition et aux propositions.
  * Une seule règle pour tous les chemins : ce qui passe ici est ce qui peut être tiré en partie.
  */
 
@@ -86,7 +86,7 @@ export type ValidationResult = { ok: true; entry: ValidEntry } | { ok: false; re
 const CONTROL_CHARS = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/;
 const HTML_CHARS = /[<>]/;
 
-/** Valide une entrée complète. `limitAllowed` : le niveau limite n'est accepté que pour ces types. */
+/** Valide une entrée complète. `limitAllowed` : le niveau limite n’est accepté que pour ces types. */
 export function validateEntry(input: CandidateInput): ValidationResult {
   if (!isBankType(input.type)) return { ok: false, reason: 'type de banque inconnu' };
   const type = input.type;
@@ -175,7 +175,7 @@ export interface ImportRejection {
 }
 
 export interface ImportPreview {
-  /** Erreur qui arrête tout l'import (fichier illisible, trop gros, format non reconnu). */
+  /** Erreur qui arrête tout l’import (fichier illisible, trop gros, format non reconnu). */
   fatal: string | null;
   accepted: ImportCandidate[];
   rejected: ImportRejection[];
@@ -184,7 +184,7 @@ export interface ImportPreview {
 
 /**
  * Analyse un fichier texte. `existing` contient les clés de doublon déjà en base.
- * Une ligne fausse n'empêche pas les autres ; les doublons (base ou fichier) sont ignorés et signalés.
+ * Une ligne fausse n’empêche pas les autres ; les doublons (base ou fichier) sont ignorés et signalés.
  */
 export function parseBankText(raw: string, existing: ReadonlySet<string>): ImportPreview {
   const empty: ImportPreview = { fatal: null, accepted: [], rejected: [], duplicates: [] };

@@ -2,7 +2,76 @@
 
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [versionnement sémantique](https://semver.org/lang/fr/).
 
-## Non publié
+## [0.12.0] - non publiée
+
+### Ajouté
+
+- Recettes : les consignes écrites par l’IA sont contrôlées avant d’être montrées (adresses, e-mails, balisage, liste de termes refusés). Un paquet demande au plus 10 générations d’IA par heure ; au-delà, la partie prend ses consignes sans appeler l’IA, avec un message.
+
+- Format de paquet 3 : **recettes**. Une recette décrit un jeu avec les règles d'une famille connue du moteur (aujourd'hui « vote sur consigne ») : textes, règles, écrans par rôle et consignes écrites par l'IA, avec repli obligatoire. Le moteur devient 0.12.0. Le paquet d'exemple `examples/exemple-recette` pèse 1,4 Ko, et le contrôle navigateur `scripts/recette-check-browser.py` joue une partie complète, avec installation par l'API d'administration.
+
+- Identité visuelle complète du catalogue : chaque jeu listé a son propre logo et son décor. Huit jeux n'en avaient pas (Couleurs & chiffres, Blanc-manger coco, Sudoku, Solitaire, Taquin, Mots croisés, Imite-moi, BOUM !) ; ils recevaient un décor emprunté à un autre jeu, choisi au hasard.
+- Bruitages de l'écran principal pour tous les jeux : lancement de la partie, bilan de chaque manche (bruit de jetons), fin de partie (fanfare). Aucun jeu n'a rien à faire ; un premier état reçu, comme une reprise d'écran, ne sonne pas. L'administration peut remplacer chaque bruitage.
+- Application installable : manifeste (nom, couleurs, icônes 192, 512 et adaptative), icône iOS et balises de partage.
+- Mode hors ligne : un service worker garde la coque de l’application (page, scripts, styles, polices, icônes). Sans réseau, l’application s’ouvre et explique qu’une partie demande la connexion. L’API et les connexions temps réel ne sont jamais mises en cache, et chaque build installe une nouvelle version qui purge l’ancienne.
+- Contrôles navigateur : `scripts/audio-check-browser.py` mesure le son réellement produit sur l’écran principal et sur le téléphone (niveau de sortie, sources démarrées), et `scripts/offline-check-browser.py` vérifie l’ouverture hors ligne. Tous deux sont dans la CI.
+- Pause de partie : l’hôte met la partie en pause depuis l’écran principal (bouton « Mettre en pause ») ou depuis son téléphone. Pendant la pause, l’horloge de la partie est figée : les décomptes s’arrêtent, les minuteurs et les robots attendent, et les actions des joueurs sont refusées. À la reprise, chaque minuteur repart avec le temps qui lui restait. Le téléphone et l’observateur voient la pause. Une partie terminée pendant la pause en sort. Limites : les animations purement visuelles (mouvements, capteurs des défis du téléphone) ne sont pas figées, et les délais de reconnexion d’un joueur absent continuent de courir.
+- Contrôles manuels (hors CI) : `scripts/keyboard-check-browser.py` (parcours au clavier de l’accueil, de la jointure et de la salle, avec focus visible), `scripts/devices-check-browser.py` (huit profils d’appareils : défilement horizontal et cibles tactiles), et `scripts/balance-sim.ts` (équilibrage par simulation de robots, `npx tsx`).
+- Contrôle navigateur : `scripts/pause-check-browser.py` vérifie la pause dans une vraie salle (le jeu est figé, le téléphone le signale, la reprise relance le jeu). Il est dans la CI.
+- Contrôle qualité du catalogue (tests) : chaque jeu listé doit avoir une fiche complète (titre, description de 40 à 180 caractères, notice de 2 à 12 étapes), une icône unique, un logo et un décor dessinés.
+- Gags en rafale : nouveau jeu, seul ou à plusieurs, façon jeux-éclair loufoques. Six gags d’une seconde jouent sur le téléphone : lancer la crêpe, écraser une mouche qui bouge, gonfler un ballon, ne pas toucher un bouton rouge, faire la statue, gratter un ticket. Une réussite rapporte 100 points, plus jusqu’à 60 pour la rapidité. De 1 à 20 gags, 10 par défaut. Le prompt complet pour recréer le jeu est servi par l’application, à `/prompts/gags-en-rafale.md`.
+- Fiches de jeu, façon boutique : chaque jeu a sa page (`/jeux/<identifiant>`), avec un en-tête aux couleurs du jeu, la notice complète (but, déroulé, astuces), une fiche technique (type, joueurs, durée, IA, version, lancé ou non sur cet appareil) et les autres jeux de la même catégorie. « Créer la salle » et « Essayer seul » sont sur la fiche.
+- Catalogue : filtres par nombre de joueurs, type de jeu, durée (moins de 10 min, de 10 à 25 min, plus de 25 min), intelligence artificielle (avec ou sans IA) et jeux joués récemment. Recherche par nom ou description, tri par nom, durée, nombre de joueurs ou jeux récents. Les filtres restent dans l’adresse de la page : un retour depuis une fiche retrouve la même liste.
+- Catalogue en fiches ou en liste. Un clic sur une ligne ouvre la fiche du jeu, où l’on peut revenir avant de créer une salle.
+- Captures des jeux sur la fiche : `scripts/game-photos.py` joue chaque jeu en salle d’entraînement, avec les robots seulement, et enregistre l’écran de salle et l’écran de jeu dans `packages/web/public/game-photos/`. L’index `index.json` est lu par la fiche, qui n’affiche la galerie que si le jeu a des captures.
+- Captures de la première partie : l’hôte autorise une fois, depuis le menu de l’écran principal (« Photos de la partie »), le partage de l’onglet. Pour chaque jeu encore sans captures, deux images sont prises pendant la partie réelle et une sur l’écran des résultats. Elles s’affichent sur la fiche du jeu, sur ordinateur et sur téléphone. Une seule salle par jeu, quatre captures au plus. Les parties d’essai n’en prennent pas.
+- Bandeau « Joués récemment » sur l’accueil. Les jeux lancés (salle ou essai) sont mémorisés sur cet appareil seulement, 12 au plus.
+- Drapeau « IA » dans le manifeste des jeux (Quiz Party, Phrases à trous, Aventure IA), qui alimente le filtre « Avec IA ».
+- Championnat du salon, pour tous les jeux multijoueurs : le salon joue une partie unique (par défaut) ou de 2 à 10 manches, avec 0, 2, 3 ou 4 équipes (Rouge, Bleue, Verte, Jaune). Le réglage se fait dans le menu de l’écran principal, avant la partie, et reste en place d’une manche à l’autre. Chaque manche rapporte des points selon le rang (10 au premier, puis 6, 4, 3, 2 et 1), cumulés jusqu’à la dernière manche. Une équipe marque la somme de ses membres ; les ex æquo se partagent le titre.
+- Championnat, rangs de progression : Recrue, Habitué (10 points), Confirmé (25), Expert (50) et Légende (100), affichés à côté de chaque joueur.
+- Championnat, icônes de victoire : champion, série de victoires (dès deux d’affilée), invaincu, et régulier (toujours sur le podium).
+- Podium de fin de partie pour tous les jeux : les trois premiers, avec leurs médailles, s’affichent à côté des résultats sur l’écran principal. Sur le téléphone, chaque joueur voit sa place, son rang de championnat et son équipe.
+- Championnat, historique : l’écran principal liste le vainqueur de chaque manche. Les équipes sont réparties à l’arrivée des joueurs et gardent leurs membres d’une manche à l’autre.
+- Protocole : nouveau message `host:championship` (manches et équipes, avant la partie). La vue du salon porte `championship`, `series` et `lastResult`, et chaque joueur porte son `team`.
+- Phrases à trous : nouveau jeu de la catégorie Quiz. L’IA écrit des phrases à trou à partir des mots-clés de chaque joueur. À chaque tour, chacun pose une carte de sa main dans le trou, puis tout le monde vote anonymement (100 points par vote reçu, 50 de plus pour la carte qui complète juste le trou). De 3 à 8 tours, puis un vainqueur. Sans IA configurée, les phrases intégrées prennent le relais, avec un message à l’écran.
+- Quiz Party, source « Thèmes des joueurs (IA) » : chaque joueur donne quelques mots-clés à tour de rôle, et l’IA écrit les questions à partir de ces thèmes. Sans IA configurée, ou si sa réponse est inutilisable, les questions intégrées prennent le relais, avec un message à l’écran.
+
+### Modifié
+
+- Recettes, validation : les phases à écran fixe (attente et génération, classement du téléphone) ne se personnalisent plus, et la clé est refusée au lieu d’être ignorée. Un même bloc ne figure qu’une fois par phase, et deux consignes identiques (sans tenir compte de la casse) font refuser le paquet.
+
+- ModelScope (génération d'images) est désactivé par défaut : son service est réservé à un usage non commercial. Il ne s'active que si `MODELSCOPE_ALLOW_NONCOMMERCIAL=1` est défini.
+
+- Budgets des paquets, pour rester petits : archive 8 Mio (16 Mio auparavant), manifeste 8 Ko (64 Ko), définition 256 Ko (1 Mio), image 200 Ko et 1024 px de côté (2048 px). Les données pèsent quelques Ko ; seules les images sont lourdes.
+
+- Icônes : Couleurs & chiffres (🌈) et Taquin (🔀) ne partagent plus leur icône avec un autre jeu.
+- Aventure IA : description raccourcie pour tenir sur une carte du catalogue. Tarot : une étape de la notice raccourcie, sans changer la règle.
+- Accueil : les puces de catégorie cèdent la place à la recherche, au tri, à l’affichage et à un panneau de filtres. Sur téléphone, les filtres se déplient depuis le bouton « Filtres ».
+- Statistiques des profils : un jeu renommé par l’administration s’y affiche sous son nouveau nom, et non plus sous son nom d’origine.
+- Réglages de Quiz Party et des Phrases à trous : un champ numérique vidé est ramené à sa borne minimale à la perte de focus, au lieu d’envoyer 0 au serveur.
+- Rejouer : pendant un championnat, le bouton devient « Manche suivante : 2 sur 3 », puis « Nouveau championnat » une fois le titre attribué. Rejouer ramène toujours au salon, où l’hôte lance la manche avec « Lancer la partie ». Le salon affiche la progression du championnat.
+- Accessibilité des vues de jeu : `scripts/a11y-games-browser.py` joue chaque jeu en salle d’entraînement (les robots jouent) et audite l’écran TV et le téléphone avec axe-core (WCAG 2 niveaux A et AA), au salon puis à 2, 5, 9 et 14 secondes de la partie. Le script échoue sur une violation grave ou critique, ou sur une erreur JavaScript. La CI le lance après l’audit des pages.
+- Garde-fou d’accessibilité (`aria-roles.test.ts`) : un élément générique (div, span, p) ne porte pas de nom (`aria-label`) sans rôle explicite.
+
+- Catalogue : la catégorie « Plateau » s’intitule désormais « Ambiance » (Réflexe, Gags en rafale, Micro-défis, Funambule, Bombes party…). Son identifiant interne ne change pas.
+- Textes : les apostrophes sont typographiques (’) dans les textes et les commentaires en français. Le message « Ce n’est pas votre tour. » suit la même règle.
+
+### Corrigé
+
+- Recettes : un joueur qui quitte en pleine manche ne bloque plus la phase. Quand le dernier joueur attendu part pendant l’écriture ou le vote, la phase suivante s’ouvre tout de suite, et le joueur parti n’apparaît plus dans l’attente ni dans le compte. Ses points restent au classement.
+- Images des paquets : les JPEG et WebP sont contrôlés comme les PNG (côté le plus long au plus 1024 px). Les dimensions sont lues dans l’en-tête, sans décodage.
+- ModelScope dans Docker : la variable `MODELSCOPE_ALLOW_NONCOMMERCIAL` est transmise au conteneur (`compose.yaml`, `compose.dev.yaml`) et documentée dans `.env.example` et le README. Sans elle, ModelScope reste désactivé.
+- Administration : le bouton « Créer une copie modifiable » n’apparaît plus pour une recette, qui ne se copie pas.
+
+- Une recette installée était relue comme un jeu de cartes : sa réinstallation était refusée à tort (« est installé comme jeu de cartes »). Le module stocké est maintenant lu correctement.
+
+- Accessibilité des vues de jeu : Sudoku, Taquin et Mots croisés déclaraient une grille (`role="grid"`) sans les cellules ni la navigation attendues ; ce sont désormais des groupes nommés. Solitaire annonce la carte cachée comme une image. Tarot : la main est accessible au clavier et le pli en cours est nommé. Poker, Rami 51, Président, Cartes, Promoteur, Plateau, Phrases à trous et Aventure : éléments nommés sans rôle, désormais annoncés comme images, groupes ou jauges. Administration (webcam, niveaux des appareils) et écran des appareils corrigés de la même façon.
+- Son, écran principal : le son se débloque au premier toucher ou clic de la page, et non plus seulement dans une vue de jeu. Le départ lancé depuis le salon de l’écran principal sonne désormais.
+- Son, téléphone : la couche de bruitages (départ, bilan, fin) joue aussi sur le téléphone. Un bruitage propre au jeu passe avant, sans doublon.
+- Son, double son : à la fin d’une manche, le bilan de la couche d’écran ne sonne plus en même temps que la victoire ou le ramassage du jeu. La fanfare finale reste toujours jouée.
+- Son, reprise d’écran : le premier état reçu après un rechargement ne joue plus le départ.
+- Bots de « Ressemblance des formes » : le verrou d’un robot se comparait à `Date.now()` au lieu de l’horloge de la partie. Il utilise désormais `now`, transmis à `suggest` par la salle.
+- Salle TV sur tablette : les boutons compacts « Ajouter un robot » et « Lancer depuis mon téléphone » font au moins 44 px de haut au toucher (`pointer: coarse`). Constat à vérifier sur un vrai appareil, l’écran principal étant mis à l’échelle. Le hook ne comparait pas avec un état qui n’existait pas encore.
 
 ## [0.11.0] - 2026-10-17
 

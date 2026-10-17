@@ -31,7 +31,19 @@ export {
   MEDIA_PREFS_KEY,
 } from './media.js';
 export type { MediaPrefs } from './media.js';
-export { isMuted, onMuteChange, setMuted, setSfxFiles, startMusic, stopMusic, unlockAudio } from './audio.js';
+export {
+  cueYieldsToGame,
+  isMuted,
+  onMuteChange,
+  play as playSfx,
+  playCue,
+  setMuted,
+  setSfxFiles,
+  startMusic,
+  stopMusic,
+  unlockAudio,
+  unlockOnFirstGesture,
+} from './audio.js';
 export { SoundToggle } from './SoundToggle.js';
 export {
   motionAvailable,
@@ -57,7 +69,7 @@ export {
   TILT_FULL_DEG,
   tiltFrom,
 } from './sensors-core.js';
-// Banques BOUM ! : libellés, types et règles de saisie, partagés avec l'administration et le profil.
+// Banques BOUM ! : libellés, types et règles de saisie, partagés avec l’administration et le profil.
 export { BANK_TYPES, BANK_TYPE_INFO, LEVELS, LEVEL_LABELS, STATUSES, STATUS_LABELS } from '../boum/bank/types.js';
 export type { AnswerRule, BankType, EntryStatus, Level } from '../boum/bank/types.js';
 export type { ImportCandidate, ImportPreview, ImportRejection } from '../boum/bank/validate.js';
@@ -71,7 +83,7 @@ export type { CardsPublic, CardsPlayerState } from '../cards/client/common.js';
 
 /*
  * Chaque jeu est chargé à la demande (découpage du bundle) : le navigateur ne télécharge
- * le code d'un jeu que lorsqu'on le règle, l'affiche ou le joue. Les vues rendues par les
+ * le code d’un jeu que lorsqu’on le règle, l’affiche ou le joue. Les vues rendues par les
  * pages doivent donc être sous une frontière Suspense.
  */
 
@@ -83,6 +95,9 @@ export const boardViews = lazyViews(() => import('../board/client/index.js').the
 
 /** Vues communes à tous les jeux de questions médias (chacun a sa définition côté serveur). */
 export const mediaQuizViews = lazyViews(() => import('../media-quiz/client/index.js').then((m) => m.mediaQuizViews));
+
+/** Vues communes à toutes les recettes des paquets de format 3 (chacune a sa disposition côté serveur). */
+export const recipeViews = lazyViews(() => import('../recipes/client/index.js').then((m) => m.recipeViews));
 
 const soloViews = (id: string) =>
   lazyViews(() => import('../solo/client/index.js').then((m) => m.soloClientViews[id]!));
@@ -99,6 +114,14 @@ export const clientViews: Record<string, GameClientViews> = {
       import('../quiz-party/client/Settings.js'),
     ]);
     return { Settings: QuizSettings, Host: QuizHost, Player: QuizPlayer };
+  }),
+  'phrases-trous': lazyViews(async () => {
+    const [{ PhrasesHost }, { PhrasesPlayer }, { PhrasesSettings }] = await Promise.all([
+      import('../phrases-trous/client/HostScreen.js'),
+      import('../phrases-trous/client/PlayerScreen.js'),
+      import('../phrases-trous/client/Settings.js'),
+    ]);
+    return { Settings: PhrasesSettings, Host: PhrasesHost, Player: PhrasesPlayer };
   }),
   association: lazyViews(async () => {
     const [{ AssociationHost }, { AssociationPlayer }] = await Promise.all([
@@ -148,6 +171,17 @@ export const clientViews: Record<string, GameClientViews> = {
       Settings: fieldSettings([{ key: 'rounds', label: 'Défis', min: 1, max: 12 }]),
       Host: MicroDefisHost,
       Player: MicroDefisPlayer,
+    };
+  }),
+  'gags-en-rafale': lazyViews(async () => {
+    const [{ GagsHost }, { GagsPlayer }] = await Promise.all([
+      import('../gags-en-rafale/client/HostScreen.js'),
+      import('../gags-en-rafale/client/PlayerScreen.js'),
+    ]);
+    return {
+      Settings: fieldSettings([{ key: 'rounds', label: 'Gags', min: 1, max: 20 }]),
+      Host: GagsHost,
+      Player: GagsPlayer,
     };
   }),
   funambule: lazyViews(async () => {
@@ -276,5 +310,5 @@ export type { Group } from '../promoteur/board.js';
 export type { PlayerPub, PromoteurPub, TilePub } from '../promoteur/client/types.js';
 export { useSteppedPositions } from '../promoteur/client/useStepped.js';
 export { usePrefersReducedMotion } from './motion.js';
-export { useRemaining } from './hooks.js';
+export { PauseContext, useRemaining } from './hooks.js';
 export { TimerBar } from './ui.js';

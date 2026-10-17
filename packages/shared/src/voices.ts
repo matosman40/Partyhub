@@ -2,13 +2,13 @@ import { z } from 'zod';
 
 /**
  * Voix de profil : de courts sons enregistrés par un joueur (5 au maximum), nommés par lui.
- * Pendant la partie, il les déclenche depuis son téléphone ; l'écran principal les joue.
+ * Pendant la partie, il les déclenche depuis son téléphone ; l’écran principal les joue.
  */
 
 export const VOICE_MAX_PER_PROFILE = 5;
-/** Durée d'un enregistrement : il s'arrête tout seul à cette limite. */
+/** Durée d’un enregistrement : il s’arrête tout seul à cette limite. */
 export const VOICE_MAX_SECONDS = 5;
-/** Taille maximale d'une voix une fois enregistrée (5 secondes tiennent largement). */
+/** Taille maximale d’une voix une fois enregistrée (5 secondes tiennent largement). */
 export const VOICE_MAX_BYTES = 300 * 1024;
 export const VOICE_NAME_MAX = 30;
 
@@ -32,8 +32,8 @@ export const voicePlaySchema = z.object({
 });
 
 /**
- * Reconnaît le format d'un son à ses premiers octets (jamais à l'extension ou au type déclaré).
- * Retourne le type MIME à servir, ou null si le fichier n'est pas un son connu.
+ * Reconnaît le format d’un son à ses premiers octets (jamais à l’extension ou au type déclaré).
+ * Retourne le type MIME à servir, ou null si le fichier n’est pas un son connu.
  */
 export function sniffAudioMime(bytes: Uint8Array): string | null {
   const at = (i: number) => bytes[i] ?? -1;

@@ -14,7 +14,7 @@ import {
 import { api, newId } from '../api.js';
 import type { AssetRecord } from './AssetLibrary.js';
 
-/** Éditeur d'un jeu de questions médias : réglages, puis une liste d'extraits. */
+/** Éditeur d’un jeu de questions médias : réglages, puis une liste d’extraits. */
 
 export interface MediaGameRecord {
   id: string;
@@ -25,7 +25,7 @@ export interface MediaGameRecord {
 
 const MAX_ITEMS = 60;
 
-/** Un extrait tel qu'il est saisi : les liens et temps restent du texte jusqu'à l'enregistrement. */
+/** Un extrait tel qu’il est saisi : les liens et temps restent du texte jusqu’à l’enregistrement. */
 interface ItemDraft {
   key: string;
   id: string;
@@ -422,7 +422,7 @@ export function MediaGameEditor({
   }, []);
 
   const count = draft.items.length;
-  // Le moteur tire au plus autant d'extraits qu'il y en a dans le jeu.
+  // Le moteur tire au plus autant d’extraits qu’il y en a dans le jeu.
   const questionCount = Math.min(draft.questionCount, Math.max(1, count));
 
   function setItem(index: number, next: ItemDraft) {

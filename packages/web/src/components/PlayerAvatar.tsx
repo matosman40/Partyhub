@@ -3,8 +3,8 @@ import type { AvatarInfo, CharacterExpression, CharacterMood } from '@partyhub/s
 import { Character } from '@partyhub/games/client';
 
 /**
- * Avatar d'un joueur : photo de profil si elle existe, sinon son personnage sur sa couleur de fond.
- * Si l'image ne charge pas, le personnage (ou l'emoji, pour un ancien profil) prend le relais.
+ * Avatar d’un joueur : photo de profil si elle existe, sinon son personnage sur sa couleur de fond.
+ * Si l’image ne charge pas, le personnage (ou l’emoji, pour un ancien profil) prend le relais.
  */
 export function PlayerAvatar({
   avatar,

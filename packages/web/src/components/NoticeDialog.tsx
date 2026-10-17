@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import type { GameInfo } from '@partyhub/shared';
 
 /**
- * Notice d'un jeu : but, étapes dans l'ordre, conseils. S'ouvre au-dessus de la page.
+ * Notice d’un jeu : but, étapes dans l’ordre, conseils. S’ouvre au-dessus de la page.
  * Échap ou le bouton ferment ; le focus revient au déclencheur.
  */
 export function NoticeDialog({ game, onClose }: { game: GameInfo; onClose: () => void }) {

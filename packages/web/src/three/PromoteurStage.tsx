@@ -9,7 +9,7 @@ import {
 import PromoteurBoard3D from './PromoteurBoard3D';
 
 /**
- * Scène du Promoteur sur l'écran TV, en 3D. Chargée à la demande (voir TvPage) pour que
+ * Scène du Promoteur sur l’écran TV, en 3D. Chargée à la demande (voir TvPage) pour que
  * Three.js ne pèse pas sur le premier affichage. Les phases sans plateau (attente, classement)
  * restent sur la vue 2D fournie par `flat`.
  */

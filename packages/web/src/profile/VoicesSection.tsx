@@ -131,7 +131,7 @@ export function VoicesSection() {
     tickRef.current = window.setInterval(() => {
       setRecording({ seconds: Math.min(VOICE_MAX_SECONDS, Math.floor((Date.now() - startedAt) / 1000)) });
     }, 250);
-    // L'enregistrement s'arrête tout seul à la limite.
+    // L’enregistrement s’arrête tout seul à la limite.
     stopTimerRef.current = window.setTimeout(stopRecording, VOICE_MAX_SECONDS * 1000);
   }
 

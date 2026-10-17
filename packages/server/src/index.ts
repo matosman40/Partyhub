@@ -37,7 +37,7 @@ async function main(): Promise<void> {
     if (stopping) return;
     stopping = true;
     logger.info({ event: 'app.stopping', signal }, 'Arrêt en cours');
-    // Filet de sécurité : si l'arrêt propre bloque, on sort quand même.
+    // Filet de sécurité : si l’arrêt propre bloque, on sort quand même.
     const force = setTimeout(() => process.exit(1), 15_000);
     force.unref();
     server

@@ -53,7 +53,7 @@ async function readOrThrow(res: Response): Promise<void> {
 
 /**
  * Journal des erreurs : serveur et navigateur dans un même fil, filtrables.
- * Les erreurs les plus fréquentes sont regroupées en tête ; chaque entrée se déplie pour voir sa pile d'appels.
+ * Les erreurs les plus fréquentes sont regroupées en tête ; chaque entrée se déplie pour voir sa pile d’appels.
  */
 export function LogsAdmin() {
   const [level, setLevel] = useState<LevelFilter>('warn');

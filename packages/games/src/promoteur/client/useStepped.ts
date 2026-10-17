@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { nextSquare } from '../board.js';
 
 /**
- * Positions affichées des pions : chaque pion avance d'une case à la fois jusqu'à sa
- * position réelle (donnée par le serveur). Avec `instant`, il saute directement à l'arrivée.
+ * Positions affichées des pions : chaque pion avance d’une case à la fois jusqu’à sa
+ * position réelle (donnée par le serveur). Avec `instant`, il saute directement à l’arrivée.
  * Un nouveau joueur apparaît sur sa case ; un changement de cible en cours de route
  * reprend le déplacement depuis la case où le pion se trouve.
  */

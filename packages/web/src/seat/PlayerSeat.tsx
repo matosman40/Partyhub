@@ -11,7 +11,7 @@ import {
 import { createSocket, type AppSocket } from '../realtime.js';
 import { newId } from '../api.js';
 import { viewsFor } from '../games.js';
-import { AvatarsContext, SensorSenderContext } from '@partyhub/games/client';
+import { AvatarsContext, PauseContext, SensorSenderContext } from '@partyhub/games/client';
 import { PlayerAvatar } from '../components/PlayerAvatar.js';
 import { ChatPanel, EmoteBar } from '../components/Social.js';
 import { Link } from 'react-router-dom';
@@ -26,22 +26,25 @@ import { TestModeBadge } from '../components/TestModeBadge.js';
 import { poseOf, useLobbyMoods } from '../components/useLobbyMoods.js';
 import { useLobbyPositions } from '../components/useLobbyPositions.js';
 import { NoticeDialog } from '../components/NoticeDialog.js';
+import { GameViewBoundary } from '../components/GameView.js';
 import { Qr } from '../components/Qr.js';
 import { CornerMenu, DrawerSection } from '../components/CornerMenu.js';
+import { MyResult, TeamBadge, championshipSummary, hasChampionship, replayLabel } from '../components/Championship.js';
 import { getDevice } from '../device/device.js';
 import { SHARED_PLACE_PARAM } from './share.js';
+import { phaseOf, useGameCues } from '../tv/gameCues.js';
 
 /**
  * Un siège : un joueur avec sa propre connexion, son jeton et sa place dans la salle.
  * Un téléphone peut tenir plusieurs sièges (plusieurs joueurs sur le même appareil),
- * et l'écran principal peut en tenir un pour l'hôte qui joue aussi.
- * Le siège se reconnecte tout seul après une coupure grâce au jeton gardé sur l'appareil.
+ * et l’écran principal peut en tenir un pour l’hôte qui joue aussi.
+ * Le siège se reconnecte tout seul après une coupure grâce au jeton gardé sur l’appareil.
  */
 
 export interface Stored {
   token: string;
   name: string;
-  /** Profil avec lequel la place a été prise : une autre identité sur l'appareil ne la reprend pas. */
+  /** Profil avec lequel la place a été prise : une autre identité sur l’appareil ne la reprend pas. */
   profileId?: string;
 }
 
@@ -74,7 +77,7 @@ export function removeSeat(code: string, seatId: string): void {
   }
 }
 
-/** Jeton d'hôte gardé par cet onglet pour la salle (transféré depuis l'écran hôte), sans erreur si absent. */
+/** Jeton d’hôte gardé par cet onglet pour la salle (transféré depuis l’écran hôte), sans erreur si absent. */
 function readHostToken(code: string): string | null {
   try {
     return sessionStorage.getItem(`ph:host:${code}`);
@@ -94,7 +97,7 @@ export interface PlayerSeatProps {
   /** Vue réduite (écran principal) : pas de liste des joueurs dans le salon. */
   compact?: boolean;
   hidden?: boolean;
-  /** Options de l'appareil (changer de salle, ajouter un joueur…), rangées dans le tiroir. */
+  /** Options de l’appareil (changer de salle, ajouter un joueur…), rangées dans le tiroir. */
   deviceMenu?: ReactNode;
   onIdentity?: (seatId: string, name: string | null) => void;
   onProfileRejected?: () => void;
@@ -125,11 +128,11 @@ export function PlayerSeat({
   const [socialError, setSocialError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const { connected } = useConnection(socket);
-  // Case « Je suis prêt » : le choix s'affiche tout de suite, le salon le confirme ensuite.
+  // Case « Je suis prêt » : le choix s’affiche tout de suite, le salon le confirme ensuite.
   const [readyPending, setReadyPending] = useState<boolean | null>(null);
   const [ended, setEnded] = useState<string | null>(null);
-  // Jeton d'hôte de cet appareil (transféré par l'écran hôte) : le siège reste joueur, et ouvre
-  // en plus une connexion d'hôte pour lancer la partie depuis ce téléphone.
+  // Jeton d’hôte de cet appareil (transféré par l’écran hôte) : le siège reste joueur, et ouvre
+  // en plus une connexion d’hôte pour lancer la partie depuis ce téléphone.
   const [hostToken, setHostToken] = useState<string | null>(() => readHostToken(code));
   const [hostSocket, setHostSocket] = useState<AppSocket | null>(null);
   const [isHost, setIsHost] = useState(false);
@@ -160,7 +163,7 @@ export function PlayerSeat({
     const rejoin = () => {
       const stored = readSeat(code, seatId);
       if (!stored) return;
-      // Place prise avec un autre profil de l'appareil : elle n'est pas reprise, le joueur entre à nouveau.
+      // Place prise avec un autre profil de l’appareil : elle n’est pas reprise, le joueur entre à nouveau.
       const current = profileRef.current.profileId;
       if (stored.profileId && current && stored.profileId !== current) {
         removeSeat(code, seatId);
@@ -175,7 +178,7 @@ export function PlayerSeat({
           setEnded(null);
           onIdentity?.(seatId, stored.name);
         } else {
-          // Jeton non reconnu : le siège repart d'un formulaire vierge.
+          // Jeton non reconnu : le siège repart d’un formulaire vierge.
           removeSeat(code, seatId);
           setJoined(false);
           setView(null);
@@ -248,7 +251,7 @@ export function PlayerSeat({
     );
   }
 
-  // Le choix en attente est abandonné dès que le salon envoie l'état réel de la case.
+  // Le choix en attente est abandonné dès que le salon envoie l’état réel de la case.
   useEffect(() => {
     setReadyPending(null);
   }, [view?.you.ready]);
@@ -286,7 +289,7 @@ export function PlayerSeat({
     });
   }
 
-  // Une action ne part qu'en ligne : rien n'est gardé pour plus tard. Gardée pendant une coupure, elle arriverait
+  // Une action ne part qu’en ligne : rien n’est gardé pour plus tard. Gardée pendant une coupure, elle arriverait
   // avant la reconnexion et le salon la refuserait avec un message trompeur. Sans réponse dans le délai, le
   // bouton redevient utilisable.
   const send = (type: string, payload?: unknown) =>
@@ -313,8 +316,8 @@ export function PlayerSeat({
   }
 
   /**
-   * Capteurs du téléphone : relayés à l'écran pendant la partie seulement (le serveur filtre le reste).
-   * Volatile : un échantillon n'est pas gardé pendant une coupure, il serait périmé au retour.
+   * Capteurs du téléphone : relayés à l’écran pendant la partie seulement (le serveur filtre le reste).
+   * Volatile : un échantillon n’est pas gardé pendant une coupure, il serait périmé au retour.
    */
   function sendSensor(sample: SensorSample) {
     socket.volatile.emit('player:sensor', sample);
@@ -322,7 +325,7 @@ export function PlayerSeat({
 
   function sendLobbyMove(position: LobbyPosition) {
     if (!connected) return;
-    // Les refus de déplacement (débit, fin du salon) ne sont pas affichés : la place revient d'elle-même.
+    // Les refus de déplacement (débit, fin du salon) ne sont pas affichés : la place revient d’elle-même.
     socket.emit('player:lobby-move', position, () => undefined);
   }
 
@@ -357,6 +360,9 @@ export function PlayerSeat({
       {children}
     </section>
   );
+
+  // Bruitages du téléphone (début, bilan, fin) : un son propre au jeu passe avant, sans doublon.
+  useGameCues(view?.lobby.status ?? null, phaseOf(view?.game?.public));
 
   if (ended) {
     return wrapper(
@@ -440,7 +446,7 @@ export function PlayerSeat({
     </>
   );
 
-  /** L'hôte a ouvert « Lancer depuis mon téléphone » sur l'écran : le code donne accès aux commandes d'hôte. */
+  /** L’hôte a ouvert « Lancer depuis mon téléphone » sur l’écran : le code donne accès aux commandes d’hôte. */
   function claimHost(e: FormEvent) {
     e.preventDefault();
     setClaimError(null);
@@ -466,7 +472,7 @@ export function PlayerSeat({
     hostSocket.emit('host:start', (res) => setError(res.ok ? null : res.error));
   }
 
-  /** Commande d'hôte depuis ce téléphone (même règles que l'écran TV : elles passent par la connexion d'hôte). */
+  /** Commande d’hôte depuis ce téléphone (même règles que l’écran TV : elles passent par la connexion d’hôte). */
   function hostCommand(event: 'host:next' | 'host:end' | 'host:replay' | 'host:addBot') {
     if (!hostSocket || !canSend(hostSocket, setError)) return;
     const done = (res: { ok: true } | { ok: false; error: string }) => setError(res.ok ? null : res.error);
@@ -476,177 +482,204 @@ export function PlayerSeat({
     else hostSocket.emit('host:addBot', done);
   }
 
+  /** Pause de l’écran principal : elle se commande depuis l’hôte, et elle suspend aussi les actions de ce téléphone. */
+  function hostPause(paused: boolean) {
+    if (!hostSocket || !canSend(hostSocket, setError)) return;
+    hostSocket.emit('host:pause', { paused }, (res) => setError(res.ok ? null : res.error));
+  }
+
   return wrapper(
     <AvatarsContext.Provider value={avatars}>
-      <div className="seat-head">
-        <PlayerAvatar avatar={you.avatar} name={you.name} size="md" highlight />
-        <span className="name">{you.name}</span>
-        <span className="muted small">Salle {lobby.code}</span>
-      </div>
+      <PauseContext.Provider value={lobby.paused}>
+        <div className="seat-head">
+          <PlayerAvatar avatar={you.avatar} name={you.name} size="md" highlight />
+          <span className="name">{you.name}</span>
+          <span className="muted small">Salle {lobby.code}</span>
+        </div>
 
-      {!connected && (
-        <p className="notice" role="status">
-          Connexion perdue. Reconnexion en cours…
-        </p>
-      )}
-
-      {error && (
-        <p className="error" role="alert" onClick={() => setError(null)}>
-          {error}
-        </p>
-      )}
-
-      {inLobby ? (
-        <section className="stack">
-          <div className="lobby-game">
-            <span className="lobby-icon" aria-hidden="true">
-              {lobby.game.icon}
-            </span>
-            <p className="big">{lobby.game.name}</p>
-          </div>
-          <p className="muted small">
-            {lobby.players.length} joueur(s) · {lobby.readyCount} prêt(s)
+        {!connected && (
+          <p className="notice" role="status">
+            Connexion perdue. Reconnexion en cours…
           </p>
-          <button type="button" className={`btn big ${readyNow ? 'ready' : 'primary'}`} onClick={toggleReady}>
-            {readyNow ? 'Prêt ! Annuler' : 'Je suis prêt'}
-          </button>
-          {isHost && lobby.game.id !== PLATEAU_TEST_ID ? (
-            <div className="stack host-start">
-              <p className="muted small">Vous êtes l’hôte de la salle.</p>
-              <button
-                type="button"
-                className="btn primary big"
-                disabled={lobby.players.filter((p) => p.connected).length < lobby.game.minPlayers}
-                onClick={startAsHost}
-              >
-                Lancer la partie
-              </button>
-              {lobby.players.filter((p) => p.connected).length < lobby.game.minPlayers && (
-                <p className="muted small">Il faut au moins {lobby.game.minPlayers} joueur(s) connecté(s).</p>
-              )}
-              <button
-                type="button"
-                className="btn small"
-                onClick={() => hostCommand('host:addBot')}
-                disabled={lobby.players.length >= lobby.maxPlayers}
-              >
-                Ajouter un robot
-              </button>
+        )}
+
+        {error && (
+          <p className="error" role="alert" onClick={() => setError(null)}>
+            {error}
+          </p>
+        )}
+
+        {inLobby ? (
+          <section className="stack">
+            <div className="lobby-game">
+              <span className="lobby-icon" aria-hidden="true">
+                {lobby.game.icon}
+              </span>
+              <p className="big">{lobby.game.name}</p>
             </div>
-          ) : (
-            <p className="muted small">En attente de l’hôte : il lance la partie depuis son écran.</p>
-          )}
-          {!compact &&
-            !isHost &&
-            lobby.game.id !== PLATEAU_TEST_ID &&
-            (claimOpen ? (
-              <form className="stack claim-host" onSubmit={claimHost}>
-                <p className="muted small">Entrez le code à 6 chiffres affiché sur l’écran de la salle.</p>
-                <label className="field">
-                  <span>Code hôte</span>
-                  <input
-                    inputMode="numeric"
-                    autoComplete="one-time-code"
-                    maxLength={6}
-                    value={claimCode}
-                    onChange={(e) => setClaimCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                  />
-                </label>
-                {claimError && (
-                  <p className="error" role="alert">
-                    {claimError}
+            <p className="muted small">
+              {lobby.players.length} joueur(s) · {lobby.readyCount} prêt(s)
+            </p>
+            <button type="button" className={`btn big ${readyNow ? 'ready' : 'primary'}`} onClick={toggleReady}>
+              {readyNow ? 'Prêt ! Annuler' : 'Je suis prêt'}
+            </button>
+            {isHost && lobby.game.id !== PLATEAU_TEST_ID ? (
+              <div className="stack host-start">
+                <p className="muted small">Vous êtes l’hôte de la salle.</p>
+                <button
+                  type="button"
+                  className="btn primary big"
+                  disabled={lobby.players.filter((p) => p.connected).length < lobby.game.minPlayers}
+                  onClick={startAsHost}
+                >
+                  Lancer la partie
+                </button>
+                {lobby.players.filter((p) => p.connected).length < lobby.game.minPlayers && (
+                  <p className="muted small">Il faut au moins {lobby.game.minPlayers} joueur(s) connecté(s).</p>
+                )}
+                <button
+                  type="button"
+                  className="btn small"
+                  onClick={() => hostCommand('host:addBot')}
+                  disabled={lobby.players.length >= lobby.maxPlayers}
+                >
+                  Ajouter un robot
+                </button>
+              </div>
+            ) : (
+              <p className="muted small">En attente de l’hôte : il lance la partie depuis son écran.</p>
+            )}
+            {!compact &&
+              !isHost &&
+              lobby.game.id !== PLATEAU_TEST_ID &&
+              (claimOpen ? (
+                <form className="stack claim-host" onSubmit={claimHost}>
+                  <p className="muted small">Entrez le code à 6 chiffres affiché sur l’écran de la salle.</p>
+                  <label className="field">
+                    <span>Code hôte</span>
+                    <input
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      maxLength={6}
+                      value={claimCode}
+                      onChange={(e) => setClaimCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    />
+                  </label>
+                  {claimError && (
+                    <p className="error" role="alert">
+                      {claimError}
+                    </p>
+                  )}
+                  <button type="submit" className="btn primary" disabled={!/^\d{6}$/.test(claimCode)}>
+                    Je suis l’hôte
+                  </button>
+                  <button type="button" className="link-btn" onClick={() => setClaimOpen(false)}>
+                    Annuler
+                  </button>
+                </form>
+              ) : (
+                <button type="button" className="link-btn" onClick={() => setClaimOpen(true)}>
+                  Je suis l’hôte de cette salle
+                </button>
+              ))}
+            {lobby.game.id === PLATEAU_TEST_ID ? (
+              !compact && (
+                <LobbyPlateau
+                  players={lobby.players}
+                  poses={poses}
+                  emotes={emotes}
+                  positions={positions}
+                  me={you.id}
+                  onMove={sendLobbyMove}
+                  label="Salon : déplacez votre personnage"
+                />
+              )
+            ) : (
+              <>
+                {!compact && hasChampionship(lobby.championship) && (
+                  <p className="muted small">
+                    Championnat : {championshipSummary(lobby.championship)}{' '}
+                    <TeamBadge lobby={lobby} playerId={you.id} />
                   </p>
                 )}
-                <button type="submit" className="btn primary" disabled={!/^\d{6}$/.test(claimCode)}>
-                  Je suis l’hôte
-                </button>
-                <button type="button" className="link-btn" onClick={() => setClaimOpen(false)}>
-                  Annuler
-                </button>
-              </form>
-            ) : (
-              <button type="button" className="link-btn" onClick={() => setClaimOpen(true)}>
-                Je suis l’hôte de cette salle
-              </button>
-            ))}
-          {lobby.game.id === PLATEAU_TEST_ID ? (
-            !compact && (
-              <LobbyPlateau
-                players={lobby.players}
-                poses={poses}
-                emotes={emotes}
-                positions={positions}
-                me={you.id}
-                onMove={sendLobbyMove}
-                label="Salon : déplacez votre personnage"
-              />
-            )
-          ) : (
-            <LobbyHeads players={lobby.players} me={you.id} emotes={emotes} />
-          )}
-          {!compact && <TestModeBadge />}
-          {!compact && you.profile && you.avatar.character && profileToken && (
-            <ExpressionRow character={you.avatar.character} token={profileToken} />
-          )}
-          {!compact && <LobbyMoodBar onPick={sendLobbyMood} />}
-          <EmoteBar onPick={sendReaction} />
-          {!compact && you.profile && <VoiceBar socket={socket} token={profileToken} />}
-          {!compact && you.profile && <CameraBubble token={profileToken} />}
-          {!compact && you.profile && (
-            <Link className="link-btn" to="/profil">
-              Modifier mon personnage et mon profil
-            </Link>
-          )}
-        </section>
-      ) : (
-        views &&
-        game && (
-          <section className="stack">
-            {isHost && (lobby.status === 'in_game' || lobby.status === 'ended') && (
-              <div className="host-bar" role="group" aria-label="Commandes de l’hôte">
-                {lobby.status === 'in_game' ? (
-                  <>
-                    <button type="button" className="btn primary small" onClick={() => hostCommand('host:next')}>
-                      Étape suivante
-                    </button>
-                    <button type="button" className="btn ghost small" onClick={() => hostCommand('host:end')}>
-                      Arrêter la partie
-                    </button>
-                  </>
-                ) : (
-                  <button type="button" className="btn primary small" onClick={() => hostCommand('host:replay')}>
-                    Rejouer avec les mêmes joueurs
-                  </button>
-                )}
-              </div>
+                <LobbyHeads players={lobby.players} me={you.id} emotes={emotes} />
+              </>
             )}
-            <Suspense fallback={<p className="muted">Chargement du jeu…</p>}>
-              <SensorSenderContext.Provider value={sendSensor}>
-                <views.Player
-                  publicState={game.public}
-                  playerState={game.player}
-                  playerId={you.id}
-                  now={view.now}
-                  send={send}
-                  connected={connected}
-                />
-              </SensorSenderContext.Provider>
-            </Suspense>
+            {!compact && <TestModeBadge />}
+            {!compact && you.profile && you.avatar.character && profileToken && (
+              <ExpressionRow character={you.avatar.character} token={profileToken} />
+            )}
+            {!compact && <LobbyMoodBar onPick={sendLobbyMood} />}
             <EmoteBar onPick={sendReaction} />
             {!compact && you.profile && <VoiceBar socket={socket} token={profileToken} />}
+            {!compact && you.profile && <CameraBubble token={profileToken} />}
+            {!compact && you.profile && (
+              <Link className="link-btn" to="/profil">
+                Modifier mon personnage et mon profil
+              </Link>
+            )}
           </section>
-        )
-      )}
+        ) : (
+          views &&
+          game && (
+            <section className="stack">
+              {isHost && (lobby.status === 'in_game' || lobby.status === 'ended') && (
+                <div className="host-bar" role="group" aria-label="Commandes de l’hôte">
+                  {lobby.status === 'in_game' ? (
+                    <>
+                      <button type="button" className="btn primary small" onClick={() => hostCommand('host:next')}>
+                        Étape suivante
+                      </button>
+                      <button type="button" className="btn ghost small" onClick={() => hostPause(!lobby.paused)}>
+                        {lobby.paused ? 'Reprendre la partie' : 'Mettre en pause'}
+                      </button>
+                      <button type="button" className="btn ghost small" onClick={() => hostCommand('host:end')}>
+                        Arrêter la partie
+                      </button>
+                    </>
+                  ) : (
+                    <button type="button" className="btn primary small" onClick={() => hostCommand('host:replay')}>
+                      {replayLabel(lobby)}
+                    </button>
+                  )}
+                </div>
+              )}
+              {lobby.paused && lobby.status === 'in_game' && (
+                <p className="seat-pause" role="status">
+                  Partie en pause : les actions reprendront à la reprise.
+                </p>
+              )}
+              {lobby.status === 'ended' && <MyResult lobby={lobby} playerId={you.id} />}
+              <GameViewBoundary gameId={lobby.game.id} publicState={game.public}>
+                <Suspense fallback={<p className="muted">Chargement du jeu…</p>}>
+                  <SensorSenderContext.Provider value={sendSensor}>
+                    <views.Player
+                      publicState={game.public}
+                      playerState={game.player}
+                      playerId={you.id}
+                      now={view.now}
+                      send={send}
+                      connected={connected}
+                    />
+                  </SensorSenderContext.Provider>
+                </Suspense>
+              </GameViewBoundary>
+              <EmoteBar onPick={sendReaction} />
+              {!compact && you.profile && <VoiceBar socket={socket} token={profileToken} />}
+            </section>
+          )
+        )}
 
-      {noticeOpen && <NoticeDialog game={lobby.game} onClose={() => setNoticeOpen(false)} />}
+        {noticeOpen && <NoticeDialog game={lobby.game} onClose={() => setNoticeOpen(false)} />}
+      </PauseContext.Provider>
     </AvatarsContext.Provider>,
     drawer,
   );
 }
 
 /**
- * Lien et QR code pour ouvrir la même place sur un deuxième appareil (tablette, téléphone d'un proche).
- * Le jeton est dans le fragment de l'adresse (#place=…) : il n'est jamais envoyé au serveur.
+ * Lien et QR code pour ouvrir la même place sur un deuxième appareil (tablette, téléphone d’un proche).
+ * Le jeton est dans le fragment de l’adresse (#place=…) : il n’est jamais envoyé au serveur.
  */
 function SeatShare({ code, seatId }: { code: string; seatId: string }) {
   const token = readSeat(code, seatId)?.token ?? null;

@@ -6,13 +6,13 @@
 export const VOTE_POINTS = 100;
 /** Le plus probable : points par vote reçu. */
 export const PROBABLE_POINTS = 50;
-/** Réponse rapide : ordre d'arrivée des bonnes réponses. Les suivantes ne rapportent rien. */
+/** Réponse rapide : ordre d’arrivée des bonnes réponses. Les suivantes ne rapportent rien. */
 export const QUICK_LADDER = [100, 70, 50, 30] as const;
 /** Combien ? : points pour le plus proche, le second et le troisième. */
 export const CLOSEST_LADDER = [100, 50, 25] as const;
 
 /**
- * Réponse rapide : `orderOfCorrect` liste les joueurs qui ont trouvé, dans l'ordre d'arrivée.
+ * Réponse rapide : `orderOfCorrect` liste les joueurs qui ont trouvé, dans l’ordre d’arrivée.
  * Renvoie les points de chacun.
  */
 export function quickPoints(orderOfCorrect: readonly string[]): Record<string, number> {
@@ -23,7 +23,7 @@ export function quickPoints(orderOfCorrect: readonly string[]): Record<string, n
   return points;
 }
 
-/** Où est-ce ? : le bon pays vaut 100 ; les points baissent linéairement jusqu'à 0 à cette distance (km). */
+/** Où est-ce ? : le bon pays vaut 100 ; les points baissent linéairement jusqu’à 0 à cette distance (km). */
 export const COUNTRY_ZERO_KM = 2000;
 
 /** Distance orthodromique (km) entre deux points [latitude, longitude] en degrés. */
@@ -37,7 +37,7 @@ export function haversineKm(a: readonly [number, number], b: readonly [number, n
 
 /**
  * Où est-ce ? : `picks` associe chaque joueur à un code pays. Le bon pays vaut 100 ; sinon les points
- * baissent linéairement avec la distance entre les centres, jusqu'à 0 à COUNTRY_ZERO_KM. Sans centre connu,
+ * baissent linéairement avec la distance entre les centres, jusqu’à 0 à COUNTRY_ZERO_KM. Sans centre connu,
  * un mauvais pays ne rapporte rien.
  */
 export function countryPoints(

@@ -5,7 +5,7 @@ import { Avatar } from '../../client/ui.js';
 import type { Resolution, RoundReport } from '../module.js';
 import { KIND_LABELS, STAT_LABELS, type SceneKind, type StatKey } from '../schemas.js';
 
-/** Fiche d'un personnage, telle que la vue publique la donne (aucune donnée secrète). */
+/** Fiche d’un personnage, telle que la vue publique la donne (aucune donnée secrète). */
 export interface SheetView {
   id: string;
   name: string;
@@ -18,7 +18,7 @@ export interface SheetView {
   ability: { name: string; text: string };
   flaw: string;
   item: string;
-  /** Objets trouvés pendant l'aventure (quatre au plus). */
+  /** Objets trouvés pendant l’aventure (quatre au plus). */
   bag: string[];
   level: number;
   xp: number;
@@ -26,7 +26,7 @@ export interface SheetView {
   nextXp: number | null;
   games: number;
   victories: number;
-  /** Portrait généré (identifiant d'image), ou null. */
+  /** Portrait généré (identifiant d’image), ou null. */
   portraitId: string | null;
   ownerId: string | null;
   ownerName: string | null;
@@ -77,7 +77,7 @@ export function StatGrid({ stats }: { stats: Record<StatKey, number> }) {
   );
 }
 
-/** Nature d'une scène : rencontre, dialogue, énigme, halte ou combat. */
+/** Nature d’une scène : rencontre, dialogue, énigme, halte ou combat. */
 export function KindTag({ kind }: { kind: SceneKind }) {
   return <span className={`aventure-kind is-${kind}`}>{KIND_LABELS[kind]}</span>;
 }
@@ -88,7 +88,7 @@ export function RelationTag({ relation }: { relation: string }) {
   return <span className={`aventure-relation${tone}`}>Lien : {relation}</span>;
 }
 
-/** Ce qu'un résultat change pour le groupe : expérience, niveaux, objets, soins, blessures, liens. */
+/** Ce qu’un résultat change pour le groupe : expérience, niveaux, objets, soins, blessures, liens. */
 export function ProgressList({ lines }: { lines: string[] }) {
   if (lines.length === 0) return null;
   return (
@@ -100,7 +100,7 @@ export function ProgressList({ lines }: { lines: string[] }) {
   );
 }
 
-/** Adresse publique d'une image générée, servie par le serveur. */
+/** Adresse publique d’une image générée, servie par le serveur. */
 export function artUrl(id: string): string {
   return `/api/ai-images/${id}`;
 }
@@ -124,15 +124,15 @@ export function ArtFrame({ id, alt = '', fallback }: { id: string; alt?: string;
   );
 }
 
-/** Pastille d'un personnage dans une liste de choix : son portrait généré, ou son emoji. */
+/** Pastille d’un personnage dans une liste de choix : son portrait généré, ou son emoji. */
 export function ArtBadge({ id, emoji }: { id: string | null; emoji: string }) {
   const emojiSpan = <span aria-hidden="true">{emoji}</span>;
   return id ? <ArtFrame id={id} fallback={emojiSpan} /> : emojiSpan;
 }
 
 /**
- * Portrait d'un personnage joueur : la photo ou le personnage dessiné de son joueur. Un compagnon (personne
- * ne le joue) porte son portrait généré s'il existe, sinon il est dessiné à partir de son nom.
+ * Portrait d’un personnage joueur : la photo ou le personnage dessiné de son joueur. Un compagnon (personne
+ * ne le joue) porte son portrait généré s’il existe, sinon il est dessiné à partir de son nom.
  */
 export function Portrait({ c }: { c: SheetView }) {
   if (c.ownerName) {
@@ -148,7 +148,7 @@ export function Portrait({ c }: { c: SheetView }) {
   );
 }
 
-/** Fiche complète : pour l'écran principal (version compacte) et le téléphone (version détaillée). */
+/** Fiche complète : pour l’écran principal (version compacte) et le téléphone (version détaillée). */
 export function SheetCard({
   c,
   detailed = false,
@@ -240,7 +240,7 @@ export function NpcCard({ npc }: { npc: NpcView }) {
   );
 }
 
-/** Adversaire : ses points de vie restants, et ce qu'il faut pour le toucher. */
+/** Adversaire : ses points de vie restants, et ce qu’il faut pour le toucher. */
 export function FoeCard({ foe }: { foe: FoeView }) {
   return (
     <article className="aventure-foe" aria-label={`Ennemi : ${foe.name}`}>
@@ -259,7 +259,7 @@ export function FoeCard({ foe }: { foe: FoeView }) {
   );
 }
 
-/** Bilan d'une manche : chaque action, le dé, la riposte, et ce que la manche change. `highlightId` marque le personnage du lecteur. */
+/** Bilan d’une manche : chaque action, le dé, la riposte, et ce que la manche change. `highlightId` marque le personnage du lecteur. */
 export function RoundReportCard({
   report,
   highlightId = null,
@@ -306,7 +306,7 @@ export function ResolutionCard({ r }: { r: Resolution }) {
         {r.characterName} tente « {r.choiceLabel} »
       </p>
       <p className="aventure-dice">
-        <span className="aventure-roll" aria-label={`Dé : ${r.roll}`}>
+        <span className="aventure-roll" role="img" aria-label={`Dé : ${r.roll}`}>
           {r.roll}
         </span>
         <span className="aventure-math">

@@ -20,7 +20,7 @@ export function webcamErrorMessage(err: unknown): string {
 
 /**
  * Prend la photo de profil avec la webcam : aperçu en miroir, compte à rebours de 3 secondes,
- * puis la photo est recadrée comme une photo choisie. La caméra s'éteint dès que c'est fini.
+ * puis la photo est recadrée comme une photo choisie. La caméra s’éteint dès que c’est fini.
  */
 export function WebcamPhoto({ onCapture, onCancel }: { onCapture: (dataUrl: string) => void; onCancel: () => void }) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -108,14 +108,14 @@ export function WebcamPhoto({ onCapture, onCancel }: { onCapture: (dataUrl: stri
   }
 
   return (
-    <div className="webcam stack" aria-label="Photo avec la webcam">
+    <div className="webcam stack" role="group" aria-label="Photo avec la webcam">
       <div className="webcam-frame" aria-live="polite">
         {status !== 'error' && (
           <video ref={videoRef} className="webcam-video" autoPlay muted playsInline aria-label="Aperçu de la webcam" />
         )}
         {status === 'starting' && <p className="webcam-note">Ouverture de la caméra…</p>}
         {status === 'countdown' && (
-          <p className="webcam-count" aria-label={`Photo dans ${count}`}>
+          <p className="webcam-count" role="status" aria-label={`Photo dans ${count}`}>
             {count}
           </p>
         )}

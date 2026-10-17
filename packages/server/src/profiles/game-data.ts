@@ -2,7 +2,7 @@ import type { ProfileDataStore } from '@partyhub/shared';
 import type { Store } from '../db/store.js';
 
 /**
- * Données de jeu par profil (par exemple les personnages de l'Aventure IA gardés d'une partie à l'autre).
+ * Données de jeu par profil (par exemple les personnages de l’Aventure IA gardés d’une partie à l’autre).
  * Stockées dans la table clé-valeur, une entrée par jeu et par profil. Bornées en taille : un jeu ne peut pas
  * remplir la base. Supprimées avec le profil (voir `ProfileService.delete`).
  */
@@ -15,7 +15,7 @@ export function gameDataKey(gameId: string, profileId: string): string {
   return `${PREFIX}${gameId}:${profileId}`;
 }
 
-/** Fabrique le magasin d'un jeu : chaque jeu ne voit que ses propres entrées. */
+/** Fabrique le magasin d’un jeu : chaque jeu ne voit que ses propres entrées. */
 export function gameDataFor(store: Store): (gameId: string) => ProfileDataStore {
   return (gameId) => ({
     read(profileId) {
@@ -36,7 +36,7 @@ export function gameDataFor(store: Store): (gameId: string) => ProfileDataStore 
   });
 }
 
-/** Efface toutes les données de jeu d'un profil supprimé. Les identifiants de profil sont des UUID : pas de joker. */
+/** Efface toutes les données de jeu d’un profil supprimé. Les identifiants de profil sont des UUID : pas de joker. */
 export function purgeGameData(store: Store, profileId: string): void {
   store.db.prepare('DELETE FROM kv WHERE key LIKE ? AND key LIKE ?').run(`${PREFIX}%`, `%:${profileId}`);
 }

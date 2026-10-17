@@ -23,7 +23,7 @@ import { currentBoumBank, type BankSnapshot } from './bank/registry.js';
 import { BANK_TYPE_INFO, type BankType, type Level } from './bank/types.js';
 
 /**
- * BOUM ! : un tirage de cinq manches dans un pool de modes, joué sur l'écran principal et les téléphones.
+ * BOUM ! : un tirage de cinq manches dans un pool de modes, joué sur l’écran principal et les téléphones.
  * Phase 1 : modes texte, vote et cartes. Les banques sont lues à la création de la salle (instantané).
  */
 
@@ -31,11 +31,11 @@ export const boumSettingsSchema = z.object({
   rounds: z.number().int().min(3).max(8).default(5),
   writeSeconds: z.number().int().min(15).max(120).default(45),
   voteSeconds: z.number().int().min(10).max(60).default(25),
-  /** Pack Humour noir : activé à la création de la salle, avec un avertissement à l'entrée. */
+  /** Pack Humour noir : activé à la création de la salle, avec un avertissement à l’entrée. */
   pack: z.boolean().default(false),
   /** Ton corsé (en plus du doux). */
   corse: z.boolean().default(false),
-  /** Effets de mise en scène sur l'écran principal. */
+  /** Effets de mise en scène sur l’écran principal. */
   effects: z.enum(['complets', 'reduits', 'aucun']).default('reduits'),
 });
 
@@ -70,7 +70,7 @@ export interface BoumRound {
   /** Dernier texte écrit ou carte jouée, par joueur. Jamais montré avant le vote. */
   writings: Record<string, string>;
   guesses: Record<string, number>;
-  /** Bonnes réponses dans l'ordre d'arrivée (réponse rapide). */
+  /** Bonnes réponses dans l’ordre d’arrivée (réponse rapide). */
   correct: string[];
   /** Cartes en main (main sale), par joueur. */
   hands: Record<string, string[]>;
@@ -113,11 +113,11 @@ const voteSchema = z.object({
 });
 const rateSchema = z.object({ stars: z.number().int().min(1).max(5) });
 const countrySchema = z.object({ code: z.string().length(2) });
-/** Extrait chanté : même format que les sons d'Imite-moi, moins de 60 000 caractères par action. */
+/** Extrait chanté : même format que les sons d’Imite-moi, moins de 60 000 caractères par action. */
 const CLIP_MAX_CHARS = 60_000;
 const CLIP_URL = /^data:audio\/(webm|ogg|mp4)(;codecs=[A-Za-z0-9.,-]+)?;base64,[A-Za-z0-9+/]+={0,2}$/;
 const clipSchema = z.object({ dataUrl: z.string().max(CLIP_MAX_CHARS).regex(CLIP_URL, 'Extrait invalide') });
-/** Photo-défi : une photo JPEG réduite, comme celles d'Imite-moi (moins de 60 000 caractères). */
+/** Photo-défi : une photo JPEG réduite, comme celles d’Imite-moi (moins de 60 000 caractères). */
 const PHOTO_MAX_CHARS = 60_000;
 const PHOTO_URL = /^data:image\/jpeg;base64,[A-Za-z0-9+/]+={0,2}$/;
 const photoSchema = z.object({ dataUrl: z.string().max(PHOTO_MAX_CHARS).regex(PHOTO_URL, 'Photo invalide') });
@@ -136,7 +136,7 @@ export const boumActions = {
   tap: tapSchema,
 };
 
-/** Indice du mot secret : un seul mot, qui ne reprend ni le mot à deviner ni l'un de ses mots longs. */
+/** Indice du mot secret : un seul mot, qui ne reprend ni le mot à deviner ni l’un de ses mots longs. */
 function clueProblem(clue: string, word: string): string | null {
   const trimmed = clue.trim();
   if (/\s/.test(trimmed)) return 'L’indice doit être un seul mot';
@@ -172,7 +172,7 @@ export function buildPool(snapshot: BankSnapshot, levels: readonly Level[]): Par
   return pool;
 }
 
-/** Tire `count` entrées d'un type. Quand la file est vide, elle se recharge (répétitions acceptées). */
+/** Tire `count` entrées d’un type. Quand la file est vide, elle se recharge (répétitions acceptées). */
 function take(
   state: BoumState,
   type: BankType,
@@ -246,7 +246,7 @@ function connectedOf(state: BoumState, ctx: GameContext): string[] {
 }
 
 /* ------------------------------------------------------------------------- */
-/* Déroulement d'une manche                                                    */
+/* Déroulement d’une manche                                                    */
 /* ------------------------------------------------------------------------- */
 
 function startRound(state: BoumState, ctx: GameContext): BoumState {
@@ -260,7 +260,7 @@ function startRound(state: BoumState, ctx: GameContext): BoumState {
   };
 }
 
-/** Ouvre la manche après l'annonce : tire la consigne, les cartes, et le premier temps de saisie. */
+/** Ouvre la manche après l’annonce : tire la consigne, les cartes, et le premier temps de saisie. */
 function openRound(state: BoumState, ctx: GameContext): BoumState {
   const mode = currentMode(state);
   if (!mode || !state.round) return finish(state, ctx);
@@ -350,7 +350,7 @@ function openRound(state: BoumState, ctx: GameContext): BoumState {
   return { ...s, phase: mode.kind === 'vote_joueur' ? 'vote' : 'write', round };
 }
 
-/** Passe à la phase de vote des textes écrits, ou à la révélation s'il n'y a pas assez de textes. */
+/** Passe à la phase de vote des textes écrits, ou à la révélation s’il n’y a pas assez de textes. */
 function toVote(state: BoumState, ctx: GameContext): BoumState {
   const round = state.round!;
   const authors = shuffle(Object.keys(round.writings), ctx.random);
@@ -396,7 +396,7 @@ function reveal(state: BoumState, ctx: GameContext): BoumState {
       break;
     }
     case 'mot_secret': {
-      // Le mot trouvé rapporte 100 au joueur désigné, et 50 à chaque auteur d'indice.
+      // Le mot trouvé rapporte 100 au joueur désigné, et 50 à chaque auteur d’indice.
       if (round.pleader && round.correct.includes(round.pleader)) {
         add(round.pleader, 100);
         for (const id of Object.keys(round.writings)) add(id, 50);
@@ -487,7 +487,7 @@ function maybeAdvanceQuick(state: BoumState, ctx: GameContext): BoumState {
   return state;
 }
 
-/** Vote : la révélation s'ouvre dès que chaque joueur connecté a voté. */
+/** Vote : la révélation s’ouvre dès que chaque joueur connecté a voté. */
 function maybeFinishVote(state: BoumState, ctx: GameContext): BoumState {
   const round = state.round!;
   const connected = connectedOf(state, ctx);
@@ -495,7 +495,7 @@ function maybeFinishVote(state: BoumState, ctx: GameContext): BoumState {
   return state;
 }
 
-/** Fin de saisie : la manche avance dès que le mode n'attend plus personne. */
+/** Fin de saisie : la manche avance dès que le mode n’attend plus personne. */
 function afterWrite(state: BoumState, ctx: GameContext): BoumState {
   const mode = currentMode(state)!;
   const round = state.round!;
@@ -687,7 +687,7 @@ export function createBoum(getBank: () => BankSnapshot = currentBoumBank): GameM
         if (state.phase !== 'write') return fail('Le temps est écoulé');
         if (pid !== round.pleader) return fail('Seul le chanteur envoie l’extrait');
         if (round.clip) return fail('Extrait déjà envoyé');
-        // Le moteur valide déjà l'action ; on revérifie ici pour que la règle tienne seule.
+        // Le moteur valide déjà l’action ; on revérifie ici pour que la règle tienne seule.
         const parsed = clipSchema.safeParse(payload);
         if (!parsed.success) return fail('Extrait invalide');
         return ok({ ...state, round: { ...round, clip: parsed.data.dataUrl } });
@@ -825,7 +825,7 @@ export function createBoum(getBank: () => BankSnapshot = currentBoumBank): GameM
       };
       if (!round || !mode || state.phase === 'ready' || state.phase === 'final') return base;
 
-      // Le métier du mime ne sort jamais de la vue du mimeur : l'écran et les autres téléphones ne le voient pas.
+      // Le métier du mime ne sort jamais de la vue du mimeur : l’écran et les autres téléphones ne le voient pas.
       const prompt =
         round.prompt && mode.kind !== 'mime' && mode.kind !== 'chanson' && mode.kind !== 'mot_secret'
           ? {

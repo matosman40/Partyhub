@@ -2,14 +2,34 @@ import { useState } from 'react';
 import type { PlayerViewProps } from '../../client/types.js';
 import { useRemaining } from '../../client/hooks.js';
 import { LETTERS } from '../../client/ui.js';
+import { KeywordForm } from '../../common/client/keywords-ui.js';
 
 export function QuizPlayer({ publicState: pub, playerState: me, now, send }: PlayerViewProps) {
-  const remaining = useRemaining(pub?.answerEndsAt, now);
+  const remaining = useRemaining(pub?.endsAt ?? pub?.answerEndsAt, now);
   // Retour visuel immédiat : le choix apparaît avant la confirmation du serveur.
   const [picked, setPicked] = useState<{ index: number; choice: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   if (!pub) return null;
+
+  if (pub.phase === 'topics') {
+    return (
+      <KeywordForm
+        myTurn={me?.myTurn === true}
+        current={pub.topics?.current ?? null}
+        remaining={remaining}
+        send={send}
+      />
+    );
+  }
+  if (pub.phase === 'generating') {
+    return (
+      <section className="player-game fade-in">
+        <p className="big">L’IA écrit vos questions…</p>
+        <p className="muted">Les mots-clés de chacun servent de thème. Regardez l’écran principal.</p>
+      </section>
+    );
+  }
 
   const index: number = pub.index;
   const myChoice: number | null = me?.myChoice ?? (picked && picked.index === index ? picked.choice : null);

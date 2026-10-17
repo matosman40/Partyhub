@@ -1,5 +1,6 @@
 import type { GameContext, GameJob } from '@partyhub/shared';
 import type { z } from 'zod';
+import { parseJsonObject } from '../common/ai-json.js';
 import {
   STAT_LABELS,
   TONE_LABELS,
@@ -13,20 +14,20 @@ import {
 import { generateRosterImages } from './images.js';
 
 /**
- * Génération de l'aventure par un modèle de langage. Le moteur ne l'appelle jamais directement :
+ * Génération de l’aventure par un modèle de langage. Le moteur ne l’appelle jamais directement :
  * la salle exécute `runAventureJob` hors du moteur, puis `completeJob` intègre le résultat.
- * Sans client d'IA configuré, le travail renvoie null et le jeu prend son histoire de secours.
+ * Sans client d’IA configuré, le travail renvoie null et le jeu prend son histoire de secours.
  */
 
 export interface WorldInput {
   title: string;
   intro: string;
   goal: string;
-  /** Ce qui se cache derrière l'histoire : le conteur s'en sert, sans le révéler d'un coup. */
+  /** Ce qui se cache derrière l’histoire : le conteur s’en sert, sans le révéler d’un coup. */
   secret: string;
 }
 
-/** Fiche résumée d'un personnage, telle qu'elle est donnée au modèle. */
+/** Fiche résumée d’un personnage, telle qu’elle est donnée au modèle. */
 export interface PromptCharacter {
   name: string;
   title: string;
@@ -39,11 +40,11 @@ export interface PromptCharacter {
   ability: { name: string; text: string };
   flaw: string;
   item: string;
-  /** Objets trouvés pendant l'aventure. */
+  /** Objets trouvés pendant l’aventure. */
   bag: string[];
 }
 
-/** Personnage secondaire de l'histoire : ses liens avec le groupe comptent pour la suite. */
+/** Personnage secondaire de l’histoire : ses liens avec le groupe comptent pour la suite. */
 export interface PromptNpc {
   name: string;
   title: string;
@@ -122,7 +123,7 @@ function historyBlock(history: string[]): string {
 function sceneRules(sceneNumber: number, total: number, difficulty: string): string {
   const last = sceneNumber === total;
   return `Écris la scène numéro ${sceneNumber} sur ${total}.
-Choisis son type (kind) selon ce qui sert l'histoire :
+Choisis son type (kind) selon ce qui sert l’histoire :
 - choix : une situation, deux ou trois manières d’agir.
 - dialogue : un personnage secondaire parle. npc est obligatoire, avec sa réplique (line). Chaque choix est une réplique du groupe ; son ton (bond) change le lien avec ce personnage : -1 (vexant), 0 (neutre) ou +1 (aimable), quel que soit le jet.
 - enigme : une énigme ou un mécanisme, avec un indice (hint, 160 caractères au plus). Les choix sont des réponses ou des manières de forcer le passage. Une bonne réponse peut donner un objet (item).
@@ -200,24 +201,11 @@ const SCHEMAS: Record<JobInput['kind'], z.ZodType> = {
   epilogue: epilogueDraftSchema,
 };
 
-/**
- * Extrait l'objet JSON d'une réponse, même entourée de texte ou de balises.
- * Les messages d'erreur ne reprennent jamais le contenu renvoyé par le modèle.
- */
-export function parseJsonObject(text: string): unknown {
-  const start = text.indexOf('{');
-  const end = text.lastIndexOf('}');
-  if (start < 0 || end <= start) throw new Error('Réponse sans objet JSON.');
-  try {
-    return JSON.parse(text.slice(start, end + 1));
-  } catch {
-    throw new Error('Réponse JSON illisible.');
-  }
-}
+export { parseJsonObject };
 
 /**
- * Exécute le travail demandé au modèle. Renvoie le contenu validé, ou null quand aucune IA n'est configurée.
- * Toute réponse hors format lève une erreur : le moteur bascule alors sur l'histoire de secours.
+ * Exécute le travail demandé au modèle. Renvoie le contenu validé, ou null quand aucune IA n’est configurée.
+ * Toute réponse hors format lève une erreur : le moteur bascule alors sur l’histoire de secours.
  */
 export async function runAventureJob(job: GameJob, ctx: GameContext, signal: AbortSignal): Promise<unknown> {
   if (!ctx.ai || (ctx.ai.available && !ctx.ai.available())) return null;
