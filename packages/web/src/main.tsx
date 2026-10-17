@@ -16,6 +16,7 @@ import './styles/quiz-phrases.css';
 import './styles/championship.css';
 import './styles/catalog.css';
 import './styles/game-sheet.css';
+import './styles/game-gallery.css';
 
 installClientLogging(__APP_VERSION__);
 applyTheme(loadTheme());

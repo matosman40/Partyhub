@@ -1,0 +1,70 @@
+/* ==========================================================================
+   Captures de la fiche de jeu : une image en grand, des vignettes dessous.
+   ========================================================================== */
+
+.sheet-gallery {
+  display: grid;
+  gap: 0.7rem;
+  min-width: 0;
+}
+
+.sheet-gallery h2 {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 1.35rem;
+}
+
+.sheet-shot {
+  margin: 0;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: var(--r-md);
+  border: 1px solid var(--line);
+  background: var(--glass);
+}
+
+.sheet-shot img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.sheet-thumbs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sheet-thumbs button {
+  appearance: none;
+  width: 100%;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  overflow: hidden;
+  background: none;
+  cursor: pointer;
+}
+
+.sheet-thumbs button[aria-pressed='true'] {
+  border-color: var(--cyan);
+}
+
+.sheet-thumbs button:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* La hauteur vient du ratio, pas de l'attribut height de l'image (1280 × 720) : sinon la vignette s'étire. */
+.sheet-thumbs img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+}

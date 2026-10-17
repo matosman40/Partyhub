@@ -1,8 +1,9 @@
+import { useState } from 'react';
 import type { CatalogGame } from '@partyhub/shared';
 import { CATEGORY_LABEL } from '../catalog/labels.js';
+import { artStyle, playersLabel } from '../catalog/display.js';
 import { GameLogo } from './GameLogo.js';
 import { GameCard } from './GameCard.js';
-import { artStyle, playersLabel } from './GameRow.js';
 
 /** « 1 joueur », « 4 joueurs », « 2 à 6 joueurs ». */
 export function playersText(game: Pick<CatalogGame, 'minPlayers' | 'maxPlayers'>): string {
@@ -10,15 +11,53 @@ export function playersText(game: Pick<CatalogGame, 'minPlayers' | 'maxPlayers'>
   return `${playersLabel(game)} joueurs`;
 }
 
+/** Captures du jeu : une image en grand, les autres en vignettes. */
+function Gallery({ name, photos }: { name: string; photos: string[] }) {
+  const [index, setIndex] = useState(0);
+  const current = photos[index] ?? photos[0];
+  return (
+    <section className="sheet-gallery" aria-labelledby="sheet-shots">
+      <h2 id="sheet-shots">Captures</h2>
+      <figure className="sheet-shot">
+        <img
+          src={current}
+          alt={`Capture de ${name}, ${index + 1} sur ${photos.length}`}
+          width={1280}
+          height={720}
+          loading="lazy"
+        />
+      </figure>
+      {photos.length > 1 && (
+        <ul className="sheet-thumbs" aria-label="Choisir une capture">
+          {photos.map((src, i) => (
+            <li key={src}>
+              <button
+                type="button"
+                aria-label={`Capture ${i + 1}`}
+                aria-pressed={i === index}
+                onClick={() => setIndex(i)}
+              >
+                <img src={src} alt="" width={1280} height={720} loading="lazy" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <p className="filter-note">Prises sur des parties d’essai avec des robots.</p>
+    </section>
+  );
+}
+
 /**
  * Fiche d'un jeu, sur le modèle d'une page de boutique : en-tête aux couleurs du jeu avec les
- * actions, puis la notice, la fiche technique et les autres jeux de la même catégorie.
+ * actions, puis les captures, la notice, la fiche technique et les autres jeux de la même catégorie.
  * Présentation seule : la page gère les appels à l'API et la navigation.
  */
 export function GameSheet({
   game,
   recent,
   sameCategory,
+  photos = [],
   creating,
   trying,
   error,
@@ -30,6 +69,8 @@ export function GameSheet({
   recent: boolean;
   /** Autres jeux de la même catégorie, déjà filtrés et limités par la page. */
   sameCategory: CatalogGame[];
+  /** Adresses des captures du jeu (vide tant qu'il n'en a pas). */
+  photos?: string[];
   creating: boolean;
   trying: boolean;
   error: string | null;
@@ -72,6 +113,8 @@ export function GameSheet({
 
       <div className="sheet-body">
         <div className="sheet-main">
+          {photos.length > 0 && <Gallery key={game.id} name={game.name} photos={photos} />}
+
           <section className="sheet-section" aria-labelledby="sheet-about">
             <h2 id="sheet-about">À propos</h2>
             <p className="sheet-goal">{notice.goal}</p>

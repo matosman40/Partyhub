@@ -278,6 +278,11 @@
   transition: border-color 0.2s ease;
 }
 
+/* Ligne de liste : toute la ligne ouvre la fiche (c'est un lien). */
+.game-list a.game-row-head {
+  text-decoration: none;
+}
+
 .game-card:hover {
   border-color: var(--line-strong);
 }

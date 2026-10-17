@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import type { CatalogGame } from '@partyhub/shared';
 import { CATEGORY_LABEL } from '../catalog/labels.js';
 import { GameLogo } from './GameLogo.js';
-import { artStyle, playersLabel } from './GameRow.js';
+import { artStyle, playersLabel } from '../catalog/display.js';
 
 /**
  * Fiche d'un jeu, façon boutique : vignette aux couleurs du jeu, nom, description et repères.

@@ -1,12 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import type { CatalogGame } from '@partyhub/shared';
 import { api } from '../api.js';
 import { ThemeToggle } from '../components/ThemeToggle.js';
 import { DeviceChoice } from '../components/DeviceChoice.js';
-import { NoticeDialog } from '../components/NoticeDialog.js';
 import { CornerMenu, DrawerSection } from '../components/CornerMenu.js';
-import { GameRow } from '../components/GameRow.js';
+import { GameListRow } from '../components/GameListRow.js';
 import { GameCard } from '../components/GameCard.js';
 import { CatalogFilterPanel } from '../components/CatalogFilterPanel.js';
 import { useMusicSlot } from '../sounds.js';
@@ -23,7 +22,6 @@ import {
   type SortKey,
 } from '../catalog/filters.js';
 import { readRecent } from '../catalog/recentGames.js';
-import { launchGame } from '../catalog/launch.js';
 
 const SORT_CHOICES = Object.keys(SORT_LABEL) as SortKey[];
 const MAX_RECENT_SHOWN = 6;
@@ -38,14 +36,10 @@ function countLabel(n: number): string {
  * revenir d'une fiche de jeu retrouve la même liste.
  */
 export function HomePage() {
-  const navigate = useNavigate();
   useMusicSlot('accueil');
   const [params, setParams] = useSearchParams();
   const [games, setGames] = useState<CatalogGame[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState<string | null>(null);
-  const [openId, setOpenId] = useState<string | null>(null);
-  const [notice, setNotice] = useState<CatalogGame | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
   const [recentIds] = useState<string[]>(() => readRecent());
@@ -88,18 +82,6 @@ export function HomePage() {
 
   function clearFilters() {
     commit(resetFilters(filters));
-  }
-
-  async function launch(gameId: string, practice: boolean) {
-    setBusy(`${practice ? 'try' : 'create'}:${gameId}`);
-    setError(null);
-    try {
-      const code = await launchGame(gameId, practice);
-      navigate(`/tv/${code}`);
-    } catch (e) {
-      setError((e as Error).message);
-      setBusy(null);
-    }
   }
 
   return (
@@ -261,19 +243,7 @@ export function HomePage() {
               ) : (
                 <ul className="game-list" aria-label="Jeux disponibles">
                   {visible.map((g) => (
-                    <GameRow
-                      key={g.id}
-                      game={g}
-                      detailsHref={`/jeux/${g.id}`}
-                      open={openId === g.id}
-                      creating={busy === `create:${g.id}`}
-                      trying={busy === `try:${g.id}`}
-                      busy={busy !== null}
-                      onToggle={() => setOpenId(openId === g.id ? null : g.id)}
-                      onCreate={() => launch(g.id, false)}
-                      onTry={() => launch(g.id, true)}
-                      onNotice={() => setNotice(g)}
-                    />
+                    <GameListRow key={g.id} game={g} />
                   ))}
                 </ul>
               )}
@@ -281,8 +251,6 @@ export function HomePage() {
           </div>
         </section>
       )}
-
-      {notice && <NoticeDialog game={notice} onClose={() => setNotice(null)} />}
     </main>
   );
 }

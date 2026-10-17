@@ -6,6 +6,7 @@ import { BackButton } from '../components/BackButton.js';
 import { GameSheet } from '../components/GameSheet.js';
 import { launchGame } from '../catalog/launch.js';
 import { readRecent } from '../catalog/recentGames.js';
+import { loadPhotoIndex, photosFor, type PhotoIndex } from '../catalog/photos.js';
 import { useMusicSlot } from '../sounds.js';
 
 const SAME_CATEGORY_LIMIT = 6;
@@ -21,6 +22,17 @@ export function GamePage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [recentIds] = useState<string[]>(() => readRecent());
+  const [photoIndex, setPhotoIndex] = useState<PhotoIndex>({ games: {} });
+
+  useEffect(() => {
+    let alive = true;
+    loadPhotoIndex().then((index) => {
+      if (alive) setPhotoIndex(index);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   useEffect(() => {
     setGames(null);
@@ -93,6 +105,7 @@ export function GamePage() {
         game={game}
         recent={recentIds.includes(game.id)}
         sameCategory={sameCategory}
+        photos={photosFor(photoIndex, game.id)}
         creating={busy === 'create'}
         trying={busy === 'try'}
         error={error}
