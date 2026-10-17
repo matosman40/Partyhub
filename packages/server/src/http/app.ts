@@ -70,6 +70,7 @@ import { type DbBackupScheduler, listDbBackups } from '../db/backup.js';
 import type { CharacterPackService } from '../characters/packs.js';
 import type { AiRuntime } from '../ai/runtime.js';
 import type { ImageLibrary } from '../images/library.js';
+import { GAME_PHOTO_MAX_BYTES, type GamePhotoRejection, type GamePhotoStore } from '../game-photos/store.js';
 import { GAME_IMAGE_ID } from '@partyhub/shared';
 import { aiProviderUpdateSchema } from '../ai/settings.js';
 import { PRESETS } from '../config.js';
@@ -102,7 +103,17 @@ export interface AppDeps {
   ai: AiRuntime;
   /** Images générées par IA (portraits, fonds) : servies publiquement par identifiant. */
   imageLibrary?: ImageLibrary;
+  /** Captures de la première partie de chaque jeu, montrées dans la fiche. */
+  gamePhotos: GamePhotoStore;
 }
+
+const GAME_PHOTO_ERRORS: Record<GamePhotoRejection, string> = {
+  invalid: 'Jeu inconnu.',
+  'not-jpeg': 'Image JPEG attendue.',
+  'too-large': 'Capture trop volumineuse.',
+  closed: 'Ce jeu a déjà ses captures, prises à sa première partie.',
+  full: 'Ce jeu a déjà toutes ses captures.',
+};
 
 const ADMIN_COOKIE = 'ph_admin';
 const ADMIN_COOKIE_PATH = '/api/admin';
@@ -115,6 +126,7 @@ export function createApp(deps: AppDeps): express.Express {
     journal,
     store,
     manager,
+    gamePhotos,
     profiles,
     cardGames,
     boumBank,
@@ -222,6 +234,58 @@ export function createApp(deps: AppDeps): express.Express {
       status: room?.status ?? null,
       gameName: room?.module.manifest.name ?? null,
     });
+  });
+
+  // Captures de la première partie d'un jeu : la salle source les envoie depuis son écran (jeton d'hôte),
+  // la fiche du jeu les affiche. Voir game-photos/store.ts.
+  api.get('/game-photos', (_req, res) => {
+    res.setHeader('Cache-Control', 'no-cache');
+    res.json({ games: gamePhotos.urls() });
+  });
+
+  api.get('/game-photos/:game/:file', (req, res) => {
+    const file = gamePhotos.filePath(String(req.params.game ?? ''), String(req.params.file ?? ''));
+    if (!file) {
+      res.status(404).json({ error: 'Capture introuvable.' });
+      return;
+    }
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.type('jpeg').sendFile(file);
+  });
+
+  api.post('/rooms/:code/photos', express.raw({ type: 'image/jpeg', limit: GAME_PHOTO_MAX_BYTES }), (req, res) => {
+    const parsed = roomCodeSchema.safeParse(req.params.code);
+    const room = parsed.success ? manager.getByCode(parsed.data) : undefined;
+    if (!room) {
+      res.status(404).json({ error: 'Salle introuvable.' });
+      return;
+    }
+    if (req.get('x-host-token') !== room.hostToken) {
+      res.status(403).json({ error: 'Accès refusé.' });
+      return;
+    }
+    if (room.practice) {
+      res.status(403).json({ error: 'Les parties d’essai ne gardent pas de captures.' });
+      return;
+    }
+    // Pendant la partie, ou sur l'écran des résultats qui la suit (dernière capture de la salle source).
+    if (room.status !== 'in_game' && room.status !== 'ended') {
+      res.status(409).json({ error: 'Aucune partie en cours.' });
+      return;
+    }
+    if (!Buffer.isBuffer(req.body)) {
+      res.status(400).json({ error: GAME_PHOTO_ERRORS['not-jpeg'] });
+      return;
+    }
+    const result = gamePhotos.add(room.module.manifest.id, room.code, req.body);
+    if ('rejected' in result) {
+      const status =
+        result.rejected === 'too-large' ? 413 : result.rejected === 'closed' || result.rejected === 'full' ? 409 : 400;
+      res.status(status).json({ error: GAME_PHOTO_ERRORS[result.rejected] });
+      return;
+    }
+    res.status(201).json({ count: result.count });
   });
 
   // Ressources graphiques d'un paquet installé et activé. Lecture publique : rien de privé n'est exposé.

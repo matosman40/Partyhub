@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { CatalogGame } from '@partyhub/shared';
 import { CATEGORY_LABEL } from '../catalog/labels.js';
 import { artStyle, playersLabel } from '../catalog/display.js';
+import { photoOrigin } from '../catalog/photos.js';
 import { GameLogo } from './GameLogo.js';
 import { GameCard } from './GameCard.js';
 
@@ -10,6 +11,11 @@ export function playersText(game: Pick<CatalogGame, 'minPlayers' | 'maxPlayers'>
   if (game.minPlayers === game.maxPlayers) return game.minPlayers === 1 ? '1 joueur' : `${game.minPlayers} joueurs`;
   return `${playersLabel(game)} joueurs`;
 }
+
+const ORIGIN_NOTE = {
+  partie: 'Prises à la première partie de ce jeu, sur l’écran de la salle.',
+  essai: 'Prises sur des parties d’essai avec des robots.',
+} as const;
 
 /** Captures du jeu : une image en grand, les autres en vignettes. */
 function Gallery({ name, photos }: { name: string; photos: string[] }) {
@@ -43,7 +49,7 @@ function Gallery({ name, photos }: { name: string; photos: string[] }) {
           ))}
         </ul>
       )}
-      <p className="filter-note">Prises sur des parties d’essai avec des robots.</p>
+      <p className="filter-note">{ORIGIN_NOTE[photoOrigin(photos)]}</p>
     </section>
   );
 }

@@ -92,5 +92,12 @@ describe('captures de la fiche', () => {
     expect(html).toContain('aria-label="Capture 2"');
     expect(html.match(/aria-pressed="true"/g)?.length).toBe(1);
     expect(html).toContain('Prises sur des parties d’essai avec des robots.');
+    expect(html).not.toContain('Prises à la première partie');
+  });
+
+  it('dit d’où viennent les captures : première partie réelle ou partie d’essai', () => {
+    const real = sheet(['/api/game-photos/quiz-party/1.jpg']);
+    expect(real).toContain('Prises à la première partie de ce jeu, sur l’écran de la salle.');
+    expect(real).not.toContain('robots');
   });
 });

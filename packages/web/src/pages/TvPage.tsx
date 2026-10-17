@@ -26,6 +26,7 @@ import { CornerMenu, DrawerSection } from '../components/CornerMenu.js';
 import { ChampionshipSettingsForm, GameEndPanel, championshipPill, replayLabel } from '../components/Championship.js';
 import { useActiveProfile } from '../profile/useProfile.js';
 import { useActivity } from './tv/useActivity.js';
+import { useGamePhotoCapture } from '../tv/useGamePhotoCapture.js';
 import { musicForLobby, useMusicSlot } from '../sounds.js';
 import { canSend, OFFLINE_ACTION_ERROR, useConnection } from '../connection.js';
 
@@ -72,6 +73,8 @@ export function TvPage() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [barFocused, setBarFocused] = useState(false);
   const active = useActivity(menuOpen || barFocused);
+  // Captures de la première partie de chaque jeu : tant que l'hôte a autorisé le partage, elles se prennent seules.
+  const photos = useGamePhotoCapture({ code, hostToken, lobby: view?.lobby ?? null });
 
   // Mise en page « console » : l'écran tient exactement dans la fenêtre (voir styles.css).
   useEffect(() => {
@@ -370,6 +373,33 @@ export function TvPage() {
           </button>
         </DrawerSection>
       )}
+
+      <DrawerSection title="Photos de la partie">
+        <p className="muted small">
+          À la première partie de chaque jeu, deux captures de l’écran sont prises pendant la partie, une troisième sur
+          l’écran des résultats. Elles montrent les pseudos et les personnages de la salle. Le navigateur demande de
+          partager cet onglet.
+        </p>
+        {photos.status === 'on' ? (
+          <button type="button" className="btn ghost small" onClick={photos.stop}>
+            Arrêter les captures
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="btn ghost small"
+            onClick={() => void photos.start()}
+            disabled={photos.status === 'asking'}
+          >
+            {photos.status === 'asking' ? 'Choix de l’onglet…' : 'Activer les captures'}
+          </button>
+        )}
+        {photos.note && (
+          <p className="small" role="status">
+            {photos.note}
+          </p>
+        )}
+      </DrawerSection>
 
       <DrawerSection title="Discussion">
         <ChatPanel messages={chat} onSend={sendChat} error={chatError} />
