@@ -21,6 +21,7 @@ import { BackupPanel } from '../admin/BackupPanel.js';
 import { DbBackups } from '../admin/DbBackups.js';
 import { BackButton } from '../components/BackButton.js';
 import { LogsAdmin } from '../admin/LogsAdmin.js';
+import { AiSettingsAdmin } from '../admin/AiSettingsAdmin.js';
 
 const ORIGIN_LABEL: Record<CatalogGame['origin'], string | null> = {
   builtin: null,
@@ -349,7 +350,7 @@ const ADMIN_CATEGORIES = [
   {
     id: 'systeme',
     title: 'Système',
-    text: 'Journal des erreurs, réglages généraux, sauvegardes et base de données.',
+    text: 'Journal des erreurs, clés d’IA, réglages généraux, sauvegardes et base de données.',
   },
 ] as const;
 
@@ -701,6 +702,11 @@ export function AdminPage() {
               <section className="card stack">
                 <h2>Journal des erreurs</h2>
                 <LogsAdmin />
+              </section>
+
+              <section className="card stack">
+                <h2>Intelligence artificielle</h2>
+                <AiSettingsAdmin />
               </section>
 
               <section className="card">

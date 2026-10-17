@@ -31,18 +31,6 @@ export function describeMediaError(err: unknown): string {
   }
 }
 
-/** Niveau sonore entre 0 et 1, à partir des échantillons d'un AnalyserNode (valeurs 0 à 255, centrées sur 128). */
-export function levelFromBytes(samples: ArrayLike<number>): number {
-  if (samples.length === 0) return 0;
-  let sum = 0;
-  for (let i = 0; i < samples.length; i++) {
-    const v = (samples[i]! - 128) / 128;
-    sum += v * v;
-  }
-  const rms = Math.sqrt(sum / samples.length);
-  return Math.min(1, rms * 3);
-}
-
 /** Libellé français de l'état d'une autorisation (Permissions API). */
 export function permissionLabel(state: string): string {
   switch (state) {
@@ -74,3 +62,5 @@ export function unavailableMessage(kind: 'micro' | 'caméra', secureContext: boo
   }
   return `Ce navigateur ne permet pas d’accéder au ${kind}.`;
 }
+
+export { levelFromBytes } from '@partyhub/games/client';

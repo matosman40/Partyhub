@@ -1,10 +1,13 @@
 /**
  * Profils gardés sur cet appareil. Un profil « nom seul » n'a pas de mot de passe : son jeton de session
- * est le seul moyen de le retrouver. Le profil actif est dans `KEY` ; la liste de tous les profils de
- * l'appareil (pour en changer vite) est dans `LIST_KEY`. Toutes les lectures et écritures sont
- * protégées : le stockage peut être indisponible (navigation privée).
+ * est le seul moyen de le retrouver. Le profil actif de l'appareil est dans `KEY` (il sert aux nouveaux
+ * onglets) ; la liste de tous les profils de l'appareil (pour en changer vite) est dans `LIST_KEY`.
+ * Chaque onglet garde son propre profil dans `TAB_KEY` (sessionStorage), figé à son ouverture : deux
+ * onglets peuvent donc jouer chacun avec un joueur différent, même sur un seul navigateur.
+ * Toutes les lectures et écritures sont protégées : le stockage peut être indisponible (navigation privée).
  */
 const KEY = 'ph:profile';
+const TAB_KEY = 'ph:profile-tab';
 const LIST_KEY = 'ph:profiles';
 /** Événement de la fenêtre : le profil actif ou la liste a changé (les écrans se mettent à jour). */
 export const PROFILE_CHANGED = 'ph:profile-changed';
@@ -24,7 +27,26 @@ export interface DeviceProfile {
   name: string;
 }
 
+/** Ouvre l'onglet avec le profil actif de l'appareil, s'il n'a pas encore le sien. */
+function pinTabProfile(): void {
+  try {
+    if (sessionStorage.getItem(TAB_KEY) !== null) return;
+    const device = localStorage.getItem(KEY);
+    if (device) sessionStorage.setItem(TAB_KEY, device);
+  } catch {
+    /* sans stockage de session : l'onglet suit le profil de l'appareil */
+  }
+}
+pinTabProfile();
+
+/** Profil actif de cet onglet, à défaut celui de l'appareil. */
 export function readProfileToken(): string | null {
+  try {
+    const tab = sessionStorage.getItem(TAB_KEY);
+    if (tab) return tab;
+  } catch {
+    /* pas de stockage de session : profil de l'appareil */
+  }
   try {
     return localStorage.getItem(KEY);
   } catch {
@@ -32,8 +54,13 @@ export function readProfileToken(): string | null {
   }
 }
 
-/** Définit le profil actif par son jeton (sans toucher à la liste). */
+/** Définit le profil actif par son jeton, pour cet onglet et pour l'appareil (sans toucher à la liste). */
 export function saveProfileToken(token: string): void {
+  try {
+    sessionStorage.setItem(TAB_KEY, token);
+  } catch {
+    /* sans effet : l'onglet suivra le profil de l'appareil */
+  }
   try {
     localStorage.setItem(KEY, token);
   } catch {
@@ -42,8 +69,13 @@ export function saveProfileToken(token: string): void {
   notifyChanged();
 }
 
-/** Plus de profil actif sur cet appareil (la liste reste). */
+/** Plus de profil actif sur cet appareil ni dans cet onglet (la liste reste). */
 export function clearProfileToken(): void {
+  try {
+    sessionStorage.removeItem(TAB_KEY);
+  } catch {
+    /* sans effet */
+  }
   try {
     localStorage.removeItem(KEY);
   } catch {

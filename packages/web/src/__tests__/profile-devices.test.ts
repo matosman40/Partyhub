@@ -86,3 +86,45 @@ describe('Profils de l’appareil', () => {
     expect(readDeviceProfiles()).toEqual([]);
   });
 });
+
+type Session = typeof import('../profile/session.js');
+
+/** Un onglet : son propre sessionStorage, et le localStorage partagé de l'appareil (`store`). */
+async function openTab(): Promise<{ run: <T>(fn: (s: Session) => T) => T }> {
+  const tabStore = new Map<string, string>();
+  const tabStorage = {
+    getItem: (k: string) => tabStore.get(k) ?? null,
+    setItem: (k: string, v: string) => void tabStore.set(k, v),
+    removeItem: (k: string) => void tabStore.delete(k),
+  };
+  vi.stubGlobal('sessionStorage', tabStorage);
+  vi.resetModules();
+  const mod = await import('../profile/session.js');
+  return {
+    run: (fn) => {
+      vi.stubGlobal('sessionStorage', tabStorage);
+      return fn(mod);
+    },
+  };
+}
+
+describe('Un profil par onglet', () => {
+  it('changer de joueur dans un onglet ne change pas celui des autres onglets', async () => {
+    rememberDeviceProfile(lea);
+    rememberDeviceProfile(max, false);
+    const tab1 = await openTab();
+    const tab2 = await openTab();
+    expect(tab1.run((s) => s.readProfileToken())).toBe('t-lea');
+    tab2.run((s) => s.switchDeviceProfile('t-max'));
+    expect(tab2.run((s) => s.readProfileToken())).toBe('t-max');
+    expect(tab1.run((s) => s.readProfileToken())).toBe('t-lea');
+  });
+
+  it('un nouvel onglet prend le profil actif de l’appareil', async () => {
+    rememberDeviceProfile(lea);
+    rememberDeviceProfile(max, false);
+    switchDeviceProfile('t-max');
+    const tab = await openTab();
+    expect(tab.run((s) => s.readProfileToken())).toBe('t-max');
+  });
+});
