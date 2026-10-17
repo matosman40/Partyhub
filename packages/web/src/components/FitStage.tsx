@@ -20,30 +20,32 @@ export function FitStage({ children, minScale = 0.45 }: FitStageProps) {
     const i = inner.current;
     if (!o || !i) return;
 
-    let busy = false;
     const fit = () => {
-      if (busy) return;
-      busy = true;
-      try {
-        // Mesure en taille naturelle, puis applique le facteur de réduction.
-        i.style.zoom = '1';
-        const naturalH = i.scrollHeight;
-        const naturalW = i.scrollWidth;
-        const scale = Math.min(1, o.clientHeight / Math.max(1, naturalH), o.clientWidth / Math.max(1, naturalW));
-        i.style.zoom = String(Math.max(minScale, Math.floor(scale * 1000) / 1000));
-      } finally {
-        busy = false;
-      }
+      // Mesure en taille naturelle, puis applique le facteur de réduction.
+      i.style.zoom = '1';
+      const naturalH = i.scrollHeight;
+      const naturalW = i.scrollWidth;
+      const scale = Math.min(1, o.clientHeight / Math.max(1, naturalH), o.clientWidth / Math.max(1, naturalW));
+      i.style.zoom = String(Math.max(minScale, Math.floor(scale * 1000) / 1000));
+    };
+
+    // Le recalcul est repoussé à l'image suivante : changer le zoom modifie la taille observée, et le faire dans le
+    // même cycle que l'observateur provoquerait l'avertissement « ResizeObserver loop » du navigateur.
+    let frame = 0;
+    const schedule = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(fit);
     };
 
     fit();
-    const ro = new ResizeObserver(fit);
+    const ro = new ResizeObserver(schedule);
     ro.observe(o);
     ro.observe(i);
-    window.addEventListener('resize', fit);
+    window.addEventListener('resize', schedule);
     return () => {
+      cancelAnimationFrame(frame);
       ro.disconnect();
-      window.removeEventListener('resize', fit);
+      window.removeEventListener('resize', schedule);
     };
   }, [minScale]);
 
