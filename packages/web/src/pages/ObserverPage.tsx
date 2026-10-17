@@ -2,6 +2,7 @@ import { Suspense, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import type { ChatMessage, ObserverRoomView } from '@partyhub/shared';
 import { DEVICE_KIND_ICONS, DEVICE_KIND_LABELS } from '@partyhub/shared';
+import { canSend } from '../connection.js';
 import { createSocket, type AppSocket } from '../realtime.js';
 import { viewsFor } from '../games.js';
 import { AvatarsContext } from '@partyhub/games/client';
@@ -94,6 +95,7 @@ export function ObserverPage() {
 
   function sendChat(text: string) {
     setChatError(null);
+    if (!canSend(socket, setChatError)) return;
     socket.emit('observer:chat', { text }, (res) => {
       if (!res.ok) setChatError(res.error);
     });
@@ -101,6 +103,7 @@ export function ObserverPage() {
 
   function sendReaction(emoji: string) {
     setChatError(null);
+    if (!canSend(socket, setChatError)) return;
     socket.emit('observer:reaction', { emoji }, (res) => {
       if (!res.ok) setChatError(res.error);
     });

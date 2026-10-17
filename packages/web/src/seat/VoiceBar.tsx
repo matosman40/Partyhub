@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { VoiceClip } from '@partyhub/shared';
 import { api } from '../api.js';
+import { canSend } from '../connection.js';
 import type { AppSocket } from '../realtime.js';
 import { authHeaders } from '../profile/session.js';
 import { voiceUrl } from '../components/voiceQueue.js';
@@ -37,6 +38,7 @@ export function VoiceBar({ socket, token }: { socket: AppSocket; token?: string 
 
   function play(voice: VoiceClip) {
     setNotice(null);
+    if (!canSend(socket, (text) => setNotice({ ok: false, text }))) return;
     socket.emit('player:voice', { id: voice.id }, (res) => {
       setNotice(res.ok ? { ok: true, text: `« ${voice.name} » envoyée à l’écran.` } : { ok: false, text: res.error });
     });

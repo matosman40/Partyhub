@@ -22,13 +22,17 @@ function watch(socket: AppSocket): AppSocket {
   return socket;
 }
 
+/**
+ * Reconnexion : la première tentative part au bout de 0,5 s, puis l'attente croît sans dépasser 1,5 s. Au-delà,
+ * un téléphone revenu sur le réseau restait jusqu'à 4 s sans répondre (mesuré : 3,4 s après le rétablissement).
+ */
 function options(autoConnect: boolean) {
   return {
     autoConnect,
     transports: ['websocket', 'polling'] as ('websocket' | 'polling')[],
     reconnection: true,
     reconnectionDelay: 500,
-    reconnectionDelayMax: 4000,
+    reconnectionDelayMax: 1500,
   };
 }
 
