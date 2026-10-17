@@ -10973,6 +10973,11 @@ html:not([data-theme='dark']) .corner-drawer {
     min-height: 44px;
     justify-content: center;
   }
+
+  /* Boutons compacts (« Ajouter un robot », « Lancer depuis mon téléphone » sur l’écran principal) : 44 px au toucher. */
+  .btn.small {
+    min-height: 44px;
+  }
 }
 
 /* ==========================================================================
