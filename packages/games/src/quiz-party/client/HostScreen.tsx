@@ -3,6 +3,7 @@ import type { HostViewProps } from '../../client/types.js';
 import { MoodsContext } from '../../client/avatar-context.js';
 import { useRemaining } from '../../client/hooks.js';
 import { Avatar, LETTERS, Ranking, TimerBar, type RankRow } from '../../client/ui.js';
+import { KeywordTurnsBoard } from '../../common/client/keywords-ui.js';
 import { quizMoods } from './moods.js';
 
 /** Écran TV du quiz : les personnages réagissent à la phase (salut, joie, tristesse, danse). */
@@ -18,7 +19,7 @@ export function QuizHost(props: HostViewProps) {
 }
 
 function QuizBoard({ publicState: pub, hostState: host, now }: HostViewProps) {
-  const remaining = useRemaining(pub?.answerEndsAt, now);
+  const remaining = useRemaining(pub?.endsAt ?? pub?.answerEndsAt, now);
 
   if (!pub) return null;
 
@@ -40,6 +41,10 @@ function QuizBoard({ publicState: pub, hostState: host, now }: HostViewProps) {
     return <p className="center big">En attente du lancement…</p>;
   }
 
+  if (pub.phase === 'topics' || pub.phase === 'generating') {
+    return <KeywordTurnsBoard topics={pub.topics} remaining={remaining} generating={pub.phase === 'generating'} />;
+  }
+
   const q = pub.question;
   if (!q) return null;
 
@@ -48,6 +53,7 @@ function QuizBoard({ publicState: pub, hostState: host, now }: HostViewProps) {
     const pending: string[] = host?.pending ?? [];
     return (
       <section className="quiz-host fade-in" key={`q-${pub.index}`}>
+        {pub.notice && <p className="quiz-notice">{pub.notice}</p>}
         <div className="round-info">
           Question {pub.index + 1} / {pub.total} · <span className="tag">{q.category}</span>
         </div>

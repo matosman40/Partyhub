@@ -1,5 +1,6 @@
 import type { GameContext, GameJob } from '@partyhub/shared';
 import type { z } from 'zod';
+import { parseJsonObject } from '../common/ai-json.js';
 import {
   STAT_LABELS,
   TONE_LABELS,
@@ -200,20 +201,7 @@ const SCHEMAS: Record<JobInput['kind'], z.ZodType> = {
   epilogue: epilogueDraftSchema,
 };
 
-/**
- * Extrait l'objet JSON d'une réponse, même entourée de texte ou de balises.
- * Les messages d'erreur ne reprennent jamais le contenu renvoyé par le modèle.
- */
-export function parseJsonObject(text: string): unknown {
-  const start = text.indexOf('{');
-  const end = text.lastIndexOf('}');
-  if (start < 0 || end <= start) throw new Error('Réponse sans objet JSON.');
-  try {
-    return JSON.parse(text.slice(start, end + 1));
-  } catch {
-    throw new Error('Réponse JSON illisible.');
-  }
-}
+export { parseJsonObject };
 
 /**
  * Exécute le travail demandé au modèle. Renvoie le contenu validé, ou null quand aucune IA n'est configurée.

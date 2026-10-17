@@ -100,6 +100,14 @@ export const clientViews: Record<string, GameClientViews> = {
     ]);
     return { Settings: QuizSettings, Host: QuizHost, Player: QuizPlayer };
   }),
+  'phrases-trous': lazyViews(async () => {
+    const [{ PhrasesHost }, { PhrasesPlayer }, { PhrasesSettings }] = await Promise.all([
+      import('../phrases-trous/client/HostScreen.js'),
+      import('../phrases-trous/client/PlayerScreen.js'),
+      import('../phrases-trous/client/Settings.js'),
+    ]);
+    return { Settings: PhrasesSettings, Host: PhrasesHost, Player: PhrasesPlayer };
+  }),
   association: lazyViews(async () => {
     const [{ AssociationHost }, { AssociationPlayer }] = await Promise.all([
       import('../association/client/HostScreen.js'),

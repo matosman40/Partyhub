@@ -1,5 +1,6 @@
 import type { GameModule } from '@partyhub/shared';
 import { quizParty } from './quiz-party/module.js';
+import { phrasesTrous } from './phrases-trous/module.js';
 import { association } from './association/module.js';
 import { plutotQui } from './plutot-qui/module.js';
 import { imposteur } from './imposteur/module.js';
@@ -30,6 +31,7 @@ import { aventureIa } from './aventure/module.js';
  */
 export const gameRegistry: GameModule[] = [
   quizParty,
+  phrasesTrous,
   association,
   plutotQui,
   imposteur,
@@ -62,6 +64,7 @@ export function findGame(id: string): GameModule | undefined {
 }
 
 export { quizParty } from './quiz-party/module.js';
+export { phrasesTrous } from './phrases-trous/module.js';
 export type { QuizSettings, QuizState } from './quiz-party/module.js';
 export { association } from './association/module.js';
 export { plutotQui } from './plutot-qui/module.js';

@@ -741,10 +741,49 @@ const microDefis: Scene = (c) => {
   );
 };
 
+/** Phrases à trous : des lignes à compléter au centre, des cartes éparpillées sous la phrase. */
+const phrasesTrous: Scene = (c) => (
+  <>
+    <rect y={H * 0.8} width={W} height={H * 0.2} fill="#000" opacity={0.3} />
+    {Array.from({ length: 4 }, (_, i) => (
+      <line
+        key={i}
+        x1={W * 0.18}
+        x2={W * 0.82}
+        y1={H * (0.26 + i * 0.13)}
+        y2={H * (0.26 + i * 0.13)}
+        stroke={c.edge}
+        strokeWidth={6}
+        strokeDasharray="36 22"
+        opacity={0.45}
+      />
+    ))}
+    {Array.from({ length: 14 }, (_, i) => {
+      const x = span(c.r, 60, W - 60);
+      const y = span(c.r, H * 0.62, H * 0.9);
+      const rot = span(c.r, -25, 25);
+      return (
+        <rect
+          key={i}
+          x={x}
+          y={y}
+          width={120}
+          height={160}
+          rx={18}
+          fill={i % 2 ? c.fill : c.edge}
+          opacity={0.22}
+          transform={`rotate(${rot.toFixed(0)} ${x.toFixed(1)} ${y.toFixed(1)})`}
+        />
+      );
+    })}
+  </>
+);
+
 const FALLBACK: Scene[] = [plutotQui, tarot, association, promoteur];
 
 const SCENES: Record<string, Scene> = {
   'quiz-party': quizParty,
+  'phrases-trous': phrasesTrous,
   'bombes-party': bombes,
   banquise,
   imposteur,

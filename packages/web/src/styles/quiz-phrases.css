@@ -1,0 +1,192 @@
+/* Quiz à thème et phrases à trous : mots-clés à tour de rôle, phrase à trou, cartes en main et votes. */
+
+.quiz-notice {
+  max-width: 62ch;
+  margin: 0 auto;
+  padding: 0.5rem 0.9rem;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--r-md);
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.keyword-board,
+.phrases-host {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(0.9rem, 2vw, 1.4rem);
+  width: 100%;
+  text-align: center;
+}
+
+.topic-turns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 0.6rem;
+  width: min(100%, 60rem);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.topic-turn {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.75rem 0.95rem;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--glass);
+  text-align: left;
+}
+
+.topic-turn .name {
+  font-weight: 700;
+}
+
+.topic-turn .keywords {
+  color: var(--muted);
+  font-size: 0.95rem;
+  overflow-wrap: anywhere;
+}
+
+.topic-turn.is-current {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(255, 61, 139, 0.25);
+}
+
+.topic-turn.is-done .keywords {
+  color: var(--text);
+}
+
+.topic-turn.is-waiting {
+  opacity: 0.6;
+}
+
+.phrase-sentence {
+  max-width: 34ch;
+  margin: 0 auto;
+  font-size: clamp(1.4rem, 4.2vw, 2.6rem);
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.phrase-small {
+  margin: 0;
+  font-size: 1.15rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+/* Le trou : vide tant que la carte n'est pas posée, souligné pour se repérer de loin. */
+.hole {
+  display: inline-block;
+  min-width: 6ch;
+  padding: 0 0.2em;
+  border-bottom: 3px dashed var(--accent);
+  color: var(--accent);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.card-hand {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+  gap: 0.6rem;
+}
+
+.card-btn {
+  min-height: 3.2rem;
+  padding: 0.65rem 0.8rem;
+  border: 2px solid var(--line-strong);
+  border-radius: var(--r-md);
+  background: var(--btn-face, var(--glass-2));
+  color: var(--text);
+  font: inherit;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+
+.card-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.card-btn:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.card-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.phrase-options {
+  display: grid;
+  gap: 0.6rem;
+  width: min(100%, 56rem);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  text-align: left;
+}
+
+.phrase-option {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.7rem;
+  padding: 0.8rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--glass);
+}
+
+.phrase-option .letter {
+  flex: none;
+}
+
+.phrase-text {
+  flex: 1 1 14rem;
+  font-size: clamp(1.05rem, 2.6vw, 1.4rem);
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.phrase-meta {
+  flex-basis: 100%;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.phrase-option.correct {
+  border-color: #3ff5e0;
+  background: rgba(63, 245, 224, 0.12);
+}
+
+.roster {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.roster li {
+  padding: 0.35rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--glass);
+}
+
+.roster .answered {
+  border-color: rgba(63, 245, 224, 0.5);
+}
+
+.roster .waiting {
+  color: var(--muted);
+}

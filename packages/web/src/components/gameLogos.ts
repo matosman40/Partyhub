@@ -36,6 +36,15 @@ export const GAME_LOGOS: Record<string, LogoSpec> = {
     mark: 'bubble',
     tilt: -4,
   },
+  'phrases-trous': {
+    lines: ['Phrases', 'à trous'],
+    fill: '#c3a6ff',
+    edge: '#ff9ad5',
+    ink: '#1a0f2e',
+    sky: ['#0c3a4f', '#031019'],
+    mark: 'frame',
+    tilt: -3,
+  },
   'bombes-party': {
     lines: ['Bombes', 'party'],
     fill: '#ff8a3d',

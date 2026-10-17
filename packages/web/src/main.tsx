@@ -12,6 +12,7 @@ import './styles.css';
 import './styles/rami51.css';
 import './styles/tarot.css';
 import './styles/board.css';
+import './styles/quiz-phrases.css';
 
 installClientLogging(__APP_VERSION__);
 applyTheme(loadTheme());
