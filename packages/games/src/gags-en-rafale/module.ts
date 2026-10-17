@@ -128,12 +128,15 @@ function finishPlay(s: GagsState, ctx: GameContext): GagsState {
   ctx.schedule(REVEAL_END, REVEAL_MS);
   const planned = current(s);
   const gag = planned ? GAGS[planned.gag] : null;
+  // Le silence ne vaut quelque chose que pour un joueur encore là : un joueur parti ne gagne rien à ne rien faire.
+  const connected = new Set(ctx.connectedPlayerIds());
   const results: Record<string, { success: boolean; points: number }> = {};
   let points = s.points;
   for (const id of Object.keys(s.players)) {
     const sub = s.submissions[id];
-    const verdict: Judgement | null = sub ?? (gag ? silentOutcome(gag) : null);
-    results[id] = { success: verdict?.success ?? false, points: verdict?.points ?? 0 };
+    const silent: Judgement = gag && connected.has(id) ? silentOutcome(gag) : { success: false, points: 0 };
+    const verdict: Judgement = sub ?? silent;
+    results[id] = { success: verdict.success, points: verdict.points };
     if (results[id].points) points = addPoints(points, id, results[id].points);
   }
   return {

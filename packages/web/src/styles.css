@@ -10353,6 +10353,36 @@ html:not([data-theme='dark']) .corner-drawer {
   border-color: transparent;
 }
 
+.gag-lift {
+  position: absolute;
+  top: 16px;
+  bottom: 16px;
+  left: 14px;
+  width: 12px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+}
+
+.gag-lift > span {
+  display: block;
+  height: 100%;
+  transform-origin: 50% 100%;
+  background: linear-gradient(180deg, #ffc83d, #9dff4a);
+}
+
+.gag-balloon.is-late {
+  border-color: #e0112b;
+  background: linear-gradient(180deg, rgba(224, 17, 43, 0.3), rgba(255, 61, 207, 0.12));
+}
+
+.gag-quip-phone {
+  margin: 0;
+  font-family: var(--display);
+  font-size: clamp(1.1rem, 4vw, 1.5rem);
+  color: var(--sun);
+}
+
 .gag-nosensor {
   max-width: 420px;
 }

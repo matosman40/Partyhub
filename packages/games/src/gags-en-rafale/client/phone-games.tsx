@@ -8,6 +8,7 @@ import {
   CREPE_SWIPE_RATIO,
   flyAt,
   isFlyHit,
+  SCRATCH_MIN_MS,
   SCRATCH_SHARE,
   STATUE_MS,
   STILL_ACCEL,
@@ -61,6 +62,7 @@ export function SwipeChallenge({ localStart, onDone }: ChallengeProps) {
   const pad = useRef<HTMLDivElement>(null);
   const start = useRef<{ y: number; height: number } | null>(null);
   const finished = useRef(false);
+  const [lift, setLift] = useState(0);
 
   function down(e: ReactPointerEvent<HTMLDivElement>) {
     if (finished.current || !pad.current) return;
@@ -71,7 +73,9 @@ export function SwipeChallenge({ localStart, onDone }: ChallengeProps) {
   function move(e: ReactPointerEvent<HTMLDivElement>) {
     const from = start.current;
     if (!from || finished.current) return;
-    if (from.y - e.clientY >= from.height * CREPE_SWIPE_RATIO) {
+    const ratio = (from.y - e.clientY) / Math.max(1, from.height);
+    setLift(Math.max(0, Math.min(1, ratio / CREPE_SWIPE_RATIO)));
+    if (ratio >= CREPE_SWIPE_RATIO) {
       finished.current = true;
       onDone({ value: Math.max(CREPE_MIN_MS, Math.round(elapsedSince(localStart))) });
     }
@@ -94,6 +98,9 @@ export function SwipeChallenge({ localStart, onDone }: ChallengeProps) {
         🥞
       </span>
       <span className="gag-pad-text">⬆ Glissez vers le haut !</span>
+      <span className="gag-lift" aria-hidden="true">
+        <span style={{ transform: `scaleY(${lift.toFixed(3)})` }} />
+      </span>
     </div>
   );
 }
@@ -121,11 +128,12 @@ export function MoucheChallenge({ localStart, seed, onDone }: ChallengeProps) {
 
   function tap(e: ReactPointerEvent<HTMLDivElement>) {
     if (finished.current || !field.current) return;
-    const t = elapsedSince(localStart);
+    // L'instant est arrondi avant le test : le serveur juge la valeur reçue, pas l'instant exact.
+    const value = Math.round(elapsedSince(localStart));
     const at = relative(e, field.current.getBoundingClientRect());
-    if (isFlyHit(seed, t, at.x, at.y)) {
+    if (isFlyHit(seed, value, at.x, at.y)) {
       finished.current = true;
-      onDone({ value: Math.round(t), x: at.x, y: at.y });
+      onDone({ value, x: at.x, y: at.y });
     } else {
       setMiss((m) => m + 1);
     }
@@ -141,6 +149,13 @@ export function MoucheChallenge({ localStart, seed, onDone }: ChallengeProps) {
       </span>
     </div>
   );
+}
+
+/** Ce que dit le ballon pendant qu'on le gonfle : trop tôt, à point, ou trop tard. */
+export function balloonHint(heldMs: number): string {
+  if (heldMs < BALLOON_MIN_MS) return 'Encore un peu…';
+  if (heldMs <= BALLOON_MAX_MS) return 'À point ! Relâchez';
+  return 'Trop tard : relâchez vite !';
 }
 
 /** Ballon : on maintient pour gonfler, on relâche entre 0,9 et 1,5 seconde. Un seul relâchement compte. */
@@ -172,10 +187,12 @@ export function BalloonChallenge({ onDone }: ChallengeProps) {
   }
 
   const ripe = held >= BALLOON_MIN_MS && held <= BALLOON_MAX_MS;
+  const late = held > BALLOON_MAX_MS;
   const size = 0.35 + (Math.min(held, 2500) / 2500) * 0.65;
+  const hint = pressedAt.current === null ? 'Maintenez pour gonfler' : balloonHint(held);
   return (
     <div
-      className={`gag-pad gag-balloon${ripe ? ' is-ripe' : ''}`}
+      className={`gag-pad gag-balloon${ripe ? ' is-ripe' : ''}${late ? ' is-late' : ''}`}
       onPointerDown={press}
       onPointerUp={release}
       onPointerCancel={release}
@@ -184,11 +201,7 @@ export function BalloonChallenge({ onDone }: ChallengeProps) {
         🎈
       </span>
       <span className="gag-pad-text" aria-live="polite">
-        {pressedAt.current === null
-          ? 'Maintenez pour gonfler'
-          : ripe
-            ? 'À point ! Relâchez'
-            : 'Relâchez à la bonne taille'}
+        {hint}
       </span>
     </div>
   );
@@ -242,8 +255,19 @@ export function StillChallenge({ onDone }: Omit<ChallengeProps, 'localStart' | '
   }, []);
   useDisplayTick(signal !== 'no');
 
-  if (signal === 'no')
-    return <NoSensor text="Ce téléphone ne transmet pas le mouvement : ce gag ne peut pas être réussi." />;
+  if (signal === 'no') {
+    // Hors HTTPS, le navigateur bloque le mouvement : on le dit, plutôt que d'accuser le téléphone.
+    const insecure = typeof window !== 'undefined' && window.isSecureContext === false;
+    return (
+      <NoSensor
+        text={
+          insecure
+            ? 'Le mouvement est bloqué parce que la page n’est pas en HTTPS. Ce gag ne peut pas être réussi.'
+            : 'Ce téléphone ne transmet pas le mouvement : ce gag ne peut pas être réussi.'
+        }
+      />
+    );
+  }
   return (
     <div className="gag-challenge gag-still">
       <span className="gag-pad-icon" aria-hidden="true">
@@ -291,7 +315,7 @@ export function ScratchChallenge({ localStart, onDone }: ChallengeProps) {
     setOpened(count);
     if (!finished.current && count / cells.current.length >= SCRATCH_SHARE) {
       finished.current = true;
-      onDone({ value: Math.round(elapsedSince(localStart)) });
+      onDone({ value: Math.max(SCRATCH_MIN_MS, Math.round(elapsedSince(localStart))) });
     }
   }
 

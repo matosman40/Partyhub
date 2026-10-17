@@ -257,6 +257,19 @@ describe('Gags en rafale : déroulement d’une partie', () => {
     expect(board.results.find((r) => r.name === 'Léo')?.success).toBe(false);
   });
 
+  it('un joueur parti pendant un gag d’attente ne gagne rien à ne rien faire', () => {
+    // Léo a quitté la salle : seule Ana est connectée. Ana ne touche à rien (elle gagne), Léo non (il perd).
+    const c = clock(['ana']);
+    const init = gagsEnRafale.initialize({ rounds: 1 }, [ANA, LEO], c.ctx);
+    const started = gagsEnRafale.start(init, c.ctx);
+    if (!started.ok) throw new Error(started.error);
+    let s = playOf({ ...started.state, plan: [{ gag: 'patience', seed: 9 }] }, c);
+    s = c.fire(s, 'play-end');
+    const board = gagsEnRafale.getPublicState(s) as { results: { name: string; success: boolean; points: number }[] };
+    expect(board.results.find((r) => r.name === 'Ana')).toMatchObject({ success: true });
+    expect(board.results.find((r) => r.name === 'Léo')).toMatchObject({ success: false, points: 0 });
+  });
+
   it('additionne les points et classe les joueurs', () => {
     const { c, s: start } = started(1);
     let s = playOf(start, c);

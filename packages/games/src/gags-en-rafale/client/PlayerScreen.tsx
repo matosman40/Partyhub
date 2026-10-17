@@ -69,11 +69,13 @@ export function GagsPlayer({ publicState, playerState, playerId, now, send }: Pl
     );
   }
 
-  // Bilan
+  // Bilan : le verdict de ce joueur, puis la réplique du gag (la même que sur l'écran principal).
   const gained = me?.mine?.points ?? 0;
+  const won = Boolean(me?.mine?.success);
   return (
     <section className="player-game fade-in gag-phone">
-      <p className="gag-verdict">{me?.mine?.success ? 'Réussi !' : me?.submitted ? 'Raté' : 'Pas de réponse'}</p>
+      <p className="gag-verdict">{won ? 'Réussi !' : me?.submitted ? 'Raté' : 'Pas de réponse'}</p>
+      <p className="gag-quip-phone">{won ? gag.quips.win : gag.quips.lose}</p>
       {gained > 0 && <p className="big-number">+{gained}</p>}
       <p className="muted">Total : {me?.points ?? 0} pts</p>
       <p className="muted small">Gag suivant dans quelques secondes…</p>

@@ -5,6 +5,8 @@ import { gagsEnRafale, type GagsState } from '../gags-en-rafale/module.js';
 import { GAG_IDS, GAGS, type GagId } from '../gags-en-rafale/gags.js';
 import { GagsHost } from '../gags-en-rafale/client/HostScreen.js';
 import { GagsPlayer } from '../gags-en-rafale/client/PlayerScreen.js';
+import { balloonHint } from '../gags-en-rafale/client/phone-games.js';
+import { BALLOON_MAX_MS, BALLOON_MIN_MS } from '../gags-en-rafale/gags.js';
 
 /**
  * Les vues du jeu, rendues à partir d'états réels du moteur : chaque gag, chaque phase, côté écran principal
@@ -125,8 +127,18 @@ describe('Gags en rafale : téléphone', () => {
     expect(scratch).toContain('🍌');
   });
 
-  it('affiche le verdict du bilan', () => {
+  it('affiche le verdict du bilan, avec la réplique du gag', () => {
     const reveal = renderToStaticMarkup(<GagsPlayer {...playerView(stateAt('crepe', 'reveal'))} />);
     expect(reveal).toMatch(/Réussi|Raté|Pas de réponse/);
+    // Ana a répondu à côté : la réplique du raté, comme sur l'écran principal.
+    expect(reveal.includes(GAGS.crepe.quips.lose)).toBe(true);
+  });
+
+  it('dit si le ballon est trop tôt, à point ou trop tard', () => {
+    expect(balloonHint(0)).toBe('Encore un peu…');
+    expect(balloonHint(BALLOON_MIN_MS - 1)).toBe('Encore un peu…');
+    expect(balloonHint(BALLOON_MIN_MS)).toBe('À point ! Relâchez');
+    expect(balloonHint(BALLOON_MAX_MS)).toBe('À point ! Relâchez');
+    expect(balloonHint(BALLOON_MAX_MS + 1)).toBe('Trop tard : relâchez vite !');
   });
 });

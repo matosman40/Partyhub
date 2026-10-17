@@ -55,7 +55,8 @@ donc disponible dans l'image Docker publiée.
 Règles communes :
 - Le serveur ne croit jamais un résultat impossible dans le temps écoulé : `value` ≤ temps écoulé + 400 ms (tolérance réseau).
 - Points : 100 pour une réussite, plus jusqu'à 60 selon la rapidité : `100 + round(60 × max(0, 1 − temps / durée))`.
-- Un joueur qui n'envoie rien rate, sauf au gag « Surtout, ne touchez pas », où il réussit.
+- Un joueur qui n'envoie rien rate, sauf au gag « Surtout, ne touchez pas », où il réussit s'il est toujours connecté
+  (un joueur parti ne gagne rien à ne rien faire).
 - Les robots du mode test réussissent six fois sur dix, avec leur réponse gagnante, au plus tôt 0,7 s après le début
   (délai minimal de leur action). La statue ne leur est donc accessible qu'après 1,1 s : c'est normal.
 
@@ -75,8 +76,11 @@ Mouche : la position à l'instant `t` (ms) est une courbe de Lissajous, identiqu
   animée), la liste des joueurs avec ✔ prêt (ou ✘ touché pour l'attente) ; bilan (réplique du gag, résultats,
   classement) ; fin (classement final).
 - **Téléphone** : présentation avec la phrase absurde ; défi du gag ; « Envoyé ! » après une réponse (« Touché ! »
-  pour l'attente) ; bilan (Réussi / Raté / Pas de réponse, points gagnés, total). Le gag « Faites la statue » demande
-  l'autorisation du mouvement (iOS) et affiche un message clair sans capteur.
+  pour l'attente) ; bilan (Réussi / Raté / Pas de réponse, réplique du gag, points gagnés, total).
+  Retours pendant le défi : la crêpe montre la progression du glissement ; le ballon indique « Encore un peu… »,
+  « À point ! Relâchez » ou « Trop tard » ; la mouche signale un tap raté et laisse retenter.
+  Le gag « Faites la statue » demande l'autorisation du mouvement (iOS). Sans capteur, ou hors HTTPS,
+  il affiche un message qui dit pourquoi.
 - Le téléphone mesure le temps depuis le début du gag avec `useLocalStart` (horloge recalée sur le serveur).
 
 ## Tests attendus
