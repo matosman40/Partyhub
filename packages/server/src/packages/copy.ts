@@ -40,6 +40,8 @@ function currentDefinition(module: PackageModule, gameId: string, s: CopyService
       return s.boardGames.list().find((r) => r.id === gameId)?.definition;
     case 'quiz':
       return s.mediaGames.get(gameId)?.definition;
+    case 'recipe':
+      return undefined;
   }
 }
 
@@ -52,8 +54,13 @@ function saveDefinition(module: PackageModule, id: string | null, definition: un
       return s.boardGames.save(id, definition);
     case 'quiz':
       return s.mediaGames.save(id, definition);
+    case 'recipe':
+      return { ok: false, error: NOT_COPYABLE };
   }
 }
+
+/** Message affiché quand un paquet ne peut pas devenir un jeu modifiable. */
+const NOT_COPYABLE = 'Une recette ne se copie pas encore dans l’administration : elle reste un paquet.';
 
 /**
  * Crée un jeu modifiable à partir d’un paquet actif : même définition, enregistrée dans le
@@ -65,6 +72,7 @@ export function copyPackageToEditable(packageId: string, services: CopyServices)
   const read = services.packages.readActive(packageId);
   if (!read.ok) return read;
   const { pkg } = read;
+  if (pkg.module === 'recipe') return { ok: false, error: NOT_COPYABLE };
   const name = copyNameOf(pkg.definition.name);
   const saved = saveDefinition(pkg.module, null, { ...pkg.definition, name }, services);
   if (!saved.ok) return saved;

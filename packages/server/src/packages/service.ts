@@ -14,12 +14,18 @@ import {
   type ValidatedPackage,
 } from './format.js';
 import { createPackageGame } from './factory.js';
+import { PARTYHUB_ENGINE } from './engine.js';
 import { launchCheck, type LaunchCheckOptions } from './launch-check.js';
 import { compareVersions } from './semver.js';
 
 const ARCHIVE_NAME = 'package.phgame';
 
-const MODULE_LABEL: Record<PackageModule, string> = { cards: 'cartes', board: 'plateau', quiz: 'questions' };
+const MODULE_LABEL: Record<PackageModule, string> = {
+  cards: 'cartes',
+  board: 'plateau',
+  quiz: 'questions',
+  recipe: 'recette',
+};
 
 const CONTENT_TYPES: Record<string, string> = {
   '.png': 'image/png',
@@ -356,7 +362,9 @@ function parseStoredManifest(raw: string): { description: string; author: string
     return {
       description: typeof parsed.description === 'string' ? parsed.description : '',
       author: typeof parsed.author === 'string' ? parsed.author : '',
-      module: first === 'board' || first === 'quiz' ? first : 'cards',
+      module: (PARTYHUB_ENGINE.modules as readonly string[]).includes(String(first))
+        ? (first as PackageModule)
+        : 'cards',
     };
   } catch {
     return { description: '', author: '', module: 'cards' };

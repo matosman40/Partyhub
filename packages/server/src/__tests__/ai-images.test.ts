@@ -213,6 +213,7 @@ describe('configuration des fournisseurs d’images', () => {
   it('les fournisseurs dont la clé est présente sont utilisés, Cloudflare d’abord', () => {
     const config = imagesFromEnv({
       MODELSCOPE_API_KEY: 'ms',
+      MODELSCOPE_ALLOW_NONCOMMERCIAL: '1',
       CLOUDFLARE_ACCOUNT_ID: 'acc',
       CLOUDFLARE_API_TOKEN: 'cf',
     });
@@ -223,6 +224,7 @@ describe('configuration des fournisseurs d’images', () => {
     const config = imagesFromEnv({
       IMAGE_PROVIDERS: 'modelscope,cloudflare',
       MODELSCOPE_API_KEY: 'ms',
+      MODELSCOPE_ALLOW_NONCOMMERCIAL: '1',
       CLOUDFLARE_ACCOUNT_ID: 'acc',
       CLOUDFLARE_API_TOKEN: 'cf',
     });
@@ -234,8 +236,18 @@ describe('configuration des fournisseurs d’images', () => {
     expect(imagesFromEnv({ CLOUDFLARE_ACCOUNT_ID: 'acc' }).providers).toEqual([]);
   });
 
+  it('ModelScope reste désactivé sans déclaration d’usage non commercial, même avec sa clé', () => {
+    expect(imagesFromEnv({ MODELSCOPE_API_KEY: 'ms' }).providers).toEqual([]);
+    expect(imagesFromEnv({ MODELSCOPE_API_KEY: 'ms', MODELSCOPE_ALLOW_NONCOMMERCIAL: '0' }).providers).toEqual([]);
+    expect(() => imagesFromEnv({ IMAGE_PROVIDERS: 'modelscope', MODELSCOPE_API_KEY: 'ms' })).toThrow(
+      'réservé à un usage non commercial',
+    );
+  });
+
   it('demander un fournisseur sans sa clé est une erreur de configuration', () => {
-    expect(() => imagesFromEnv({ IMAGE_PROVIDERS: 'modelscope' })).toThrow('clé est absente');
+    expect(() => imagesFromEnv({ IMAGE_PROVIDERS: 'modelscope', MODELSCOPE_ALLOW_NONCOMMERCIAL: '1' })).toThrow(
+      'clé est absente',
+    );
   });
 
   it('un fournisseur inconnu est une erreur de configuration', () => {
@@ -255,6 +267,7 @@ describe('configuration des fournisseurs d’images', () => {
     const config = imagesFromEnv({
       IMAGE_PROVIDERS: 'modelscope,cloudflare',
       MODELSCOPE_API_KEY: 'ms',
+      MODELSCOPE_ALLOW_NONCOMMERCIAL: '1',
       CLOUDFLARE_ACCOUNT_ID: 'acc',
       CLOUDFLARE_API_TOKEN: 'cf',
     });

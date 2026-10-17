@@ -96,6 +96,9 @@ export const boardViews = lazyViews(() => import('../board/client/index.js').the
 /** Vues communes à tous les jeux de questions médias (chacun a sa définition côté serveur). */
 export const mediaQuizViews = lazyViews(() => import('../media-quiz/client/index.js').then((m) => m.mediaQuizViews));
 
+/** Vues communes à toutes les recettes des paquets de format 3 (chacune a sa disposition côté serveur). */
+export const recipeViews = lazyViews(() => import('../recipes/client/index.js').then((m) => m.recipeViews));
+
 const soloViews = (id: string) =>
   lazyViews(() => import('../solo/client/index.js').then((m) => m.soloClientViews[id]!));
 

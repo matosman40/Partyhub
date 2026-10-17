@@ -3,9 +3,11 @@ import {
   boardGameDefinitionSchema,
   cardGameDefinitionSchema,
   mediaQuizDefinitionSchema,
+  recipeDefinitionSchema,
   type BoardGameDefinition,
   type CardGameDefinition,
   type MediaQuizDefinition,
+  type RecipeDefinition,
 } from '@partyhub/shared';
 import { PARTYHUB_ENGINE } from './engine.js';
 import { readZip, ZipError, type ZipFileEntry, type ZipReadLimits } from './zip.js';
@@ -16,9 +18,12 @@ import { compareVersions, isValidVersion } from './semver.js';
  * Format .phgame. Voir docs/PHGAME.md.
  * - Version 1 : jeux de cartes.
  * - Version 2 : jeux de cartes, jeux de plateau et jeux de questions (médias YouTube seulement).
+ * - Version 3 : recettes (module « recipe ») : règles déclaratives, écrans par rôle, génération IA avec repli.
  */
-export const PHGAME_FORMAT_VERSIONS = [1, 2] as const;
-export const PHGAME_FORMAT_VERSION = 2;
+export const PHGAME_FORMAT_VERSIONS = [1, 2, 3] as const;
+export const PHGAME_FORMAT_VERSION = 3;
+/** Première version du moteur qui comprend le format 3. */
+export const RECIPE_MIN_ENGINE_VERSION = '0.12.0';
 
 /** Module de jeu porté par un paquet. Un paquet en porte exactement un. */
 export type PackageModule = (typeof PARTYHUB_ENGINE.modules)[number];
@@ -28,7 +33,7 @@ export type PackageModule = (typeof PARTYHUB_ENGINE.modules)[number];
  * jamais (« pkg- » n’est pas un début possible de « pkgb- » ni de « pkgq- »), donc deux paquets
  * de types différents ne peuvent pas partager un identifiant de jeu.
  */
-const GAME_ID_PREFIX: Record<PackageModule, string> = { cards: 'pkg-', board: 'pkgb-', quiz: 'pkgq-' };
+const GAME_ID_PREFIX: Record<PackageModule, string> = { cards: 'pkg-', board: 'pkgb-', quiz: 'pkgq-', recipe: 'pkgr-' };
 
 export function packageGameId(packageId: string, module: PackageModule = 'cards'): string {
   return `${GAME_ID_PREFIX[module]}${packageId}`;
@@ -46,10 +51,16 @@ export interface PackageLimits {
   maxJsonBytes: number;
   maxManifestBytes: number;
   maxImageSide: number;
+  /** Poids maximal d'une image, en octets. */
+  maxImageBytes: number;
 }
 
+/**
+ * Budgets d'un paquet : il doit rester petit. Les données pèsent quelques Ko ; les images sont le seul
+ * élément lourd, donc bornées une à une. Voir claude/architecture-jeux-importables.md, section 6.
+ */
 export const DEFAULT_PACKAGE_LIMITS: PackageLimits = {
-  maxArchiveBytes: 16 * 1024 * 1024,
+  maxArchiveBytes: 8 * 1024 * 1024,
   maxEntries: 200,
   maxEntryBytes: 4 * 1024 * 1024,
   maxTotalBytes: 32 * 1024 * 1024,
@@ -57,9 +68,10 @@ export const DEFAULT_PACKAGE_LIMITS: PackageLimits = {
   ratioCheckBytes: 1024 * 1024,
   maxPathLength: 200,
   maxDepth: 4,
-  maxJsonBytes: 1024 * 1024,
-  maxManifestBytes: 64 * 1024,
-  maxImageSide: 2048,
+  maxJsonBytes: 256 * 1024,
+  maxManifestBytes: 8 * 1024,
+  maxImageSide: 1024,
+  maxImageBytes: 200 * 1024,
 };
 
 const ID = /^[a-z0-9][a-z0-9-]{1,47}$/;
@@ -77,7 +89,7 @@ const TOP_DIRS: Record<string, readonly string[]> = {
 export const manifestSchema = z
   .object({
     format: z.literal('phgame'),
-    formatVersion: z.union([z.literal(1), z.literal(2)]),
+    formatVersion: z.union([z.literal(1), z.literal(2), z.literal(3)]),
     id: z.string().regex(ID, 'Identifiant : minuscules, chiffres et tirets (2 à 48 caractères).'),
     name: z.string().trim().min(2).max(40),
     version: z.string().max(64).refine(isValidVersion, 'Version attendue au format X.Y.Z.'),
@@ -91,7 +103,7 @@ export const manifestSchema = z
     requires: z.object({
       modules: z
         .array(z.enum(PARTYHUB_ENGINE.modules))
-        .length(1, 'Un paquet déclare exactement un module de jeu (cards, board ou quiz).'),
+        .length(1, 'Un paquet déclare exactement un module de jeu (cards, board, quiz ou recipe).'),
     }),
     entry: z.literal('game/definition.json'),
     cover: z.string().optional(),
@@ -170,7 +182,8 @@ export function imageProblem(data: Uint8Array, ext: string, limits: PackageLimit
 export type DefinitionValue =
   | { module: 'cards'; definition: CardGameDefinition }
   | { module: 'board'; definition: BoardGameDefinition }
-  | { module: 'quiz'; definition: MediaQuizDefinition };
+  | { module: 'quiz'; definition: MediaQuizDefinition }
+  | { module: 'recipe'; definition: RecipeDefinition };
 
 interface ValidatedBase {
   manifest: PackageManifest;
@@ -239,6 +252,11 @@ function checkDefinition(
       if (issues.length > 0) return { issues };
       return { issues: [], value: { module: 'quiz', definition: parsed.data } };
     }
+    case 'recipe': {
+      const parsed = recipeDefinitionSchema.safeParse(raw);
+      if (!parsed.success) return { issues: fromZod(parsed.error) };
+      return { issues: [], value: { module: 'recipe', definition: parsed.data } };
+    }
   }
 }
 
@@ -305,6 +323,15 @@ export function validatePackage(bytes: Uint8Array, limits: PackageLimits = DEFAU
   if (manifest.formatVersion === 1 && module !== 'cards') {
     issues.push(`Le format 1 ne porte que des jeux de cartes : le module « ${module} » demande le format 2.`);
   }
+  if (module === 'recipe' && manifest.formatVersion !== 3) {
+    issues.push('Une recette demande le format 3.');
+  }
+  if (manifest.formatVersion === 3) {
+    if (module !== 'recipe') issues.push(`Le format 3 ne porte que des recettes : « ${module} » n’en est pas une.`);
+    if (compareVersions(manifest.engine.minVersion, RECIPE_MIN_ENGINE_VERSION) < 0) {
+      issues.push(`Le format 3 demande PartyHub ${RECIPE_MIN_ENGINE_VERSION} au minimum.`);
+    }
+  }
 
   // Fichiers déclarés : présents, sans doublon, de la bonne taille et de la bonne empreinte.
   const declared = new Map<string, (typeof manifest.files)[number]>();
@@ -355,7 +382,11 @@ export function validatePackage(bytes: Uint8Array, limits: PackageLimits = DEFAU
   for (const name of files.keys()) {
     if (!name.startsWith('assets/')) continue;
     const dot = name.lastIndexOf('.');
-    const problem = imageProblem(files.get(name)!, name.slice(dot).toLowerCase(), limits);
+    const data = files.get(name)!;
+    if (data.byteLength > limits.maxImageBytes) {
+      issues.push(`« ${name} » : image trop lourde (maximum ${Math.round(limits.maxImageBytes / 1024)} Ko).`);
+    }
+    const problem = imageProblem(data, name.slice(dot).toLowerCase(), limits);
     if (problem) issues.push(`« ${name} » : ${problem}.`);
   }
   if (manifest.cover !== undefined && !(manifest.cover.startsWith('assets/') && declared.has(manifest.cover))) {

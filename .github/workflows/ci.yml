@@ -39,6 +39,9 @@ jobs:
           npm run phgame -w @partyhub/server -- check ../../examples/exemple-cartes.phgame
           npm run phgame -w @partyhub/server -- pack ../../examples/exemple-cartes "$RUNNER_TEMP/exemple.phgame"
           cmp "$RUNNER_TEMP/exemple.phgame" examples/exemple-cartes.phgame
+          npm run phgame -w @partyhub/server -- check ../../examples/exemple-recette.phgame
+          npm run phgame -w @partyhub/server -- pack ../../examples/exemple-recette "$RUNNER_TEMP/exemple-recette.phgame"
+          cmp "$RUNNER_TEMP/exemple-recette.phgame" examples/exemple-recette.phgame
 
   image:
     name: Construction de l'image (sans publication)
@@ -131,6 +134,11 @@ jobs:
         env:
           BASE_URL: http://127.0.0.1:8282
         run: python scripts/pause-check-browser.py quiz-party
+      - name: Recette de bout en bout (paquet de format 3, sans IA)
+        env:
+          BASE_URL: http://127.0.0.1:8282
+          ADMIN_PASSWORD: ci-admin-password-test
+        run: python scripts/recette-check-browser.py
       - name: Journal du serveur en cas d'échec
         if: failure()
         run: cat "$RUNNER_TEMP/server.log" || true

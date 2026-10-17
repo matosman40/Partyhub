@@ -1,4 +1,4 @@
-import { boardViews, cardViews, clientViews, mediaQuizViews } from '@partyhub/games/client';
+import { boardViews, cardViews, clientViews, mediaQuizViews, recipeViews } from '@partyhub/games/client';
 
 /** Préfixe des jeux de cartes créés dans l’administration (voir le serveur). */
 const CUSTOM_GAME_PREFIX = 'custom-';
@@ -8,6 +8,8 @@ const MEDIA_GAME_PREFIX = 'media-';
 const PACKAGE_CARD_PREFIX = 'pkg-';
 /** Préfixe des jeux de plateau installés à partir d’un paquet .phgame (format 2). */
 const PACKAGE_BOARD_PREFIX = 'pkgb-';
+/** Préfixe des recettes installées à partir d’un paquet .phgame (format 3). */
+const PACKAGE_RECIPE_PREFIX = 'pkgr-';
 /** Préfixe des jeux de questions installés à partir d’un paquet .phgame (format 2). */
 const PACKAGE_QUIZ_PREFIX = 'pkgq-';
 /** Préfixe des jeux de plateau créés dans l’administration. */
@@ -23,5 +25,6 @@ export function viewsFor(gameId: string) {
   if (gameId.startsWith(CUSTOM_GAME_PREFIX) || gameId.startsWith(PACKAGE_CARD_PREFIX)) return cardViews;
   if (gameId.startsWith(MEDIA_GAME_PREFIX) || gameId.startsWith(PACKAGE_QUIZ_PREFIX)) return mediaQuizViews;
   if (gameId.startsWith(BOARD_GAME_PREFIX) || gameId.startsWith(PACKAGE_BOARD_PREFIX)) return boardViews;
+  if (gameId.startsWith(PACKAGE_RECIPE_PREFIX)) return recipeViews;
   return null;
 }

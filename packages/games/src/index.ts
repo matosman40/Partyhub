@@ -231,3 +231,4 @@ export {
   rollDice as boardRollDice,
   currentPlayer as boardCurrentPlayer,
 } from './board/rules.js';
+export { createRecipeGame } from './recipes/index.js';

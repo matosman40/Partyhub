@@ -6,6 +6,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 
 ### Ajouté
 
+- Format de paquet 3 : **recettes**. Une recette décrit un jeu avec les règles d'une famille connue du moteur (aujourd'hui « vote sur consigne ») : textes, règles, écrans par rôle et consignes écrites par l'IA, avec repli obligatoire. Le moteur devient 0.12.0. Le paquet d'exemple `examples/exemple-recette` pèse 1,4 Ko, et le contrôle navigateur `scripts/recette-check-browser.py` joue une partie complète, avec installation par l'API d'administration.
+
 - Identité visuelle complète du catalogue : chaque jeu listé a son propre logo et son décor. Huit jeux n'en avaient pas (Couleurs & chiffres, Blanc-manger coco, Sudoku, Solitaire, Taquin, Mots croisés, Imite-moi, BOUM !) ; ils recevaient un décor emprunté à un autre jeu, choisi au hasard.
 - Bruitages de l'écran principal pour tous les jeux : lancement de la partie, bilan de chaque manche (bruit de jetons), fin de partie (fanfare). Aucun jeu n'a rien à faire ; un premier état reçu, comme une reprise d'écran, ne sonne pas. L'administration peut remplacer chaque bruitage.
 - Application installable : manifeste (nom, couleurs, icônes 192, 512 et adaptative), icône iOS et balises de partage.
@@ -34,6 +36,10 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 
 ### Modifié
 
+- ModelScope (génération d'images) est désactivé par défaut : son service est réservé à un usage non commercial. Il ne s'active que si `MODELSCOPE_ALLOW_NONCOMMERCIAL=1` est défini.
+
+- Budgets des paquets, pour rester petits : archive 8 Mio (16 Mio auparavant), manifeste 8 Ko (64 Ko), définition 256 Ko (1 Mio), image 200 Ko et 1024 px de côté (2048 px). Les données pèsent quelques Ko ; seules les images sont lourdes.
+
 - Icônes : Couleurs & chiffres (🌈) et Taquin (🔀) ne partagent plus leur icône avec un autre jeu.
 - Aventure IA : description raccourcie pour tenir sur une carte du catalogue. Tarot : une étape de la notice raccourcie, sans changer la règle.
 - Accueil : les puces de catégorie cèdent la place à la recherche, au tri, à l’affichage et à un panneau de filtres. Sur téléphone, les filtres se déplient depuis le bouton « Filtres ».
@@ -47,6 +53,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 - Textes : les apostrophes sont typographiques (’) dans les textes et les commentaires en français. Le message « Ce n’est pas votre tour. » suit la même règle.
 
 ### Corrigé
+
+- Une recette installée était relue comme un jeu de cartes : sa réinstallation était refusée à tort (« est installé comme jeu de cartes »). Le module stocké est maintenant lu correctement.
 
 - Accessibilité des vues de jeu : Sudoku, Taquin et Mots croisés déclaraient une grille (`role="grid"`) sans les cellules ni la navigation attendues ; ce sont désormais des groupes nommés. Solitaire annonce la carte cachée comme une image. Tarot : la main est accessible au clavier et le pli en cours est nommé. Poker, Rami 51, Président, Cartes, Promoteur, Plateau, Phrases à trous et Aventure : éléments nommés sans rôle, désormais annoncés comme images, groupes ou jauges. Administration (webcam, niveaux des appareils) et écran des appareils corrigés de la même façon.
 - Son, écran principal : le son se débloque au premier toucher ou clic de la page, et non plus seulement dans une vue de jeu. Le départ lancé depuis le salon de l’écran principal sonne désormais.

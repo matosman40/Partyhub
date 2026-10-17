@@ -11083,3 +11083,67 @@ input[type='file']::file-selector-button {
 .game-view-error p {
   margin: 0;
 }
+
+/* Recettes (paquets de format 3) : blocs d'écran communs à tous les paquets de recette. */
+.recipe-title {
+  margin: 0 0 0.4em;
+  font-size: clamp(1.2rem, 3vw, 2rem);
+  overflow-wrap: anywhere;
+}
+.recipe-prompt-text {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin: 0.2em 0 0.6em;
+  overflow-wrap: anywhere;
+}
+.recipe-options,
+.recipe-results {
+  list-style: none;
+  margin: 0.6em 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5em;
+}
+.recipe-letter {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.8em;
+  min-height: 1.8em;
+  border-radius: 999px;
+  background: var(--primary-bg, #3b82f6);
+  color: var(--primary-ink, #fff);
+  font-weight: 800;
+  margin-right: 0.3em;
+}
+.recipe-word {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.recipe-gain {
+  color: var(--focus, #16a34a);
+  font-weight: 700;
+}
+.recipe-form {
+  display: grid;
+  gap: 0.6em;
+  margin: 0.8em 0;
+}
+.recipe-form input {
+  min-height: 44px;
+  font-size: 1.1rem;
+  padding: 0.4em 0.7em;
+}
+.recipe-choices {
+  display: grid;
+  gap: 0.6em;
+  margin: 0.8em 0;
+}
+.recipe-choices .btn {
+  min-height: 44px;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+.recipe-sent {
+  font-weight: 700;
+  margin: 0.8em 0;
+}

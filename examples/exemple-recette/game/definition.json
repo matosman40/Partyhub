@@ -1,0 +1,20 @@
+{
+  "recipe": "vote-sur-consigne",
+  "name": "Le plus…",
+  "description": "Écrivez le premier mot qui vous vient, puis votez pour le plus drôle.",
+  "icon": "💭",
+  "rules": { "manches": 4, "ecriture": 40, "vote": 25, "pointsParVote": 100, "motMax": 24 },
+  "consignes": [
+    "Le plus susceptible d’oublier son téléphone en vacances",
+    "Le plus bruyant au cinéma",
+    "Le plus gênant dans un ascenseur",
+    "Le plus surprenant au petit-déjeuner",
+    "Le plus improbable dans une bibliothèque",
+    "Le plus convaincant pour rater un train"
+  ],
+  "ecrans": {
+    "tv": { "ecriture": ["consigne", "minuteur", "attente"], "resultat": ["consigne", "resultat", "classement"] },
+    "joueur": { "ecriture": ["consigne", "saisie-texte", "minuteur"] }
+  },
+  "appareils": {}
+}

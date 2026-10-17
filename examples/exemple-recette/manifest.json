@@ -1,0 +1,15 @@
+{
+  "format": "phgame",
+  "formatVersion": 3,
+  "id": "exemple-recette",
+  "name": "Exemple de recette",
+  "version": "1.0.0",
+  "description": "Une consigne, des mots, un vote : la recette « vote sur consigne », avec consignes de repli et écrans personnalisés.",
+  "author": "PartyHub contributors",
+  "kind": "declarative",
+  "engine": { "minVersion": "0.12.0", "api": 1 },
+  "requires": { "modules": ["recipe"] },
+  "entry": "game/definition.json",
+  "licenses": [{ "path": "licenses/LICENCE.txt", "covers": [] }],
+  "files": []
+}

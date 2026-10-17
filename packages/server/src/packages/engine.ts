@@ -4,12 +4,12 @@
  */
 export const PARTYHUB_ENGINE = {
   /** Doit correspondre à la version publiée (package.json, CHANGELOG). Vérifié par les tests. */
-  version: '0.11.0',
+  version: '0.12.0',
   /** Version de l’API des paquets. Un paquet demande exactement cette version. */
   api: 1,
   /**
    * Modules de jeu disponibles pour les paquets déclaratifs : jeux de cartes, jeux de plateau,
-   * jeux de questions (médias YouTube seulement). Aucun code de paquet n’est exécuté.
+   * jeux de questions (médias YouTube seulement), recettes (format 3). Aucun code de paquet n’est exécuté.
    */
-  modules: ['cards', 'board', 'quiz'] as const,
+  modules: ['cards', 'board', 'quiz', 'recipe'] as const,
 } as const;

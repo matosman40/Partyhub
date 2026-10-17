@@ -12,7 +12,8 @@ import {
  *
  * - CLOUDFLARE_ACCOUNT_ID et CLOUDFLARE_API_TOKEN : Cloudflare Workers AI (FLUX.1 schnell), gratuit dans la limite
  *   d’un quota quotidien.
- * - MODELSCOPE_API_KEY : ModelScope (Qwen-Image). Service réservé à un usage non commercial.
+ * - MODELSCOPE_API_KEY : ModelScope (Qwen-Image). Service réservé à un usage non commercial : il n’est actif
+ *   que si MODELSCOPE_ALLOW_NONCOMMERCIAL=1 est défini (défaut : désactivé, pour une utilisation commerciale).
  * - IMAGE_PROVIDERS : ordre d’appel, séparé par des virgules (par défaut : les fournisseurs dont la clé est présente).
  * - IMAGE_MAX_PER_DAY : nombre maximal d’images générées par jour, tous fournisseurs confondus.
  */
@@ -47,6 +48,12 @@ function intFromEnv(name: string, raw: string | undefined, fallback: number, min
   return value;
 }
 
+/** ModelScope n'est utilisable que dans un cadre non commercial, déclaré explicitement. */
+export function modelScopeAllowed(env: NodeJS.ProcessEnv): boolean {
+  const flag = (env.MODELSCOPE_ALLOW_NONCOMMERCIAL ?? '').trim().toLowerCase();
+  return flag === '1' || flag === 'true';
+}
+
 function settingsFor(id: ImageProviderId, env: NodeJS.ProcessEnv): ImageProviderSettings | null {
   if (id === 'cloudflare') {
     const accountId = env.CLOUDFLARE_ACCOUNT_ID?.trim();
@@ -54,6 +61,7 @@ function settingsFor(id: ImageProviderId, env: NodeJS.ProcessEnv): ImageProvider
     if (!accountId || !apiKey) return null;
     return { id, apiKey, accountId, baseUrl: env.CLOUDFLARE_API_BASE?.trim() || undefined };
   }
+  if (!modelScopeAllowed(env)) return null;
   const apiKey = env.MODELSCOPE_API_KEY?.trim();
   if (!apiKey) return null;
   return {
@@ -75,6 +83,11 @@ export function imagesFromEnv(env: NodeJS.ProcessEnv): ImagesConfig {
     providers = ids.map((id) => {
       if (!(IMAGE_PROVIDER_IDS as readonly string[]).includes(id)) {
         throw new Error(`IMAGE_PROVIDERS invalide : « ${id} » (${IMAGE_PROVIDER_IDS.join(', ')})`);
+      }
+      if (id === 'modelscope' && !modelScopeAllowed(env)) {
+        throw new Error(
+          'IMAGE_PROVIDERS demande « modelscope » : ce service est réservé à un usage non commercial (MODELSCOPE_ALLOW_NONCOMMERCIAL=1 pour l’activer).',
+        );
       }
       const settings = settingsFor(id as ImageProviderId, env);
       if (!settings) throw new Error(`IMAGE_PROVIDERS demande « ${id} », mais sa clé est absente.`);
