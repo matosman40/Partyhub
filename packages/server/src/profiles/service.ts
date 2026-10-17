@@ -9,9 +9,14 @@ import {
   type ProfileStats,
   type ProfileView,
   type AvatarEmoji,
+  type VoiceClip,
+  VOICE_MAX_BYTES,
+  VOICE_MAX_PER_PROFILE,
+  sniffAudioMime,
 } from '@partyhub/shared';
 import { hashPassword, verifyPassword } from '../auth.js';
 import type { Store } from '../db/store.js';
+import { purgeGameData } from './game-data.js';
 
 const SESSION_TTL_MS = 90 * 24 * 60 * 60 * 1000;
 
@@ -114,11 +119,19 @@ export class ProfileService {
     return token;
   }
 
-  async register(input: { username: string; password: string; displayName: string }) {
-    const exists = this.db.prepare('SELECT 1 FROM profiles WHERE username = ?').get(input.username);
-    if (exists) throw new ProfileError(409, 'Cet identifiant est déjà pris. Choisissez-en un autre.');
+  /**
+   * Crée un profil. Sans identifiant ni mot de passe : profil « nom seul » (identifiant généré,
+   * pas de mot de passe). Avec les deux : ancien compte, identifiant unique et mot de passe.
+   */
+  async register(input: { displayName: string; username?: string; password?: string }) {
     const id = randomUUID();
-    const avatar = defaultAvatarFor(input.username);
+    const withPassword = input.password !== undefined;
+    const username = withPassword ? input.username! : `p${randomBytes(6).toString('hex')}`;
+    if (withPassword) {
+      const exists = this.db.prepare('SELECT 1 FROM profiles WHERE username = ?').get(username);
+      if (exists) throw new ProfileError(409, 'Cet identifiant est déjà pris. Choisissez-en un autre.');
+    }
+    const avatar = defaultAvatarFor(username);
     this.db
       .prepare(
         `INSERT INTO profiles (id, username, display_name, password_hash, avatar_hue, avatar_emoji, created_at)
@@ -126,9 +139,9 @@ export class ProfileService {
       )
       .run(
         id,
-        input.username,
+        username,
         input.displayName,
-        await hashPassword(input.password),
+        withPassword ? await hashPassword(input.password!) : '',
         avatar.hue,
         avatar.emoji,
         new Date(this.now()).toISOString(),
@@ -138,7 +151,8 @@ export class ProfileService {
 
   async login(username: string, password: string) {
     const row = this.db.prepare('SELECT * FROM profiles WHERE username = ?').get(username) as ProfileRow | undefined;
-    const valid = row !== undefined && (await verifyPassword(password, row.password_hash));
+    // Un profil « nom seul » n'a pas de mot de passe : il ne se connecte pas par identifiant.
+    const valid = row !== undefined && row.password_hash !== '' && (await verifyPassword(password, row.password_hash));
     if (!row || !valid) {
       throw new ProfileError(401, 'Identifiant ou mot de passe incorrect.');
     }
@@ -155,6 +169,13 @@ export class ProfileService {
     if (row.expires_at < this.now()) {
       this.db.prepare('DELETE FROM profile_sessions WHERE token_hash = ?').run(hashToken(token));
       return undefined;
+    }
+    // Session glissante : un profil « nom seul » n'a que ce jeton pour revenir, il ne doit pas expirer
+    // pendant qu'on s'en sert. Prolongée dès que la moitié de la durée est passée.
+    if (row.expires_at - this.now() < SESSION_TTL_MS / 2) {
+      this.db
+        .prepare('UPDATE profile_sessions SET expires_at = ? WHERE token_hash = ?')
+        .run(this.now() + SESSION_TTL_MS, hashToken(token));
     }
     return row.profile_id;
   }
@@ -179,6 +200,7 @@ export class ProfileService {
       displayName: row.display_name,
       avatar: this.avatarOf(row),
       avatarShared: row.avatar_shared === 1,
+      hasPassword: row.password_hash !== '',
       createdAt: row.created_at,
       stats: this.stats(profileId),
     };
@@ -224,6 +246,7 @@ export class ProfileService {
   async changePassword(profileId: string, current: string, next: string): Promise<void> {
     const row = this.rowById(profileId);
     if (!row) throw new ProfileError(404, 'Profil introuvable.');
+    if (row.password_hash === '') throw new ProfileError(400, 'Ce profil n’a pas de mot de passe.');
     if (!(await verifyPassword(current, row.password_hash))) {
       throw new ProfileError(401, 'Le mot de passe actuel est incorrect.');
     }
@@ -239,7 +262,78 @@ export class ProfileService {
   }
 
   delete(profileId: string): void {
+    // Les voix partent avec le profil (la clé étrangère l'assure aussi, mais on ne compte pas dessus).
+    this.db.prepare('DELETE FROM voice_clips WHERE profile_id = ?').run(profileId);
+    // Les données de jeu (personnages gardés d'une partie à l'autre) aussi.
+    purgeGameData(this.store, profileId);
     this.db.prepare('DELETE FROM profiles WHERE id = ?').run(profileId);
+  }
+
+  /* Voix de profil : le son reste en base, seule la liste part vers le navigateur. */
+
+  voices(profileId: string): VoiceClip[] {
+    const rows = this.db
+      .prepare('SELECT id, name, created_at FROM voice_clips WHERE profile_id = ? ORDER BY rowid')
+      .all(profileId) as { id: string; name: string; created_at: string }[];
+    return rows.map((r) => ({ id: r.id, name: r.name, createdAt: r.created_at }));
+  }
+
+  /** Ajoute une voix si le profil n'en a pas encore cinq et si le son est bien un format audio connu. */
+  addVoice(profileId: string, name: string, data: Buffer): VoiceClip {
+    const mime = sniffAudioMime(data);
+    if (!mime) {
+      throw new ProfileError(
+        400,
+        'Ce fichier n’est pas un son reconnu. Enregistrez à nouveau, ou choisissez un fichier MP3, WAV, OGG, WebM ou M4A.',
+      );
+    }
+    if (data.length > VOICE_MAX_BYTES) {
+      throw new ProfileError(413, 'Enregistrement trop lourd : 5 secondes maximum.');
+    }
+    const id = randomUUID();
+    const createdAt = new Date(this.now()).toISOString();
+    // Le contrôle du nombre et l'insertion se font dans une même transaction.
+    const insert = this.db.transaction(() => {
+      const count = (
+        this.db.prepare('SELECT COUNT(*) AS n FROM voice_clips WHERE profile_id = ?').get(profileId) as { n: number }
+      ).n;
+      if (count >= VOICE_MAX_PER_PROFILE) {
+        throw new ProfileError(409, `Vous avez déjà ${VOICE_MAX_PER_PROFILE} voix. Supprimez-en une pour en ajouter.`);
+      }
+      this.db
+        .prepare('INSERT INTO voice_clips (id, profile_id, name, mime, data, created_at) VALUES (?, ?, ?, ?, ?, ?)')
+        .run(id, profileId, name, mime, data, createdAt);
+    });
+    insert();
+    return { id, name, createdAt };
+  }
+
+  renameVoice(profileId: string, voiceId: string, name: string): VoiceClip {
+    const result = this.db
+      .prepare('UPDATE voice_clips SET name = ? WHERE id = ? AND profile_id = ?')
+      .run(name, voiceId, profileId);
+    if (result.changes === 0) throw new ProfileError(404, 'Cette voix n’existe plus.');
+    return this.voices(profileId).find((v) => v.id === voiceId)!;
+  }
+
+  deleteVoice(profileId: string, voiceId: string): void {
+    const result = this.db.prepare('DELETE FROM voice_clips WHERE id = ? AND profile_id = ?').run(voiceId, profileId);
+    if (result.changes === 0) throw new ProfileError(404, 'Cette voix n’existe plus.');
+  }
+
+  /** La voix si elle appartient à ce profil (la salle ne joue que les voix de son joueur). */
+  ownedVoice(profileId: string, voiceId: string): { id: string; name: string } | undefined {
+    const row = this.db
+      .prepare('SELECT id, name FROM voice_clips WHERE id = ? AND profile_id = ?')
+      .get(voiceId, profileId) as { id: string; name: string } | undefined;
+    return row;
+  }
+
+  /** Son d'une voix, pour la route publique /api/voices/:id (les écrans n'ont pas de compte). */
+  voiceAudio(voiceId: string): { mime: string; data: Buffer } | undefined {
+    const row = this.db.prepare('SELECT mime, data FROM voice_clips WHERE id = ?').get(voiceId) as
+      { mime: string; data: Buffer } | undefined;
+    return row;
   }
 
   count(): number {

@@ -7,25 +7,63 @@ name: partyhub
 
 services:
   partyhub:
-    image: ghcr.io/matosman40/partyhub:0.9.1
+    image: ghcr.io/matosman40/partyhub:0.11.0
     pull_policy: missing
     container_name: partyhub
     restart: unless-stopped
     stop_grace_period: 20s
     ports:
       # Seul le port HTTP est publié ; le port interne n'est jamais exposé directement.
-      - "${PARTYHUB_PORT:-8282}:8282"
+      - '${PARTYHUB_PORT:-8282}:8282'
     environment:
-      PORT: "8282"
-      HOST: "0.0.0.0"
+      PORT: '8282'
+      HOST: '0.0.0.0'
       DATA_DIR: /data
-      ADMIN_PASSWORD: "${ADMIN_PASSWORD:-}"
-      GITHUB_TOKEN: "${GITHUB_TOKEN:-}"
-      LOG_LEVEL: "${LOG_LEVEL:-info}"
-      COOKIE_SECURE: "${COOKIE_SECURE:-false}"
-      TRUST_PROXY: "${TRUST_PROXY:-loopback}"
-      DB_BACKUP_EVERY_HOURS: "${DB_BACKUP_EVERY_HOURS:-24}"
-      DB_BACKUP_KEEP: "${DB_BACKUP_KEEP:-7}"
+      ADMIN_PASSWORD: '${ADMIN_PASSWORD:-}'
+      GITHUB_TOKEN: '${GITHUB_TOKEN:-}'
+      LOG_LEVEL: '${LOG_LEVEL:-info}'
+      LOG_DIR: '${LOG_DIR:-}'
+      LOG_MAX_MB: '${LOG_MAX_MB:-5}'
+      LOG_FILES: '${LOG_FILES:-6}'
+      COOKIE_SECURE: '${COOKIE_SECURE:-false}'
+      TRUST_PROXY: '${TRUST_PROXY:-loopback}'
+      DB_BACKUP_EVERY_HOURS: '${DB_BACKUP_EVERY_HOURS:-24}'
+      DB_BACKUP_KEEP: '${DB_BACKUP_KEEP:-7}'
+      ANTHROPIC_API_KEY: '${ANTHROPIC_API_KEY:-}'
+      OPENAI_API_KEY: '${OPENAI_API_KEY:-}'
+      AI_PROVIDER: '${AI_PROVIDER:-}'
+      GROQ_API_KEY: '${GROQ_API_KEY:-}'
+      OPENROUTER_API_KEY: '${OPENROUTER_API_KEY:-}'
+      MISTRAL_API_KEY: '${MISTRAL_API_KEY:-}'
+      CEREBRAS_API_KEY: '${CEREBRAS_API_KEY:-}'
+      GEMINI_API_KEY: '${GEMINI_API_KEY:-}'
+      AI_CUSTOM_API_KEY: '${AI_CUSTOM_API_KEY:-}'
+      AI_CUSTOM_BASE_URL: '${AI_CUSTOM_BASE_URL:-}'
+      AI_ANTHROPIC_MODEL: '${AI_ANTHROPIC_MODEL:-}'
+      AI_OPENAI_MODEL: '${AI_OPENAI_MODEL:-}'
+      AI_GROQ_MODEL: '${AI_GROQ_MODEL:-}'
+      AI_OPENROUTER_MODEL: '${AI_OPENROUTER_MODEL:-}'
+      AI_MISTRAL_MODEL: '${AI_MISTRAL_MODEL:-}'
+      AI_CEREBRAS_MODEL: '${AI_CEREBRAS_MODEL:-}'
+      AI_GEMINI_MODEL: '${AI_GEMINI_MODEL:-}'
+      AI_CUSTOM_MODEL: '${AI_CUSTOM_MODEL:-}'
+      AI_ANTHROPIC_MAX_CALLS_PER_DAY: '${AI_ANTHROPIC_MAX_CALLS_PER_DAY:-}'
+      AI_OPENAI_MAX_CALLS_PER_DAY: '${AI_OPENAI_MAX_CALLS_PER_DAY:-}'
+      AI_GROQ_MAX_CALLS_PER_DAY: '${AI_GROQ_MAX_CALLS_PER_DAY:-}'
+      AI_OPENROUTER_MAX_CALLS_PER_DAY: '${AI_OPENROUTER_MAX_CALLS_PER_DAY:-}'
+      AI_MISTRAL_MAX_CALLS_PER_DAY: '${AI_MISTRAL_MAX_CALLS_PER_DAY:-}'
+      AI_CEREBRAS_MAX_CALLS_PER_DAY: '${AI_CEREBRAS_MAX_CALLS_PER_DAY:-}'
+      AI_GEMINI_MAX_CALLS_PER_DAY: '${AI_GEMINI_MAX_CALLS_PER_DAY:-}'
+      AI_CUSTOM_MAX_CALLS_PER_DAY: '${AI_CUSTOM_MAX_CALLS_PER_DAY:-}'
+      AI_TIMEOUT_MS: '${AI_TIMEOUT_MS:-30000}'
+      AI_MAX_CALLS_PER_HOUR: '${AI_MAX_CALLS_PER_HOUR:-300}'
+      CLOUDFLARE_ACCOUNT_ID: '${CLOUDFLARE_ACCOUNT_ID:-}'
+      CLOUDFLARE_API_TOKEN: '${CLOUDFLARE_API_TOKEN:-}'
+      MODELSCOPE_API_KEY: '${MODELSCOPE_API_KEY:-}'
+      IMAGE_PROVIDERS: '${IMAGE_PROVIDERS:-}'
+      IMAGE_MAX_PER_DAY: '${IMAGE_MAX_PER_DAY:-150}'
+      IMAGE_TIMEOUT_MS: '${IMAGE_TIMEOUT_MS:-60000}'
+      BUILTIN_GAMES: '${BUILTIN_GAMES:-off}'
     volumes:
       - partyhub-data:/data
     healthcheck:
@@ -57,7 +95,7 @@ services:
         fr_FR: Jeux de soirée sur votre réseau local
       developer: PartyHub contributors
       category: Games
-      port_map: "${PARTYHUB_PORT:-8282}"
+      port_map: '${PARTYHUB_PORT:-8282}'
       index: /
       title:
         en_US: PartyHub

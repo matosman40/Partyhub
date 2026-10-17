@@ -287,6 +287,38 @@ besoin. Le SDK `@partyhub/games/client` fournit :
 Le flux obtenu appartient au jeu : arrêtez les pistes (`track.stop()`) dès que la vue se ferme. Aucun flux n'est
 envoyé au serveur par défaut ; un jeu qui enregistre quoi que ce soit doit le dire dans ses règles.
 
+## Capteurs du téléphone
+
+Un jeu peut utiliser le gyroscope, l'accéléromètre et le micro du téléphone : inclinaison, secousses, rotation, souffle.
+Le SDK `@partyhub/games/client` fournit :
+
+- `useMotionFeed(active, onFrame)` : écoute l'orientation et le mouvement tant que `active` est vrai. La pose de départ
+  sert de référence (le téléphone doit être tenu comme au début) ; `recalibrate()` la reprend. Chaque mesure donne
+  l'inclinaison `tilt` (de -1 à 1 sur chaque axe), l'accélération linéaire `accel` et le cap `alpha`.
+- `requestMotionAccess()` : demande l'accès. iOS l'exige depuis un geste (un bouton). Elle renvoie `'granted'`,
+  `'denied'`, `'unavailable'` ou `'insecure'` (page sans HTTPS).
+- `useMicLevel(active)` : niveau du micro, de 0 à 1. Le micro est arrêté dès que `active` devient faux.
+- `useSensorBroadcast(hz)` (sur le téléphone) : envoie `{ x, y, energy }` à l'écran principal, au plus `hz` fois par
+  seconde (`SENSOR_SEND_HZ` vaut 30). Le serveur plafonne à quarante messages par seconde et par joueur (`SENSOR_MAX_PER_SECOND`),
+  ne les relaie qu'aux écrans de la salle, et seulement pendant une partie (`room:sensor`). Rien n'est enregistré.
+- `useSensors()` (sur l'écran principal) : le dernier échantillon de chaque joueur, avec l'instant de réception `at`.
+  Les écrans réagissent à chaque lot de mesures : pour ne pas tout redessiner à chaque mesure, un jeu confie les
+  éléments qui bougent à un composant qui s'abonne à `useSensors()`, mémoïsé par joueur, et non à la scène entière.
+  `isFreshReading` et `useFreshnessTick` donnent la fraîcheur d'une mesure, et un rafraîchissement périodique pour
+  qu'une mesure qui vieillit soit revue comme périmée.
+- Les détections pures (`ShakeDetector`, `HoldTimer`, `SpinTracker`, `Pulses`, `Throttle`, `tiltFrom`) se testent sans
+  navigateur, comme dans `packages/games/src/client/sensors-core.ts`.
+
+Quelques règles, tirées de Micro-Défis et de Funambule :
+
+- Un téléphone peut ne pas avoir de capteur, ou la page peut être en HTTP. Prévoyez alors une autre manière de jouer
+  (« Tapote vite » ne demande aucun capteur) ou un message clair, sans bloquer la partie.
+- Le téléphone mesure son propre mouvement, mais le serveur ne peut pas le voir. Il borne donc la valeur reçue par le
+  temps réellement écoulé, comme `judge` (`micro-defis/microgames.ts`) et `judgeWalk` (`funambule/rules.ts`). Une valeur
+  plus grande que le temps écoulé n'est jamais crue.
+- Un défi se joue en même temps pour tous : le serveur fixe le début (`startedAt`), et chaque téléphone le recale sur
+  son horloge locale avec `useLocalStart`. Le serveur ne publie jamais le résultat avant le bilan.
+
 ## Ce qu'un jeu ne peut pas faire
 
 - Charger du code depuis un fichier de configuration ou depuis un dossier utilisateur : les jeux sont déclarés dans le code.

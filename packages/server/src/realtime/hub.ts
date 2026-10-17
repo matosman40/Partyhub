@@ -6,15 +6,21 @@ import {
   configureSchema,
   defaultCharacterFor,
   deviceKindFromUserAgent,
+  handoffClaimSchema,
   hostConnectSchema,
   joinSchema,
+  hostGameActionSchema,
   kickSchema,
   normalizeRoomCode,
   observerJoinSchema,
   lobbyMoodSchema,
   lobbyPositionSchema,
   readySchema,
+  SENSOR_MAX_PER_SECOND,
+  sensorSchema,
   reactionSchema,
+  voicePlaySchema,
+  PROFILE_SESSION_EXPIRED,
   type DeviceInfo,
   type DeviceKind,
   type Ack,
@@ -44,15 +50,17 @@ type TypedSocket = Socket<ClientToServerEvents, ServerToClientEvents, Record<str
 class RateLimiter {
   private hits: number[] = [];
 
+  /** Maximum fixe, ou fonction lue à chaque envoi (cadence du mode test). */
   constructor(
-    private readonly max: number,
+    private readonly max: number | (() => number),
     private readonly windowMs: number,
   ) {}
 
   take(): boolean {
     const now = Date.now();
     this.hits = this.hits.filter((t) => now - t < this.windowMs);
-    if (this.hits.length >= this.max) return false;
+    const limit = typeof this.max === 'number' ? this.max : this.max();
+    if (this.hits.length >= limit) return false;
     this.hits.push(now);
     return true;
   }
@@ -86,12 +94,18 @@ export class RealtimeHub {
   private logger: Logger | null = null;
   private profiles: ProfileService | null = null;
   private readonly joinThrottle: JoinThrottle;
+  /** Cadence du mode test (1 hors essai) : multiplie les émotions et les voix autorisées. */
+  private cadence: () => number = () => 1;
 
   constructor(
     private readonly trust: TrustProxy = compileTrustProxy('loopback'),
     throttle: Partial<JoinThrottleOptions> = {},
   ) {
     this.joinThrottle = new JoinThrottle({ ...JOIN_THROTTLE_DEFAULTS, ...throttle });
+  }
+
+  setCadence(cadence: () => number): void {
+    this.cadence = cadence;
   }
 
   attach(io: IO, manager: RoomManager, logger: Logger, profiles: ProfileService): void {
@@ -189,7 +203,12 @@ export class RealtimeHub {
     const reactionLimiter = new RateLimiter(REACTIONS_PER_WINDOW, CHAT_WINDOW_MS);
     // Déplacements : jusqu'à 30 par seconde (glisser suit le doigt) ; émotions : 6 toutes les 4 secondes.
     const lobbyMoveLimiter = new RateLimiter(30, 1000);
-    const lobbyMoodLimiter = new RateLimiter(6, 4000);
+    // Capteurs : débit propre à la socket (pas de compte dans les commandes), relayé sans accusé.
+    const sensorLimiter = new RateLimiter(SENSOR_MAX_PER_SECOND, 1000);
+    const lobbyMoodLimiter = new RateLimiter(() => 6 * this.cadence(), 4000);
+    // Voix : une toutes les quelques secondes et par socket ; la salle a aussi sa file d'attente côté écran.
+    // Le mode test multiplie ces deux cadences par son facteur.
+    const voiceLimiter = new RateLimiter(() => 3 * this.cadence(), 10_000);
     const ip = clientIp(this.trust, socket.handshake.address, socket.handshake.headers['x-forwarded-for']);
 
     const limited = (ack: Ack): boolean => {
@@ -209,7 +228,10 @@ export class RealtimeHub {
       const unknown = 'Code de salle inconnu. Vérifiez le code affiché sur l’écran.';
       const reservation = this.joinThrottle.reserve(ip, normalizeRoomCode(rawCode));
       if ('refused' in reservation) {
-        this.logger?.warn({ ip }, 'Trop de codes de salle inconnus : tentative refusée');
+        this.logger?.warn(
+          { event: 'socket.join-throttled', ip },
+          'Trop de codes de salle inconnus : tentative refusée',
+        );
         invalid(ack, 'Trop de codes incorrects depuis cette connexion. Patientez quelques instants.');
         return undefined;
       }
@@ -230,8 +252,32 @@ export class RealtimeHub {
       }
       this.leave(socket);
       socket.data = { role: 'host', roomId: room.id };
-      room.attachHost(socket.id, this.kindOf(socket));
+      room.attachHost(socket.id, this.kindOf(socket), parsed.data.screen === true);
       ack({ ok: true });
+    });
+
+    socket.on('host:handoff', (ack) => {
+      if (limited(ack)) return;
+      const room = this.hostRoomOf(socket);
+      if (!room) return invalid(ack, 'Action réservée à l’hôte de la salle.');
+      const handoff = room.createHandoff();
+      this.logger?.info({ event: 'room.handoff-created', roomCode: room.code }, 'Code de transfert d’hôte créé');
+      ack({ ok: true, code: handoff.code, expiresAt: handoff.expiresAt });
+    });
+
+    socket.on('host:claim', (p, ack) => {
+      if (limited(ack)) return;
+      const parsed = handoffClaimSchema.safeParse(p);
+      if (!parsed.success) return invalid(ack);
+      const room = roomOrRefuse(parsed.data.code, ack);
+      if (!room) return;
+      const res = room.claimHandoff(parsed.data.handoffCode);
+      if (!res.ok) {
+        this.logger?.warn({ event: 'room.handoff-refused', roomCode: room.code }, 'Code de transfert d’hôte refusé');
+        return ack(res);
+      }
+      this.logger?.info({ event: 'room.handoff-claimed', roomCode: room.code }, 'Accès hôte transféré à un appareil');
+      ack({ ok: true, hostToken: res.hostToken });
     });
 
     const hostCommand = (ack: Ack, run: (room: Room) => { ok: true } | { ok: false; error: string }) => {
@@ -265,6 +311,13 @@ export class RealtimeHub {
     socket.on('host:replay', (ack) => {
       if (limited(ack)) return;
       hostCommand(ack, (room) => room.replay());
+    });
+
+    socket.on('host:game-action', (p, ack) => {
+      if (limited(ack)) return;
+      const parsed = hostGameActionSchema.safeParse(p);
+      if (!parsed.success) return invalid(ack);
+      hostCommand(ack, (room) => room.hostAction(parsed.data.type, parsed.data.payload));
     });
 
     socket.on('host:kick', (p, ack) => {
@@ -339,7 +392,7 @@ export class RealtimeHub {
         const profileId = this.profiles?.authenticate(parsed.data.profileToken);
         profile = profileId ? this.profiles?.playerProfile(profileId) : undefined;
         if (!profile) {
-          return invalid(ack, 'Votre session de profil a expiré. Reconnectez-vous ou entrez sans profil.');
+          return invalid(ack, PROFILE_SESSION_EXPIRED);
         }
       }
 
@@ -453,6 +506,23 @@ export class RealtimeHub {
       ack(moved.ok ? { ok: true } : moved);
     });
 
+    socket.on('player:sensor', (p) => {
+      const current = this.playerRoomOf(socket);
+      if (!current || !current.room.acceptsSensors(current.playerId)) return;
+      // Le débit est compté avant la lecture du message : un flot de messages, valides ou non, reste borné.
+      if (!sensorLimiter.take()) return;
+      const parsed = sensorSchema.safeParse(p);
+      if (!parsed.success) return;
+      const screens = current.room.screenSocketIds();
+      if (screens.length === 0) return;
+      this.io?.to(screens).emit('room:sensor', {
+        playerId: current.playerId,
+        x: parsed.data.x,
+        y: parsed.data.y,
+        energy: parsed.data.energy,
+      });
+    });
+
     socket.on('player:lobby-mood', (p, ack) => {
       if (limited(ack)) return;
       const current = this.playerRoomOf(socket);
@@ -462,10 +532,12 @@ export class RealtimeHub {
       if (!parsed.success) return invalid(ack);
       const allowed = current.room.lobbyMoodAllowed(current.playerId);
       if (!allowed.ok) return ack(allowed);
+      const choice = parsed.data;
       this.io?.to(current.room.socketIds()).emit('room:lobby-mood', {
         id: randomUUID(),
         playerId: current.playerId,
-        mood: parsed.data.mood,
+        mood: 'mood' in choice ? choice.mood : null,
+        face: 'face' in choice ? choice.face : null,
       });
       ack({ ok: true });
     });
@@ -486,6 +558,35 @@ export class RealtimeHub {
       ack({ ok: true });
     });
 
+    socket.on('player:voice', (p, ack) => {
+      if (limited(ack)) return;
+      const current = this.playerRoomOf(socket);
+      if (!current) return invalid(ack, 'Vous n’êtes pas dans une salle.');
+      const parsed = voicePlaySchema.safeParse(p);
+      if (!parsed.success) return invalid(ack);
+      if (!voiceLimiter.take()) return ack({ ok: false, error: 'Doucement : une voix toutes les quelques secondes.' });
+      // Seules les voix du profil du joueur sont jouées : une voix d'un autre joueur est refusée.
+      const profileId = current.room.profileOf(current.playerId);
+      const voice = profileId && this.profiles ? this.profiles.ownedVoice(profileId, parsed.data.id) : undefined;
+      if (!voice) return invalid(ack, 'Cette voix n’est pas dans votre profil.');
+      const sender = current.room.senderOf(current.playerId);
+      if (!sender) return invalid(ack, 'Vous n’êtes plus dans la salle.');
+      const screens = current.room.screenSocketIds();
+      if (screens.length === 0) {
+        return ack({ ok: false, error: 'Aucun écran principal n’est connecté : la voix ne sera pas entendue.' });
+      }
+      this.io?.to(screens).emit('room:voice', {
+        id: randomUUID(),
+        playerId: current.playerId,
+        from: sender.name,
+        avatar: sender.avatar,
+        name: voice.name,
+        voiceId: voice.id,
+      });
+      this.logger?.debug({ event: 'room.voice', room: current.room.code }, 'Voix jouée sur l’écran');
+      ack({ ok: true });
+    });
+
     socket.on('player:leave', (ack) => {
       if (limited(ack)) return;
       const current = this.playerRoomOf(socket);
@@ -497,7 +598,7 @@ export class RealtimeHub {
 
     socket.on('disconnect', () => {
       this.leave(socket);
-      this.logger?.debug({ socket: socket.id }, 'Socket déconnecté');
+      this.logger?.debug({ event: 'socket.disconnected', socket: socket.id }, 'Socket déconnecté');
     });
   }
 }

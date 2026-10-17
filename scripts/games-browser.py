@@ -50,6 +50,13 @@ def overflow(page) -> int:
     return page.evaluate("() => document.documentElement.scrollWidth - document.documentElement.clientWidth")
 
 
+def join_phone(page) -> None:
+    """Un appareil neuf crée d'abord son profil (« Votre nom »), puis entre dans la salle."""
+    page.get_by_label(re.compile("votre nom", re.I)).first.fill("Testeur")
+    page.get_by_role("button", name=re.compile("continuer", re.I)).first.click()
+    page.get_by_role("button", name=re.compile("entrer dans la salle", re.I)).first.click()
+
+
 def tv_for(browser, game: dict) -> None:
     name = game["name"]
     room = post_json("/api/rooms", {"gameId": game["id"], "practice": True})
@@ -105,8 +112,7 @@ def phone_for(browser, game: dict) -> None:
         tv.goto(f"{BASE_URL}/tv/{code}", wait_until="networkidle", timeout=20000)
 
         phone.goto(f"{BASE_URL}/j/{code}", wait_until="networkidle", timeout=20000)
-        phone.get_by_label(re.compile("pseudo", re.I)).first.fill("Testeur")
-        phone.get_by_role("button", name=re.compile("entrer|rejoindre|rejoindre la salle|continuer", re.I)).first.click()
+        join_phone(phone)
         ready = phone.get_by_role("button", name=re.compile("Je suis prêt", re.I)).first
         ready.wait_for(timeout=15000)
         ready.click()

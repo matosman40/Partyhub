@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
-import { Link } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { DEVICE_KIND_ICONS, type CatalogGame, type DeviceKind } from '@partyhub/shared';
+import { DEFAULT_TEST_MODE, TEST_MODE_FACTORS, testModeLabel, type TestMode } from '@partyhub/shared';
 import { api } from '../api.js';
 import { openRoomsText } from '../admin/messages.js';
 import { CardGamesAdmin } from '../admin/CardGamesAdmin.js';
@@ -18,6 +19,9 @@ import { GameSettingsEditor } from '../admin/GameSettingsEditor.js';
 import { viewsFor } from '../games.js';
 import { BackupPanel } from '../admin/BackupPanel.js';
 import { DbBackups } from '../admin/DbBackups.js';
+import { BackButton } from '../components/BackButton.js';
+import { LogsAdmin } from '../admin/LogsAdmin.js';
+import { AiSettingsAdmin } from '../admin/AiSettingsAdmin.js';
 
 const ORIGIN_LABEL: Record<CatalogGame['origin'], string | null> = {
   builtin: null,
@@ -112,9 +116,7 @@ function Login({ onDone }: { onDone: () => void }) {
           {error}
         </p>
       )}
-      <p className="muted small">
-        <Link to="/">Retour à l’accueil</Link>
-      </p>
+      <BackButton to="/">Retour à l’accueil</BackButton>
     </main>
   );
 }
@@ -250,7 +252,120 @@ function SettingsForm({ settings, onSaved }: { settings: AdminSettings; onSaved:
   );
 }
 
+/** Mode test : un curseur de cadence pour essayer les émotions et les voix, sans toucher aux réglages habituels. */
+function TestModeForm() {
+  const [mode, setMode] = useState<TestMode>(DEFAULT_TEST_MODE);
+  const [loaded, setLoaded] = useState(false);
+  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
+
+  useEffect(() => {
+    api<{ mode: TestMode }>('/api/test-mode')
+      .then((res) => setMode(res.mode))
+      .catch(() => undefined)
+      .finally(() => setLoaded(true));
+  }, []);
+
+  const step = Math.max(0, (TEST_MODE_FACTORS as readonly number[]).indexOf(mode.factor));
+
+  async function save(e: FormEvent) {
+    e.preventDefault();
+    setMessage(null);
+    try {
+      const res = await api<{ mode: TestMode }>('/api/admin/test-mode', {
+        method: 'PUT',
+        body: JSON.stringify(mode),
+      });
+      setMode(res.mode);
+      setMessage({
+        ok: true,
+        text: res.mode.enabled ? `Mode test actif : cadence ${testModeLabel(res.mode.factor)}.` : 'Mode test éteint.',
+      });
+    } catch (err) {
+      setMessage({ ok: false, text: (err as Error).message });
+    }
+  }
+
+  return (
+    <form className="admin-form" onSubmit={save}>
+      <label className="field">
+        <span>
+          <input
+            type="checkbox"
+            checked={mode.enabled}
+            onChange={(e) => setMode({ ...mode, enabled: e.target.checked })}
+          />{' '}
+          Mode test actif
+        </span>
+      </label>
+      <label className="field">
+        <span>Cadence des émotions et des voix : {testModeLabel(mode.factor)}</span>
+        <input
+          type="range"
+          min={0}
+          max={TEST_MODE_FACTORS.length - 1}
+          step={1}
+          value={step}
+          aria-valuetext={testModeLabel(mode.factor)}
+          onChange={(e) => setMode({ ...mode, factor: TEST_MODE_FACTORS[Number(e.target.value)] ?? 1 })}
+        />
+      </label>
+      <p className="muted small">
+        Normal : la cadence habituelle. Chaque palier la multiplie. Les joueurs connectés voient le bandeau « Mode test
+        » sur le salon et le téléphone.
+      </p>
+      <button type="submit" className="btn primary" disabled={!loaded}>
+        Enregistrer le mode test
+      </button>
+      {message && (
+        <p className={message.ok ? 'notice' : 'error'} role="status">
+          {message.text}
+        </p>
+      )}
+    </form>
+  );
+}
+
+/** Rubriques du menu de l'administration. Le choix est dans l'adresse (?section=…) : le bouton précédent fonctionne. */
+const ADMIN_CATEGORIES = [
+  {
+    id: 'salles',
+    title: 'Salles et statistiques',
+    text: 'Salles ouvertes, parties lancées, nettoyage des salles sans connexion.',
+  },
+  {
+    id: 'jeux',
+    title: 'Jeux',
+    text: 'Activer ou désactiver les jeux, leur présentation, leurs notices et leurs réglages par défaut.',
+  },
+  {
+    id: 'creation',
+    title: 'Créer des jeux',
+    text: 'Jeux de cartes, de plateau et de questions médias, banques BOUM !, paquets importés.',
+  },
+  {
+    id: 'ambiance',
+    title: 'Médias et ambiance',
+    text: 'Médiathèque, fonds d’écran, musiques, bruitages et personnages illustrés.',
+  },
+  {
+    id: 'systeme',
+    title: 'Système',
+    text: 'Journal des erreurs, clés d’IA, réglages généraux, sauvegardes et base de données.',
+  },
+] as const;
+
+type AdminCategoryId = (typeof ADMIN_CATEGORIES)[number]['id'];
+
+function isAdminCategory(value: string | null): value is AdminCategoryId {
+  return ADMIN_CATEGORIES.some((c) => c.id === value);
+}
+
 export function AdminPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const sectionParam = searchParams.get('section');
+  const category = isAdminCategory(sectionParam) ? sectionParam : null;
+  const openCategory = (id: AdminCategoryId | null) => setSearchParams(id ? { section: id } : {});
+
   const [authenticated, setAuthenticated] = useState<boolean | null>(null);
   const [overview, setOverview] = useState<Overview | null>(null);
   const [libraryVersion, setLibraryVersion] = useState(0);
@@ -330,6 +445,20 @@ export function AdminPage() {
   }
 
   const stat = (key: string) => overview.stats[key] ?? 0;
+  const current = ADMIN_CATEGORIES.find((c) => c.id === category);
+  const enabledGames = overview.games.filter((g) => g.enabled).length;
+  const customGames = overview.games.filter((g) => g.origin !== 'builtin').length;
+
+  /** Ligne de résumé sous le titre de chaque rubrique du menu. */
+  const summary: Record<AdminCategoryId, string> = {
+    salles: `${overview.rooms.length} salle(s) ouverte(s)`,
+    jeux: `${enabledGames} jeu(x) activé(s) sur ${overview.games.length}`,
+    creation: `${customGames} jeu(x) créé(s) ou importé(s)`,
+    ambiance: '',
+    systeme: '',
+  };
+
+  const backToMenu = <BackButton onClick={() => openCategory(null)}>Menu de l’administration</BackButton>;
 
   return (
     <main className="page admin fade-in">
@@ -349,206 +478,277 @@ export function AdminPage() {
         </p>
       )}
 
-      <section className="card">
-        <h2>Statistiques</h2>
-        <div className="stats">
-          <div className="admin-stat">
-            <span className="big-number">{overview.rooms.length}</span>
-            <span>Salles ouvertes</span>
+      {current ? (
+        <>
+          <div className="admin-category-head">
+            {backToMenu}
+            <h2>{current.title}</h2>
+            <p className="muted">{current.text}</p>
           </div>
-          <div className="admin-stat">
-            <span className="big-number">{stat('rooms_created')}</span>
-            <span>Salles créées</span>
-          </div>
-          <div className="admin-stat">
-            <span className="big-number">{stat('games_started')}</span>
-            <span>Parties lancées</span>
-          </div>
-          <div className="admin-stat">
-            <span className="big-number">{stat('games_completed')}</span>
-            <span>Parties terminées</span>
-          </div>
-        </div>
-      </section>
 
-      <section className="card">
-        <div className="section-head">
-          <h2>Salles</h2>
-          <button type="button" className="btn ghost" onClick={purgeIdle}>
-            Supprimer les salles sans connexion
-          </button>
-        </div>
-        {overview.rooms.length === 0 ? (
-          <p className="muted">Aucune salle active.</p>
-        ) : (
-          <div className="table-scroll">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Code</th>
-                  <th>Jeu</th>
-                  <th>Statut</th>
-                  <th>Joueurs</th>
-                  <th>Appareils</th>
-                  <th>Spectateurs</th>
-                  <th>Hôte</th>
-                  <th>Dernière activité</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {overview.rooms.map((r) => (
-                  <tr key={r.code}>
-                    <td>
-                      <strong>{r.code}</strong>
-                    </td>
-                    <td className="nowrap">{r.gameName}</td>
-                    <td>{STATUS_LABEL[r.status] ?? r.status}</td>
-                    <td>
-                      {r.connected}/{r.players}
-                    </td>
-                    <td>{deviceSummary(r.devices ?? {})}</td>
-                    <td>{r.observers ?? 0}</td>
-                    <td>{r.hostConnected ? 'connecté' : 'absent'}</td>
-                    <td>{new Date(r.lastActivity).toLocaleTimeString('fr-FR')}</td>
-                    <td>
-                      <button type="button" className="link-btn" onClick={() => closeRoom(r.code)}>
-                        Fermer
+          {category === 'salles' && (
+            <>
+              <section className="card">
+                <h2>Statistiques</h2>
+                <div className="stats">
+                  <div className="admin-stat">
+                    <span className="big-number">{overview.rooms.length}</span>
+                    <span>Salles ouvertes</span>
+                  </div>
+                  <div className="admin-stat">
+                    <span className="big-number">{stat('rooms_created')}</span>
+                    <span>Salles créées</span>
+                  </div>
+                  <div className="admin-stat">
+                    <span className="big-number">{stat('games_started')}</span>
+                    <span>Parties lancées</span>
+                  </div>
+                  <div className="admin-stat">
+                    <span className="big-number">{stat('games_completed')}</span>
+                    <span>Parties terminées</span>
+                  </div>
+                </div>
+              </section>
+
+              <section className="card">
+                <div className="section-head">
+                  <h2>Salles</h2>
+                  <button type="button" className="btn ghost" onClick={purgeIdle}>
+                    Supprimer les salles sans connexion
+                  </button>
+                </div>
+                {overview.rooms.length === 0 ? (
+                  <p className="muted">Aucune salle active.</p>
+                ) : (
+                  <div className="table-scroll">
+                    <table className="table">
+                      <thead>
+                        <tr>
+                          <th>Code</th>
+                          <th>Jeu</th>
+                          <th>Statut</th>
+                          <th>Joueurs</th>
+                          <th>Appareils</th>
+                          <th>Spectateurs</th>
+                          <th>Hôte</th>
+                          <th>Dernière activité</th>
+                          <th />
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {overview.rooms.map((r) => (
+                          <tr key={r.code}>
+                            <td>
+                              <strong>{r.code}</strong>
+                            </td>
+                            <td className="nowrap">{r.gameName}</td>
+                            <td>{STATUS_LABEL[r.status] ?? r.status}</td>
+                            <td>
+                              {r.connected}/{r.players}
+                            </td>
+                            <td>{deviceSummary(r.devices ?? {})}</td>
+                            <td>{r.observers ?? 0}</td>
+                            <td>{r.hostConnected ? 'connecté' : 'absent'}</td>
+                            <td>{new Date(r.lastActivity).toLocaleTimeString('fr-FR')}</td>
+                            <td>
+                              <button type="button" className="link-btn" onClick={() => closeRoom(r.code)}>
+                                Fermer
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </section>
+            </>
+          )}
+
+          {category === 'jeux' && (
+            <>
+              <section className="card">
+                <h2>Activation des jeux</h2>
+                <ul className="games-admin">
+                  {overview.games.map((g) => (
+                    <li key={g.id}>
+                      <span>
+                        {g.icon} {g.name} <span className="muted small">v{g.version}</span>{' '}
+                        {ORIGIN_LABEL[g.origin] && <span className="badge">{ORIGIN_LABEL[g.origin]}</span>}
+                      </span>
+                      <button
+                        type="button"
+                        className={g.enabled ? 'btn primary' : 'btn ghost'}
+                        onClick={() => toggleGame(g)}
+                      >
+                        {g.enabled ? 'Activé' : 'Désactivé'}
                       </button>
-                    </td>
-                  </tr>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+
+              <section className="card stack">
+                <h2>Présentation des jeux intégrés et importés</h2>
+                <p className="muted">
+                  Nom, icône, description et durée estimée s’affichent partout dans l’application. Les règles et le
+                  nombre de joueurs de chaque jeu ne se modifient pas ici ; seule la présentation change. Les jeux de
+                  cartes, de plateau et de questions médias se modifient dans leur propre éditeur.
+                </p>
+                {overview.games
+                  .filter((g) => g.origin === 'builtin' || g.origin === 'package')
+                  .map((g) => (
+                    <GameDetailsEditor key={g.id} game={g} onSaved={load} />
+                  ))}
+              </section>
+
+              <section className="card stack">
+                <h2>Réglages par défaut des parties</h2>
+                <p className="muted">
+                  Durées, nombre de manches et autres options proposées à l’hôte quand il crée une salle. Une salle déjà
+                  ouverte garde ses réglages. Pour revenir au réglage du jeu, utilisez « Revenir aux réglages d’origine
+                  ».
+                </p>
+                {overview.games
+                  .filter((g) => viewsFor(g.id)?.Settings)
+                  .map((g) => (
+                    <GameSettingsEditor key={g.id} game={g} onSaved={load} />
+                  ))}
+              </section>
+
+              <section className="card stack">
+                <h2>Notices des jeux</h2>
+                <p className="muted">Ce que voient les joueurs avant de jouer. La notice d’origine reste disponible.</p>
+                {overview.games.map((g) => (
+                  <NoticeEditor key={g.id} game={g} onSaved={load} />
                 ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
+              </section>
+            </>
+          )}
 
-      <section className="card">
-        <h2>Jeux du catalogue</h2>
-        <ul className="games-admin">
-          {overview.games.map((g) => (
-            <li key={g.id}>
-              <span>
-                {g.icon} {g.name} <span className="muted small">v{g.version}</span>{' '}
-                {ORIGIN_LABEL[g.origin] && <span className="badge">{ORIGIN_LABEL[g.origin]}</span>}
-              </span>
-              <button type="button" className={g.enabled ? 'btn primary' : 'btn ghost'} onClick={() => toggleGame(g)}>
-                {g.enabled ? 'Activé' : 'Désactivé'}
-              </button>
-            </li>
-          ))}
-        </ul>
-      </section>
+          {category === 'creation' && (
+            <>
+              <section className="card stack">
+                <h2>Jeux de cartes</h2>
+                <CardGamesAdmin onChanged={load} />
+              </section>
 
-      <section className="card stack">
-        <h2>Jeux de cartes</h2>
-        <CardGamesAdmin onChanged={load} />
-      </section>
+              <section className="card stack">
+                <h2>Jeux de plateau</h2>
+                <BoardGamesAdmin onChanged={load} />
+              </section>
 
-      <section className="card stack">
-        <h2>Jeux de plateau</h2>
-        <BoardGamesAdmin onChanged={load} />
-      </section>
+              <section className="card stack">
+                <h2>Jeux de questions médias</h2>
+                <MediaGamesAdmin onChanged={load} />
+              </section>
 
-      <section className="card stack">
-        <h2>Paquets de jeux (.phgame)</h2>
-        <PackagesAdmin onChanged={load} />
-        <h3>Sources GitHub</h3>
-        <PackageSourcesAdmin onChanged={load} />
-      </section>
+              <section className="card stack">
+                <h2>Banques BOUM !</h2>
+                <p className="muted small">
+                  Textes des manches : validez les entrées avant qu’elles ne sortent en partie. Seules les entrées
+                  validées sont tirées.
+                </p>
+                <BoumBanksAdmin />
+              </section>
 
-      <section className="card stack">
-        <h2>Personnages illustrés (zip)</h2>
-        <CharacterPacksAdmin onChanged={load} />
-      </section>
+              <section className="card stack">
+                <h2>Paquets de jeux (.phgame)</h2>
+                <PackagesAdmin onChanged={load} />
+                <h3>Sources GitHub</h3>
+                <PackageSourcesAdmin onChanged={load} />
+              </section>
+            </>
+          )}
 
-      <section className="card stack">
-        <h2>Médiathèque</h2>
-        <AssetLibrary
-          onChanged={() => {
-            void load();
-            setLibraryVersion((v) => v + 1);
-          }}
-        />
-      </section>
+          {category === 'ambiance' && (
+            <>
+              <section className="card stack">
+                <h2>Médiathèque</h2>
+                <AssetLibrary
+                  onChanged={() => {
+                    void load();
+                    setLibraryVersion((v) => v + 1);
+                  }}
+                />
+              </section>
 
-      <section className="card stack">
-        <h2>Fonds d’écran</h2>
-        <p className="muted small">
-          Une image de la médiathèque par écran. Le voile sombre reste par-dessus pour garder le texte lisible.
-        </p>
-        <ScreenBackgroundsAdmin libraryVersion={libraryVersion} />
-      </section>
+              <section className="card stack">
+                <h2>Fonds d’écran</h2>
+                <p className="muted small">
+                  Une image de la médiathèque par écran. Le voile sombre reste par-dessus pour garder le texte lisible.
+                </p>
+                <ScreenBackgroundsAdmin libraryVersion={libraryVersion} />
+              </section>
 
-      <section className="card stack">
-        <h2>Musiques et bruitages</h2>
-        <p className="muted small">
-          Musique de fond pour les menus, l’accueil et la fin de partie, et un fichier pour chaque bruitage des jeux.
-        </p>
-        <SoundSettingsAdmin libraryVersion={libraryVersion} />
-      </section>
+              <section className="card stack">
+                <h2>Musiques et bruitages</h2>
+                <p className="muted small">
+                  Musique de fond pour les menus, l’accueil et la fin de partie, et un fichier pour chaque bruitage des
+                  jeux.
+                </p>
+                <SoundSettingsAdmin libraryVersion={libraryVersion} />
+              </section>
 
-      <section className="card stack">
-        <h2>Banques BOUM !</h2>
-        <p className="muted small">
-          Textes des manches : validez les entrées avant qu’elles ne sortent en partie. Seules les entrées validées sont
-          tirées.
-        </p>
-        <BoumBanksAdmin />
-      </section>
+              <section className="card stack">
+                <h2>Personnages illustrés (zip)</h2>
+                <CharacterPacksAdmin onChanged={load} />
+              </section>
+            </>
+          )}
 
-      <section className="card stack">
-        <h2>Jeux de questions médias</h2>
-        <MediaGamesAdmin onChanged={load} />
-      </section>
+          {category === 'systeme' && (
+            <>
+              <section className="card stack">
+                <h2>Journal des erreurs</h2>
+                <LogsAdmin />
+              </section>
 
-      <section className="card stack">
-        <h2>Présentation des jeux intégrés et importés</h2>
-        <p className="muted">
-          Nom, icône, description et durée estimée s’affichent partout dans l’application. Les règles et le nombre de
-          joueurs de chaque jeu ne se modifient pas ici ; seule la présentation change. Les jeux de cartes, de plateau
-          et de questions médias se modifient dans leur propre éditeur.
-        </p>
-        {overview.games
-          .filter((g) => g.origin === 'builtin' || g.origin === 'package')
-          .map((g) => (
-            <GameDetailsEditor key={g.id} game={g} onSaved={load} />
-          ))}
-      </section>
+              <section className="card stack">
+                <h2>Intelligence artificielle</h2>
+                <AiSettingsAdmin />
+              </section>
 
-      <section className="card stack">
-        <h2>Réglages par défaut des parties</h2>
-        <p className="muted">
-          Durées, nombre de manches et autres options proposées à l’hôte quand il crée une salle. Une salle déjà ouverte
-          garde ses réglages. Pour revenir au réglage du jeu, utilisez « Revenir aux réglages d’origine ».
-        </p>
-        {overview.games
-          .filter((g) => viewsFor(g.id)?.Settings)
-          .map((g) => (
-            <GameSettingsEditor key={g.id} game={g} onSaved={load} />
-          ))}
-      </section>
+              <section className="card">
+                <h2>Réglages généraux</h2>
+                <SettingsForm settings={overview.settings} onSaved={load} />
+              </section>
 
-      <section className="card stack">
-        <h2>Notices des jeux</h2>
-        <p className="muted">Ce que voient les joueurs avant de jouer. La notice d’origine reste disponible.</p>
-        {overview.games.map((g) => (
-          <NoticeEditor key={g.id} game={g} onSaved={load} />
-        ))}
-      </section>
+              <section className="card">
+                <h2>Mode test</h2>
+                <TestModeForm />
+              </section>
 
-      <section className="card stack">
-        <h2>Sauvegarde et restauration</h2>
-        <BackupPanel onChanged={load} />
-        <h3>Base de données</h3>
-        <DbBackups />
-      </section>
+              <section className="card stack">
+                <h2>Sauvegarde et restauration</h2>
+                <BackupPanel onChanged={load} />
+                <h3>Base de données</h3>
+                <DbBackups />
+              </section>
+            </>
+          )}
 
-      <section className="card">
-        <h2>Réglages généraux</h2>
-        <SettingsForm settings={overview.settings} onSaved={load} />
-      </section>
+          <div className="section-head">{backToMenu}</div>
+        </>
+      ) : (
+        <>
+          <nav aria-label="Rubriques de l’administration">
+            <ul className="admin-menu">
+              {ADMIN_CATEGORIES.map((c) => (
+                <li key={c.id}>
+                  <button type="button" className="card admin-menu-card" onClick={() => openCategory(c.id)}>
+                    <span className="admin-menu-title">{c.title}</span>
+                    <span className="muted small">{c.text}</span>
+                    {summary[c.id] && <span className="admin-menu-count">{summary[c.id]}</span>}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </nav>
+
+          <BackButton to="/">Retour à l’accueil</BackButton>
+        </>
+      )}
     </main>
   );
 }

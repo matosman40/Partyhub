@@ -160,6 +160,25 @@ describe('Présence dans le salon : émotions', () => {
     host.disconnect();
   });
 
+  it('diffuse un visage du profil à toute la salle, sans attitude, et refuse les choix doubles ou inconnus', async () => {
+    const { code, hostToken } = await freshRoom();
+    const { host, views } = await hostOf(code, hostToken);
+    const ana = await joinAs(code, 'Ana');
+    const leo = await joinAs(code, 'Léo');
+    const hostView = await until(views, (v) => v.lobby.players.length === 2);
+    const anaId = hostView.lobby.players.find((p) => p.name === 'Ana')!.id;
+
+    expect((await call(ana.socket, 'player:lobby-mood', { face: 'rieur' })).ok).toBe(true);
+    const received = await until(leo.moods, (e) => e.playerId === anaId);
+    expect(received.face).toBe('rieur');
+    expect(received.mood).toBeNull();
+
+    // Un visage inconnu, ou une attitude et un visage à la fois : refusés.
+    expect((await call(ana.socket, 'player:lobby-mood', { face: 'coucou' })).ok).toBe(false);
+    expect((await call(ana.socket, 'player:lobby-mood', { mood: 'joy', face: 'rieur' })).ok).toBe(false);
+    host.disconnect();
+  });
+
   it('limite le rythme des émotions : 6 toutes les 4 secondes, puis refus', async () => {
     const { code, hostToken } = await freshRoom();
     const { host } = await hostOf(code, hostToken);

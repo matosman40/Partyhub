@@ -2,12 +2,15 @@ import { Suspense, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import type { ChatMessage, ObserverRoomView } from '@partyhub/shared';
 import { DEVICE_KIND_ICONS, DEVICE_KIND_LABELS } from '@partyhub/shared';
+import { canSend } from '../connection.js';
 import { createSocket, type AppSocket } from '../realtime.js';
 import { viewsFor } from '../games.js';
 import { AvatarsContext } from '@partyhub/games/client';
 import { FitStage } from '../components/FitStage.js';
 import { Boundary } from '../components/Boundary.js';
+import { BackButton } from '../components/BackButton.js';
 import { ChatPanel, EmoteBar, ReactionLayer } from '../components/Social.js';
+import { ConnectingNotice } from '../components/ConnectingNotice.js';
 import { NoticeDialog } from '../components/NoticeDialog.js';
 import { PlayerAvatar } from '../components/PlayerAvatar.js';
 import { PlayerSeat } from '../seat/PlayerSeat.js';
@@ -79,7 +82,7 @@ export function ObserverPage() {
   if (!view) {
     return (
       <main className="page center">
-        <p>{error ?? 'Connexion à la salle…'}</p>
+        <ConnectingNotice error={error} />
       </main>
     );
   }
@@ -92,6 +95,7 @@ export function ObserverPage() {
 
   function sendChat(text: string) {
     setChatError(null);
+    if (!canSend(socket, setChatError)) return;
     socket.emit('observer:chat', { text }, (res) => {
       if (!res.ok) setChatError(res.error);
     });
@@ -99,6 +103,7 @@ export function ObserverPage() {
 
   function sendReaction(emoji: string) {
     setChatError(null);
+    if (!canSend(socket, setChatError)) return;
     socket.emit('observer:reaction', { emoji }, (res) => {
       if (!res.ok) setChatError(res.error);
     });
@@ -152,6 +157,7 @@ export function ObserverPage() {
             Salle <strong>{lobby.code}</strong>
           </div>
           <div className="page-nav">
+            <BackButton to="/">Quitter</BackButton>
             <span className="muted small" aria-live="polite">
               {lobby.observers.count} spectateur(s)
               {lobby.observers.devices.length > 0 && (

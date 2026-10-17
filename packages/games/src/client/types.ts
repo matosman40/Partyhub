@@ -26,6 +26,11 @@ export interface HostViewProps {
   hostState: any;
   /** Horodatage serveur au moment de l'émission de la vue. */
   now: number;
+  /**
+   * Envoie une action de l'écran principal au jeu (ex. générer des personnages). Absent quand la vue
+   * n'est pas celle de l'hôte (spectateur) : le jeu n'affiche alors pas les boutons correspondants.
+   */
+  onAction?: (type: string, payload?: unknown) => Promise<{ ok: boolean; error?: string }>;
 }
 
 export interface PlayerViewProps {
@@ -35,6 +40,8 @@ export interface PlayerViewProps {
   now: number;
   /** Envoie une action au serveur et attend sa validation. */
   send: (type: string, payload?: unknown) => Promise<{ ok: boolean; error?: string }>;
+  /** Vrai quand la connexion au salon est établie : le jeu efface un message de coupure une fois la connexion revenue. */
+  connected?: boolean;
 }
 
 export interface GameClientViews {

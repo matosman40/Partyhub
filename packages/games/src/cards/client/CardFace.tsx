@@ -1,6 +1,13 @@
-import { useId } from 'react';
-import { WILD_FAMILY, type CardBack, type CardEntry, type CardGameDefinition, type CardTheme } from '@partyhub/shared';
-import { assetFontFamily } from './fonts.js';
+import { useId, type ReactElement } from 'react';
+import {
+  WILD_FAMILY,
+  type CardBack,
+  type CardBackPattern,
+  type CardEntry,
+  type CardGameDefinition,
+  type CardTheme,
+} from '@partyhub/shared';
+import { assetFontFamily, presetFontFamily } from './fonts.js';
 
 /**
  * Rendu vectoriel des cartes. Tout est dessiné en SVG (aucune image externe) :
@@ -50,7 +57,7 @@ export function CardFace({ def, entry, back, label }: CardFaceProps) {
     <svg
       className={`pcard pcard-${theme}${showBack ? ' is-back' : ''}`}
       viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
-      style={def.fontAssetId ? { fontFamily: `${assetFontFamily(def.fontAssetId)}, sans-serif` } : undefined}
+      style={fontFamilyOf(def) ? { fontFamily: fontFamilyOf(def) } : undefined}
       role="img"
       aria-label={showBack ? 'Dos de carte' : (label ?? entry?.label ?? 'Carte')}
     >
@@ -63,7 +70,79 @@ export function CardFace({ def, entry, back, label }: CardFaceProps) {
       ) : (
         <Front def={def} entry={entry!} theme={theme} uid={uid} />
       )}
+      {!showBack && entry?.text && <TextPanel text={entry.text} dark={theme === 'nuit' || theme === 'arcade'} />}
     </svg>
+  );
+}
+
+/** Découpe un texte en lignes de `perLine` caractères au plus, sans couper les mots si possible. */
+export function wrapLines(text: string, perLine: number, maxLines: number): string[] {
+  const words = text.split(/\s+/).filter(Boolean);
+  const lines: string[] = [];
+  let current = '';
+  for (const word of words) {
+    const candidate = current ? `${current} ${word}` : word;
+    if (Array.from(candidate).length <= perLine) {
+      current = candidate;
+      continue;
+    }
+    if (current) lines.push(current);
+    // Un mot plus long que la ligne est coupé.
+    const chars = Array.from(word);
+    let rest = chars;
+    while (rest.length > perLine) {
+      lines.push(rest.slice(0, perLine).join(''));
+      rest = rest.slice(perLine);
+    }
+    current = rest.join('');
+  }
+  if (current) lines.push(current);
+  if (lines.length > maxLines) {
+    const kept = lines.slice(0, maxLines);
+    const last = Array.from(kept[maxLines - 1] ?? '');
+    kept[maxLines - 1] = `${last.slice(0, Math.max(0, perLine - 1)).join('')}…`;
+    return kept;
+  }
+  return lines;
+}
+
+/**
+ * Texte d'une carte à texte : un panneau posé sur la zone centrale, lisible sur chaque thème.
+ * La taille baisse avec la longueur du texte pour rester dans le panneau.
+ */
+function TextPanel({ text, dark }: { text: string; dark: boolean }) {
+  const length = Array.from(text).length;
+  const size = length <= 30 ? 19 : length <= 70 ? 15 : length <= 130 ? 12 : 10;
+  const lineHeight = Math.round(size * 1.25);
+  const perLine = Math.max(6, Math.floor(152 / (size * 0.56)));
+  const maxLines = Math.floor(124 / lineHeight);
+  const lines = wrapLines(text, perLine, maxLines);
+  const top = 140 - ((lines.length - 1) * lineHeight) / 2;
+  return (
+    <g className="pcard-text" aria-hidden="true">
+      <rect
+        x={16}
+        y={72}
+        width={168}
+        height={136}
+        rx={14}
+        fill={dark ? '#0b0f1f' : '#fffdf6'}
+        fillOpacity={dark ? 0.9 : 0.94}
+      />
+      <text
+        fill={dark ? '#f4f6ff' : '#1d1b16'}
+        fontSize={size}
+        fontWeight={600}
+        textAnchor="middle"
+        dominantBaseline="middle"
+      >
+        {lines.map((line, i) => (
+          <tspan key={i} x={100} y={top + i * lineHeight}>
+            {line}
+          </tspan>
+        ))}
+      </text>
+    </g>
   );
 }
 
@@ -578,6 +657,9 @@ function CustomBack({ back, uid }: { back: CardBack; uid: string }) {
       <rect x="0" y="0" width={VIEW_W} height={VIEW_H} rx="22" fill={darken(color, 0.45)} />
       <g clipPath={`url(#${clip})`}>
         <rect x="8" y="8" width="184" height="264" fill={color} />
+        {!back.imageAssetId && back.pattern && back.pattern !== 'uni' && (
+          <BackPattern pattern={back.pattern} color={color} />
+        )}
         {back.imageAssetId && (
           <image
             href={`/api/assets/${back.imageAssetId}`}
@@ -617,6 +699,54 @@ function CustomBack({ back, uid }: { back: CardBack; uid: string }) {
         </text>
       )}
     </>
+  );
+}
+
+/** Police de la carte : celle de la médiathèque si elle existe, sinon une police livrée, sinon celle du thème. */
+function fontFamilyOf(def: CardGameDefinition): string | undefined {
+  if (def.fontAssetId) return `${assetFontFamily(def.fontAssetId)}, sans-serif`;
+  if (def.fontPreset) return presetFontFamily(def.fontPreset);
+  return undefined;
+}
+
+/** Motif du dos : rayures, pois, losanges ou quadrillage, tracés sur la couleur de fond. */
+function BackPattern({ pattern, color }: { pattern: CardBackPattern; color: string }) {
+  const ink = lighten(color, 0.5);
+  const step = 24;
+  const shapes: ReactElement[] = [];
+  if (pattern === 'rayures') {
+    for (let x = -280; x < 200; x += 16) {
+      shapes.push(<line key={`r${x}`} x1={x} y1={0} x2={x + 280} y2={280} />);
+    }
+  } else if (pattern === 'quadrillage') {
+    for (let x = 0; x <= 200; x += step) shapes.push(<line key={`v${x}`} x1={x} y1={0} x2={x} y2={280} />);
+    for (let y = 0; y <= 280; y += step) shapes.push(<line key={`h${y}`} x1={0} y1={y} x2={200} y2={y} />);
+  } else if (pattern === 'pois') {
+    for (let row = 0; row * step < 280; row++) {
+      const offset = (row % 2) * (step / 2);
+      for (let x = offset + step / 2; x < 200; x += step) {
+        shapes.push(<circle key={`p${row}-${x}`} cx={x} cy={row * step + step / 2} r={4} />);
+      }
+    }
+  } else {
+    for (let row = 0; row * step < 280; row++) {
+      const offset = (row % 2) * (step / 2);
+      for (let x = offset - step; x < 200 + step; x += step) {
+        const y = row * step;
+        shapes.push(
+          <path
+            key={`l${row}-${x}`}
+            d={`M${x} ${y} l${step / 2} ${step / 2} l${-step / 2} ${step / 2} l${-step / 2} ${-step / 2} z`}
+          />,
+        );
+      }
+    }
+  }
+  const filled = pattern === 'pois';
+  return (
+    <g fill={filled ? ink : 'none'} fillOpacity={0.35} stroke={ink} strokeOpacity={0.4} strokeWidth={filled ? 0 : 1.5}>
+      {shapes}
+    </g>
   );
 }
 

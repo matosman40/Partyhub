@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { api } from '../api.js';
 import { PlayerSeat, readSeat, removeSeat, writeSeat } from '../seat/PlayerSeat.js';
 import { sharedPlaceToken } from '../seat/share.js';
-import { readProfileToken, clearProfileToken, authHeaders } from '../profile/session.js';
+import { forgetDeviceProfile, type DeviceProfile } from '../profile/session.js';
+import { useDeviceProfiles } from '../profile/useProfile.js';
+import { CreateProfileForm } from '../profile/CreateProfileForm.js';
+import { ProfileSwitcher } from '../profile/ProfileSwitcher.js';
 import { DrawerSection } from '../components/CornerMenu.js';
 import { DeviceChooser } from '../device/DeviceChooser.js';
 
@@ -11,6 +13,7 @@ import { DeviceChooser } from '../device/DeviceChooser.js';
 const MAX_SEATS = 6;
 
 const seatListKey = (code: string) => `ph:seats:${code}`;
+const seatProfilesKey = (code: string) => `ph:seatprofiles:${code}`;
 
 function readSeatList(code: string): string[] {
   try {
@@ -33,32 +36,50 @@ function writeSeatList(code: string, list: string[]): void {
   }
 }
 
+/** Jeton du profil de chaque siège supplémentaire (le siège principal suit le profil actif). */
+function readSeatProfiles(code: string): Record<string, string> {
+  try {
+    const raw = localStorage.getItem(seatProfilesKey(code));
+    const map = raw ? (JSON.parse(raw) as unknown) : null;
+    if (map && typeof map === 'object' && !Array.isArray(map)) {
+      return Object.fromEntries(Object.entries(map).filter(([, v]) => typeof v === 'string')) as Record<string, string>;
+    }
+  } catch {
+    /* repli ci-dessous */
+  }
+  return {};
+}
+
+function writeSeatProfiles(code: string, map: Record<string, string>): void {
+  try {
+    localStorage.setItem(seatProfilesKey(code), JSON.stringify(map));
+  } catch {
+    /* sans effet */
+  }
+}
+
 /**
- * Interface joueur (smartphone). Un téléphone peut tenir plusieurs joueurs
- * (« ajouter un joueur sur cet appareil ») ; chacun a sa place et sa manette.
- * Un joueur connecté à son profil entre sous ce profil.
+ * Interface joueur (smartphone). Un téléphone peut tenir plusieurs joueurs : chacun a sa place,
+ * sa manette et son profil de l'appareil. Le siège principal suit le profil actif.
  */
 export function PlayerPage() {
   const { code: rawCode = '' } = useParams();
   const code = rawCode.toUpperCase();
+  const { active: activeProfile, list: profiles } = useDeviceProfiles();
 
   const [seats, setSeats] = useState<string[]>(() => readSeatList(code));
+  const [seatTokens, setSeatTokens] = useState<Record<string, string>>(() => readSeatProfiles(code));
   const [active, setActive] = useState('main');
   const [labels, setLabels] = useState<Record<string, string | null>>({});
-  const [profileToken, setProfileToken] = useState<string | null>(() => readProfileToken());
-  const [profileName, setProfileName] = useState<string | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [creatingSeat, setCreatingSeat] = useState(false);
 
-  useEffect(() => {
-    if (!profileToken) return;
-    api<{ profile: { displayName: string } }>('/api/profiles/me', { headers: authHeaders() })
-      .then((r) => setProfileName(r.profile.displayName))
-      .catch(() => {
-        clearProfileToken();
-        setProfileToken(null);
-      });
-    // Le profil est relu une fois à l'ouverture de la page.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  /** Profil du siège : le principal suit le profil actif, les autres gardent celui choisi à leur ajout. */
+  function profileOfSeat(id: string): DeviceProfile | null {
+    if (id === 'main') return activeProfile;
+    const token = seatTokens[id];
+    return profiles.find((p) => p.token === token) ?? null;
+  }
 
   useEffect(() => {
     // Lien « jouer sur un autre appareil » : cette page reçoit la place d'un autre téléphone.
@@ -85,21 +106,46 @@ export function PlayerPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [code]);
 
-  function addSeat() {
+  // Un profil retiré de l'appareil libère son siège.
+  useEffect(() => {
+    const known = new Set(profiles.map((p) => p.token));
+    const stale = seats.filter((id) => id !== 'main' && seatTokens[id] && !known.has(seatTokens[id]!));
+    if (stale.length === 0) return;
+    stale.forEach((id) => removeSeat(code, id));
+    const next = seats.filter((id) => !stale.includes(id));
+    const tokens = Object.fromEntries(Object.entries(seatTokens).filter(([id]) => !stale.includes(id)));
+    setSeats(next);
+    setSeatTokens(tokens);
+    writeSeatList(code, next);
+    writeSeatProfiles(code, tokens);
+    if (!next.includes(active)) setActive('main');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profiles]);
+
+  /** Ajoute un siège tenu par le profil donné. */
+  function addSeatWith(token: string) {
     if (seats.length >= MAX_SEATS) return;
     const id = `seat-${Date.now().toString(36)}`;
     const next = [...seats, id];
+    const tokens = { ...seatTokens, [id]: token };
     setSeats(next);
+    setSeatTokens(tokens);
     writeSeatList(code, next);
+    writeSeatProfiles(code, tokens);
     setActive(id);
+    setPickerOpen(false);
+    setCreatingSeat(false);
   }
 
   function dropSeat(id: string) {
     if (id === 'main') return;
     removeSeat(code, id);
     const next = seats.filter((s) => s !== id);
+    const tokens = Object.fromEntries(Object.entries(seatTokens).filter(([k]) => k !== id));
     setSeats(next);
+    setSeatTokens(tokens);
     writeSeatList(code, next);
+    writeSeatProfiles(code, tokens);
     setActive('main');
   }
 
@@ -107,11 +153,9 @@ export function PlayerPage() {
     setLabels((l) => (l[id] === name ? l : { ...l, [id]: name }));
   }
 
-  const profileRejected = () => {
-    clearProfileToken();
-    setProfileToken(null);
-    setProfileName(null);
-  };
+  // Profils encore libres pour un nouveau siège : ni le profil actif, ni ceux déjà à une place.
+  const usedTokens = new Set([activeProfile?.token, ...Object.values(seatTokens)]);
+  const candidates = profiles.filter((p) => !usedTokens.has(p.token));
 
   // Options de l'appareil : rangées dans le tiroir d'angle de chaque siège, hors de l'écran de jeu.
   const deviceMenu = (
@@ -121,9 +165,19 @@ export function PlayerPage() {
           Changer de salle
         </Link>
       </DrawerSection>
+      <DrawerSection title="Mon profil sur cet appareil">
+        <ProfileSwitcher />
+      </DrawerSection>
       <DrawerSection title="Sur cet appareil">
         {seats.length < MAX_SEATS && (
-          <button type="button" className="link-btn" onClick={addSeat}>
+          <button
+            type="button"
+            className="link-btn"
+            onClick={() => {
+              setPickerOpen(true);
+              setCreatingSeat(false);
+            }}
+          >
             Ajouter un joueur sur cet appareil
           </button>
         )}
@@ -136,20 +190,52 @@ export function PlayerPage() {
       <DrawerSection title="Micro et caméra">
         <DeviceChooser compact />
       </DrawerSection>
-      {!profileToken && (
-        <DrawerSection title="Compte">
-          <p className="muted small">
-            Aucun compte nécessaire. <Link to="/profil">Créer un profil</Link> pour garder votre image et vos
-            statistiques.
-          </p>
-        </DrawerSection>
-      )}
     </>
   );
 
   return (
     <main className="page player fade-in">
       <h1 className="sr-only">Salle {code}</h1>
+
+      {pickerOpen && (
+        <section className="card stack seat-picker" aria-label="Ajouter un joueur">
+          <h2>Quel joueur ajouter ?</h2>
+          {candidates.length > 0 ? (
+            <ul className="profile-list">
+              {candidates.map((p) => (
+                <li key={p.id}>
+                  <button type="button" className="chip" onClick={() => addSeatWith(p.token)}>
+                    {p.name}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="muted small">Tous les profils de cet appareil ont déjà une place.</p>
+          )}
+          {creatingSeat ? (
+            <CreateProfileForm
+              title="Nouveau joueur"
+              activate={false}
+              onCreated={(_profile, token) => addSeatWith(token)}
+            />
+          ) : (
+            <button type="button" className="link-btn" onClick={() => setCreatingSeat(true)}>
+              + Nouveau profil pour ce joueur
+            </button>
+          )}
+          <button
+            type="button"
+            className="link-btn"
+            onClick={() => {
+              setPickerOpen(false);
+              setCreatingSeat(false);
+            }}
+          >
+            Annuler
+          </button>
+        </section>
+      )}
 
       {seats.length > 1 && (
         <nav className="seat-tabs" aria-label="Joueurs sur cet appareil">
@@ -170,19 +256,24 @@ export function PlayerPage() {
         </nav>
       )}
 
-      {seats.map((id) => (
-        <PlayerSeat
-          key={id}
-          code={code}
-          seatId={id}
-          hidden={id !== active}
-          profileToken={id === 'main' ? profileToken : null}
-          profileName={id === 'main' ? profileName : null}
-          deviceMenu={deviceMenu}
-          onIdentity={onIdentity}
-          onProfileRejected={id === 'main' ? profileRejected : undefined}
-        />
-      ))}
+      {seats.map((id) => {
+        const prof = profileOfSeat(id);
+        return (
+          <PlayerSeat
+            // Changer de profil remonte le siège : il rejoint la salle sous sa nouvelle identité.
+            key={`${id}:${prof?.id ?? 'sans-profil'}`}
+            code={code}
+            seatId={id}
+            hidden={id !== active}
+            profileToken={prof?.token ?? null}
+            profileName={prof?.name ?? null}
+            profileId={prof?.id ?? null}
+            deviceMenu={deviceMenu}
+            onIdentity={onIdentity}
+            onProfileRejected={prof ? () => forgetDeviceProfile(prof.token) : undefined}
+          />
+        );
+      })}
     </main>
   );
 }

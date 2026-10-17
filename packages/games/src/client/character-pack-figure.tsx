@@ -1,4 +1,10 @@
-import type { CharacterMood, CharacterPackAtlasName, CharacterPackInfo, CharacterPackLook } from '@partyhub/shared';
+import type {
+  CharacterExpression,
+  CharacterMood,
+  CharacterPackAtlasName,
+  CharacterPackInfo,
+  CharacterPackLook,
+} from '@partyhub/shared';
 
 /**
  * Affichage d'un look de pack de sprites. La case de la planche est découpée par un viewBox SVG : le dessin
@@ -15,6 +21,19 @@ export const PACK_BUST_FACE: Record<CharacterMood, string> = {
   sad: 'triste',
   wave: 'clin_doeil',
   dance: 'contente',
+};
+
+/**
+ * Visages demandés (émotions du salon, expression du profil) → case de la planche « visages ».
+ * Une case absente du pack retombe sur l'attitude du moment.
+ */
+export const PACK_FACE_CASE: Record<CharacterExpression, string> = {
+  calme: 'neutre',
+  souriant: 'contente',
+  rieur: 'tres_joyeuse',
+  clin: 'clin_doeil',
+  triste: 'triste',
+  etonne: 'surpris',
 };
 
 /** Corps entier : planche « poses ». */
@@ -37,12 +56,14 @@ export interface PackFigureProps {
   pack: CharacterPackInfo;
   look: CharacterPackLook;
   mood?: CharacterMood;
+  /** Visage à montrer sur le portrait (absent : celui de l'attitude). */
+  face?: CharacterExpression;
   framing?: 'full' | 'bust';
   label?: string;
   className?: string;
 }
 
-export function PackFigure({ pack, look, mood = 'idle', framing = 'full', label, className }: PackFigureProps) {
+export function PackFigure({ pack, look, mood = 'idle', face, framing = 'full', label, className }: PackFigureProps) {
   const wantsBust = framing === 'bust';
   const atlasName: CharacterPackAtlasName | null = wantsBust
     ? look.atlases.visages
@@ -58,7 +79,7 @@ export function PackFigure({ pack, look, mood = 'idle', framing = 'full', label,
   const atlas = atlasName ? look.atlases[atlasName] : undefined;
   if (!atlasName || !atlas) return null;
 
-  const wanted = atlasName === 'visages' ? PACK_BUST_FACE[mood] : PACK_FULL_POSE[mood];
+  const wanted = atlasName === 'visages' ? (face ? PACK_FACE_CASE[face] : PACK_BUST_FACE[mood]) : PACK_FULL_POSE[mood];
   const image =
     atlas.images.find((img) => img.name === wanted) ??
     atlas.images.find((img) => img.name === DEFAULT_CASE[atlasName]) ??

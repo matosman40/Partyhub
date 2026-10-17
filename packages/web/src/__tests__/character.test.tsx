@@ -56,3 +56,26 @@ describe('Personnage dessiné', () => {
     expect(a).not.toEqual(b);
   });
 });
+
+describe('Expression au repos du profil', () => {
+  it('le visage change selon l’expression choisie, sans changer le personnage', () => {
+    const faces = [0, 1, 2, 3, 4, 5].map((expression) =>
+      renderToStaticMarkup(<Character spec={{ ...base, expression }} mood="idle" />),
+    );
+    // Six expressions, six dessins distincts (les yeux et la bouche changent).
+    expect(new Set(faces).size).toBe(6);
+    for (const html of faces) expect(html).not.toMatch(/NaN|undefined/);
+  });
+
+  it('une attitude (joie, tristesse…) garde son propre visage, quelle que soit l’expression', () => {
+    const joyWithCalm = renderToStaticMarkup(<Character spec={{ ...base, expression: 0 }} mood="joy" />);
+    const joyWithSad = renderToStaticMarkup(<Character spec={{ ...base, expression: 4 }} mood="joy" />);
+    expect(joyWithCalm).toEqual(joyWithSad);
+  });
+
+  it('refuse une expression hors liste dans le schéma partagé', () => {
+    expect(characterSchema.safeParse({ ...base, expression: 5 }).success).toBe(true);
+    expect(characterSchema.safeParse({ ...base, expression: 6 }).success).toBe(false);
+    expect(characterSchema.safeParse({ ...base, expression: -1 }).success).toBe(false);
+  });
+});

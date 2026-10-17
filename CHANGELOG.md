@@ -4,6 +4,132 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 
 ## Non publié
 
+## [0.11.0] - 2026-10-17
+
+### Ajouté
+
+- Clés d’IA dans l’administration (Système → Intelligence artificielle), derrière le mot de passe administrateur. Chaque fournisseur a un champ de clé, un modèle, un plafond journalier facultatif et un bouton « Tester ». Les clés sont chiffrées sur le serveur (AES-256-GCM, clé locale `ai-secret.key`), ne reviennent jamais dans la page et priment sur les variables d’environnement d’un même fournisseur. Les changements s’appliquent sans redémarrage.
+- Aventure IA, plus de variété : six thèmes (Brumes et lanternes, Carnaval masqué, Forêt qui chuchote, Fromagerie hantée, Les pigeons gouvernent, Vaisseau rétro), chacun avec son intrigue de secours. Le salon choisit le thème (au hasard, un thème précis, ou libre avec une précision), le ton (dont « Absurde et loufoque ») et la difficulté : facile, normale ou difficile, qui décale les jets et les points de vie des ennemis.
+- Aventure IA, types de scène : rencontre, dialogue avec un personnage (chaque réplique fait évoluer son lien avec le groupe, de « hostile » à « allié »), énigme (un indice, et un objet à la clé), halte (on reprend des points de vie) et affrontement tour par tour.
+- Aventure IA, progression : chaque réussite rapporte de l’expérience. Un personnage monte jusqu’au niveau 5, avec plus de points de vie maximum, une stat plus faible renforcée, et un sac de quatre objets au plus.
+- Aventure IA, personnages gardés : les personnages joués sont enregistrés dans le profil (jusqu’à quarante, avec leur niveau, leurs parties et leur portrait). Dans une autre partie, « Tes personnages » sur le téléphone permet de les reprendre. Ils sont supprimés avec le profil.
+- Aventure IA, images : chaque personnage reçoit un portrait et chaque monde un fond, générés par une IA d’image (Cloudflare Workers AI, avec ModelScope en secours). Ils sont gardés dans une bibliothèque partagée par thème : un fond ou un portrait déjà créé se reprend dans les parties suivantes. Sans fournisseur, le rendu reste celui d’aujourd’hui. Les clés et le plafond journalier (`IMAGE_MAX_PER_DAY`) restent sur le serveur.
+- Images pour les autres jeux : un jeu peut demander une image à la même bibliothèque (`ctx.images`). Les images sont servies par `/api/ai-images/:id`.
+- Capteurs du téléphone pour les jeux : le gyroscope (inclinaison), l’accéléromètre (secousses) et le micro (souffle) servent de manettes. Le téléphone envoie son inclinaison à l’écran principal, qui la montre en direct. Ces échantillons passent par un canal à part (`player:sensor` vers `room:sensor`) : ils ne touchent pas à l’état de la salle, ne sont relayés qu’aux écrans, et seulement pendant une partie. Le serveur plafonne le débit à quarante messages par seconde et par joueur, et rien n’est enregistré.
+- Micro-Défis : une succession de défis éclair, les mêmes pour tout le monde. Secouer, garder le téléphone à plat, le faire tourner, souffler dans le micro, tapoter, appuyer au bon moment. De 1 à 12 défis par partie ; un défi réussi rapporte 100 points, plus jusqu’à 60 pour la rapidité.
+- Funambule : chaque joueur tient son funambule sur le fil en penchant son téléphone contre le vent, qui se renforce d’une manche à l’autre (de 1 à 6 manches). Tout le monde marche en même temps, et l’écran principal montre les funambules en direct. Un funambule qui tombe garde le temps tenu ; celui qui traverse les douze secondes reçoit une prime.
+- Page « Test des appareils » : une section « Tester le mouvement » (inclinaison en direct, secousses, recentrage) pour vérifier le gyroscope avant une partie.
+
+### Modifié
+
+- Aventure IA, refondue pour une histoire qui tient debout : le monde a un objectif et un secret que le conteur révèle petit à petit. Chaque choix dit déjà ce qui arrive en cas de réussite ou d’échec, et le jet ne fait que trancher. Le groupe rencontre des personnages secondaires, dessinés comme les personnages du jeu (le dessin dépend du nom) ; la fiche de chaque joueur montre son avatar ou sa photo ; un affrontement se joue tour par tour sur les téléphones (frapper, feinter, soigner, parlementer). Parties de 3 à 6 scènes, vote de 15 à 120 secondes.
+- Aventure IA, bibliothèque : jusqu’à quarante personnages par profil (huit auparavant).
+- Docker et HTTPS : l’en-tête `Permissions-Policy` autorise le gyroscope, l’accéléromètre, le micro et la caméra pour PartyHub. La page de test des appareils et les jeux partagent le même calcul du niveau sonore (`levelFromBytes`).
+- Lisibilité sur les TV et les téléphones : les textes des écrans Micro-Défis et Funambule, le classement, la barre de contrôle de la TV et l’étiquette « Salle » ne descendent plus sous 14 px. Les cases à cocher font 24 px sur écran tactile, et toute la ligne (libellé compris) est une cible d’au moins 44 px.
+- Téléphones, contrôles en premier : le pad d’un défi (tapotement, « Stop ! ») occupe la moitié de l’écran et son libellé est grand ; le fil du funambule est plus haut ; « Recentrer » et les boutons d’autorisation font une cible pleine largeur de 52 px ; les choix du vote et de l’Aventure, les actions de combat et « Ma fiche » sont des blocs plus hauts. Hors des jeux, les boutons font au moins 50 px sur téléphone (44 px pour les petits boutons).
+- Réactivité des jeux : les capteurs du téléphone partent au plus trente fois par seconde (une dizaine auparavant) et l’écran principal les affiche à l’image suivante. Un capteur met environ 10 ms à s’afficher sur la TV, contre 50 ms auparavant, et le mouvement du funambule sur le téléphone suit le capteur au lieu de se mettre à jour dix fois par seconde. Les barres de temps, les rubans du vent et les jauges du micro sont mis à l’échelle au lieu de changer de largeur, pour ne plus recalculer la mise en page à chaque image. Les personnages ne se redessinent que lorsque leur propre mesure change.
+- Connexion coupée : une action qui ne peut pas partir (choix, vote, « Lancer », message, réaction) est refusée tout de suite avec le message « Connexion perdue », sur le téléphone comme sur l’écran principal. Rien n’est gardé pour plus tard. L’attente entre deux tentatives de reconnexion passe de 4 secondes au plus à 1,5 seconde (le salon revient en 1,2 à 1,7 seconde après le rétablissement), et le bandeau « Reconnexion en cours… » disparaît dès qu’elle aboutit.
+- Aventure : le choix (personnage, vote, action de combat) s’affiche à l’appui, sans attendre l’aller-retour avec le salon. Avec 150 ms de latence, le retour visuel passe d’environ 160 ms à 1 ou 2 ms.
+- Chargement : les pages secondaires (administration, profil, test des appareils, certificat, spectateur, écran principal) ne sont téléchargées qu’à leur ouverture. Le fichier principal passe de 670 ko à 236 ko avant compression, et l’accueil charge en tout 511 ko de JavaScript (contre 795 ko) ; sur une 4G simulée, le formulaire d’accueil s’affiche en 4,3 s au lieu de 6,3 s.
+
+### Corrigé
+
+- Aventure IA : une fiche abîmée dans la bibliothèque d’un profil ne fait plus perdre les autres personnages à la sauvegarde suivante. Seule la fiche abîmée est écartée.
+- Funambule et Micro-Défis sur la TV : le contenu était collé à gauche de l’écran. Il est centré, et chaque jeu a son propre décor (un chapiteau au crépuscule pour Funambule, une borne d’arcade pour Micro-Défis) au lieu d’un décor générique.
+- Micro-Défis, « Souffle » : le trait qui marque le seuil était invisible sur le téléphone. Les défis occupent aussi l’écran du téléphone, centrés.
+- Micro-Défis, « Plateau tournant » : un aller-retour ne compte plus comme un tour, il faut faire 360 degrés dans un sens (ou dans l’autre). Un téléphone qui ne donne pas son cap est signalé, au lieu de laisser le défi bloqué.
+- Micro-Défis, « Secoue ! » : sur certains Android, qui donnent des mesures d’accélération vides, aucune secousse n’était comptée. La mesure de repli prend le relais.
+- Funambule : une traversée se termine à sa durée même si le téléphone cesse d’envoyer ses mesures (écran éteint, onglet caché).
+- Écran principal : les mesures des téléphones sont regroupées, vingt mises à jour par seconde au plus, au lieu de plusieurs centaines avec douze joueurs. L’avertissement « ResizeObserver loop » n’apparaît plus à la mise à l’échelle des jeux.
+- Les délais des jeux se mesurent sur l’horloge monotone de la page : un changement d’heure ne fausse plus le décompte.
+- Cases à cocher des réglages (restauration d’une sauvegarde, fournisseur d’IA activé, jeu média) : elles rétrécissaient à 13 px sur téléphone. Elles gardent leur taille.
+- Salon et Aventure : les libellés du salon, l’objectif et l’épilogue de l’Aventure ne descendent plus sous 14 px sur les écrans TV.
+- Téléphones : le pad d’un défi restait à 44 px de haut, car une règle générique pour les boutons tactiles l’emportait sur la sienne. Il prend maintenant sa hauteur prévue.
+- Profil : le bouton « Choisir un fichier » est aux couleurs de l’application, et chaque statistique sépare bien son chiffre de son libellé.
+- Coupure réseau : pendant une coupure, les boutons restaient actifs sans rien dire, et une commande pressée était rejouée à la reconnexion, avant que le salon ne reconnaisse l’écran. Elle était alors refusée avec un message trompeur (« Vous n’êtes pas dans une salle. ») ou perdue en silence. Le message « Connexion perdue » remplace ce comportement.
+- Aventure : le message « Les personnages se choisissent au début de l’aventure » restait affiché pendant le vote quand un appui arrivait après le changement d’étape. Un refus n’est plus montré que dans l’étape où le choix a été fait.
+
+## [0.10.0] - 2026-10-16
+
+### Ajouté
+
+- Aventure IA : une aventure racontée en direct. L’écran principal génère le monde et six personnages, chacun avec sa fiche (stats, points de vie, pouvoir narratif, défaut, objet). À chaque scène, les joueurs votent un choix ; le personnage qui l’a choisi tente un jet de d20 plus sa stat, et la suite dépend du résultat. Sans IA configurée, une histoire de secours est jouée.
+- Configuration de l’IA sur le serveur, avec plusieurs fournisseurs : Anthropic, OpenAI, Groq, OpenRouter, Mistral, Cerebras, Google Gemini, ou un service compatible avec l’API OpenAI. `AI_PROVIDER` liste les fournisseurs par ordre de préférence. Chacun a sa clé, son modèle (`AI_<FOURNISSEUR>_MODEL`), son adresse (`AI_<FOURNISSEUR>_BASE_URL`) et un plafond journalier facultatif (`AI_<FOURNISSEUR>_MAX_CALLS_PER_DAY`). Si un fournisseur échoue ou atteint son plafond, le suivant répond. Les clés restent sur le serveur. Chaque appel a un délai maximal, une seule nouvelle tentative sur erreur transitoire, et une limite horaire globale.
+- Travaux asynchrones pour les jeux : un jeu peut confier un travail hors de son moteur (appel à l’IA, par exemple). La salle l’exécute, l’abandonne si la partie change, et intègre le résultat à son retour. Un jeu peut aussi définir des actions réservées à l’écran principal.
+- Mécanique « Mémo » pour les jeux de cartes : toutes les cartes sont face cachée, chaque joueur retourne deux cartes à son tour. Une paire trouvée rapporte ses points et le joueur rejoue ; sinon les cartes se retournent et c’est au joueur suivant. La partie finit quand toutes les paires sont trouvées, ou quand un joueur atteint l’objectif. Les robots jouent aussi.
+- Cartes à texte : une carte peut porter un texte (240 caractères au plus), affiché sur un panneau lisible sur chaque thème. Une étiquette « paire » relie deux cartes au mémo, un « rang » sert au tri de la main.
+- Import CSV : les cartes peuvent venir d’un fichier CSV (colonnes nom, texte, symbole, famille, nombre, points, paire, rang, en français ou en anglais, séparateur virgule ou point-virgule). Dans l’administration, « CSV de cartes » se choisit avant « Importer un fichier » ; un champ `csv` dans le JSON fait la même chose. Une erreur indique la ligne. 200 types de cartes au plus.
+- Polices livrées avec l’application, sans fichier à envoyer : Atkinson Hyperlegible (lisible), Noto Sans Symbols 2 (symboles : figures et pictogrammes), Luckiest Guy (titre). La police de la médiathèque, si elle est choisie, reste prioritaire.
+- Motifs du dos de carte : uni, rayures, pois, losanges ou quadrillage, dessinés en SVG, sans image.
+- Modèles prêts à l’emploi, dans « Partir de » : jeu de 52 cartes (quatre couleurs), tarot (78 cartes), jetons de mise, mémo des animaux, mémo des capitales (paires texte).
+- Visages dans le salon : sous les attitudes, le téléphone propose les six visages du profil (calme, souriant, rire, clin d’œil, chagrin, étonné). Le personnage montre ce visage pendant quelques secondes, sur l’écran comme sur le téléphone, puis reprend son visage habituel.
+- Photo de profil à la webcam : « Prendre une photo avec la webcam » ouvre un aperçu en miroir, avec un compte à rebours de 3 secondes. La photo est recadrée comme une photo choisie. La webcam demande une connexion sécurisée (https).
+- Expression au repos du personnage : dans son profil, chaque joueur choisit une expression (calme, souriant, rieur, clin d’œil, triste, étonné). Elle reste affichée dans le salon et sur l’écran, contrairement à une émote qui disparaît.
+- Voix de profil : chaque joueur enregistre jusqu’à 5 courts sons (5 secondes au maximum), nommés comme il veut, au micro ou depuis un fichier audio. Pendant une partie, il les envoie depuis son téléphone et l’écran principal les joue, avec un bandeau qui indique qui parle. Si le navigateur bloque le son de l’écran, un bouton « Activer le son » le relance.
+- Mode test (administration) : un curseur règle la cadence des émotions et des voix (×1, ×2, ×4, ×10), pour essayer les réglages. Un bandeau « Mode test » s’affiche sur le salon et le téléphone pendant l’essai.
+- Téléphone dans le salon : « Écouter » joue une voix sur ce téléphone avant de l’envoyer à l’écran. Une bulle « Ma photo » prend la photo de profil à la webcam, et un lien mène au profil pour changer l’expression du personnage.
+- Profil par simple prénom : il suffit d’un prénom pour créer son profil, sans identifiant ni mot de passe. La création passe en premier, sur l’accueil, avant de rejoindre une salle ou de jouer.
+- Plusieurs profils sur un appareil : le menu « Joueur : … » de l’accueil et du téléphone liste les profils de l’appareil, en change d’un clic, en crée un nouveau ou en retire un. Sur un téléphone, chaque joueur a sa place avec son propre profil.
+- Le personnage est présent partout : le profil actif tient la place du joueur sur l’écran hôte et sur le téléphone, et son expression choisie s’y affiche.
+- Jeux de cartes : export en JSON autonome. Le fichier contient la définition complète (nom, règles, score cible, notice, cartes) et les fichiers qu’il utilise, l’image du dos et la police. Importé ailleurs, il recrée ces fichiers dans la médiathèque. Les fichiers version 1 restent acceptés.
+- Mécanique « Ressemblance » pour les jeux de cartes : une carte est posée au centre et chaque joueur a sa main, cachée. Le premier à toucher une carte qui ressemble au centre (même couleur, même forme, ou les deux selon le réglage) prend la carte et ses points. Une fausse touche bloque son auteur 1,5 seconde. Sans réponse pendant le délai choisi, le centre change. Les robots jouent aussi.
+- Mécanique « Plis » pour les jeux de cartes : chacun joue une carte à son tour, en fournissant la couleur demandée s’il le peut. Le pli va à la plus forte carte de la couleur demandée, ou à l’atout si un atout est choisi. Son gagnant prend les points du pli et ouvre le suivant. Un joueur absent joue automatiquement sa carte la plus faible.
+- Poker Texas, intégré : de 2 à 8 joueurs, avec blindes, mises, relances, tapis et pots secondaires. Les cartes privées ne sont jamais envoyées à l’écran principal ; les robots jouent avec une évaluation simple de leur main. Le jeu se désactive ou s’active dans l’administration comme les autres.
+- Modèles « Ressemblance des formes » (quatre couleurs, quatre formes, 32 cartes) et « Plis classiques » (32 cartes du sept à l’as, sans atout par défaut), dans « Partir de ».
+
+### Modifié
+
+- Jeux de cartes, administration : le modèle se choisit dans « Partir de » (modèles intégrés et modèles prêts à l’emploi). L’éditeur gère la mécanique, la police, le motif du dos, et le texte, la paire et le rang de chaque carte. Une définition peut compter 200 types de cartes (60 auparavant).
+- Administration des jeux de cartes : la mécanique propose défausse, mémo, ressemblance et plis. L’atout se choisit pour les plis. Passer au mémo, à la ressemblance ou aux plis retire effets et jokers, après confirmation. Le compteur de cartes indique combien il en faut pour distribuer les joueurs, en rouge quand il en manque.
+- Validation des jeux de cartes : un atout n’est accepté que pour les plis, et il doit être une famille du jeu.
+- Export des jeux de cartes au format version 3 (cartes à texte, mécanique, polices et motifs livrés). Les fichiers versions 1 et 2 restent acceptés à l’import. Une version antérieure à 3 refuse un fichier 3, au lieu d’ignorer silencieusement ces champs.
+- Administration : pour chaque jeu de cartes ou de questions médias, Dupliquer, Exporter et Supprimer sont regroupés sous un bouton « ⋯ ». « Modifier » reste visible.
+- Main triée par grandeur : dans le Président, « Couleurs & chiffres » et les jeux de cartes créés dans l’administration, les cartes vont du plus petit au plus grand, les actions et les jokers à la suite. Le Rami et le Tarot gardaient déjà leur tri.
+- Un profil sans mot de passe ne propose plus de section « Mot de passe » sur sa page. Les anciens comptes avec identifiant et mot de passe se reconnectent depuis « J’ai un ancien compte avec mot de passe ».
+- Salon de l’écran hôte (TV, ordinateur, tablette) : les joueurs s’affichent comme sur le téléphone, avec leur tête et leur pseudo. La prairie ne reste que pour le plateau de test.
+- L’hôte peut lancer la partie depuis son téléphone : sur le téléphone d’un joueur, « Je suis l’hôte de cette salle » demande le code affiché sur l’écran (valable 3 minutes, une seule utilisation, cinq essais maximum). Le téléphone reste joueur.
+- Depuis le téléphone de l’hôte : lancer la partie, étape suivante, arrêter, rejouer et ajouter un robot. « Ajouter un robot » est aussi accessible directement dans le salon de l’écran hôte.
+
+### Corrigé
+
+- Dans le salon, une émotion n’était qu’un emoji à côté de la tête : le personnage ne bougeait pas et ne changeait pas de visage. Il joue maintenant l’attitude ou le visage choisi. Sur l’écran, les têtes du salon sont plus grandes pour lire les visages de loin.
+- Quand le salon ne répond pas (réseau coupé, serveur injoignable), l’écran TV, la page spectateur et le téléphone n’affichaient qu’une ligne de texte sur fond sombre. Après quelques secondes, ils expliquent quoi vérifier et proposent « Réessayer ».
+- Le bouton « Lancer la partie » pouvait être hors de l’écran : le contenu du salon était coupé en haut et en bas. Il reste visible, et son message indique ce qui manque pour lancer.
+
+## [0.9.3] - 2026-10-16
+
+### Ajouté
+
+- Page **Installer le certificat HTTPS** (`/certificat`, dans le menu de l'accueil) : le certificat racine se télécharge directement, avec les instructions de l'appareil détecté (iPhone et iPad, Android, Windows, Mac, Linux). Il est servi par Caddy, sans volume supplémentaire pour l'application.
+- Fichier `deploy/casaos/compose.https.yaml` : PartyHub et Caddy dans un seul fichier, installable depuis l'interface CasaOS, sans ligne de commande.
+- Journal des erreurs complet, dans `DATA_DIR/logs/partyhub.log` (une ligne JSON par événement, niveau en toutes lettres, rotation automatique). Chaque requête reçoit un identifiant (`X-Request-Id`) qui relie une erreur à sa requête. Les mots de passe et jetons sont masqués.
+- Les erreurs du navigateur remontent dans le même journal (écran de secours, erreurs de script, promesses rejetées, appels API en échec, connexion temps réel perdue), sous `source: "client"`, avec limite de débit par adresse.
+- Administration, rubrique Système : consultation du journal avec filtres (niveau, source, recherche), erreurs les plus fréquentes regroupées, détail de chaque entrée, téléchargement et vidage.
+- Menu d’administration par rubriques : Salles et statistiques, Jeux, Créer des jeux, Médias et ambiance, Système. Chaque rubrique a son propre écran, avec un bouton retour vers le menu.
+- Script `scripts/casaos-check.sh` : contrôle d'une installation HTTPS, à lancer sur le serveur.
+
+### Modifié
+
+- Boutons « Retour à l’accueil » au même endroit et de même style sur les pages de connexion, rejoindre, profil, test des appareils, administration et spectateur.
+- Publication : la release n'est créée qu'après la vérification du fichier d'installation CasaOS (mise à jour depuis la version précédente, installation propre, amd64 et arm64). Les deux fichiers d'installation doivent épingler la version publiée.
+
+### Corrigé
+
+- Plus d’écran noir : une page qui plante affiche un message, un bouton pour recharger la page et un retour à l’accueil. Si le script de l’application ne se charge pas, le texte « Chargement de PartyHub… » reste visible.
+
+## [0.9.2] - 2026-10-16
+
+### Modifié
+
+- Salon sur téléphone, pour tous les jeux : chaque joueur est représenté par sa tête, son pseudo et ses étiquettes (vous, prêt, robot), sans plateau à déplacer. Le plateau reste réservé au plateau de test.
+- Accueil : les jeux se présentent en liste épurée ; un clic déploie le sous-menu du jeu (description, créer la salle, essayer seul, comment jouer).
+- Le bouton « Essayer le plateau » de l'accueil est retiré : le plateau de test n'est pas encore proposé au public.
+
+### Corrigé
+
+- Écran TV : le bouton ☰ d'un siège joueur ne se superpose plus au bouton « Fermer » du menu ouvert.
+- Salon sur téléphone : les boutons d'émotion ont le style du reste de l'interface.
+
 ## [0.9.1] - 2026-10-15
 
 ### Corrigé

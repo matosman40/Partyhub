@@ -6,7 +6,7 @@ import { SoundToggle } from '../../client/SoundToggle.js';
 import { CardFace } from './CardFace.js';
 import { HandFan } from './HandFan.js';
 import { cueTurn, useCardFlights, useChange } from './cues.js';
-import { entryOf, familyOf, rankingOf, type CardsPlayerState, type CardsPublic } from './common.js';
+import { entryOf, familyOf, rankingOf, sortHandByValue, type CardsPlayerState, type CardsPublic } from './common.js';
 
 /** Téléphone d'un jeu de cartes : la main, le tour en cours et les actions. */
 export function CardsPlayer({ publicState, playerState, playerId, send }: PlayerViewProps) {
@@ -163,7 +163,7 @@ export function CardsPlayer({ publicState, playerState, playerId, send }: Player
                 disabled={busy || !me.isMyTurn}
                 onTap={tapCard}
                 pendingUid={pendingUid}
-                items={me.hand.map((card) => {
+                items={sortHandByValue(pub.def, me.hand).map((card) => {
                   const entry = entryOf(pub.def, card.entry);
                   return {
                     uid: card.uid,

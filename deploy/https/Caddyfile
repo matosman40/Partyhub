@@ -1,8 +1,8 @@
 # Caddy : HTTPS sur le réseau local avec un certificat interne.
 #
 # L'adresse du serveur est lue dans PARTYHUB_HOST (fichier .env à côté de compose.yaml), par exemple 192.168.1.156.
-# Le certificat est signé par l'autorité interne de Caddy : son certificat racine doit être installé sur les
-# téléphones et tablettes (voir docs/HTTPS-LAN.md).
+# Le certificat est signé par l'autorité interne de Caddy : son certificat racine se télécharge depuis la page
+# /certificat de PartyHub, puis s'installe sur les téléphones et tablettes (voir docs/HTTPS-LAN.md).
 
 {
 	# Un téléphone qui se connecte par adresse IP n'envoie pas de nom (SNI) pendant la poignée de main TLS.
@@ -13,5 +13,18 @@
 https://{$PARTYHUB_HOST} {
 	tls internal
 	encode zstd gzip
-	reverse_proxy partyhub:8282
+
+	# Certificat racine : public, servi par Caddy lui-même. Il est téléchargeable avant toute installation.
+	# CADDY_CA_DIR n'est fourni que pour les tests ; sur Docker, le chemin par défaut est celui de l'image.
+	handle /certificat/racine.crt {
+		root * {$CADDY_CA_DIR:/data/caddy/pki/authorities/local}
+		rewrite * /root.crt
+		header Content-Type application/x-x509-ca-cert
+		header Content-Disposition attachment;filename=partyhub-autorite-locale.crt
+		file_server
+	}
+
+	handle {
+		reverse_proxy partyhub:8282
+	}
 }

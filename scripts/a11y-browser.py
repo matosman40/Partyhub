@@ -118,8 +118,9 @@ def main() -> int:
         # Téléphone dans le plateau de test : son personnage est déplaçable (bouton, flèches).
         on_plateau = phone.new_page()
         on_plateau.goto(f"{BASE_URL}/j/{plateau['code']}", wait_until="networkidle")
-        on_plateau.get_by_label("Pseudo", exact=False).first.fill("Audit")
-        on_plateau.get_by_role("button", name=re.compile("entrer|rejoindre|continuer", re.I)).first.click()
+        on_plateau.get_by_label("Votre nom", exact=False).first.fill("Audit")
+        on_plateau.get_by_role("button", name="Continuer").click()
+        on_plateau.get_by_role("button", name=re.compile("entrer dans la salle", re.I)).first.click()
         on_plateau.wait_for_selector(".lobby-plateau .plateau-figures", timeout=10000)
         audit(on_plateau, "téléphone (plateau de test)")
 

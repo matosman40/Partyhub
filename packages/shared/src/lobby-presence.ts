@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { CharacterMood } from './characters.js';
+import { CHARACTER_EXPRESSIONS, type CharacterExpression, type CharacterMood } from './characters.js';
 
 /**
  * Présence dans le salon : chaque personnage peut être déplacé et prendre une émotion.
@@ -19,6 +19,24 @@ export const LOBBY_MOOD_INFO: Record<LobbyMood, { label: string; emoji: string }
   sad: { label: 'Triste', emoji: '😢' },
 };
 
+/**
+ * Visages que le joueur peut montrer dans le salon : ceux de son profil, pendant quelques secondes.
+ * Une attitude (saluer, danser…) change le corps ; un visage change seulement l'expression.
+ */
+export const LOBBY_FACES = CHARACTER_EXPRESSIONS;
+
+export const LOBBY_FACE_INFO: Record<CharacterExpression, { label: string; emoji: string }> = {
+  calme: { label: 'Calme', emoji: '😌' },
+  souriant: { label: 'Souriant', emoji: '🙂' },
+  rieur: { label: 'Rire', emoji: '😂' },
+  clin: { label: 'Clin d’œil', emoji: '😉' },
+  triste: { label: 'Chagrin', emoji: '😞' },
+  etonne: { label: 'Étonné', emoji: '😲' },
+};
+
+/** Un choix envoyé par le téléphone : une attitude, ou un visage (jamais les deux). */
+export type LobbyMoodChoice = { mood: LobbyMood } | { face: CharacterExpression };
+
 /** Identifiant du jeu « plateau de test » : une salle où l'on essaie les déplacements, sans partie. */
 export const PLATEAU_TEST_ID = 'plateau-test';
 
@@ -36,7 +54,10 @@ export const lobbyPositionSchema = z.object({
   y: z.number().min(0).max(1),
 });
 
-export const lobbyMoodSchema = z.object({ mood: z.enum(LOBBY_MOODS) });
+export const lobbyMoodSchema = z.union([
+  z.object({ mood: z.enum(LOBBY_MOODS) }).strict(),
+  z.object({ face: z.enum(LOBBY_FACES) }).strict(),
+]);
 
 /** Nouvelle place d'un personnage, diffusée seule à la salle (sans renvoyer toute la vue). */
 export interface LobbyPositionEvent {
@@ -44,11 +65,20 @@ export interface LobbyPositionEvent {
   position: LobbyPosition;
 }
 
-/** Émotion diffusée à toute la salle. */
+/** Émotion diffusée à toute la salle : une attitude, un visage, ou les deux champs à null pour rien. */
 export interface LobbyMoodEvent {
   id: string;
   playerId: string;
-  mood: LobbyMood;
+  /** Attitude du corps, ou null quand seul le visage change. */
+  mood: LobbyMood | null;
+  /** Visage montré pendant quelques secondes, ou null (le visage habituel reste). */
+  face: CharacterExpression | null;
+}
+
+/** Emoji de la bulle au-dessus d'un personnage : celui du visage, sinon celui de l'attitude. */
+export function lobbyEmoteEmoji(e: { mood: LobbyMood | null; face: CharacterExpression | null }): string {
+  if (e.face) return LOBBY_FACE_INFO[e.face].emoji;
+  return e.mood ? LOBBY_MOOD_INFO[e.mood].emoji : '';
 }
 
 /** Ramène une position dans la zone utile, marges comprises. */

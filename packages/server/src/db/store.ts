@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { ROOM_CODE_DEFAULT_LENGTH, ROOM_CODE_MAX_LENGTH, ROOM_CODE_MIN_LENGTH } from '@partyhub/shared';
 import { parseScreenBackgrounds, type ScreenBackgrounds } from '../screen-backgrounds.js';
 import { parseSoundSettings, type SoundSettings } from '@partyhub/shared';
+import { DEFAULT_TEST_MODE, testModeSchema, type TestMode } from '@partyhub/shared';
 
 /** Fichier de la médiathèque (les octets sont sur le disque, pas en base). */
 export interface AssetRow {
@@ -350,6 +351,43 @@ export const MIGRATIONS: Migration[] = [
       `);
     },
   },
+  {
+    version: 12,
+    description: 'Voix de profil : courts sons nommés par le joueur (5 au maximum), stockés en base',
+    up(db) {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS voice_clips (
+          id         TEXT PRIMARY KEY,
+          profile_id TEXT NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+          name       TEXT NOT NULL,
+          mime       TEXT NOT NULL,
+          data       BLOB NOT NULL,
+          created_at TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS voice_clips_profile ON voice_clips (profile_id);
+      `);
+    },
+  },
+  {
+    version: 13,
+    description: 'Images générées par IA (portraits et fonds), partagées par les jeux, stockées en base',
+    up(db) {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS ai_images (
+          id         TEXT PRIMARY KEY,
+          kind       TEXT NOT NULL,
+          tag        TEXT NOT NULL,
+          mime       TEXT NOT NULL,
+          provider   TEXT NOT NULL,
+          prompt     TEXT NOT NULL,
+          size       INTEGER NOT NULL,
+          data       BLOB NOT NULL,
+          created_at TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS ai_images_by_tag ON ai_images (kind, tag, created_at);
+      `);
+    },
+  },
 ];
 
 /** Entrée d'une banque BOUM ! telle qu'elle est stockée. */
@@ -530,6 +568,22 @@ export class Store {
 
   saveSettings(settings: AdminSettings): void {
     this.setKv('admin_settings', JSON.stringify(settings));
+  }
+
+  /** Mode test : curseur de cadence. Une valeur illisible retombe sur le réglage normal (éteint). */
+  getTestMode(): TestMode {
+    const raw = this.getKv('test_mode');
+    if (!raw) return { ...DEFAULT_TEST_MODE };
+    try {
+      const parsed = testModeSchema.safeParse(JSON.parse(raw));
+      return parsed.success ? parsed.data : { ...DEFAULT_TEST_MODE };
+    } catch {
+      return { ...DEFAULT_TEST_MODE };
+    }
+  }
+
+  saveTestMode(mode: TestMode): void {
+    this.setKv('test_mode', JSON.stringify(mode));
   }
 
   /** Fond d'écran choisi pour chaque écran (identifiants de médiathèque). */

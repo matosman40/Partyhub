@@ -361,6 +361,23 @@ const imposteur: Scene = (c) => (
   </>
 );
 
+const aventure: Scene = (c) => (
+  <>
+    <Stars c={c} count={70} maxY={H * 0.45} />
+    <Moon cx={330} cy={220} r={110} color={c.fill} craters={c.ink} />
+    <Ridge c={c} base={H * 0.66} amp={110} color="#14361f" />
+    <Pines c={c} base={H * 0.74} count={18} minH={110} maxH={220} color="#0b2214" />
+    <rect x={1040} y={H * 0.42} width={60} height={H * 0.44} fill="#0b1d12" />
+    <rect x={1300} y={H * 0.42} width={60} height={H * 0.44} fill="#0b1d12" />
+    <rect x={1080} y={H * 0.5} width={260} height={H * 0.36} fill="#0b1d12" />
+    <polygon points="1040,378 1070,300 1100,378" fill="#0b1d12" />
+    <polygon points="1300,378 1330,300 1360,378" fill="#0b1d12" />
+    <circle cx={1210} cy={560} r={70} fill={c.edge} opacity={0.2} />
+    <rect x={1204} y={520} width={12} height={40} fill={c.fill} />
+    <Ridge c={c} base={H * 0.88} amp={40} color="#06140b" />
+  </>
+);
+
 const loups: Scene = (c) => (
   <>
     <Stars c={c} count={90} maxY={H * 0.55} />
@@ -631,7 +648,99 @@ const banquise: Scene = (c) => {
   );
 };
 
+/** Table de poker : tapis vert, jetons autour, cartes au centre. */
+const poker: Scene = (c) => (
+  <>
+    <Stars c={c} count={60} maxY={H * 0.5} />
+    <ellipse cx={800} cy={470} rx={640} ry={330} fill={c.ink} opacity={0.35} />
+    <ellipse cx={800} cy={460} rx={600} ry={300} fill={c.a} opacity={0.9} />
+    <ellipse cx={800} cy={460} rx={560} ry={265} fill="none" stroke={c.fill} strokeWidth={6} opacity={0.35} />
+    {Array.from({ length: 16 }, (_, i) => {
+      const angle = (i * Math.PI) / 8;
+      const x = 800 + Math.cos(angle) * 660;
+      const y = 460 + Math.sin(angle) * 350;
+      return <circle key={i} cx={x} cy={y} r={span(c.r, 26, 40)} fill={i % 2 ? c.edge : c.fill} opacity={0.55} />;
+    })}
+    {[-1, 0, 1].map((i) => (
+      <rect
+        key={i}
+        x={800 + i * 70 - 46}
+        y={400 - (i === 0 ? 10 : 0)}
+        width={92}
+        height={130}
+        rx={12}
+        fill={c.fill}
+        opacity={0.8}
+        transform={`rotate(${i * 8} ${800 + i * 70} 465)`}
+      />
+    ))}
+  </>
+);
+
 /** Décors génériques, pour les jeux sans décor dessiné (paquets, cartes, plateau, solo). */
+/** Funambule : un chapiteau au crépuscule, deux projecteurs, un rideau rayé en haut et le public en bas. */
+const funambule: Scene = (c) => {
+  const cols = 16;
+  const drape: ReactNode[] = [];
+  for (let i = 0; i < cols; i++) {
+    const x0 = (i * W) / cols;
+    const x1 = ((i + 1) * W) / cols;
+    drape.push(
+      <path
+        key={i}
+        d={`M${x0} 0 L${x1} 0 L${x1} 120 Q${(x0 + x1) / 2} 176 ${x0} 120 Z`}
+        fill={i % 2 ? c.fill : c.edge}
+        opacity={0.2}
+      />,
+    );
+  }
+  const crowd: ReactNode[] = [];
+  for (let i = 0; i < 34; i++) {
+    const x = span(c.r, -20, W + 20);
+    const r = span(c.r, 34, 58);
+    const base = H - span(c.r, 0, 70);
+    crowd.push(<circle key={`h${i}`} cx={x} cy={base - r * 2.1} r={r} />);
+    crowd.push(<ellipse key={`b${i}`} cx={x} cy={base + r * 0.6} rx={r * 1.7} ry={r * 1.6} />);
+  }
+  return (
+    <>
+      <path d={`M0 0 L${W * 0.42} ${H * 0.96} L${W * 0.18} ${H * 0.96} Z`} fill={c.fill} opacity={0.07} />
+      <path d={`M${W} 0 L${W * 0.58} ${H * 0.96} L${W * 0.82} ${H * 0.96} Z`} fill={c.fill} opacity={0.07} />
+      <g>{drape}</g>
+      <Stars c={c} count={36} maxY={H * 0.5} color={c.fill} />
+      <g fill="#000" opacity={0.42}>
+        {crowd}
+      </g>
+    </>
+  );
+};
+
+/** Micro-Défis : une borne d'arcade au coucher du soleil, grille en perspective et soleil en halos. */
+const microDefis: Scene = (c) => {
+  const horizon = H * 0.6;
+  const cx = W / 2;
+  const grid: ReactNode[] = [];
+  for (let i = -14; i <= 14; i++) {
+    grid.push(<line key={`v${i}`} x1={cx + i * 8} y1={horizon} x2={cx + i * 260} y2={H} />);
+  }
+  for (let k = 1; k <= 9; k++) {
+    const y = horizon + (H - horizon) * (k / 9) ** 2;
+    grid.push(<line key={`h${k}`} x1={0} y1={y} x2={W} y2={y} />);
+  }
+  return (
+    <>
+      <Stars c={c} count={60} maxY={horizon - 60} />
+      <circle cx={cx} cy={horizon} r={380} fill={c.fill} opacity={0.06} />
+      <circle cx={cx} cy={horizon} r={270} fill={c.fill} opacity={0.1} />
+      <circle cx={cx} cy={horizon} r={170} fill={c.fill} opacity={0.16} />
+      <rect x={0} y={horizon} width={W} height={H - horizon} fill="#000" opacity={0.25} />
+      <g stroke={c.edge} strokeWidth={3} opacity={0.32}>
+        {grid}
+      </g>
+    </>
+  );
+};
+
 const FALLBACK: Scene[] = [plutotQui, tarot, association, promoteur];
 
 const SCENES: Record<string, Scene> = {
@@ -639,6 +748,7 @@ const SCENES: Record<string, Scene> = {
   'bombes-party': bombes,
   banquise,
   imposteur,
+  'aventure-ia': aventure,
   'loups-village': loups,
   'plus-ou-moins': plusOuMoins,
   'plutot-qui': plutotQui,
@@ -648,6 +758,9 @@ const SCENES: Record<string, Scene> = {
   reflexe,
   tarot,
   association,
+  'poker-texas': poker,
+  funambule,
+  'micro-defis': microDefis,
 };
 
 /** Fond de scène du jeu, en SVG. À placer en premier enfant d'un conteneur positionné. */

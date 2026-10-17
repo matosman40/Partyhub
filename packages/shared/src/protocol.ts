@@ -1,9 +1,10 @@
-import type { LobbyMood, LobbyMoodEvent, LobbyPosition, LobbyPositionEvent } from './lobby-presence.js';
+import type { LobbyMoodChoice, LobbyMoodEvent, LobbyPosition, LobbyPositionEvent } from './lobby-presence.js';
 import type { GameCategory, GameNotice, ScoreEntry } from './game-types.js';
 import type { GameDetails } from './schemas.js';
 import type { DeviceInfo, DeviceKind } from './devices.js';
 import type { SettingsBounds } from './settings-form.js';
 import type { CharacterSpec } from './characters.js';
+import type { SensorEvent, SensorSample } from './sensors.js';
 
 export type { DeviceInfo, DeviceKind };
 
@@ -69,6 +70,18 @@ export interface ReactionEvent {
   id: string;
   from: string;
   emoji: string;
+}
+
+/** Voix jouée sur l'écran principal, déclenchée depuis le téléphone d'un joueur. */
+export interface VoiceEvent {
+  id: string;
+  playerId: string;
+  from: string;
+  avatar: AvatarInfo;
+  /** Nom donné à la voix par le joueur (affiché sur l'écran). */
+  name: string;
+  /** Identifiant de la voix : l'écran la télécharge depuis /api/voices/:id. */
+  voiceId: string;
 }
 
 export interface LobbyView {
@@ -141,9 +154,14 @@ export interface ProfileStats {
   perGame: { gameId: string; name: string; played: number; wins: number; points: number }[];
 }
 
+/** Message renvoyé quand le jeton de profil n'est plus valable : le téléphone retire alors ce profil. */
+export const PROFILE_SESSION_EXPIRED = 'Votre session de profil a expiré. Choisissez un profil sur cet appareil.';
+
 export interface ProfileView {
   /** Vrai si la photo est visible des autres joueurs pendant les parties. */
   avatarShared: boolean;
+  /** Faux pour un profil « nom seul » : pas de mot de passe, donc pas de changement de mot de passe. */
+  hasPassword: boolean;
   id: string;
   username: string;
   displayName: string;
@@ -157,7 +175,12 @@ export type Ack<T extends object = object> = (res: ({ ok: true } & T) | { ok: fa
 
 export interface ClientToServerEvents {
   // Hôte (écran principal) — réservé au socket qui a présenté le jeton d'hôte
-  'host:connect': (p: { code: string; hostToken: string }, ack: Ack) => void;
+  /** screen : cet écran est l'écran principal de la salle (il joue les voix). */
+  'host:connect': (p: { code: string; hostToken: string; screen?: boolean }, ack: Ack) => void;
+  /** Code à 6 chiffres pour ouvrir l'écran hôte sur un autre appareil (valable 3 minutes, une fois). */
+  'host:handoff': (ack: Ack<{ code: string; expiresAt: number }>) => void;
+  /** Un téléphone saisit le code de transfert : il reçoit le jeton d'hôte de la salle. */
+  'host:claim': (p: { code: string; handoffCode: string }, ack: Ack<{ hostToken: string }>) => void;
   'host:configure': (p: { gameSettings: Record<string, unknown> }, ack: Ack) => void;
   'host:start': (ack: Ack) => void;
   'host:next': (ack: Ack) => void;
@@ -169,6 +192,8 @@ export interface ClientToServerEvents {
   'host:removeBot': (p: { playerId: string }, ack: Ack) => void;
   'host:chat': (p: { text: string }, ack: Ack) => void;
   'host:reaction': (p: { emoji: string }, ack: Ack) => void;
+  /** Action du jeu demandée par l'écran principal (ex. générer des personnages), sans joueur attribué. */
+  'host:game-action': (p: { type: string; payload?: unknown }, ack: Ack) => void;
 
   // Joueurs (smartphones)
   'player:join': (
@@ -184,7 +209,10 @@ export interface ClientToServerEvents {
   'player:chat': (p: { text: string }, ack: Ack) => void;
   'player:reaction': (p: { emoji: string }, ack: Ack) => void;
   'player:lobby-move': (p: LobbyPosition, ack: Ack) => void;
-  'player:lobby-mood': (p: { mood: LobbyMood }, ack: Ack) => void;
+  'player:lobby-mood': (p: LobbyMoodChoice, ack: Ack) => void;
+  'player:voice': (p: { id: string }, ack: Ack) => void;
+  /** Capteurs du téléphone : pas d'accusé, relayé seulement aux écrans pendant une partie. */
+  'player:sensor': (p: SensorSample) => void;
 
   // Observateurs (regardent le plateau sans jouer ; aucune action de jeu)
   'observer:join': (p: { code: string; device?: DeviceInfo }, ack: Ack) => void;
@@ -202,4 +230,6 @@ export interface ServerToClientEvents {
   'room:reaction': (r: ReactionEvent) => void;
   'room:lobby-mood': (e: LobbyMoodEvent) => void;
   'room:lobby-position': (e: LobbyPositionEvent) => void;
+  'room:voice': (e: VoiceEvent) => void;
+  'room:sensor': (e: SensorEvent) => void;
 }

@@ -33,6 +33,13 @@ export const CHARACTER_ACCESSORIES = [
   'flower',
 ] as const;
 
+/**
+ * Expression du visage au repos, choisie dans le profil et gardée d'une partie à l'autre. Les attitudes
+ * (joie, tristesse, salut…) et les émotions ponctuelles du salon la remplacent le temps d'un moment.
+ */
+export const CHARACTER_EXPRESSIONS = ['calme', 'souriant', 'rieur', 'clin', 'triste', 'etonne'] as const;
+export type CharacterExpression = (typeof CHARACTER_EXPRESSIONS)[number];
+
 /** Attitudes du personnage : chacune correspond à un moment de la partie (voir CharacterMood). */
 export const CHARACTER_MOODS = ['idle', 'joy', 'sad', 'wave', 'dance'] as const;
 
@@ -53,6 +60,8 @@ export interface CharacterSpec {
   pack?: string | null;
   /** Look du pack (une même personne peut avoir plusieurs looks). Absent : le premier look du pack. */
   look?: string | null;
+  /** Expression du visage au repos (index dans CHARACTER_EXPRESSIONS). Absent : « calme ». */
+  expression?: number;
 }
 
 /** Identifiant d'un pack : minuscules, chiffres et tirets (le même que dans l'URL). */
@@ -117,6 +126,7 @@ export const characterSchema = z.object({
   accessory: index(CHARACTER_ACCESSORIES.length),
   pack: z.string().regex(CHARACTER_PACK_ID).nullable().optional(),
   look: z.string().regex(CHARACTER_LOOK_ID).nullable().optional(),
+  expression: index(CHARACTER_EXPRESSIONS.length).optional(),
 });
 
 /** Personnage généré pour un texte donné (pseudo) : même pseudo, même personnage partout. */

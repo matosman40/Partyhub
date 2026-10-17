@@ -1,5 +1,12 @@
 import { useId } from 'react';
-import { characterColors, resolveLook, type CharacterMood, type CharacterSpec } from '@partyhub/shared';
+import {
+  CHARACTER_EXPRESSIONS,
+  characterColors,
+  resolveLook,
+  type CharacterExpression,
+  type CharacterMood,
+  type CharacterSpec,
+} from '@partyhub/shared';
 import { usePackInfo } from './character-packs.js';
 import { PackFigure } from './character-pack-figure.js';
 
@@ -30,6 +37,30 @@ interface Pose {
   look: Pair;
   wave?: boolean;
   sparkles?: boolean;
+}
+
+/** Visage de chaque expression du profil (au repos). « calme » reprend le visage de l'attitude de repos. */
+const EXPRESSION_FACE: Record<CharacterExpression, Pick<Pose, 'eyes' | 'brow' | 'mouth'>> = {
+  calme: { eyes: 'open', brow: 'neutral', mouth: 'smile' },
+  souriant: { eyes: 'open', brow: 'happy', mouth: 'grin' },
+  rieur: { eyes: 'happy', brow: 'happy', mouth: 'shout' },
+  clin: { eyes: 'wink', brow: 'happy', mouth: 'grin' },
+  triste: { eyes: 'sad', brow: 'sad', mouth: 'frown' },
+  etonne: { eyes: 'open', brow: 'neutral', mouth: 'shout' },
+};
+
+/**
+ * Visage à montrer : celui qui est demandé (émotion du salon), sinon l'expression du profil.
+ * L'expression du profil ne se voit qu'au repos : une attitude (joie, danse…) garde son visage.
+ */
+export function faceOf(
+  spec: CharacterSpec,
+  mood: CharacterMood,
+  face?: CharacterExpression,
+): CharacterExpression | undefined {
+  if (face) return face;
+  if (mood !== 'idle' || spec.expression === undefined) return undefined;
+  return CHARACTER_EXPRESSIONS[spec.expression];
 }
 
 /** Une humeur par moment de jeu : idle au repos, joy, sad, wave (main levée), dance. */
@@ -398,6 +429,8 @@ function Star({ x, y }: { x: number; y: number }) {
 export interface CharacterProps {
   spec: CharacterSpec;
   mood?: CharacterMood;
+  /** Visage demandé pour un instant (émotion du salon). Absent : l'expression du profil, au repos. */
+  face?: CharacterExpression;
   /** `bust` : tête et buste, pour les bulles d'avatar. `full` : personnage entier. */
   framing?: 'full' | 'bust';
   /** Texte alternatif ; absent, le personnage est décoratif. */
@@ -411,10 +444,11 @@ const FRAMES = {
 } as const;
 
 /** Personnage dessiné (listes fermées). Le point d'entrée public est `Character`, qui gère aussi les packs. */
-function DrawnCharacter({ spec, mood = 'idle', framing = 'full', label, className }: CharacterProps) {
+function DrawnCharacter({ spec, mood = 'idle', framing = 'full', label, className, face }: CharacterProps) {
   const uid = useId().replace(/[^a-zA-Z0-9]/g, '');
   const c = characterColors(spec);
-  const P = POSES[mood];
+  const key = faceOf(spec, mood, face);
+  const P = key ? { ...POSES[mood], ...EXPRESSION_FACE[key] } : POSES[mood];
   const bob = P.bounce;
   const hy = 62 + bob;
   const frame = FRAMES[framing];
@@ -603,6 +637,7 @@ export function Character(props: CharacterProps) {
         pack={pack}
         look={look}
         mood={props.mood}
+        face={faceOf(props.spec, props.mood ?? 'idle', props.face)}
         framing={props.framing}
         label={props.label}
         className={props.className}

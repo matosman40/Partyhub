@@ -1,21 +1,33 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
+import { BackButton } from '../components/BackButton.js';
 import { defaultCharacterFor, type ProfileView } from '@partyhub/shared';
 import { api } from '../api.js';
 import { PlayerAvatar } from '../components/PlayerAvatar.js';
-import { authHeaders, clearProfileToken, readProfileToken, saveProfileToken } from '../profile/session.js';
+import {
+  activeDeviceProfile,
+  authHeaders,
+  forgetDeviceProfile,
+  readProfileToken,
+  rememberDeviceProfile,
+  renameDeviceProfile,
+  replaceActiveToken,
+} from '../profile/session.js';
+import { useActiveProfile } from '../profile/useProfile.js';
+import { CreateProfileForm } from '../profile/CreateProfileForm.js';
+import { ProfileSwitcher } from '../profile/ProfileSwitcher.js';
 import { fileToAvatarDataUrl } from '../profile/avatarImage.js';
+import { WebcamPhoto, webcamAvailable } from '../profile/WebcamPhoto.js';
 import { CharacterEditor } from '../profile/CharacterEditor.js';
 import { DeviceChooser } from '../device/DeviceChooser.js';
 import { useMusicSlot } from '../sounds.js';
 import { ProposeBoumCard } from '../profile/ProposeBoumCard.js';
+import { VoicesSection } from '../profile/VoicesSection.js';
 
 /**
  * Profil : compte réutilisable d'un appareil à l'autre. Le profil garde le pseudo,
  * l'image, l'avatar et les statistiques ; on se reconnecte pour les retrouver.
  */
-
-type Mode = 'login' | 'register';
 
 interface Session {
   profile: ProfileView;
@@ -25,20 +37,34 @@ export function ProfilePage() {
   useMusicSlot('menus');
   const [session, setSession] = useState<Session | null>(null);
   const [checking, setChecking] = useState(readProfileToken() !== null);
-  const [mode, setMode] = useState<Mode>('login');
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
+  // Le profil actif peut changer depuis le sélecteur : la page suit.
+  const active = useActiveProfile();
 
   useEffect(() => {
-    if (!readProfileToken()) return;
+    if (!active) {
+      setSession(null);
+      setChecking(false);
+      return;
+    }
+    let alive = true;
     api<Session>('/api/profiles/me', { headers: authHeaders() })
-      .then((r) => setSession(r))
-      .catch(() => {
-        clearProfileToken();
-        setSession(null);
+      .then((r) => {
+        if (alive) setSession(r);
       })
-      .finally(() => setChecking(false));
-  }, []);
+      .catch((err: Error & { status?: number }) => {
+        // Seule une session refusée retire le profil de l'appareil ; une panne réseau ne le fait pas.
+        if (alive && err.status === 401) forgetDeviceProfile(active.token);
+      })
+      .finally(() => {
+        if (alive) setChecking(false);
+      });
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active?.token]);
 
   async function run<T>(action: () => Promise<T>, done?: (value: T) => string | null): Promise<void> {
     setBusy(true);
@@ -71,33 +97,18 @@ export function ProfilePage() {
     return (
       <main className="page fade-in" style={{ maxWidth: 560 }}>
         <p className="page-nav">
-          <Link to="/">Accueil</Link>
+          <BackButton to="/">Retour à l’accueil</BackButton>
         </p>
-        <h1>{mode === 'register' ? 'Créer un profil' : 'Se connecter'}</h1>
-        <p className="muted">
-          Le profil garde votre pseudo, votre image et vos statistiques. Un identifiant et un mot de passe suffisent.
-        </p>
+        <CreateProfileForm
+          title="Créer mon profil"
+          onCreated={(created) => {
+            setSession({ profile: created });
+            setMessage({ ok: true, text: 'Profil créé. Bienvenue !' });
+          }}
+        />
 
-        <nav className="filters" aria-label="Choix du formulaire">
-          <button
-            type="button"
-            className={`chip${mode === 'login' ? ' active' : ''}`}
-            aria-pressed={mode === 'login'}
-            onClick={() => setMode('login')}
-          >
-            J’ai déjà un profil
-          </button>
-          <button
-            type="button"
-            className={`chip${mode === 'register' ? ' active' : ''}`}
-            aria-pressed={mode === 'register'}
-            onClick={() => setMode('register')}
-          >
-            Créer un profil
-          </button>
-        </nav>
-
-        {mode === 'login' ? (
+        <details className="card" style={{ marginTop: '1rem' }}>
+          <summary>J’ai un ancien compte avec mot de passe</summary>
           <AuthForm
             key="login"
             busy={busy}
@@ -105,44 +116,19 @@ export function ProfilePage() {
             onSubmit={(values) =>
               run(
                 () =>
-                  api<{ token: string }>('/api/profiles/login', {
+                  api<{ token: string; profile: ProfileView }>('/api/profiles/login', {
                     method: 'POST',
                     body: JSON.stringify({ username: values.username, password: values.password }),
                   }),
                 (r) => {
-                  saveProfileToken(r.token);
+                  rememberDeviceProfile({ token: r.token, id: r.profile.id, name: r.profile.displayName });
                   void reload();
                   return 'Connecté.';
                 },
               )
             }
           />
-        ) : (
-          <AuthForm
-            key="register"
-            busy={busy}
-            submitLabel="Créer le profil"
-            withName
-            onSubmit={(values) =>
-              run(
-                () =>
-                  api<{ token: string }>('/api/profiles/register', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                      username: values.username,
-                      password: values.password,
-                      displayName: values.displayName,
-                    }),
-                  }),
-                (r) => {
-                  saveProfileToken(r.token);
-                  void reload();
-                  return 'Profil créé. Bienvenue !';
-                },
-              )
-            }
-          />
-        )}
+        </details>
 
         {message && (
           <p className={message.ok ? 'notice' : 'error'} role="status">
@@ -159,9 +145,11 @@ export function ProfilePage() {
   return (
     <main className="page fade-in" style={{ maxWidth: 760 }}>
       <p className="page-nav">
-        <Link to="/">Accueil</Link>
+        <BackButton to="/">Retour à l’accueil</BackButton>
         <Link to="/join">Rejoindre une salle</Link>
       </p>
+
+      <ProfileSwitcher />
 
       <section className="card profile-hero" aria-labelledby="profile-title">
         <PlayerAvatar avatar={profile.avatar} name={profile.displayName} size="lg" highlight />
@@ -170,19 +158,28 @@ export function ProfilePage() {
             {profile.displayName}
           </h1>
           <p className="muted small">
-            @{profile.username} · membre depuis le {new Date(profile.createdAt).toLocaleDateString('fr-FR')}
+            {profile.hasPassword && <>@{profile.username} · </>}membre depuis le{' '}
+            {new Date(profile.createdAt).toLocaleDateString('fr-FR')}
           </p>
           <button
             type="button"
             className="btn ghost small"
             onClick={() => {
+              // Sans mot de passe, retirer le profil de l'appareil le rend inaccessible : on le demande.
+              if (
+                !profile.hasPassword &&
+                !window.confirm(
+                  `Retirer « ${profile.displayName} » de cet appareil ? Sans mot de passe, ce profil ne pourra plus être rouvert.`,
+                )
+              )
+                return;
               void api('/api/profiles/logout', { method: 'POST', headers: authHeaders() }).catch(() => undefined);
-              clearProfileToken();
+              const current = activeDeviceProfile();
+              if (current) forgetDeviceProfile(current.token);
               setSession(null);
-              setMode('login');
             }}
           >
-            Se déconnecter
+            {profile.hasPassword ? 'Se déconnecter de cet appareil' : 'Retirer de cet appareil'}
           </button>
         </div>
       </section>
@@ -269,6 +266,7 @@ export function ProfilePage() {
                   body: JSON.stringify({ displayName }),
                 }),
               () => {
+                renameDeviceProfile(profile.id, displayName);
                 void reload();
                 return 'Pseudo enregistré.';
               },
@@ -286,26 +284,30 @@ export function ProfilePage() {
         <DeviceChooser />
       </section>
 
-      <section className="card stack" aria-labelledby="password-title">
-        <h2 id="password-title">Mot de passe</h2>
-        <PasswordForm
-          busy={busy}
-          onSave={(current, next) =>
-            run(
-              () =>
-                api<{ token: string }>('/api/profiles/me/password', {
-                  method: 'PUT',
-                  headers: authHeaders(),
-                  body: JSON.stringify({ current, next }),
-                }),
-              (r) => {
-                saveProfileToken(r.token);
-                return 'Mot de passe changé. Vos autres appareils devront se reconnecter.';
-              },
-            )
-          }
-        />
-      </section>
+      {profile.hasPassword && (
+        <section className="card stack" aria-labelledby="password-title">
+          <h2 id="password-title">Mot de passe</h2>
+          <PasswordForm
+            busy={busy}
+            onSave={(current, next) =>
+              run(
+                () =>
+                  api<{ token: string }>('/api/profiles/me/password', {
+                    method: 'PUT',
+                    headers: authHeaders(),
+                    body: JSON.stringify({ current, next }),
+                  }),
+                (r) => {
+                  replaceActiveToken(r.token);
+                  return 'Mot de passe changé. Vos autres appareils devront se reconnecter.';
+                },
+              )
+            }
+          />
+        </section>
+      )}
+
+      <VoicesSection />
 
       <section className="card stack" aria-labelledby="boum-title">
         <h2 id="boum-title">Proposer une carte pour BOUM !</h2>
@@ -325,9 +327,10 @@ export function ProfilePage() {
               () => api('/api/profiles/me', { method: 'DELETE', headers: authHeaders() }),
               () => null,
             ).then(() => {
-              clearProfileToken();
+              const removed = activeDeviceProfile();
+              if (removed) forgetDeviceProfile(removed.token);
+              // S'il reste un autre profil sur l'appareil, la page le charge toute seule (effet ci-dessus).
               setSession(null);
-              setMode('login');
               setMessage({ ok: true, text: 'Profil supprimé.' });
             });
           }}
@@ -423,6 +426,7 @@ function AvatarSection({
   onChange: (patch: Record<string, unknown>) => void;
 }) {
   const [error, setError] = useState<string | null>(null);
+  const [webcamOpen, setWebcamOpen] = useState(false);
 
   async function pickFile(file: File | undefined) {
     if (!file) return;
@@ -441,19 +445,44 @@ function AvatarSection({
       <div className="profile-hero">
         <PlayerAvatar avatar={profile.avatar} name={profile.displayName} size="lg" />
         <div className="stack" style={{ flex: 1, minWidth: 220 }}>
-          <label className="field">
-            <span>Choisir une photo</span>
-            <input type="file" accept="image/*" disabled={busy} onChange={(e) => void pickFile(e.target.files?.[0])} />
-          </label>
-          {profile.avatar.imageUrl && (
-            <button
-              type="button"
-              className="btn ghost small"
-              disabled={busy}
-              onClick={() => onChange({ avatarImage: null })}
-            >
-              Retirer la photo
-            </button>
+          {webcamOpen ? (
+            <WebcamPhoto
+              onCapture={(dataUrl) => {
+                setWebcamOpen(false);
+                setError(null);
+                onChange({ avatarImage: dataUrl });
+              }}
+              onCancel={() => setWebcamOpen(false)}
+            />
+          ) : (
+            <>
+              <label className="field">
+                <span>Choisir une photo</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  disabled={busy}
+                  onChange={(e) => void pickFile(e.target.files?.[0])}
+                />
+              </label>
+              {webcamAvailable() ? (
+                <button type="button" className="btn ghost small" disabled={busy} onClick={() => setWebcamOpen(true)}>
+                  Prendre une photo avec la webcam
+                </button>
+              ) : (
+                <p className="muted small">La webcam ne s’ouvre que sur une connexion sécurisée (https).</p>
+              )}
+              {profile.avatar.imageUrl && (
+                <button
+                  type="button"
+                  className="btn ghost small"
+                  disabled={busy}
+                  onClick={() => onChange({ avatarImage: null })}
+                >
+                  Retirer la photo
+                </button>
+              )}
+            </>
           )}
         </div>
       </div>

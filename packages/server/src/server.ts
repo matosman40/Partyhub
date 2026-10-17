@@ -5,6 +5,7 @@ import { createServer as createHttpServer, type Server as HttpServer } from 'nod
 import path from 'node:path';
 import { Server } from 'socket.io';
 import type { ClientToServerEvents, ServerToClientEvents } from '@partyhub/shared';
+import { appliedCadence } from '@partyhub/shared';
 import { gameRegistry } from '@partyhub/games';
 import { resolveGame } from './games-registry.js';
 import { CardGameService } from './cards/service.js';
@@ -16,13 +17,19 @@ import { MediaQuizService } from './media/service.js';
 import { PackageService } from './packages/service.js';
 import { hashPassword } from './auth.js';
 import { effectiveNotice } from './catalog.js';
+import { gameDataFor } from './profiles/game-data.js';
 import { ProfileService } from './profiles/service.js';
 import type { AppConfig } from './config.js';
 import { createApp } from './http/app.js';
 import { Store } from './db/store.js';
 import type { Logger } from './logger.js';
+import type { RotatingFile } from './logs/rotating-file.js';
 import { RealtimeHub, type SocketData } from './realtime/hub.js';
 import { RoomManager } from './rooms/manager.js';
+import { AiRuntime } from './ai/runtime.js';
+import { IMAGES_DEFAULTS, buildImageProviders } from './images/config.js';
+import { createGameImages } from './images/game-images.js';
+import { ImageLibrary } from './images/library.js';
 import { DbBackupScheduler } from './db/backup.js';
 import { compileTrustProxy } from './trust-proxy.js';
 import type { JoinThrottleOptions } from './realtime/join-throttle.js';
@@ -40,6 +47,8 @@ export interface PartyServer {
 export interface ServerOptions {
   config: AppConfig;
   logger: Logger;
+  /** Journal fichier (consultable depuis l'administration). Absent = sortie standard seulement. */
+  journal?: RotatingFile;
   /** Période du nettoyage des salles (0 = désactivé, utile aux tests). */
   sweepEveryMs?: number;
   /** Réglages du ralentissement des codes inconnus (valeurs par défaut sinon). */
@@ -62,7 +71,10 @@ async function ensureAdminPassword(store: Store, config: AppConfig, logger: Logg
   store.setKv('admin_password_hash', await hashPassword(generated));
   const file = path.join(config.dataDir, 'admin-password.txt');
   writeFileSync(file, `${generated}\n`, { mode: 0o600 });
-  logger.warn({ file }, 'Mot de passe administrateur généré : lisez ce fichier, puis supprimez-le');
+  logger.warn(
+    { event: 'admin.password-generated', file },
+    'Mot de passe administrateur généré : lisez ce fichier, puis supprimez-le',
+  );
 }
 
 export async function createServer(opts: ServerOptions): Promise<PartyServer> {
@@ -71,7 +83,10 @@ export async function createServer(opts: ServerOptions): Promise<PartyServer> {
   const store = new Store(config.dbFile, { backupDir: path.join(config.dataDir, 'migrations') });
   const migration = store.migration;
   if (migration.to !== migration.from) {
-    logger.info({ from: migration.from, to: migration.to, backup: migration.backup }, 'Schéma de la base mis à jour');
+    logger.info(
+      { event: 'db.migrated', from: migration.from, to: migration.to, backup: migration.backup },
+      'Schéma de la base mis à jour',
+    );
   }
   // Installation neuve (aucun mot de passe administrateur encore créé) : jeux intégrés désactivés si configuré.
   // Une installation existante garde ses réglages, même si elle a été mise à jour.
@@ -80,7 +95,7 @@ export async function createServer(opts: ServerOptions): Promise<PartyServer> {
     const games = gameRegistry.filter((game) => game.manifest.listed !== false);
     for (const game of games) store.setGameEnabled(game.manifest.id, false);
     logger.info(
-      { count: games.length },
+      { event: 'db.fresh-install', count: games.length },
       'Installation neuve : jeux intégrés désactivés (BUILTIN_GAMES=on pour les activer)',
     );
   }
@@ -96,11 +111,28 @@ export async function createServer(opts: ServerOptions): Promise<PartyServer> {
   const packageSources = new PackageSourceService(store, packages, { token: config.githubToken });
   const characterPacks = new CharacterPackService(store.db);
   const hub = new RealtimeHub(compileTrustProxy(config.trustProxy ?? 'loopback'), opts.joinThrottle);
+  hub.setCadence(() => appliedCadence(store.getTestMode()));
+  // Les fournisseurs viennent de l'environnement et de l'administration (clés saisies dans l'interface).
+  const aiRuntime = new AiRuntime(store, config.ai, config.dataDir, logger);
+  // Images générées (portraits, fonds) : une bibliothèque partagée par les jeux, alimentée par les fournisseurs
+  // configurés (Cloudflare, ModelScope). Sans fournisseur, les jeux gardent leur rendu de secours.
+  const imageLibrary = new ImageLibrary(store);
+  const imageConfig = config.images ?? { providers: [], ...IMAGES_DEFAULTS };
+  const gameImages = createGameImages({
+    providers: buildImageProviders(imageConfig),
+    library: imageLibrary,
+    maxPerDay: imageConfig.maxPerDay,
+    timeoutMs: imageConfig.timeoutMs,
+    logger,
+  });
   const manager = new RoomManager(
     {
       now: () => Date.now(),
       random: () => Math.random(),
       logger,
+      ai: aiRuntime,
+      images: gameImages,
+      gameData: gameDataFor(store),
       maxPlayers: () => store.getSettings().maxPlayers,
       graceMs: () => store.getSettings().graceSeconds * 1000,
       notice: (gameId) => {
@@ -137,6 +169,9 @@ export async function createServer(opts: ServerOptions): Promise<PartyServer> {
   const app = createApp({
     config,
     logger,
+    ai: aiRuntime,
+    imageLibrary,
+    journal: opts.journal,
     store,
     manager,
     hub,
@@ -174,7 +209,7 @@ export async function createServer(opts: ServerOptions): Promise<PartyServer> {
         inactivityMs: s.inactivityMinutes * 60_000,
         maxAgeMs: s.maxRoomAgeMinutes * 60_000,
       });
-      if (removed > 0) logger.info({ removed }, 'Salles inactives nettoyées');
+      if (removed > 0) logger.info({ event: 'room.purged', removed }, 'Salles inactives nettoyées');
     }, sweepEvery);
     sweeper.unref();
   }

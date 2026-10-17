@@ -9,19 +9,24 @@ import { GameLogo } from '../components/GameLogo.js';
 import { GameScene } from '../components/GameScene.js';
 import { logoFor } from '../components/gameLogos.js';
 import { useArrivalMoods } from '../components/useArrivalMoods.js';
-import { useLobbyMoods } from '../components/useLobbyMoods.js';
+import { poseOf, useLobbyMoods } from '../components/useLobbyMoods.js';
 import { useLobbyPositions } from '../components/useLobbyPositions.js';
+import { RoomSensors } from '../components/RoomSensors.js';
 import { ChatPanel, EmoteBar, ReactionLayer } from '../components/Social.js';
+import { VoiceLayer } from '../components/VoiceLayer.js';
+import { ConnectingNotice } from '../components/ConnectingNotice.js';
 import { NoticeDialog } from '../components/NoticeDialog.js';
 import { PlayerSeat } from '../seat/PlayerSeat.js';
 import { FitStage } from '../components/FitStage.js';
 import { Boundary } from '../components/Boundary.js';
 import { read3DPreference, supportsWebGL, write3DPreference } from '../three/prefs.js';
 import { AvatarsContext, MoodsContext, useWakeLock, type PromoteurPub } from '@partyhub/games/client';
-import { TvLobby } from './tv/TvLobby.js';
+import { TvLobby, type HandoffCode } from './tv/TvLobby.js';
 import { CornerMenu, DrawerSection } from '../components/CornerMenu.js';
+import { useActiveProfile } from '../profile/useProfile.js';
 import { useActivity } from './tv/useActivity.js';
 import { musicForLobby, useMusicSlot } from '../sounds.js';
+import { canSend, OFFLINE_ACTION_ERROR, useConnection } from '../connection.js';
 
 /** Plateau 3D du Promoteur : chargé seulement quand il est affiché (Three.js reste hors du premier chargement). */
 const PromoteurStage = lazy(() => import('../three/PromoteurStage.js'));
@@ -35,6 +40,8 @@ export function TvPage() {
   const { code = '' } = useParams();
   const navigate = useNavigate();
   const hostToken = sessionStorage.getItem(`ph:host:${code}`);
+  // Le profil actif de cet appareil joue la place « Jouer depuis cet écran » : même personnage partout.
+  const seatProfile = useActiveProfile();
 
   const [view, setView] = useState<HostRoomView | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -50,7 +57,7 @@ export function TvPage() {
   const emotes = useLobbyMoods(getSocket());
   const positions = useLobbyPositions(getSocket());
   const lobbyPoses: Record<string, CharacterMood> = {
-    ...Object.fromEntries(Object.entries(emotes).map(([id, e]) => [id, e.mood])),
+    ...Object.fromEntries(Object.entries(emotes).map(([id, e]) => [id, poseOf(e)])),
     ...Object.fromEntries(
       Object.entries(arrivals).flatMap(([name, mood]) => {
         const id = view?.lobby.players.find((p) => p.name === name)?.id;
@@ -59,6 +66,8 @@ export function TvPage() {
     ),
   };
   // Menu discret et commandes de partie : elles reviennent au moindre mouvement, puis s'effacent.
+  // Code pour ouvrir l'écran hôte sur un téléphone (affiché dans le salon, jamais envoyé aux joueurs).
+  const [handoff, setHandoff] = useState<HandoffCode | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [barFocused, setBarFocused] = useState(false);
   const active = useActivity(menuOpen || barFocused);
@@ -77,7 +86,8 @@ export function TvPage() {
     const socket = getSocket();
 
     const authenticate = () => {
-      socket.emit('host:connect', { code, hostToken }, (res) => {
+      // screen : cet écran joue les voix des joueurs (le téléphone de l’hôte, non).
+      socket.emit('host:connect', { code, hostToken, screen: true }, (res) => {
         if (res.ok) setError(null);
         else setError(res.error);
       });
@@ -104,6 +114,8 @@ export function TvPage() {
 
   // Musique de la salle : menus avant la partie, fin de partie aux résultats, silence pendant le jeu.
   useMusicSlot(musicForLobby(view?.lobby.status));
+  // Une coupure est annoncée sur l'écran : sinon, il reste figé sans que personne ne sache pourquoi.
+  const connection = useConnection(getSocket());
 
   if (!hostToken) {
     return (
@@ -131,7 +143,7 @@ export function TvPage() {
   if (!view) {
     return (
       <main className="page center">
-        <p>{error ?? 'Connexion à la salle…'}</p>
+        <ConnectingNotice error={error} />
       </main>
     );
   }
@@ -149,18 +161,35 @@ export function TvPage() {
   const can3d = lobby.game.id === 'promoteur' && !board3dFailed && supportsWebGL();
   const use3d = can3d && board3d;
   const flat = (
-    <FitStage>
-      {views && game && (
-        <Suspense fallback={<p className="muted">Chargement du jeu…</p>}>
-          <views.Host publicState={game.public} hostState={game.host} now={view.now} />
-        </Suspense>
-      )}
-    </FitStage>
+    <RoomSensors socket={socket}>
+      <FitStage>
+        {views && game && (
+          <Suspense fallback={<p className="muted">Chargement du jeu…</p>}>
+            <views.Host publicState={game.public} hostState={game.host} now={view.now} onAction={sendGameAction} />
+          </Suspense>
+        )}
+      </FitStage>
+    </RoomSensors>
   );
   const sky = logoFor(lobby.game.id, lobby.game.name).sky;
   const skyStyle = { '--sky-a': sky[0], '--sky-b': sky[1] } as CSSProperties;
 
+  /** Action propre au jeu, demandée par l'écran principal (ex. générer des personnages). */
+  function sendGameAction(type: string, payload?: unknown): Promise<{ ok: boolean; error?: string }> {
+    return new Promise((resolve) => {
+      if (!canSend(socket, setError)) {
+        resolve({ ok: false, error: OFFLINE_ACTION_ERROR });
+        return;
+      }
+      socket.emit('host:game-action', { type, payload }, (res) => {
+        if (!res.ok) setError(res.error);
+        resolve(res.ok ? { ok: true } : { ok: false, error: res.error });
+      });
+    });
+  }
+
   function emitAck(event: 'host:start' | 'host:next' | 'host:end' | 'host:replay') {
+    if (!canSend(socket, setError)) return;
     const done = (res: { ok: true } | { ok: false; error: string }) => setError(res.ok ? null : res.error);
     if (event === 'host:start') socket.emit('host:start', done);
     else if (event === 'host:next') socket.emit('host:next', done);
@@ -168,25 +197,37 @@ export function TvPage() {
     else socket.emit('host:replay', done);
   }
 
+  function createHandoff() {
+    if (!canSend(socket, setError)) return;
+    socket.emit('host:handoff', (res) => {
+      if (res.ok) setHandoff({ code: res.code, expiresAt: res.expiresAt });
+      else setError(res.error);
+    });
+  }
+
   function configure(gameSettings: Record<string, unknown>) {
+    if (!canSend(socket, setError)) return;
     socket.emit('host:configure', { gameSettings }, (res) => {
       if (!res.ok) setError(res.error);
     });
   }
 
   function kick(playerId: string) {
+    if (!canSend(socket, setError)) return;
     socket.emit('host:kick', { playerId }, (res) => {
       if (!res.ok) setError(res.error);
     });
   }
 
   function addBot() {
+    if (!canSend(socket, setError)) return;
     socket.emit('host:addBot', (res) => {
       if (!res.ok) setError(res.error);
     });
   }
 
   function removeBot(playerId: string) {
+    if (!canSend(socket, setError)) return;
     socket.emit('host:removeBot', { playerId }, (res) => {
       if (!res.ok) setError(res.error);
     });
@@ -194,6 +235,7 @@ export function TvPage() {
 
   function sendChat(text: string) {
     setChatError(null);
+    if (!canSend(socket, setChatError)) return;
     socket.emit('host:chat', { text }, (res) => {
       if (!res.ok) setChatError(res.error);
     });
@@ -201,6 +243,7 @@ export function TvPage() {
 
   function sendReaction(emoji: string) {
     setChatError(null);
+    if (!canSend(socket, setChatError)) return;
     socket.emit('host:reaction', { emoji }, (res) => {
       if (!res.ok) setChatError(res.error);
     });
@@ -213,6 +256,7 @@ export function TvPage() {
   }
 
   function backToCatalog() {
+    if (!canSend(socket, setError)) return;
     socket.emit('host:close', () => {
       sessionStorage.removeItem(`ph:host:${code}`);
       navigate('/');
@@ -310,7 +354,15 @@ export function TvPage() {
 
       <DrawerSection title="Jouer depuis cet écran">
         <p className="muted small">Prenez une manette sur cet écran pour jouer avec les autres.</p>
-        <PlayerSeat code={lobby.code} seatId="tv" compact />
+        <PlayerSeat
+          key={`tv:${seatProfile?.id ?? 'sans-profil'}`}
+          code={lobby.code}
+          seatId="tv"
+          compact
+          profileToken={seatProfile?.token ?? null}
+          profileName={seatProfile?.name ?? null}
+          profileId={seatProfile?.id ?? null}
+        />
       </DrawerSection>
 
       <div className="corner-actions">
@@ -341,10 +393,16 @@ export function TvPage() {
             className={`stage-scene${inLobby ? '' : ' is-quiet'}`}
           />
           <ReactionLayer socket={socket} />
+          <VoiceLayer socket={socket} />
 
           {error && (
             <p className="stage-toast" role="alert" onClick={() => setError(null)}>
               {error}
+            </p>
+          )}
+          {connection.lost && !connection.connected && (
+            <p className="stage-toast" role="status">
+              Connexion au serveur perdue. Reconnexion en cours…
             </p>
           )}
 
@@ -357,6 +415,9 @@ export function TvPage() {
               emotes={emotes}
               positions={positions}
               onStart={() => emitAck('host:start')}
+              handoff={handoff}
+              onHandoff={createHandoff}
+              onAddBot={addBot}
             />
           ) : (
             <>

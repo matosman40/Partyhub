@@ -1,0 +1,99 @@
+# PartyHub en HTTPS sur CasaOS, en un seul fichier : PartyHub et Caddy (certificat interne).
+#
+# Installation : dans CasaOS, « Install a customized app » (ou « Importer un compose »), coller tout ce fichier.
+# Une seule modification : remplacez 192.168.1.156 par l'adresse fixe de votre serveur. Elle apparaît à deux
+# endroits, dans la commande de Caddy : la ligne « default_sni » et le bloc « https:// ».
+#
+# Ensuite, ouvrez https://<adresse-du-serveur> : l'avertissement du navigateur est normal avant l'installation.
+# Choisissez « Avancé », « Continuer », puis téléchargez le certificat sur la page /certificat (lien « Installer
+# le certificat HTTPS » dans le menu de l'accueil) et installez-le une fois sur chaque appareil.
+#
+# La page /certificat existe à partir de la version 0.9.3 de l'image. Les données sont dans le volume
+# partyhub-data, comme avec le compose de base : vous pouvez passer de l'un à l'autre sans les perdre.
+
+name: partyhub
+
+services:
+  partyhub:
+    image: ghcr.io/matosman40/partyhub:0.11.0
+    pull_policy: missing
+    container_name: partyhub
+    restart: unless-stopped
+    stop_grace_period: 20s
+    # Pas de port publié : seul Caddy reçoit les connexions, en HTTPS.
+    expose:
+      - '8282'
+    environment:
+      PORT: '8282'
+      HOST: '0.0.0.0'
+      DATA_DIR: /data
+      ADMIN_PASSWORD: '${ADMIN_PASSWORD:-}'
+      LOG_LEVEL: 'info'
+      # Cookies de session envoyés seulement en HTTPS ; le proxy Caddy est sur le réseau Docker.
+      COOKIE_SECURE: 'true'
+      TRUST_PROXY: '172.16.0.0/12'
+    volumes:
+      - partyhub-data:/data
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:8282/api/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+    x-casaos:
+      architectures:
+        - amd64
+        - arm64
+      main: partyhub
+      icon: https://raw.githubusercontent.com/matosman40/Partyhub/main/docs/casaos/icon.png
+      description:
+        en_US: PartyHub is a browser-based party game platform. Players join from their phones; the TV shows the game.
+        fr_FR: PartyHub est une plateforme de jeux de soirée sur navigateur. Les joueurs rejoignent depuis leur téléphone, la TV affiche la partie.
+      tagline:
+        en_US: Party games on your local network
+        fr_FR: Jeux de soirée sur votre réseau local
+      developer: PartyHub contributors
+      category: Games
+      port_map: '443'
+      index: /
+      title:
+        en_US: PartyHub
+        fr_FR: PartyHub
+
+  caddy:
+    image: caddy:2.10-alpine
+    pull_policy: missing
+    container_name: partyhub-caddy
+    restart: unless-stopped
+    depends_on:
+      - partyhub
+    ports:
+      - '443:443'
+    # La configuration de Caddy est écrite au démarrage, à partir de ce texte (adresse du serveur comprise).
+    entrypoint:
+      - /bin/sh
+      - -c
+      - 'printf "%b" "{\n  default_sni 192.168.1.156\n}\nhttps://192.168.1.156 {\n  tls internal\n  encode zstd gzip\n  handle /certificat/racine.crt {\n    root * /data/caddy/pki/authorities/local\n    rewrite * /root.crt\n    header Content-Type application/x-x509-ca-cert\n    header Content-Disposition attachment;filename=partyhub-autorite-locale.crt\n    file_server\n  }\n  handle {\n    reverse_proxy partyhub:8282\n  }\n}\n" > /etc/caddy/Caddyfile && exec caddy run --config /etc/caddy/Caddyfile --adapter caddyfile'
+    volumes:
+      # caddy-data contient l'autorité interne : le supprimer oblige à réinstaller le certificat partout.
+      - partyhub-caddy-data:/data
+      - partyhub-caddy-config:/config
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  partyhub-data:
+    name: partyhub-data
+  partyhub-caddy-data:
+    name: partyhub-caddy-data
+  partyhub-caddy-config:
+    name: partyhub-caddy-config

@@ -5,6 +5,8 @@ import { plutotQui } from './plutot-qui/module.js';
 import { imposteur } from './imposteur/module.js';
 import { plusOuMoins } from './plus-ou-moins/module.js';
 import { reflexe } from './reflexe/module.js';
+import { microDefis } from './micro-defis/module.js';
+import { funambule } from './funambule/module.js';
 import { bombesParty } from './bombes-party/module.js';
 import { createCardGame } from './cards/engine.js';
 import { cardGamePresets } from './cards/presets.js';
@@ -14,10 +16,12 @@ import { loupsVillage } from './loups-village/module.js';
 import { sudoku, solitaire, taquin, motsCroises } from './solo/index.js';
 import { rami51 } from './rami51/module.js';
 import { tarot } from './tarot/module.js';
+import { pokerTexas } from './poker/module.js';
 import { imiteMoi } from './imite-moi/module.js';
 import { banquise } from './banquise/module.js';
 import { boum } from './boum/module.js';
 import { plateauTest } from './plateau-test/module.js';
+import { aventureIa } from './aventure/module.js';
 
 /**
  * Registre explicite des jeux disponibles.
@@ -29,8 +33,11 @@ export const gameRegistry: GameModule[] = [
   association,
   plutotQui,
   imposteur,
+  aventureIa,
   plusOuMoins,
   reflexe,
+  microDefis,
+  funambule,
   bombesParty,
   createCardGame(cardGamePresets['cartes-couleurs'], { id: 'cartes-couleurs' }),
   createCardGame(cardGamePresets['cartes-coco'], { id: 'cartes-coco' }),
@@ -43,6 +50,7 @@ export const gameRegistry: GameModule[] = [
   motsCroises,
   rami51,
   tarot,
+  pokerTexas,
   imiteMoi,
   banquise,
   boum,
@@ -58,8 +66,16 @@ export type { QuizSettings, QuizState } from './quiz-party/module.js';
 export { association } from './association/module.js';
 export { plutotQui } from './plutot-qui/module.js';
 export { imposteur } from './imposteur/module.js';
+export { aventureIa } from './aventure/module.js';
 export { plusOuMoins } from './plus-ou-moins/module.js';
 export { reflexe } from './reflexe/module.js';
+export { microDefis, microDefisSettingsSchema } from './micro-defis/module.js';
+export type { MicroDefisState, MicroDefisSettings } from './micro-defis/module.js';
+export { MICROGAMES, MICROGAME_IDS, judge as judgeMicrogame, pileMarker } from './micro-defis/microgames.js';
+export type { Microgame, MicrogameId } from './micro-defis/microgames.js';
+export { funambule, funambuleSettingsSchema } from './funambule/module.js';
+export type { FunambuleState, FunambuleSettings, FunambulePhase } from './funambule/module.js';
+export { judgeWalk, windAt, windStrength, FallDetector, WALK_MS } from './funambule/rules.js';
 export { bombesParty } from './bombes-party/module.js';
 export { banquise, LEVEL_RULES as BANQUISE_LEVELS, LEVEL_COUNT as BANQUISE_LEVEL_COUNT } from './banquise/module.js';
 export type { BanquiseState, BanquiseSettings } from './banquise/module.js';
@@ -118,6 +134,8 @@ export { createCardGame, canPlayCard } from './cards/engine.js';
 export type { CardGameState, CardInstance, CardPhase } from './cards/engine.js';
 export { cardGamePresets, cartesCouleurs, blancMangerCoco } from './cards/presets.js';
 export { president, createPresidentGame } from './president/module.js';
+export { pokerTexas } from './poker/module.js';
+export type { PokerSettings, PokerState } from './poker/module.js';
 export type { PresidentState, PresidentSettings } from './president/module.js';
 export { validatePlay, rankValue, RANKS, PRESIDENT_DEFINITION } from './president/rules.js';
 export { promoteur } from './promoteur/module.js';

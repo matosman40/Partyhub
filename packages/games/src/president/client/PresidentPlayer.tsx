@@ -7,7 +7,7 @@ import { CardFace } from '../../cards/client/CardFace.js';
 import { HandFan } from '../../cards/client/HandFan.js';
 import { cueTurn, useChange } from '../../cards/client/cues.js';
 import { entryOf, rankingOf, type CardsPublic } from '../../cards/client/common.js';
-import { validatePlay } from '../rules.js';
+import { sortHandByRank, validatePlay } from '../rules.js';
 
 /** Vue publique du Président : le pli, les rangs et les passes en plus des champs communs. */
 interface PresidentPub extends CardsPublic {
@@ -179,7 +179,7 @@ export function PresidentPlayer({ publicState, playerState, playerId, send }: Pl
               waiting={!me.isMyTurn}
               disabled={busy || !me.isMyTurn}
               onTap={toggle}
-              items={me.hand.map((card) => {
+              items={sortHandByRank(me.hand).map((card) => {
                 const entry = entryOf(pub.def, card.entry);
                 return {
                   uid: card.uid,

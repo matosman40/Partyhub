@@ -33,11 +33,36 @@ export {
 export type { MediaPrefs } from './media.js';
 export { isMuted, onMuteChange, setMuted, setSfxFiles, startMusic, stopMusic, unlockAudio } from './audio.js';
 export { SoundToggle } from './SoundToggle.js';
+export {
+  motionAvailable,
+  motionNeedsPermission,
+  requestMotionAccess,
+  SensorsContext,
+  SensorSenderContext,
+  useMicLevel,
+  useMotionFeed,
+  useSensorBroadcast,
+  useSensors,
+} from './sensors.js';
+export type { MicStatus, MotionAccess, MotionFrame, SensorReading, SignalState } from './sensors.js';
+export {
+  angleDelta,
+  GRAVITY,
+  HoldTimer,
+  levelFromBytes,
+  Pulses,
+  ShakeDetector,
+  SpinTracker,
+  Throttle,
+  TILT_FULL_DEG,
+  tiltFrom,
+} from './sensors-core.js';
 // Banques BOUM ! : libellés, types et règles de saisie, partagés avec l'administration et le profil.
 export { BANK_TYPES, BANK_TYPE_INFO, LEVELS, LEVEL_LABELS, STATUSES, STATUS_LABELS } from '../boum/bank/types.js';
 export type { AnswerRule, BankType, EntryStatus, Level } from '../boum/bank/types.js';
 export type { ImportCandidate, ImportPreview, ImportRejection } from '../boum/bank/validate.js';
 export { cardGamePresets } from '../cards/presets.js';
+export { cardGameTemplates, type CardGameTemplate } from '../cards/templates.js';
 export { validatePlay, rankValue, RANKS, PRESIDENT_DEFINITION } from '../president/rules.js';
 export { CardFace } from '../cards/client/CardFace.js';
 export { assetFontFamily } from '../cards/client/fonts.js';
@@ -112,6 +137,40 @@ export const clientViews: Record<string, GameClientViews> = {
       Settings: fieldSettings([{ key: 'rounds', label: 'Manches', min: 1, max: 8 }]),
       Host: ImposteurHost,
       Player: ImposteurPlayer,
+    };
+  }),
+  'micro-defis': lazyViews(async () => {
+    const [{ MicroDefisHost }, { MicroDefisPlayer }] = await Promise.all([
+      import('../micro-defis/client/HostScreen.js'),
+      import('../micro-defis/client/PlayerScreen.js'),
+    ]);
+    return {
+      Settings: fieldSettings([{ key: 'rounds', label: 'Défis', min: 1, max: 12 }]),
+      Host: MicroDefisHost,
+      Player: MicroDefisPlayer,
+    };
+  }),
+  funambule: lazyViews(async () => {
+    const [{ FunambuleHost }, { FunambulePlayer }] = await Promise.all([
+      import('../funambule/client/HostScreen.js'),
+      import('../funambule/client/PlayerScreen.js'),
+    ]);
+    return {
+      Settings: fieldSettings([{ key: 'rounds', label: 'Manches', min: 1, max: 6 }]),
+      Host: FunambuleHost,
+      Player: FunambulePlayer,
+    };
+  }),
+  'aventure-ia': lazyViews(async () => {
+    const [{ AventureHost }, { AventurePlayer }, { AventureSettings }] = await Promise.all([
+      import('../aventure/client/HostScreen.js'),
+      import('../aventure/client/PlayerScreen.js'),
+      import('../aventure/client/Settings.js'),
+    ]);
+    return {
+      Settings: AventureSettings,
+      Host: AventureHost,
+      Player: AventurePlayer,
     };
   }),
   'plus-ou-moins': lazyViews(async () => {
@@ -208,6 +267,7 @@ export const clientViews: Record<string, GameClientViews> = {
   'mots-croises': soloViews('mots-croises'),
   'rami-51': lazyViews(() => import('../rami51/client/index.js').then((m) => m.ramiViews)),
   tarot: lazyViews(() => import('../tarot/client/index.js').then((m) => m.tarotViews)),
+  'poker-texas': lazyViews(() => import('../poker/client/index.js').then((m) => m.pokerViews)),
 };
 
 // Briques partagées avec la vue 3D du Promoteur (écran TV, chargement différé côté web).

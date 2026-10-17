@@ -1,5 +1,11 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react';
-import { clampLobbyPosition, type CharacterMood, type CharacterSpec, type LobbyPosition } from '@partyhub/shared';
+import {
+  clampLobbyPosition,
+  type CharacterExpression,
+  type CharacterMood,
+  type CharacterSpec,
+  type LobbyPosition,
+} from '@partyhub/shared';
 import { Character } from './character.js';
 import { PrairieScene } from './plateau-scene.js';
 
@@ -39,6 +45,8 @@ export interface PlateauFigure {
   avatar?: ReactNode;
   /** Attitude du personnage (pose). */
   mood?: CharacterMood;
+  /** Visage demandé pour un instant (émotion du salon). */
+  face?: CharacterExpression;
   /** Bulle au-dessus de la tête. La clé relance son apparition quand une même émotion revient. */
   bubble?: { emoji: string; key: string } | null;
   /** Le personnage de cet appareil : il est déplaçable. */
@@ -281,7 +289,7 @@ function FigureView({ figure, at, interactive, dragging, onDown, onMove, onUp, o
       <div className="plateau-face" style={{ transform: `scaleX(${facing})` }}>
         <div className="plateau-bob" ref={bob}>
           {figure.character ? (
-            <Character spec={figure.character} mood={figure.mood ?? 'idle'} framing="full" />
+            <Character spec={figure.character} mood={figure.mood ?? 'idle'} face={figure.face} framing="full" />
           ) : (
             figure.avatar
           )}

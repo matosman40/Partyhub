@@ -1,15 +1,20 @@
 import { clampLobbyPosition, type LobbyPosition } from '@partyhub/shared';
-import { randomBytes, randomUUID } from 'node:crypto';
+import { randomBytes, randomInt, randomUUID } from 'node:crypto';
 import { settingsIssueMessage, type DeviceKind, type ObserverRoomView, type ObserverSummary } from '@partyhub/shared';
 import type {
   AvatarInfo,
+  AiClient,
   GameInfo,
+  GameJob,
   GameModule,
   GameNotice,
   GameResult,
   HostRoomView,
+  JobOutcome,
   LobbyView,
+  GameImages,
   PlayerRef,
+  ProfileDataStore,
   PlayerRoomView,
   PublicPlayer,
   RoomStatus,
@@ -49,6 +54,12 @@ export interface RoomEnv {
   graceMs: () => number;
   /** Notice affichée pour un jeu (défaut du code ou surcharge de l'administration). */
   notice: (gameId: string) => GameNotice;
+  /** Client d'IA générative, absent si aucune clé n'est configurée. Seul le lanceur de travaux s'en sert. */
+  ai?: AiClient;
+  /** Données par profil, par jeu (personnages gardés d'une partie à l'autre). */
+  gameData?: (gameId: string) => ProfileDataStore;
+  /** Images générées (portraits, fonds), absent si aucun fournisseur d'images n'est configuré. */
+  images?: GameImages;
 }
 
 export interface RoomHooks {
@@ -83,6 +94,10 @@ export function newToken(): string {
  * Le serveur est l'unique autorité : les vues envoyées aux clients sont
  * construites ici, à partir de l'état complet.
  */
+/** Durée et nombre d'essais d'un code de transfert d'hôte. */
+export const HANDOFF_MS = 3 * 60_000;
+export const HANDOFF_TRIES = 5;
+
 export class Room {
   readonly id = randomUUID();
   readonly hostToken = newToken();
@@ -94,6 +109,8 @@ export class Room {
   /** Place de chaque personnage dans le salon (perdue avec la salle, jamais enregistrée). */
   private readonly positions = new Map<string, LobbyPosition>();
   readonly hostSockets = new Set<string>();
+  /** Sous-ensemble des sockets hôte : les écrans principaux (ils jouent les voix des joueurs). */
+  private readonly screens = new Set<string>();
   /** Observateurs : socket -> type d'appareil. Ils ne jouent pas et ne comptent pas dans la partie. */
   readonly observers = new Map<string, DeviceKind>();
   /** Type d'appareil déclaré par chaque socket (hôte, joueur ou observateur). */
@@ -103,6 +120,10 @@ export class Room {
   private state: unknown;
   private readonly timers = new Map<string, NodeJS.Timeout>();
   private readonly botTimers = new Map<string, { key: string; timer: NodeJS.Timeout }>();
+  /** Travail du jeu en cours (ex. génération) : son identifiant et le moyen de l'annuler. */
+  private running: { id: string; controller: AbortController } | null = null;
+  /** Dernier travail terminé : un identifiant déjà traité n'est jamais relancé. */
+  private finishedJobId: string | null = null;
   private readonly ctx: import('@partyhub/shared').GameContext;
 
   constructor(
@@ -123,6 +144,9 @@ export class Room {
       schedule: (key, ms) => this.schedule(key, ms),
       cancel: (key) => this.cancelTimer(key),
       connectedPlayerIds: () => [...this.players.values()].filter((p) => p.bot || p.sockets.size > 0).map((p) => p.id),
+      ...(env.ai ? { ai: env.ai } : {}),
+      ...(env.gameData ? { profileData: env.gameData(module.manifest.id) } : {}),
+      ...(env.images?.available() ? { images: env.images } : {}),
     };
     this.state = module.initialize(this.settings, [], this.ctx);
   }
@@ -192,6 +216,24 @@ export class Room {
       createdAt: new Date(this.createdAt).toISOString(),
       lastActivity: new Date(this.lastActivity).toISOString(),
     };
+  }
+
+  /**
+   * Vrai si les capteurs de ce joueur sont relayés : une partie en cours et un joueur présent.
+   * Hors partie, rien n'est relayé (le salon n'a pas besoin de mouvements).
+   */
+  acceptsSensors(playerId: string): boolean {
+    return this.status === 'in_game' && this.players.has(playerId);
+  }
+
+  /** Sockets des écrans principaux (et seulement eux) : les voix des joueurs y sont jouées. */
+  screenSocketIds(): string[] {
+    return [...this.screens];
+  }
+
+  /** Profil lié à un joueur, ou null pour un invité. */
+  profileOf(playerId: string): string | null {
+    return this.players.get(playerId)?.profileId ?? null;
   }
 
   /** Identifiants de toutes les sockets de la salle (hôte, joueurs et observateurs), pour le relais de messages. */
@@ -292,7 +334,7 @@ export class Room {
   // ---------------------------------------------------------------------------
 
   private playerRefs(): PlayerRef[] {
-    return [...this.players.values()].map((p) => ({ id: p.id, name: p.name }));
+    return [...this.players.values()].map((p) => ({ id: p.id, name: p.name, profileId: p.profileId }));
   }
 
   private refreshStatus(): void {
@@ -353,7 +395,11 @@ export class Room {
       avatar: profile?.avatar ?? guestAvatar(finalName),
     };
     this.players.set(player.id, player);
-    this.state = this.module.onPlayerJoin(this.state, { id: player.id, name: player.name }, this.ctx);
+    this.state = this.module.onPlayerJoin(
+      this.state,
+      { id: player.id, name: player.name, profileId: player.profileId },
+      this.ctx,
+    );
     this.refreshStatus();
     this.touch();
     this.hooks.onChange(this);
@@ -371,6 +417,7 @@ export class Room {
   /** Retire un socket (hôte, joueur ou observateur). Une absence n'efface jamais un joueur tout de suite. */
   removeSocket(socketId: string): void {
     let changed = this.hostSockets.delete(socketId);
+    this.screens.delete(socketId);
     changed = this.observers.delete(socketId) || changed;
     for (const p of this.players.values()) {
       if (p.sockets.delete(socketId)) {
@@ -385,8 +432,39 @@ export class Room {
     }
   }
 
-  attachHost(socketId: string, kind: DeviceKind = 'unknown'): void {
+  /**
+   * Transfert de l'accès hôte à un autre appareil (téléphone) : l'écran hôte affiche un code court,
+   * valable quelques minutes, à usage unique. Le téléphone qui le saisit reçoit le jeton d'hôte.
+   */
+  private handoff: { code: string; expiresAt: number; attempts: number } | null = null;
+
+  createHandoff(now = Date.now()): { code: string; expiresAt: number } {
+    const code = String(randomInt(0, 1_000_000)).padStart(6, '0');
+    const expiresAt = now + HANDOFF_MS;
+    this.handoff = { code, expiresAt, attempts: 0 };
+    return { code, expiresAt };
+  }
+
+  claimHandoff(code: string, now = Date.now()): { ok: true; hostToken: string } | { ok: false; error: string } {
+    const h = this.handoff;
+    if (!h || now > h.expiresAt) {
+      this.handoff = null;
+      return { ok: false, error: 'Ce code a expiré. Demandez un nouveau code sur l’écran.' };
+    }
+    if (h.attempts >= HANDOFF_TRIES) {
+      this.handoff = null;
+      return { ok: false, error: 'Trop d’essais. Demandez un nouveau code sur l’écran.' };
+    }
+    h.attempts += 1;
+    if (code !== h.code) return { ok: false, error: 'Code incorrect. Vérifiez le code affiché sur l’écran.' };
+    this.handoff = null;
+    return { ok: true, hostToken: this.hostToken };
+  }
+
+  attachHost(socketId: string, kind: DeviceKind = 'unknown', screen = false): void {
     this.hostSockets.add(socketId);
+    if (screen) this.screens.add(socketId);
+    else this.screens.delete(socketId);
     this.socketDevice.set(socketId, kind);
     this.touch();
     this.hooks.onChange(this);
@@ -427,7 +505,7 @@ export class Room {
     const p = this.players.get(playerId);
     if (!p || p.sockets.size > 0 || !this.inLobby) return;
     this.dropPlayer(p);
-    this.env.logger.info({ room: this.code }, 'Joueur absent retiré de la salle');
+    this.env.logger.info({ event: 'room.player-removed', room: this.code }, 'Joueur absent retiré de la salle');
     this.touch();
     this.hooks.onChange(this);
   }
@@ -587,6 +665,27 @@ export class Room {
     return { ok: true };
   }
 
+  /**
+   * Action de l'écran principal (ex. « générer des personnages ») : elle n'est attribuée à aucun joueur.
+   * Le schéma déclaré par le jeu valide le payload, comme pour les actions des joueurs.
+   */
+  hostAction(type: string, payload: unknown): Outcome {
+    if (this.status !== 'in_game') return { ok: false, error: 'Aucune partie en cours.' };
+    const { hostActions, handleHostAction } = this.module;
+    if (!hostActions || !handleHostAction || !Object.hasOwn(hostActions, type)) {
+      return { ok: false, error: 'Action inconnue.' };
+    }
+    // Sans payload, l'action reçoit un objet vide : « régénérer » n'a rien à transmettre.
+    const parsed = hostActions[type]!.safeParse(payload ?? {});
+    if (!parsed.success) return { ok: false, error: 'Données invalides.' };
+
+    const result = this.safely(() => handleHostAction.call(this.module, this.state, type, parsed.data, this.ctx));
+    if (!result.ok) return { ok: false, error: result.error };
+    this.state = result.state;
+    this.afterMutation();
+    return { ok: true };
+  }
+
   // ---------------------------------------------------------------------------
   // Actions des joueurs
   // ---------------------------------------------------------------------------
@@ -663,7 +762,11 @@ export class Room {
     const suggestion = this.module.suggest(this.state, botId, this.env.random);
     if (!suggestion) return;
     const res = this.apply(bot, suggestion.type, suggestion.payload);
-    if (!res.ok) this.env.logger.debug({ room: this.code, error: res.error }, 'Action de robot refusée');
+    if (!res.ok)
+      this.env.logger.debug(
+        { event: 'room.bot-refused', room: this.code, error: res.error },
+        'Action de robot refusée',
+      );
   }
 
   private clearBotTimers(): void {
@@ -680,7 +783,7 @@ export class Room {
     try {
       return fn();
     } catch (err) {
-      this.env.logger.error({ err, room: this.code }, 'Erreur du moteur de jeu');
+      this.env.logger.error({ event: 'game.error', err, room: this.code }, 'Erreur du moteur de jeu');
       return { ok: false, error: 'Erreur interne, réessayez.' };
     }
   }
@@ -689,7 +792,7 @@ export class Room {
     try {
       this.state = fn(this.state);
     } catch (err) {
-      this.env.logger.error({ err, room: this.code }, 'Erreur du moteur de jeu');
+      this.env.logger.error({ event: 'game.error', err, room: this.code }, 'Erreur du moteur de jeu');
     }
     this.afterMutation();
   }
@@ -703,6 +806,7 @@ export class Room {
     this.touch();
     this.hooks.onChange(this);
     this.scheduleBots();
+    this.syncJob();
   }
 
   private schedule(key: string, ms: number): void {
@@ -728,6 +832,53 @@ export class Room {
     for (const handle of this.timers.values()) clearTimeout(handle);
     this.timers.clear();
     this.clearBotTimers();
+    this.abortJob();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Travaux asynchrones du jeu (ex. génération par IA)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Lance le travail que le jeu demande, s'il y en a un, et abandonne celui qui ne l'est plus.
+   * Un seul travail à la fois par salle. Son résultat revient par `completeJob`, comme une mutation normale :
+   * un résultat tardif (salle terminée, travail remplacé) est ignoré.
+   */
+  private syncJob(): void {
+    const m = this.module;
+    if (!m.pendingJob || !m.runJob || !m.completeJob) return;
+    const job = this.status === 'in_game' ? m.pendingJob(this.state) : null;
+    if (this.running && this.running.id !== job?.id) this.abortJob();
+    if (!job || this.running || job.id === this.finishedJobId) return;
+
+    const controller = new AbortController();
+    this.running = { id: job.id, controller };
+    const run = m.runJob;
+    new Promise<unknown>((resolve) => resolve(run.call(m, job, this.ctx, controller.signal))).then(
+      (value) => this.finishJob(job, { ok: true, value }),
+      (err: unknown) => this.finishJob(job, { ok: false, error: err instanceof Error ? err.message : String(err) }),
+    );
+  }
+
+  private finishJob(job: GameJob, outcome: JobOutcome): void {
+    if (this.running?.id !== job.id) return;
+    this.running = null;
+    this.finishedJobId = job.id;
+    if (!outcome.ok) {
+      this.env.logger.warn(
+        { event: 'room.job-failed', room: this.code, kind: job.kind, error: outcome.error },
+        'Travail du jeu en échec',
+      );
+    }
+    const complete = this.module.completeJob;
+    if (this.status !== 'in_game' || !complete) return;
+    this.mutate((s) => complete.call(this.module, s, job.id, outcome, this.ctx));
+  }
+
+  private abortJob(): void {
+    if (!this.running) return;
+    this.running.controller.abort();
+    this.running = null;
   }
 
   /** Libère minuteurs et temporisations (fermeture de la salle). */

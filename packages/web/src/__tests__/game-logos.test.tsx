@@ -7,11 +7,15 @@ import { GAME_LOGOS, fallbackLogo, logoFor, type LogoMark } from '../components/
 
 const BUILTIN_IDS = [
   'association',
+  'aventure-ia',
   'bombes-party',
+  'funambule',
   'imposteur',
   'loups-village',
+  'micro-defis',
   'plus-ou-moins',
   'plutot-qui',
+  'poker-texas',
   'president',
   'promoteur',
   'quiz-party',

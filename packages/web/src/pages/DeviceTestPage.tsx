@@ -1,6 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { readMediaPrefs, requestCamera, requestMicrophone } from '@partyhub/games/client';
+import { BackButton } from '../components/BackButton.js';
+import {
+  motionAvailable,
+  motionNeedsPermission,
+  readMediaPrefs,
+  requestCamera,
+  requestMicrophone,
+  requestMotionAccess,
+  ShakeDetector,
+  useMotionFeed,
+  type MotionAccess,
+  type MotionFrame,
+} from '@partyhub/games/client';
 import {
   describeMediaError,
   formatBytes,
@@ -10,8 +21,8 @@ import {
 } from '../device/mediaTest.js';
 
 /**
- * Page de test : micro (niveau et enregistrement de 3 s), caméra (aperçu) et image (ouverte depuis
- * l'appareil). Le navigateur demande l'autorisation au premier usage ; rien n'est envoyé au serveur.
+ * Page de test : micro (niveau et enregistrement de 3 s), caméra (aperçu), mouvement (inclinaison et secousses)
+ * et image (ouverte depuis l'appareil). Le navigateur demande l'autorisation au premier usage ; rien n'est envoyé au serveur.
  */
 
 type PermissionName = 'microphone' | 'camera';
@@ -285,13 +296,127 @@ function ImagePanel() {
   );
 }
 
+/** Lecture en direct de l'inclinaison et des secousses, rafraîchie 10 fois par seconde. */
+function MotionPanel() {
+  const [access, setAccess] = useState<MotionAccess | null>(null);
+  const [active, setActive] = useState(false);
+  const [tilt, setTilt] = useState({ x: 0, y: 0 });
+  const [shakes, setShakes] = useState(0);
+  const [energy, setEnergy] = useState(0);
+  const [heard, setHeard] = useState(false);
+  const shake = useRef(new ShakeDetector(12, 160));
+  const latest = useRef<MotionFrame | null>(null);
+  const supported = motionAvailable();
+
+  const onFrame = useCallback((frame: MotionFrame) => {
+    latest.current = frame;
+    if (frame.accel !== null) shake.current.feed(frame.accel, frame.t);
+  }, []);
+  const { signal, recalibrate } = useMotionFeed(active, onFrame);
+
+  // Affichage rafraîchi à intervalle fixe : les mesures arrivent bien plus souvent.
+  useEffect(() => {
+    if (!active) return;
+    const id = window.setInterval(() => {
+      const frame = latest.current;
+      if (frame) setTilt(frame.tilt);
+      setShakes(shake.current.pulses.count);
+      setEnergy(shake.current.pulses.energy);
+      setHeard(frame !== null);
+    }, 100);
+    return () => window.clearInterval(id);
+  }, [active]);
+
+  async function allow() {
+    setAccess(await requestMotionAccess());
+  }
+
+  function start() {
+    shake.current.reset();
+    latest.current = null;
+    setShakes(0);
+    setActive(true);
+  }
+
+  const pct = (v: number) => `${Math.round(((v + 1) / 2) * 100)}%`;
+  const message =
+    access === 'insecure'
+      ? 'Les capteurs sont bloqués parce que la page n’est pas en HTTPS. Ouvrez PartyHub en HTTPS (ou sur localhost).'
+      : access === 'denied'
+        ? 'Accès refusé. Autorisez le mouvement dans les réglages du navigateur, puis réessayez.'
+        : access === 'unavailable' || !supported
+          ? 'Ce navigateur ne publie pas les mouvements du téléphone.'
+          : null;
+
+  return (
+    <section className="card stack devtest-card" aria-labelledby="devtest-motion">
+      <h2 id="devtest-motion">Mouvement</h2>
+      <p className="muted small">
+        Inclinez le téléphone : le point se déplace. Secouez-le pour compter les secousses. Le téléphone doit être tenu
+        comme au départ : « Recentrer » reprend cette pose.
+      </p>
+      {motionNeedsPermission() && access !== 'granted' && (
+        <p className="muted small">Sur iPhone, l’accès doit être accordé d’un appui sur le bouton ci-dessous.</p>
+      )}
+      {message && (
+        <p className="error small" role="alert">
+          {message}
+        </p>
+      )}
+      <div className="devtest-actions">
+        {access !== 'granted' && (
+          <button type="button" className="btn" onClick={allow}>
+            Autoriser le mouvement
+          </button>
+        )}
+        {!active ? (
+          <button type="button" className="btn primary" onClick={start} disabled={!supported}>
+            Tester le mouvement
+          </button>
+        ) : (
+          <button type="button" className="btn ghost" onClick={() => setActive(false)}>
+            Arrêter
+          </button>
+        )}
+        {active && (
+          <button type="button" className="btn ghost" onClick={recalibrate}>
+            Recentrer
+          </button>
+        )}
+      </div>
+      {active && (
+        <>
+          <p className="small" aria-live="polite">
+            {signal === 'yes' || heard
+              ? 'Capteurs reçus.'
+              : signal === 'no'
+                ? 'Aucun capteur reçu : cet appareil ne transmet pas le mouvement.'
+                : 'En attente des capteurs…'}
+          </p>
+          <div
+            className="devtest-tilt"
+            role="img"
+            aria-label={`Inclinaison : gauche-droite ${Math.round(tilt.x * 100)} %, avant-arrière ${Math.round(tilt.y * 100)} %`}
+          >
+            <span style={{ left: pct(tilt.x), top: pct(tilt.y) }} />
+          </div>
+          <p className="small">
+            Secousses : <strong>{shakes}</strong>
+          </p>
+          <div className="devtest-meter" aria-label="Énergie des secousses">
+            <span style={{ width: `${Math.round(energy * 100)}%` }} />
+          </div>
+        </>
+      )}
+    </section>
+  );
+}
+
 export function DeviceTestPage() {
   return (
     <main className="page devtest fade-in">
       <header className="stack">
-        <Link to="/" className="muted small">
-          ← Accueil
-        </Link>
+        <BackButton to="/">Retour à l’accueil</BackButton>
         <h1>Test des appareils</h1>
         <p className="muted">
           Vérifiez que le micro, la caméra et les images fonctionnent sur cet appareil. Au premier essai, le navigateur
@@ -303,6 +428,7 @@ export function DeviceTestPage() {
       <div className="devtest-grid">
         <MicPanel />
         <CameraPanel />
+        <MotionPanel />
         <ImagePanel />
       </div>
     </main>

@@ -1,0 +1,156 @@
+# Vérifie le fichier d'installation CasaOS (deploy/casaos/compose.https.yaml) sur un vrai Docker, en amd64 et arm64 :
+#   1. mise à jour depuis la version précédente publiée : les données et le certificat racine sont conservés ;
+#   2. installation propre du fichier : démarrage, certificat téléchargeable et reconnu (scripts/casaos-check.sh).
+# Lancé à chaque modification du fichier, du Caddyfile ou du script, à la main, et par release.yml
+# avec l'image publiée (avant la création de la release).
+name: Vérification de l'installation CasaOS
+
+on:
+  workflow_call:
+    inputs:
+      image:
+        description: "Image à tester. Vide : image construite à partir du dépôt."
+        type: string
+        required: false
+        default: ''
+  workflow_dispatch:
+    inputs:
+      image:
+        description: "Image à tester (vide : construite à partir du dépôt)."
+        type: string
+        required: false
+        default: ''
+  push:
+    paths:
+      - 'deploy/casaos/**'
+      - 'deploy/https/**'
+      - 'scripts/casaos-check.sh'
+      - '.github/workflows/verify-casaos.yml'
+      - 'Dockerfile'
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  casaos:
+    name: CasaOS HTTPS (${{ matrix.runner }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-24.04, ubuntu-24.04-arm]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # les tags : pour trouver la version publiée précédente
+
+      - name: Préparer les fichiers et l'image
+        env:
+          REQUESTED_IMAGE: ${{ inputs.image }}
+        run: |
+          set -eu
+          VERSION="$(jq -r .version package.json)"
+          PREVIOUS="$(git tag -l 'v[0-9]*' --sort=-v:refname | grep -v "^v${VERSION}$" | head -1 || true)"
+          PREVIOUS_VERSION="${PREVIOUS#v}"
+          if [ -n "$REQUESTED_IMAGE" ]; then
+            TEST_IMAGE="$REQUESTED_IMAGE"
+          else
+            docker build -t partyhub:ci .
+            TEST_IMAGE="partyhub:ci"
+          fi
+          IP="$(ip -4 route get 1.1.1.1 | awk '{for (i = 1; i <= NF; i++) if ($i == "src") {print $(i + 1); exit}}')"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "PREVIOUS_VERSION=$PREVIOUS_VERSION" >> "$GITHUB_ENV"
+          echo "TEST_IMAGE=$TEST_IMAGE" >> "$GITHUB_ENV"
+          echo "IP=$IP" >> "$GITHUB_ENV"
+          echo "ADMIN_PASSWORD=ci-$(openssl rand -hex 12)" >> "$GITHUB_ENV"
+          mkdir -p "$RUNNER_TEMP/casaos"
+          # Le même fichier que celui donné à CasaOS. Seuls l'adresse du runner et l'image changent.
+          sed -e "s/192\.168\.1\.156/$IP/g" \
+              -e "s#image: ghcr.io/matosman40/partyhub:[0-9.]*#image: $TEST_IMAGE#" \
+              deploy/casaos/compose.https.yaml > "$RUNNER_TEMP/casaos/new.yaml"
+          if [ -n "$PREVIOUS_VERSION" ]; then
+            sed -e "s/192\.168\.1\.156/$IP/g" \
+                -e "s#image: ghcr.io/matosman40/partyhub:[0-9.]*#image: ghcr.io/matosman40/partyhub:$PREVIOUS_VERSION#" \
+                deploy/casaos/compose.https.yaml > "$RUNNER_TEMP/casaos/old.yaml"
+          fi
+          echo "Version testée : $VERSION (image $TEST_IMAGE), version précédente : ${PREVIOUS_VERSION:-aucune}, adresse : $IP"
+
+      - name: Fichier valide
+        run: docker compose -f "$RUNNER_TEMP/casaos/new.yaml" config --quiet
+
+      - name: Mise à jour depuis la version précédente (données et certificat conservés)
+        if: env.PREVIOUS_VERSION != ''
+        run: |
+          set -eu
+          OLD="$RUNNER_TEMP/casaos/old.yaml"
+          NEW="$RUNNER_TEMP/casaos/new.yaml"
+          BASE="https://$IP"
+          JAR="$RUNNER_TEMP/casaos/jar"
+          wait_healthy() {
+            for i in $(seq 1 60); do
+              s="$(docker inspect --format='{{.State.Health.Status}}' partyhub 2>/dev/null || echo starting)"
+              [ "$s" = healthy ] && return 0
+              [ "$s" = unhealthy ] && break
+              sleep 3
+            done
+            docker compose -f "$1" logs --no-color || true
+            return 1
+          }
+          wait_https() {
+            for i in $(seq 1 30); do curl -fsSk "$BASE/api/health" >/dev/null 2>&1 && return 0; sleep 2; done
+            docker compose -f "$1" logs --no-color || true
+            return 1
+          }
+          # Départ propre, puis version précédente avec des données.
+          docker compose -f "$NEW" down -v
+          docker compose -f "$OLD" up -d
+          wait_healthy "$OLD"; wait_https "$OLD"
+          curl -sk -c "$JAR" -H 'Content-Type: application/json' \
+            -d "{\"password\":\"$ADMIN_PASSWORD\"}" "$BASE/api/admin/login" -o /dev/null -w 'connexion admin : %{http_code}\n'
+          curl -sk -b "$JAR" "$BASE/api/admin/overview" | jq -c '.settings | .maxPlayers = 7' > "$RUNNER_TEMP/casaos/settings.json"
+          curl -sk -b "$JAR" -X PUT -H 'Content-Type: application/json' \
+            -d @"$RUNNER_TEMP/casaos/settings.json" "$BASE/api/admin/settings" -o /dev/null -w 'réglage enregistré : %{http_code}\n'
+          curl -sk "$BASE/certificat/racine.crt" -o "$RUNNER_TEMP/casaos/root-avant.crt"
+          openssl x509 -in "$RUNNER_TEMP/casaos/root-avant.crt" -noout -fingerprint -sha256 > "$RUNNER_TEMP/casaos/fp-avant"
+          docker compose -f "$OLD" down
+          # Mise à jour : même projet, mêmes volumes.
+          docker compose -f "$NEW" up -d
+          wait_healthy "$NEW"; wait_https "$NEW"
+          curl -sk -c "$JAR" -H 'Content-Type: application/json' \
+            -d "{\"password\":\"$ADMIN_PASSWORD\"}" "$BASE/api/admin/login" -o /dev/null
+          curl -sk -b "$JAR" "$BASE/api/admin/overview" | jq -e '.settings.maxPlayers == 7' >/dev/null \
+            || { echo "ÉCHEC : les réglages ne sont pas conservés après la mise à jour"; exit 1; }
+          echo "OK : réglages conservés après la mise à jour"
+          curl -sk "$BASE/certificat/racine.crt" -o "$RUNNER_TEMP/casaos/root-apres.crt"
+          openssl x509 -in "$RUNNER_TEMP/casaos/root-apres.crt" -noout -fingerprint -sha256 > "$RUNNER_TEMP/casaos/fp-apres"
+          diff "$RUNNER_TEMP/casaos/fp-avant" "$RUNNER_TEMP/casaos/fp-apres" \
+            || { echo "ÉCHEC : le certificat racine a changé à la mise à jour : tous les appareils devraient le réinstaller"; exit 1; }
+          echo "OK : même certificat racine après la mise à jour"
+          curl -s --cacert "$RUNNER_TEMP/casaos/root-avant.crt" -o /dev/null -w 'appareil déjà équipé : %{http_code}\n' "$BASE/api/health"
+          docker compose -f "$NEW" down -v
+
+      - name: Installation propre du fichier CasaOS
+        run: |
+          set -eu
+          docker compose -f "$RUNNER_TEMP/casaos/new.yaml" up -d
+          for i in $(seq 1 60); do
+            s="$(docker inspect --format='{{.State.Health.Status}}' partyhub 2>/dev/null || echo starting)"
+            [ "$s" = healthy ] && break
+            [ "$s" = unhealthy ] && { docker compose -f "$RUNNER_TEMP/casaos/new.yaml" logs --no-color; exit 1; }
+            sleep 3
+          done
+          for i in $(seq 1 30); do curl -fsSk "https://$IP/api/health" >/dev/null 2>&1 && break; sleep 2; done
+          sudo bash scripts/casaos-check.sh "$IP"
+
+      - name: Journaux en cas d'échec
+        if: failure()
+        run: docker compose -f "$RUNNER_TEMP/casaos/new.yaml" logs --no-color || true
+
+      - name: Arrêt et nettoyage
+        if: always()
+        run: |
+          docker compose -f "$RUNNER_TEMP/casaos/new.yaml" down -v || true
+          if [ -f "$RUNNER_TEMP/casaos/old.yaml" ]; then docker compose -f "$RUNNER_TEMP/casaos/old.yaml" down -v || true; fi

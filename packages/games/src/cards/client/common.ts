@@ -45,7 +45,7 @@ export function familyOf(def: CardGameDefinition, id: string): CardFamily | unde
 }
 
 /** Classement décroissant par points, rangs en compétition (ex æquo partagés). */
-export function rankingOf(pub: CardsPublic): RankRow[] {
+export function rankingOf(pub: Pick<CardsPublic, 'order' | 'names' | 'scores'>): RankRow[] {
   const rows = pub.order.map((id) => ({
     playerId: id,
     name: pub.names[id] ?? '?',
@@ -57,4 +57,35 @@ export function rankingOf(pub: CardsPublic): RankRow[] {
 
 export function handPoints(def: CardGameDefinition, hand: { entry: string }[]): number {
   return hand.reduce((sum, c) => sum + (entryOf(def, c.entry)?.points ?? 0), 0);
+}
+
+/**
+ * Main triée par grandeur, pour l'affichage : les cartes à chiffre d'abord, du plus petit au plus grand ;
+ * les cartes sans chiffre (actions, jokers) ensuite, par points. À valeur égale : famille, puis ordre du paquet.
+ */
+export function sortHandByValue<T extends { entry: string }>(def: CardGameDefinition, hand: readonly T[]): T[] {
+  const familyIndex = (family: string) => {
+    const i = def.families.findIndex((f) => f.id === family);
+    return i < 0 ? def.families.length : i;
+  };
+  const deckOrder = new Map(def.cards.map((c, i) => [c.id, i]));
+  const keyed = hand.map((card) => {
+    const entry = entryOf(def, card.entry);
+    const symbol = entry?.symbol.trim() ?? '';
+    const numeric = /^\d+$/.test(symbol);
+    return {
+      card,
+      numeric,
+      value: numeric ? Number(symbol) : 0,
+      points: entry ? entry.points : Number.MAX_SAFE_INTEGER,
+      family: entry ? familyIndex(entry.family) : def.families.length,
+      order: deckOrder.get(card.entry) ?? Number.MAX_SAFE_INTEGER,
+    };
+  });
+  keyed.sort((a, b) => {
+    if (a.numeric !== b.numeric) return a.numeric ? -1 : 1;
+    const first = a.numeric ? a.value - b.value : a.points - b.points;
+    return first || a.family - b.family || a.order - b.order;
+  });
+  return keyed.map((k) => k.card);
 }

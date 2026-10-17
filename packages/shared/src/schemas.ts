@@ -26,9 +26,15 @@ export const createRoomSchema = z.object({
   practice: z.boolean().optional(),
 });
 
+export const handoffClaimSchema = z.object({
+  code: roomCodeSchema,
+  handoffCode: z.string().regex(/^\d{6}$/, 'Code à 6 chiffres.'),
+});
+
 export const hostConnectSchema = z.object({
   code: roomCodeSchema,
   hostToken: tokenSchema,
+  screen: z.boolean().optional(),
 });
 
 export const joinSchema = z.object({
@@ -72,11 +78,19 @@ export const avatarImageSchema = z
   .max(60_000, 'Image trop lourde')
   .regex(/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/, 'Format d’image non reconnu');
 
-export const registerSchema = z.object({
-  username: usernameSchema,
-  password: passwordSchema,
-  displayName: playerNameSchema,
-});
+/**
+ * Création d'un profil. Par défaut : le pseudo seul, sans mot de passe (le profil se garde sur cet appareil).
+ * Les anciens comptes, créés avec un identifiant et un mot de passe, restent acceptés.
+ */
+export const registerSchema = z
+  .object({
+    displayName: playerNameSchema,
+    username: usernameSchema.optional(),
+    password: passwordSchema.optional(),
+  })
+  .refine((v) => (v.username === undefined) === (v.password === undefined), {
+    message: 'Identifiant et mot de passe vont ensemble.',
+  });
 
 export const loginSchema = z.object({
   username: usernameSchema,
@@ -120,6 +134,12 @@ export const configureSchema = z.object({
 
 export const kickSchema = z.object({
   playerId: z.string().min(1).max(64),
+});
+
+/** Action de l'écran principal : type court, payload libre (validé ensuite par le jeu). */
+export const hostGameActionSchema = z.object({
+  type: z.string().min(1).max(40),
+  payload: z.unknown().optional(),
 });
 
 export const readySchema = z.object({

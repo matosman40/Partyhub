@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs';
+import { createReadStream, existsSync } from 'node:fs';
 import path from 'node:path';
 import express, { type NextFunction, type Request, type Response } from 'express';
 import {
@@ -9,11 +9,14 @@ import {
   profileUpdateSchema,
   registerSchema,
   roomCodeSchema,
+  VOICE_MAX_BYTES,
+  voiceNameSchema,
 } from '@partyhub/shared';
 import { resolveGame } from '../games-registry.js';
 import type { BoardGameService } from '../boards/service.js';
 import type { PackageSourceService } from '../sources/service.js';
 import type { CardGameService } from '../cards/service.js';
+import { embedCardAssets, restoreCardAssets } from '../cards/assets.js';
 import { PROPOSAL_MAX_PENDING, PROPOSAL_MAX_PER_DAY, type BoumBankService } from '../boum/service.js';
 import { IMPORT_MAX_BYTES, isBankType } from '@partyhub/games';
 import { z } from 'zod';
@@ -47,6 +50,7 @@ import {
   type SoundSettings,
 } from '@partyhub/shared';
 import type { AppConfig } from '../config.js';
+import { testModeSchema } from '@partyhub/shared';
 import { adminSettingsSchema, type Store } from '../db/store.js';
 import {
   screenBackgroundsSchema,
@@ -55,15 +59,26 @@ import {
   type ScreenBackgrounds,
 } from '../screen-backgrounds.js';
 import type { Logger } from '../logger.js';
+import type { RotatingFile } from '../logs/rotating-file.js';
+import { readJournal, type JournalMinLevel } from '../logs/journal.js';
+import { BatchLimiter, clientBatchSchema, recordClientEntries } from '../logs/client-logs.js';
+import { requestIdOf, requestLogger } from '../logs/request-log.js';
 import type { RoomManager } from '../rooms/manager.js';
 import type { RealtimeHub } from '../realtime/hub.js';
 import { ProfileError, type ProfileService } from '../profiles/service.js';
 import { type DbBackupScheduler, listDbBackups } from '../db/backup.js';
 import type { CharacterPackService } from '../characters/packs.js';
+import type { AiRuntime } from '../ai/runtime.js';
+import type { ImageLibrary } from '../images/library.js';
+import { GAME_IMAGE_ID } from '@partyhub/shared';
+import { aiProviderUpdateSchema } from '../ai/settings.js';
+import { PRESETS } from '../config.js';
 
 export interface AppDeps {
   config: AppConfig;
   logger: Logger;
+  /** Journal fichier consultable par l'administrateur. Absent = pas de consultation (tests). */
+  journal?: RotatingFile;
   store: Store;
   manager: RoomManager;
   hub: RealtimeHub;
@@ -83,6 +98,10 @@ export interface AppDeps {
   characterPacks: CharacterPackService;
   /** Sauvegardes automatiques de la base. Absent = fonction non configurée. */
   dbBackups?: DbBackupScheduler;
+  /** IA générative : fournisseurs de l'environnement et de l'administration. */
+  ai: AiRuntime;
+  /** Images générées par IA (portraits, fonds) : servies publiquement par identifiant. */
+  imageLibrary?: ImageLibrary;
 }
 
 const ADMIN_COOKIE = 'ph_admin';
@@ -93,6 +112,7 @@ export function createApp(deps: AppDeps): express.Express {
   const {
     config,
     logger,
+    journal,
     store,
     manager,
     profiles,
@@ -115,13 +135,16 @@ export function createApp(deps: AppDeps): express.Express {
 
   app.disable('x-powered-by');
   app.set('trust proxy', config.trustProxy ?? 'loopback');
+  // Chaque requête reçoit un identifiant et sa durée est journalisée.
+  app.use(requestLogger(logger));
   // Les images de profil tiennent dans le corps JSON (60 Ko maximum après encodage).
   // La sauvegarde complète est lue plus bas, avec sa propre limite.
   const jsonBody = express.json({ limit: '80kb' });
-  // Ces deux routes lisent elles-mêmes leur corps : le JSON global ne doit pas y toucher.
+  // Ces routes lisent elles-mêmes leur corps (limite propre) : le JSON global ne doit pas y toucher.
   app.use((req, res, next) => {
     const selfParsed =
       req.path === '/api/admin/backup/import' ||
+      req.path === '/api/admin/card-games/import' ||
       (req.method === 'POST' && (req.path === '/api/admin/assets' || req.path === '/api/admin/backup/archive'));
     return selfParsed ? next() : jsonBody(req, res, next);
   });
@@ -130,6 +153,12 @@ export function createApp(deps: AppDeps): express.Express {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Referrer-Policy', 'same-origin');
     res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+    // Capteurs (gyroscope, accéléromètre, magnétomètre) et appareils (micro, caméra) : réservés à ce site.
+    // Le navigateur refuse les capteurs hors HTTPS ; cet en-tête évite qu'une politique héritée les coupe.
+    res.setHeader(
+      'Permissions-Policy',
+      'accelerometer=(self), gyroscope=(self), magnetometer=(self), microphone=(self), camera=(self)',
+    );
     // YouTube est autorisé uniquement pour les extraits des jeux de questions (API du lecteur,
     // iframe du lecteur, oEmbed de l'administration). Tout le reste reste limité à ce site.
     res.setHeader(
@@ -208,6 +237,23 @@ export function createApp(deps: AppDeps): express.Express {
     res.type(asset.contentType).send(Buffer.from(asset.bytes));
   });
 
+  // Erreurs du navigateur (écran de secours, erreurs de script, appels API en échec). Limité par adresse.
+  const clientLogLimiter = new BatchLimiter();
+  api.post('/logs/client', (req, res) => {
+    const ip = req.ip ?? 'inconnue';
+    if (!clientLogLimiter.allow(ip)) {
+      res.status(429).json({ error: 'Trop de journaux envoyés. Patientez une minute.' });
+      return;
+    }
+    const parsed = clientBatchSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: 'Journal invalide.' });
+      return;
+    }
+    recordClientEntries(logger, parsed.data.entries, ip);
+    res.status(204).end();
+  });
+
   app.use('/api', api);
 
   // --- Profils joueurs ------------------------------------------------------
@@ -228,6 +274,34 @@ export function createApp(deps: AppDeps): express.Express {
     next();
   };
   const profileOf = (req: Request) => (req as Request & { profileId: string }).profileId;
+
+  /**
+   * Envoie un fichier en mémoire, avec les plages d'octets (Safari ne lance pas un son sans elles).
+   */
+  const sendBytes = (req: Request, res: Response, mime: string, data: Buffer) => {
+    res.setHeader('Content-Type', mime);
+    res.setHeader('Accept-Ranges', 'bytes');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    const range = /^bytes=(\d*)-(\d*)$/.exec(req.headers.range ?? '');
+    if (!range) {
+      res.setHeader('Content-Length', data.length);
+      res.end(data);
+      return;
+    }
+    const size = data.length;
+    const start = range[1] === '' ? Math.max(0, size - Number(range[2])) : Number(range[1]);
+    const end = range[1] === '' || range[2] === '' ? size - 1 : Math.min(Number(range[2]), size - 1);
+    if (!Number.isFinite(start) || start > end || start >= size) {
+      res.setHeader('Content-Range', `bytes */${size}`);
+      res.status(416).end();
+      return;
+    }
+    res.status(206);
+    res.setHeader('Content-Range', `bytes ${start}-${end}/${size}`);
+    res.setHeader('Content-Length', end - start + 1);
+    res.end(data.subarray(start, end + 1));
+  };
 
   /** Réponse d'erreur métier, ou erreur interne. */
   const fail = (res: Response, err: unknown) => {
@@ -378,6 +452,53 @@ export function createApp(deps: AppDeps): express.Express {
     res.status(201).json({ proposal: result.value });
   });
 
+  /* Voix de profil (5 au maximum). L'envoi est lu brut : le son n'est jamais interprété comme du JSON. */
+  profileRoutes.get('/me/voices', withProfile, (req, res) => {
+    res.setHeader('Cache-Control', 'no-cache');
+    res.json({ voices: profiles.voices(profileOf(req)) });
+  });
+
+  profileRoutes.post(
+    '/me/voices',
+    withProfile,
+    express.raw({ type: () => true, limit: VOICE_MAX_BYTES }),
+    (req, res) => {
+      const name = voiceNameSchema.safeParse(typeof req.query.name === 'string' ? req.query.name : '');
+      if (!name.success) {
+        res.status(400).json({ error: name.error.issues[0]?.message ?? 'Nom invalide.' });
+        return;
+      }
+      const data = Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0);
+      try {
+        res.status(201).json({ voice: profiles.addVoice(profileOf(req), name.data, data) });
+      } catch (err) {
+        fail(res, err);
+      }
+    },
+  );
+
+  profileRoutes.put('/me/voices/:id', withProfile, (req, res) => {
+    const name = voiceNameSchema.safeParse((req.body as { name?: unknown } | undefined)?.name);
+    if (!name.success) {
+      res.status(400).json({ error: name.error.issues[0]?.message ?? 'Nom invalide.' });
+      return;
+    }
+    try {
+      res.json({ voice: profiles.renameVoice(profileOf(req), String(req.params.id ?? ''), name.data) });
+    } catch (err) {
+      fail(res, err);
+    }
+  });
+
+  profileRoutes.delete('/me/voices/:id', withProfile, (req, res) => {
+    try {
+      profiles.deleteVoice(profileOf(req), String(req.params.id ?? ''));
+      res.json({ ok: true });
+    } catch (err) {
+      fail(res, err);
+    }
+  });
+
   api.use('/profiles', profileRoutes);
 
   /** Packs de personnages (sprites) : liste publique et planches PNG. Revalidées à chaque chargement. */
@@ -412,6 +533,19 @@ export function createApp(deps: AppDeps): express.Express {
     });
   });
 
+  /** Images générées par IA : identifiants aléatoires, contenu immuable. */
+  api.get('/ai-images/:id', (req, res) => {
+    const id = req.params.id ?? '';
+    const image = GAME_IMAGE_ID.test(id) ? deps.imageLibrary?.data(id) : null;
+    if (!image) {
+      res.status(404).json({ error: 'Image introuvable.' });
+      return;
+    }
+    res.setHeader('Content-Type', image.mime);
+    res.setHeader('Cache-Control', 'public, max-age=86400, immutable');
+    res.send(image.bytes);
+  });
+
   /** Fonds d'écran affichés sur chaque écran (adresses des images de la médiathèque, ou null). */
   api.get('/screen-backgrounds', (_req, res) => {
     res.setHeader('Cache-Control', 'no-cache');
@@ -424,6 +558,12 @@ export function createApp(deps: AppDeps): express.Express {
     res.json({ sounds: resolveSounds(store.getSoundSettings()) });
   });
 
+  /** Mode test : affiché sur les écrans et les téléphones. Aucun secret. */
+  api.get('/test-mode', (_req, res) => {
+    res.setHeader('Cache-Control', 'no-cache');
+    res.json({ mode: store.getTestMode() });
+  });
+
   api.get('/avatars/:id', (req, res) => {
     const image = profiles.avatarImage(req.params.id ?? '');
     if (!image) {
@@ -432,6 +572,16 @@ export function createApp(deps: AppDeps): express.Express {
     }
     res.setHeader('Cache-Control', 'public, max-age=3600');
     res.type(image.mime).send(image.data);
+  });
+
+  /** Voix de profil jouée sur l'écran principal : publique (les écrans n'ont pas de compte), identifiant aléatoire. */
+  api.get('/voices/:id', (req, res) => {
+    const voice = profiles.voiceAudio(req.params.id ?? '');
+    if (!voice) {
+      res.status(404).json({ error: 'Voix introuvable.' });
+      return;
+    }
+    sendBytes(req, res, voice.mime, voice.data);
   });
 
   // --- Administration (authentification obligatoire) -------------------------
@@ -453,7 +603,7 @@ export function createApp(deps: AppDeps): express.Express {
     const valid = password.length > 0 && (await verifyPassword(password, stored));
     if (!valid) {
       limiter.fail(ip);
-      logger.warn({ ip }, 'Tentative de connexion administrateur refusée');
+      logger.warn({ event: 'admin.login.refused', ip }, 'Tentative de connexion administrateur refusée');
       res.status(401).json({ error: 'Mot de passe incorrect.' });
       return;
     }
@@ -480,6 +630,43 @@ export function createApp(deps: AppDeps): express.Express {
       return;
     }
     next();
+  });
+
+  // Journal des erreurs : consultation, téléchargement et vidage (administrateur seulement).
+  const noJournal = (res: Response) => res.status(503).json({ error: 'Journal fichier désactivé (LOG_DIR).' });
+
+  admin.get('/logs', (req, res) => {
+    if (!journal) return noJournal(res);
+    const level = typeof req.query.level === 'string' ? req.query.level : '';
+    const minLevel: JournalMinLevel = level === 'all' ? 'all' : level === 'error' ? 'error' : 'warn';
+    const source = req.query.source === 'client' || req.query.source === 'server' ? req.query.source : undefined;
+    const text = typeof req.query.q === 'string' ? req.query.q.trim().slice(0, 200) : '';
+    const limit = Number(req.query.limit) || 200;
+    res.json(readJournal(journal, { minLevel, source, text: text || undefined, limit }));
+  });
+
+  admin.get('/logs/download', (_req, res) => {
+    if (!journal) return noJournal(res);
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+    res.setHeader('Content-Type', 'application/x-ndjson; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="partyhub-journal-${stamp}.jsonl"`);
+    const files = journal.files();
+    void (async () => {
+      for (const file of files) {
+        for await (const chunk of createReadStream(file)) res.write(chunk);
+      }
+      res.end();
+    })().catch((err: unknown) => {
+      logger.error({ event: 'admin.logs.download', err }, 'Téléchargement du journal interrompu');
+      res.destroy();
+    });
+  });
+
+  admin.delete('/logs', (_req, res) => {
+    if (!journal) return noJournal(res);
+    journal.clear();
+    logger.info({ event: 'admin.logs.cleared' }, 'Journal vidé par l’administrateur');
+    res.json({ ok: true });
   });
 
   admin.get('/overview', (_req, res) => {
@@ -952,10 +1139,16 @@ export function createApp(deps: AppDeps): express.Express {
     res.status(201).json({ ok: true, id: result.id });
   });
 
+  /** Export autonome : la définition et les fichiers qu'elle utilise (image du dos, police), en base64. */
   admin.get('/card-games/:id/export', (req, res) => {
     const exported = cardGames.exportOf(req.params.id ?? '');
     if (!exported) {
       res.status(404).json({ error: 'Jeu inconnu.' });
+      return;
+    }
+    const embedded = embedCardAssets(exported.definition, assets);
+    if (!embedded.ok) {
+      res.status(409).json({ error: embedded.error });
       return;
     }
     const slug =
@@ -964,17 +1157,27 @@ export function createApp(deps: AppDeps): express.Express {
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-|-$/g, '') || 'jeu';
     res.setHeader('Content-Disposition', `attachment; filename="${slug}.partyhub.json"`);
-    res.json(exported);
+    res.json({ ...exported, assets: embedded.assets });
   });
 
+  /**
+   * Import : toujours un nouveau jeu. Les fichiers joints sont recréés dans la médiathèque sous de nouveaux
+   * identifiants ; si le jeu n'est pas enregistré, ils sont retirés.
+   */
   admin.post('/card-games/import', (req, res) => {
     const parsed = cardGames.parseImport(req.body);
     if (!parsed.ok) {
       res.status(400).json({ error: parsed.error });
       return;
     }
-    const result = cardGames.save(null, parsed.definition);
+    const restored = restoreCardAssets(parsed.definition, parsed.assets, assets);
+    if (!restored.ok) {
+      res.status(400).json({ error: restored.error });
+      return;
+    }
+    const result = cardGames.save(null, restored.definition);
     if (!result.ok) {
+      for (const id of restored.created) assets.remove(id);
       res.status(400).json({ error: result.error });
       return;
     }
@@ -1343,6 +1546,63 @@ export function createApp(deps: AppDeps): express.Express {
     res.json({ settings: parsed.data });
   });
 
+  /** Mode test : curseur de cadence pour les émotions et les voix. Sans effet quand il est éteint. */
+  admin.put('/test-mode', (req, res) => {
+    const parsed = testModeSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: 'Réglage du mode test invalide.' });
+      return;
+    }
+    store.saveTestMode(parsed.data);
+    logger.info(
+      { event: 'admin.test-mode', enabled: parsed.data.enabled, factor: parsed.data.factor },
+      'Mode test modifié par l’administrateur',
+    );
+    res.json({ mode: parsed.data });
+  });
+
+  /**
+   * Fournisseurs d'IA. Les clés ne sortent jamais du serveur : on sait seulement si une clé existe, et d'où elle vient.
+   */
+  admin.get('/ai', (_req, res) => {
+    res.json(deps.ai.status());
+  });
+
+  admin.put('/ai/:id', (req, res) => {
+    const id = req.params.id ?? '';
+    if (!PRESETS.some((p) => p.id === id)) {
+      res.status(404).json({ error: 'Fournisseur inconnu.' });
+      return;
+    }
+    const parsed = aiProviderUpdateSchema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.issues[0]?.message ?? 'Réglages invalides.' });
+      return;
+    }
+    const { error, changed } = deps.ai.update(id, parsed.data);
+    if (error) {
+      res.status(400).json({ error });
+      return;
+    }
+    // Journal : les noms des champs modifiés, jamais leurs valeurs (la clé en particulier).
+    logger.info(
+      { event: 'admin.ai.updated', provider: id, fields: changed },
+      'Fournisseur d’IA modifié par l’administrateur',
+    );
+    res.json(deps.ai.status());
+  });
+
+  admin.post('/ai/:id/test', async (req, res) => {
+    const id = req.params.id ?? '';
+    if (!PRESETS.some((p) => p.id === id)) {
+      res.status(404).json({ error: 'Fournisseur inconnu.' });
+      return;
+    }
+    const result = await deps.ai.test(id);
+    logger.info({ event: 'admin.ai.tested', provider: id, ok: result.ok }, 'Clé d’IA testée par l’administrateur');
+    res.json(result);
+  });
+
   admin.post('/rooms/purge-idle', (_req, res) => {
     res.json({ removed: manager.purgeIdle() });
   });
@@ -1369,7 +1629,9 @@ export function createApp(deps: AppDeps): express.Express {
       ) {
         return next();
       }
-      return express.json({ limit: req.path === '/backup/import' ? '20mb' : '512kb' })(req, res, next);
+      // Sauvegarde et jeu de cartes avec ses fichiers joints (base64) : des limites plus hautes.
+      const limit = req.path === '/backup/import' ? '20mb' : req.path === '/card-games/import' ? '16mb' : '512kb';
+      return express.json({ limit })(req, res, next);
     },
     admin,
   );
@@ -1389,14 +1651,20 @@ export function createApp(deps: AppDeps): express.Express {
       res.sendFile(indexFile);
     });
   } else {
-    logger.warn({ staticDir: config.staticDir }, 'Interface web absente : lancer npm run build');
+    logger.warn({ event: 'app.no-web', staticDir: config.staticDir }, 'Interface web absente : lancer npm run build');
   }
 
   // --- Erreurs ---------------------------------------------------------------
 
-  app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+  app.use((err: unknown, req: Request, res: Response, _next: NextFunction) => {
     const status = typeof (err as { status?: unknown })?.status === 'number' ? (err as { status: number }).status : 500;
-    if (status >= 500) logger.error({ err }, 'Erreur HTTP');
+    if (status >= 500) {
+      res.locals.errorLogged = true;
+      logger.error(
+        { event: 'http.error', req: requestIdOf(res), method: req.method, path: req.path, err },
+        'Erreur HTTP',
+      );
+    }
     const message =
       status === 400 ? 'Requête invalide.' : status === 413 ? 'Requête trop volumineuse.' : 'Erreur interne.';
     res.status(status).json({ error: message });
