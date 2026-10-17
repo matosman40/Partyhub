@@ -47,6 +47,13 @@ const WIN_POINTS = 100;
 const CRATE_RATIO = 0.7;
 const DROP_RATIO = 0.35;
 const SPEED_MAX = 2;
+/** Kangourou monté : une bombe se lance jusqu'à trois cases, et un coup la fait glisser jusqu'à quatre. */
+const THROW_RANGE = 3;
+const KICK_RANGE = 4;
+/** Délai minimal entre deux gestes du kangourou (soulever, lancer, frapper). */
+const RIDE_COOLDOWN_MS = 300;
+/** Kangourous sauvages posés au début de chaque manche : on les monte pour gagner une vie. */
+const WILD_KANGAROOS = 2;
 /** Répartition des bonus tirés d'une caisse détruite. */
 const DROP_TABLE: Array<[PowerKind, number]> = [
   ['bomb', 30],
@@ -89,6 +96,8 @@ export type BombesPartyPhase = 'ready' | 'play' | 'round-over' | 'final';
 /** Animaux montables : le kangourou pousse les bombes, le dino est plus rapide. Un animal encaisse un coup. */
 export type Mount = 'kangaroo' | 'dino';
 export type PowerKind = 'bomb' | 'flame' | 'speed' | 'kangaroo' | 'dino';
+/** Gestes du kangourou monté : soulever la bombe devant soi, la lancer, ou lui donner un coup. */
+export type RideAction = 'lift' | 'throw' | 'kick';
 
 export interface Unit {
   x: number;
@@ -101,6 +110,10 @@ export interface Unit {
   mount: Mount | null;
   facing: Dir;
   lastMoveAt: number;
+  /** Bombe soulevée (identifiant), ou null. Elle suit le personnage jusqu'au lancer. */
+  carrying: string | null;
+  /** Dernier geste du kangourou (soulever, lancer, frapper). */
+  lastRideAt: number;
 }
 
 export interface Bomb {
@@ -317,19 +330,22 @@ function startRound(s: BombesPartyState, ctx: GameContext, round: number): Bombe
       mount: null,
       facing: 'down',
       lastMoveAt: 0,
+      carrying: null,
+      lastRideAt: -1e9,
     };
   });
+  const grid = buildGrid(ctx.random);
   ctx.cancel(NEXT_ROUND);
   ctx.schedule(ROUND_LIMIT, ROUND_LIMIT_MS);
   return {
     ...s,
     phase: 'play',
     round,
-    grid: buildGrid(ctx.random),
+    grid,
     units,
     bombs: [],
     flames: [],
-    powerups: [],
+    powerups: wildKangaroos(grid, ctx.random),
     winnerId: null,
     endsAt: ctx.now() + ROUND_LIMIT_MS,
     seq: s.seq + 1,
@@ -398,9 +414,9 @@ function explode(s: BombesPartyState, startId: string, ctx: GameContext): Bombes
         const u = units[uid];
         if (!u || !u.alive || u.x !== c.x || u.y !== c.y || hitIds.has(uid)) continue;
         hitIds.add(uid);
-        // L'animal encaisse le premier coup ; sans animal, le joueur est éliminé.
-        if (u.mount) units[uid] = { ...u, mount: null };
-        else units[uid] = { ...u, alive: false };
+        // L'animal encaisse le premier coup ; sans animal, le joueur est éliminé. La bombe portée tombe sur place.
+        if (u.mount) units[uid] = { ...u, mount: null, carrying: null };
+        else units[uid] = { ...u, alive: false, carrying: null };
       }
     }
 
@@ -449,18 +465,13 @@ function move(s: BombesPartyState, playerId: string, dir: Dir, ctx: GameContext)
   const [dx, dy] = DIRS[dir];
   const tx = unit.x + dx;
   const ty = unit.y + dy;
-  if (cellAt(s.grid, tx, ty) !== FLOOR) return withUnit(s, playerId, { ...unit, facing: dir }, seq);
-
-  let bombs = s.bombs;
-  const bomb = s.bombs.find((b) => b.x === tx && b.y === ty);
-  if (bomb) {
-    // Seul le kangourou peut pousser une bombe, d'une case, si la place est libre.
-    const bx = tx + dx;
-    const by = ty + dy;
-    const free = cellAt(s.grid, bx, by) === FLOOR && !s.bombs.some((b) => b.x === bx && b.y === by);
-    if (unit.mount !== 'kangaroo' || !free) return withUnit(s, playerId, { ...unit, facing: dir }, seq);
-    bombs = s.bombs.map((b) => (b === bomb ? { ...b, x: bx, y: by } : b));
+  // Murs, caisses et bombes arrêtent le pas. Une bombe ne se pousse pas : on la soulève ou on la frappe.
+  if (cellAt(s.grid, tx, ty) !== FLOOR || bombAt(s, tx, ty)) {
+    return withUnit(s, playerId, { ...unit, facing: dir }, seq);
   }
+
+  // La bombe soulevée suit son porteur.
+  const bombs = unit.carrying ? moveBomb(s.bombs, unit.carrying, { x: tx, y: ty }) : s.bombs;
 
   let next: Unit = { ...unit, x: tx, y: ty, lastMoveAt: now, facing: dir };
   const pick = s.powerups.find((p) => p.x === tx && p.y === ty);
@@ -478,18 +489,129 @@ function move(s: BombesPartyState, playerId: string, dir: Dir, ctx: GameContext)
         next = { ...next, speed: Math.min(SPEED_MAX, next.speed + 1) };
         break;
       case 'kangaroo':
+        next = { ...next, mount: 'kangaroo' };
+        break;
       case 'dino':
-        next = { ...next, mount: pick.kind };
+        // Un dinosaure ne porte pas de bombe : celle qu'on tenait tombe sur place.
+        next = { ...next, mount: 'dino', carrying: null };
         break;
     }
   }
 
-  // Marcher dans une flamme : l'animal s'enfuit en premier, sinon c'est fatal.
+  // Marcher dans une flamme : l'animal s'enfuit en premier, sinon c'est fatal. La bombe portée tombe.
   if (s.flames.some((f) => f.x === tx && f.y === ty && f.until > now)) {
-    next = next.mount ? { ...next, mount: null } : { ...next, alive: false };
+    next = next.mount ? { ...next, mount: null, carrying: null } : { ...next, alive: false, carrying: null };
   }
 
   return checkRoundEnd({ ...s, bombs, units: { ...s.units, [playerId]: next }, powerups, seq }, ctx);
+}
+
+function bombAt(s: BombesPartyState, x: number, y: number): Bomb | undefined {
+  return s.bombs.find((b) => b.x === x && b.y === y);
+}
+
+function moveBomb(bombs: Bomb[], id: string, to: Pt): Bomb[] {
+  return bombs.map((b) => (b.id === id ? { ...b, x: to.x, y: to.y } : b));
+}
+
+/** Case devant le personnage, dans la direction où il regarde. */
+function frontOf(u: Pt & { facing: Dir }): Pt {
+  const [dx, dy] = DIRS[u.facing];
+  return { x: u.x + dx, y: u.y + dy };
+}
+
+/**
+ * Dernière case où une bombe peut glisser dans une direction, sans dépasser `range` cases.
+ * Elle s'arrête sur un mur, une caisse, une autre bombe ou un personnage vivant. Null : elle ne bouge pas.
+ */
+function slideEnd(s: BombesPartyState, from: Pt, dir: Dir, range: number): Pt | null {
+  const [dx, dy] = DIRS[dir];
+  let end: Pt | null = null;
+  for (let i = 1; i <= range; i++) {
+    const x = from.x + dx * i;
+    const y = from.y + dy * i;
+    if (cellAt(s.grid, x, y) !== FLOOR || bombAt(s, x, y)) break;
+    if (Object.values(s.units).some((u) => u.alive && u.x === x && u.y === y)) break;
+    end = { x, y };
+  }
+  return end;
+}
+
+/** Gestes possibles maintenant pour le kangourou : ce que le téléphone doit proposer. */
+function rideOptions(s: BombesPartyState, playerId: string): { lift: boolean; kick: boolean; throw: boolean } {
+  const none = { lift: false, kick: false, throw: false };
+  const unit = s.units[playerId];
+  if (!unit || !unit.alive || unit.mount !== 'kangaroo') return none;
+  if (unit.carrying) {
+    return { ...none, throw: slideEnd(s, { x: unit.x, y: unit.y }, unit.facing, THROW_RANGE) !== null };
+  }
+  const front = frontOf(unit);
+  const bomb = bombAt(s, front.x, front.y);
+  if (!bomb) return none;
+  return { lift: true, kick: slideEnd(s, front, unit.facing, KICK_RANGE) !== null, throw: false };
+}
+
+/** Soulever, lancer ou frapper une bombe : réservé au kangourou monté. */
+function rideAction(
+  s: BombesPartyState,
+  playerId: string,
+  action: RideAction,
+  ctx: GameContext,
+): GameResult<BombesPartyState> {
+  const unit = s.units[playerId];
+  if (!unit) return fail('Joueur inconnu dans cette partie');
+  if (unit.mount !== 'kangaroo') return fail('Il faut être monté sur un kangourou');
+  const now = ctx.now();
+  // Un geste trop rapide est ignoré sans erreur, comme un pas trop rapide.
+  if (now - unit.lastRideAt < RIDE_COOLDOWN_MS) return ok({ ...s, seq: s.seq + 1 });
+  const seq = s.seq + 1;
+  const withRide = (u: Unit): Record<string, Unit> => ({ ...s.units, [playerId]: { ...u, lastRideAt: now } });
+
+  if (action === 'throw') {
+    if (!unit.carrying) return fail('Vous ne portez pas de bombe');
+    const landing = slideEnd(s, { x: unit.x, y: unit.y }, unit.facing, THROW_RANGE);
+    if (!landing) return fail('Pas de place pour lancer la bombe ici');
+    return ok({
+      ...s,
+      bombs: moveBomb(s.bombs, unit.carrying, landing),
+      units: withRide({ ...unit, carrying: null }),
+      seq,
+    });
+  }
+
+  if (unit.carrying) return fail('Vous portez déjà une bombe');
+  const front = frontOf(unit);
+  const bomb = bombAt(s, front.x, front.y);
+  if (!bomb) return fail('Aucune bombe devant vous');
+
+  if (action === 'lift') {
+    return ok({
+      ...s,
+      bombs: moveBomb(s.bombs, bomb.id, { x: unit.x, y: unit.y }),
+      units: withRide({ ...unit, carrying: bomb.id }),
+      seq,
+    });
+  }
+
+  const landing = slideEnd(s, front, unit.facing, KICK_RANGE);
+  if (!landing) return fail('La bombe ne bouge pas');
+  return ok({ ...s, bombs: moveBomb(s.bombs, bomb.id, landing), units: withRide(unit), seq });
+}
+
+/** Deux kangourous sauvages, sur des cases libres, loin des coins de départ. */
+function wildKangaroos(grid: string[], random: () => number): Powerup[] {
+  const cells: Pt[] = [];
+  for (let y = 0; y < HEIGHT; y++) {
+    for (let x = 0; x < WIDTH; x++) {
+      if (cellAt(grid, x, y) === FLOOR && !nearSpawn(x, y)) cells.push({ x, y });
+    }
+  }
+  const out: Powerup[] = [];
+  for (let i = 0; i < WILD_KANGAROOS && cells.length > 0; i++) {
+    const [cell] = cells.splice(Math.floor(random() * cells.length), 1);
+    if (cell) out.push({ x: cell.x, y: cell.y, kind: 'kangaroo' });
+  }
+  return out;
 }
 
 function placeBomb(s: BombesPartyState, playerId: string, ctx: GameContext): GameResult<BombesPartyState> {
@@ -528,12 +650,14 @@ export const bombesParty: GameModule<BombesPartyState, BombesPartySettings> = {
         'Déplacez votre personnage avec les flèches de votre téléphone.',
         'Posez une bombe : elle explose après deux secondes et demie, dans les quatre directions.',
         'Une caisse détruite peut laisser tomber un bonus : une bombe de plus ou une portée plus longue.',
+        'Des kangourous sauvages traînent sur le plateau : montez-en un pour avoir une vie de plus.',
+        'Monté sur un kangourou, soulevez la bombe devant vous, lancez-la, ou donnez-lui un coup.',
         'Le dernier survivant de la manche marque 100 points.',
       ],
       tips: [
         'Le souffle s’arrête sur les murs et sur les caisses.',
         'Une bombe peut en faire exploser une autre : repérez votre sortie avant de poser.',
-        'Marcher dans une flamme élimine aussi.',
+        'Marcher dans une flamme élimine aussi, sauf à dos de kangourou : il encaisse le premier coup.',
       ],
     },
   },
@@ -543,8 +667,11 @@ export const bombesParty: GameModule<BombesPartyState, BombesPartySettings> = {
 
   actions: {
     move: moveSchema,
-    // La pose de bombe ne porte aucune donnée.
+    // Les gestes suivants ne portent aucune donnée.
     bomb: z.unknown(),
+    lift: z.unknown(),
+    throw: z.unknown(),
+    kick: z.unknown(),
   },
 
   initialize(settings, players) {
@@ -587,7 +714,8 @@ export const bombesParty: GameModule<BombesPartyState, BombesPartySettings> = {
     // Un joueur qui quitte pendant la manche est éliminé.
     const unit = s.units[p.id];
     if (s.phase === 'play' && unit?.alive) {
-      return checkRoundEnd({ ...s, units: { ...s.units, [p.id]: { ...unit, alive: false } }, seq: s.seq + 1 }, ctx);
+      const gone = { ...unit, alive: false, carrying: null };
+      return checkRoundEnd({ ...s, units: { ...s.units, [p.id]: gone }, seq: s.seq + 1 }, ctx);
     }
     return s;
   },
@@ -609,6 +737,7 @@ export const bombesParty: GameModule<BombesPartyState, BombesPartySettings> = {
       return ok(move(s, p.id, parsed.data.dir, ctx));
     }
     if (type === 'bomb') return placeBomb(s, p.id, ctx);
+    if (type === 'lift' || type === 'throw' || type === 'kick') return rideAction(s, p.id, type, ctx);
     return fail('Action inconnue');
   },
 
@@ -658,6 +787,10 @@ export const bombesParty: GameModule<BombesPartyState, BombesPartySettings> = {
           mount: u.mount,
           speed: u.speed,
           facing: u.facing,
+          carrying: u.carrying !== null,
+          range: u.range,
+          maxBombs: u.maxBombs,
+          placed: s.bombs.filter((b) => b.owner === id).length,
         };
       }),
       bombs: s.bombs.map((b) => ({ id: b.id, x: b.x, y: b.y, color: order.indexOf(b.owner), endsAt: b.endsAt })),
@@ -684,6 +817,8 @@ export const bombesParty: GameModule<BombesPartyState, BombesPartySettings> = {
       maxBombs: u?.maxBombs ?? null,
       speed: u?.speed ?? 0,
       mount: u?.mount ?? null,
+      carrying: (u?.carrying ?? null) !== null,
+      ride: rideOptions(s, playerId),
       placed: s.bombs.filter((b) => b.owner === playerId).length,
       gained: s.phase === 'round-over' ? (s.winnerId === playerId ? WIN_POINTS : 0) : null,
     };

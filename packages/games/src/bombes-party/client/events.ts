@@ -12,7 +12,11 @@ export type FxEvent =
   | { type: 'die'; x: number; y: number; color: number }
   | { type: 'hit'; x: number; y: number; color: number }
   | { type: 'pickup'; x: number; y: number; kind: PowerKind }
-  | { type: 'phase'; phase: string; winner: boolean };
+  | { type: 'phase'; phase: string; winner: boolean }
+  /** Une bombe qui arrive sur une case : lancée, frappée ou reposée. */
+  | { type: 'slide'; x: number; y: number }
+  /** Points gagnés par le vainqueur d'une manche, affichés au-dessus de lui. */
+  | { type: 'score'; x: number; y: number; color: number; text: string };
 
 const key = (x: number, y: number) => `${x},${y}`;
 
@@ -21,6 +25,15 @@ export function diffEvents(prev: BoardView, next: BoardView): FxEvent[] {
 
   const prevBombs = new Set(prev.bombs.map((b) => b.id));
   for (const b of next.bombs) if (!prevBombs.has(b.id)) out.push({ type: 'place', x: b.x, y: b.y });
+
+  // Une bombe qui change de case et qui n'est pas portée par quelqu'un vient d'être lancée ou frappée.
+  const prevBombById = new Map(prev.bombs.map((b) => [b.id, b] as const));
+  for (const b of next.bombs) {
+    const before = prevBombById.get(b.id);
+    if (!before || (before.x === b.x && before.y === b.y)) continue;
+    const carried = next.units.some((u) => u.carrying && u.x === b.x && u.y === b.y);
+    if (!carried) out.push({ type: 'slide', x: b.x, y: b.y });
+  }
 
   const prevFlames = new Set(prev.flames.map((f) => key(f.x, f.y)));
   const fresh = next.flames.filter((f) => !prevFlames.has(key(f.x, f.y)));
@@ -50,6 +63,11 @@ export function diffEvents(prev: BoardView, next: BoardView): FxEvent[] {
 
   if (next.phase && prev.phase !== next.phase) {
     out.push({ type: 'phase', phase: next.phase, winner: !!next.winnerName });
+  }
+  // Fin de manche : le vainqueur gagne ses points, affichés au-dessus de lui.
+  if (next.phase === 'round-over' && prev.phase !== 'round-over' && next.winnerName) {
+    const winner = next.units.find((u) => u.alive && u.name === next.winnerName);
+    if (winner) out.push({ type: 'score', x: winner.x, y: winner.y, color: winner.color, text: '+100' });
   }
   return out;
 }

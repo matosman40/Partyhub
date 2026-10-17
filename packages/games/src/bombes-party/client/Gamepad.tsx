@@ -2,10 +2,15 @@ import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } f
 import type { Dir } from './render.js';
 
 /**
- * Commandes tactiles, toujours visibles en bas de l'écran : une croix de
- * quatre grosses touches à gauche et le bouton A à droite. Une touche maintenue
- * répète le déplacement. Désactivées (estompées) hors manche, mais jamais cachées.
+ * Commandes tactiles, toujours visibles en bas de l'écran : une rangée de gestes du kangourou au-dessus,
+ * puis une croix de quatre grosses touches à gauche et le bouton A à droite. Une touche maintenue
+ * répète le déplacement. Les gestes et le bouton A sont estompés hors de leur utilisation, mais jamais cachés.
  */
+
+/** Gestes du kangourou monté : soulever la bombe devant soi, la lancer, ou lui donner un coup. */
+export type RideAction = 'lift' | 'throw' | 'kick';
+/** Ce qui est possible maintenant, calculé par le serveur. */
+export type RideOptions = Record<RideAction, boolean>;
 
 const REPEAT_MS = 105;
 
@@ -24,13 +29,25 @@ const KEY_LABEL: Record<Dir, { glyph: string; label: string; area: string }> = {
   down: { glyph: '▼', label: 'Bas', area: '3 / 2' },
 };
 
+const RIDE_BUTTONS: Array<{ action: RideAction; label: string; hint: string }> = [
+  { action: 'lift', label: 'Soulever', hint: 'Soulever la bombe devant vous' },
+  { action: 'throw', label: 'Lancer', hint: 'Lancer la bombe portée, jusqu’à trois cases' },
+  { action: 'kick', label: 'Frapper', hint: 'Donner un coup à la bombe devant vous' },
+];
+
 export function Gamepad({
   onMove,
   onBomb,
+  onRide,
+  ride = null,
   disabled = false,
 }: {
   onMove: (dir: Dir) => void;
   onBomb: () => void;
+  /** Gestes du kangourou. Absent : pas de rangée de gestes. */
+  onRide?: (action: RideAction) => void;
+  /** Gestes possibles maintenant ; null hors kangourou monté. */
+  ride?: RideOptions | null;
   disabled?: boolean;
 }) {
   const [held, setHeld] = useState<Dir | null>(null);
@@ -82,25 +99,53 @@ export function Gamepad({
   };
 
   return (
-    <div className="gamepad" role="group" aria-label="Commandes">
-      <div className="dpad" role="group" aria-label="Déplacement">
-        {(['up', 'left', 'right', 'down'] as Dir[]).map(key)}
+    <div className="gamepad-stack">
+      {onRide && (
+        <div className="ride-row" role="group" aria-label="Gestes du kangourou">
+          {RIDE_BUTTONS.map(({ action, label, hint }) => {
+            const on = !disabled && !!ride?.[action];
+            return (
+              <button
+                key={action}
+                type="button"
+                className="ride-btn"
+                disabled={!on}
+                title={hint}
+                aria-label={`${label} : ${hint}`}
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  if (!on) return;
+                  buzz(10);
+                  onRide(action);
+                }}
+                onContextMenu={(e) => e.preventDefault()}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+      )}
+      <div className="gamepad" role="group" aria-label="Commandes">
+        <div className="dpad" role="group" aria-label="Déplacement">
+          {(['up', 'left', 'right', 'down'] as Dir[]).map(key)}
+        </div>
+        <button
+          type="button"
+          className="a-btn"
+          disabled={disabled}
+          aria-label="Poser une bombe (bouton A)"
+          onPointerDown={(e) => {
+            e.preventDefault();
+            if (disabled) return;
+            buzz(12);
+            onBomb();
+          }}
+          onContextMenu={(e) => e.preventDefault()}
+        >
+          A
+        </button>
       </div>
-      <button
-        type="button"
-        className="a-btn"
-        disabled={disabled}
-        aria-label="Poser une bombe (bouton A)"
-        onPointerDown={(e) => {
-          e.preventDefault();
-          if (disabled) return;
-          buzz(12);
-          onBomb();
-        }}
-        onContextMenu={(e) => e.preventDefault()}
-      >
-        A
-      </button>
     </div>
   );
 }

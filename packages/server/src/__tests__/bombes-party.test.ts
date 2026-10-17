@@ -233,7 +233,7 @@ describe('Bombes party : robots', () => {
 });
 
 describe('Bombes party : animaux et vitesse', () => {
-  it('le kangourou pousse une bombe d’une case', () => {
+  it('même monté sur un kangourou, on ne pousse pas une bombe en marchant : il faut la soulever', () => {
     const { state, ctx } = started([A, B]);
     const s: BombesPartyState = {
       ...state,
@@ -243,8 +243,8 @@ describe('Bombes party : animaux et vitesse', () => {
     };
     const res = bombesParty.handleAction(s, A, 'move', { dir: 'right' }, ctx);
     if (!res.ok) throw new Error(res.error);
-    expect(res.state.units.a).toMatchObject({ x: 2, y: 1, mount: 'kangaroo' });
-    expect(res.state.bombs[0]).toMatchObject({ x: 3, y: 1 });
+    expect(res.state.units.a).toMatchObject({ x: 1, y: 1, mount: 'kangaroo' });
+    expect(res.state.bombs[0]).toMatchObject({ x: 2, y: 1 });
   });
 
   it('sans kangourou, une bombe bloque le passage', () => {
