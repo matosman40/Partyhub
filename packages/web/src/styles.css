@@ -7449,6 +7449,131 @@ html:not([data-theme='dark']) .corner-drawer {
   }
 }
 
+/* Karaoké : passage sur l’écran principal, recherche et notation sur le téléphone. */
+.karaoke-host,
+.karaoke-play {
+  display: grid;
+  gap: 14px;
+  justify-items: center;
+  text-align: center;
+  width: 100%;
+}
+
+.karaoke-head h2,
+.karaoke-title {
+  margin: 0;
+}
+
+.karaoke-song,
+.karaoke-line {
+  margin: 0;
+}
+
+.karaoke-line {
+  font-size: 1.1rem;
+}
+
+.karaoke-count {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.karaoke-screen {
+  width: min(960px, 92vw);
+  aspect-ratio: 16 / 9;
+  border-radius: 18px;
+  overflow: hidden;
+  background: #000;
+}
+
+.karaoke-screen .mq-stage {
+  width: 100%;
+  height: 100%;
+}
+
+.karaoke-ranking {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+  width: min(420px, 90vw);
+}
+
+.karaoke-ranking li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--glass);
+  border: 1px solid var(--line);
+}
+
+.karaoke-search {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  width: 100%;
+}
+
+.karaoke-search .field {
+  flex: 1;
+  min-width: 0;
+}
+
+.karaoke-hits {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+  width: 100%;
+}
+
+.karaoke-hits button {
+  width: 100%;
+  display: grid;
+  gap: 2px;
+  text-align: left;
+}
+
+.karaoke-hit-title {
+  font-weight: 600;
+}
+
+.karaoke-chosen {
+  width: 100%;
+  display: grid;
+  gap: 10px;
+}
+
+.karaoke-stars {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+}
+
+.karaoke-star {
+  font-size: 2.2rem;
+  line-height: 1;
+  padding: 4px 8px;
+  background: none;
+  border: 0;
+  color: var(--faint);
+  cursor: pointer;
+}
+
+.karaoke-star[aria-pressed='true'] {
+  color: var(--accent);
+}
+
+.karaoke-star:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
 /* Personnages illustrés (packs de sprites) */
 .chara-pack {
   /* La planche entière est chargée : seule la case doit rester visible, et ne pas capter les clics. */

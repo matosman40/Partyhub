@@ -19,6 +19,7 @@ import { rami51 } from './rami51/module.js';
 import { tarot } from './tarot/module.js';
 import { pokerTexas } from './poker/module.js';
 import { imiteMoi } from './imite-moi/module.js';
+import { karaoke } from './karaoke/module.js';
 import { banquise } from './banquise/module.js';
 import { boum } from './boum/module.js';
 import { plateauTest } from './plateau-test/module.js';
@@ -64,6 +65,7 @@ export const gameRegistry: GameModule[] = [
   tarot,
   pokerTexas,
   imiteMoi,
+  karaoke,
   banquise,
   boum,
   plateauTest,

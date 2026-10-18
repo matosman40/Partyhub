@@ -301,6 +301,13 @@ export const RELEASE_NOTES: Readonly<Partial<Record<string, readonly GameRelease
       changes: ['Première version : poker Texas hold’em, de 2 à 8 joueurs.'],
     },
   ],
+  karaoke: [
+    {
+      version: '1.0.0',
+      date: '2026-10-18',
+      changes: ['Première version : chanter un passage de chanson YouTube, noté par les autres.'],
+    },
+  ],
   'imite-moi': [
     {
       version: '1.0.0',

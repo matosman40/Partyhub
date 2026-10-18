@@ -279,6 +279,15 @@ export const GAME_LOGOS: Record<string, LogoSpec> = {
     mark: 'star',
     tilt: -4,
   },
+  karaoke: {
+    lines: ['Karaoké'],
+    fill: '#5efce8',
+    edge: '#ff2e63',
+    ink: '#0b1d2a',
+    sky: ['#0d3b4f', '#04121a'],
+    mark: 'bubble',
+    tilt: -3,
+  },
   'tribunal-absurde': {
     lines: ['Tribunal', 'de l’absurde'],
     fill: '#e9d5a6',

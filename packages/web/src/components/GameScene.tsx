@@ -1104,6 +1104,31 @@ const imiteMoi: Scene = (c) => (
   </>
 );
 
+/** KARAOKÉ : un micro au centre, des ondes sonores de chaque côté, et une scène en bas. */
+const karaoke: Scene = (c) => (
+  <>
+    <Stars c={c} count={24} maxY={H * 0.3} />
+    <rect x={W * 0.2} y={H * 0.8} width={W * 0.6} height={H * 0.2} fill={c.ink} opacity={0.4} />
+    <rect x={W * 0.5 - 36} y={H * 0.4} width={72} height={190} rx={36} fill={c.edge} />
+    <path
+      d={`M${W * 0.5 - 92} 430 Q${W * 0.5 - 92} 530 ${W * 0.5} 530 Q${W * 0.5 + 92} 530 ${W * 0.5 + 92} 430`}
+      fill="none"
+      stroke={c.fill}
+      strokeWidth={12}
+      strokeLinecap="round"
+    />
+    <path d={`M${W * 0.5} 530 V${H * 0.7}`} stroke={c.fill} strokeWidth={12} strokeLinecap="round" />
+    {[1, 2, 3].map((i) => (
+      <g key={i} fill="none" stroke={c.fill} strokeWidth={10} strokeLinecap="round" opacity={1 - i * 0.22}>
+        <path d={`M${W * 0.5 - 120 - i * 46} 390 Q${W * 0.5 - 150 - i * 46} 470 ${W * 0.5 - 120 - i * 46} 550`} />
+        <path d={`M${W * 0.5 + 120 + i * 46} 390 Q${W * 0.5 + 150 + i * 46} 470 ${W * 0.5 + 120 + i * 46} 550`} />
+      </g>
+    ))}
+    <path d={sparkle(W * 0.5 + 260, H * 0.3, 40)} fill={c.edge} />
+    <path d={sparkle(W * 0.5 - 260, H * 0.26, 28)} fill={c.fill} />
+  </>
+);
+
 /** BOUM : une explosion étoilée au centre, des étincelles, et des nuages de fumée en bas. */
 const boum: Scene = (c) => {
   const points: string[] = [];
@@ -1243,6 +1268,7 @@ const SCENES: Record<string, Scene> = {
   taquin,
   'mots-croises': motsCroises,
   'imite-moi': imiteMoi,
+  karaoke,
   boum,
   'tribunal-absurde': tribunal,
   'imposteur-parmi-nous': imposteurParmiNous,

@@ -264,6 +264,20 @@ export const clientViews: Record<string, GameClientViews> = {
     ]);
     return { Settings: ImiteSettings, Host: ImiteHost, Player: ImitePlayer };
   }),
+  karaoke: lazyViews(async () => {
+    const [{ KaraokeHost }, { KaraokePlayer }] = await Promise.all([
+      import('../karaoke/client/HostScreen.js'),
+      import('../karaoke/client/PlayerScreen.js'),
+    ]);
+    return {
+      Settings: fieldSettings([
+        { key: 'segmentSeconds', label: 'Secondes par passage', min: 6, max: 12 },
+        { key: 'pickSeconds', label: 'Secondes pour choisir', min: 20, max: 180 },
+      ]),
+      Host: KaraokeHost,
+      Player: KaraokePlayer,
+    };
+  }),
   'bombes-party': lazyViews(async () => {
     const [{ BombesPartyHost }, { BombesPartyPlayer }] = await Promise.all([
       import('../bombes-party/client/HostScreen.js'),

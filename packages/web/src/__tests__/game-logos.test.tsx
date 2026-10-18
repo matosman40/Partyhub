@@ -12,6 +12,7 @@ const BUILTIN_IDS = [
   'funambule',
   'gags-en-rafale',
   'imposteur-parmi-nous',
+  'karaoke',
   'loups-village',
   'micro-defis',
   'phrases-trous',
