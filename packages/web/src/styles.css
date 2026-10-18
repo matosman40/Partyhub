@@ -4558,9 +4558,12 @@ html.is-tv #root > .tv {
 
 /* Petits écrans en largeur (tablette à l'horizontale, etc.) : la page peut défiler */
 @media (max-width: 900px) {
+  /* Hauteur minimale d’écran entier : `html` a son propre fond, donc le dégradé du `body` ne va pas au-delà de sa
+     boîte. Sans ce minimum, il s’arrêtait sous le contenu, en bande sombre sur téléphone. */
   html.is-tv,
   html.is-tv body {
     height: auto;
+    min-height: 100vh;
     overflow: auto;
   }
 

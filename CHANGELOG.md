@@ -28,6 +28,7 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 ### Corrigé
 
 - Écran noir au démarrage : si l’application ne se lance pas (script bloqué, réseau coupé, mise à jour en cours), la page n’affichait qu’un fond sombre. Au bout de 12 secondes, elle indique maintenant de vérifier la connexion et propose de recharger la page. Une salle qui ne répond pas affiche déjà un message et un bouton « Réessayer » après 6 secondes.
+- Téléphone, vue TV : le fond sombre s’arrêtait sous le contenu, et une bande plus foncée restait en bas de l’écran. Le fond couvre maintenant toute la hauteur de l’écran.
 
 ## [0.12.0] - 2026-10-18
 
