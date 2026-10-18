@@ -246,7 +246,10 @@ function Court({ pub, now, onAction }: { pub: TennisPub; now: number; onAction: 
           const since = wall - (swingAt[side] ?? 0);
           const swing = since < SWING_MS ? -SWING_DEG * (1 - since / SWING_MS) : 0;
           const batWidth = g.racketH * 0.5;
-          bat.style.transform = `translate(${lx - batWidth / 2}px, ${ly - g.racketH}px) rotate(${(angle[side] ?? 0) + swing}deg)`;
+          const tilt = wrapDeg((angle[side] ?? 0) + swing);
+          // Raquette levée vers le haut : elle passe derrière le personnage, pour ne pas cacher son visage.
+          bat.style.zIndex = Math.abs(tilt) < 50 ? '-1' : '1';
+          bat.style.transform = `translate(${lx - batWidth / 2}px, ${ly - g.racketH}px) rotate(${tilt}deg)`;
         });
       } catch (err) {
         // Une erreur de dessin ne doit jamais figer l’écran : on la signale une seule fois, la boucle continue.

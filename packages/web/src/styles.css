@@ -11330,8 +11330,9 @@ input[type='file']::file-selector-button {
   border-radius: 22px;
   background: #2a7062;
   box-shadow:
-    0 0 0 6px rgba(255, 255, 255, 0.08),
-    0 30px 60px -28px rgba(0, 0, 0, 0.7);
+    0 0 0 3px #1c5047,
+    0 0 0 7px rgba(255, 255, 255, 0.07),
+    0 30px 60px -28px rgba(0, 0, 0, 0.75);
 }
 
 .tennis-canvas {
@@ -11351,6 +11352,19 @@ input[type='file']::file-selector-button {
   transform-origin: 50% 92%;
   pointer-events: none;
   will-change: transform;
+}
+
+.tennis-athlete::before {
+  content: '';
+  position: absolute;
+  left: 18%;
+  right: 18%;
+  bottom: 2%;
+  height: 12%;
+  z-index: -1;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(0, 20, 10, 0.5), rgba(0, 20, 10, 0) 70%);
+  pointer-events: none;
 }
 
 .tennis-athlete.is-far .tennis-tag {

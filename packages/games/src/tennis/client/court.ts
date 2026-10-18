@@ -12,7 +12,7 @@ const GROUND_BOTTOM = '#174a41';
 const SURFACE = '#2f8d72';
 const STRIPE = 'rgba(0, 40, 20, 0.08)';
 const LINE = 'rgba(255, 255, 255, 0.92)';
-const WALL = '#0f3a31';
+const WALL = '#0c2e28';
 
 function polygon(ctx: CanvasRenderingContext2D, points: Point[]): void {
   ctx.beginPath();
@@ -72,11 +72,21 @@ export function drawCourt(ctx: CanvasRenderingContext2D, g: Layout, active: bool
     polygon(ctx, [at(0, k / 10), at(1, k / 10), at(1, (k + 1) / 10), at(0, (k + 1) / 10)]);
     ctx.fill();
   }
+  // Reflet doux au centre du court, comme une lumière de stade tombant sur la surface.
+  const cy = (g.yFar + g.yNear) / 2;
+  const glow = ctx.createRadialGradient(g.cx, cy, 0, g.cx, cy, g.wNear * 0.75);
+  glow.addColorStop(0, 'rgba(255, 255, 220, 0.14)');
+  glow.addColorStop(1, 'rgba(255, 255, 220, 0)');
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, W, g.H);
   ctx.restore();
 
-  // Lignes blanches : contour, lignes de couloir, lignes de service et ligne centrale.
+  // Lignes blanches : contour, lignes de couloir, lignes de service et ligne centrale, avec une ombre légère.
   ctx.strokeStyle = LINE;
-  ctx.lineWidth = Math.max(1.5, W * 0.0045);
+  ctx.lineWidth = Math.max(1.2, W * 0.0036);
+  ctx.shadowColor = 'rgba(0, 20, 10, 0.35)';
+  ctx.shadowBlur = Math.max(1, W * 0.004);
+  ctx.shadowOffsetY = Math.max(0.5, W * 0.002);
   ctx.lineJoin = 'miter';
   ctx.lineCap = 'butt';
   polygon(ctx, [T, R, Bm, L]);
@@ -86,6 +96,9 @@ export function drawCourt(ctx: CanvasRenderingContext2D, g: Layout, active: bool
   segment(ctx, at(0.12, 0.2), at(0.88, 0.2));
   segment(ctx, at(0.12, 0.8), at(0.88, 0.8));
   segment(ctx, at(0.5, 0.2), at(0.5, 0.8));
+  ctx.shadowColor = 'rgba(0, 0, 0, 0)';
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetY = 0;
 
   // Murs : un côté sans joueur (libre ou éliminé) est une bordure sombre, qui renvoie la balle.
   for (const side of SIDES) {
@@ -97,7 +110,7 @@ export function drawCourt(ctx: CanvasRenderingContext2D, g: Layout, active: bool
 function drawWall(ctx: CanvasRenderingContext2D, g: Layout, side: Side): void {
   const [a, b] = edgeOf(side);
   ctx.strokeStyle = WALL;
-  ctx.lineWidth = g.W * 0.014;
+  ctx.lineWidth = g.W * 0.009;
   ctx.lineCap = 'butt';
   segment(ctx, project(g, a.u, a.v), project(g, b.u, b.v));
 }
