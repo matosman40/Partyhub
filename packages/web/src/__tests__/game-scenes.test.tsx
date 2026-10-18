@@ -11,6 +11,7 @@ const BUILTIN_IDS = [
   'funambule',
   'gags-en-rafale',
   'imposteur',
+  'imposteur-parmi-nous',
   'loups-village',
   'micro-defis',
   'phrases-trous',
@@ -24,6 +25,8 @@ const BUILTIN_IDS = [
   'rami-51',
   'reflexe',
   'tarot',
+  'telephone-arabe',
+  'tribunal-absurde',
 ];
 
 const render = (id: string, name = 'Un jeu') => renderToStaticMarkup(<GameScene gameId={id} name={name} />);

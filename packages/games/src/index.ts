@@ -26,6 +26,9 @@ import { plateauTest } from './plateau-test/module.js';
 import { aventureIa } from './aventure/module.js';
 import { tennisParty } from './tennis/module.js';
 import { plateauFete } from './plateau-fete/module.js';
+import { tribunalAbsurde } from './tribunal-absurde/module.js';
+import { imposteurParmiNous } from './imposteur-parmi-nous/module.js';
+import { telephoneArabe } from './telephone-arabe/module.js';
 
 /**
  * Registre explicite des jeux disponibles.
@@ -40,6 +43,9 @@ export const gameRegistry: GameModule[] = [
   association,
   plutotQui,
   imposteur,
+  imposteurParmiNous,
+  tribunalAbsurde,
+  telephoneArabe,
   aventureIa,
   plusOuMoins,
   reflexe,

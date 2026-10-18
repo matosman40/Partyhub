@@ -162,6 +162,30 @@ export const clientViews: Record<string, GameClientViews> = {
       Player: ImposteurPlayer,
     };
   }),
+  'tribunal-absurde': lazyViews(async () => {
+    const [{ TribunalHost }, { TribunalPlayer }, { TribunalSettings }] = await Promise.all([
+      import('../tribunal-absurde/client/HostScreen.js'),
+      import('../tribunal-absurde/client/PlayerScreen.js'),
+      import('../tribunal-absurde/client/Settings.js'),
+    ]);
+    return { Settings: TribunalSettings, Host: TribunalHost, Player: TribunalPlayer };
+  }),
+  'imposteur-parmi-nous': lazyViews(async () => {
+    const [{ ImposteurPartageHost }, { ImposteurPartagePlayer }, { ImposteurPartageSettings }] = await Promise.all([
+      import('../imposteur-parmi-nous/client/HostScreen.js'),
+      import('../imposteur-parmi-nous/client/PlayerScreen.js'),
+      import('../imposteur-parmi-nous/client/Settings.js'),
+    ]);
+    return { Settings: ImposteurPartageSettings, Host: ImposteurPartageHost, Player: ImposteurPartagePlayer };
+  }),
+  'telephone-arabe': lazyViews(async () => {
+    const [{ TelephoneHost }, { TelephonePlayer }, { TelephoneArabeSettings }] = await Promise.all([
+      import('../telephone-arabe/client/HostScreen.js'),
+      import('../telephone-arabe/client/PlayerScreen.js'),
+      import('../telephone-arabe/client/Settings.js'),
+    ]);
+    return { Settings: TelephoneArabeSettings, Host: TelephoneHost, Player: TelephonePlayer };
+  }),
   'plateau-fete': lazyViews(async () => {
     const [{ PlateauHost }, { PlateauPlayer }] = await Promise.all([
       import('../plateau-fete/client/HostScreen.js'),

@@ -9,6 +9,39 @@ import type { GameRelease } from '@partyhub/shared';
  * Les dates sont celles de la version de PartyHub qui a publié le changement (voir CHANGELOG.md).
  */
 export const RELEASE_NOTES: Readonly<Partial<Record<string, readonly GameRelease[]>>> = {
+  'tribunal-absurde': [
+    {
+      version: '1.0.0',
+      date: '2026-10-18',
+      changes: [
+        'Nouveau jeu pour 3 à 10 joueurs : une situation improbable apparaît, chacun écrit sa défense, puis le jury (les autres joueurs) vote anonymement pour la meilleure.',
+        'Quatre ambiances : humour noir, mauvaise foi, excuses impossibles, adultes. « Mélange » change d’ambiance à chaque affaire.',
+        'Chaque vote rapporte 100 points à l’auteur. La défense la plus votée est acquittée, les autres sont condamnées.',
+      ],
+    },
+  ],
+  'imposteur-parmi-nous': [
+    {
+      version: '1.0.0',
+      date: '2026-10-18',
+      changes: [
+        'Nouveau jeu pour 3 à 10 joueurs : l’imposteur ignore le mot secret. Chacun dit une phrase, puis tout le monde vote pour le démasquer.',
+        'Quatre modes : espion (un mot proche), intrus (un mot d’une autre catégorie), mot interdit (le mot ne doit jamais être prononcé), rôle secret (aucun mot).',
+        'L’imposteur gagne s’il survit au vote, ou s’il devine le mot après avoir été démasqué.',
+      ],
+    },
+  ],
+  'telephone-arabe': [
+    {
+      version: '1.0.0',
+      date: '2026-10-18',
+      changes: [
+        'Nouveau jeu pour 2 à 10 joueurs : une phrase absurde est dessinée au doigt, puis décrite par le joueur suivant, et ainsi de suite.',
+        'Temps par étape libre, de 45 secondes ou de 30 secondes. Phrases de départ tirées au hasard, ou écrites par les joueurs.',
+        'À la fin, l’écran principal montre toute l’évolution de chaque phrase, de la phrase de départ jusqu’au résultat final.',
+      ],
+    },
+  ],
   'plateau-fete': [
     {
       version: '1.1.0',

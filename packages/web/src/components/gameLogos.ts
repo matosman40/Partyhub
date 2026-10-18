@@ -288,6 +288,33 @@ export const GAME_LOGOS: Record<string, LogoSpec> = {
     mark: 'star',
     tilt: -4,
   },
+  'tribunal-absurde': {
+    lines: ['Tribunal', 'de l’absurde'],
+    fill: '#e9d5a6',
+    edge: '#ff4d6d',
+    ink: '#1f0a12',
+    sky: ['#4a1030', '#14040f'],
+    mark: 'skyline',
+    tilt: -3,
+  },
+  'imposteur-parmi-nous': {
+    lines: ['L’imposteur', 'parmi nous'],
+    fill: '#ff2e63',
+    edge: '#ffd23f',
+    ink: '#14061f',
+    sky: ['#2d0f4a', '#0a0316'],
+    mark: 'lens',
+    tilt: -3,
+  },
+  'telephone-arabe': {
+    lines: ['Téléphone arabe', 'illustré'],
+    fill: '#6cc8ff',
+    edge: '#ffd23f',
+    ink: '#0d1b2a',
+    sky: ['#0f4c75', '#06182a'],
+    mark: 'duo',
+    tilt: -3,
+  },
 };
 
 /** Identité de repli : déterministe, à partir de l’identifiant et du nom du jeu. */
