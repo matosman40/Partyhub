@@ -7,7 +7,7 @@ name: partyhub
 
 services:
   partyhub:
-    image: ghcr.io/matosman40/partyhub:0.11.0
+    image: ghcr.io/matosman40/partyhub:0.12.0
     pull_policy: missing
     container_name: partyhub
     restart: unless-stopped

@@ -31,7 +31,7 @@ Légende : **Fait** = dans le dépôt. **À faire** = pas commencé. **En cours*
 | 0.8.0 | Robustesse des parties | Salles et parties survivant à un redémarrage (à faire) ; sessions d'administration persistantes (**Fait**, migration 6) | À étudier |
 | 0.9.0 | Jeux JavaScript | Code de paquet exécuté dans un bac à sable WebAssembly, limites de temps et de mémoire | À faire (revue de sécurité requise) |
 | 0.11.0 | Réactivité et capteurs | Funambule, Micro-défis, capteurs relayés, retours immédiats au téléphone, premier chargement allégé | **Publiée** (tag `v0.11.0`) |
-| 0.12.0 | Recettes et sauvegarde complète | Format 3 (recettes et écrans déclaratifs), catalogue en fiches, championnat, Banquise, sauvegarde avec les paquets installés | **Prête, non publiée** : tag à poser après validation |
+| 0.12.0 | Recettes et sauvegarde complète | Format 3 (recettes et écrans déclaratifs), catalogue en fiches, championnat, Banquise, sauvegarde avec les paquets installés | **Publiée** (tag `v0.12.0`) |
 | 1.0.0 | Première version stable | Critères ci-dessous | À faire |
 
 ## Détail par version
