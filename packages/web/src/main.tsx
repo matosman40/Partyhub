@@ -14,6 +14,7 @@ import './styles.css';
 import './styles/rami51.css';
 import './styles/tarot.css';
 import './styles/board.css';
+import './styles/plateau-fete.css';
 import './styles/quiz-phrases.css';
 import './styles/championship.css';
 import './styles/catalog.css';

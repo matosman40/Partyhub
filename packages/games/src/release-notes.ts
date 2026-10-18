@@ -9,6 +9,24 @@ import type { GameRelease } from '@partyhub/shared';
  * Les dates sont celles de la version de PartyHub qui a publié le changement (voir CHANGELOG.md).
  */
 export const RELEASE_NOTES: Readonly<Partial<Record<string, readonly GameRelease[]>>> = {
+  'plateau-fete': [
+    {
+      version: '1.1.0',
+      date: '2026-10-18',
+      changes: [
+        'Les mêmes six défis de plus que Micro-Défis (glisser, répéter le motif, pincer, lancer, applaudir, cacher la lumière), tirés au sort dans les mini-jeux du plateau.',
+      ],
+    },
+    {
+      version: '1.0.0',
+      date: '2026-10-18',
+      changes: [
+        'Nouveau jeu de plateau pour 2 à 8 joueurs : chacun lance le dé sur son téléphone, puis les pions avancent sur un anneau de 60 cases.',
+        'Trois étoiles à acheter pour 20 pièces, des cases à pièces, des événements (pari, pickpocket, grand saut) et un mini-jeu de cinq défis tous les trois tours.',
+        'Une partie dure environ 25 minutes, 40 tours. Le plus d’étoiles gagne, puis le plus de pièces.',
+      ],
+    },
+  ],
   'quiz-party': [
     {
       version: '1.1.0',
@@ -63,6 +81,14 @@ export const RELEASE_NOTES: Readonly<Partial<Record<string, readonly GameRelease
   'plus-ou-moins': [{ version: '1.0.0', date: '2026-10-14', changes: ['Première version publique.'] }],
   reflexe: [{ version: '1.0.0', date: '2026-10-14', changes: ['Première version publique.'] }],
   'micro-defis': [
+    {
+      version: '1.1.0',
+      date: '2026-10-18',
+      changes: [
+        'Six défis de plus, qui utilisent les gestes et les capteurs du téléphone : glisser dans l’ordre des flèches, répéter un motif de vibrations, pincer à la bonne taille, lancer le ballon, applaudir, couvrir la lumière de la caméra.',
+        'Le motif et la vibration ne sont pas proposés sur tous les téléphones : sans vibration, le motif s’affiche à l’écran ; la caméra et le micro demandent une autorisation.',
+      ],
+    },
     {
       version: '1.0.0',
       date: '2026-10-17',

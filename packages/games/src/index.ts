@@ -25,6 +25,7 @@ import { boum } from './boum/module.js';
 import { plateauTest } from './plateau-test/module.js';
 import { aventureIa } from './aventure/module.js';
 import { tennisParty } from './tennis/module.js';
+import { plateauFete } from './plateau-fete/module.js';
 
 /**
  * Registre explicite des jeux disponibles.
@@ -63,6 +64,7 @@ export const gameRegistry: GameModule[] = [
   boum,
   plateauTest,
   tennisParty,
+  plateauFete,
 ];
 
 export function findGame(id: string): GameModule | undefined {
@@ -78,6 +80,8 @@ export { imposteur } from './imposteur/module.js';
 export { aventureIa } from './aventure/module.js';
 export { tennisParty } from './tennis/module.js';
 export type { TennisSettings, TennisState } from './tennis/module.js';
+export { plateauFete } from './plateau-fete/module.js';
+export type { PlateauState, PlateauSettings } from './plateau-fete/module.js';
 export { plusOuMoins } from './plus-ou-moins/module.js';
 export { reflexe } from './reflexe/module.js';
 export { microDefis, microDefisSettingsSchema } from './micro-defis/module.js';

@@ -769,6 +769,67 @@ const microDefis: Scene = (c) => {
   );
 };
 
+/** Plateau fête : une grande roue illuminée, une guirlande de lampions et des tentes sur l’horizon, de nuit. */
+const plateauFete: Scene = (c) => {
+  const horizon = H * 0.72;
+  const cx = W * 0.7;
+  const cy = H * 0.4;
+  const R = 230;
+  const spokes: ReactNode[] = [];
+  const cabins: ReactNode[] = [];
+  for (let i = 0; i < 12; i++) {
+    const a = (i / 12) * Math.PI * 2;
+    const x = cx + Math.cos(a) * R;
+    const y = cy + Math.sin(a) * R;
+    spokes.push(<line key={`s${i}`} x1={cx} y1={cy} x2={x} y2={y} />);
+    cabins.push(
+      <g key={`c${i}`}>
+        <line x1={x} y1={y} x2={x} y2={y + 26} />
+        <rect x={x - 11} y={y + 26} width={22} height={18} rx={4} fill={i % 2 ? c.fill : c.edge} stroke="none" />
+      </g>,
+    );
+  }
+  const bulbs: ReactNode[] = [];
+  for (let i = 0; i <= 26; i++) {
+    const t = i / 26;
+    const x = W * 0.06 + t * W * 0.88;
+    const sag = Math.sin(t * Math.PI) * 70;
+    bulbs.push(
+      <circle key={`b${i}`} cx={x} cy={H * 0.22 + sag} r={6} fill={i % 3 === 0 ? c.edge : c.fill} stroke="none" />,
+    );
+  }
+  const tents: ReactNode[] = [];
+  for (let i = 0; i < 9; i++) {
+    const x = span(c.r, 40, W - 40);
+    const w = span(c.r, 90, 150);
+    tents.push(
+      <polygon
+        key={`t${i}`}
+        points={`${x - w / 2},${horizon} ${x},${horizon - span(c.r, 70, 110)} ${x + w / 2},${horizon}`}
+        fill="#000"
+        opacity={0.5}
+        stroke="none"
+      />,
+    );
+  }
+  return (
+    <>
+      <Stars c={c} count={70} maxY={horizon - 120} />
+      <circle cx={cx} cy={cy} r={R + 60} fill={c.fill} opacity={0.07} />
+      <g stroke={c.edge} strokeWidth={5} opacity={0.55} fill="none">
+        <circle cx={cx} cy={cy} r={R} />
+        {spokes}
+      </g>
+      <g stroke={c.edge} strokeWidth={3} opacity={0.6}>
+        {cabins}
+      </g>
+      <rect x={0} y={horizon} width={W} height={H - horizon} fill="#000" opacity={0.35} />
+      {tents}
+      <g opacity={0.85}>{bulbs}</g>
+    </>
+  );
+};
+
 /** Phrases à trous : des lignes à compléter au centre, des cartes éparpillées sous la phrase. */
 const phrasesTrous: Scene = (c) => (
   <>
@@ -1122,6 +1183,7 @@ const SCENES: Record<string, Scene> = {
   'poker-texas': poker,
   funambule,
   'micro-defis': microDefis,
+  'plateau-fete': plateauFete,
   'gags-en-rafale': gagsEnRafale,
   'cartes-couleurs': cartesCouleurs,
   'cartes-coco': cartesCoco,

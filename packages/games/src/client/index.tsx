@@ -162,6 +162,17 @@ export const clientViews: Record<string, GameClientViews> = {
       Player: ImposteurPlayer,
     };
   }),
+  'plateau-fete': lazyViews(async () => {
+    const [{ PlateauHost }, { PlateauPlayer }] = await Promise.all([
+      import('../plateau-fete/client/HostScreen.js'),
+      import('../plateau-fete/client/PlayerScreen.js'),
+    ]);
+    return {
+      Settings: fieldSettings([]),
+      Host: PlateauHost,
+      Player: PlateauPlayer,
+    };
+  }),
   'micro-defis': lazyViews(async () => {
     const [{ MicroDefisHost }, { MicroDefisPlayer }] = await Promise.all([
       import('../micro-defis/client/HostScreen.js'),

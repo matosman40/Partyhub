@@ -174,6 +174,41 @@ export class ShakeDetector {
 }
 
 /**
+ * Claquements : une montée franche du niveau sonore (au-dessus de `high`, après être retombé sous `low`) compte
+ * pour un claquement, avec un délai minimal entre deux. Le seuil bas évite de compter deux fois le même bruit.
+ */
+/** Niveau sonore (0 à 1) au-dessus duquel un claquement est reconnu, et niveau sous lequel on se réarme. */
+export const CLAP_HIGH = 0.5;
+export const CLAP_LOW = 0.25;
+
+export class ClapDetector {
+  private armed = true;
+  readonly pulses: Pulses;
+
+  constructor(
+    private readonly high = CLAP_HIGH,
+    private readonly low = CLAP_LOW,
+    cooldownMs = 180,
+  ) {
+    this.pulses = new Pulses(cooldownMs);
+  }
+
+  /** Reçoit un niveau de 0 à 1 à l’instant `t`. Renvoie vrai si un claquement vient d’être compté. */
+  feed(level: number, t: number): boolean {
+    this.pulses.tick(t);
+    if (level <= this.low) this.armed = true;
+    if (!this.armed || level < this.high) return false;
+    this.armed = false;
+    return this.pulses.hit(t);
+  }
+
+  reset(): void {
+    this.armed = true;
+    this.pulses.reset();
+  }
+}
+
+/**
  * Maintien : le temps passé sans interruption dans une zone. Sortir de la zone remet le compteur à zéro.
  */
 export class HoldTimer {

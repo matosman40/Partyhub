@@ -160,7 +160,7 @@ export const microDefis: GameModule<MicroDefisState, MicroDefisSettings> = {
     name: 'Micro-Défis',
     description: 'Des défis éclair à la manette : secouez, penchez, tournez, soufflez, tapotez !',
     icon: '🎮',
-    version: '1.0.0',
+    version: '1.1.0',
     apiVersion: 1,
     minPlayers: 1,
     maxPlayers: 12,

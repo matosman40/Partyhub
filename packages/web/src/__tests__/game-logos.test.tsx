@@ -15,6 +15,7 @@ const BUILTIN_IDS = [
   'loups-village',
   'micro-defis',
   'phrases-trous',
+  'plateau-fete',
   'plus-ou-moins',
   'plutot-qui',
   'poker-texas',
