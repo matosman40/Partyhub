@@ -83,7 +83,6 @@ export const RELEASE_NOTES: Readonly<Partial<Record<string, readonly GameRelease
   ],
   association: [{ version: '1.0.0', date: '2026-10-14', changes: ['Première version publique.'] }],
   'plutot-qui': [{ version: '1.0.0', date: '2026-10-14', changes: ['Première version publique.'] }],
-  imposteur: [{ version: '1.0.0', date: '2026-10-14', changes: ['Première version publique.'] }],
   'aventure-ia': [
     {
       version: '1.2.0',

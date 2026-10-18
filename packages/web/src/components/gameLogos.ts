@@ -108,15 +108,6 @@ export const GAME_LOGOS: Record<string, LogoSpec> = {
     mark: 'star',
     tilt: -1,
   },
-  imposteur: {
-    lines: ['L’Imposteur'],
-    fill: '#3ff5e0',
-    edge: '#ff6b9a',
-    ink: '#041822',
-    sky: ['#0d3b52', '#03131c'],
-    mark: 'lens',
-    tilt: 0,
-  },
   'loups-village': {
     lines: ['Les Loups', 'du village'],
     fill: '#f4d35e',

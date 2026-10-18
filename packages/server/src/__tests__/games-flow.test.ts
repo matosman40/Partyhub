@@ -156,22 +156,22 @@ describe('Association express — parcours complet', () => {
   });
 });
 
-describe("L'Imposteur — confidentialité des rôles", () => {
+describe('L’imposteur parmi nous — confidentialité des rôles', () => {
   it('donne le mot aux membres de l’équipe, jamais à l’imposteur', async () => {
-    const { host, players } = await openRoom('imposteur', ['Ana', 'Ben', 'Cléo']);
+    const { host, players } = await openRoom('imposteur-parmi-nous', ['Ana', 'Ben', 'Cléo']);
     // Vues de départ : posées avant le lancement pour ne rien manquer.
     const firstViews = players.map((p) => nextPlayerView(p.sock, (v) => v.game !== null));
     await startGame(host);
     const views = await Promise.all(firstViews);
 
-    const roles = views.map((v) => v.game?.player as { role: string; word: string | null });
-    expect(roles.filter((r) => r.role === 'impostor')).toHaveLength(1);
+    const roles = views.map((v) => (v.game?.player as { role: { isImpostor: boolean; word: string | null } }).role);
+    expect(roles.filter((r) => r.isImpostor)).toHaveLength(1);
     for (const r of roles) {
-      if (r.role === 'impostor') expect(r.word).toBeNull();
+      if (r.isImpostor) expect(r.word).toBeNull();
       else expect(r.word).toEqual(expect.any(String));
     }
     // Le mot secret ne figure jamais dans la vue publique.
-    const word = roles.find((r) => r.role === 'crew')!.word!;
+    const word = roles.find((r) => !r.isImpostor)!.word!;
     expect(JSON.stringify(views[0]!.game?.public)).not.toContain(word);
   });
 });

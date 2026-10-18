@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { GameContext, GameModule, PlayerRef } from '@partyhub/shared';
 import { directory, everyConnectedDone, fail, normalizeText, ok, rankEntries, shuffle } from '../common/engine.js';
-import rawWords from '../imposteur/content.fr.json' with { type: 'json' };
+import rawWords from './content.fr.json' with { type: 'json' };
 import {
   CLUE_MAX_LENGTH,
   GUESS_MAX_LENGTH,

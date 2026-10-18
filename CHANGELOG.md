@@ -7,7 +7,7 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 ### Ajouté
 
 - Tribunal de l’absurde : une situation absurde s’affiche, chacun écrit sa défense sur son téléphone, puis les autres joueurs votent pour la meilleure. Chaque vote rapporte 100 points à l’auteur de la défense, et la défense la plus votée est acquittée. Quatre ambiances : humour noir, mauvaise foi, excuses impossibles, adultes.
-- L’imposteur parmi nous : chaque joueur reçoit le mot secret, sauf l’imposteur, qui n’en connaît que la catégorie (ou rien, selon le mode). Chacun dit une phrase sans trahir le mot, puis les joueurs votent. L’imposteur gagne s’il n’est pas démasqué, ou s’il devine le mot après l’avoir été. Quatre modes : espion, intrus, mot interdit, rôle secret. Ce jeu est distinct de « L’Imposteur », qui reste inchangé.
+- L’imposteur parmi nous : chaque joueur reçoit le mot secret, sauf l’imposteur, qui n’en connaît que la catégorie (ou rien, selon le mode). Chacun dit une phrase sans trahir le mot, puis les joueurs votent. L’imposteur gagne s’il n’est pas démasqué, ou s’il devine le mot après l’avoir été. Quatre modes : espion, intrus, mot interdit, rôle secret. Il remplace « L’Imposteur », retiré du catalogue.
 - Téléphone arabe illustré : une phrase absurde est dessinée au doigt, puis décrite par le joueur suivant, et ainsi de suite. À la fin, l’écran principal montre toute l’évolution de chaque phrase. Le temps par étape est libre, de 45 ou de 30 secondes ; les phrases de départ sont tirées au hasard ou écrites par les joueurs.
 - Plateau fête : un jeu de plateau au dé pour 2 à 8 joueurs, d’environ 25 minutes. Chacun lance le dé sur son téléphone, puis les pions avancent sur un anneau de 60 cases, avec des pièces, des événements (pari, pickpocket, grand saut, échange de place) et trois étoiles à acheter pour 20 pièces. Tous les trois tours, un mini-jeu de cinq défis (secousses, équilibre, tapotements…) distribue des pièces. Le plus d’étoiles gagne, puis le plus de pièces. Les pions sont les personnages des profils.
 - Tennis party : un nouveau jeu de tennis pour 2 à 4 joueurs. Chacun défend un côté du court avec sa raquette, pilotée par l’inclinaison du téléphone (ou par les boutons et les flèches à défaut). Les personnages de profil sont sur l’écran principal, à côté de leur côté. Une balle ratée coûte une vie (3 par défaut, réglable de 1 à 5) ; le dernier joueur debout gagne une prime, et la partie dure au plus deux minutes et demie.
@@ -27,6 +27,10 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 
 - Aventure IA : sur l’écran principal, le personnage qui parle est affiché en grand, à côté de la scène, avec sa réplique.
 - Bombes party : le niveau est plus grand (25 × 19 cases) et accueille dix joueurs. L’écran principal montre tout le niveau, et le téléphone suit son personnage avec un cadre de taille inchangée, bloqué sur les bords du niveau. Le classement latéral passe sur deux colonnes pour que le plateau reste grand.
+
+### Retiré
+
+- L’Imposteur (premier jeu du même nom) : retiré du catalogue, remplacé par L’imposteur parmi nous.
 
 ### Corrigé
 

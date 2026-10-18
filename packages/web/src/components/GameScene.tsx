@@ -347,20 +347,6 @@ const bombes: Scene = (c) => (
   </>
 );
 
-const imposteur: Scene = (c) => (
-  <>
-    <Stars c={c} count={60} maxY={H * 0.4} color="#cfffff" />
-    <Ridge c={c} base={H * 0.6} amp={90} color="#0c2c3a" />
-    <Pines c={c} base={H * 0.7} count={26} minH={120} maxH={260} color="#082330" />
-    <rect y={H * 0.6} width={W} height={160} fill="#bfefff" opacity={0.1} />
-    <Ridge c={c} base={H * 0.82} amp={60} color="#041820" />
-    <Pines c={c} base={H * 0.9} count={14} minH={160} maxH={300} color="#020d12" />
-    <circle cx={1180} cy={600} r={150} fill={c.edge} opacity={0.12} />
-    <line x1={1180} y1={626} x2={1180} y2={700} stroke={c.ink} strokeWidth={8} strokeLinecap="round" />
-    <circle cx={1180} cy={610} r={26} fill={c.fill} />
-  </>
-);
-
 const aventure: Scene = (c) => (
   <>
     <Stars c={c} count={70} maxY={H * 0.45} />
@@ -1235,7 +1221,6 @@ const SCENES: Record<string, Scene> = {
   'bombes-party': bombes,
   'tennis-party': tennis,
   banquise,
-  imposteur,
   'aventure-ia': aventure,
   'loups-village': loups,
   'plus-ou-moins': plusOuMoins,

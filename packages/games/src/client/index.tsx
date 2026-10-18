@@ -151,17 +151,6 @@ export const clientViews: Record<string, GameClientViews> = {
       Player: PlutotQuiPlayer,
     };
   }),
-  imposteur: lazyViews(async () => {
-    const [{ ImposteurHost }, { ImposteurPlayer }] = await Promise.all([
-      import('../imposteur/client/HostScreen.js'),
-      import('../imposteur/client/PlayerScreen.js'),
-    ]);
-    return {
-      Settings: fieldSettings([{ key: 'rounds', label: 'Manches', min: 1, max: 8 }]),
-      Host: ImposteurHost,
-      Player: ImposteurPlayer,
-    };
-  }),
   'tribunal-absurde': lazyViews(async () => {
     const [{ TribunalHost }, { TribunalPlayer }, { TribunalSettings }] = await Promise.all([
       import('../tribunal-absurde/client/HostScreen.js'),

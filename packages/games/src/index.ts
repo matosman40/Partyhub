@@ -3,7 +3,6 @@ import { quizParty } from './quiz-party/module.js';
 import { phrasesTrous } from './phrases-trous/module.js';
 import { association } from './association/module.js';
 import { plutotQui } from './plutot-qui/module.js';
-import { imposteur } from './imposteur/module.js';
 import { plusOuMoins } from './plus-ou-moins/module.js';
 import { reflexe } from './reflexe/module.js';
 import { microDefis } from './micro-defis/module.js';
@@ -42,7 +41,6 @@ export const gameRegistry: GameModule[] = [
   phrasesTrous,
   association,
   plutotQui,
-  imposteur,
   imposteurParmiNous,
   tribunalAbsurde,
   telephoneArabe,
@@ -82,7 +80,6 @@ export { phrasesTrous } from './phrases-trous/module.js';
 export type { QuizSettings, QuizState } from './quiz-party/module.js';
 export { association } from './association/module.js';
 export { plutotQui } from './plutot-qui/module.js';
-export { imposteur } from './imposteur/module.js';
 export { aventureIa } from './aventure/module.js';
 export { tennisParty } from './tennis/module.js';
 export type { TennisSettings, TennisState } from './tennis/module.js';

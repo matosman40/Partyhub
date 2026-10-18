@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { GameModule } from '@partyhub/shared';
-import rawWords from '../imposteur/content.fr.json' with { type: 'json' };
+import rawWords from '../imposteur-parmi-nous/content.fr.json' with { type: 'json' };
 import {
   buildRounds,
   containsWord,
