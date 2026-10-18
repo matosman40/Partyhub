@@ -2309,9 +2309,21 @@ button.bet:active:not(:disabled) {
   /* Pleine largeur : sans cela, la grille se dimensionne à son contenu et le plateau reste petit. */
   width: 100%;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) clamp(290px, 24vw, 390px);
+  /* Colonne latérale assez large pour deux colonnes de fiches (jusqu’à dix joueurs). */
+  grid-template-columns: minmax(0, 1fr) clamp(420px, 36vw, 560px);
   gap: clamp(1rem, 2vw, 1.8rem);
   align-items: center;
+}
+
+/* Classement en deux colonnes et plus compact : il ne doit pas allonger la colonne latérale. */
+.bombes-side .ranking {
+  width: 100%;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.bombes-side .ranking li {
+  gap: 0.5rem;
+  padding: 0.4rem 0.75rem 0.4rem 0.45rem;
 }
 
 .arena.arena-host {
@@ -2327,16 +2339,18 @@ button.bet:active:not(:disabled) {
   min-width: 0;
 }
 
+/* Jusqu’à dix joueurs : deux colonnes, pour que la colonne latérale ne fasse pas rétrécir tout l’écran. */
 .bombes-players {
   display: grid;
-  gap: 0.7rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
 .bombes-player {
-  padding: 0.8rem 1rem;
+  padding: 0.6rem 0.75rem;
   border-radius: 18px;
   border: 2px solid;
   background: rgba(14, 10, 40, 0.86);
@@ -2355,9 +2369,9 @@ button.bet:active:not(:disabled) {
   display: flex;
   align-items: center;
   gap: 0.55rem;
-  margin: 0 0 0.55rem;
+  margin: 0 0 0.4rem;
   font-family: var(--display);
-  font-size: clamp(1.15rem, 1.9vw, 1.6rem);
+  font-size: clamp(1rem, 1.5vw, 1.3rem);
   color: var(--text);
 }
 
@@ -8888,6 +8902,7 @@ html:not([data-theme='dark']) .corner-drawer {
 
 /* Aventure IA */
 .aventure {
+  width: min(100%, 1180px);
   max-width: min(100%, 1180px);
   margin-inline: auto;
 }
@@ -9439,6 +9454,71 @@ html:not([data-theme='dark']) .corner-drawer {
 .aventure-npc-line {
   margin: 0.2rem 0 0;
   font-style: italic;
+}
+
+/* Scène et personnage qui parle côte à côte : le personnage occupe la colonne de droite, en grand. */
+.aventure-stage {
+  display: grid;
+  gap: clamp(0.8rem, 2vw, 1.4rem);
+  width: min(100%, 1180px);
+  align-items: stretch;
+}
+
+.aventure-stage.has-figure {
+  grid-template-columns: minmax(0, 1fr) minmax(17rem, 38%);
+}
+
+.aventure-stage.has-figure .aventure-scene {
+  width: 100%;
+}
+
+.aventure-stage-figure {
+  display: grid;
+  align-content: end;
+  justify-items: center;
+  gap: 0.6rem;
+  margin: 0;
+}
+
+.aventure-stage-art {
+  width: 100%;
+  max-width: 30rem;
+  aspect-ratio: 3 / 4;
+  max-height: 64vh;
+}
+
+.aventure-stage-art > * {
+  width: 100%;
+  height: 100%;
+}
+
+.aventure-stage-caption {
+  display: grid;
+  gap: 0.2rem;
+  text-align: center;
+  font-size: clamp(1rem, 1.8vw, 1.25rem);
+}
+
+.aventure-stage-line {
+  margin: 0;
+  padding: 0.7rem 0.9rem;
+  border-radius: var(--r-md);
+  background: var(--glass);
+  border: 1px solid var(--line-strong);
+  font-style: italic;
+  text-align: center;
+  line-height: 1.45;
+}
+
+@media (max-width: 760px) {
+  .aventure-stage.has-figure {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .aventure-stage-art {
+    max-width: 16rem;
+    max-height: 40vh;
+  }
 }
 
 .aventure-foe {
@@ -11146,4 +11226,187 @@ input[type='file']::file-selector-button {
 .recipe-sent {
   font-weight: 700;
   margin: 0.8em 0;
+}
+
+/* ==========================================================================
+   Tennis party : terrain sur l’écran principal, raquette sur le téléphone
+   ========================================================================== */
+
+.tennis-host {
+  width: 100%;
+  display: grid;
+  gap: clamp(0.4rem, 1vh, 0.9rem);
+  justify-items: center;
+}
+
+.tennis-head {
+  text-align: center;
+}
+
+.tennis-title {
+  margin: 0;
+  font-family: var(--display);
+  font-size: clamp(1.6rem, 3vw, 2.4rem);
+}
+
+.tennis-rule {
+  margin: 0.2rem 0 0;
+  font-size: clamp(0.95rem, 1.4vw, 1.2rem);
+}
+
+.tennis-court-wrap {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) min(62vh, 70vw) minmax(180px, 1fr);
+  grid-template-rows: auto min(62vh, 70vw) auto;
+  grid-template-areas:
+    '. top .'
+    'left court right'
+    '. bottom .';
+  align-items: center;
+  justify-items: center;
+  gap: 0.6rem;
+}
+
+.tennis-court-box {
+  grid-area: court;
+  width: 100%;
+  border-radius: 22px;
+  overflow: hidden;
+  box-shadow:
+    0 0 0 6px rgba(255, 255, 255, 0.08),
+    0 30px 60px -28px rgba(0, 0, 0, 0.7);
+}
+
+.tennis-court {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1 / 1;
+}
+
+.tennis-seat {
+  min-width: 0;
+  display: grid;
+  justify-items: center;
+  gap: 0.25rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: 20px;
+  border: 2px solid var(--line-strong);
+  background: rgba(14, 10, 40, 0.86);
+  text-align: center;
+  box-shadow: 0 12px 26px -16px rgba(0, 0, 0, 0.7);
+  transition:
+    opacity 0.3s ease,
+    filter 0.3s ease;
+}
+
+.tennis-seat.is-out {
+  opacity: 0.45;
+  filter: grayscale(0.7);
+}
+
+.tennis-seat.is-empty {
+  display: grid;
+  place-items: center;
+  min-height: 4rem;
+  border-style: dashed;
+  background: transparent;
+  box-shadow: none;
+}
+
+.tennis-seat-name {
+  font-family: var(--display);
+  font-size: clamp(1.1rem, 1.8vw, 1.5rem);
+  color: var(--text);
+}
+
+.tennis-hearts,
+.tennis-points {
+  font-size: clamp(0.95rem, 1.4vw, 1.2rem);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Téléphone : la raquette glisse sur une piste, horizontale pour bas et haut, verticale pour gauche et droite. */
+.tennis-player {
+  display: grid;
+  justify-items: center;
+  gap: 1rem;
+}
+
+.tennis-side {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 1.4rem;
+}
+
+.tennis-status {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+.tennis-track {
+  position: relative;
+  width: min(100%, 360px);
+  height: 44px;
+  border-radius: 999px;
+  background: var(--glass);
+  border: 1px solid var(--line-strong);
+  overflow: hidden;
+}
+
+.tennis-racket {
+  position: absolute;
+  top: 50%;
+  width: 20%;
+  height: 22px;
+  margin-top: -11px;
+  border-radius: 999px;
+  transform: translateX(-50%);
+  transition: left 0.09s linear;
+}
+
+.tennis-player.is-vertical .tennis-track {
+  width: 64px;
+  height: min(52vh, 360px);
+}
+
+.tennis-player.is-vertical .tennis-racket {
+  top: auto;
+  left: 10%;
+  right: 10%;
+  width: auto;
+  height: 20%;
+  margin: 0;
+  transform: translateY(-50%);
+  transition: top 0.09s linear;
+}
+
+.tennis-pad {
+  display: flex;
+  gap: 0.8rem;
+}
+
+.tennis-player.is-vertical .tennis-pad {
+  flex-direction: column;
+}
+
+.tennis-btn {
+  width: 88px;
+  height: 72px;
+  border-radius: 20px;
+  border: 1px solid var(--line-strong);
+  background: var(--glass-2);
+  color: var(--text);
+  font-size: 1.8rem;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.tennis-btn:active {
+  transform: scale(0.96);
+  background: rgba(255, 255, 255, 0.18);
 }

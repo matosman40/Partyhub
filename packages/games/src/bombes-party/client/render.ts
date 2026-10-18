@@ -72,7 +72,65 @@ export function cellOrigin(L: Layout, x: number, y: number): { x: number; y: num
   return { x: L.pad + x * L.T, y: L.pad + y * L.T };
 }
 
-export const PLAYER_COLORS = ['#ff3d8b', '#3ff5e0', '#ffc83d', '#b59cff'];
+/**
+ * Cadre du téléphone : même taille qu’avant (13 × 11 cases visibles). Le niveau peut être plus grand : le cadre
+ * le suit, centré sur le personnage, sans sortir du niveau.
+ */
+export const CAMERA_COLS = 13;
+export const CAMERA_ROWS = 11;
+
+export interface Frame {
+  /** Mise en page du niveau entier, en pixels CSS. */
+  L: Layout;
+  /** Hauteur du canevas à l’écran. */
+  viewH: number;
+  /** Décalage de la caméra, en pixels CSS (nul sans caméra). */
+  camX: number;
+  camY: number;
+  /** Vrai quand la caméra suit un personnage. */
+  camera: boolean;
+}
+
+const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
+
+/**
+ * Cadre à dessiner. Sans point de suivi (écran principal, spectateur), le niveau entier tient dans la largeur.
+ * Avec un point de suivi (téléphone), les cases gardent la taille du cadre, et la caméra centre ce point,
+ * borné aux bords du niveau.
+ */
+export function frameFor(
+  cssWidth: number,
+  cols: number,
+  rows: number,
+  focus: { x: number; y: number } | null | undefined,
+): Frame {
+  if (!focus) {
+    const L = layoutFor(cssWidth, cols, rows);
+    return { L, viewH: L.height, camX: 0, camY: 0, camera: false };
+  }
+  const T = cssWidth / (CAMERA_COLS + PAD_TILES * 2);
+  const pad = PAD_TILES * T;
+  const L: Layout = { T, tileD: T, pad, width: cols * T + pad * 2, height: rows * T + pad * 2 };
+  const viewH = CAMERA_ROWS * T + pad * 2;
+  const cx = pad + (focus.x + 0.5) * T;
+  const cy = pad + (focus.y + 0.5) * T;
+  const camX = clamp(cx - cssWidth / 2, 0, Math.max(0, L.width - cssWidth));
+  const camY = clamp(cy - viewH / 2, 0, Math.max(0, L.height - viewH));
+  return { L, viewH, camX, camY, camera: true };
+}
+
+export const PLAYER_COLORS = [
+  '#ff3d8b',
+  '#3ff5e0',
+  '#ffc83d',
+  '#b59cff',
+  '#ff7a3d',
+  '#7dff6a',
+  '#3d7bff',
+  '#f5f5f5',
+  '#ff5fd2',
+  '#c8ff3d',
+];
 export const INK = '#0c0a24';
 const FACE = '#fdf0dc';
 const BOOTS = '#2a2770';

@@ -107,7 +107,12 @@ export function BombesPartyPlayer({ publicState: pub, playerState: me, send }: P
   const view = pub as BoardView;
   const board = (
     <div className="arena arena-player" data-pos={me ? `${me.x},${me.y}` : undefined}>
-      <BoardCanvas view={view} label="Votre plateau" celebrate={celebrate} />
+      <BoardCanvas
+        view={view}
+        label="Votre plateau"
+        celebrate={celebrate}
+        focus={me ? { x: me.x, y: me.y } : null}
+      />
     </div>
   );
 

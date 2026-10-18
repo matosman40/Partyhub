@@ -7,6 +7,10 @@ import type { GameContext, PlayerRef } from '@partyhub/shared';
  * puis une partie complète jouée uniquement par des robots, sur plusieurs graines.
  */
 
+/** Dimensions du niveau (voir WIDTH et HEIGHT dans packages/games/src/bombes-party/module.ts). */
+const W = 25;
+const H = 19;
+
 const A: PlayerRef = { id: 'a', name: 'Alice' };
 const B: PlayerRef = { id: 'b', name: 'Bob' };
 
@@ -26,10 +30,10 @@ function makeCtx(connected: string[]) {
 /** Grille vide : bordure et piliers, sol partout ailleurs. */
 function emptyGrid(): string[] {
   const rows: string[] = [];
-  for (let y = 0; y < 11; y++) {
+  for (let y = 0; y < H; y++) {
     let row = '';
-    for (let x = 0; x < 13; x++) {
-      const border = x === 0 || y === 0 || x === 12 || y === 10;
+    for (let x = 0; x < W; x++) {
+      const border = x === 0 || y === 0 || x === W - 1 || y === H - 1;
       const pillar = x % 2 === 0 && y % 2 === 0;
       row += border || pillar ? '#' : '.';
     }
@@ -57,11 +61,20 @@ describe('Bombes party : règles', () => {
   it('démarre avec chaque joueur sur son coin, sans bombe ni explosion', () => {
     const { state } = started([A, B]);
     expect(state.phase).toBe('play');
-    expect(state.grid).toHaveLength(11);
-    expect(state.grid.every((row) => row.length === 13)).toBe(true);
+    expect(state.grid).toHaveLength(H);
+    expect(state.grid.every((row) => row.length === W)).toBe(true);
     expect(state.units.a).toMatchObject({ x: 1, y: 1, alive: true });
-    expect(state.units.b).toMatchObject({ x: 11, y: 1, alive: true });
+    expect(state.units.b).toMatchObject({ x: W - 2, y: 1, alive: true });
     expect(state.bombs).toEqual([]);
+  });
+
+  it('accueille dix joueurs, chacun sur une case de départ distincte', () => {
+    const players: PlayerRef[] = Array.from({ length: 10 }, (_, i) => ({ id: `p${i}`, name: `J${i}` }));
+    const { state } = started(players);
+    expect(bombesParty.manifest.maxPlayers).toBe(10);
+    const cells = Object.values(state.units).map((u) => `${u.x},${u.y}`);
+    expect(cells).toHaveLength(10);
+    expect(new Set(cells).size).toBe(10);
   });
 
   it('refuse de marcher sur un mur et respecte le délai entre deux pas', () => {
@@ -225,7 +238,7 @@ describe('Bombes party : robots', () => {
   it('les vues publique et privée ne révèlent rien d’interdit', () => {
     const { s } = playWithBots(5, 1);
     const pub = bombesParty.getPublicState(s) as { grid: string[]; ranking: unknown[] };
-    expect(pub.grid.length).toBe(11);
+    expect(pub.grid.length).toBe(H);
     expect(pub.ranking).toHaveLength(4);
     const mine = bombesParty.getPlayerState(s, 'p1') as { alive: boolean };
     expect(typeof mine.alive).toBe('boolean');

@@ -2,6 +2,17 @@
 
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [Non publié]
+
+### Ajouté
+
+- Tennis party : un nouveau jeu de tennis pour 2 à 4 joueurs. Chacun défend un côté du court avec sa raquette, pilotée par l’inclinaison du téléphone (ou par les boutons et les flèches à défaut). Les personnages de profil sont sur l’écran principal, à côté de leur côté. Une balle ratée coûte une vie (3 par défaut, réglable de 1 à 5) ; le dernier joueur debout gagne une prime, et la partie dure au plus deux minutes et demie.
+
+### Modifié
+
+- Aventure IA : sur l’écran principal, le personnage qui parle est affiché en grand, à côté de la scène, avec sa réplique.
+- Bombes party : le niveau est plus grand (25 × 19 cases) et accueille dix joueurs. L’écran principal montre tout le niveau, et le téléphone suit son personnage avec un cadre de taille inchangée, bloqué sur les bords du niveau. Le classement latéral passe sur deux colonnes pour que le plateau reste grand.
+
 ## [0.12.0] - 2026-10-18
 
 ### Ajouté

@@ -715,6 +715,34 @@ const funambule: Scene = (c) => {
   );
 };
 
+/** Tennis party : un court vu en perspective, lignes claires, et une balle en haut à droite. */
+const tennis: Scene = (c) => {
+  const top = H * 0.46;
+  return (
+    <>
+      <Stars c={c} count={30} maxY={H * 0.4} color={c.fill} />
+      <path
+        d={`M${W * 0.3} ${H} L${W * 0.7} ${H} L${W * 0.56} ${top} L${W * 0.44} ${top} Z`}
+        fill={c.fill}
+        opacity={0.16}
+      />
+      <g stroke="#ffffff" strokeWidth={3} opacity={0.35} fill="none">
+        <path d={`M${W * 0.3} ${H} L${W * 0.44} ${top} L${W * 0.56} ${top} L${W * 0.7} ${H}`} />
+        <path d={`M${W * 0.37} ${H * 0.72} L${W * 0.63} ${H * 0.72}`} />
+        <path d={`M${W * 0.5} ${top} L${W * 0.5} ${H}`} />
+      </g>
+      <circle cx={W * 0.8} cy={H * 0.22} r={H * 0.07} fill={c.edge} opacity={0.95} />
+      <path
+        d={`M${W * 0.8 - H * 0.05} ${H * 0.2} Q${W * 0.8} ${H * 0.26} ${W * 0.8 + H * 0.05} ${H * 0.19}`}
+        stroke="#ffffff"
+        strokeWidth={2}
+        opacity={0.7}
+        fill="none"
+      />
+    </>
+  );
+};
+
 /** Micro-Défis : une borne d’arcade au coucher du soleil, grille en perspective et soleil en halos. */
 const microDefis: Scene = (c) => {
   const horizon = H * 0.6;
@@ -1078,6 +1106,7 @@ const SCENES: Record<string, Scene> = {
   'quiz-party': quizParty,
   'phrases-trous': phrasesTrous,
   'bombes-party': bombes,
+  'tennis-party': tennis,
   banquise,
   imposteur,
   'aventure-ia': aventure,

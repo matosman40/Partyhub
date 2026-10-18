@@ -72,6 +72,15 @@ export const GAME_LOGOS: Record<string, LogoSpec> = {
     mark: 'bolt',
     tilt: -3,
   },
+  'tennis-party': {
+    lines: ['Tennis', 'party'],
+    fill: '#d8ff3a',
+    edge: '#2f86e6',
+    ink: '#0a1c33',
+    sky: ['#1f5fb0', '#071a33'],
+    mark: 'bolt',
+    tilt: -2,
+  },
   funambule: {
     lines: ['Funambule'],
     fill: '#ffd27a',

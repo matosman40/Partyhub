@@ -8,7 +8,7 @@ import {
   burstParticles,
   cellOrigin,
   drawScene,
-  layoutFor,
+  frameFor,
   PLAYER_COLORS,
   textParticle,
   updateParticles,
@@ -123,14 +123,21 @@ export function BoardCanvas({
   label = 'Plateau de jeu',
   sound = true,
   celebrate = 0,
+  focus = null,
 }: {
   view: BoardView;
   label?: string;
   sound?: boolean;
   /** Incrémenter pour lancer une pluie de confettis (fin de manche). */
   celebrate?: number;
+  /**
+   * Case suivie par la caméra (le personnage du téléphone). Sans lui, le niveau entier est affiché.
+   */
+  focus?: { x: number; y: number } | null;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const focusRef = useRef(focus);
+  focusRef.current = focus;
   const viewRef = useRef<BoardView>(view);
   const prevRef = useRef<BoardView | null>(null);
   const particles = useRef<Particle[]>([]);
@@ -161,7 +168,7 @@ export function BoardCanvas({
     prevRef.current = view;
     if (!prev) return;
     const canvas = canvasRef.current;
-    const L = layoutFor(canvas?.clientWidth || 360, view.width, view.height);
+    const L = frameFor(canvas?.clientWidth || 360, view.width, view.height, focusRef.current).L;
     for (const ev of diffEvents(prev, view)) {
       if (sound) playEvent(ev);
       spawnEvent(ev, L, particles.current, reduced.current);
@@ -175,8 +182,8 @@ export function BoardCanvas({
     if (celebrate <= 0) return;
     const canvas = canvasRef.current;
     const v = viewRef.current;
-    const L = layoutFor(canvas?.clientWidth || 360, v.width, v.height);
-    const colors = ['#ff4f8b', '#5eead4', '#ffd23f', '#ecebe3', '#3247e0'];
+    const L = frameFor(canvas?.clientWidth || 360, v.width, v.height, focusRef.current).L;
+    const colors =['#ff4f8b', '#5eead4', '#ffd23f', '#ecebe3', '#3247e0'];
     for (let i = 0; i < 140; i++) {
       const a = Math.random() * Math.PI * 2;
       const sp = 200 + Math.random() * 380;
@@ -205,20 +212,32 @@ export function BoardCanvas({
       if (!canvas || !v) return;
       const dpr = window.devicePixelRatio || 1;
       const cssW = canvas.clientWidth || 360;
-      const L = layoutFor(cssW, v.width, v.height);
+      const f = frameFor(cssW, v.width, v.height, focusRef.current);
       const bw = Math.round(cssW * dpr);
-      const bh = Math.round(L.height * dpr);
+      const bh = Math.round(f.viewH * dpr);
       if (canvas.width !== bw || canvas.height !== bh) {
         canvas.width = bw;
         canvas.height = bh;
       }
-      canvas.style.height = `${L.height}px`;
+      canvas.style.height = `${f.viewH}px`;
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       const dt = Math.min(0.05, (now - last) / 1000);
       updateParticles(particles.current, dt);
-      drawScene(ctx, L, v, { now, particles: particles.current, dpr, skins: skinsRef.current });
+      const opts = { now, particles: particles.current, dpr, skins: skinsRef.current };
+      if (f.camera) {
+        // Caméra : seule la fenêtre du téléphone est dessinée, décalée sur le personnage.
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(0, 0, cssW, f.viewH);
+        ctx.clip();
+        ctx.translate(-f.camX, -f.camY);
+        drawScene(ctx, f.L, v, opts);
+        ctx.restore();
+      } else {
+        drawScene(ctx, f.L, v, opts);
+      }
     };
     let reported = false;
     const frame = (now: number) => {

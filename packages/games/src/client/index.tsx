@@ -251,6 +251,17 @@ export const clientViews: Record<string, GameClientViews> = {
       Player: BombesPartyPlayer,
     };
   }),
+  'tennis-party': lazyViews(async () => {
+    const [{ TennisHost }, { TennisPlayer }] = await Promise.all([
+      import('../tennis/client/HostScreen.js'),
+      import('../tennis/client/PlayerScreen.js'),
+    ]);
+    return {
+      Settings: fieldSettings([{ key: 'lives', label: 'Vies par joueur', min: 1, max: 5 }]),
+      Host: TennisHost,
+      Player: TennisPlayer,
+    };
+  }),
   banquise: lazyViews(async () => {
     const [{ BanquiseHost }, { BanquisePlayer }, { BanquiseSettings }] = await Promise.all([
       import('../banquise/client/HostScreen.js'),
