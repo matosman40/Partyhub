@@ -11229,14 +11229,14 @@ input[type='file']::file-selector-button {
 }
 
 /* ==========================================================================
-   Tennis party : terrain sur l’écran principal, raquette sur le téléphone
+   Tennis party : terrain isométrique sur l’écran principal, raquette sur le téléphone
    ========================================================================== */
 
 .tennis-host {
-  width: 100%;
   display: grid;
-  gap: clamp(0.4rem, 1vh, 0.9rem);
   justify-items: center;
+  gap: 0.9rem;
+  width: 100%;
 }
 
 .tennis-head {
@@ -11246,86 +11246,191 @@ input[type='file']::file-selector-button {
 .tennis-title {
   margin: 0;
   font-family: var(--display);
-  font-size: clamp(1.6rem, 3vw, 2.4rem);
 }
 
 .tennis-rule {
-  margin: 0.2rem 0 0;
-  font-size: clamp(0.95rem, 1.4vw, 1.2rem);
+  margin: 0.25rem 0 0;
 }
 
+/* Largeur du terrain : toute la hauteur de l’écran, sans dépasser les trois quarts de la largeur. */
 .tennis-court-wrap {
-  width: 100%;
   display: grid;
-  grid-template-columns: minmax(180px, 1fr) min(62vh, 70vw) minmax(180px, 1fr);
-  grid-template-rows: auto min(62vh, 70vw) auto;
-  grid-template-areas:
-    '. top .'
-    'left court right'
-    '. bottom .';
-  align-items: center;
-  justify-items: center;
+  gap: 0.6rem;
+  width: min(72vw, calc((100vh - 240px) / 0.86));
+  max-width: 100%;
+}
+
+.tennis-hud {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.6rem;
 }
 
-.tennis-court-box {
-  grid-area: court;
-  width: 100%;
-  border-radius: 22px;
-  overflow: hidden;
-  box-shadow:
-    0 0 0 6px rgba(255, 255, 255, 0.08),
-    0 30px 60px -28px rgba(0, 0, 0, 0.7);
-}
-
-.tennis-court {
-  display: block;
-  width: 100%;
-  height: auto;
-  aspect-ratio: 1 / 1;
-}
-
-.tennis-seat {
+.tennis-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   min-width: 0;
-  display: grid;
-  justify-items: center;
-  gap: 0.25rem;
-  padding: 0.7rem 0.9rem;
-  border-radius: 20px;
+  padding: 0.45rem 0.6rem;
+  border-radius: 16px;
   border: 2px solid var(--line-strong);
   background: rgba(14, 10, 40, 0.86);
-  text-align: center;
   box-shadow: 0 12px 26px -16px rgba(0, 0, 0, 0.7);
   transition:
     opacity 0.3s ease,
     filter 0.3s ease;
 }
 
-.tennis-seat.is-out {
-  opacity: 0.45;
-  filter: grayscale(0.7);
-}
-
-.tennis-seat.is-empty {
-  display: grid;
-  place-items: center;
-  min-height: 4rem;
+.tennis-chip.is-empty {
+  justify-content: center;
   border-style: dashed;
   background: transparent;
   box-shadow: none;
 }
 
-.tennis-seat-name {
+.tennis-chip.is-out {
+  opacity: 0.5;
+  filter: grayscale(0.7);
+}
+
+.tennis-chip-text {
+  display: grid;
+  min-width: 0;
+}
+
+.tennis-chip-name {
+  overflow: hidden;
   font-family: var(--display);
-  font-size: clamp(1.1rem, 1.8vw, 1.5rem);
+  font-size: clamp(0.95rem, 1.5vw, 1.25rem);
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: var(--text);
+}
+
+.tennis-chip-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.5rem;
 }
 
 .tennis-hearts,
 .tennis-points {
-  font-size: clamp(0.95rem, 1.4vw, 1.2rem);
+  font-size: clamp(0.8rem, 1.2vw, 1rem);
   font-weight: 800;
   font-variant-numeric: tabular-nums;
+}
+
+/* Le terrain : fond, public, surface et lignes sont sur le canevas ; joueurs, raquettes et balle sont par-dessus. */
+.tennis-stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 0.86;
+  container-type: inline-size;
+  overflow: hidden;
+  border-radius: 22px;
+  background: #0a0820;
+  box-shadow:
+    0 0 0 6px rgba(255, 255, 255, 0.08),
+    0 30px 60px -28px rgba(0, 0, 0, 0.7);
+}
+
+.tennis-canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Un joueur : son personnage, sa raquette et son nom. Le pied est le point d’ancrage (transform-origin). */
+.tennis-athlete {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: calc(20cqw * 260 / 340);
+  transform-origin: 50% 92%;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.tennis-athlete.is-out {
+  opacity: 0.45;
+  filter: grayscale(0.8);
+}
+
+.tennis-tag {
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  transform: translate(-50%, -0.3em);
+  padding: 0.1em 0.6em;
+  border: 2px solid;
+  border-radius: 999px;
+  background: rgba(14, 10, 40, 0.9);
+  font-family: var(--display);
+  font-size: clamp(0.8rem, 2.2cqw, 1.2rem);
+  white-space: nowrap;
+  color: var(--text);
+}
+
+.tennis-bat {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 5.5cqw;
+  height: 11cqw;
+  transform-origin: 50% 100%;
+  pointer-events: none;
+}
+
+.tennis-bat.is-hidden {
+  display: none;
+}
+
+.tennis-bat svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.tennis-ball {
+  position: absolute;
+  left: 0;
+  top: 0;
+  visibility: hidden;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ffffff 0%, #eaff6a 40%, #b5d400 100%);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.3),
+    0 3px 8px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+}
+
+.tennis-shadow {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 1;
+  visibility: hidden;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+}
+
+.tennis-ring {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 900;
+  box-sizing: border-box;
+  width: 7cqw;
+  height: 7cqw;
+  border: 3px solid #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 0 18px rgba(255, 255, 255, 0.7);
+  opacity: 0;
+  pointer-events: none;
 }
 
 /* Téléphone : la raquette glisse sur une piste, horizontale pour bas et haut, verticale pour gauche et droite. */
@@ -11333,6 +11438,28 @@ input[type='file']::file-selector-button {
   display: grid;
   justify-items: center;
   gap: 1rem;
+}
+
+.tennis-me {
+  position: relative;
+  width: min(44vw, 170px);
+}
+
+.tennis-me-bat {
+  position: absolute;
+  left: 61%;
+  top: 27%;
+  width: 24%;
+  transform: rotate(24deg);
+  transform-origin: 50% 100%;
+  pointer-events: none;
+}
+
+.tennis-me-bat svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
 }
 
 .tennis-side {

@@ -1,20 +1,25 @@
-import { useEffect, useRef, useState } from 'react';
-import { SENSOR_SEND_HZ } from '@partyhub/shared';
+import { useContext, useEffect, useRef, useState } from 'react';
+import { SENSOR_SEND_HZ, defaultCharacterFor } from '@partyhub/shared';
 import type { PlayerViewProps } from '../../client/types.js';
+import { AvatarsContext } from '../../client/avatar-context.js';
+import { Character } from '../../client/character.js';
 import { FinalScreen, WaitingScreen } from '../../client/ui.js';
 import { useMotionFeed, useSensorBroadcast } from '../../client/sensors.js';
 import { SIDE_NAMES, aimFromTilt, isHorizontal, racketTarget, type Side } from '../rules.js';
+import { Racket } from './Athlete.js';
 import { SIDE_COLORS, type TennisMe, type TennisPub } from './types.js';
 
 /**
- * Tennis party, téléphone : la raquette suit l’inclinaison, ou les boutons (ou les flèches) à défaut. La commande
- * est envoyée à l’écran principal à chaque instant, sur le canal des capteurs : rien n’est enregistré.
+ * Tennis party, téléphone : le personnage du joueur, et une raquette qui glisse le long de son côté. Elle suit
+ * l’inclinaison, ou les boutons (ou les flèches) à défaut. La commande est envoyée à l’écran principal à chaque
+ * instant, sur le canal des capteurs : rien n’est enregistré.
  */
 export function TennisPlayer({ publicState, playerState }: PlayerViewProps) {
   const pub = publicState as TennisPub | null;
   const me = playerState as TennisMe | null;
   const side: Side | null = me?.side ?? null;
   const live = Boolean(pub?.phase === 'play' && me?.alive && side !== null);
+  const avatars = useContext(AvatarsContext);
 
   // Commande de l’inclinaison, et commande des boutons ou des flèches (prioritaire quand elle est active).
   const tiltAim = useRef(0);
@@ -86,14 +91,13 @@ export function TennisPlayer({ publicState, playerState }: PlayerViewProps) {
 
   const horizontal = isHorizontal(side);
   const color = SIDE_COLORS[side];
+  const name = pub.seats.find((seat) => seat.side === side)?.name ?? null;
   const place = `${racketTarget(shown) * 100}%`;
   // La taille de la raquette vient du CSS (20 % du côté) ; seule sa place change en direct.
   const racket = { background: color, ...(horizontal ? { left: place } : { top: place }) };
   // Boutons : sens de l’écran principal (gauche ou haut = -1, droite ou bas = +1).
   const [lowLabel, highLabel] = horizontal ? ['◀', '▶'] : ['▲', '▼'];
-  const [lowName, highName] = horizontal
-    ? ['vers la gauche', 'vers la droite']
-    : ['vers le haut', 'vers le bas'];
+  const [lowName, highName] = horizontal ? ['vers la gauche', 'vers la droite'] : ['vers le haut', 'vers le bas'];
 
   const press = (value: -1 | 1) => () => {
     heldAim.current = value;
@@ -104,6 +108,14 @@ export function TennisPlayer({ publicState, playerState }: PlayerViewProps) {
 
   return (
     <section className={`player-game fade-in tennis-player ${horizontal ? 'is-horizontal' : 'is-vertical'}`}>
+      {name && (
+        <div className="tennis-me" aria-hidden="true">
+          <Character spec={avatars[name]?.character ?? defaultCharacterFor(name)} framing="full" mood="idle" />
+          <span className="tennis-me-bat" style={{ color }}>
+            <Racket />
+          </span>
+        </div>
+      )}
       <p className="tennis-side" style={{ color }}>
         Votre côté : {SIDE_NAMES[side]}
       </p>
