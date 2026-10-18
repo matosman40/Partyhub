@@ -18,10 +18,41 @@
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <title>PartyHub</title>
+    <style>
+      .boot {
+        font-family: sans-serif;
+        text-align: center;
+        padding: 2rem;
+        color: #b3acdb;
+      }
+      /* Si l’application ne démarre pas, le message apparaît après 12 secondes au lieu d’un écran sombre et muet.
+         Pur CSS et lien simple : la politique de sécurité interdit les scripts en ligne. Une fois l’application
+         montée, elle remplace ce contenu. */
+      .boot-late {
+        margin-top: 1rem;
+        opacity: 0;
+        animation: boot-late 0.4s 12s forwards;
+      }
+      .boot-late a {
+        color: #ffd166;
+        font-weight: bold;
+      }
+      @keyframes boot-late {
+        to {
+          opacity: 1;
+        }
+      }
+    </style>
   </head>
   <body>
     <div id="root">
-      <p style="font-family: sans-serif; text-align: center; padding: 2rem; color: #b3acdb">Chargement de PartyHub…</p>
+      <div class="boot" role="status">
+        <p>Chargement de PartyHub…</p>
+        <div class="boot-late">
+          <p>PartyHub ne s’est pas chargé. Vérifiez la connexion, puis rechargez la page.</p>
+          <a href="/">Recharger la page</a>
+        </div>
+      </div>
       <noscript>Activez JavaScript pour utiliser PartyHub.</noscript>
     </div>
     <script type="module" src="/src/main.tsx"></script>

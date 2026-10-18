@@ -25,6 +25,10 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 - Aventure IA : sur l’écran principal, le personnage qui parle est affiché en grand, à côté de la scène, avec sa réplique.
 - Bombes party : le niveau est plus grand (25 × 19 cases) et accueille dix joueurs. L’écran principal montre tout le niveau, et le téléphone suit son personnage avec un cadre de taille inchangée, bloqué sur les bords du niveau. Le classement latéral passe sur deux colonnes pour que le plateau reste grand.
 
+### Corrigé
+
+- Écran noir au démarrage : si l’application ne se lance pas (script bloqué, réseau coupé, mise à jour en cours), la page n’affichait qu’un fond sombre. Au bout de 12 secondes, elle indique maintenant de vérifier la connexion et propose de recharger la page. Une salle qui ne répond pas affiche déjà un message et un bouton « Réessayer » après 6 secondes.
+
 ## [0.12.0] - 2026-10-18
 
 ### Ajouté
