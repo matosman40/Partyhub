@@ -12,7 +12,8 @@ import { SIDE_COLORS, type TennisMe, type TennisPub } from './types.js';
 /**
  * Tennis party, téléphone : le personnage du joueur, et une raquette qui glisse le long de son côté. Elle suit
  * l’inclinaison, ou les boutons (ou les flèches) à défaut. La commande est envoyée à l’écran principal à chaque
- * instant, sur le canal des capteurs : rien n’est enregistré.
+ * instant, sur le canal des capteurs : rien n’est enregistré. Pendant un championnat, le téléphone dit quand le
+ * joueur attend son tour, et affiche le score du jeu en cours.
  */
 export function TennisPlayer({ publicState, playerState }: PlayerViewProps) {
   const pub = publicState as TennisPub | null;
@@ -76,17 +77,22 @@ export function TennisPlayer({ publicState, playerState }: PlayerViewProps) {
   if (pub.phase === 'ready') {
     return <WaitingScreen title="Préparez-vous !" text="Vous défendez un côté du terrain sur l’écran principal." />;
   }
-  if (pub.phase === 'final') return <FinalScreen points={me?.points ?? 0} rank={null} />;
-  if (side === null) {
-    return <WaitingScreen title="La partie est lancée" text="Vous n’avez pas de côté dans cette partie." />;
-  }
+  if (pub.phase === 'final') return <FinalScreen points={me?.points ?? 0} rank={me?.rank ?? null} />;
+  if (pub.phase === 'pause') return <WaitingScreen title="Pause entre deux matchs" text={nextText(pub)} />;
   if (!me?.alive) {
+    if (me?.waiting) return <WaitingScreen title="Votre tour viendra" text={nextText(pub)} />;
+    if (side === null) {
+      return <WaitingScreen title="La partie est lancée" text="Vous n’avez pas de côté dans cette partie." />;
+    }
     return (
       <section className="player-game fade-in tennis-player">
         <p className="big">Éliminé</p>
         <p className="muted">Suivez la fin de la partie sur l’écran principal.</p>
       </section>
     );
+  }
+  if (side === null) {
+    return <WaitingScreen title="La partie est lancée" text="Vous n’avez pas de côté dans cette partie." />;
   }
 
   const horizontal = isHorizontal(side);
@@ -119,9 +125,7 @@ export function TennisPlayer({ publicState, playerState }: PlayerViewProps) {
       <p className="tennis-side" style={{ color }}>
         Votre côté : {SIDE_NAMES[side]}
       </p>
-      <p className="tennis-status">
-        {'❤'.repeat(me.lives)} · {me.points} pts
-      </p>
+      <p className="tennis-status">{statusLine(pub, me)}</p>
       <div className="tennis-track" aria-hidden="true">
         <span className="tennis-racket" style={racket} />
       </div>
@@ -159,4 +163,22 @@ export function TennisPlayer({ publicState, playerState }: PlayerViewProps) {
       </button>
     </section>
   );
+}
+
+/** Ligne de score sur le téléphone : le point du jeu et les jeux en règles du tennis, les vies sinon. */
+function statusLine(pub: TennisPub, me: TennisMe): string {
+  if (pub.rules === 'tennis') {
+    const games = pub.match?.rules === 'tennis' ? ` · jeux ${pub.match.games}` : '';
+    return `Point ${me.label || '0'}${games}`;
+  }
+  const hearts = '❤'.repeat(me.lives);
+  // En championnat, les points ne tombent qu’à la fin : pendant les matchs, on ne montre que les vies.
+  return pub.tournament ? hearts : `${hearts} · ${me.points} pts`;
+}
+
+/** Phrase d’attente : le prochain match du championnat, quand on le connaît. */
+function nextText(pub: TennisPub): string {
+  const next = pub.tournament?.matches.find((m) => m.status === 'waiting' && m.a !== null && m.b !== null && !m.bye);
+  if (!next) return 'Suivez le tableau sur l’écran principal.';
+  return `Prochain match : ${next.a} contre ${next.b}.`;
 }

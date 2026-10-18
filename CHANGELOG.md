@@ -7,6 +7,13 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 ### Ajouté
 
 - Tennis party : un nouveau jeu de tennis pour 2 à 4 joueurs. Chacun défend un côté du court avec sa raquette, pilotée par l’inclinaison du téléphone (ou par les boutons et les flèches à défaut). Les personnages de profil sont sur l’écran principal, à côté de leur côté. Une balle ratée coûte une vie (3 par défaut, réglable de 1 à 5) ; le dernier joueur debout gagne une prime, et la partie dure au plus deux minutes et demie.
+- Tennis party, règles du vrai tennis : score de chaque point (0, 15, 30, 40, avantage, égalité), jeux, sets, tie-break à 6 jeux partout (premier à 7 avec deux points d’écart), service qui alterne. Au choix : un set, ou le meilleur de trois sets. Une balle perdue donne le point à l’adversaire ; le service part vers le joueur qui reçoit. Le score s’affiche au-dessus du terrain et sur le téléphone.
+- Tennis party, championnats : une poule (tous contre tous, 3 points par victoire, 1 par nul, départage par les manches puis les touches) ou un tableau à élimination directe (les premières graines reçoivent les exemptions ; un match nul est rejoué). Chaque match oppose deux joueurs sur le bas et le haut du court, les autres côtés faisant office de murs. Les matchs suivent les règles simples (des vies) ou celles du vrai tennis. Un match dure au plus 2 min 30 aux règles simples, et 10 min aux règles du tennis : à l’échéance, celui qui mène gagne. Entre deux matchs, l’écran principal montre le tableau et le prochain match ; le téléphone dit quand le joueur attend son tour. Le classement final donne 10, 6, 4, 3, 2 et 1 points aux six premiers.
+- Réglages à choix : les formulaires de réglage acceptent des listes déroulantes, en plus des champs numériques.
+
+### Modifié (tennis)
+
+- Tennis party : les automates (joueurs sans téléphone) ratent une balle sur cinq environ. Sans cette erreur, deux robots renvoient presque tout, un échange dure deux minutes, et un match ne se termine pas.
 
 ### Modifié
 

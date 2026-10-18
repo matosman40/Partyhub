@@ -11566,3 +11566,144 @@ input[type='file']::file-selector-button {
   transform: scale(0.96);
   background: rgba(255, 255, 255, 0.18);
 }
+
+/* Score du match, au-dessus du terrain : le tour, les joueurs, puis les sets, les jeux ou les vies. */
+.tennis-matchbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.35rem 1rem;
+  width: min(72vw, calc((100vh - 240px) / 0.86));
+  max-width: 100%;
+  font-variant-numeric: tabular-nums;
+}
+
+.tennis-match-label {
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  background: var(--glass-2);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.tennis-match-names {
+  font-family: var(--display);
+  font-size: clamp(1rem, 1.6vw, 1.35rem);
+}
+
+.tennis-match-score {
+  font-weight: 700;
+  color: var(--muted);
+}
+
+/* Point de service : un point coloré devant le nom du joueur qui sert. */
+.tennis-serve {
+  color: #ffd23f;
+  font-size: 0.8em;
+}
+
+.tennis-tour {
+  width: min(92vw, 880px);
+}
+
+.tennis-next {
+  margin: 0;
+  font-size: 1.05rem;
+  text-align: center;
+}
+
+.tennis-board {
+  display: grid;
+  gap: 1rem;
+  width: 100%;
+}
+
+.tennis-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.tennis-table th,
+.tennis-table td {
+  padding: 0.45rem 0.6rem;
+  text-align: left;
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.tennis-table th {
+  font-size: 0.8rem;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.tennis-matches {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tennis-row {
+  display: grid;
+  grid-template-columns: minmax(7rem, auto) 1fr auto;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.8rem;
+  border-radius: 12px;
+  background: var(--glass-2);
+}
+
+.tennis-row.is-playing {
+  box-shadow: inset 0 0 0 2px #ffd23f;
+}
+
+.tennis-row.is-waiting,
+.tennis-row.is-bye {
+  opacity: 0.7;
+}
+
+.tennis-row-label {
+  font-weight: 700;
+}
+
+.tennis-row-result {
+  color: var(--muted);
+  text-align: right;
+}
+
+/* Compte à rebours entre deux matchs : un chiffre seul, sous la phrase du prochain match. */
+.tennis-countdown {
+  display: grid;
+  justify-items: center;
+  gap: 0.2rem;
+  margin: 0;
+}
+
+.tennis-countdown .countdown {
+  font-size: clamp(3rem, 9vw, 5.5rem);
+}
+
+.tennis-champion {
+  margin: 0;
+  text-align: center;
+  font-size: 1.1rem;
+}
+
+.tennis-final {
+  display: grid;
+  justify-items: center;
+  gap: 1rem;
+}
+
+@media (max-width: 640px) {
+  .tennis-row {
+    grid-template-columns: 1fr;
+  }
+
+  .tennis-row-result {
+    text-align: left;
+  }
+}

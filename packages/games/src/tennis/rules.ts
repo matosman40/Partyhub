@@ -29,6 +29,11 @@ export const RACKET_SPEED = 2.4;
 export const AUTO_SPEED = 0.95;
 /** Erreur de visée maximale de l’automate, tirée à chaque service. */
 export const AUTO_BIAS = 0.1;
+/**
+ * Chance qu’un automate rate une balle qui arrive devant lui. Sans cette erreur, un robot renvoie presque toute la
+ * balle : un échange dure deux minutes, et un match aux règles du tennis ne se termine pas.
+ */
+export const AUTO_MISS = 0.18;
 export const SERVE_DELAY_MS = 1000;
 /** Pas de calcul maximal, en secondes : au-delà, la balle pourrait franchir une ligne sans la voir. */
 export const MAX_STEP_S = 0.05;
@@ -92,13 +97,18 @@ export interface Rally {
   aim: (number | null)[];
   /** Erreur de visée de l’automate, par côté, tirée à chaque service. */
   bias: number[];
+  /** Tirage de l’automate pour ses ratés (AUTO_MISS). Absent : pas de raté, donc un échange déterministe. */
+  rng?: () => number;
 }
 
-/** Balle de service : au centre, vers un côté défendu tiré au hasard. */
-export function serve(active: boolean[], rng: () => number): Ball {
+/**
+ * Balle de service : au centre, vers un côté défendu. Le côté `toward` (celui du joueur qui reçoit) si on le connaît
+ * et qu’il est défendu ; sinon un côté défendu tiré au hasard.
+ */
+export function serve(active: boolean[], rng: () => number, toward?: Side): Ball {
   const open = SIDES.filter((s) => active[s]);
   const pool = open.length > 0 ? open : SIDES;
-  const side = pool[Math.floor(rng() * pool.length)] ?? 0;
+  const side = toward !== undefined && active[toward] ? toward : (pool[Math.floor(rng() * pool.length)] ?? 0);
   const dir = DIR[side];
   const angle = Math.atan2(dir.y, dir.x) + (rng() - 0.5) * 1.0;
   return {
@@ -110,14 +120,15 @@ export function serve(active: boolean[], rng: () => number): Ball {
   };
 }
 
-/** Un échange neuf : raquettes au centre, service vers un côté défendu. */
-export function createRally(active: boolean[], rng: () => number): Rally {
+/** Un échange neuf : raquettes au centre, service vers le côté `toward` (ou vers un côté défendu au hasard). */
+export function createRally(active: boolean[], rng: () => number, toward?: Side): Rally {
   return {
-    ball: serve(active, rng),
+    ball: serve(active, rng, toward),
     active: [...active],
     pos: SIDES.map(() => 0.5),
     aim: SIDES.map(() => null),
     bias: SIDES.map(() => (rng() * 2 - 1) * AUTO_BIAS),
+    rng,
   };
 }
 
@@ -192,7 +203,10 @@ export function stepRally(r: Rally, dt: number): RallyEvent[] {
     if (out * (depth - plane) < 0) continue;
     const along = horiz ? b.x : b.y;
     const offset = along - (r.pos[side] ?? 0.5);
-    if (Math.abs(offset) > RACKET_HALF + BALL_R) {
+    // Un automate (sans téléphone) peut rater la balle, même bien placé.
+    const automatic = r.aim[side] === null;
+    const missed = automatic && r.rng !== undefined && r.rng() < AUTO_MISS;
+    if (missed || Math.abs(offset) > RACKET_HALF + BALL_R) {
       events.push({ type: 'lost', side });
       return events;
     }
