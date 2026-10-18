@@ -37,9 +37,18 @@ export const STAND_U = 0.03;
 
 /** Angle vertical de la caméra. */
 const FOV_Y = (40 * Math.PI) / 180;
-/** Point visé par la caméra, et décalage de la caméra par rapport à lui au réglage de base (maquette). */
+/**
+ * Proportion de la scène (hauteur sur largeur). Doit rester égale à `aspect-ratio` du terrain dans la feuille de
+ * style (`.tennis-stage`) et à la largeur du bloc (`.tennis-court-wrap`) : une scène plus plate laisse le terrain
+ * occuper plus de largeur à hauteur d’écran égale.
+ */
+export const STAGE_ASPECT = 0.7;
+/**
+ * Point visé par la caméra, et décalage de la caméra par rapport à lui. Un peu plus haute et plus proche que la
+ * maquette : le terrain gagne en profondeur, à la manière d’un tennis vu depuis le fond du court.
+ */
 const AIM: Vec3 = { x: 0, y: 0.4, z: -0.6 };
-const OFFSET: Vec3 = { x: 0, y: 8.6, z: 17 };
+const OFFSET: Vec3 = { x: 0, y: 10, z: 15 };
 const UP: Vec3 = { x: 0, y: 1, z: 0 };
 /** Marges du cadre : à gauche et à droite, en haut, en bas (fractions de la scène). */
 const MARGIN_X = 0.06;
@@ -185,7 +194,7 @@ let cached: Layout | null = null;
  */
 export function layoutFor(W: number): Layout {
   if (cached?.W === W) return cached;
-  const H = W * 0.86;
+  const H = W * STAGE_ASPECT;
   const cam = fitCamera(W, H);
   const unit = place(cam, { x: 0, y: 0, z: 0 }).s;
   const figH = FIG_H * unit;

@@ -11256,7 +11256,7 @@ input[type='file']::file-selector-button {
 .tennis-court-wrap {
   display: grid;
   gap: 0.6rem;
-  width: min(72vw, calc((100vh - 240px) / 0.86));
+  width: min(72vw, calc((100vh - 240px) / 0.7));
   max-width: 100%;
 }
 
@@ -11324,7 +11324,7 @@ input[type='file']::file-selector-button {
 .tennis-stage {
   position: relative;
   width: 100%;
-  aspect-ratio: 1 / 0.86;
+  aspect-ratio: 1 / 0.7;
   container-type: inline-size;
   overflow: hidden;
   border-radius: 22px;
@@ -11574,7 +11574,7 @@ input[type='file']::file-selector-button {
   align-items: baseline;
   justify-content: center;
   gap: 0.35rem 1rem;
-  width: min(72vw, calc((100vh - 240px) / 0.86));
+  width: min(72vw, calc((100vh - 240px) / 0.7));
   max-width: 100%;
   font-variant-numeric: tabular-nums;
 }
