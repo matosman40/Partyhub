@@ -13,6 +13,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 - Réglages à choix : les formulaires de réglage acceptent des listes déroulantes, en plus des champs numériques.
 - Fiches de jeu : le numéro de version et le journal des versions de chaque jeu, avec la date de dernière mise à jour. Une carte du catalogue affiche aussi la version. Le journal de chaque jeu est dans `packages/games/src/release-notes.ts`, et les tests vérifient qu’il suit le numéro du manifeste.
 
+- Paquets `.phgame` : script npm racine `npm run phgame` (`pack` pour construire un paquet, `check` pour le vérifier et lancer une partie de contrôle avec des robots). Les quatre paquets d’exemple passent ce contrôle.
+
 ### Modifié (tennis)
 
 - Tennis party : les automates (joueurs sans téléphone) ratent une balle sur cinq environ. Sans cette erreur, deux robots renvoient presque tout, un échange dure deux minutes, et un match ne se termine pas.

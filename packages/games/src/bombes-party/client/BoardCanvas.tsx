@@ -183,7 +183,7 @@ export function BoardCanvas({
     const canvas = canvasRef.current;
     const v = viewRef.current;
     const L = frameFor(canvas?.clientWidth || 360, v.width, v.height, focusRef.current).L;
-    const colors =['#ff4f8b', '#5eead4', '#ffd23f', '#ecebe3', '#3247e0'];
+    const colors = ['#ff4f8b', '#5eead4', '#ffd23f', '#ecebe3', '#3247e0'];
     for (let i = 0; i < 140; i++) {
       const a = Math.random() * Math.PI * 2;
       const sp = 200 + Math.random() * 380;
