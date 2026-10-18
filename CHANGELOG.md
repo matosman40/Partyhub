@@ -10,10 +10,12 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 - Tennis party, règles du vrai tennis : score de chaque point (0, 15, 30, 40, avantage, égalité), jeux, sets, tie-break à 6 jeux partout (premier à 7 avec deux points d’écart), service qui alterne. Au choix : un set, ou le meilleur de trois sets. Une balle perdue donne le point à l’adversaire ; le service part vers le joueur qui reçoit. Le score s’affiche au-dessus du terrain et sur le téléphone.
 - Tennis party, championnats : une poule (tous contre tous, 3 points par victoire, 1 par nul, départage par les manches puis les touches) ou un tableau à élimination directe (les premières graines reçoivent les exemptions ; un match nul est rejoué). Chaque match oppose deux joueurs sur le bas et le haut du court, les autres côtés faisant office de murs. Les matchs suivent les règles simples (des vies) ou celles du vrai tennis. Un match dure au plus 2 min 30 aux règles simples, et 10 min aux règles du tennis : à l’échéance, celui qui mène gagne. Entre deux matchs, l’écran principal montre le tableau et le prochain match ; le téléphone dit quand le joueur attend son tour. Le classement final donne 10, 6, 4, 3, 2 et 1 points aux six premiers.
 - Réglages à choix : les formulaires de réglage acceptent des listes déroulantes, en plus des champs numériques.
+- Fiches de jeu : le numéro de version et le journal des versions de chaque jeu, avec la date de dernière mise à jour. Une carte du catalogue affiche aussi la version. Le journal de chaque jeu est dans `packages/games/src/release-notes.ts`, et les tests vérifient qu’il suit le numéro du manifeste.
 
 ### Modifié (tennis)
 
 - Tennis party : les automates (joueurs sans téléphone) ratent une balle sur cinq environ. Sans cette erreur, deux robots renvoient presque tout, un échange dure deux minutes, et un match ne se termine pas.
+- Tennis party : rendu en perspective, à la manière de la maquette approuvée. Le terrain, les tribunes à bandes et le filet sont en 3D simulée, sur une caméra fixe qui s’ajuste à l’écran et agrandit le court sur la télé. La balle monte en cloche au-dessus du filet, et les joueurs grossissent à mesure qu’ils s’approchent du spectateur. La physique ne change pas.
 
 ### Modifié
 

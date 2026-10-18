@@ -132,6 +132,12 @@
   }
 }
 
+.sheet-main {
+  display: grid;
+  gap: 1.2rem;
+  min-width: 0;
+}
+
 .sheet-section,
 .sheet-facts {
   display: grid;
@@ -203,6 +209,44 @@
 .sheet-facts dd {
   margin: 0;
   font-weight: 600;
+}
+
+/* ---- Journal des versions --------------------------------------------------------- */
+
+.sheet-releases {
+  gap: 1.1rem;
+}
+
+.sheet-release {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.sheet-release h3 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.6rem;
+  margin: 0;
+}
+
+.sheet-release-date {
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 400;
+}
+
+.sheet-release-current {
+  font-size: 0.75rem;
+}
+
+.sheet-release ul {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+  padding-left: 1.3rem;
+  color: var(--muted);
+  line-height: 1.5;
 }
 
 /* ---- Jeux de la même catégorie ---------------------------------------------------- */

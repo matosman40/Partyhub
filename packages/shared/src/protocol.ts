@@ -1,5 +1,5 @@
 import type { LobbyMoodChoice, LobbyMoodEvent, LobbyPosition, LobbyPositionEvent } from './lobby-presence.js';
-import type { GameCategory, GameNotice, ScoreEntry } from './game-types.js';
+import type { GameCategory, GameNotice, GameRelease, ScoreEntry } from './game-types.js';
 import type { GameDetails } from './schemas.js';
 import type { DeviceInfo, DeviceKind } from './devices.js';
 import type { SettingsBounds } from './settings-form.js';
@@ -8,7 +8,7 @@ import type { SensorEvent, SensorSample } from './sensors.js';
 
 export type { DeviceInfo, DeviceKind };
 
-export type { ScoreEntry, GameCategory, GameNotice };
+export type { ScoreEntry, GameCategory, GameNotice, GameRelease };
 
 export type RoomStatus = 'waiting' | 'full' | 'in_game' | 'ended';
 
@@ -27,6 +27,8 @@ export interface GameInfo {
   settingsBounds: SettingsBounds;
   /** Le jeu s’appuie sur une IA quand elle est configurée (filtre « Avec IA » du catalogue). */
   ai: boolean;
+  /** Journal des versions, la plus récente en premier. Absent pour un jeu sans journal (paquets importés). */
+  changelog?: readonly GameRelease[];
 }
 
 /** Apparence d’un joueur : image de profil si elle existe, sinon emoji sur une teinte. */

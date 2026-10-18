@@ -31,6 +31,8 @@ import { tennisParty } from './tennis/module.js';
  * Ajouter un jeu = créer son dossier puis l’ajouter ICI (aucun chargement
  * dynamique depuis le disque ou la configuration). Voir docs/ADDING-A-GAME.md.
  */
+export { RELEASE_NOTES } from './release-notes.js';
+
 export const gameRegistry: GameModule[] = [
   quizParty,
   phrasesTrous,
