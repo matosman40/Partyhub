@@ -114,3 +114,50 @@ function drawWall(ctx: CanvasRenderingContext2D, g: Layout, side: Side): void {
   ctx.lineCap = 'butt';
   segment(ctx, project(g, a.u, a.v), project(g, b.u, b.v));
 }
+
+/**
+ * Filet, au milieu du court (v = 0,5) : un voile blanc tendu entre deux poteaux, avec son ruban du haut et son ombre
+ * au sol. Il est dessiné sur sa propre couche, au-dessus du terrain : les joueurs du fond passent derrière, ceux du
+ * premier plan devant (voir HostScreen).
+ */
+export function drawNet(ctx: CanvasRenderingContext2D, g: Layout): void {
+  const { W } = g;
+  const lift = 0.035;
+  const b0 = project(g, 0, 0.5);
+  const b1 = project(g, 1, 0.5);
+  const t0 = project(g, 0, 0.5, lift);
+  const t1 = project(g, 1, 0.5, lift);
+
+  // Ombre du filet sur la surface.
+  const shade = W * 0.006;
+  ctx.fillStyle = 'rgba(0, 20, 10, 0.28)';
+  polygon(ctx, [b0, b1, { x: b1.x, y: b1.y + shade }, { x: b0.x, y: b0.y + shade }]);
+  ctx.fill();
+
+  // Voile : une teinte claire, puis des mailles verticales et trois rangées horizontales.
+  ctx.fillStyle = 'rgba(245, 250, 245, 0.2)';
+  polygon(ctx, [b0, b1, t1, t0]);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
+  ctx.lineWidth = Math.max(0.8, W * 0.0016);
+  ctx.lineCap = 'butt';
+  for (let i = 1; i < 60; i++) {
+    const u = i / 60;
+    segment(ctx, project(g, u, 0.5), project(g, u, 0.5, lift));
+  }
+  for (let k = 1; k <= 2; k++) {
+    segment(ctx, project(g, 0, 0.5, (lift * k) / 3), project(g, 1, 0.5, (lift * k) / 3));
+  }
+
+  // Ruban du haut, ligne au sol, et poteaux qui dépassent un peu du voile.
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.95)';
+  ctx.lineWidth = Math.max(1.5, W * 0.0045);
+  segment(ctx, t0, t1);
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+  ctx.lineWidth = Math.max(1, W * 0.0025);
+  segment(ctx, b0, b1);
+  ctx.strokeStyle = '#f4f4f0';
+  ctx.lineWidth = Math.max(2, W * 0.0065);
+  segment(ctx, b0, project(g, 0, 0.5, lift + 0.012));
+  segment(ctx, b1, project(g, 1, 0.5, lift + 0.012));
+}

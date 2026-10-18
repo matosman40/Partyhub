@@ -11343,6 +11343,15 @@ input[type='file']::file-selector-button {
   height: 100%;
 }
 
+.tennis-net {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
 /* Un joueur : son personnage, sa raquette et son nom. Le pied est le point d’ancrage (transform-origin). */
 .tennis-athlete {
   position: absolute;

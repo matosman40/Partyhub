@@ -17,7 +17,7 @@ import {
   type Side,
 } from '../rules.js';
 import { Athlete } from './Athlete.js';
-import { drawBackdrop, drawCourt } from './court.js';
+import { drawBackdrop, drawCourt, drawNet } from './court.js';
 import { handOf, layoutFor, project, standAt, strikeAt, type Layout, type Point } from './geometry.js';
 import { SIDE_COLORS, type TennisPub, type TennisSeatView } from './types.js';
 
@@ -66,6 +66,7 @@ function Court({ pub, now, onAction }: { pub: TennisPub; now: number; onAction: 
   const shadowRef = useRef<HTMLDivElement>(null);
   const ballRef = useRef<HTMLDivElement>(null);
   const ringRef = useRef<HTMLDivElement>(null);
+  const netRef = useRef<HTMLCanvasElement>(null);
   const roots = useRef<(HTMLDivElement | null)[]>([]);
   const bats = useRef<(HTMLSpanElement | null)[]>([]);
   // Humeur de chaque joueur : seule chose de cette vue qui passe par React (rare : à chaque coup ou balle perdue).
@@ -127,6 +128,24 @@ function Court({ pub, now, onAction }: { pub: TennisPub; now: number; onAction: 
       drawCourt(ctx, g, active);
     };
 
+    /** Le filet a sa propre couche, placée selon sa profondeur entre les joueurs du fond et ceux du premier plan. */
+    let netKey = '';
+    const drawNetLayer = (net: HTMLCanvasElement, g: Layout) => {
+      const key = String(g.W);
+      if (key !== netKey) {
+        netKey = key;
+        const dpr = window.devicePixelRatio || 1;
+        net.width = Math.round(g.W * dpr);
+        net.height = Math.round(g.H * dpr);
+        const ctx = net.getContext('2d');
+        if (ctx) {
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+          drawNet(ctx, g);
+        }
+      }
+      net.style.zIndex = String(Math.round(project(g, 0.5, 0.5).y));
+    };
+
     const frame = (t: number) => {
       raf = requestAnimationFrame(frame);
       try {
@@ -135,6 +154,8 @@ function Court({ pub, now, onAction }: { pub: TennisPub; now: number; onAction: 
         if (!stage || !canvas) return;
         const g = layoutFor(stage.clientWidth || 480);
         width = g.W;
+        const net = netRef.current;
+        if (net) drawNetLayer(net, g);
         const wall = performance.now();
         const dt = Math.min(0.05, Math.max(0, (t - last) / 1000));
         last = t;
@@ -283,6 +304,7 @@ function Court({ pub, now, onAction }: { pub: TennisPub; now: number; onAction: 
         </div>
         <div className="tennis-stage" ref={stageRef}>
           <canvas ref={canvasRef} className="tennis-canvas" role="img" aria-label="Terrain de tennis" />
+          <canvas ref={netRef} className="tennis-net" aria-hidden="true" />
           <div ref={shadowRef} className="tennis-shadow" aria-hidden="true" />
           {SIDES.map((side) => {
             const seat = pub.seats.find((s) => s.side === side);
