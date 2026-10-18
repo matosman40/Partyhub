@@ -51,12 +51,12 @@ describe('Route de recherche YouTube', () => {
     expect(((await response.json()) as { error: string }).error).toContain('au moins deux caractères');
   });
 
-  it('sans clé, répond 503 : la recherche est désactivée, le lien reste possible', async () => {
+  it('sans clé, répond 503 avec un message en français, sans rien laisser fuiter', async () => {
     const base = await boot(undefined);
     const response = await fetch(`${base}/api/youtube/search?q=stromae`);
     expect(response.status).toBe(503);
     const body = (await response.json()) as { error: string };
-    expect(body.error).toContain('Collez un lien YouTube');
+    expect(body.error).toContain('pas activé sur ce serveur');
     expect(JSON.stringify(body)).not.toContain('key=');
   });
 
@@ -64,5 +64,25 @@ describe('Route de recherche YouTube', () => {
     const base = await boot('   ');
     const response = await fetch(`${base}/api/youtube/search?q=stromae`);
     expect(response.status).toBe(503);
+  });
+
+  it('la vérification d’une vidéo refuse un identifiant mal formé (400)', async () => {
+    const base = await boot(undefined);
+    const response = await fetch(`${base}/api/youtube/video?id=court`);
+    expect(response.status).toBe(400);
+    expect(((await response.json()) as { error: string }).error).toContain('aucune vidéo YouTube');
+  });
+
+  it('la vérification d’une vidéo sans clé répond 503 avec le code « disabled » (le téléphone accepte alors le lien collé)', async () => {
+    const base = await boot(undefined);
+    const response = await fetch(`${base}/api/youtube/video?id=VHoT4N43jK8`);
+    expect(response.status).toBe(503);
+    expect(((await response.json()) as { code: string }).code).toBe('disabled');
+  });
+
+  it('sans identifiant du tout, la route répond 400 et non 500', async () => {
+    const base = await boot(undefined);
+    const response = await fetch(`${base}/api/youtube/video`);
+    expect(response.status).toBe(400);
   });
 });

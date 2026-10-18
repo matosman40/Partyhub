@@ -31,7 +31,7 @@ Sur une installation neuve, les jeux intégrés sont désactivés : l'administra
 - Administration protégée par mot de passe : activer ou désactiver les jeux, consulter les salles,
   supprimer les salles inactives, régler les limites.
 - Persistance SQLite (réglages, jeux activés, statistiques) dans un volume Docker.
-- Aucun service externe, aucune clé API : tout fonctionne sur le réseau local.
+- Le jeu tourne sur le réseau local, sans internet. Quelques fonctions optionnelles utilisent un service externe : l’IA (Aventure IA et images, avec une clé), la recherche de chansons du karaoké (avec une clé YouTube), et la lecture des vidéos YouTube (avec une connexion internet).
 
 ## Installation (Docker Compose, CasaOS)
 

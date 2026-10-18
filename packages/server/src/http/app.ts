@@ -31,10 +31,10 @@ import {
 import type { MediaQuizService } from '../media/service.js';
 import {
   createSearchLimiter,
-  createYoutubeSearch,
-  YOUTUBE_SEARCH_MESSAGES,
-  YoutubeSearchError,
-  type YoutubeSearchCode,
+  createYoutube,
+  YOUTUBE_ERROR_MESSAGES,
+  YoutubeError,
+  type YoutubeErrorCode,
 } from '../youtube/search.js';
 import { AdminSessions, LoginLimiter, readCookie, verifyPassword } from '../auth.js';
 import { catalog, gameInfo, originOf } from '../catalog.js';
@@ -325,28 +325,45 @@ export function createApp(deps: AppDeps): express.Express {
     res.status(204).end();
   });
 
-  // Recherche de vidéos pour le karaoké : la clé reste ici, le quota est limité par adresse.
-  const youtubeSearch = createYoutubeSearch({ apiKey: config.youtube?.apiKey });
+  // YouTube pour le karaoké : recherche et vérification d’une vidéo. La clé reste ici, le quota est limité par adresse.
+  const youtube = createYoutube({ apiKey: config.youtube?.apiKey });
   const youtubeLimiter = createSearchLimiter();
-  const YOUTUBE_STATUS: Record<YoutubeSearchCode, number> = {
+  const YOUTUBE_STATUS: Record<YoutubeErrorCode, number> = {
     invalid: 400,
+    badId: 400,
+    notFound: 404,
+    notEmbeddable: 422,
+    live: 422,
     disabled: 503,
     quota: 503,
     unavailable: 502,
   };
+  const sendYoutubeError = (res: Response, error: unknown) => {
+    const code: YoutubeErrorCode = error instanceof YoutubeError ? error.code : 'unavailable';
+    res.status(YOUTUBE_STATUS[code]).json({ error: YOUTUBE_ERROR_MESSAGES[code], code });
+  };
   api.get('/youtube/search', async (req, res) => {
-    const ip = req.ip ?? 'inconnue';
-    if (!youtubeLimiter.allow(ip)) {
+    if (!youtubeLimiter.allow(req.ip ?? 'inconnue')) {
       res.status(429).json({ error: 'Trop de recherches. Patientez une minute.' });
       return;
     }
-    const query = typeof req.query.q === 'string' ? req.query.q : '';
     try {
-      const results = await youtubeSearch.search(query);
+      const results = await youtube.search(typeof req.query.q === 'string' ? req.query.q : '');
       res.json({ results });
     } catch (error) {
-      const code: YoutubeSearchCode = error instanceof YoutubeSearchError ? error.code : 'unavailable';
-      res.status(YOUTUBE_STATUS[code]).json({ error: YOUTUBE_SEARCH_MESSAGES[code] });
+      sendYoutubeError(res, error);
+    }
+  });
+  api.get('/youtube/video', async (req, res) => {
+    if (!youtubeLimiter.allow(req.ip ?? 'inconnue')) {
+      res.status(429).json({ error: 'Trop de recherches. Patientez une minute.' });
+      return;
+    }
+    try {
+      const video = await youtube.video(typeof req.query.id === 'string' ? req.query.id : '');
+      res.json({ video });
+    } catch (error) {
+      sendYoutubeError(res, error);
     }
   });
 

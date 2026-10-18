@@ -48,6 +48,9 @@ const recordingSchema = z.object({
 
 const ratingSchema = z.object({ stars: z.number().int().min(1).max(5) });
 
+/** Le chanteur arrête son passage (micro perdu, vidéo qui ne se lance pas) : aucun contenu à lire. */
+const abandonSchema = z.object({}).strict();
+
 export type KaraokePhase = 'ready' | 'pick' | 'sing' | 'replay' | 'vote' | 'reveal' | 'final';
 
 export interface KaraokeSong {
@@ -271,6 +274,7 @@ export const karaoke: GameModule<KaraokeState, KaraokeSettings> = {
   actions: {
     sing: singSchema,
     recording: recordingSchema,
+    abandon: abandonSchema,
     rate: ratingSchema,
   },
 
@@ -336,6 +340,13 @@ export const karaoke: GameModule<KaraokeState, KaraokeSettings> = {
       const parsed = recordingSchema.safeParse(payload);
       if (!parsed.success) return fail('Enregistrement invalide');
       return ok(openReplay(s, parsed.data.dataUrl, ctx));
+    }
+
+    if (type === 'abandon') {
+      if (s.phase !== 'sing') return fail('Rien à interrompre maintenant');
+      if (p.id !== singer) return fail('Seul le chanteur peut passer son tour');
+      // Passage interrompu : pas de vote sur une prestation qu’on n’a pas entendue en entier.
+      return ok(reveal({ ...s, clip: null }, ctx));
     }
 
     if (type === 'rate') {

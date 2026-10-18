@@ -85,6 +85,9 @@ export function loadYouTubeApi(): Promise<YouTubeNamespace> {
 /* ---------- Lecteur ---------- */
 
 const PLAYING = 1;
+const YT_UNSTARTED = -1;
+const YT_PAUSED = 2;
+const YT_CUED = 5;
 
 export function MediaStage({ media, active, kind, muted = false, picture }: MediaStageProps) {
   const [error, setError] = useState<string | null>(null);
@@ -163,6 +166,12 @@ export function MediaStage({ media, active, kind, muted = false, picture }: Medi
               yt.current?.seekTo(media.startSec, true);
               yt.current?.playVideo();
               scheduleStop();
+              // Un navigateur peut refuser la lecture avec son sans geste : on propose alors le bouton de reprise.
+              window.setTimeout(() => {
+                if (cancelled || !yt.current) return;
+                const state = yt.current.getPlayerState();
+                if (state === YT_UNSTARTED || state === YT_PAUSED || state === YT_CUED) setNeedsTap(true);
+              }, 1500);
             },
             onStateChange: (e) => {
               if (e.data === PLAYING) setNeedsTap(false);

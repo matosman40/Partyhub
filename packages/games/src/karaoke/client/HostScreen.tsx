@@ -94,7 +94,8 @@ export function KaraokeHost({ publicState: pub, hostState, now }: HostViewProps)
             <p>Pas de note pour ce passage.</p>
           ) : (
             <p>
-              Moyenne : {pub.average.toFixed(1)} sur 5 · <strong>+{pub.gained} points</strong> pour {pub.singerName}
+              Moyenne : {pub.average.toFixed(1).replace('.', ',')} sur 5 · <strong>+{pub.gained} points</strong> pour{' '}
+              {pub.singerName}
             </p>
           )}
         </div>

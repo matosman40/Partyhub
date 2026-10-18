@@ -11,10 +11,9 @@ interface Hit {
   channel: string;
 }
 
-interface Chosen {
-  videoId: string;
-  title: string;
-  channel: string;
+/** Vidéo choisie : vérifiée par le serveur (durée connue), ou collée sans vérification si le serveur n’a pas de clé. */
+interface Checked extends Hit {
+  durationSec: number | null;
 }
 
 const STAR_LABELS = ['1 étoile', '2 étoiles', '3 étoiles', '4 étoiles', '5 étoiles'];
@@ -47,6 +46,19 @@ async function searchVideos(query: string): Promise<{ hits: Hit[] } | { error: s
   }
 }
 
+async function checkVideo(videoId: string): Promise<{ video: Checked } | { error: string; code?: string }> {
+  try {
+    const response = await fetch(`/api/youtube/video?id=${encodeURIComponent(videoId)}`);
+    const body = (await response.json().catch(() => null)) as { video?: Checked; error?: string; code?: string } | null;
+    if (!response.ok || !body?.video) {
+      return { error: body?.error ?? 'Cette vidéo ne peut pas être vérifiée.', code: body?.code };
+    }
+    return { video: body.video };
+  } catch {
+    return { error: 'La vérification ne répond pas. Vérifiez la connexion.' };
+  }
+}
+
 /** Téléphone : chercher ou coller une vidéo et chanter le passage, puis noter les autres. */
 export function KaraokePlayer({ publicState: pub, playerState: me, send, now }: PlayerViewProps) {
   const remaining = useRemaining(pub?.endsAt, now);
@@ -54,13 +66,16 @@ export function KaraokePlayer({ publicState: pub, playerState: me, send, now }: 
   const [query, setQuery] = useState('');
   const [hits, setHits] = useState<Hit[] | null>(null);
   const [link, setLink] = useState('');
-  const [chosen, setChosen] = useState<Chosen | null>(null);
+  const [chosen, setChosen] = useState<Checked | null>(null);
   const [startText, setStartText] = useState('0:00');
   const [searching, setSearching] = useState(false);
+  const [checking, setChecking] = useState(false);
   const [recording, setRecording] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   if (!pub) return null;
+
+  const seconds = Math.ceil(remaining / 1000);
 
   async function run(type: string, payload: unknown, fallback: string) {
     setBusy(true);
@@ -88,16 +103,35 @@ export function KaraokePlayer({ publicState: pub, playerState: me, send, now }: 
     }
   }
 
-  function pasteLink() {
+  /** Vérifie la vidéo choisie avant de la proposer : un lien ou un résultat peut ne plus être lisible. */
+  async function choose(videoId: string, startFrom: number | null) {
+    setError(null);
+    setChecking(true);
+    const result = await checkVideo(videoId);
+    setChecking(false);
+    if ('error' in result) {
+      // Pas de clé sur le serveur : la vérification est impossible, mais le lien collé reste utilisable (sans durée connue).
+      // Une recherche n’existe pas sans clé, donc ce cas ne concerne que les liens.
+      if (result.code === 'disabled') {
+        setChosen({ videoId, title: `Vidéo ${videoId}`, channel: '', durationSec: null });
+        if (startFrom !== null) setStartText(formatTime(startFrom));
+        return;
+      }
+      setChosen(null);
+      setError(result.error);
+      return;
+    }
+    setChosen(result.video);
+    if (startFrom !== null) setStartText(formatTime(startFrom));
+  }
+
+  function chooseFromLink() {
     const videoId = parseYoutubeId(link);
     if (!videoId) {
       setError('Ce lien ne ressemble pas à une vidéo YouTube.');
       return;
     }
-    setError(null);
-    setChosen({ videoId, title: 'Vidéo collée', channel: '' });
-    const start = youtubeStartFromUrl(link);
-    if (start !== null) setStartText(formatTime(start));
+    void choose(videoId, youtubeStartFromUrl(link));
   }
 
   /** Le micro est demandé au geste du joueur, puis le passage part sur l’écran, et la voix est enregistrée. */
@@ -106,6 +140,10 @@ export function KaraokePlayer({ publicState: pub, playerState: me, send, now }: 
     const startSec = startText.trim() === '' ? 0 : parseTimeInput(startText);
     if (startSec === null) {
       setError('Indiquez le début du passage, par exemple 1:30.');
+      return;
+    }
+    if (chosen.durationSec !== null && startSec >= chosen.durationSec) {
+      setError(`Le passage doit commencer avant la fin de la vidéo (${formatTime(chosen.durationSec)}).`);
       return;
     }
     setError(null);
@@ -118,7 +156,12 @@ export function KaraokePlayer({ publicState: pub, playerState: me, send, now }: 
     }
     const stop = () => stream.getTracks().forEach((track) => track.stop());
     setBusy(true);
-    const started = await send('sing', { ...chosen, startSec });
+    const started = await send('sing', {
+      videoId: chosen.videoId,
+      title: chosen.title,
+      channel: chosen.channel,
+      startSec,
+    });
     setBusy(false);
     if (!started.ok) {
       stop();
@@ -135,6 +178,8 @@ export function KaraokePlayer({ publicState: pub, playerState: me, send, now }: 
     } catch (err) {
       stop();
       setRecording(false);
+      // Le passage s’arrête tout de suite plutôt que d’attendre la fin du délai.
+      await send('abandon', {});
       setError(micMessage(err));
     }
   }
@@ -162,7 +207,7 @@ export function KaraokePlayer({ publicState: pub, playerState: me, send, now }: 
         <section className="karaoke-play fade-in">
           <h2 className="karaoke-title">{pub.singerName} choisit sa chanson</h2>
           <p className="muted small">Préparez-vous à chanter le prochain passage.</p>
-          <p className="karaoke-count">{Math.ceil(remaining / 1000)} s</p>
+          <p className="karaoke-count">{seconds} s</p>
         </section>
       );
     }
@@ -170,6 +215,7 @@ export function KaraokePlayer({ publicState: pub, playerState: me, send, now }: 
     return (
       <section className="karaoke-play fade-in">
         <h2 className="karaoke-title">À vous de chanter</h2>
+        <p className="karaoke-count">{seconds} s pour choisir</p>
 
         <form
           className="karaoke-search"
@@ -187,7 +233,7 @@ export function KaraokePlayer({ publicState: pub, playerState: me, send, now }: 
               onChange={(e) => setQuery(e.target.value)}
             />
           </label>
-          <button type="submit" className="btn" disabled={searching || busy}>
+          <button type="submit" className="btn" disabled={searching || checking || busy}>
             {searching ? 'Recherche…' : 'Chercher'}
           </button>
         </form>
@@ -200,10 +246,8 @@ export function KaraokePlayer({ publicState: pub, playerState: me, send, now }: 
                 <button
                   type="button"
                   className={`choice-btn ${chosen?.videoId === hit.videoId ? 'selected' : ''}`}
-                  onClick={() => {
-                    setError(null);
-                    setChosen({ videoId: hit.videoId, title: hit.title, channel: hit.channel });
-                  }}
+                  disabled={checking}
+                  onClick={() => void choose(hit.videoId, null)}
                 >
                   <span className="karaoke-hit-title">{hit.title}</span>
                   {hit.channel && <span className="muted small">{hit.channel}</span>}
@@ -217,15 +261,15 @@ export function KaraokePlayer({ publicState: pub, playerState: me, send, now }: 
           className="karaoke-search"
           onSubmit={(e) => {
             e.preventDefault();
-            pasteLink();
+            chooseFromLink();
           }}
         >
           <label className="field">
             <span>Ou collez un lien YouTube</span>
             <input value={link} placeholder="https://youtu.be/…" onChange={(e) => setLink(e.target.value)} />
           </label>
-          <button type="submit" className="btn">
-            Utiliser
+          <button type="submit" className="btn" disabled={checking || busy}>
+            {checking ? 'Vérification…' : 'Vérifier'}
           </button>
         </form>
 
@@ -233,12 +277,18 @@ export function KaraokePlayer({ publicState: pub, playerState: me, send, now }: 
           <div className="karaoke-chosen">
             <p>
               <strong>{chosen.title}</strong>
+              {chosen.channel && <span className="muted small"> · {chosen.channel}</span>}
+            </p>
+            <p className="muted small">
+              {chosen.durationSec === null
+                ? 'Durée inconnue : ce serveur ne vérifie pas les vidéos.'
+                : `Durée : ${formatTime(chosen.durationSec)}`}
             </p>
             <label className="field">
               <span>Début du passage (1:30, par exemple)</span>
               <input value={startText} maxLength={10} onChange={(e) => setStartText(e.target.value)} />
             </label>
-            <button type="button" className="btn primary" disabled={busy} onClick={() => void sing()}>
+            <button type="button" className="btn primary" disabled={busy || checking} onClick={() => void sing()}>
               Je chante ce passage
             </button>
             <p className="muted small">Le micro s’active au moment où vous appuyez. Le passage joue sur l’écran.</p>
@@ -259,7 +309,15 @@ export function KaraokePlayer({ publicState: pub, playerState: me, send, now }: 
       return (
         <section className="karaoke-play fade-in">
           <h2 className="karaoke-title">Chantez !</h2>
-          <p className="karaoke-count">{recording ? 'Enregistrement en cours' : 'Préparation'}</p>
+          <p className="karaoke-count">{recording ? `Enregistrement en cours · ${seconds} s` : 'Préparation'}</p>
+          <button
+            type="button"
+            className="link-btn"
+            disabled={busy || recording}
+            onClick={() => void run('abandon', {}, 'Passage refusé.')}
+          >
+            Je ne peux pas chanter, passer mon tour
+          </button>
           {error && (
             <p className="error" role="alert">
               {error}
@@ -272,7 +330,7 @@ export function KaraokePlayer({ publicState: pub, playerState: me, send, now }: 
       <section className="karaoke-play fade-in">
         <h2 className="karaoke-title">{pub.singerName} chante</h2>
         <p className="muted small">Chantez avec l’écran principal, votre tour viendra.</p>
-        <p className="karaoke-count">{Math.ceil(remaining / 1000)} s</p>
+        <p className="karaoke-count">{seconds} s</p>
       </section>
     );
   }
@@ -329,6 +387,9 @@ export function KaraokePlayer({ publicState: pub, playerState: me, send, now }: 
   return (
     <section className="karaoke-play fade-in">
       <h2 className="karaoke-title">{pub.singerName}</h2>
+      {pub.average !== null && pub.average !== undefined && (
+        <p className="karaoke-count">Moyenne : {Number(pub.average).toFixed(1).replace('.', ',')} sur 5</p>
+      )}
       <p className="notice">
         {me?.isSinger
           ? gained > 0
@@ -339,6 +400,11 @@ export function KaraokePlayer({ publicState: pub, playerState: me, send, now }: 
             : 'Aucun point pour ce passage'}
       </p>
       {me?.rank && <p className="muted small">Vous êtes {me.rank}ᵉ</p>}
+      {error && (
+        <p className="error" role="alert">
+          {error}
+        </p>
+      )}
     </section>
   );
 }
