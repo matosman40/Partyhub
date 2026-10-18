@@ -19,7 +19,18 @@ import {
 import type { TennisMatchView, TournamentRow, TournamentView } from '../module.js';
 import { Athlete } from './Athlete.js';
 import { drawBackdrop, drawCourt, drawNet } from './court.js';
-import { handOf, layoutFor, project, standAt, strikeAt, type Layout, type Point } from './geometry.js';
+import {
+  BALL_R,
+  ballHeight,
+  handOf,
+  layoutFor,
+  placeAt,
+  project,
+  standAt,
+  strikeAt,
+  type Layout,
+  type Point,
+} from './geometry.js';
 import { SIDE_COLORS, type TennisPub, type TennisSeatView } from './types.js';
 
 /** Un relevé plus vieux que ce délai ne pilote plus la raquette : le téléphone est éteint ou hors de portée. */
@@ -29,9 +40,11 @@ const INTRO_MS = 1500;
 /** Coup de raquette : la raquette part en arrière puis revient en `SWING_MS`. */
 const SWING_MS = 220;
 const SWING_DEG = 62;
-/** Durée de l’arc de la balle après chaque coup, et hauteur maximale (fraction de la largeur de scène). */
+/** Durée de l’arc de la balle après chaque coup ; sa hauteur suit `ballHeight` (unités de scène). */
 const FLIGHT_MS = 650;
-const LIFT = 0.05;
+/** Ombre de la balle au sol, en unités de scène : elle pâlit et rétrécit quand la balle monte. */
+const SHADOW_W = 0.9;
+const SHADOW_FADE = 0.18;
 /** Humeurs : joie après un coup réussi, tristesse après une balle perdue. */
 const JOY_MS = 900;
 const SAD_MS = 1400;
@@ -40,7 +53,6 @@ const FEET = 0.92;
 /** Taille de l’anneau de frappe, en fraction de la largeur de scène. */
 const RING = 0.07;
 
-const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
 const wrapDeg = (d: number) => ((((d + 180) % 360) + 360) % 360) - 180;
 
 /**
@@ -54,7 +66,7 @@ function receiverSide(pub: TennisPub): Side | undefined {
 }
 
 /**
- * Tennis party, écran principal. Pendant un match : terrain en vue isométrique, avec le score au-dessus. Entre deux
+ * Tennis party, écran principal. Pendant un match : terrain en perspective (3D simulée), avec le score au-dessus. Entre deux
  * matchs d’un championnat : le tableau et le prochain match. À la fin : le classement.
  *
  * Le fond et la surface sont dessinés une fois sur un canevas ; les joueurs, leurs raquettes et la balle sont des
@@ -229,51 +241,51 @@ function Court({ pub, now, onAction }: { pub: TennisPub; now: number; onAction: 
           moveRackets(r, Math.min(0.05, dt));
         }
 
-        // Balle : arc visuel après chaque coup, et ombre au sol qui rétrécit quand elle monte.
-        const lift = live ? LIFT * Math.sin(Math.PI * clamp01((wall - lastBallAt) / FLIGHT_MS)) : 0;
+        // Balle : arc en cloche après chaque coup. Son ombre est posée au sol, et pâlit quand la balle monte.
+        const h = live ? ballHeight((wall - lastBallAt) / FLIGHT_MS) : 0;
         const ball = ballRef.current;
         const shadow = shadowRef.current;
         if (ball) {
-          const air = project(g, r.ball.x, r.ball.y, lift);
-          const ground = project(g, r.ball.x, r.ball.y);
-          const d = 2 * g.ballR;
+          const air = placeAt(g, r.ball.x, r.ball.y, h);
+          const ground = placeAt(g, r.ball.x, r.ball.y);
+          const rad = BALL_R * air.s;
           ball.style.visibility = live ? 'visible' : 'hidden';
-          ball.style.width = `${d}px`;
-          ball.style.height = `${d}px`;
-          ball.style.transform = `translate(${air.x - g.ballR}px, ${air.y - g.ballR}px)`;
+          ball.style.width = `${2 * rad}px`;
+          ball.style.height = `${2 * rad}px`;
+          ball.style.transform = `translate(${air.x - rad}px, ${air.y - rad}px)`;
           ball.style.zIndex = String(Math.round(ground.y) + 1);
           if (shadow) {
-            const s = d * 1.7 * (1 - lift * 6);
+            const sw = (SHADOW_W * ground.s) / (1 + SHADOW_FADE * h);
             shadow.style.visibility = live ? 'visible' : 'hidden';
-            shadow.style.width = `${s}px`;
-            shadow.style.height = `${s * 0.5}px`;
-            shadow.style.transform = `translate(${ground.x - s / 2}px, ${ground.y - s / 4}px)`;
+            shadow.style.width = `${sw}px`;
+            shadow.style.height = `${sw * 0.5}px`;
+            shadow.style.transform = `translate(${ground.x - sw / 2}px, ${ground.y - sw / 4}px)`;
           }
         }
 
-        // Joueurs : plus ils sont près du spectateur, plus ils sont grands ; leur raquette suit la balle.
+        // Joueurs : la taille suit la profondeur de la caméra (plus près = plus grand) ; leur raquette suit la balle.
         SIDES.forEach((side) => {
           const root = roots.current[side];
           if (!root) return;
           const stand = standAt(side, r.pos[side] ?? 0.5);
-          const feet = project(g, stand.u, stand.v);
-          const near = clamp01((feet.y - g.yFar) / (g.yNear - g.yFar));
-          const scale = 0.72 + 0.4 * near;
-          const left = feet.x - g.figW / 2;
-          const topPx = feet.y - FEET * g.figH;
-          root.style.transform = `translate(${left}px, ${topPx}px) scale(${scale})`;
+          const feet = placeAt(g, stand.u, stand.v);
+          const scale = feet.s / g.unit;
+          root.style.width = `${g.figW}px`;
+          root.style.transform = `translate(${feet.x - g.figW / 2}px, ${feet.y - FEET * g.figH}px) scale(${scale})`;
           root.style.zIndex = String(Math.round(feet.y));
 
           const bat = bats.current[side];
           if (!bat || !active[side]) return;
+          bat.style.width = `${g.racketH * 0.5}px`;
+          bat.style.height = `${g.racketH}px`;
           // Position de la main dans le repère du personnage (avant la mise à l’échelle, qui se fait au pied).
-          const hand = handOf(g, feet);
+          const hand = handOf(g, feet, scale);
           const lx = g.figW / 2 + (hand.x - feet.x) / scale;
           const ly = FEET * g.figH + (hand.y - feet.y) / scale;
-          const aim = project(g, r.ball.x, r.ball.y, lift);
+          const aim = project(g, r.ball.x, r.ball.y, h);
           const dx = aim.x - hand.x;
           const dy = aim.y - hand.y;
-          if (Math.hypot(dx, dy) > g.figH * 0.25) {
+          if (Math.hypot(dx, dy) > g.figH * scale * 0.25) {
             const want = (Math.atan2(dy, dx) * 180) / Math.PI + 90;
             angle[side] = (angle[side] ?? 0) + wrapDeg(want - (angle[side] ?? 0)) * (1 - Math.exp(-dt * 14));
           }
