@@ -209,7 +209,7 @@ function Court({ pub, now, onAction }: { pub: TennisPub; now: number; onAction: 
           ball.style.transform = `translate(${air.x - g.ballR}px, ${air.y - g.ballR}px)`;
           ball.style.zIndex = String(Math.round(ground.y) + 1);
           if (shadow) {
-            const s = d * 2.2 * (1 - lift * 6);
+            const s = d * 1.7 * (1 - lift * 6);
             shadow.style.visibility = live ? 'visible' : 'hidden';
             shadow.style.width = `${s}px`;
             shadow.style.height = `${s * 0.5}px`;
@@ -218,15 +218,13 @@ function Court({ pub, now, onAction }: { pub: TennisPub; now: number; onAction: 
         }
 
         // Joueurs : plus ils sont près du spectateur, plus ils sont grands ; leur raquette suit la balle.
-        const top = g.cy - g.B;
-        const bottom = g.cy + g.B;
         SIDES.forEach((side) => {
           const root = roots.current[side];
           if (!root) return;
           const stand = standAt(side, r.pos[side] ?? 0.5);
           const feet = project(g, stand.u, stand.v);
-          const near = clamp01((feet.y - top) / (bottom - top));
-          const scale = 0.86 + 0.26 * near;
+          const near = clamp01((feet.y - g.yFar) / (g.yNear - g.yFar));
+          const scale = 0.72 + 0.4 * near;
           const left = feet.x - g.figW / 2;
           const topPx = feet.y - FEET * g.figH;
           root.style.transform = `translate(${left}px, ${topPx}px) scale(${scale})`;
@@ -295,6 +293,7 @@ function Court({ pub, now, onAction }: { pub: TennisPub; now: number; onAction: 
                 mood={out ? 'sad' : (moods[side] ?? 'idle')}
                 active={!out}
                 out={out}
+                tagBelow={side === 1}
                 rootRef={(el) => {
                   roots.current[side] = el;
                 }}

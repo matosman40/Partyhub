@@ -11328,7 +11328,7 @@ input[type='file']::file-selector-button {
   container-type: inline-size;
   overflow: hidden;
   border-radius: 22px;
-  background: #0a0820;
+  background: #2a7062;
   box-shadow:
     0 0 0 6px rgba(255, 255, 255, 0.08),
     0 30px 60px -28px rgba(0, 0, 0, 0.7);
@@ -11347,10 +11347,16 @@ input[type='file']::file-selector-button {
   position: absolute;
   left: 0;
   top: 0;
-  width: calc(20cqw * 260 / 340);
+  width: calc(17cqw * 260 / 340);
   transform-origin: 50% 92%;
   pointer-events: none;
   will-change: transform;
+}
+
+.tennis-athlete.is-far .tennis-tag {
+  bottom: auto;
+  top: 100%;
+  transform: translate(-50%, 0.3em);
 }
 
 .tennis-athlete.is-out {
@@ -11377,8 +11383,8 @@ input[type='file']::file-selector-button {
   position: absolute;
   left: 0;
   top: 0;
-  width: 5.5cqw;
-  height: 11cqw;
+  width: 4.7cqw;
+  height: 9.35cqw;
   transform-origin: 50% 100%;
   pointer-events: none;
 }

@@ -1,27 +1,29 @@
 import { INSET, type Side } from '../rules.js';
 
 /**
- * Projection du terrain en vue isométrique (environ 30°, façon jeux SNES à vue de dessus en biais).
+ * Projection du terrain en perspective, vu de haut et en biais, comme les jeux de tennis sur console 16 bits.
  *
- * Le terrain reste un carré de 0 à 1 pour la physique (voir `rules.ts`). Ici on ne fait que le dessiner :
- * chaque point (u, v) du sol devient un point de l’écran, et les personnages se tiennent au bord de leur côté.
+ * Le terrain reste un carré de 0 à 1 pour la physique (voir `rules.ts`). Ici on ne fait que le dessiner : le bord
+ * lointain (v = 0) est plus étroit que le bord proche (v = 1), et chaque ligne horizontale garde sa largeur. Les
+ * personnages se tiennent au bord de leur côté, et sont plus petits au fond.
  */
 
-/** Rapport de hauteur du losange : 0,58 équivaut à une pente d’environ 30°. */
-export const TILT = 0.58;
-/** Distance entre la ligne du terrain et les pieds du joueur, en fraction du terrain. */
-export const STAND = 0.085;
+/** Décalage des joueurs hors du terrain : sur l’axe du fond et du premier plan, puis sur les côtés. */
+export const STAND_V = 0.085;
+export const STAND_U = 0.03;
 
 export interface Layout {
   /** Largeur et hauteur de la scène, en pixels. */
   W: number;
   H: number;
-  /** Demi-largeur et demi-hauteur du losange du terrain. */
-  A: number;
-  B: number;
-  /** Centre du losange. */
+  /** Axe vertical du terrain. */
   cx: number;
-  cy: number;
+  /** Ordonnée du bord lointain et du bord proche du terrain. */
+  yFar: number;
+  yNear: number;
+  /** Largeur du terrain au bord lointain et au bord proche. */
+  wFar: number;
+  wNear: number;
   /** Taille d’un personnage (hauteur, largeur) et longueur d’une raquette. */
   figH: number;
   figW: number;
@@ -37,30 +39,29 @@ export interface Point {
 
 export function layoutFor(W: number): Layout {
   const H = W * 0.86;
-  const A = W * 0.36;
-  const B = A * TILT;
-  const figH = W * 0.2;
+  const figH = W * 0.17;
   return {
     W,
     H,
-    A,
-    B,
     cx: W / 2,
-    // Le contenu (joueurs du fond compris) se répartit entre la tribune du haut et le bord du bas.
-    cy: W * 0.5,
+    yFar: H * 0.22,
+    yNear: H * 0.9,
+    wFar: W * 0.72,
+    wNear: W * 0.88,
     figH,
     // Le ratio du personnage complet (260 × 340) fixe la largeur.
     figW: figH / (340 / 260),
     racketH: figH * 0.55,
-    ballR: Math.max(5, W * 0.016),
+    ballR: Math.max(4, W * 0.014),
   };
 }
 
 /** Projection d’un point du sol (u, v), décalé de `lift` (fraction de la largeur) vers le haut. */
 export function project(g: Layout, u: number, v: number, lift = 0): Point {
+  const width = g.wFar + (g.wNear - g.wFar) * v;
   return {
-    x: g.cx + (u - v) * g.A,
-    y: g.cy + (u + v - 1) * g.B - lift * g.W,
+    x: g.cx + (u - 0.5) * width,
+    y: g.yFar + (g.yNear - g.yFar) * v - lift * g.W,
   };
 }
 
@@ -72,13 +73,13 @@ export function project(g: Layout, u: number, v: number, lift = 0): Point {
 export function standAt(side: Side, pos: number): { u: number; v: number } {
   switch (side) {
     case 0:
-      return { u: pos, v: 1 + STAND };
+      return { u: pos, v: 1 + STAND_V };
     case 1:
-      return { u: pos, v: -STAND };
+      return { u: pos, v: -STAND_V };
     case 2:
-      return { u: -STAND, v: pos };
+      return { u: -STAND_U, v: pos };
     default:
-      return { u: 1 + STAND, v: pos };
+      return { u: 1 + STAND_U, v: pos };
   }
 }
 
@@ -97,12 +98,13 @@ export function strikeAt(side: Side, pos: number): { u: number; v: number } {
 }
 
 /**
- * Main qui tient la raquette : un peu vers le terrain, et à hauteur de l’épaule (pieds - 0,42 × hauteur du
+ * Main qui tient la raquette : un peu vers le centre du terrain, et à hauteur de l’épaule (pieds - 0,42 × hauteur du
  * personnage). Une seule formule pour les quatre côtés.
  */
 export function handOf(g: Layout, feet: Point): Point {
+  const centerY = (g.yFar + g.yNear) / 2;
   const dx = g.cx - feet.x;
-  const dy = g.cy - feet.y;
+  const dy = centerY - feet.y;
   const len = Math.hypot(dx, dy) || 1;
   return {
     x: feet.x + (dx / len) * g.figH * 0.22,

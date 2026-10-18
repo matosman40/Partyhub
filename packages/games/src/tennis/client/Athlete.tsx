@@ -13,6 +13,8 @@ interface AthleteProps {
   active: boolean;
   /** Joueur éliminé : personnage grisé, sans raquette. */
   out: boolean;
+  /** Le nom passe sous le personnage (joueur du fond, dont la tête touche le haut de la scène). */
+  tagBelow?: boolean;
   rootRef: (el: HTMLDivElement | null) => void;
   racketRef: (el: HTMLSpanElement | null) => void;
 }
@@ -21,12 +23,12 @@ interface AthleteProps {
  * Un joueur sur le terrain : son personnage (celui de son avatar, sinon celui que son pseudo donne), son nom et sa
  * raquette. La position, l’échelle et l’angle de la raquette sont posés à chaque image par l’écran principal.
  */
-export function Athlete({ side, name, mood, active, out, rootRef, racketRef }: AthleteProps) {
+export function Athlete({ side, name, mood, active, out, tagBelow = false, rootRef, racketRef }: AthleteProps) {
   const known = useContext(AvatarsContext)[name];
   const spec: CharacterSpec = known?.character ?? defaultCharacterFor(name);
   const color = SIDE_COLORS[side];
   return (
-    <div ref={rootRef} className={`tennis-athlete${out ? ' is-out' : ''}`}>
+    <div ref={rootRef} className={`tennis-athlete${out ? ' is-out' : ''}${tagBelow ? ' is-far' : ''}`}>
       <span className="tennis-tag" style={{ borderColor: color }}>
         {name}
       </span>
