@@ -55,7 +55,9 @@
   font-weight: 600;
 }
 
+/* Troisième colonne de l’en-tête : l’horloge reste à droite, hors de la zone où passent les pions du haut. */
 .pf-clock {
+  grid-column: 3;
   justify-self: end;
 }
 
@@ -286,13 +288,14 @@
   animation: pf-bob 1s ease-in-out infinite;
 }
 
+/* Remonté et plus bas : les pions du bas de l’anneau restent visibles sous le panneau. */
 .pf-centre {
   position: absolute;
   left: 50%;
-  top: 50%;
+  top: 46%;
   transform: translate(-50%, -50%);
   width: 56%;
-  max-height: 64%;
+  max-height: 50%;
   display: grid;
   place-items: center;
   z-index: 3;
