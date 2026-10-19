@@ -120,6 +120,8 @@ const clipSchema = z.object({ dataUrl: z.string().max(CLIP_MAX_CHARS).regex(CLIP
 /** Photo-défi : une photo JPEG réduite, comme celles d’Imite-moi (moins de 60 000 caractères). */
 const PHOTO_MAX_CHARS = 60_000;
 const PHOTO_URL = /^data:image\/jpeg;base64,[A-Za-z0-9+/]+={0,2}$/;
+/** Photo minimale du robot de test (le contrôle ne la décode pas, seul son format est vérifié). */
+const ROBOT_PHOTO = 'data:image/jpeg;base64,/9j/4AAQSkZJRg==';
 const photoSchema = z.object({ dataUrl: z.string().max(PHOTO_MAX_CHARS).regex(PHOTO_URL, 'Photo invalide') });
 
 const tapSchema = z.object({ intervals: z.array(z.number().int().min(0).max(10_000)).min(1).max(8) });
@@ -752,6 +754,50 @@ export function createBoum(getBank: () => BankSnapshot = currentBoumBank): GameM
       }
 
       return fail('Action inconnue');
+    },
+
+    /** Mode test : un robot répond à la phase en cours (saisie, estimation, carte, rythme, vote ou note). */
+    suggest(s, playerId, random) {
+      const round = s.round;
+      const mode = currentMode(s);
+      if (!round || !mode || !(playerId in s.players)) return null;
+      const pid = playerId;
+      const key = `${s.index}:${s.phase}:${pid}`;
+      if (s.phase === 'write') {
+        if (mode.kind === 'rythme' && !(pid in round.taps)) {
+          return { type: 'tap', payload: { intervals: round.rhythm }, key };
+        }
+        if (mode.kind === 'chiffre' && !(pid in round.guesses)) {
+          return { type: 'guess', payload: { value: Math.floor(random() * 1000) }, key };
+        }
+        if (mode.kind === 'carte_vote' && !(pid in round.played)) return { type: 'pick', payload: { card: 0 }, key };
+        if (mode.kind === 'pays' && !(pid in round.picks)) return { type: 'country', payload: { code: 'FR' }, key };
+        if (mode.kind === 'photo' && !(pid in round.writings)) {
+          return { type: 'photo', payload: { dataUrl: ROBOT_PHOTO }, key };
+        }
+        if (
+          (mode.kind === 'reponse' || mode.kind === 'ecriture_vote' || mode.kind === 'vrai_ou_faux') &&
+          !(pid in round.writings) &&
+          !round.correct.includes(pid)
+        ) {
+          return { type: 'answer', payload: { text: 'réponse du robot' }, key };
+        }
+        return null;
+      }
+      if (s.phase === 'vote') {
+        if (round.votes[pid] !== undefined) return null;
+        if (mode.kind === 'vote_joueur') {
+          const other = Object.keys(s.players).find((id) => id !== pid);
+          return other ? { type: 'vote', payload: { player: other }, key } : null;
+        }
+        const option = round.options.findIndex((author) => author !== pid);
+        return option >= 0 ? { type: 'vote', payload: { option }, key } : null;
+      }
+      if (s.phase === 'rate') {
+        if (pid === round.pleader || round.ratings[pid] !== undefined) return null;
+        return { type: 'rate', payload: { stars: 3 }, key };
+      }
+      return null;
     },
 
     onTimer(state, key, ctx) {

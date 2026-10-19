@@ -184,6 +184,12 @@ function* checkSteps(mod: GameModule, options: LaunchCheckOptions = {}): Check {
     actions += run.actions;
   }
 
+  // Un jeu à plusieurs joueurs dont aucune partie n'a d'action de robot ne teste rien : il n'a pas de robot (suggest).
+  // Un jeu solo peut finir sans action de robot : il n'est pas concerné.
+  if (actions === 0 && mod.manifest.minPlayers >= 2) {
+    return { ok: false, error: 'aucune action jouée par les robots : le jeu ne se teste pas (suggest absent ou vide)' };
+  }
+
   // 2. Reproductibilité : la partie 1, rejouée après les autres, doit donner exactement la même suite d'états.
   const again = new BotRun(mod, 1, maxSteps);
   const againFailure = yield* playToEnd(again);
