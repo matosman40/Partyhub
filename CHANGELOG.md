@@ -4,6 +4,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 
 ## [Non publié]
 
+## [0.13.0] - 2026-10-19
+
 ### Ajouté
 
 - Mise à jour depuis l’administration : la rubrique *Système* affiche la version en cours et le changelog de chaque version publiée, et propose d’installer une version plus récente. Avant chaque mise à jour, la base est copiée. Pendant qu’elle est demandée, aucune nouvelle partie ne démarre, et une partie en cours est menée à son terme. Un service installé une fois sur l’hôte (`deploy/updater/install.sh`) fait le travail : si le serveur ne répond pas dans la nouvelle version, il revient à la précédente, et remet la base d’avant si la nouvelle l’avait migrée. L’application n’a pas accès à Docker. Le guide est dans `docs/MISE-A-JOUR.md`. Pour une mise à jour à la main, le dépôt se place désormais sur un tag : `git fetch --tags`, puis `git checkout vX.Y.Z`.
@@ -17,16 +19,12 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 - Tennis party, championnats : une poule (tous contre tous, 3 points par victoire, 1 par nul, départage par les manches puis les touches) ou un tableau à élimination directe (les premières graines reçoivent les exemptions ; un match nul est rejoué). Chaque match oppose deux joueurs sur le bas et le haut du court, les autres côtés faisant office de murs. Les matchs suivent les règles simples (des vies) ou celles du vrai tennis. Un match dure au plus 2 min 30 aux règles simples, et 10 min aux règles du tennis : à l’échéance, celui qui mène gagne. Entre deux matchs, l’écran principal montre le tableau et le prochain match ; le téléphone dit quand le joueur attend son tour. Le classement final donne 10, 6, 4, 3, 2 et 1 points aux six premiers.
 - Réglages à choix : les formulaires de réglage acceptent des listes déroulantes, en plus des champs numériques.
 - Fiches de jeu : le numéro de version et le journal des versions de chaque jeu, avec la date de dernière mise à jour. Une carte du catalogue affiche aussi la version. Le journal de chaque jeu est dans `packages/games/src/release-notes.ts`, et les tests vérifient qu’il suit le numéro du manifeste.
-
 - Paquets `.phgame` : script npm racine `npm run phgame` (`pack` pour construire un paquet, `check` pour le vérifier et lancer une partie de contrôle avec des robots). Les quatre paquets d’exemple passent ce contrôle.
-
-### Modifié (tennis)
-
-- Tennis party : les automates (joueurs sans téléphone) ratent une balle sur cinq environ. Sans cette erreur, deux robots renvoient presque tout, un échange dure deux minutes, et un match ne se termine pas.
-- Tennis party : rendu en perspective, à la manière de la maquette approuvée. Le terrain, les tribunes à bandes et le filet sont en 3D simulée, sur une caméra fixe qui s’ajuste à l’écran et agrandit le court sur la télé. La balle monte en cloche au-dessus du filet, et les joueurs grossissent à mesure qu’ils s’approchent du spectateur. La physique ne change pas.
 
 ### Modifié
 
+- Tennis party : les automates (joueurs sans téléphone) ratent une balle sur cinq environ. Sans cette erreur, deux robots renvoient presque tout, un échange dure deux minutes, et un match ne se termine pas.
+- Tennis party : rendu en perspective, à la manière de la maquette approuvée. Le terrain, les tribunes à bandes et le filet sont en 3D simulée, sur une caméra fixe qui s’ajuste à l’écran et agrandit le court sur la télé. La balle monte en cloche au-dessus du filet, et les joueurs grossissent à mesure qu’ils s’approchent du spectateur. La physique ne change pas.
 - Aventure IA : sur l’écran principal, le personnage qui parle est affiché en grand, à côté de la scène, avec sa réplique.
 - Bombes party : le niveau est plus grand (25 × 19 cases) et accueille dix joueurs. L’écran principal montre tout le niveau, et le téléphone suit son personnage avec un cadre de taille inchangée, bloqué sur les bords du niveau. Le classement latéral passe sur deux colonnes pour que le plateau reste grand.
 
@@ -38,6 +36,19 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 
 - Écran noir au démarrage : si l’application ne se lance pas (script bloqué, réseau coupé, mise à jour en cours), la page n’affichait qu’un fond sombre. Au bout de 12 secondes, elle indique maintenant de vérifier la connexion et propose de recharger la page. Une salle qui ne répond pas affiche déjà un message et un bouton « Réessayer » après 6 secondes.
 - Téléphone, vue TV : le fond sombre s’arrêtait sous le contenu, et une bande plus foncée restait en bas de l’écran. Le fond couvre maintenant toute la hauteur de l’écran.
+
+### Migration
+
+- Aucune migration de base de données : le schéma reste celui de 0.12.0.
+- **Première mise à jour depuis 0.12.0 : à la main.** La rubrique de mise à jour arrive avec cette version. Procédure à la section 5 de `docs/MISE-A-JOUR.md` : `git fetch --tags`, `git checkout v0.13.0`, `docker compose pull`, `docker compose up -d`. Installer ensuite le service une fois avec `sudo ./deploy/updater/install.sh` : les mises à jour suivantes se font depuis l’administration.
+
+### Problèmes connus
+
+- Mise à jour : la chaîne réelle (`docker compose pull`, `up -d`, retour arrière sur une vraie image) n’a pas été essayée sur un serveur Docker. À vérifier sur une machine de test avant de la conseiller largement.
+- Non testé sur de vrais téléphones (Android, iOS) : les vérifications sont faites en navigateur et avec des robots.
+- Karaoké : sans clé `YOUTUBE_API_KEY`, il n’y a pas de recherche, et un lien collé n’est pas vérifié. La lecture réelle des vidéos reste à essayer.
+- Une mise à jour ferme les salons ouverts au redémarrage, les parties étant en mémoire. L’administration indique leur nombre avant de confirmer.
+- Liste des versions : sans jeton GitHub, la limite de l’API (60 requêtes par heure) peut bloquer la vérification. Seules les 30 dernières releases GitHub sont lues, et 15 versions au plus sont proposées : si les releases de jeux sont nombreuses, des versions anciennes de la plateforme peuvent ne pas apparaître.
 
 ## [0.12.0] - 2026-10-18
 

@@ -1,6 +1,6 @@
 {
   "name": "@partyhub/server",
-  "version": "0.12.0",
+  "version": "0.13.0",
   "private": true,
   "type": "module",
   "main": "./dist/index.js",
@@ -13,8 +13,8 @@
     "phgame": "node dist/cli/phgame.js"
   },
   "dependencies": {
-    "@partyhub/games": "0.12.0",
-    "@partyhub/shared": "0.12.0",
+    "@partyhub/games": "0.13.0",
+    "@partyhub/shared": "0.13.0",
     "better-sqlite3": "^13.0.3",
     "express": "5.1.0",
     "pino": "^10.3.1",
