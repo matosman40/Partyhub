@@ -11195,7 +11195,6 @@ input[type='file']::file-selector-button {
   margin: 0.8em 0;
 }
 
-
 /* Mise à jour depuis l’administration : notes de version en texte seul (titres et puces), sans HTML interprété. */
 .update-notes {
   margin: 0.5rem 0 0;
