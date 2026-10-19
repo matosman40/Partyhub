@@ -2,6 +2,62 @@
 
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [Non publié]
+
+### Ajouté
+
+- Magasin de jeux : la section *Magasin de jeux* de l’administration liste les jeux publiés dans le dépôt de jeux (`matosman40/jeux-partyhub` par défaut, variable `PARTYHUB_STORE_REPO`, modifiable dans l’administration). Chaque jeu montre sa couverture, son auteur, sa version et son état. Un jeu s’installe d’un clic, se met à jour chaque jour ou à la demande, et se supprime ; ses parties en cours sont fermées. Seuls les paquets déclaratifs (cartes, plateau, questions, recettes) s’installent : les jeux écrits dans le code de PartyHub restent dans l’application. Guide : `docs/MAGASIN.md`.
+- Sons dans les paquets (format 4) : un paquet peut porter des bruitages (`.ogg` ou `.mp3`) et une musique de partie, déclarés dans `game/definition.json` (bloc `sons`). Ils remplacent les bruitages globaux pendant que la salle du jeu est affichée, et la musique de partie tourne sur l’écran principal. Budgets : 512 Ko par fichier, 2 Mio par paquet, 16 fichiers. Le format 4 demande PartyHub 0.14.0 au minimum. Route publique : `GET /api/game-sounds/<identifiant>`. Documentation : `docs/PHGAME.md`, section Sons.
+
+## [0.13.0] - 2026-10-19
+
+### Ajouté
+
+- Jeux solo compétitifs : l’écran principal trace l’avancement de chaque joueur au fil du temps, avec une légende, une infobulle au survol et un tableau comparatif (temps pour atteindre 25, 50 et 75 %, temps de résolution, coups, points). Le téléphone affiche son rang en direct, par exemple « 2ᵉ sur 4 ». Chaque joueur a un personnage qui court au bout de sa courbe, un bandeau annonce la tête de course, et le classement final affiche un podium (🥇🥈🥉) avec des confettis.
+- Mise à jour depuis l’administration : la rubrique *Système* affiche la version en cours et le changelog de chaque version publiée, et propose d’installer une version plus récente. Avant chaque mise à jour, la base est copiée. Pendant qu’elle est demandée, aucune nouvelle partie ne démarre, et une partie en cours est menée à son terme. Un service installé une fois sur l’hôte (`deploy/updater/install.sh`) fait le travail : si le serveur ne répond pas dans la nouvelle version, il revient à la précédente, et remet la base d’avant si la nouvelle l’avait migrée. L’application n’a pas accès à Docker. Le guide est dans `docs/MISE-A-JOUR.md`. Pour une mise à jour à la main, le dépôt se place désormais sur un tag : `git fetch --tags`, puis `git checkout vX.Y.Z`.
+- Karaoké : chacun chante à tour de rôle un passage d’une vidéo YouTube, cherché depuis le téléphone ou collé en lien. L’écran principal joue le passage avec le son, le téléphone enregistre la voix (12 secondes au maximum). Puis la voix est rejouée sur l’écran, l’image muette, et les autres joueurs notent de 1 à 5 étoiles : 10 points par étoile de moyenne. Aucune parole n’est affichée. Avec une clé `YOUTUBE_API_KEY` (facultative), la recherche et la vérification passent par le serveur : une vidéo qui ne peut pas être intégrée, un direct ou une vidéo à venir sont refusés avant le passage, et la durée de la vidéo borne le début du passage. Sans clé, il n’y a pas de recherche, et un lien collé est accepté sans vérification. Le chanteur peut passer son tour si son micro lâche. Les enregistrements ne sont pas conservés.
+- Tribunal de l’absurde : une situation absurde s’affiche, chacun écrit sa défense sur son téléphone, puis les autres joueurs votent pour la meilleure. Chaque vote rapporte 100 points à l’auteur de la défense, et la défense la plus votée est acquittée. Quatre ambiances : humour noir, mauvaise foi, excuses impossibles, adultes.
+- L’imposteur parmi nous : chaque joueur reçoit le mot secret, sauf l’imposteur, qui n’en connaît que la catégorie (ou rien, selon le mode). Chacun dit une phrase sans trahir le mot, puis les joueurs votent. L’imposteur gagne s’il n’est pas démasqué, ou s’il devine le mot après l’avoir été. Quatre modes : espion, intrus, mot interdit, rôle secret. Il remplace « L’Imposteur », retiré du catalogue.
+- Téléphone arabe illustré : une phrase absurde est dessinée au doigt, puis décrite par le joueur suivant, et ainsi de suite. À la fin, l’écran principal montre toute l’évolution de chaque phrase. Le temps par étape est libre, de 45 ou de 30 secondes ; les phrases de départ sont tirées au hasard ou écrites par les joueurs.
+- Plateau fête : un jeu de plateau au dé pour 2 à 8 joueurs, d’environ 25 minutes. Chacun lance le dé sur son téléphone, puis les pions avancent sur un anneau de 60 cases, avec des pièces, des événements (pari, pickpocket, grand saut, échange de place) et trois étoiles à acheter pour 20 pièces. Tous les trois tours, un mini-jeu de cinq défis (secousses, équilibre, tapotements…) distribue des pièces. Le plus d’étoiles gagne, puis le plus de pièces. Les pions sont les personnages des profils.
+- Tennis party : un nouveau jeu de tennis pour 2 à 4 joueurs. Chacun défend un côté du court avec sa raquette, pilotée par l’inclinaison du téléphone (ou par les boutons et les flèches à défaut). Les personnages de profil sont sur l’écran principal, à côté de leur côté. Une balle ratée coûte une vie (3 par défaut, réglable de 1 à 5) ; le dernier joueur debout gagne une prime, et la partie dure au plus deux minutes et demie.
+- Tennis party, règles du vrai tennis : score de chaque point (0, 15, 30, 40, avantage, égalité), jeux, sets, tie-break à 6 jeux partout (premier à 7 avec deux points d’écart), service qui alterne. Au choix : un set, ou le meilleur de trois sets. Une balle perdue donne le point à l’adversaire ; le service part vers le joueur qui reçoit. Le score s’affiche au-dessus du terrain et sur le téléphone.
+- Tennis party, championnats : une poule (tous contre tous, 3 points par victoire, 1 par nul, départage par les manches puis les touches) ou un tableau à élimination directe (les premières graines reçoivent les exemptions ; un match nul est rejoué). Chaque match oppose deux joueurs sur le bas et le haut du court, les autres côtés faisant office de murs. Les matchs suivent les règles simples (des vies) ou celles du vrai tennis. Un match dure au plus 2 min 30 aux règles simples, et 10 min aux règles du tennis : à l’échéance, celui qui mène gagne. Entre deux matchs, l’écran principal montre le tableau et le prochain match ; le téléphone dit quand le joueur attend son tour. Le classement final donne 10, 6, 4, 3, 2 et 1 points aux six premiers.
+- Réglages à choix : les formulaires de réglage acceptent des listes déroulantes, en plus des champs numériques.
+- Fiches de jeu : le numéro de version et le journal des versions de chaque jeu, avec la date de dernière mise à jour. Une carte du catalogue affiche aussi la version. Le journal de chaque jeu est dans `packages/games/src/release-notes.ts`, et les tests vérifient qu’il suit le numéro du manifeste.
+- Paquets `.phgame` : script npm racine `npm run phgame` (`pack` pour construire un paquet, `check` pour le vérifier et lancer une partie de contrôle avec des robots). Les quatre paquets d’exemple passent ce contrôle.
+
+### Modifié
+
+- Jeux solo, classement : un joueur qui n’a pas fini (temps limité écoulé) est classé par avancement, après les grilles résolues, et reçoit des points selon sa place (100, 90, 80…). Avant, tous les joueurs non terminés étaient à égalité à 0 point. Les points d’un joueur sont fixés dès qu’il résout sa grille.
+- Sudoku : l’avancement ne compte que les cases à remplir. Les cases données ne comptent plus : la partie démarre à 0 %.
+- Tennis party : les automates (joueurs sans téléphone) ratent une balle sur cinq environ. Sans cette erreur, deux robots renvoient presque tout, un échange dure deux minutes, et un match ne se termine pas.
+- Tennis party : rendu en perspective, à la manière de la maquette approuvée. Le terrain, les tribunes à bandes et le filet sont en 3D simulée, sur une caméra fixe qui s’ajuste à l’écran et agrandit le court sur la télé. La balle monte en cloche au-dessus du filet, et les joueurs grossissent à mesure qu’ils s’approchent du spectateur. La physique ne change pas.
+- Aventure IA : sur l’écran principal, le personnage qui parle est affiché en grand, à côté de la scène, avec sa réplique.
+- Bombes party : le niveau est plus grand (25 × 19 cases) et accueille dix joueurs. L’écran principal montre tout le niveau, et le téléphone suit son personnage avec un cadre de taille inchangée, bloqué sur les bords du niveau. Le classement latéral passe sur deux colonnes pour que le plateau reste grand.
+
+### Retiré
+
+- L’Imposteur (premier jeu du même nom) : retiré du catalogue, remplacé par L’imposteur parmi nous.
+
+### Corrigé
+
+- Écran noir au démarrage : si l’application ne se lance pas (script bloqué, réseau coupé, mise à jour en cours), la page n’affichait qu’un fond sombre. Au bout de 12 secondes, elle indique maintenant de vérifier la connexion et propose de recharger la page. Une salle qui ne répond pas affiche déjà un message et un bouton « Réessayer » après 6 secondes.
+- Téléphone, vue TV : le fond sombre s’arrêtait sous le contenu, et une bande plus foncée restait en bas de l’écran. Le fond couvre maintenant toute la hauteur de l’écran.
+
+### Migration
+
+- Aucune migration de base de données : le schéma reste celui de 0.12.0.
+- **Première mise à jour depuis 0.12.0 : à la main.** La rubrique de mise à jour arrive avec cette version. Procédure à la section 5 de `docs/MISE-A-JOUR.md` : `git fetch --tags`, `git checkout v0.13.0`, `docker compose pull`, `docker compose up -d`. Installer ensuite le service une fois avec `sudo ./deploy/updater/install.sh` : les mises à jour suivantes se font depuis l’administration.
+
+### Problèmes connus
+
+- Mise à jour : la chaîne réelle (`docker compose pull`, `up -d`, retour arrière sur une vraie image) n’a pas été essayée sur un serveur Docker. À vérifier sur une machine de test avant de la conseiller largement.
+- Non testé sur de vrais téléphones (Android, iOS) : les vérifications sont faites en navigateur et avec des robots.
+- Karaoké : sans clé `YOUTUBE_API_KEY`, il n’y a pas de recherche, et un lien collé n’est pas vérifié. La lecture réelle des vidéos reste à essayer.
+- Une mise à jour ferme les salons ouverts au redémarrage, les parties étant en mémoire. L’administration indique leur nombre avant de confirmer.
+- Liste des versions : sans jeton GitHub, la limite de l’API (60 requêtes par heure) peut bloquer la vérification. Seules les 30 dernières releases GitHub sont lues, et 15 versions au plus sont proposées : si les releases de jeux sont nombreuses, des versions anciennes de la plateforme peuvent ne pas apparaître.
+
 ## [0.12.0] - 2026-10-18
 
 ### Ajouté

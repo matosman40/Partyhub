@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { MemoryRouter } from 'react-router-dom';
 import type { CatalogGame } from '@partyhub/shared';
-import { GameSheet, playersText } from '../components/GameSheet.js';
+import { GameSheet, playersText, releaseDateText } from '../components/GameSheet.js';
 
 /** Fiche d'un jeu : rendu statique. */
 
@@ -115,6 +115,37 @@ describe('GameSheet', () => {
 
   it('n’expose ni NaN ni undefined', () => {
     expect(sheet()).not.toMatch(/NaN|undefined/);
+  });
+
+  it('affiche le journal des versions, la plus récente en tête, avec sa date', () => {
+    const withLog = {
+      ...quiz,
+      changelog: [
+        { version: '1.4.0', date: '2026-10-18', changes: ['Thèmes des joueurs confiés à l’IA.'] },
+        { version: '1.0.0', date: '2026-10-14', changes: ['Première version publique.'] },
+      ],
+    } as unknown as CatalogGame;
+    const html = sheet({ game: withLog });
+    expect(html).toContain('Journal des versions');
+    expect(html.indexOf('Version 1.4.0')).toBeLessThan(html.indexOf('Version 1.0.0'));
+    expect(html).toContain('Thèmes des joueurs confiés à l’IA.');
+    expect(html).toMatch(/<time[^>]*"2026-10-18"/);
+    expect(html).toContain('18 octobre 2026');
+    expect(html).toContain('Actuelle');
+    expect(html).toContain('Dernière mise à jour');
+  });
+
+  it('sans journal, la section est absente', () => {
+    const html = sheet();
+    expect(html).not.toContain('Journal des versions');
+    expect(html).not.toContain('Dernière mise à jour');
+  });
+});
+
+describe('releaseDateText', () => {
+  it('écrit la date en français, et montre une date illisible telle quelle', () => {
+    expect(releaseDateText('2026-10-14')).toBe('14 octobre 2026');
+    expect(releaseDateText('pas une date')).toBe('pas une date');
   });
 });
 

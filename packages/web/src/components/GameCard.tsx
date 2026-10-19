@@ -26,6 +26,9 @@ export function GameCard({ game, compact = false }: { game: CatalogGame; compact
           <span className="tag">{playersLabel(game)} joueurs</span>
           <span className="tag">{game.durationMin} min</span>
           {game.ai && <span className="tag tag-ai">IA</span>}
+          <span className="tag game-card-version" title="Version du jeu">
+            v{game.version}
+          </span>
         </span>
       </span>
     </Link>

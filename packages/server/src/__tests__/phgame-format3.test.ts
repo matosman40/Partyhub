@@ -50,10 +50,10 @@ function issuesOf(bytes: Uint8Array): string[] {
 }
 
 describe('format 3 : recettes', () => {
-  it('le moteur annonce la version 0.12.0 et le module recette', () => {
-    expect(PARTYHUB_ENGINE.version).toBe('0.12.0');
+  it('le moteur annonce la version 0.14.0 et le module recette', () => {
+    expect(PARTYHUB_ENGINE.version).toBe('0.14.0');
     expect(PARTYHUB_ENGINE.modules).toContain('recipe');
-    expect(PHGAME_FORMAT_VERSION).toBe(3);
+    expect(PHGAME_FORMAT_VERSION).toBe(4);
   });
 
   it('le paquet de recette d’exemple est valide, très petit, et de module recipe', () => {

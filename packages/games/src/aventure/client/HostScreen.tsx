@@ -10,6 +10,7 @@ import {
   ResolutionCard,
   RoundReportCard,
   SheetCard,
+  StageFigure,
   type FoeView,
   type NpcView,
   type SheetView,
@@ -196,34 +197,36 @@ function Vote({ pub, host, remaining }: { pub: AventurePublic; host: AventureHos
   if (!scene) return null;
   return (
     <>
-      <section className="aventure-scene" aria-label="Scène en cours">
-        <p className="label">
-          Scène {pub.sceneNumber} sur {pub.total}
-        </p>
-        <div className="aventure-meta">
-          <KindTag kind={scene.kind} />
-        </div>
-        <h2 className="aventure-scene-title">{scene.title}</h2>
-        <p className="aventure-scene-text">{scene.text}</p>
-        {scene.hint && <p className="aventure-hint">Indice : {scene.hint}</p>}
-        {scene.npc && <NpcCard npc={scene.npc} />}
-        <ol className="aventure-choices">
-          {scene.choices.map((c, i) => (
-            <li key={c.id}>
-              <span className="aventure-choice-index" aria-hidden="true">
-                {i + 1}
-              </span>
-              <span className="aventure-choice-label">{c.label}</span>
-              <span className="aventure-choice-tag">{c.statLabel}</span>
-              <span className="aventure-choice-tag">Difficulté {c.difficulty}</span>
-            </li>
-          ))}
-        </ol>
-        <p className="muted">
-          {pub.voteCount} / {pub.voterCount} vote(s)
-        </p>
-        <PendingNote names={host?.pending ?? []} label="Vote attendu de :" />
-      </section>
+      <div className={`aventure-stage${scene.npc ? ' has-figure' : ''}`}>
+        <section className="aventure-scene" aria-label="Scène en cours">
+          <p className="label">
+            Scène {pub.sceneNumber} sur {pub.total}
+          </p>
+          <div className="aventure-meta">
+            <KindTag kind={scene.kind} />
+          </div>
+          <h2 className="aventure-scene-title">{scene.title}</h2>
+          <p className="aventure-scene-text">{scene.text}</p>
+          {scene.hint && <p className="aventure-hint">Indice : {scene.hint}</p>}
+          <ol className="aventure-choices">
+            {scene.choices.map((c, i) => (
+              <li key={c.id}>
+                <span className="aventure-choice-index" aria-hidden="true">
+                  {i + 1}
+                </span>
+                <span className="aventure-choice-label">{c.label}</span>
+                <span className="aventure-choice-tag">{c.statLabel}</span>
+                <span className="aventure-choice-tag">Difficulté {c.difficulty}</span>
+              </li>
+            ))}
+          </ol>
+          <p className="muted">
+            {pub.voteCount} / {pub.voterCount} vote(s)
+          </p>
+          <PendingNote names={host?.pending ?? []} label="Vote attendu de :" />
+        </section>
+        {scene.npc && <StageFigure npc={scene.npc} />}
+      </div>
       <Cast npcs={pub.npcs} />
       <TimerBar remaining={remaining} total={pub.durationMs} />
     </>
@@ -313,7 +316,8 @@ export function AventureHost({ publicState, hostState, now, onAction }: HostView
         <>
           <WorldHeader pub={pub} />
           <Vote pub={pub} host={host} remaining={remaining} />
-          <CharacterRow characters={pub.characters} />
+          {/* Avec un personnage en grand, la scène prime : la rangée des fiches, trop haute, réduirait tout l’écran. */}
+          {!pub.scene?.npc && <CharacterRow characters={pub.characters} />}
         </>
       )}
       {pub.phase === 'combat' && (

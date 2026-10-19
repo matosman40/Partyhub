@@ -1,5 +1,5 @@
-import { useEffect, useSyncExternalStore } from 'react';
-import { isMuted, onMuteChange, setSfxFiles } from '@partyhub/games/client';
+import { useEffect, useState, useSyncExternalStore } from 'react';
+import { isMuted, onMuteChange, playLoopFile, setSfxFiles, stopLoopFile } from '@partyhub/games/client';
 import type { MusicSlot, SfxName } from '@partyhub/shared';
 import { api } from './api.js';
 
@@ -17,10 +17,25 @@ export interface PublicSounds {
 
 let sounds: PublicSounds | null = null;
 const soundListeners = new Set<() => void>();
+/** Bruitages du jeu affiché (paquet importé) : ils remplacent les bruitages globaux pendant que sa salle est ouverte. */
+let gameSfx: Partial<Record<SfxName, string>> = {};
+
+/** Fusion des bruitages : ceux du jeu affiché l’emportent, les réglages globaux restent pour le reste. Fonction pure. */
+export function mergeSfxFiles(
+  global: Partial<Record<SfxName, string | null>>,
+  game: Partial<Record<SfxName, string>>,
+): Partial<Record<SfxName, string | null>> {
+  return { ...global, ...game };
+}
+
+/** Règle la table des bruitages : ceux du jeu affiché d’abord, puis les réglages globaux. */
+function applySfx(): void {
+  setSfxFiles(mergeSfxFiles(sounds?.sfx ?? {}, gameSfx));
+}
 
 function publishSounds(next: PublicSounds | null): void {
   sounds = next;
-  setSfxFiles(next?.sfx ?? {});
+  applySfx();
   for (const listener of soundListeners) listener();
 }
 
@@ -45,6 +60,63 @@ export function usePublicSounds(): PublicSounds | null {
     () => sounds,
     () => null,
   );
+}
+
+/*
+ * Sons d’un jeu importé (format 4) : bruitages et musique de partie, décrits par le paquet. Seuls les jeux du registre
+ * importés (préfixes pkg-, pkgb-, pkgq-, pkgr-) en ont. Un jeu intégré à l’application garde les sons globaux.
+ */
+
+export interface GameSounds {
+  sfx: Partial<Record<SfxName, string>>;
+  music: { partie?: string };
+}
+
+const NO_GAME_SOUNDS: GameSounds = { sfx: {}, music: {} };
+const IMPORTED_GAME = /^pkg[bqr]?-/;
+
+/** Vrai pour un jeu importé d’un paquet (identifiant du registre). Les jeux intégrés n’ont pas de sons de paquet. */
+export function isImportedGame(gameId: string): boolean {
+  return IMPORTED_GAME.test(gameId);
+}
+
+/** Sons d’un jeu, par identifiant. Un échec laisse les sons globaux. */
+export async function loadGameSounds(gameId: string): Promise<GameSounds> {
+  try {
+    const res = await api<GameSounds>(`/api/game-sounds/${encodeURIComponent(gameId)}`);
+    return { sfx: res.sfx ?? {}, music: res.music ?? {} };
+  } catch {
+    return NO_GAME_SOUNDS;
+  }
+}
+
+/**
+ * Pendant que la salle d’un jeu importé est affichée : ses bruitages remplacent les globaux, et sa musique de partie
+ * tourne quand `playing` est vrai (écran principal seulement). Tout est rendu à la sortie de la salle.
+ */
+export function usePackageSounds(gameId: string | null, playing: boolean): void {
+  const [partie, setPartie] = useState<string | null>(null);
+  useEffect(() => {
+    setPartie(null);
+    if (!gameId || !isImportedGame(gameId)) return;
+    let current = true;
+    void loadGameSounds(gameId).then((game) => {
+      if (!current) return;
+      gameSfx = game.sfx;
+      applySfx();
+      setPartie(game.music.partie ?? null);
+    });
+    return () => {
+      current = false;
+      gameSfx = {};
+      applySfx();
+    };
+  }, [gameId]);
+  useEffect(() => {
+    if (!playing || !partie) return;
+    playLoopFile(partie);
+    return () => stopLoopFile();
+  }, [playing, partie]);
 }
 
 /*

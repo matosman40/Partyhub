@@ -13,7 +13,8 @@ Sur une installation neuve, les jeux intégrés sont désactivés : l'administra
 | 🧩 **Phrases à trous**     | Quiz      | L’IA écrit des phrases à trou. Chacun pose une carte dans le trou, puis tout le monde vote anonymement. |
 | 💭 **Association express** | Soirée    | Écrivez le premier mot qui vous vient, puis votez anonymement pour le plus drôle. |
 | 👉 **Plutôt qui ?**        | Soirée    | « Qui est le plus susceptible de… ? » Votez en secret et suivez la majorité.      |
-| 🕵️ **L'Imposteur**         | Soirée    | Un imposteur ignore le mot secret : donnez des indices, puis démasquez-le.        |
+| 🫣 **L’imposteur parmi nous** | Soirée  | Un imposteur ignore le mot secret : donnez des indices, puis démasquez-le. Quatre modes de jeu. |
+| 🎤 **Karaoké** | Soirée | Cherchez une chanson sur YouTube et chantez un passage : l’écran le joue, votre voix est rejouée, et les autres notent. |
 | 🃏 **Plus ou moins**       | Cartes    | Un paquet de 52 cartes : la suivante sera-t-elle plus haute ou plus basse ?       |
 | ⚡ **Réflexe**             | Adresse   | Attendez le vert, puis touchez le plus vite possible.                             |
 | 🃏 **Rami 51**             | Cartes    | Ouvrez à 51 points, posez vos combinaisons, videz votre main le premier.          |
@@ -30,7 +31,7 @@ Sur une installation neuve, les jeux intégrés sont désactivés : l'administra
 - Administration protégée par mot de passe : activer ou désactiver les jeux, consulter les salles,
   supprimer les salles inactives, régler les limites.
 - Persistance SQLite (réglages, jeux activés, statistiques) dans un volume Docker.
-- Aucun service externe, aucune clé API : tout fonctionne sur le réseau local.
+- Le jeu tourne sur le réseau local, sans internet. Quelques fonctions optionnelles utilisent un service externe : l’IA (Aventure IA et images, avec une clé), la recherche de chansons du karaoké (avec une clé YouTube), et la lecture des vidéos YouTube (avec une connexion internet).
 
 ## Installation (Docker Compose, CasaOS)
 
@@ -58,11 +59,14 @@ sudo docker compose logs -f     # Ctrl+C pour quitter
 Ouvrir `http://<adresse-du-serveur>:8282` sur l'écran principal, puis `http://<adresse-du-serveur>:8282/join`
 sur les téléphones (ou scanner le QR code). Le détail pour CasaOS est dans [docs/CASAOS.md](docs/CASAOS.md).
 
-**Mise à jour** (les données du volume `partyhub-data` sont conservées) :
+**Mise à jour** (les données du volume `partyhub-data` sont conservées) : depuis la rubrique *Système* de
+l'administration, après une installation unique du service de mise à jour, ou à la main. Le détail, les règles et le
+dépannage sont dans [docs/MISE-A-JOUR.md](docs/MISE-A-JOUR.md).
 
 ```bash
 cd /DATA/AppData/partyhub
-sudo git pull                      # récupère la nouvelle version du compose.yaml
+sudo git fetch --tags
+sudo git checkout vX.Y.Z           # la version voulue (liste : git tag -l 'v*')
 sudo docker compose pull           # télécharge l'image de cette version
 sudo docker compose up -d
 ```
@@ -154,6 +158,7 @@ la bonne réponse n'apparaît qu'à la révélation, et les réponses privées r
 | `ASSET_MAX_FONT_MB`                  | `2`                            | Taille maximale d'une police de la médiathèque (1 à 16)                                                                                                                                                                                                                                                            |
 | `BUILTIN_GAMES`                      | `off`                          | `on` active les jeux intégrés sur une installation neuve ; `off` les laisse désactivés (les installations existantes ne changent pas)                                                                                                                                                                              |
 | `GITHUB_TOKEN`                       | vide                           | Jeton GitHub (lecture des releases). Requis pour les dépôts privés ; évite aussi la limite d'appels anonymes. Jamais affiché ni sauvegardé                                                                                                                                                                         |
+| `PARTYHUB_STORE_REPO` | matosman40/jeux-partyhub | Dépôt de jeux du magasin (auteur/nom). Modifiable aussi dans l'administration. |
 | `AI_PROVIDER`                        | déduit de la clé               | Un ou plusieurs fournisseurs, par ordre de préférence, séparés par des virgules (ex. `groq,anthropic`). `none` ou `off` désactive l'IA. Sans valeur, un seul fournisseur est utilisé : le premier dont la clé est présente                                                                                         |
 | `*_API_KEY`                          | vide                           | Clé d'un fournisseur : `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GROQ_API_KEY`, `OPENROUTER_API_KEY`, `MISTRAL_API_KEY`, `CEREBRAS_API_KEY`, `GEMINI_API_KEY`, `AI_CUSTOM_API_KEY`. Sert à écrire les aventures du jeu « Aventure IA ». Sans clé utilisable, une histoire de secours est jouée. Reste sur le serveur |
 | `AI_<FOURNISSEUR>_MODEL`             | voir tableau                   | Modèle utilisé chez ce fournisseur, par exemple `AI_GROQ_MODEL`. Obligatoire pour les fournisseurs sans modèle par défaut (tous les gratuits, et `custom`)                                                                                                                                                         |
@@ -161,6 +166,7 @@ la bonne réponse n'apparaît qu'à la révélation, et les réponses privées r
 | `AI_<FOURNISSEUR>_MAX_CALLS_PER_DAY` | illimité                       | Plafond d'appels sur 24 heures glissantes pour ce fournisseur (1 à 1000000). Une fois atteint, le fournisseur suivant de la liste répond. Sert à rester dans un palier gratuit                                                                                                                                     |
 | `AI_TIMEOUT_MS`                      | `30000`                        | Délai maximal d'un appel à l'IA, de 5000 à 120000 ms                                                                                                                                                                                                                                                               |
 | `AI_MAX_CALLS_PER_HOUR`              | `300`                          | Plafond global d'appels à l'IA par heure, tous fournisseurs confondus (1 à 100000)                                                                                                                                                                                                                                 |
+| `YOUTUBE_API_KEY`                    | vide                           | Clé de l'API YouTube Data v3 : recherche de chansons du jeu « Karaoké ». Sans clé, les joueurs peuvent toujours coller un lien YouTube. Reste sur le serveur. Quota de 10 000 unités par jour (une recherche en coûte 100)                                                                                              |
 | `PORT`, `HOST`                       | `8282`, `0.0.0.0`              | Écoute du serveur dans le conteneur                                                                                                                                                                                                                                                                                |
 
 ### Fournisseurs d'IA

@@ -1,3 +1,4 @@
+import { RELEASE_NOTES } from '@partyhub/games';
 import { allGames, sourceOf, type CustomSource } from './games-registry.js';
 import { settingsBounds, type CatalogGame, type GameInfo, type GameModule, type GameOrigin } from '@partyhub/shared';
 import type { Store } from './db/store.js';
@@ -20,6 +21,7 @@ export function gameInfo(module: GameModule): GameInfo {
     notice: m.notice,
     settingsBounds: settingsBounds(module.settingsSchema),
     ai: m.ai === true,
+    changelog: RELEASE_NOTES[m.id] ?? [],
   };
 }
 

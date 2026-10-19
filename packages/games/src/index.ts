@@ -3,7 +3,6 @@ import { quizParty } from './quiz-party/module.js';
 import { phrasesTrous } from './phrases-trous/module.js';
 import { association } from './association/module.js';
 import { plutotQui } from './plutot-qui/module.js';
-import { imposteur } from './imposteur/module.js';
 import { plusOuMoins } from './plus-ou-moins/module.js';
 import { reflexe } from './reflexe/module.js';
 import { microDefis } from './micro-defis/module.js';
@@ -20,22 +19,32 @@ import { rami51 } from './rami51/module.js';
 import { tarot } from './tarot/module.js';
 import { pokerTexas } from './poker/module.js';
 import { imiteMoi } from './imite-moi/module.js';
+import { karaoke } from './karaoke/module.js';
 import { banquise } from './banquise/module.js';
 import { boum } from './boum/module.js';
 import { plateauTest } from './plateau-test/module.js';
 import { aventureIa } from './aventure/module.js';
+import { tennisParty } from './tennis/module.js';
+import { plateauFete } from './plateau-fete/module.js';
+import { tribunalAbsurde } from './tribunal-absurde/module.js';
+import { imposteurParmiNous } from './imposteur-parmi-nous/module.js';
+import { telephoneArabe } from './telephone-arabe/module.js';
 
 /**
  * Registre explicite des jeux disponibles.
  * Ajouter un jeu = créer son dossier puis l’ajouter ICI (aucun chargement
  * dynamique depuis le disque ou la configuration). Voir docs/ADDING-A-GAME.md.
  */
+export { RELEASE_NOTES } from './release-notes.js';
+
 export const gameRegistry: GameModule[] = [
   quizParty,
   phrasesTrous,
   association,
   plutotQui,
-  imposteur,
+  imposteurParmiNous,
+  tribunalAbsurde,
+  telephoneArabe,
   aventureIa,
   plusOuMoins,
   reflexe,
@@ -56,9 +65,12 @@ export const gameRegistry: GameModule[] = [
   tarot,
   pokerTexas,
   imiteMoi,
+  karaoke,
   banquise,
   boum,
   plateauTest,
+  tennisParty,
+  plateauFete,
 ];
 
 export function findGame(id: string): GameModule | undefined {
@@ -70,8 +82,11 @@ export { phrasesTrous } from './phrases-trous/module.js';
 export type { QuizSettings, QuizState } from './quiz-party/module.js';
 export { association } from './association/module.js';
 export { plutotQui } from './plutot-qui/module.js';
-export { imposteur } from './imposteur/module.js';
 export { aventureIa } from './aventure/module.js';
+export { tennisParty } from './tennis/module.js';
+export type { TennisSettings, TennisState } from './tennis/module.js';
+export { plateauFete } from './plateau-fete/module.js';
+export type { PlateauState, PlateauSettings } from './plateau-fete/module.js';
 export { plusOuMoins } from './plus-ou-moins/module.js';
 export { reflexe } from './reflexe/module.js';
 export { microDefis, microDefisSettingsSchema } from './micro-defis/module.js';

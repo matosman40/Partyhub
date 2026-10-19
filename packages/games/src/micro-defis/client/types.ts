@@ -8,7 +8,8 @@ export interface MicrogameView {
   instruction: string;
   hint: string;
   durationMs: number;
-  sensor: 'shake' | 'tilt' | 'spin' | 'mic' | 'tap' | 'timing';
+  sensor:
+    'shake' | 'tilt' | 'spin' | 'mic' | 'tap' | 'timing' | 'swipe' | 'vibrate' | 'camera' | 'clap' | 'pinch' | 'flick';
   /** Valeur à atteindre (secousses, millisecondes, degrés, tapotements). 0 pour « Pile ». */
   target: number;
 }

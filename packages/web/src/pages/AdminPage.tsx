@@ -8,6 +8,7 @@ import { CardGamesAdmin } from '../admin/CardGamesAdmin.js';
 import { BoardGamesAdmin } from '../admin/BoardGamesAdmin.js';
 import { PackagesAdmin } from '../admin/PackagesAdmin.js';
 import { PackageSourcesAdmin } from '../admin/PackageSourcesAdmin.js';
+import { StoreAdmin } from '../admin/StoreAdmin.js';
 import { CharacterPacksAdmin } from '../admin/CharacterPacksAdmin.js';
 import { AssetLibrary } from '../admin/AssetLibrary.js';
 import { ScreenBackgroundsAdmin } from '../admin/ScreenBackgroundsAdmin.js';
@@ -19,6 +20,7 @@ import { GameSettingsEditor } from '../admin/GameSettingsEditor.js';
 import { viewsFor } from '../games.js';
 import { BackupPanel } from '../admin/BackupPanel.js';
 import { DbBackups } from '../admin/DbBackups.js';
+import { UpdatePanel } from '../admin/UpdatePanel.js';
 import { BackButton } from '../components/BackButton.js';
 import { LogsAdmin } from '../admin/LogsAdmin.js';
 import { AiSettingsAdmin } from '../admin/AiSettingsAdmin.js';
@@ -350,7 +352,7 @@ const ADMIN_CATEGORIES = [
   {
     id: 'systeme',
     title: 'Système',
-    text: 'Journal des erreurs, clés d’IA, réglages généraux, sauvegardes et base de données.',
+    text: 'Mise à jour, journal des erreurs, clés d’IA, réglages généraux, sauvegardes et base de données.',
   },
 ] as const;
 
@@ -653,6 +655,11 @@ export function AdminPage() {
               </section>
 
               <section className="card stack">
+                <h2>Magasin de jeux</h2>
+                <StoreAdmin onChanged={load} />
+              </section>
+
+              <section className="card stack">
                 <h2>Paquets de jeux (.phgame)</h2>
                 <PackagesAdmin onChanged={load} />
                 <h3>Sources GitHub</h3>
@@ -699,6 +706,11 @@ export function AdminPage() {
 
           {category === 'systeme' && (
             <>
+              <section className="card stack">
+                <h2>Mise à jour</h2>
+                <UpdatePanel />
+              </section>
+
               <section className="card stack">
                 <h2>Journal des erreurs</h2>
                 <LogsAdmin />

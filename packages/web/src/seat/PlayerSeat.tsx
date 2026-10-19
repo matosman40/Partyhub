@@ -33,6 +33,7 @@ import { MyResult, TeamBadge, championshipSummary, hasChampionship, replayLabel 
 import { getDevice } from '../device/device.js';
 import { SHARED_PLACE_PARAM } from './share.js';
 import { phaseOf, useGameCues } from '../tv/gameCues.js';
+import { usePackageSounds } from '../sounds.js';
 
 /**
  * Un siège : un joueur avec sa propre connexion, son jeton et sa place dans la salle.
@@ -363,6 +364,8 @@ export function PlayerSeat({
 
   // Bruitages du téléphone (début, bilan, fin) : un son propre au jeu passe avant, sans doublon.
   useGameCues(view?.lobby.status ?? null, phaseOf(view?.game?.public));
+  // Bruitages du jeu importé (paquet) : la musique de partie reste sur l’écran principal.
+  usePackageSounds(view?.lobby.game.id ?? null, false);
 
   if (ended) {
     return wrapper(

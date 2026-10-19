@@ -126,6 +126,15 @@ export interface GameNotice {
   tips: string[];
 }
 
+/** Une entrée du journal d’un jeu : son numéro de version à cette date, la date, et ce qui a changé. */
+export interface GameRelease {
+  version: string;
+  /** Date de publication, au format AAAA-MM-JJ. */
+  date: string;
+  /** Changements visibles, en phrases courtes. */
+  changes: string[];
+}
+
 export interface GameManifest {
   id: string;
   category: GameCategory;

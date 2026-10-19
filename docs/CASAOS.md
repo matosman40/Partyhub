@@ -65,11 +65,16 @@ télécharger la nouvelle image :
 
 ```bash
 cd /DATA/AppData/partyhub
-sudo git pull
+sudo git fetch --tags
+sudo git checkout vX.Y.Z      # la version voulue (liste : git tag -l 'v*')
 sudo docker compose pull
 sudo docker compose up -d
 sudo docker compose ps
 ```
+
+Le dépôt est sur un tag de version (« HEAD détaché »), donc un `git pull` seul ne suffit plus. Une fois le service
+de mise à jour installé, la rubrique *Système* de l'administration propose les nouvelles versions avec leur changelog,
+et s'en charge (voir [MISE-A-JOUR.md](MISE-A-JOUR.md)).
 
 Depuis CasaOS : réimporter le nouveau `compose.yaml` (même procédure que la section 3), en gardant le même nom
 d'application et les mêmes variables, afin de réutiliser le volume existant.

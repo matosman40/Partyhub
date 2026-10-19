@@ -133,13 +133,26 @@ export function useMotionFeed(
 
 export type MicStatus = 'idle' | 'starting' | 'ready' | 'denied' | 'unavailable' | 'insecure';
 
+/** Options du micro : la cadence des mesures, et un récepteur direct pour les détections rapides (claquements). */
+export interface MicOptions {
+  /** Période entre deux mesures, en millisecondes (50 par défaut). */
+  intervalMs?: number;
+  /** Reçoit chaque mesure avec son horloge, sans attendre le rendu. */
+  onLevel?: (level: number, t: number) => void;
+}
+
 /**
  * Niveau du micro (0 à 1), tant que `active` est vrai. Le micro est demandé à ce moment-là, puis arrêté
  * dès que `active` redevient faux : le flux n’est jamais envoyé au serveur.
  */
-export function useMicLevel(active: boolean): { status: MicStatus; level: number } {
+export function useMicLevel(active: boolean, options: MicOptions = {}): { status: MicStatus; level: number } {
   const [status, setStatus] = useState<MicStatus>('idle');
   const [level, setLevel] = useState(0);
+  const optionsRef = useRef(options);
+
+  useEffect(() => {
+    optionsRef.current = options;
+  });
 
   useEffect(() => {
     if (!active) {
@@ -178,8 +191,10 @@ export function useMicLevel(active: boolean): { status: MicStatus; level: number
         const buffer = new Uint8Array(analyser.fftSize);
         timer = window.setInterval(() => {
           analyser.getByteTimeDomainData(buffer);
-          setLevel(levelFromBytes(buffer));
-        }, 50);
+          const value = levelFromBytes(buffer);
+          setLevel(value);
+          optionsRef.current.onLevel?.(value, performance.now());
+        }, optionsRef.current.intervalMs ?? 50);
         setStatus('ready');
       })
       .catch((err: unknown) => {

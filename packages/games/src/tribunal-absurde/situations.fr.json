@@ -1,0 +1,50 @@
+{
+  "humour-noir": [
+    "Tu es jugé pour avoir offert un cactus à ta belle-mère, « pour la piquer un peu ». Quelle est ta défense ?",
+    "Tu es accusé d’avoir laissé un mot doux sur le répondeur du cimetière. Quelle est ta défense ?",
+    "Tu es poursuivi parce que ton chat a rapporté une souris à l’enterrement de ta tante. Quelle est ta défense ?",
+    "Tu es accusé d’avoir écrit « on verra bien » sur le testament de ton voisin. Quelle est ta défense ?",
+    "Tu es jugé pour avoir gardé le sapin de Noël toute l’année, « par superstition ». Quelle est ta défense ?",
+    "Tu es accusé d’avoir réglé ton réveil pour sonner pendant la visite du médecin. Quelle est ta défense ?",
+    "Tu es poursuivi pour avoir ri pendant la minute de silence de la réunion de famille. Quelle est ta défense ?",
+    "Tu es jugé pour avoir demandé au robot aspirateur de « faire le ménage » avec le chat dedans. Quelle est ta défense ?",
+    "Tu es accusé d’avoir vendu la maison de ton grand-père « à un prix d’ami ». Quelle est ta défense ?",
+    "Tu es poursuivi pour avoir mis du sel dans le café du directeur, « pour le réveiller ». Quelle est ta défense ?"
+  ],
+  "mauvaise-foi": [
+    "Tu es accusé d’avoir mangé le dernier yaourt du frigo, alors que la photo te montre avec la cuillère. Quelle est ta défense ?",
+    "Tu es jugé pour être arrivé en retard à ton propre mariage. Quelle est ta défense ?",
+    "Tu es accusé d’avoir rayé la voiture du voisin avec ton caddie. Quelle est ta défense ?",
+    "Tu es poursuivi pour avoir répondu « je suis en route » depuis ton canapé pendant trois heures. Quelle est ta défense ?",
+    "Tu es accusé d’avoir gardé la télécommande pendant tout le match. Quelle est ta défense ?",
+    "Tu es jugé pour avoir fait semblant de ne pas entendre ton prénom pendant l’appel. Quelle est ta défense ?",
+    "Tu es accusé d’avoir cassé le vase, puis d’avoir accusé le chien, qui n’existe pas. Quelle est ta défense ?",
+    "Tu es poursuivi pour avoir dit « c’est le dernier » à chaque soirée depuis deux ans. Quelle est ta défense ?",
+    "Tu es accusé d’avoir gagné au Monopoly en gardant l’argent de la banque dans ta poche. Quelle est ta défense ?",
+    "Tu es jugé pour avoir affirmé que la pizza à l’ananas est un plat de l’Antiquité. Quelle est ta défense ?"
+  ],
+  "excuses-impossibles": [
+    "Tu es accusé d’être arrivé deux heures en retard au travail, « le temps que le train se décide ». Quelle est ta défense ?",
+    "Tu es accusé d’avoir raté ton examen de conduite parce que tu étais « déjà dans un autre examen ». Quelle est ta défense ?",
+    "Tu es accusé de ne pas avoir rendu ton rapport, qui a été mangé par ta tortue. Quelle est ta défense ?",
+    "Tu es accusé d’avoir manqué le mariage de ta sœur, en croyant qu’il était le mois prochain. Quelle est ta défense ?",
+    "Tu es accusé d’être venu à la réunion en pyjama, sans t’en rendre compte pendant trois heures. Quelle est ta défense ?",
+    "Tu es accusé d’avoir perdu les clés de la voiture dans le four. Quelle est ta défense ?",
+    "Tu es accusé d’avoir raté la finale de ton équipe, car ton réveil était « un peu trop en avance ». Quelle est ta défense ?",
+    "Tu es accusé d’avoir cassé la fenêtre du voisin avec une baguette de pain. Quelle est ta défense ?",
+    "Tu es accusé d’avoir mis trois heures à réparer une prise, en la débranchant pour mieux voir. Quelle est ta défense ?",
+    "Tu es accusé de t’être endormi pendant ta propre conférence en ligne, caméra allumée. Quelle est ta défense ?"
+  ],
+  "adultes": [
+    "Tu es accusé d’avoir offert un cadeau beaucoup trop personnel à ton collègue, au pot de départ. Quelle est ta défense ?",
+    "Tu es accusé d’avoir envoyé un message très explicite à la mauvaise personne, avec un emoji à l’appui. Quelle est ta défense ?",
+    "Tu es accusé d’avoir réservé la suite nuptiale pour une nuit « purement professionnelle ». Quelle est ta défense ?",
+    "Tu es accusé d’avoir confondu ton rendez-vous de rencontre avec une réunion du syndic de copropriété. Quelle est ta défense ?",
+    "Tu es accusé d’avoir dit « on verra ça au calme » au beau-père de ton ex. Quelle est ta défense ?",
+    "Tu es accusé d’avoir fait une sieste de deux heures pendant le vernissage de ton ex. Quelle est ta défense ?",
+    "Tu es accusé d’avoir offert une bouteille de champagne à ton ex, « juste pour le principe ». Quelle est ta défense ?",
+    "Tu es accusé d’avoir classé le nom de ton crush dans le dossier « Confidentiel » du bureau. Quelle est ta défense ?",
+    "Tu es accusé d’avoir dansé le tango avec le directeur, en pleine fête de Noël. Quelle est ta défense ?",
+    "Tu es accusé d’avoir laissé ton téléphone ouvert sur une conversation qui n’était pas la tienne. Quelle est ta défense ?"
+  ]
+}

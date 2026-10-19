@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { PlayerViewProps } from '../../client/types.js';
 import { FinalScreen, WaitingScreen } from '../../client/ui.js';
 import { motionAvailable, motionNeedsPermission, requestMotionAccess } from '../../client/sensors.js';
-import { readMediaPrefs, requestMicrophone } from '../../client/media.js';
+import { readMediaPrefs, requestCamera, requestMicrophone } from '../../client/media.js';
 import { useLocalStart } from '../../client/hooks.js';
 import {
   BlowChallenge,
@@ -12,6 +12,8 @@ import {
   TapChallenge,
   TiltChallenge,
 } from './phone-games.js';
+import { ClapChallenge, LumiereChallenge } from './phone-games-media.js';
+import { LanceChallenge, PinceChallenge, SwipeChallenge, VibreChallenge } from './phone-games-touch.js';
 import type { MicroDefisMine, MicroDefisPub, MicrogameView } from './types.js';
 
 export function MicroDefisPlayer({ publicState, playerState, playerId, now, send }: PlayerViewProps) {
@@ -82,7 +84,8 @@ export function MicroDefisPlayer({ publicState, playerState, playerId, now, send
 function IntroPhone({ pub, game }: { pub: MicroDefisPub; game: MicrogameView }) {
   const [note, setNote] = useState<string | null>(null);
   const needsMotion = game.sensor === 'shake' || game.sensor === 'tilt' || game.sensor === 'spin';
-  const needsMic = game.sensor === 'mic';
+  const needsMic = game.sensor === 'mic' || game.sensor === 'clap';
+  const needsCamera = game.sensor === 'camera';
 
   async function allowMotion() {
     const access = await requestMotionAccess();
@@ -96,6 +99,16 @@ function IntroPhone({ pub, game }: { pub: MicroDefisPub; game: MicrogameView }) 
       setNote('Micro autorisé.');
     } catch {
       setNote('Micro refusé : ce défi ne pourra pas être réussi.');
+    }
+  }
+
+  async function allowCamera() {
+    try {
+      const flow = await requestCamera(readMediaPrefs(), 'environment');
+      flow.getTracks().forEach((t) => t.stop());
+      setNote('Caméra autorisée.');
+    } catch {
+      setNote('Caméra refusée : ce défi ne pourra pas être réussi.');
     }
   }
 
@@ -118,6 +131,11 @@ function IntroPhone({ pub, game }: { pub: MicroDefisPub; game: MicrogameView }) 
       {needsMic && (
         <button type="button" className="btn small" onClick={allowMic}>
           Autoriser le micro
+        </button>
+      )}
+      {needsCamera && (
+        <button type="button" className="btn small" onClick={allowCamera}>
+          Autoriser la caméra
         </button>
       )}
       {note && <p className="notice small">{note}</p>}
@@ -147,5 +165,17 @@ function Challenge({
       return <TapChallenge target={game.target} onDone={onDone} />;
     case 'timing':
       return <PileChallenge localStart={localStart} durationMs={game.durationMs} onDone={onDone} />;
+    case 'swipe':
+      return <SwipeChallenge target={game.target} onDone={onDone} />;
+    case 'vibrate':
+      return <VibreChallenge target={game.target} onDone={onDone} />;
+    case 'camera':
+      return <LumiereChallenge target={game.target} onDone={onDone} />;
+    case 'clap':
+      return <ClapChallenge target={game.target} onDone={onDone} />;
+    case 'pinch':
+      return <PinceChallenge target={game.target} onDone={onDone} />;
+    case 'flick':
+      return <LanceChallenge target={game.target} onDone={onDone} />;
   }
 }
