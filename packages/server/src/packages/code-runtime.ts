@@ -34,6 +34,44 @@ export const CODE_VIEW_GLOBAL = '__partyhubView';
  * n'a accès qu'au contexte fourni ici (horloge, hasard, minuteurs, joueurs connectés).
  */
 const SHIM = `
+// L'isolat n'a pas les API du navigateur : structuredClone manque. Copie profonde des valeurs de jeu (objets, tableaux,
+// Map, Set, Date), avec les références circulaires. Une fonction ou un symbole ne se copie pas et fait échouer.
+if (typeof structuredClone !== 'function') {
+  globalThis.structuredClone = function structuredClone(value) {
+    var seen = new Map();
+    function copy(v) {
+      if (v === null || typeof v !== 'object') {
+        if (typeof v === 'function' || typeof v === 'symbol') throw new Error('valeur non clonable');
+        return v;
+      }
+      if (seen.has(v)) return seen.get(v);
+      if (v instanceof Date) return new Date(v.getTime());
+      if (v instanceof Map) {
+        var map = new Map();
+        seen.set(v, map);
+        v.forEach(function (x, k) { map.set(copy(k), copy(x)); });
+        return map;
+      }
+      if (v instanceof Set) {
+        var set = new Set();
+        seen.set(v, set);
+        v.forEach(function (x) { set.add(copy(x)); });
+        return set;
+      }
+      if (Array.isArray(v)) {
+        var arr = [];
+        seen.set(v, arr);
+        for (var i = 0; i < v.length; i++) arr[i] = copy(v[i]);
+        return arr;
+      }
+      var out = {};
+      seen.set(v, out);
+      Object.keys(v).forEach(function (k) { out[k] = copy(v[k]); });
+      return out;
+    }
+    return copy(value);
+  };
+}
 (function () {
   var mod = ${CODE_SERVER_GLOBAL}.default;
   var REQUIRED = ['initialize','onPlayerJoin','onPlayerLeave','start','handleAction','onTimer',

@@ -39,6 +39,29 @@ const GAMES = {
   boum: 'boum/module.ts',
   promoteur: 'promoteur/module.ts',
   'loups-village': 'loups-village/module.ts',
+  president: 'president/module.ts',
+  'rami-51': 'rami51/module.ts',
+  tarot: 'tarot/module.ts',
+  'poker-texas': 'poker/module.ts',
+};
+
+/** Jeux solo : une seule fichier (solo/games.ts), un export par jeu ; vues dans soloClientViews[id]. */
+const SOLO_EXPORTS = {
+  sudoku: 'sudoku',
+  solitaire: 'solitaire',
+  taquin: 'taquin',
+  'mots-croises': 'motsCroises',
+};
+
+/**
+ * Jeux dont les vues sont un objet GameClientViews exporté par un index (pas de Promise.all dans le registre) :
+ * client.tsx le ré-exporte tel quel.
+ */
+const INDEX_VIEWS = {
+  president: { file: 'president/client/index.ts', name: 'presidentViews' },
+  'rami-51': { file: 'rami51/client/index.ts', name: 'ramiViews' },
+  tarot: { file: 'tarot/client/index.ts', name: 'tarotViews' },
+  'poker-texas': { file: 'poker/client/index.ts', name: 'pokerViews' },
 };
 
 /** Extrait l'expression équilibrée qui commence à text[open] (parenthèse, crochet ou accolade). */
@@ -94,26 +117,46 @@ function registryOf(id) {
 
 /** Nom exporté par le module serveur : export const X: GameModule. */
 function moduleExportOf(text, file) {
-  const m = /export const (\w+): GameModule/.exec(text);
-  if (!m) throw new Error(`export GameModule introuvable dans ${path.relative(ROOT, file)}`);
+  // export const X: GameModule<…> = …  ou  export const X = createXGame() : le module du jeu (pas un objet d'actions).
+  const m = /export const (\w+)(?::\s*GameModule\b[^=]*=|\s*=\s*create\w+\()/.exec(text);
+  if (!m) throw new Error(`export du module introuvable dans ${path.relative(ROOT, file)}`);
   return m[1];
 }
 
-/** Métadonnées lues dans le bloc manifest du module. */
-function manifestOf(text) {
-  const start = text.indexOf('manifest:');
-  if (start < 0) throw new Error('bloc manifest absent du module');
-  const block = text.slice(start, text.indexOf('\n  },', start));
-  const pick = (key) => {
+/**
+ * Métadonnées du jeu : bloc manifest du module, ou bloc createSoloGame de l'export `exportName` (jeux solo).
+ * La version est 1.0.0 pour un jeu solo, qui n'en déclare pas.
+ */
+function manifestOf(text, exportName) {
+  let block;
+  if (exportName) {
+    const start = text.indexOf(`export const ${exportName} =`);
+    if (start < 0) throw new Error(`export « ${exportName} » introuvable`);
+    block = text.slice(start, text.indexOf('\n});', start));
+  } else {
+    const start = text.indexOf('manifest:');
+    if (start < 0) throw new Error('bloc manifest absent du module');
+    block = text.slice(start, text.indexOf('\n  },', start));
+  }
+  const find = (key) => {
     const m = new RegExp(`\\b${key}:\\s*(?:'([^']*)'|(\\w+))`).exec(block);
-    if (!m) throw new Error(`« ${key} » absent du manifeste du module`);
+    if (!m) return undefined;
     if (m[1] !== undefined) return m[1];
-    // Valeur nommée (const GAME_NAME = '…') : on lit la constante du module.
     const constant = new RegExp(`const ${m[2]} = '([^']*)'`).exec(text);
     if (!constant) throw new Error(`« ${key} » : constante ${m[2]} introuvable`);
     return constant[1];
   };
-  return { id: pick('id'), name: pick('name'), description: pick('description'), version: pick('version') };
+  const required = (key) => {
+    const value = find(key);
+    if (value === undefined) throw new Error(`« ${key} » absent du manifeste du module`);
+    return value;
+  };
+  return {
+    id: required('id'),
+    name: required('name'),
+    description: required('description'),
+    version: find('version') ?? '1.0.0',
+  };
 }
 
 /**
@@ -172,20 +215,31 @@ function writeFile(file, data) {
 }
 
 async function exportGame(id) {
-  const moduleRel = GAMES[id];
+  const solo = SOLO_EXPORTS[id];
+  const moduleRel = solo ? 'solo/games.ts' : GAMES[id];
   const moduleFile = path.join(SRC, moduleRel);
   const moduleText = fs.readFileSync(moduleFile, 'utf8');
-  const meta = manifestOf(moduleText);
+  const meta = manifestOf(moduleText, solo);
   if (meta.id !== id) throw new Error(`identifiant du module « ${meta.id} » ≠ « ${id} »`);
-  const exported = moduleExportOf(moduleText, moduleFile);
-  const reg = registryOf(id);
+  const exported = solo ?? moduleExportOf(moduleText, moduleFile);
+  const index = INDEX_VIEWS[id];
+  const reg = index || SOLO_EXPORTS[id] ? null : registryOf(id);
+  /** Texte de src/client.tsx : par registre, ou ré-export de l'objet de vues de l'index. */
+  const clientText = (spec) => {
+    if (solo)
+      return `import { soloClientViews } from '${spec('solo/client/index.ts')}';\nexport default soloClientViews['${id}'];\n`;
+    return index ? `export { ${index.name} as default } from '${spec(index.file)}';\n` : clientSource(reg, spec);
+  };
   const dir = path.join(OUT, id);
   fs.rmSync(dir, { recursive: true, force: true });
 
   // Mesure de la fermeture : fichier temporaire à chemins absolus, supprimé aussitôt.
   fs.mkdirSync(OUT, { recursive: true });
   const probe = path.join(OUT, `.sonde-${id}.tsx`);
-  fs.writeFileSync(probe, clientSource(reg, (rel) => path.join(SRC, rel).replace(/\.js$/, '.js')));
+  fs.writeFileSync(
+    probe,
+    clientText((rel) => path.join(SRC, rel)),
+  );
   let inputs;
   try {
     inputs = new Set([...(await sourcesOf(moduleFile, 'neutral')), ...(await sourcesOf(probe, 'browser'))]);
@@ -198,7 +252,10 @@ async function exportGame(id) {
     path.join(dir, 'src/server.ts'),
     `import { ${exported} } from './games/${moduleRel.replace(/\.ts$/, '.js')}';\n\nexport default ${exported};\n`,
   );
-  writeFile(path.join(dir, 'src/client.tsx'), clientSource(reg, (rel) => `./games/${rel}`));
+  writeFile(
+    path.join(dir, 'src/client.tsx'),
+    clientText((rel) => `./games/${rel}`),
+  );
   writeFile(
     path.join(dir, 'manifest.json'),
     `${JSON.stringify(
@@ -225,7 +282,8 @@ async function exportGame(id) {
   writeFile(path.join(dir, 'styles/app.css'), fs.readFileSync(path.join(ROOT, 'packages/web/src/styles.css')));
   const fonts = path.join(ROOT, 'packages/web/public/fonts');
   for (const font of fs.readdirSync(fonts)) {
-    if (font.endsWith('.woff2')) writeFile(path.join(dir, 'styles/fonts', font), fs.readFileSync(path.join(fonts, font)));
+    if (font.endsWith('.woff2'))
+      writeFile(path.join(dir, 'styles/fonts', font), fs.readFileSync(path.join(fonts, font)));
   }
   writeFile(path.join(dir, 'licenses/LICENSE.txt'), fs.readFileSync(path.join(ROOT, 'LICENSE')));
   writeFile(path.join(dir, 'licenses/polices.txt'), fs.readFileSync(path.join(fonts, 'LICENSES.txt')));
@@ -234,7 +292,7 @@ async function exportGame(id) {
 
 fs.mkdirSync(OUT, { recursive: true });
 const report = [];
-for (const id of Object.keys(GAMES)) {
+for (const id of [...Object.keys(GAMES), ...Object.keys(SOLO_EXPORTS)]) {
   try {
     report.push({ id, ok: true, ...(await exportGame(id)) });
   } catch (error) {
@@ -242,6 +300,8 @@ for (const id of Object.keys(GAMES)) {
   }
 }
 for (const row of report) {
-  console.log(row.ok ? `OK     ${row.id.padEnd(18)} ${row.files} fichiers source` : `ECHEC  ${row.id.padEnd(18)} ${row.error}`);
+  console.log(
+    row.ok ? `OK     ${row.id.padEnd(18)} ${row.files} fichiers source` : `ECHEC  ${row.id.padEnd(18)} ${row.error}`,
+  );
 }
 fs.writeFileSync(path.join(OUT, 'rapport.json'), `${JSON.stringify(report, null, 2)}\n`);
