@@ -18,8 +18,20 @@ COPY packages/web/package.json packages/web/
 RUN npm ci --no-audit --no-fund
 
 COPY packages ./packages
-RUN npm run build \
- && npm prune --omit=dev --no-audit --no-fund
+RUN npm run build
+
+# Dépendances de production seulement : c'est ce qui part dans l'image finale.
+FROM build AS prod
+RUN npm prune --omit=dev --no-audit --no-fund
+
+# ---------------------------------------------------------------------------
+# Outils de création de jeux (phgame) : tout le nécessaire, dont esbuild et le modèle de jeu.
+# Image séparée, jamais déployée : elle sert à créer, construire, signer et contrôler un jeu de code.
+# ---------------------------------------------------------------------------
+FROM build AS jeux
+WORKDIR /jeu
+USER node
+ENTRYPOINT ["node", "/app/packages/server/dist/cli/phgame.js"]
 
 # ---------------------------------------------------------------------------
 # Étape 2 : image finale minimale, utilisateur non privilégié
@@ -32,22 +44,23 @@ ENV NODE_ENV=production \
     LOG_LEVEL=info
 WORKDIR /app
 
-COPY --from=build --chown=root:root /app/package.json ./
-COPY --from=build /app/node_modules ./node_modules
+COPY --from=prod --chown=root:root /app/package.json ./
+COPY --from=prod /app/node_modules ./node_modules
 # npm place certaines dépendances (pino, better-sqlite3, socket.io…) dans le dossier propre à chaque
 # paquet, pas à la racine : il faut les copier aussi, sinon le serveur ne démarre pas.
-COPY --from=build /app/packages/shared/node_modules ./packages/shared/node_modules
-COPY --from=build /app/packages/games/node_modules ./packages/games/node_modules
-COPY --from=build /app/packages/server/node_modules ./packages/server/node_modules
-COPY --from=build /app/packages/shared/package.json ./packages/shared/
-COPY --from=build /app/packages/shared/dist ./packages/shared/dist
-COPY --from=build /app/packages/games/package.json ./packages/games/
-COPY --from=build /app/packages/games/dist ./packages/games/dist
-COPY --from=build /app/packages/server/package.json ./packages/server/
-COPY --from=build /app/packages/server/dist ./packages/server/dist
-COPY --from=build /app/packages/web/dist ./packages/web/dist
+COPY --from=prod /app/packages/shared/node_modules ./packages/shared/node_modules
+COPY --from=prod /app/packages/games/node_modules ./packages/games/node_modules
+COPY --from=prod /app/packages/server/node_modules ./packages/server/node_modules
+COPY --from=prod /app/packages/shared/package.json ./packages/shared/
+COPY --from=prod /app/packages/shared/dist ./packages/shared/dist
+COPY --from=prod /app/packages/games/package.json ./packages/games/
+COPY --from=prod /app/packages/games/dist ./packages/games/dist
+COPY --from=prod /app/packages/server/package.json ./packages/server/
+COPY --from=prod /app/packages/server/dist ./packages/server/dist
+COPY --from=prod /app/packages/web/dist ./packages/web/dist
 # La licence MIT demande que son texte accompagne toute copie du logiciel.
 COPY LICENSE ./
+# Ni les modèles de jeu ni l'outillage phgame ne sont dans l'image de production (voir la cible « jeux »).
 
 # Métadonnées OCI : relient l'image au dépôt, à la version et au commit source.
 ARG VERSION=dev

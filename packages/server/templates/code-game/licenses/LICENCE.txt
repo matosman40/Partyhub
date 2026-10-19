@@ -1,0 +1,4 @@
+Licence du jeu : à compléter par l'auteur.
+
+Pour rester compatible avec PartyHub (licence MIT), la licence MIT est recommandée.
+Si vous ajoutez des images ou des sons, indiquez ici leur source et leur licence.
