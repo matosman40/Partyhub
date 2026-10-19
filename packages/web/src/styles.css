@@ -5958,53 +5958,200 @@ html.is-tv #root > .tv {
   margin: 0;
 }
 
-/* Jeux solo : classement de l'écran principal, en direct. */
+/* Jeux solo : courbe d’avancement, tableau comparatif et classement final sur l’écran principal. */
 .solo-host {
   display: grid;
   gap: 1.1rem;
   width: 100%;
-  max-width: 48rem;
+  max-width: 60rem;
   margin-inline: auto;
+  /* Teintes des joueurs (palette validée pour le daltonisme et le contraste), sur fond sombre. */
+  --solo-surface: #120d31;
+  --solo-s1: #3987e5;
+  --solo-s2: #d95926;
+  --solo-s3: #199e70;
+  --solo-s4: #c98500;
+  --solo-s5: #d55181;
+  --solo-s6: #008300;
+  --solo-s7: #9085e9;
+  --solo-s8: #e66767;
+}
+:root[data-theme='light'] .solo-host {
+  --solo-surface: #ffffff;
+  --solo-s1: #2a78d6;
+  --solo-s2: #eb6834;
+  --solo-s3: #1baf7a;
+  --solo-s4: #eda100;
+  --solo-s5: #e87ba4;
+  --solo-s6: #008300;
+  --solo-s7: #6250d6;
+  --solo-s8: #e34948;
 }
 .solo-host .round-info {
   justify-self: center;
 }
-.solo-standings {
+
+.solo-chart {
   display: grid;
-  gap: 0.6rem;
+  gap: 0.7rem;
+}
+.solo-chart-wrap {
+  position: relative;
+  padding: 0.6rem 0.5rem 0.2rem;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--bg1);
+  overflow-x: auto;
+}
+.solo-chart-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  min-width: 40rem;
+  overflow: visible;
+}
+.solo-chart-svg .grid {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+.solo-chart-svg .baseline {
+  stroke: var(--line-strong);
+  stroke-width: 1;
+}
+.solo-chart-svg .crosshair {
+  stroke: var(--muted);
+  stroke-width: 1;
+}
+.solo-chart-svg .tick {
+  fill: var(--muted);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+.solo-chart-svg .label {
+  fill: var(--text);
+  font-size: 15px;
+  font-weight: 700;
+}
+.solo-chart-svg .line {
+  fill: none;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.solo-chart-svg .end {
+  stroke: var(--solo-surface);
+  stroke-width: 2;
+}
+.solo-tip {
+  position: absolute;
+  top: 0.6rem;
+  min-width: 11rem;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  background: var(--bg1);
+  color: var(--text);
+  font-size: 0.9rem;
+  pointer-events: none;
+}
+.solo-tip-time {
+  margin-bottom: 0.25rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+.solo-tip-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.solo-tip-row strong {
+  font-variant-numeric: tabular-nums;
+}
+.solo-tip-name,
+.solo-name-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.solo-key {
+  display: inline-block;
+  flex: none;
+  width: 0.9rem;
+  height: 3px;
+  border-radius: 2px;
+}
+.solo-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.2rem;
   margin: 0;
   padding: 0;
   list-style: none;
+  color: var(--text);
+  font-size: 0.95rem;
 }
-.solo-standings li {
-  display: grid;
-  grid-template-columns: 2.4rem minmax(0, 1.2fr) minmax(0, 2fr) auto auto;
+.solo-legend li {
+  display: inline-flex;
   align-items: center;
-  gap: 0.8rem;
-  padding: 0.75rem 1rem;
-  border-radius: var(--r-md);
-  border: 1px solid var(--line);
-  background: var(--glass);
+  gap: 0.5rem;
 }
-.solo-standings li.is-done {
-  border-color: rgba(182, 255, 92, 0.55);
+.solo-legend-key {
+  display: inline-block;
+  width: 1.2rem;
+  height: 3px;
+  border-radius: 2px;
+}
+
+.solo-compare-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--bg1);
+}
+.solo-compare {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
+}
+.solo-compare th,
+.solo-compare td {
+  padding: 0.6rem 0.8rem;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  white-space: nowrap;
+}
+.solo-compare tbody tr:last-child td {
+  border-bottom: 0;
+}
+.solo-compare th {
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.solo-compare .num {
+  text-align: right;
 }
 .solo-place {
+  width: 3rem;
   font-family: var(--display);
-  font-size: 1.2rem;
-  text-align: center;
+  font-size: 1.1rem;
   color: var(--sun);
 }
 .solo-name {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
   font-weight: 700;
+}
+.solo-progress {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
 }
 .solo-bar {
   display: block;
-  height: 0.7rem;
+  width: 8rem;
+  height: 0.6rem;
   overflow: hidden;
   border-radius: 999px;
   border: 1px solid var(--line);
@@ -6014,27 +6161,20 @@ html.is-tv #root > .tv {
   display: block;
   height: 100%;
   border-radius: 999px;
-  background: linear-gradient(90deg, var(--cyan), var(--lime));
   transition: width 0.4s ease;
 }
-.solo-status {
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
+.solo-pct {
+  min-width: 3.2rem;
   font-weight: 600;
 }
-.solo-moves {
-  white-space: nowrap;
-}
 @media (max-width: 640px) {
-  .solo-standings li {
-    grid-template-columns: 2rem minmax(0, 1fr) auto;
+  .solo-compare th,
+  .solo-compare td {
+    padding: 0.5rem 0.55rem;
+    font-size: 0.85rem;
   }
-  .solo-standings .solo-bar {
-    grid-column: 1 / -1;
-    grid-row: 2;
-  }
-  .solo-moves {
-    display: none;
+  .solo-bar {
+    width: 5rem;
   }
 }
 
