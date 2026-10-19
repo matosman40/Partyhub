@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api.js';
+import { CodeEditorAdmin } from './CodeEditorAdmin.js';
 
 /** Jeux de code : chaque version installée, son état, et la revue avant approbation. */
 
@@ -310,6 +311,14 @@ export function CodeGamesAdmin({ refreshToken, onChanged }: { refreshToken: numb
           )}
         </section>
       )}
+      <hr />
+      {/* Un brouillon signé arrive dans la liste ci-dessus : elle se recharge tout de suite. */}
+      <CodeEditorAdmin
+        onSigned={() => {
+          void load();
+          onChanged();
+        }}
+      />
     </div>
   );
 }

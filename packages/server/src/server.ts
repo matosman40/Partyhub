@@ -18,6 +18,7 @@ import { AssetService } from './assets/service.js';
 import { MediaQuizService } from './media/service.js';
 import { PackageService } from './packages/service.js';
 import { CodeGameService, loadTrustedKeys } from './code-games/service.js';
+import { CodeDraftService } from './code-games/drafts.js';
 import { hashPassword } from './auth.js';
 import { effectiveNotice } from './catalog.js';
 import { gameDataFor } from './profiles/game-data.js';
@@ -127,6 +128,8 @@ export async function createServer(opts: ServerOptions): Promise<PartyServer> {
     audit: (event, data, message) => logger.info({ event, ...data }, message),
     onStopped: (id) => closeCodeGameRooms(id),
   });
+  // Brouillons de jeux de code créés et modifiés dans l’administration (DATA_DIR/jeux-en-cours).
+  const codeDrafts = new CodeDraftService(config.dataDir, codeGames);
   const packageSources = new PackageSourceService(store, packages, { token: config.githubToken });
   // Magasin : les jeux intégrés au code ne sont jamais téléchargés, ils restent dans l’application.
   const builtinIds = new Set(gameRegistry.map((game) => game.manifest.id));
@@ -232,6 +235,7 @@ export async function createServer(opts: ServerOptions): Promise<PartyServer> {
     mediaGames,
     packages,
     codeGames,
+    codeDrafts,
     characterPacks,
     dbBackups,
     update,

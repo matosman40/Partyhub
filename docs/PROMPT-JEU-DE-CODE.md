@@ -2,6 +2,8 @@
 
 Copiez le bloc ci-dessous dans votre assistant, en remplaçant les valeurs entre crochets. L'assistant doit avoir accès au dépôt PartyHub et à Docker (ou à `npm`). Le guide de référence est `docs/JEU-DE-CODE.md`.
 
+Le jeu peut aussi être créé et modifié directement dans l'administration de PartyHub (« Créer et modifier un jeu de code »), sans ligne de commande : l'assistant écrit alors le code, et les étapes 1, 4 et 5 se font dans l'éditeur.
+
 ---
 
 ```text

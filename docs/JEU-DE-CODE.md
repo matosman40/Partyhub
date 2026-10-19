@@ -1,12 +1,30 @@
 # Jeux de code (format 5) : créer, construire, signer, installer
 
-**Statut : prototype testé de bout en bout.** Un jeu de code se crée, se construit, se signe et se contrôle avec les outils ci-dessous, puis s'installe depuis l'administration après relecture. Le module serveur (les règles) s'exécute dans un isolat V8 sans réseau ; les vues s'exécutent dans un iframe sandboxé. Les limites sont en fin de document.
+**Statut : prototype testé de bout en bout.** Un jeu de code se crée, se modifie, se construit, se signe et se contrôle dans l'administration (éditeur), ou avec les outils de ligne de commande ci-dessous. Il s'installe depuis l'administration après relecture. Le module serveur (les règles) s'exécute dans un isolat V8 sans réseau ; les vues s'exécutent dans un iframe sandboxé. Les limites sont en fin de document.
 
 Un jeu de code est un paquet `.phgame` (format 5) qui contient le code compilé du jeu : un module serveur (les règles) et des vues pour l'écran principal, le téléphone et les réglages.
 
 Pour créer un jeu avec un assistant IA, utiliser le prompt de `docs/PROMPT-JEU-DE-CODE.md`.
 
-## Créer un jeu avec Docker
+## Créer un jeu dans l'administration (recommandé)
+
+Dans l'administration, « Créer des jeux » → « Jeux de code » → « Créer et modifier un jeu de code ». Pas de ligne de commande : une seule image PartyHub suffit.
+
+1. **Clé de signature.** À la première utilisation, « Créer la clé de signature ». Elle est créée sur ce serveur : la partie privée reste dans `DATA_DIR/cles-de-signature`, elle n'est jamais affichée ni renvoyée par l'API. Sa partie publique rejoint les clés de confiance, donc les jeux signés ici s'installent sans manipulation.
+2. **Créer.** Identifiant, nom et auteur : le jeu est créé depuis le modèle, dans `DATA_DIR/jeux-en-cours/<identifiant>`. Un identifiant déjà pris par un jeu intégré ou par un autre brouillon est refusé.
+3. **Modifier.** Choisir un fichier (`src/server.ts` pour les règles, `src/client.tsx` pour les écrans, `manifest.json`, `README.md`, `licenses/`), le modifier, puis enregistrer (Ctrl+S ou « Enregistrer le fichier »). Le nom, la description et la version se règlent dans « Informations du jeu » : ils sont écrits dans `manifest.json` et dans `src/server.ts` ensemble, pour rester identiques.
+4. **Vérifier.** Construit le jeu sans signature, puis joue une partie complète avec des robots dans l'isolat de production. L'étape « Signer » n'est disponible qu'après une vérification réussie de la version actuelle : toute modification la rend caduque.
+5. **Signer et envoyer en revue.** Construit le paquet signé par la clé de l'installation, puis l'envoie dans « Jeux de code », en attente de revue. Relire le code, cocher la case et approuver : le jeu ne joue qu'après approbation, comme tout paquet.
+
+Règles :
+
+- Une version déjà installée ne se réinstalle pas avec un contenu différent : monter le numéro de version dans « Informations du jeu ».
+- Le brouillon ne joue jamais. Le supprimer n'affecte pas les versions déjà installées.
+- Seuls les fichiers texte sont éditables (`.ts`, `.tsx`, `.json`, `.md`, `.txt`), 200 Ko au plus par fichier. Les images et les sons ne se téléversent pas encore dans l'éditeur.
+- La construction ne lit que le dossier du brouillon, les dépendances installées et les paquets de l'application : un `import` vers un autre fichier (un secret, par exemple) est refusé.
+- Pour modifier un jeu créé dans l'éditeur, ouvrir son brouillon : c'est la source. Un paquet `.phgame` reçu d'ailleurs ne contient que le code compilé ; il ne se modifie pas dans l'éditeur.
+
+## Créer un jeu avec Docker (ligne de commande)
 
 Aucune installation de Node n'est nécessaire : les outils sont dans l'image PartyHub. Depuis la racine du dépôt, définissez une fois la commande, puis lancez les étapes :
 
@@ -98,7 +116,7 @@ Trois composants, exportés par défaut dans un objet `{ Settings, Host, Player 
 
 ### Installer dans PartyHub
 
-1. **Clé de confiance.** PartyHub n'accepte que les paquets signés par une clé qu'il connaît : déposer la clé publique (`.pub.pem`) dans `DATA_DIR/cles-de-confiance/`. Sans clé de confiance, l'installation est refusée avec un message qui indique ce dossier.
+1. **Clé de confiance.** PartyHub n'accepte que les paquets signés par une clé qu'il connaît : la clé de signature de l'éditeur y entre toute seule, et une clé créée avec `keygen` s'y ajoute en déposant sa partie publique (`.pub.pem`) dans `DATA_DIR/cles-de-confiance/`. Sans clé de confiance, l'installation est refusée avec un message qui indique ce dossier.
 2. **Dépôt.** Dans l'administration, section « Paquets de jeux (.phgame) », téléverser le `.phgame`. Le paquet passe alors en attente de revue : il ne change rien au jeu actif.
 3. **Revue.** Dans « Jeux de code », ouvrir la revue : fichiers, empreintes, code serveur et code des vues. Cocher la case d'approbation, puis « Approuver et activer ».
 4. **Effet.** La version approuvée devient active et apparaît au catalogue. Une nouvelle version approuvée remplace l'ancienne, et les salles en cours de l'ancienne version sont fermées (le nombre est affiché).
@@ -123,7 +141,7 @@ Règles d'installation :
 
 ## Tests de bout en bout
 
-`e2e/jeu-de-code/parcours.cjs` installe un jeu dans un serveur de test, l'approuve, puis joue une partie complète dans un navigateur : deux téléphones, trois manches, « Fin de partie ». Il n'est pas lancé par `npm test` ; voir `e2e/jeu-de-code/README.md`.
+`e2e/jeu-de-code/parcours.cjs` installe un jeu dans un serveur de test, l'approuve, puis joue une partie complète dans un navigateur : deux téléphones, trois manches, « Fin de partie ». `e2e/jeu-de-code/editeur.cjs` suit le parcours de l'éditeur à l'écran : clé, création, vérification, signature, approbation. Ils ne sont pas lancés par `npm test` ; voir `e2e/jeu-de-code/README.md`.
 
 ## Rechargement, révocation et audit
 
@@ -135,6 +153,8 @@ Règles d'installation :
 
 L'export ZIP des sauvegardes inclut les jeux de code (`code-games.json` et `code-games/<id>/<version>.phgame`). À la restauration, chaque version revient **en attente de revue** : rien ne se réactive d'office. L'administrateur doit la relire et l'approuver à nouveau, et le résumé de restauration le signale.
 
+**Ne sont pas incluses** dans l'export : les brouillons (`DATA_DIR/jeux-en-cours`), la clé de signature (`DATA_DIR/cles-de-signature`) et les clés de confiance (`DATA_DIR/cles-de-confiance`). Sur une nouvelle installation, copier aussi `cles-de-confiance` : sans clé de confiance, les jeux de code de la sauvegarde ne se réinstallent pas. Copier `cles-de-signature` si l'on veut continuer à signer les mêmes jeux, et `jeux-en-cours` pour garder les brouillons. Ces dossiers contiennent des secrets ou du travail en cours : les sauvegarder à part, en lieu sûr.
+
 ## Limites actuelles
 
 - **Frontière d'isolation.** L'isolat tourne dans le processus du serveur, ce qui est moins fort qu'un processus séparé. À valider avant d'ouvrir l'installation à des auteurs extérieurs.
@@ -144,4 +164,5 @@ L'export ZIP des sauvegardes inclut les jeux de code (`code-games.json` et `code
 - **Taille.** L'archive est limitée à 8 Mio, la limite du format. Aucun autre plafond n'est fixé pour l'instant : à confirmer.
 - **Historique.** L'administration relit, approuve et supprime une version ; elle ne gère pas encore l'historique complet des versions.
 - **Horloge.** Le contrôle ne repère un jeu qui lit l'horloge réelle (`Date.now()`) que si la valeur change entre deux parties, ce qui n'est pas garanti quand elles tournent dans la même milliseconde. Le jeu doit utiliser `ctx.now()`.
-- **Docker non vérifié** (voir plus haut).
+- **Éditeur** : seuls les brouillons créés dans l'administration se modifient ; un paquet reçu d'ailleurs ne se modifie pas. Pas encore de téléversement d'images ni de sons, ni de magasin GitHub pour les jeux de code.
+- **Docker non vérifié** : l'image PartyHub unique, et donc l'éditeur dans cette image, n'ont pas été construits dans l'environnement de développement (voir plus haut).

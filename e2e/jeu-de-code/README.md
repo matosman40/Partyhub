@@ -38,3 +38,19 @@ node e2e/jeu-de-code/parcours.cjs
 
 Le scénario suit le modèle « pile ou face » (`phgame new`). Pour un autre jeu, adapter les textes attendus et
 les choix des téléphones dans `jouer()`.
+
+## Parcours de l'éditeur
+
+`editeur.cjs` suit l'éditeur de l'administration à l'écran : clé de signature, création depuis le modèle,
+renommage, vérification (partie de robots), signature, puis approbation dans « Jeux de code ». Il n'a pas besoin
+de paquet : le serveur doit être neuf (aucune clé de signature, aucun jeu de code).
+
+```bash
+PARTYHUB_URL=http://127.0.0.1:8290 \
+PARTYHUB_ADMIN_PASSWORD='mot-de-passe-de-test' \
+PLAYWRIGHT=playwright \
+CHROMIUM=/chemin/vers/chromium \
+node e2e/jeu-de-code/editeur.cjs
+```
+
+Il crée le jeu `editeur-essai`. Pour le rejouer, repartir d'une base vide.

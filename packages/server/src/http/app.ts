@@ -25,6 +25,7 @@ import { z } from 'zod';
 import type { AssetService } from '../assets/service.js';
 import { PackageExportError, type PackageService } from '../packages/service.js';
 import type { CodeGameService } from '../code-games/service.js';
+import { DraftError, type CodeDraftService } from '../code-games/drafts.js';
 import { peekPackageKind } from '../packages/format.js';
 import {
   copyPackageToEditable,
@@ -103,6 +104,8 @@ export interface AppDeps {
   packages: PackageService;
   /** Jeux de code signés : installation en attente, revue et approbation par l’administrateur. */
   codeGames: CodeGameService;
+  /** Brouillons de jeux de code, modifiés dans l’éditeur de l’administration. */
+  codeDrafts: CodeDraftService;
   /** Packs de personnages (sprites) importés dans l’administration. */
   characterPacks: CharacterPackService;
   /** Sauvegardes automatiques de la base. Absent = fonction non configurée. */
@@ -154,6 +157,7 @@ export function createApp(deps: AppDeps): express.Express {
     update,
     packages,
     codeGames,
+    codeDrafts,
     characterPacks,
   } = deps;
   const app = express();
@@ -175,7 +179,8 @@ export function createApp(deps: AppDeps): express.Express {
     const selfParsed =
       req.path === '/api/admin/backup/import' ||
       req.path === '/api/admin/card-games/import' ||
-      (req.method === 'POST' && (req.path === '/api/admin/assets' || req.path === '/api/admin/backup/archive'));
+      (req.method === 'POST' && (req.path === '/api/admin/assets' || req.path === '/api/admin/backup/archive')) ||
+      (req.method === 'PUT' && /^\/api\/admin\/code-drafts\/[^/]+\/file$/.test(req.path));
     return selfParsed ? next() : jsonBody(req, res, next);
   });
 
@@ -1214,6 +1219,148 @@ export function createApp(deps: AppDeps): express.Express {
     const closed = manager.closeWhere((r) => r.module.manifest.id === id, 'admin');
     res.json({ ok: true, closedRooms: closed });
   });
+
+  /**
+   * Éditeur des jeux de code (administrateur seulement). Un brouillon n'est jamais joué : « Signer » l'installe
+   * en attente de revue, comme n'importe quel paquet signé. La clé privée n'est jamais renvoyée.
+   */
+  const draftRoute =
+    (handler: (req: Request, res: Response) => unknown) =>
+    async (req: Request, res: Response): Promise<void> => {
+      try {
+        await handler(req, res);
+      } catch (err) {
+        if (err instanceof DraftError) {
+          res.status(err.status).json({ error: err.message, issues: err.issues });
+          return;
+        }
+        throw err;
+      }
+    };
+  const bodyText = (value: unknown) => (typeof value === 'string' ? value : '');
+  const paramOf = (req: Request, name: string): string => {
+    const value = req.params[name];
+    return typeof value === 'string' ? value : '';
+  };
+  const queryPath = (req: Request) => (typeof req.query.path === 'string' ? req.query.path : '');
+
+  admin.get(
+    '/code-drafts',
+    draftRoute((_req, res) => {
+      res.json({ drafts: codeDrafts.list() });
+    }),
+  );
+
+  admin.post(
+    '/code-drafts',
+    draftRoute((req, res) => {
+      const body = (req.body ?? {}) as Record<string, unknown>;
+      const draft = codeDrafts.create({
+        id: bodyText(body.id).trim(),
+        name: bodyText(body.name).trim(),
+        author: bodyText(body.author).trim(),
+      });
+      res.status(201).json({ draft });
+    }),
+  );
+
+  admin.get(
+    '/code-drafts/:id',
+    draftRoute((req, res) => {
+      res.json({ draft: codeDrafts.detail(paramOf(req, 'id')) });
+    }),
+  );
+
+  admin.delete(
+    '/code-drafts/:id',
+    draftRoute((req, res) => {
+      codeDrafts.remove(paramOf(req, 'id'));
+      res.json({ ok: true });
+    }),
+  );
+
+  admin.get(
+    '/code-drafts/:id/file',
+    draftRoute((req, res) => {
+      res.json(codeDrafts.readFile(paramOf(req, 'id'), queryPath(req)));
+    }),
+  );
+
+  // Le contenu d'un fichier peut dépasser la limite JSON globale : cette route lit son propre corps.
+  admin.put(
+    '/code-drafts/:id/file',
+    express.json({ limit: '300kb' }),
+    draftRoute((req, res) => {
+      const body = (req.body ?? {}) as Record<string, unknown>;
+      codeDrafts.writeFile(paramOf(req, 'id'), bodyText(body.path), bodyText(body.content));
+      res.json({ ok: true });
+    }),
+  );
+
+  admin.delete(
+    '/code-drafts/:id/file',
+    draftRoute((req, res) => {
+      codeDrafts.deleteFile(paramOf(req, 'id'), queryPath(req));
+      res.json({ ok: true });
+    }),
+  );
+
+  /** Nom, description, version : écrits dans manifest.json et src/server.ts ensemble. */
+  admin.post(
+    '/code-drafts/:id/metadata',
+    draftRoute((req, res) => {
+      const body = (req.body ?? {}) as Record<string, unknown>;
+      const changes: { name?: string; description?: string; version?: string } = {};
+      for (const field of ['name', 'description', 'version'] as const) {
+        const value = body[field];
+        if (typeof value === 'string') changes[field] = value.trim();
+      }
+      const id = paramOf(req, 'id');
+      codeDrafts.setMetadata(id, changes);
+      res.json({ ok: true, draft: codeDrafts.detail(id) });
+    }),
+  );
+
+  /** Vérifier : construction sans signature, puis partie complète jouée par des robots. */
+  admin.post(
+    '/code-drafts/:id/check',
+    draftRoute(async (req, res) => {
+      res.json(await codeDrafts.check(paramOf(req, 'id')));
+    }),
+  );
+
+  /** Signer : construction signée par la clé de l'installation, puis installation en attente de revue. */
+  admin.post(
+    '/code-drafts/:id/sign',
+    draftRoute(async (req, res) => {
+      const result = await codeDrafts.sign(paramOf(req, 'id'), actorOf(req));
+      if (!result.ok) {
+        res.status(400).json({ error: result.error, issues: result.issues ?? [] });
+        return;
+      }
+      res.status(result.unchanged ? 200 : 201).json({ kind: 'code', ...result });
+    }),
+  );
+
+  /** Clé de signature : seule la clé publique et son identifiant sortent. */
+  admin.get(
+    '/signing-key',
+    draftRoute((_req, res) => {
+      res.json({ key: codeDrafts.signingKey() });
+    }),
+  );
+
+  admin.post(
+    '/signing-key',
+    draftRoute((req, res) => {
+      const key = codeDrafts.createSigningKey();
+      logger.info(
+        { event: 'code_game.signing_key', keyId: key.keyId, actor: actorOf(req) },
+        `Clé de signature créée (${key.keyId}) par ${actorOf(req)}`,
+      );
+      res.status(201).json({ key });
+    }),
+  );
 
   admin.post('/packages/:id/status', (req, res) => {
     const id = req.params.id ?? '';
