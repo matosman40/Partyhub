@@ -7457,6 +7457,8 @@ html:not([data-theme='dark']) .corner-drawer {
   justify-items: center;
   text-align: center;
   width: 100%;
+  /* Un titre de vidéo sans espace ne doit pas élargir l’écran du téléphone. */
+  overflow-wrap: anywhere;
 }
 
 .karaoke-head h2,
@@ -7551,6 +7553,7 @@ html:not([data-theme='dark']) .corner-drawer {
 
 .karaoke-stars {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
   justify-content: center;
 }
