@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { api } from '../api.js';
 
-type StoreStatus = 'integre' | 'non_installe' | 'a_jour' | 'mise_a_jour' | 'erreur';
+type StoreStatus = 'integre' | 'non_installe' | 'a_jour' | 'mise_a_jour' | 'erreur' | 'en_revue';
 
 interface StoreGame {
   id: string;
@@ -16,6 +16,7 @@ interface StoreGame {
   builtin: boolean;
   status: StoreStatus;
   installedVersion: string | null;
+  pendingVersion: string | null;
   autoUpdate: boolean;
   lastError: string | null;
 }
@@ -36,12 +37,16 @@ const STATUS_LABEL: Record<StoreStatus, string> = {
   a_jour: 'Installé, à jour',
   mise_a_jour: 'Mise à jour disponible',
   erreur: 'Échec de l’installation',
+  en_revue: 'En attente de revue',
 };
 
 /** Libellé d’état avec la version : l’installée, et la nouvelle quand une mise à jour est prête. */
 function statusText(game: StoreGame): string {
   if (game.status === 'mise_a_jour') return `Mise à jour disponible : ${game.installedVersion} → ${game.latestVersion}`;
   if (game.status === 'a_jour') return `Installé, à jour (${game.installedVersion})`;
+  if (game.status === 'en_revue') {
+    return `En attente de revue : version ${game.pendingVersion}. Approuvez-la dans « Jeux de code » pour la lancer.`;
+  }
   return STATUS_LABEL[game.status];
 }
 
@@ -231,11 +236,12 @@ export function StoreAdmin({ onChanged }: { onChanged: () => void }) {
                   Vérifier
                 </button>
               )}
-              {!game.builtin && (game.status === 'a_jour' || game.status === 'mise_a_jour') && (
-                <button type="button" className="btn ghost small" disabled={busy} onClick={() => remove(game)}>
-                  Supprimer
-                </button>
-              )}
+              {!game.builtin &&
+                (game.status === 'a_jour' || game.status === 'mise_a_jour' || game.status === 'en_revue') && (
+                  <button type="button" className="btn ghost small" disabled={busy} onClick={() => remove(game)}>
+                    Supprimer
+                  </button>
+                )}
             </div>
           </li>
         ))}

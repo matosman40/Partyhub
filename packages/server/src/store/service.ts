@@ -1,8 +1,11 @@
+import type { CodeGameSummary, CodeGamesPort } from '../code-games/service.js';
 import type { Store } from '../db/store.js';
+import { compareVersions } from '../packages/semver.js';
 import type { PackageService } from '../packages/service.js';
 import { isValidRepo, type GitHubOptions } from '../sources/github.js';
 import type { CheckOutcome, PackageSourceRecord, PackageSourceService } from '../sources/service.js';
 import {
+  CODE_MODULE,
   COVER_MAX_BYTES,
   GAME_ID,
   coverContentType,
@@ -24,13 +27,18 @@ const CATALOG_TTL_MS = 10 * 60 * 1000;
 const COVER_CACHE_MAX = 60;
 const KV_REPO = 'store_repo';
 
-/** integre : déjà dans l’application ; non_installe ; a_jour ; mise_a_jour ; erreur (échec, rien d’installé). */
-export type StoreStatus = 'integre' | 'non_installe' | 'a_jour' | 'mise_a_jour' | 'erreur';
+/**
+ * integre : déjà dans l’application ; non_installe ; a_jour ; mise_a_jour ; erreur (échec, rien d’installé) ;
+ * en_revue : un jeu de code est installé, en attente de l’approbation de l’administrateur (« Jeux de code »).
+ */
+export type StoreStatus = 'integre' | 'non_installe' | 'a_jour' | 'mise_a_jour' | 'erreur' | 'en_revue';
 
 export interface StoreGameView extends StoreGameInfo {
   builtin: boolean;
   status: StoreStatus;
   installedVersion: string | null;
+  /** Version de jeu de code installée et en attente de revue, ou null. */
+  pendingVersion: string | null;
   autoUpdate: boolean;
   lastError: string | null;
   lastCheckedAt: string | null;
@@ -55,6 +63,23 @@ export interface StoreServiceOptions {
   /** Vrai pour un identifiant de jeu déjà intégré à l’application : rien à télécharger. */
   isBuiltin: (gameId: string) => boolean;
   now?: () => number;
+  /** Jeux de code : installés en attente de revue, retirés depuis « Jeux de code » ou ici. */
+  code?: CodeGamesPort;
+}
+
+/** Version active et version en attente de revue d’un jeu de code (la plus haute en attente). */
+function codeVersions(rows: CodeGameSummary[], gameId: string): { active: string | null; pending: string | null } {
+  let active: string | null = null;
+  let pending: string | null = null;
+  for (const row of rows) {
+    if (row.id !== gameId) continue;
+    // « erreur » : la version active, mais qui échoue au chargement. Elle reste la version active.
+    if (row.status === 'active' || row.status === 'erreur') active = row.version;
+    else if (row.status === 'en_attente' && (pending === null || compareVersions(row.version, pending) > 0)) {
+      pending = row.version;
+    }
+  }
+  return { active, pending };
 }
 
 type Loaded =
@@ -127,6 +152,8 @@ export class StoreService {
       created = true;
     }
     if (!source) return fail('Source introuvable après création.');
+    // La source garde la version d’un jeu retiré depuis « Paquets » ou « Jeux de code » : on la réinstalle.
+    if (source.packageId && !this.installedHere(source.packageId)) this.sources.forgetInstalled(source.id);
     const outcome = await this.sources.check(source.id);
     // Échec à la première installation : pas de source orpheline, le message reste affiché par la réponse.
     if (!outcome.ok && created) this.sources.remove(source.id);
@@ -153,7 +180,12 @@ export class StoreService {
     const source = this.findSource(gameId);
     if (!source) return { ok: false, error: 'Ce jeu n’est pas installé depuis le magasin.', notFound: true };
     let closedRooms = 0;
-    if (source.packageId) {
+    const codeRows = this.codeRows(gameId);
+    if (codeRows.length > 0 && this.options.code) {
+      // Jeu de code : toutes ses versions sont retirées. Ses salons se ferment sur son identifiant (manifeste).
+      closedRooms = closeRooms(gameId);
+      for (const row of codeRows) this.options.code.remove(gameId, row.version, 'magasin');
+    } else if (source.packageId) {
       const packageGameId = this.packages.get(source.packageId)?.gameId ?? null;
       this.packages.remove(source.packageId);
       if (packageGameId) closedRooms = closeRooms(packageGameId);
@@ -236,28 +268,61 @@ export class StoreService {
 
   private view(repo: string, games: StoreGameInfo[], at: number): CatalogView {
     const sources = this.sources.list();
+    const codeRows = this.options.code?.list() ?? [];
     return {
       repo,
       tokenConfigured: this.tokenConfigured,
       checkedAt: new Date(at).toISOString(),
       error: null,
-      games: games.map((game) => this.gameView(repo, game, sources)),
+      games: games.map((game) => this.gameView(repo, game, sources, codeRows)),
     };
   }
 
-  private gameView(repo: string, game: StoreGameInfo, sources: PackageSourceRecord[]): StoreGameView {
+  /** Versions de jeu de code de ce serveur pour un identifiant. */
+  private codeRows(gameId: string): CodeGameSummary[] {
+    return (this.options.code?.list() ?? []).filter((row) => row.id === gameId);
+  }
+
+  /** Vrai si le jeu est encore installé ici, sous forme de paquet ou de jeu de code. */
+  private installedHere(gameId: string): boolean {
+    return this.codeRows(gameId).length > 0 || this.packages.get(gameId) !== undefined;
+  }
+
+  private gameView(
+    repo: string,
+    game: StoreGameInfo,
+    sources: PackageSourceRecord[],
+    codeRows: CodeGameSummary[],
+  ): StoreGameView {
     const builtin = this.options.isBuiltin(game.id);
     const source = sources.find((row) => row.repo === `${repo}/${game.id}`) ?? null;
-    const installed = Boolean(source?.packageId);
+    const versions = codeVersions(codeRows, game.id);
     let status: StoreStatus;
-    if (builtin) status = 'integre';
-    else if (installed) status = source?.installedVersion === game.latestVersion ? 'a_jour' : 'mise_a_jour';
-    else status = source?.lastError ? 'erreur' : 'non_installe';
+    let installedVersion: string | null;
+    let pendingVersion: string | null = null;
+    // Un jeu de code s’évalue sur ses versions de code : la version active, et celle qui attend la revue.
+    const isCode = game.module === CODE_MODULE || versions.active !== null || versions.pending !== null;
+    if (isCode) {
+      installedVersion = versions.active;
+      pendingVersion = versions.pending;
+      if (builtin) status = 'integre';
+      else if (versions.pending && (!versions.active || compareVersions(versions.pending, versions.active) > 0)) {
+        status = 'en_revue';
+      } else if (versions.active) status = versions.active === game.latestVersion ? 'a_jour' : 'mise_a_jour';
+      else status = source?.lastError ? 'erreur' : 'non_installe';
+    } else {
+      const installed = Boolean(source?.packageId);
+      installedVersion = installed ? (source?.installedVersion ?? null) : null;
+      if (builtin) status = 'integre';
+      else if (installed) status = source?.installedVersion === game.latestVersion ? 'a_jour' : 'mise_a_jour';
+      else status = source?.lastError ? 'erreur' : 'non_installe';
+    }
     return {
       ...game,
       builtin,
       status,
-      installedVersion: installed ? (source?.installedVersion ?? null) : null,
+      installedVersion,
+      pendingVersion,
       autoUpdate: source?.autoUpdate ?? false,
       lastError: source?.lastError ?? null,
       lastCheckedAt: source?.lastCheckedAt ?? null,

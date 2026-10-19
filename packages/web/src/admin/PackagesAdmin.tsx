@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api.js';
+import { CodeGamesAdmin } from './CodeGamesAdmin.js';
 
 export interface PackageRecord {
   id: string;
@@ -61,6 +62,8 @@ export function PackagesAdmin({ onChanged }: { onChanged: () => void }) {
   const [openId, setOpenId] = useState<string | null>(null);
   const [versionsById, setVersionsById] = useState<Record<string, PackageVersion[]>>({});
   const [copies, setCopies] = useState<PackageCopy[]>([]);
+  /** Incrémenté à chaque import de jeu de code : la liste des jeux de code se recharge. */
+  const [codeToken, setCodeToken] = useState(0);
 
   async function load() {
     try {
@@ -106,10 +109,21 @@ export function PackagesAdmin({ onChanged }: { onChanged: () => void }) {
         unchanged?: boolean;
         active?: boolean;
         id?: string;
+        kind?: string;
       };
       if (!res.ok) {
         setError(data.error ?? 'Import refusé.');
         setIssues(data.issues ?? []);
+        return;
+      }
+      if (data.kind === 'code') {
+        setCodeToken((t) => t + 1);
+        setNotice(
+          data.unchanged
+            ? 'Ce jeu de code est déjà reçu à l’identique.'
+            : 'Jeu de code reçu : il attend votre revue, dans « Jeux de code » ci-dessous. Il ne jouera qu’après approbation.',
+        );
+        onChanged();
         return;
       }
       if (data.unchanged) setNotice('Ce paquet est déjà installé à l’identique.');
@@ -391,6 +405,7 @@ export function PackagesAdmin({ onChanged }: { onChanged: () => void }) {
             mises à jour.
           </p>
         ))}
+      <CodeGamesAdmin refreshToken={codeToken} onChanged={onChanged} />
     </div>
   );
 }

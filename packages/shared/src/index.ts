@@ -17,3 +17,4 @@ export * from './voices.js';
 export * from './test-mode.js';
 export * from './sensors.js';
 export * from './recipes.js';
+export * from './code-view.js';

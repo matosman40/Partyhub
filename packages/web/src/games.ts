@@ -1,4 +1,6 @@
 import { boardViews, cardViews, clientViews, mediaQuizViews, recipeViews } from '@partyhub/games/client';
+import type { CodeViewRef } from '@partyhub/shared';
+import { codeViewsFor } from './code-views/index.js';
 
 /** Préfixe des jeux de cartes créés dans l’administration (voir le serveur). */
 const CUSTOM_GAME_PREFIX = 'custom-';
@@ -20,7 +22,11 @@ const BOARD_GAME_PREFIX = 'board-';
  * cartes personnalisés partagent la vue commune des jeux de cartes, et les jeux
  * de questions médias partagent la vue commune des questions médias.
  */
-export function viewsFor(gameId: string) {
+export function viewsFor(game: string | { id: string; codeView?: CodeViewRef }) {
+  const gameId = typeof game === 'string' ? game : game.id;
+  // Un jeu de code apporte ses propres vues (iframe) : il n’a jamais l’identifiant d’un jeu de l’application.
+  const codeView = typeof game === 'string' ? undefined : game.codeView;
+  if (codeView) return codeViewsFor(codeView);
   if (clientViews[gameId]) return clientViews[gameId];
   if (gameId.startsWith(CUSTOM_GAME_PREFIX) || gameId.startsWith(PACKAGE_CARD_PREFIX)) return cardViews;
   if (gameId.startsWith(MEDIA_GAME_PREFIX) || gameId.startsWith(PACKAGE_QUIZ_PREFIX)) return mediaQuizViews;

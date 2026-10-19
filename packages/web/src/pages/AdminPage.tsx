@@ -612,7 +612,7 @@ export function AdminPage() {
                   ».
                 </p>
                 {overview.games
-                  .filter((g) => viewsFor(g.id)?.Settings)
+                  .filter((g) => viewsFor(g)?.Settings)
                   .map((g) => (
                     <GameSettingsEditor key={g.id} game={g} onSaved={load} />
                   ))}

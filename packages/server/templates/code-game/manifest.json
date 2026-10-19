@@ -1,0 +1,13 @@
+{
+  "format": "phgame",
+  "formatVersion": 5,
+  "kind": "code",
+  "id": "{{id}}",
+  "name": "{{name}}",
+  "version": "0.1.0",
+  "description": "Chacun choisit pile ou face : les bons choix rapportent un point.",
+  "author": "{{author}}",
+  "engine": { "minVersion": "0.15.0", "api": 1 },
+  "entry": { "server": "code/server.js", "client": "code/client.js" },
+  "licenses": [{ "path": "licenses/LICENCE.txt", "covers": [] }]
+}

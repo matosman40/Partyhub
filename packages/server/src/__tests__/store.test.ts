@@ -1,8 +1,11 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { buildCodePackage, newCodeGame } from '../code-games/build.js';
+import { CodeGameService, loadTrustedKeys } from '../code-games/service.js';
 import { Store } from '../db/store.js';
+import { generateSigningKeys } from '../packages/code-format.js';
 import { PackageService } from '../packages/service.js';
 import { PackageSourceService } from '../sources/service.js';
 import { COVER_MAX_BYTES } from '../store/catalog.js';
@@ -418,5 +421,172 @@ describe('couvertures', () => {
     publish(state, 'plateau-x', '1.0.0', { cover: 'assets/couverture.png', coverBytes: big });
     const { gameStore } = service();
     expect(await gameStore.cover('plateau-x')).toBeNull();
+  });
+});
+
+/** Remplace la version d'un jeu de code, dans manifest.json et dans le manifeste du module (qui doivent rester égaux). */
+function bumpVersion(dir: string, version: string): void {
+  for (const rel of ['manifest.json', 'src/server.ts']) {
+    const file = path.join(dir, rel);
+    const text = readFileSync(file, 'utf8');
+    const next = text.replace(/((?:"version": ")|(?:version: '))\d+\.\d+\.\d+/, `$1${version}`);
+    if (next === text) throw new Error(`Version introuvable dans ${rel}.`);
+    writeFileSync(file, next);
+  }
+}
+
+describe('jeux de code dans le magasin', { timeout: 30_000 }, () => {
+  const CODE_ID = 'magasin-code';
+  const author = generateSigningKeys();
+  let codeV1: Uint8Array;
+  let codeV2: Uint8Array;
+
+  beforeAll(async () => {
+    const work = mkdtempSync(path.join(os.tmpdir(), 'ph-magasin-code-'));
+    const v1 = path.join(work, CODE_ID);
+    newCodeGame(v1, { id: CODE_ID, name: 'Magasin code', author: 'Équipe test' });
+    const v2 = path.join(work, 'v2');
+    cpSync(v1, v2, { recursive: true });
+    bumpVersion(v1, '1.0.0');
+    bumpVersion(v2, '1.1.0');
+    codeV1 = (await buildCodePackage(v1, author.privatePem)).bytes;
+    codeV2 = (await buildCodePackage(v2, author.privatePem)).bytes;
+    rmSync(work, { recursive: true, force: true });
+  }, 120_000);
+
+  /** Fiche du dépôt pour un jeu de code : `kind: "code"`, sans modules déclaratifs. */
+  const codeManifest = () =>
+    JSON.stringify({
+      id: CODE_ID,
+      name: 'Magasin code',
+      description: 'Un jeu de code de test.',
+      author: 'Équipe test',
+      kind: 'code',
+    });
+
+  const publishCode = (version: string, archive: Uint8Array) =>
+    publish(state, CODE_ID, version, { manifestText: codeManifest(), archive });
+
+  /** La clé de l'auteur est une clé de confiance de cette installation : sans elle, le paquet est refusé. */
+  const trustAuthor = () => {
+    mkdirSync(path.join(dir, 'cles-de-confiance'), { recursive: true });
+    writeFileSync(path.join(dir, 'cles-de-confiance', `${author.keyId}.pub.pem`), author.publicPem);
+  };
+
+  function codeService() {
+    const fetch = fakeFetch(state);
+    const codes = new CodeGameService(store, dir, { trustedKeys: () => loadTrustedKeys(dir).keys });
+    const sources = new PackageSourceService(store, packages, { fetch, code: codes });
+    const gameStore = new StoreService(store, sources, packages, {
+      defaultRepo: REPO,
+      fetch,
+      isBuiltin: () => false,
+      now: () => now,
+      code: codes,
+    });
+    return { gameStore, sources, codes };
+  }
+
+  it('installe un jeu de code en attente de revue, sans l’activer', async () => {
+    trustAuthor();
+    publishCode('1.0.0', codeV1);
+    const { gameStore, codes } = codeService();
+
+    expect(await gameStore.install(CODE_ID)).toEqual({ ok: true, status: 'en attente de revue', version: '1.0.0' });
+    expect(codes.list()).toEqual([expect.objectContaining({ id: CODE_ID, version: '1.0.0', status: 'en_attente' })]);
+    expect((await gameStore.catalog(true)).games[0]).toMatchObject({
+      status: 'en_revue',
+      pendingVersion: '1.0.0',
+      installedVersion: null,
+      moduleLabel: 'Jeu de code',
+    });
+  });
+
+  it('une fois approuvé dans « Jeux de code », le jeu est à jour dans le magasin', async () => {
+    trustAuthor();
+    publishCode('1.0.0', codeV1);
+    const { gameStore, codes } = codeService();
+    await gameStore.install(CODE_ID);
+
+    expect(await codes.approve(CODE_ID, '1.0.0', codes.list()[0]!.sha256, 'test')).toMatchObject({ ok: true });
+    expect((await gameStore.catalog(true)).games[0]).toMatchObject({
+      status: 'a_jour',
+      installedVersion: '1.0.0',
+      pendingVersion: null,
+    });
+  });
+
+  it('une nouvelle version attend sa revue, et l’ancienne reste active entre-temps', async () => {
+    trustAuthor();
+    publishCode('1.0.0', codeV1);
+    const { gameStore, codes } = codeService();
+    await gameStore.install(CODE_ID);
+    await codes.approve(CODE_ID, '1.0.0', codes.list()[0]!.sha256, 'test');
+
+    publishCode('1.1.0', codeV2);
+    expect((await gameStore.catalog(true)).games[0]).toMatchObject({
+      status: 'mise_a_jour',
+      installedVersion: '1.0.0',
+    });
+
+    expect(await gameStore.update(CODE_ID)).toEqual({ ok: true, status: 'en attente de revue', version: '1.1.0' });
+    expect((await gameStore.catalog(true)).games[0]).toMatchObject({
+      status: 'en_revue',
+      installedVersion: '1.0.0',
+      pendingVersion: '1.1.0',
+    });
+    // Une nouvelle vérification ne réinstalle pas la version qui attend déjà.
+    expect(await gameStore.update(CODE_ID)).toEqual({ ok: true, status: 'à jour', version: '1.1.0' });
+    expect(
+      codes
+        .list()
+        .map((row) => `${row.version}:${row.status}`)
+        .sort(),
+    ).toEqual(['1.0.0:active', '1.1.0:en_attente']);
+  });
+
+  it('refuse un jeu de code qu’aucune clé de confiance ne signe, sans rien laisser sur le serveur', async () => {
+    publishCode('1.0.0', codeV1);
+    const { gameStore, sources, codes } = codeService();
+
+    expect((await gameStore.install(CODE_ID)).ok).toBe(false);
+    expect(codes.list()).toEqual([]);
+    expect(sources.list()).toEqual([]);
+    expect((await gameStore.catalog(true)).games[0]?.status).toBe('non_installe');
+  });
+
+  it('retire un jeu de code du magasin : toutes ses versions, en attente ou non, et sa source', async () => {
+    trustAuthor();
+    publishCode('1.0.0', codeV1);
+    const { gameStore, sources, codes } = codeService();
+    await gameStore.install(CODE_ID);
+    await codes.approve(CODE_ID, '1.0.0', codes.list()[0]!.sha256, 'test');
+    publishCode('1.1.0', codeV2);
+    await gameStore.update(CODE_ID);
+
+    const closed: string[] = [];
+    const result = gameStore.uninstall(CODE_ID, (gameId) => {
+      closed.push(gameId);
+      return 1;
+    });
+
+    expect(result).toEqual({ ok: true, closedRooms: 1 });
+    expect(closed).toEqual([CODE_ID]);
+    expect(codes.list()).toEqual([]);
+    expect(sources.list()).toEqual([]);
+    expect((await gameStore.catalog(true)).games[0]?.status).toBe('non_installe');
+  });
+
+  it('réinstalle un jeu de code retiré depuis « Jeux de code », au lieu de le croire toujours présent', async () => {
+    trustAuthor();
+    publishCode('1.0.0', codeV1);
+    const { gameStore, codes } = codeService();
+    await gameStore.install(CODE_ID);
+
+    expect(codes.remove(CODE_ID, '1.0.0', 'test')).toEqual({ ok: true });
+    expect((await gameStore.catalog(true)).games[0]?.status).toBe('non_installe');
+
+    expect(await gameStore.install(CODE_ID)).toEqual({ ok: true, status: 'en attente de revue', version: '1.0.0' });
+    expect(codes.list()).toEqual([expect.objectContaining({ id: CODE_ID, status: 'en_attente' })]);
   });
 });

@@ -25,10 +25,23 @@ les supprimer depuis l'administration, dans la section **Magasin de jeux**.
 - Un jeu intégré au code de PartyHub est listé comme *Intégré à l'application*. Il ne se télécharge pas, et reste
   disponible hors ligne.
 
+## Jeux de code
+
+- Un jeu de code se publie comme les autres : `jeux/<jeu>/manifest.json` avec `"kind": "code"` (sans `requires`), et une
+  release `<jeu>-vX.Y.Z` qui contient le `<jeu>.phgame` signé et son `.sha256`.
+- Le paquet doit être signé par une clé présente dans `DATA_DIR/cles-de-confiance/`. Sans elle, l'installation est
+  refusée (« Paquet refusé »). Ajoutez la clé de l'auteur avant d'installer.
+- **Installer** met la version en attente : le magasin affiche « En attente de revue ». L'approbation se fait dans
+  **Jeux de code**, après relecture du code, comme pour un jeu ajouté par une autre voie.
+- La mise à jour quotidienne ne remplace jamais la version active. La nouvelle version attend la revue, et l'ancienne
+  continue à tourner.
+- **Supprimer** retire toutes les versions du jeu, en attente ou approuvées, ferme ses salons et supprime la source.
+  Un jeu retiré depuis **Jeux de code** se réinstalle avec **Installer**.
+
 ## Limites
 
-- Seuls les paquets déclaratifs (cartes, plateau, questions, recettes) s'installent. Un jeu écrit en code ne peut pas
-  être un paquet aujourd'hui (`docs/PHGAME.md`).
+- Un jeu de code (format 5) s'installe par le magasin, mais jamais seul : il reste en attente de revue, et un
+  administrateur l'approuve dans **Jeux de code** avant qu'il ne s'exécute (voir la section suivante).
 - Les images d'un paquet (dossier `assets/`) sont vérifiées et installées, mais aucun jeu ne les affiche encore.
 - Le magasin lit des dépôts publics. Un dépôt privé passe par une source GitHub (`GITHUB_TOKEN` requis).
 - Sans `GITHUB_TOKEN`, GitHub limite les appels à 60 par heure. Le catalogue est gardé dix minutes. Une erreur n'est

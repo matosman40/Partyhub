@@ -159,7 +159,7 @@ export function TvPage() {
   }
 
   const { lobby, game } = view;
-  const views = viewsFor(lobby.game.id);
+  const views = viewsFor(lobby.game);
   const inLobby = lobby.status === 'waiting' || lobby.status === 'full';
   const canStart = lobby.players.filter((p) => p.connected).length >= lobby.game.minPlayers;
   const joinUrl = `${window.location.origin}/j/${lobby.code}`;

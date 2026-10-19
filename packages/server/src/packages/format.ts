@@ -91,6 +91,10 @@ export const DEFAULT_PACKAGE_LIMITS: PackageLimits = {
   maxAudioFiles: 16,
 };
 
+/** Refus de la voie d'installation pour les jeux de code, tant que leur exécution isolée n'existe pas. */
+export const CODE_NOT_INSTALLABLE =
+  'Les jeux de code ne sont pas encore installables : leur exécution isolée n’est pas disponible dans cette version de PartyHub.';
+
 const ID = /^[a-z0-9][a-z0-9-]{1,47}$/;
 const SHA256 = /^[0-9a-f]{64}$/;
 const SEGMENT = /^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$/;
@@ -201,7 +205,11 @@ export const manifestSchema = z
 export type PackageManifest = z.infer<typeof manifestSchema>;
 
 /** Vérifie un chemin à l’intérieur du paquet. Retourne la raison du refus, ou null. */
-export function pathProblem(name: string, limits: Pick<PackageLimits, 'maxPathLength' | 'maxDepth'>): string | null {
+export function pathProblem(
+  name: string,
+  limits: Pick<PackageLimits, 'maxPathLength' | 'maxDepth'>,
+  dirs: Record<string, readonly string[]> = TOP_DIRS,
+): string | null {
   if (name.length === 0 || name.length > limits.maxPathLength) return `chemin trop long ou vide`;
   if (name.startsWith('/') || name.includes('\\') || name.includes('\0') || name.includes(':')) {
     return 'chemin absolu ou caractère interdit';
@@ -213,8 +221,8 @@ export function pathProblem(name: string, limits: Pick<PackageLimits, 'maxPathLe
   }
   if (parts.length === 1) return name === 'manifest.json' ? null : 'fichier hors dossier autorisé';
   const dir = parts[0]!;
-  const allowed = TOP_DIRS[dir];
-  if (!allowed) return `dossier « ${dir} » non autorisé`;
+  if (!Object.hasOwn(dirs, dir)) return `dossier « ${dir} » non autorisé`;
+  const allowed = dirs[dir]!;
   const file = parts[parts.length - 1]!;
   const dot = file.lastIndexOf('.');
   const ext = dot > 0 ? file.slice(dot).toLowerCase() : '';
@@ -423,12 +431,40 @@ function checkDefinition(
  * Valide un paquet complet : archive, chemins, manifeste, empreintes, compatibilité du moteur,
  * licences, images et définition du jeu. Toute anomalie est collectée et rapportée.
  */
+/**
+ * Lit le champ « kind » du manifeste, sans valider le reste de l'archive. Retourne null si l'archive
+ * ou son manifeste sont illisibles. Sert à aiguiller un paquet avant sa validation complète.
+ */
+export function peekPackageKind(bytes: Uint8Array): string | null {
+  try {
+    const entries = readZip(
+      bytes,
+      {
+        maxEntries: DEFAULT_PACKAGE_LIMITS.maxEntries,
+        maxEntryBytes: DEFAULT_PACKAGE_LIMITS.maxEntryBytes,
+        maxTotalBytes: DEFAULT_PACKAGE_LIMITS.maxTotalBytes,
+        maxRatio: DEFAULT_PACKAGE_LIMITS.maxRatio,
+        ratioCheckBytes: DEFAULT_PACKAGE_LIMITS.ratioCheckBytes,
+      },
+      () => undefined,
+    );
+    const manifest = entries.find((e) => e.name === 'manifest.json');
+    if (!manifest) return null;
+    const json = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(manifest.data)) as { kind?: unknown };
+    return typeof json.kind === 'string' ? json.kind : null;
+  } catch {
+    return null;
+  }
+}
+
 export function validatePackage(bytes: Uint8Array, limits: PackageLimits = DEFAULT_PACKAGE_LIMITS): ValidatedPackage {
   if (bytes.byteLength > limits.maxArchiveBytes) {
     throw new PackageValidationError([
       `Paquet trop volumineux (maximum ${Math.round(limits.maxArchiveBytes / (1024 * 1024))} Mio).`,
     ]);
   }
+  // Un jeu de code n'est pas encore installable : on le dit avant toute autre vérification.
+  if (peekPackageKind(bytes) === 'code') throw new PackageValidationError([CODE_NOT_INSTALLABLE]);
   const zipLimits: ZipReadLimits = {
     maxEntries: limits.maxEntries,
     maxEntryBytes: limits.maxEntryBytes,

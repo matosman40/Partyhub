@@ -84,6 +84,9 @@ services:
     cap_drop:
       - ALL
 
+  # Outils de création de jeux (phgame) : même image que PartyHub, voir docs/JEU-DE-CODE.md.
+  # Les clés privées restent dans ./cles (hors du dépôt, voir .gitignore).
+
 volumes:
   partyhub-data:
     name: partyhub-data

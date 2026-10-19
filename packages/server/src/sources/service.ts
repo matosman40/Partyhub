@@ -1,9 +1,17 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { z } from 'zod';
 import type { PackageSourceRow, Store } from '../db/store.js';
-import { PackageValidationError, validatePackage } from '../packages/format.js';
+import type { CodeGamesPort } from '../code-games/service.js';
+import { PackageValidationError, peekPackageKind, validatePackage } from '../packages/format.js';
 import type { PackageService } from '../packages/service.js';
-import { GitHubError, downloadArchive, latestRelease, parseSource, type GitHubOptions } from './github.js';
+import {
+  GitHubError,
+  downloadArchive,
+  latestRelease,
+  parseSource,
+  type GitHubOptions,
+  type SourceRef,
+} from './github.js';
 
 /**
  * Sources GitHub des paquets : chaque source est un dépôt dont la dernière release contient un
@@ -24,7 +32,11 @@ export interface PackageSourceRecord {
 }
 
 export type CheckOutcome =
-  | { ok: true; status: 'installé' | 'mis à jour' | 'à jour' | 'conservée'; version: string }
+  | {
+      ok: true;
+      status: 'installé' | 'mis à jour' | 'à jour' | 'conservée' | 'en attente de revue';
+      version: string;
+    }
   | { ok: false; error: string; issues?: string[] };
 
 const addSchema = z
@@ -63,6 +75,11 @@ export interface PackageSourceOptions {
   token?: string;
   /** Client HTTP injectable (tests). */
   fetch?: typeof fetch;
+  /**
+   * Jeux de code : un paquet de code arrive en attente de revue, jamais activé par la source. Sans ce port, une
+   * release de code est refusée comme avant.
+   */
+  code?: CodeGamesPort;
 }
 
 export class PackageSourceService {
@@ -136,6 +153,15 @@ export class PackageSourceService {
     return true;
   }
 
+  /**
+   * Oublie la version installée d'une source, quand elle a été retirée ailleurs (« Paquets » ou « Jeux de code »).
+   * La prochaine vérification réinstalle la dernière release, au lieu de la croire toujours présente.
+   */
+  forgetInstalled(id: string): void {
+    const row = this.store.getPackageSource(id);
+    if (row) this.store.savePackageSource({ ...row, package_id: null, installed_version: null });
+  }
+
   /** Vérifie la source et installe la dernière release si elle est plus récente. */
   async check(id: string): Promise<CheckOutcome> {
     const row = this.store.getPackageSource(id);
@@ -173,6 +199,49 @@ export class PackageSourceService {
     if (row) this.store.savePackageSource({ ...row, ...fields });
   }
 
+  /**
+   * Jeu de code : même contrôle de version et de dépôt qu'un paquet, puis installation en attente de revue.
+   * La signature est vérifiée par l'installation elle-même, avec les clés de confiance de ce serveur.
+   */
+  private async installCode(
+    row: PackageSourceRow,
+    source: SourceRef,
+    releaseVersion: string,
+    bytes: Uint8Array,
+    code: CodeGamesPort,
+  ): Promise<CheckOutcome> {
+    const inspected = code.inspect(bytes);
+    if (!inspected.ok) {
+      this.patch(row.id, { last_error: 'Paquet refusé.' });
+      return { ok: false, error: 'Paquet refusé.', issues: inspected.issues };
+    }
+    const { id, version } = inspected;
+    if (version !== releaseVersion) {
+      throw new GitHubError(
+        `Le fichier annonce la version ${version}, mais la release est la version ${releaseVersion}.`,
+      );
+    }
+    if (source.game && source.game !== id) {
+      throw new GitHubError(`Ce jeu du dépôt commun s’appelle « ${source.game} », pas « ${id} ».`);
+    }
+    if (row.package_id && row.package_id !== id) {
+      throw new GitHubError(`Cette source fournit « ${id} », pas « ${row.package_id} ».`);
+    }
+    if (this.packages.get(id)) {
+      throw new GitHubError(`Un paquet « ${id} » est déjà installé et n’est pas lié à cette source.`);
+    }
+
+    const result = await code.install(bytes, 'magasin');
+    if (!result.ok) {
+      this.patch(row.id, { last_error: result.error });
+      return { ok: false, error: result.error, issues: result.issues };
+    }
+    this.patch(row.id, { package_id: id, installed_version: version, last_error: null });
+    return result.unchanged
+      ? { ok: true, status: 'à jour', version }
+      : { ok: true, status: 'en attente de revue', version };
+  }
+
   private async run(row: PackageSourceRow): Promise<CheckOutcome> {
     const github: GitHubOptions = { fetch: this.options.fetch, token: this.options.token };
     const checkedAt = new Date().toISOString();
@@ -195,6 +264,10 @@ export class PackageSourceService {
         throw new GitHubError(
           'L’empreinte du fichier ne correspond pas à celle publiée avec la release. Fichier refusé.',
         );
+      }
+
+      if (this.options.code && peekPackageKind(bytes) === 'code') {
+        return this.installCode(row, source, release.version, bytes, this.options.code);
       }
 
       let manifestId: string;

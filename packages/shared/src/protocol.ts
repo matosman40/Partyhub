@@ -27,6 +27,8 @@ export interface GameInfo {
   settingsBounds: SettingsBounds;
   /** Le jeu s’appuie sur une IA quand elle est configurée (filtre « Avec IA » du catalogue). */
   ai: boolean;
+  /** Jeu de code : adresse de son bundle de vues (iframe). Absent pour les autres jeux. */
+  codeView?: { url: string; sha256: string };
 }
 
 /** Apparence d’un joueur : image de profil si elle existe, sinon emoji sur une teinte. */

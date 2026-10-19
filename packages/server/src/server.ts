@@ -17,6 +17,9 @@ import { StoreService } from './store/service.js';
 import { AssetService } from './assets/service.js';
 import { MediaQuizService } from './media/service.js';
 import { PackageService } from './packages/service.js';
+import { CodeGameService, loadTrustedKeys } from './code-games/service.js';
+import { CodeDraftService } from './code-games/drafts.js';
+import { CodeIntake, type IntakeDeps } from './code-games/intake.js';
 import { hashPassword } from './auth.js';
 import { effectiveNotice } from './catalog.js';
 import { gameDataFor } from './profiles/game-data.js';
@@ -59,6 +62,8 @@ export interface ServerOptions {
   joinThrottle?: Partial<JoinThrottleOptions>;
   /** Mise à jour depuis l’administration : essais seulement (faux GitHub, version simulée). */
   update?: { fetch?: typeof fetch; repo?: string; version?: string };
+  /** Jeux de code ajoutés par lien HTTPS : réseau et DNS remplaçables. Relecture du dossier de dépôt : 0 = désactivée. */
+  codeIntake?: { deps?: Partial<IntakeDeps>; watchEveryMs?: number };
 }
 
 /**
@@ -114,13 +119,38 @@ export async function createServer(opts: ServerOptions): Promise<PartyServer> {
   const assets = new AssetService(store, config.dataDir, config.assetLimits);
   const mediaGames = new MediaQuizService(store, assets);
   const packages = new PackageService(store, config.dataDir);
-  const packageSources = new PackageSourceService(store, packages, { token: config.githubToken });
+  // Jeux de code : clés de confiance relues à chaque opération, et journal des problèmes de clés au démarrage.
+  for (const problem of loadTrustedKeys(config.dataDir).problems) {
+    logger.warn({ event: 'code-game.trust', problem }, 'Clé de confiance ignorée');
+  }
+  // Les salles d'un jeu de code qui s'arrête sont fermées dès que le gestionnaire de salles existe (plus bas).
+  let closeCodeGameRooms: (id: string) => void = () => undefined;
+  const codeGames = new CodeGameService(store, config.dataDir, {
+    trustedKeys: () => loadTrustedKeys(config.dataDir).keys,
+    onError: (message) => logger.error({ event: 'code-game.load', message }, message),
+    audit: (event, data, message) => logger.info({ event, ...data }, message),
+    onStopped: (id) => closeCodeGameRooms(id),
+  });
+  // Brouillons de jeux de code créés et modifiés dans l’administration (DATA_DIR/jeux-en-cours).
+  const codeDrafts = new CodeDraftService(config.dataDir, codeGames);
+  // Ajout des jeux par le dossier de dépôt (DATA_DIR/depot-jeux, relu régulièrement) et par lien HTTPS.
+  const codeIntake = new CodeIntake(
+    config.dataDir,
+    codeGames,
+    (event, data, message) => logger.info({ event, ...data }, message),
+    opts.codeIntake?.deps,
+  );
+  const dropEvery = opts.codeIntake?.watchEveryMs ?? 10_000;
+  const stopDropWatch = dropEvery > 0 ? codeIntake.watch(dropEvery) : () => undefined;
+  // Les jeux de code des sources GitHub et du magasin arrivent en attente de revue, comme les autres voies.
+  const packageSources = new PackageSourceService(store, packages, { token: config.githubToken, code: codeGames });
   // Magasin : les jeux intégrés au code ne sont jamais téléchargés, ils restent dans l’application.
   const builtinIds = new Set(gameRegistry.map((game) => game.manifest.id));
   const gameStore = new StoreService(store, packageSources, packages, {
     defaultRepo: config.storeRepo,
     token: config.githubToken,
     isBuiltin: (gameId) => builtinIds.has(gameId),
+    code: codeGames,
   });
   const characterPacks = new CharacterPackService(store.db);
   const hub = new RealtimeHub(compileTrustProxy(config.trustProxy ?? 'loopback'), opts.joinThrottle);
@@ -180,6 +210,10 @@ export async function createServer(opts: ServerOptions): Promise<PartyServer> {
     200,
     () => store.getSettings().roomCodeLength,
   );
+  closeCodeGameRooms = (id) => {
+    const closed = manager.closeWhere((room) => room.module.manifest.id === id, 'admin');
+    if (closed > 0) logger.info({ event: 'code-game.rooms-closed', id, closed }, 'Salles fermées : jeu de code arrêté');
+  };
 
   const dbBackups = config.backup ? new DbBackupScheduler(store, config.backup, logger) : undefined;
   const update: UpdateService = new UpdateService({
@@ -214,6 +248,9 @@ export async function createServer(opts: ServerOptions): Promise<PartyServer> {
     assets,
     mediaGames,
     packages,
+    codeGames,
+    codeDrafts,
+    codeIntake,
     characterPacks,
     dbBackups,
     update,
@@ -263,6 +300,7 @@ export async function createServer(opts: ServerOptions): Promise<PartyServer> {
     },
     async close() {
       if (sweeper) clearInterval(sweeper);
+      stopDropWatch();
       stopUpdateHeartbeat();
       dbBackups?.stop();
       clearInterval(sourcesTimer);

@@ -1,5 +1,12 @@
 import { allGames, sourceOf, type CustomSource } from './games-registry.js';
-import { settingsBounds, type CatalogGame, type GameInfo, type GameModule, type GameOrigin } from '@partyhub/shared';
+import {
+  codeViewUrl,
+  settingsBounds,
+  type CatalogGame,
+  type GameInfo,
+  type GameModule,
+  type GameOrigin,
+} from '@partyhub/shared';
 import type { Store } from './db/store.js';
 import { defaultDetails, detailsOverride, settingsOverride, withOverrides } from './game-details.js';
 
@@ -20,6 +27,9 @@ export function gameInfo(module: GameModule): GameInfo {
     notice: m.notice,
     settingsBounds: settingsBounds(module.settingsSchema),
     ai: m.ai === true,
+    ...(module.codeView
+      ? { codeView: { url: codeViewUrl(m.id, module.codeView.sha256), sha256: module.codeView.sha256 } }
+      : {}),
   };
 }
 
@@ -29,6 +39,7 @@ const ORIGIN_OF_SOURCE: Record<CustomSource | 'builtin', GameOrigin> = {
   media: 'media',
   boards: 'board',
   packages: 'package',
+  code: 'package',
 };
 
 /** Origine d’un jeu, lue dans la table qui le porte (code, cartes, médias, plateau ou paquet). */

@@ -13,6 +13,8 @@ interface RestoreSummary {
   assetsPresent: number;
   packages: number;
   packagesPresent: number;
+  codeGames: number;
+  codeGamesPresent: number;
   skipped: string[];
 }
 
@@ -142,6 +144,9 @@ export function BackupPanel({ onChanged }: { onChanged: () => void }) {
           ignorés : {summary.duplicates}. Remplacés : {summary.replaced}.
           <br />
           Paquets installés : {summary.packages} version(s) ajoutée(s), {summary.packagesPresent} déjà présente(s).
+          <br />
+          Jeux de code : {summary.codeGames} version(s) remise(s) en attente de revue, {summary.codeGamesPresent} déjà
+          présente(s). Rien n’est réactivé d’office : approuvez-les à nouveau dans « Jeux de code ».
           {summary.skipped.length > 0 && (
             <>
               <br />

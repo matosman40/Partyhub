@@ -411,7 +411,7 @@ export function PlayerSeat({
 
   const { lobby, you, game } = view;
   const inLobby = lobby.status === 'waiting' || lobby.status === 'full';
-  const views = viewsFor(lobby.game.id);
+  const views = viewsFor(lobby.game);
   const readyNow = readyPending ?? you.ready;
 
   const avatars = Object.fromEntries(lobby.players.map((p) => [p.name, p.avatar]));

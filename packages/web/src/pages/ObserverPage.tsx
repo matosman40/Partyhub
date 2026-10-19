@@ -88,7 +88,7 @@ export function ObserverPage() {
   }
 
   const { lobby, game } = view;
-  const views = viewsFor(lobby.game.id);
+  const views = viewsFor(lobby.game);
   const inLobby = lobby.status === 'waiting' || lobby.status === 'full';
   const avatars = Object.fromEntries(lobby.players.map((p) => [p.name, p.avatar]));
   const sideBySide = device.kind !== 'phone';

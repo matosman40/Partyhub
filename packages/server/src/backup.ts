@@ -8,6 +8,7 @@ import type { CardGameService } from './cards/service.js';
 import type { Store } from './db/store.js';
 import { detailsOverride } from './game-details.js';
 import type { MediaQuizService } from './media/service.js';
+import type { CodeGameInstallResult } from './code-games/service.js';
 import type { PackageBackupEntry, PackageService } from './packages/service.js';
 import { compareVersions } from './packages/semver.js';
 import { formatBytes, readZip, writeZip, ZipError, type ZipFileEntry, type ZipReadLimits } from './packages/zip.js';
@@ -80,6 +81,9 @@ export interface RestoreSummary {
   /** Versions de paquets installées depuis l’archive, et versions déjà présentes à l’identique. */
   packages: number;
   packagesPresent: number;
+  /** Versions de jeux de code restaurées : elles sont en attente de revue, jamais réactivées d'office. */
+  codeGames: number;
+  codeGamesPresent: number;
   /** Jeux, fichiers ou paquets non restaurés, avec la raison. */
   skipped: string[];
 }
@@ -97,6 +101,8 @@ function emptySummary(): RestoreSummary {
     assetsPresent: 0,
     packages: 0,
     packagesPresent: 0,
+    codeGames: 0,
+    codeGamesPresent: 0,
     skipped: [],
   };
 }
@@ -209,6 +215,22 @@ export function restoreBackup(
 const ARCHIVE_ASSET_ENTRY = /^assets\/([0-9a-f]{32})$/;
 const ARCHIVE_PACKAGE_LIST = 'packages.json';
 const ARCHIVE_PACKAGE_ENTRY = /^packages\/([a-z0-9][a-z0-9-]{1,47})\/([0-9][0-9A-Za-z.+-]{0,40})\.phgame$/;
+const ARCHIVE_CODE_LIST = 'code-games.json';
+const ARCHIVE_CODE_ENTRY = /^code-games\/([a-z0-9][a-z0-9-]{1,47})\/([0-9][0-9A-Za-z.+-]{0,40})\.phgame$/;
+
+/** Une version de jeu de code, telle qu'elle est listée dans `code-games.json`. */
+export interface ArchivedCodeGame {
+  id: string;
+  version: string;
+  sha256: string;
+  active: boolean;
+  approved: boolean;
+}
+
+/** Une version de jeu de code à sauvegarder : son paquet signé et son état. */
+export interface CodeGameBackupEntry extends ArchivedCodeGame {
+  bytes: Uint8Array;
+}
 
 /** Un paquet installé, tel qu'il est listé dans `packages.json`. */
 export interface ArchivedPackage {
@@ -233,7 +255,12 @@ export class ArchiveTooLargeError extends Error {}
  * Archive ZIP : backup.json (définitions), assets.json (fiches), assets/<id> (fichiers),
  * packages.json (paquets installés) et packages/<id>/<version>.phgame (leurs archives).
  */
-export function buildArchive(backup: Backup, assets: AssetService, packages: PackageBackupEntry[] = []): Uint8Array {
+export function buildArchive(
+  backup: Backup,
+  assets: AssetService,
+  packages: PackageBackupEntry[] = [],
+  codeGames: CodeGameBackupEntry[] = [],
+): Uint8Array {
   const records = assets.list().filter((r) => existsSync(assets.filePath(r.id)));
   const total = records.reduce((sum, r) => sum + r.size, 0);
   if (total > ARCHIVE_MAX_BYTES) {
@@ -248,12 +275,21 @@ export function buildArchive(backup: Backup, assets: AssetService, packages: Pac
     active,
     sha256,
   }));
+  const listedCode: ArchivedCodeGame[] = codeGames.map(({ id, version, sha256, active, approved }) => ({
+    id,
+    version,
+    sha256,
+    active,
+    approved,
+  }));
   const files: ZipFileEntry[] = [
     { name: 'backup.json', data: enc(JSON.stringify(backup)) },
     { name: 'assets.json', data: enc(JSON.stringify(records)) },
     { name: ARCHIVE_PACKAGE_LIST, data: enc(JSON.stringify(listed)) },
+    { name: ARCHIVE_CODE_LIST, data: enc(JSON.stringify(listedCode)) },
     ...records.map((r) => ({ name: `assets/${r.id}`, data: readFileSync(assets.filePath(r.id)) })),
     ...packages.map((p) => ({ name: `packages/${p.id}/${p.version}.phgame`, data: p.bytes })),
+    ...codeGames.map((c) => ({ name: `code-games/${c.id}/${c.version}.phgame`, data: c.bytes })),
   ];
   return writeZip(files);
 }
@@ -263,6 +299,8 @@ export interface ParsedArchive {
   assets: AssetRecord[];
   files: Map<string, Buffer>;
   packages: ArchivedPackage[];
+  codeGames: ArchivedCodeGame[];
+  codeFiles: Map<string, Buffer>;
   /** Archives des paquets, par « identifiant/version ». */
   packageFiles: Map<string, Buffer>;
 }
@@ -289,14 +327,37 @@ function parseArchivedPackages(raw: Uint8Array | undefined): ArchivedPackage[] {
   });
 }
 
+/** Liste des jeux de code d'une archive. Une archive antérieure à ce format n'en a pas : rien à restaurer. */
+function parseArchivedCodeGames(raw: Uint8Array | undefined): ArchivedCodeGame[] {
+  if (!raw) return [];
+  const list = JSON.parse(Buffer.from(raw).toString('utf8')) as unknown;
+  if (!Array.isArray(list)) throw new ZipError('Liste des jeux de code illisible.');
+  return list.map((item) => {
+    const c = item as Partial<ArchivedCodeGame>;
+    if (
+      typeof c.id !== 'string' ||
+      typeof c.version !== 'string' ||
+      typeof c.sha256 !== 'string' ||
+      !SHA256_HEX.test(c.sha256) ||
+      typeof c.active !== 'boolean' ||
+      typeof c.approved !== 'boolean'
+    ) {
+      throw new ZipError('Liste des jeux de code illisible.');
+    }
+    return { id: c.id, version: c.version, sha256: c.sha256, active: c.active, approved: c.approved };
+  });
+}
+
 export function readArchive(bytes: Uint8Array): ParsedArchive {
   const entries = readZip(bytes, ARCHIVE_READ_LIMITS, (name) => {
     if (
       name === 'backup.json' ||
       name === 'assets.json' ||
       name === ARCHIVE_PACKAGE_LIST ||
+      name === ARCHIVE_CODE_LIST ||
       ARCHIVE_ASSET_ENTRY.test(name) ||
-      ARCHIVE_PACKAGE_ENTRY.test(name)
+      ARCHIVE_PACKAGE_ENTRY.test(name) ||
+      ARCHIVE_CODE_ENTRY.test(name)
     )
       return;
     throw new ZipError(`Élément inattendu dans la sauvegarde : « ${name} ».`);
@@ -311,11 +372,14 @@ export function readArchive(bytes: Uint8Array): ParsedArchive {
   if (!Array.isArray(records)) throw new ZipError('Liste de fichiers illisible.');
   const files = new Map<string, Buffer>();
   const packageFiles = new Map<string, Buffer>();
+  const codeFiles = new Map<string, Buffer>();
   for (const [name, data] of byName) {
     const match = ARCHIVE_ASSET_ENTRY.exec(name);
     if (match) files.set(match[1]!, Buffer.from(data));
     const pkg = ARCHIVE_PACKAGE_ENTRY.exec(name);
     if (pkg) packageFiles.set(`${pkg[1]}/${pkg[2]}`, Buffer.from(data));
+    const code = ARCHIVE_CODE_ENTRY.exec(name);
+    if (code) codeFiles.set(`${code[1]}/${code[2]}`, Buffer.from(data));
   }
   return {
     backup: json('backup.json'),
@@ -323,6 +387,8 @@ export function readArchive(bytes: Uint8Array): ParsedArchive {
     files,
     packages: parseArchivedPackages(byName.get(ARCHIVE_PACKAGE_LIST)),
     packageFiles,
+    codeGames: parseArchivedCodeGames(byName.get(ARCHIVE_CODE_LIST)),
+    codeFiles,
   };
 }
 
@@ -382,7 +448,40 @@ function restorePackages(
  * Restaure une archive complète : les fichiers d’abord (les jeux de médias les référencent),
  * puis les définitions, puis les paquets installés. Les fichiers déjà présents ne sont jamais remplacés.
  */
-export function restoreArchive(
+/**
+ * Réinstalle les versions de jeux de code d'une archive, en attente de revue. Rien n'est réactivé : après une
+ * restauration, l'administrateur relit et approuve à nouveau. Une version refusée (clé de confiance absente, etc.)
+ * est signalée sans bloquer les autres.
+ */
+async function restoreCodeGames(
+  parsed: ParsedArchive,
+  codeGames: { install(bytes: Uint8Array, actor?: string): Promise<CodeGameInstallResult> } | undefined,
+): Promise<{ installed: number; present: number; skipped: string[] }> {
+  const out = { installed: 0, present: 0, skipped: [] as string[] };
+  if (parsed.codeGames.length === 0) return out;
+  if (!codeGames) {
+    out.skipped.push('Jeux de code : aucun service de jeux de code disponible pour la restauration.');
+    return out;
+  }
+  for (const item of parsed.codeGames) {
+    const bytes = parsed.codeFiles.get(`${item.id}/${item.version}`);
+    if (!bytes) {
+      out.skipped.push(`Jeu de code « ${item.id} » ${item.version} : fichier absent de l’archive.`);
+      continue;
+    }
+    const result = await codeGames.install(new Uint8Array(bytes), 'restauration');
+    if (!result.ok) {
+      out.skipped.push(`Jeu de code « ${item.id} » ${item.version} : ${result.error}`);
+    } else if (result.unchanged) {
+      out.present++;
+    } else {
+      out.installed++;
+    }
+  }
+  return out;
+}
+
+export async function restoreArchive(
   bytes: Uint8Array,
   deps: {
     store: Store;
@@ -391,9 +490,10 @@ export function restoreArchive(
     boards: BoardGameService;
     assets: AssetService;
     packages?: PackageService;
+    codeGames?: { install(bytes: Uint8Array, actor?: string): Promise<CodeGameInstallResult> };
   },
   options: RestoreOptions,
-): { ok: true; summary: RestoreSummary } | { ok: false; error: string } {
+): Promise<{ ok: true; summary: RestoreSummary } | { ok: false; error: string }> {
   let parsed: ParsedArchive;
   try {
     parsed = readArchive(bytes);
@@ -415,6 +515,7 @@ export function restoreArchive(
   const restored = restoreBackup(parsed.backup, deps.store, deps.cards, deps.media, deps.boards, options);
   if (!restored.ok) return restored;
   const pkg = restorePackages(parsed, deps.packages, options.conflict);
+  const code = await restoreCodeGames(parsed, deps.codeGames);
   return {
     ok: true,
     summary: {
@@ -423,7 +524,9 @@ export function restoreArchive(
       assetsPresent: summary.assetsPresent,
       packages: pkg.installed,
       packagesPresent: pkg.present,
-      skipped: [...summary.skipped, ...restored.summary.skipped, ...pkg.skipped],
+      codeGames: code.installed,
+      codeGamesPresent: code.present,
+      skipped: [...summary.skipped, ...restored.summary.skipped, ...pkg.skipped, ...code.skipped],
     },
   };
 }

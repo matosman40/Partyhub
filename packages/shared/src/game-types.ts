@@ -205,6 +205,12 @@ export interface GameModule<S = any, C = any> {
   handleHostAction?(state: S, type: string, payload: unknown, ctx: GameContext): GameResult<S>;
 
   /**
+   * Jeux de code uniquement : bundle des vues (iframe) et son empreinte. Absent pour les jeux intégrés
+   * et les jeux déclaratifs, qui gardent leurs vues dans l’application.
+   */
+  codeView?: { script: string; sha256: string };
+
+  /**
    * Optionnel : travail asynchrone en attente, ou null. Doit rester identique tant que le travail n’est pas
    * terminé. La salle l’exécute en dehors du moteur, sans bloquer les autres salles.
    */

@@ -13,6 +13,11 @@ admin-password.txt
 !.env.example
 coverage/
 
+# Jeux de code en cours d'écriture, et clés de signature des jeux (jamais dans le dépôt)
+/jeux-en-cours/
+/cles/
+*.key.pem
+
 __pycache__/
 
 # Captures des contrôles navigateur, par défaut dans le dossier du projet

@@ -24,6 +24,10 @@ import { IMPORT_MAX_BYTES, isBankType } from '@partyhub/games';
 import { z } from 'zod';
 import type { AssetService } from '../assets/service.js';
 import { PackageExportError, type PackageService } from '../packages/service.js';
+import type { CodeGameService } from '../code-games/service.js';
+import { DraftError, type CodeDraftService } from '../code-games/drafts.js';
+import type { CodeIntake } from '../code-games/intake.js';
+import { peekPackageKind } from '../packages/format.js';
 import {
   copyPackageToEditable,
   packageCopyStatuses,
@@ -99,6 +103,12 @@ export interface AppDeps {
   mediaGames: MediaQuizService;
   /** Paquets .phgame installés (jeux déclaratifs). */
   packages: PackageService;
+  /** Jeux de code signés : installation en attente, revue et approbation par l’administrateur. */
+  codeGames: CodeGameService;
+  /** Brouillons de jeux de code, modifiés dans l’éditeur de l’administration. */
+  codeDrafts: CodeDraftService;
+  /** Ajout des jeux de code par le dossier de dépôt et par un lien HTTPS. */
+  codeIntake: CodeIntake;
   /** Packs de personnages (sprites) importés dans l’administration. */
   characterPacks: CharacterPackService;
   /** Sauvegardes automatiques de la base. Absent = fonction non configurée. */
@@ -125,6 +135,11 @@ const ADMIN_COOKIE = 'ph_admin';
 const ADMIN_COOKIE_PATH = '/api/admin';
 const ADMIN_SESSION_MS = 12 * 60 * 60 * 1000;
 
+/** Auteur d'une action d'administration, pour le journal : l'adresse de la requête (un seul administrateur). */
+function actorOf(req: { ip?: string }): string {
+  return req.ip ?? 'inconnu';
+}
+
 export function createApp(deps: AppDeps): express.Express {
   const {
     config,
@@ -144,6 +159,9 @@ export function createApp(deps: AppDeps): express.Express {
     dbBackups,
     update,
     packages,
+    codeGames,
+    codeDrafts,
+    codeIntake,
     characterPacks,
   } = deps;
   const app = express();
@@ -165,7 +183,8 @@ export function createApp(deps: AppDeps): express.Express {
     const selfParsed =
       req.path === '/api/admin/backup/import' ||
       req.path === '/api/admin/card-games/import' ||
-      (req.method === 'POST' && (req.path === '/api/admin/assets' || req.path === '/api/admin/backup/archive'));
+      (req.method === 'POST' && (req.path === '/api/admin/assets' || req.path === '/api/admin/backup/archive')) ||
+      (req.method === 'PUT' && /^\/api\/admin\/code-drafts\/[^/]+\/file$/.test(req.path));
     return selfParsed ? next() : jsonBody(req, res, next);
   });
 
@@ -186,7 +205,7 @@ export function createApp(deps: AppDeps): express.Express {
       // blob: : aperçus créés par la page elle-même (image du test, enregistrement du micro, photo de profil).
       // Une URL blob ne peut être créée que par ce site ; elle n’autorise pas de script ni de contenu externe.
       "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; " +
-        "script-src 'self' https://www.youtube.com; frame-src https://www.youtube.com https://www.youtube-nocookie.com; " +
+        "script-src 'self' https://www.youtube.com; frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com; " +
         "media-src 'self' data: blob:; connect-src 'self' ws: wss: https://www.youtube.com; object-src 'none'; " +
         "base-uri 'self'; frame-ancestors 'self'",
     );
@@ -294,6 +313,44 @@ export function createApp(deps: AppDeps): express.Express {
       return;
     }
     res.status(201).json({ count: result.count });
+  });
+
+  // Document des vues d’un jeu de code : chargé par l’iframe. Sa politique est propre (pas d’héritage de la page) :
+  // seul le script de vues de la même empreinte peut s’exécuter, et aucune connexion réseau n’est permise.
+  app.get('/api/code-games/:id/:sha256/view.html', (req, res) => {
+    const id = String(req.params.id ?? '');
+    const sha = String(req.params.sha256 ?? '');
+    if (!/^[a-f0-9]{64}$/.test(sha) || codeGames.viewScript(id, sha) === undefined) {
+      res.status(404).type('text/plain').send('Vues introuvables.');
+      return;
+    }
+    const scriptUrl = `/api/code-games/${encodeURIComponent(id)}/${sha}/views.js`;
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader(
+      'Content-Security-Policy',
+      "default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; media-src data: blob:; connect-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'self'",
+    );
+    res
+      .type('text/html; charset=utf-8')
+      .send(
+        `<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Vue du jeu</title></head><body style="margin:0;font-family:system-ui,sans-serif"><div id="root"></div><script src="${scriptUrl}"></script></body></html>`,
+      );
+  });
+
+  // Vues d’un jeu de code (iframe). Adressé par empreinte : le navigateur peut garder la réponse sans limite.
+  app.get('/api/code-games/:id/:sha256/views.js', (req, res) => {
+    const id = String(req.params.id ?? '');
+    const script = /^[a-f0-9]{64}$/.test(String(req.params.sha256 ?? ''))
+      ? codeGames.viewScript(id, String(req.params.sha256))
+      : undefined;
+    if (script === undefined) {
+      res.status(404).type('text/plain').send('Vues introuvables.');
+      return;
+    }
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.type('application/javascript; charset=utf-8').send(script);
   });
 
   // Ressources graphiques d’un paquet installé et activé. Lecture publique : rien de privé n’est exposé.
@@ -1083,10 +1140,20 @@ export function createApp(deps: AppDeps): express.Express {
     res.json({ ok: true });
   });
 
-  admin.post('/packages', express.raw({ type: () => true, limit: '16mb' }), (req, res) => {
+  admin.post('/packages', express.raw({ type: () => true, limit: '16mb' }), async (req, res) => {
     const body = req.body as unknown;
     if (!Buffer.isBuffer(body) || body.length === 0) {
       res.status(400).json({ error: 'Aucun fichier reçu.' });
+      return;
+    }
+    if (peekPackageKind(body) === 'code') {
+      // Jeu de code : installé en attente de revue, il ne s’exécute qu’après approbation.
+      const result = await codeGames.install(body, actorOf(req));
+      if (!result.ok) {
+        res.status(400).json({ error: result.error, issues: result.issues ?? [] });
+        return;
+      }
+      res.status(result.unchanged ? 200 : 201).json({ kind: 'code', ...result });
       return;
     }
     const result = packages.install(body);
@@ -1096,6 +1163,196 @@ export function createApp(deps: AppDeps): express.Express {
     }
     res.status(result.unchanged ? 200 : 201).json(result);
   });
+
+  /** Jeux de code : versions et leur état (en attente, active, remplacée, erreur). */
+  admin.get('/code-games', (_req, res) => {
+    res.json({ games: codeGames.list() });
+  });
+
+  /** Ce qu'il faut relire avant d'approuver : fichiers, empreintes et code exécuté. */
+  admin.get('/code-games/:id/:version/review', (req, res) => {
+    const review = codeGames.review(req.params.id ?? '', req.params.version ?? '');
+    if ('error' in review) {
+      res.status(404).json({ error: review.error });
+      return;
+    }
+    res.json(review);
+  });
+
+  /**
+   * Approbation : l'empreinte confirmée doit être celle de la version relue. Les salles qui jouaient
+   * l'ancienne version active sont fermées, car elles tiendraient un runtime arrêté.
+   */
+  admin.post('/code-games/:id/:version/approve', async (req, res) => {
+    const id = req.params.id ?? '';
+    const sha256 = (req.body as { sha256?: unknown } | undefined)?.sha256;
+    if (typeof sha256 !== 'string' || !/^[a-f0-9]{64}$/.test(sha256)) {
+      res.status(400).json({ error: 'Empreinte attendue : sha256 de la version relue.' });
+      return;
+    }
+    const result = await codeGames.approve(id, req.params.version ?? '', sha256, actorOf(req));
+    if (!result.ok) {
+      res.status(400).json({ error: result.error });
+      return;
+    }
+    const closed = manager.closeWhere((r) => r.module.manifest.id === id, 'admin');
+    res.json({ ok: true, closedRooms: closed, enabled: result.enabled ?? true });
+  });
+
+  /**
+   * Relit les jeux de code : une clé de confiance retirée prend effet tout de suite, et un jeu qui ne se
+   * recharge plus (signature refusée, archive modifiée) sort du catalogue. Les salles des jeux arrêtés sont fermées.
+   */
+  admin.post('/code-games/reload', (req, res) => {
+    const result = codeGames.reload(actorOf(req));
+    let closedRooms = 0;
+    for (const id of result.closed) {
+      closedRooms += manager.closeWhere((r) => r.module.manifest.id === id, 'admin');
+    }
+    res.json({ ok: true, stopped: result.closed, closedRooms, active: result.active });
+  });
+
+  /** Dossier de dépôt (DATA_DIR/depot-jeux) : dernière lecture, avec l'état de chaque fichier. */
+  admin.get('/code-intake', (_req, res) => {
+    res.json(codeIntake.state());
+  });
+
+  /** Relecture immédiate du dossier de dépôt, y compris des fichiers déjà lus. */
+  admin.post('/code-intake/scan', async (req, res) => {
+    res.json(await codeIntake.scan(actorOf(req), true));
+  });
+
+  /** Jeu de code téléchargé depuis une adresse HTTPS, puis installé en attente de revue. */
+  admin.post('/code-intake/url', async (req, res) => {
+    const body = (req.body ?? {}) as Record<string, unknown>;
+    const result = await codeIntake.importUrl(typeof body.url === 'string' ? body.url : '', actorOf(req));
+    if (!result.ok) {
+      res.status(400).json({ error: result.error, issues: result.issues ?? [] });
+      return;
+    }
+    res.status(result.unchanged ? 200 : 201).json({ kind: 'code', ...result });
+  });
+
+  /** Suppression d'une version ; supprimer la version active retire le jeu et ferme ses salles. */
+  admin.delete('/code-games/:id/:version', (req, res) => {
+    const id = req.params.id ?? '';
+    const result = codeGames.remove(id, req.params.version ?? '', actorOf(req));
+    if (!result.ok) {
+      res.status(404).json({ error: result.error });
+      return;
+    }
+    const closed = manager.closeWhere((r) => r.module.manifest.id === id, 'admin');
+    res.json({ ok: true, closedRooms: closed });
+  });
+
+  /**
+   * Éditeur des jeux de code (administrateur seulement). Un brouillon n'est jamais joué : « Signer » l'installe
+   * en attente de revue, comme n'importe quel paquet signé. La clé privée n'est jamais renvoyée.
+   */
+  const draftRoute =
+    (handler: (req: Request, res: Response) => unknown) =>
+    async (req: Request, res: Response): Promise<void> => {
+      try {
+        await handler(req, res);
+      } catch (err) {
+        if (err instanceof DraftError) {
+          res.status(err.status).json({ error: err.message, issues: err.issues });
+          return;
+        }
+        throw err;
+      }
+    };
+  const bodyText = (value: unknown) => (typeof value === 'string' ? value : '');
+  const paramOf = (req: Request, name: string): string => {
+    const value = req.params[name];
+    return typeof value === 'string' ? value : '';
+  };
+  const queryPath = (req: Request) => (typeof req.query.path === 'string' ? req.query.path : '');
+
+  admin.get(
+    '/code-drafts',
+    draftRoute((_req, res) => {
+      res.json({ drafts: codeDrafts.list() });
+    }),
+  );
+
+  admin.post(
+    '/code-drafts',
+    draftRoute((req, res) => {
+      const body = (req.body ?? {}) as Record<string, unknown>;
+      const draft = codeDrafts.create({
+        id: bodyText(body.id).trim(),
+        name: bodyText(body.name).trim(),
+        author: bodyText(body.author).trim(),
+      });
+      res.status(201).json({ draft });
+    }),
+  );
+
+  admin.get(
+    '/code-drafts/:id',
+    draftRoute((req, res) => {
+      res.json({ draft: codeDrafts.detail(paramOf(req, 'id')) });
+    }),
+  );
+
+  admin.delete(
+    '/code-drafts/:id',
+    draftRoute((req, res) => {
+      codeDrafts.remove(paramOf(req, 'id'));
+      res.json({ ok: true });
+    }),
+  );
+
+  admin.get(
+    '/code-drafts/:id/file',
+    draftRoute((req, res) => {
+      res.json(codeDrafts.readFile(paramOf(req, 'id'), queryPath(req)));
+    }),
+  );
+
+  // Le contenu d'un fichier peut dépasser la limite JSON globale : cette route lit son propre corps.
+  admin.put(
+    '/code-drafts/:id/file',
+    express.json({ limit: '300kb' }),
+    draftRoute((req, res) => {
+      const body = (req.body ?? {}) as Record<string, unknown>;
+      codeDrafts.writeFile(paramOf(req, 'id'), bodyText(body.path), bodyText(body.content));
+      res.json({ ok: true });
+    }),
+  );
+
+  admin.delete(
+    '/code-drafts/:id/file',
+    draftRoute((req, res) => {
+      codeDrafts.deleteFile(paramOf(req, 'id'), queryPath(req));
+      res.json({ ok: true });
+    }),
+  );
+
+  /** Nom, description, version : écrits dans manifest.json et src/server.ts ensemble. */
+  admin.post(
+    '/code-drafts/:id/metadata',
+    draftRoute((req, res) => {
+      const body = (req.body ?? {}) as Record<string, unknown>;
+      const changes: { name?: string; description?: string; version?: string } = {};
+      for (const field of ['name', 'description', 'version'] as const) {
+        const value = body[field];
+        if (typeof value === 'string') changes[field] = value.trim();
+      }
+      const id = paramOf(req, 'id');
+      codeDrafts.setMetadata(id, changes);
+      res.json({ ok: true, draft: codeDrafts.detail(id) });
+    }),
+  );
+
+  /** Vérifier : construction sans signature, puis partie complète jouée par des robots. */
+  admin.post(
+    '/code-drafts/:id/check',
+    draftRoute(async (req, res) => {
+      res.json(await codeDrafts.check(paramOf(req, 'id')));
+    }),
+  );
 
   admin.post('/packages/:id/status', (req, res) => {
     const id = req.params.id ?? '';
@@ -1401,7 +1658,12 @@ export function createApp(deps: AppDeps): express.Express {
   /** Archive complète (ZIP) : sauvegarde, fichiers de la médiathèque et paquets installés. */
   admin.get('/backup/archive', (_req, res) => {
     try {
-      const bytes = buildArchive(buildBackup(store, cardGames, mediaGames, boardGames), assets, packages.exportAll());
+      const bytes = buildArchive(
+        buildBackup(store, cardGames, mediaGames, boardGames),
+        assets,
+        packages.exportAll(),
+        codeGames.exportAll(),
+      );
       const stamp = new Date().toISOString().slice(0, 10);
       res.setHeader('Content-Type', 'application/zip');
       res.setHeader('Content-Disposition', `attachment; filename="partyhub-sauvegarde-complete-${stamp}.zip"`);
@@ -1422,15 +1684,15 @@ export function createApp(deps: AppDeps): express.Express {
   admin.post(
     '/backup/archive',
     express.raw({ type: () => true, limit: ARCHIVE_MAX_BYTES + 8 * 1024 * 1024 }),
-    (req, res) => {
+    async (req, res) => {
       const body = req.body as unknown;
       if (!Buffer.isBuffer(body) || body.length === 0) {
         res.status(400).json({ error: 'Archive vide.' });
         return;
       }
-      const result = restoreArchive(
+      const result = await restoreArchive(
         body,
-        { store, cards: cardGames, media: mediaGames, boards: boardGames, assets, packages },
+        { store, cards: cardGames, media: mediaGames, boards: boardGames, assets, packages, codeGames },
         { conflict: conflictMode(req.query.conflict) },
       );
       if (!result.ok) {
