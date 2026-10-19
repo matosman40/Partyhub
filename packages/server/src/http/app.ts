@@ -129,6 +129,11 @@ const ADMIN_COOKIE = 'ph_admin';
 const ADMIN_COOKIE_PATH = '/api/admin';
 const ADMIN_SESSION_MS = 12 * 60 * 60 * 1000;
 
+/** Auteur d'une action d'administration, pour le journal : l'adresse de la requête (un seul administrateur). */
+function actorOf(req: { ip?: string }): string {
+  return req.ip ?? 'inconnu';
+}
+
 export function createApp(deps: AppDeps): express.Express {
   const {
     config,
@@ -1134,7 +1139,7 @@ export function createApp(deps: AppDeps): express.Express {
     }
     if (peekPackageKind(body) === 'code') {
       // Jeu de code : installé en attente de revue, il ne s’exécute qu’après approbation.
-      const result = codeGames.install(body);
+      const result = codeGames.install(body, actorOf(req));
       if (!result.ok) {
         res.status(400).json({ error: result.error, issues: result.issues ?? [] });
         return;
@@ -1176,19 +1181,32 @@ export function createApp(deps: AppDeps): express.Express {
       res.status(400).json({ error: 'Empreinte attendue : sha256 de la version relue.' });
       return;
     }
-    const result = codeGames.approve(id, req.params.version ?? '', sha256);
+    const result = codeGames.approve(id, req.params.version ?? '', sha256, actorOf(req));
     if (!result.ok) {
       res.status(400).json({ error: result.error });
       return;
     }
     const closed = manager.closeWhere((r) => r.module.manifest.id === id, 'admin');
-    res.json({ ok: true, closedRooms: closed });
+    res.json({ ok: true, closedRooms: closed, enabled: result.enabled ?? true });
+  });
+
+  /**
+   * Relit les jeux de code : une clé de confiance retirée prend effet tout de suite, et un jeu qui ne se
+   * recharge plus (signature refusée, archive modifiée) sort du catalogue. Les salles des jeux arrêtés sont fermées.
+   */
+  admin.post('/code-games/reload', (req, res) => {
+    const result = codeGames.reload(actorOf(req));
+    let closedRooms = 0;
+    for (const id of result.closed) {
+      closedRooms += manager.closeWhere((r) => r.module.manifest.id === id, 'admin');
+    }
+    res.json({ ok: true, stopped: result.closed, closedRooms, active: result.active });
   });
 
   /** Suppression d'une version ; supprimer la version active retire le jeu et ferme ses salles. */
   admin.delete('/code-games/:id/:version', (req, res) => {
     const id = req.params.id ?? '';
-    const result = codeGames.remove(id, req.params.version ?? '');
+    const result = codeGames.remove(id, req.params.version ?? '', actorOf(req));
     if (!result.ok) {
       res.status(404).json({ error: result.error });
       return;
@@ -1501,7 +1519,12 @@ export function createApp(deps: AppDeps): express.Express {
   /** Archive complète (ZIP) : sauvegarde, fichiers de la médiathèque et paquets installés. */
   admin.get('/backup/archive', (_req, res) => {
     try {
-      const bytes = buildArchive(buildBackup(store, cardGames, mediaGames, boardGames), assets, packages.exportAll());
+      const bytes = buildArchive(
+        buildBackup(store, cardGames, mediaGames, boardGames),
+        assets,
+        packages.exportAll(),
+        codeGames.exportAll(),
+      );
       const stamp = new Date().toISOString().slice(0, 10);
       res.setHeader('Content-Type', 'application/zip');
       res.setHeader('Content-Disposition', `attachment; filename="partyhub-sauvegarde-complete-${stamp}.zip"`);
@@ -1530,7 +1553,7 @@ export function createApp(deps: AppDeps): express.Express {
       }
       const result = restoreArchive(
         body,
-        { store, cards: cardGames, media: mediaGames, boards: boardGames, assets, packages },
+        { store, cards: cardGames, media: mediaGames, boards: boardGames, assets, packages, codeGames },
         { conflict: conflictMode(req.query.conflict) },
       );
       if (!result.ok) {

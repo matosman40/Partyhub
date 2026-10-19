@@ -36,10 +36,10 @@ Un jeu complet et jouable :
    - getPublicState, getHostState, getPlayerState : ne révèle jamais ce qu'un joueur ne doit pas voir
      avant la révélation (choix secrets, réponses, cartes en main).
    - Le hasard passe par ctx.random(), le temps par ctx.now(), les délais par ctx.schedule et ctx.cancel
-     (onTimer est appelé à échéance).
+     (onTimer est appelé à échéance). Date.now() et Math.random() rendent la partie non reproductible : le contrôle la refuse.
    - suggest : un coup simple et légal pour un robot, pour que le contrôle puisse jouer une partie.
    - La partie doit toujours se terminer (isFinished devient vrai). Une partie bloquée fait échouer le contrôle.
-   - Aucun état hors de la partie : pas de variable du module modifiée d'un appel à l'autre. Un même isolat sert toutes les salles du jeu.
+   - Aucun état hors de la partie : pas de variable du module modifiée d'un appel à l'autre. Un même isolat sert toutes les salles du jeu. Le contrôle joue des parties en alternance pour le détecter.
 
 3. Écris l'écran dans src/client.tsx : Settings, Host et Player, exportés dans un objet par défaut.
    - Host reçoit publicState et hostState ; Player reçoit publicState, playerState, playerId, send.
@@ -50,7 +50,7 @@ Un jeu complet et jouable :
    docker compose -f compose.dev.yaml run --rm jeux pack /jeu/[ID-DU-JEU] /jeu/[ID-DU-JEU].phgame /cles/[ID-DU-JEU].key.pem
    docker compose -f compose.dev.yaml run --rm jeux check /jeu/[ID-DU-JEU].phgame /cles/[ID-DU-JEU].pub.pem
    Le contrôle vérifie la structure, la syntaxe des deux bundles, la cohérence du manifeste avec le module,
-   et une partie complète jouée par des robots. Corrige jusqu'à ce qu'il réussisse, sans contourner un contrôle.
+   et une partie complète jouée par des robots, puis deux parties rejouées : elles doivent donner exactement la même suite d'états, même jouées en alternance. Corrige jusqu'à ce qu'il réussisse, sans contourner un contrôle.
    (La clé de signature est fournie par l'auteur, dans ./cles. Sans clé, le paquet n'est pas signé et PartyHub refuse de l'installer.)
 
 5. Termine par un compte rendu court : le chemin du fichier .phgame, la sortie complète de check,

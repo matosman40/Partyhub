@@ -71,6 +71,7 @@ Le module reprend le contrat `GameModule` de `@partyhub/shared`. Les méthodes o
 Points à respecter :
 
 - Une partie doit toujours se terminer. Le contrôle échoue si elle reste bloquée ou dépasse 3 000 pas.
+- Le contrôle rejoue chaque partie, et joue plusieurs parties en alternance dans le même isolat. Une partie qui ne se reproduit pas à l'identique, ou qui change quand elle partage le module avec une autre, est refusée : c'est le signe d'un état gardé hors de la partie, ou de `Date.now()` ou `Math.random()` (utiliser `ctx.now()` et `ctx.random()`).
 - `getPublicState`, `getHostState` et `getPlayerState` ne doivent jamais révéler ce qu'un joueur n'a pas le droit de voir (un choix secret, une réponse avant la révélation).
 - Le hasard passe par `ctx.random()`, le temps par `ctx.now()`, les minuteurs par `ctx.schedule` et `ctx.cancel`. Les règles restent ainsi reproductibles.
 - **Aucun état hors de la partie.** Un même isolat sert toutes les salles d'un jeu : une variable du module modifiée d'un appel à l'autre mélangerait les salles. Tout l'état vit dans l'objet de partie.
@@ -86,7 +87,7 @@ Trois composants, exportés par défaut dans un objet `{ Settings, Host, Player 
 - `Host` reçoit `publicState` et `hostState` (écran principal) ;
 - `Player` reçoit `publicState`, `playerState` et `send(type, payload)` (téléphone).
 
-`send` renvoie `{ ok, error }`. Les vues ne doivent pas avoir d'effet hors de l'écran.
+`send` renvoie `{ ok, error }`. Les vues ne doivent pas avoir d'effet hors de l'écran. Un jeu désactivé ne sert plus ses vues (réponse 404).
 
 ## Signature, confiance et revue
 
@@ -106,20 +107,37 @@ Règles d'installation :
 - Une archive déjà approuvée, réinstallée à l'identique, ne crée rien de nouveau.
 - Une même version avec un contenu différent est refusée : il faut monter la version.
 - Une version en attente ne remplace jamais la version active tant qu'elle n'est pas approuvée.
+- L'approbation ne réactive pas un jeu désactivé : le message le signale, et il faut le réactiver dans l'administration des jeux. Réactiver un jeu ne demande pas de nouvelle approbation.
+
+**Revue par différence.** Quand une version remplace une version active, la revue affiche seulement les lignes modifiées du code serveur et des vues, avec quelques lignes de contexte, depuis la version active. Au-delà de 2 000 modifications, la zone concernée est montrée en bloc (tout retiré, tout ajouté).
 
 ## Exécution
 
-- **Module serveur** : dans un isolat V8 séparé (`isolated-vm`). Pas de réseau, pas de système de fichiers, pas de processus, pas d'API Node. Mémoire limitée à 64 Mio, et 2 secondes au plus par appel. Un appel trop long est interrompu, et l'isolat reste utilisable.
+- **Module serveur** : dans un isolat V8 séparé (`isolated-vm`). Pas de réseau, pas de système de fichiers, pas de processus, pas d'API Node. Mémoire limitée à 64 Mio, et 2 secondes au plus par appel.
+- **Budget de temps.** Un appel trop long est interrompu. Au cinquième dépassement (`CODE_MAX_TIMEOUTS`), ou dès qu'un échec détruit l'isolat (mémoire dépassée), le jeu est arrêté : il passe en « Erreur », ses salles sont fermées, et il reste arrêté jusqu'au prochain rechargement des jeux.
 - **Vues** : dans un iframe `sandbox="allow-scripts"`, servi depuis `/api/code-games/<id>/<empreinte>/view.html`. Ce document a sa propre politique : un seul script (celui du même paquet), aucune connexion réseau. La page et la vue échangent uniquement des messages (`postMessage`).
 - **Contrôle** (`check`) : passe par le même isolat que la production, pour tester ce qui tournera réellement.
 
+## Tests de bout en bout
+
+`e2e/jeu-de-code/parcours.cjs` installe un jeu dans un serveur de test, l'approuve, puis joue une partie complète dans un navigateur : deux téléphones, trois manches, « Fin de partie ». Il n'est pas lancé par `npm test` ; voir `e2e/jeu-de-code/README.md`.
+
+## Rechargement, révocation et audit
+
+- **Recharger les clés et les jeux** (bouton de l'administration, ou `POST /api/admin/code-games/reload`) relit `DATA_DIR/cles-de-confiance/` et les versions actives, sans redémarrer le serveur.
+- **Révoquer une clé** : retirer son fichier `.pub.pem`, puis recharger. Les versions signées par cette clé s'arrêtent, et leurs salles sont fermées. Les autres jeux ne sont pas touchés.
+- **Journal.** Chaque action est écrite dans le journal du serveur (`partyhub.log`) : `code_game.installed`, `code_game.approved`, `code_game.removed`, `code_game.reloaded`, `code_game.stopped` (avec la raison). L'acteur est l'adresse IP de la requête : PartyHub n'a qu'un compte administrateur, protégé par mot de passe.
+
+## Sauvegarde
+
+L'export ZIP des sauvegardes inclut les jeux de code (`code-games.json` et `code-games/<id>/<version>.phgame`). À la restauration, chaque version revient **en attente de revue** : rien ne se réactive d'office. L'administrateur doit la relire et l'approuver à nouveau, et le résumé de restauration le signale.
+
 ## Limites actuelles
 
+- **Frontière d'isolation.** L'isolat tourne dans le processus du serveur, ce qui est moins fort qu'un processus séparé. À valider avant d'ouvrir l'installation à des auteurs extérieurs.
 - **Installation par l'administration seulement.** Pas encore de magasin ni de galerie pour les jeux de code.
-- **Pas de sauvegarde.** Les jeux de code ne sont pas inclus dans les sauvegardes du serveur.
-- **Un isolat par jeu, partagé entre les salles.** D'où la règle : aucun état hors de la partie (voir plus haut).
+- **Un isolat par jeu, partagé entre les salles.** D'où la règle : aucun état hors de la partie (voir plus haut). Un contexte par salle est reporté : il demande un point de fermeture des salles et une mesure de mémoire.
 - **Pas d'images ni de sons à l'exécution** pour les jeux de code. Les fichiers de `assets/` sont dans le paquet, mais les vues ne les affichent pas encore.
 - **Taille.** L'archive est limitée à 8 Mio, la limite du format. Aucun autre plafond n'est fixé pour l'instant : à confirmer.
-- **Jeu désactivé.** Un jeu désactivé ne se joue plus, mais ses vues restent accessibles tant qu'il est dans le registre.
 - **Historique.** L'administration relit, approuve et supprime une version ; elle ne gère pas encore l'historique complet des versions.
 - **Docker non vérifié** (voir plus haut).

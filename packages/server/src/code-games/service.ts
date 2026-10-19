@@ -14,6 +14,7 @@ import {
 import { CodeGameRuntime, createCodeModule } from '../packages/code-runtime.js';
 import { launchCheck, type LaunchCheckOptions } from '../packages/launch-check.js';
 import { PackageValidationError } from '../packages/format.js';
+import { changedHunks, countChanges, diffLines, type DiffLine } from './diff.js';
 
 /** Dossier des clés publiques de confiance, dans DATA_DIR. Un fichier `*.pub.pem` par clé. */
 export const TRUST_DIR_NAME = 'cles-de-confiance';
@@ -70,24 +71,41 @@ export interface CodeGameSummary {
   error?: string;
 }
 
+/** Différence avec la version active : seulement les lignes modifiées, et leur contexte. */
+export interface CodeGameChanges {
+  /** Version active, à laquelle la version relue est comparée. */
+  from: string;
+  server: DiffLine[];
+  client: DiffLine[];
+  counts: { server: { added: number; removed: number }; client: { added: number; removed: number } };
+}
+
 export interface CodeGameReview extends CodeGameSummary {
   description: string;
   author: string;
   files: { path: string; size: number; sha256: string }[];
   /** Code à relire : bundles serveur (règles) et navigateur (vues), tels qu'ils seront exécutés. */
   sources: { server: string; client: string };
+  /** Différence avec la version active, quand il en existe une autre. */
+  changes: CodeGameChanges | null;
 }
 
 export type CodeGameInstallResult =
   | { ok: true; id: string; version: string; sha256: string; signer: string; unchanged: boolean }
   | { ok: false; error: string; issues?: string[] };
 
-export type CodeGameOutcome = { ok: true } | { ok: false; error: string };
+/** `enabled` : le jeu est-il activé dans l'administration (une approbation ne le change pas). */
+export type CodeGameOutcome = { ok: true; enabled?: boolean } | { ok: false; error: string };
 
 interface Loaded {
   module: GameModule;
   runtime: CodeGameRuntime;
+  version: string;
+  sha256: string;
 }
+
+/** Événement d'administration, écrit au journal : installation, approbation, arrêt, suppression, rechargement. */
+export type CodeGameAudit = (event: string, data: Record<string, unknown>, message: string) => void;
 
 export interface CodeGameServiceOptions {
   /** Clés de confiance, relues à chaque opération. */
@@ -95,6 +113,10 @@ export interface CodeGameServiceOptions {
   launch?: LaunchCheckOptions;
   /** Journal d'erreurs (chargements au démarrage). */
   onError?: (message: string) => void;
+  /** Journal d'audit des actions d'administration et des arrêts automatiques. */
+  audit?: CodeGameAudit;
+  /** Appelé quand un jeu s'arrête tout seul : ses salles doivent être fermées. */
+  onStopped?: (id: string, reason: string) => void;
 }
 
 /**
@@ -136,17 +158,19 @@ export class CodeGameService {
   private load(pkg: ValidatedCodePackage): Loaded {
     const serverSource = Buffer.from(pkg.files.get(CODE_ENTRY_SERVER)!).toString('utf8');
     const clientSource = Buffer.from(pkg.files.get(CODE_ENTRY_CLIENT)!).toString('utf8');
-    const runtime = new CodeGameRuntime(serverSource);
+    const { id, name, version } = pkg.manifest;
+    const runtime: CodeGameRuntime = new CodeGameRuntime(serverSource, undefined, {
+      onStop: (reason) => this.handleStop(id, runtime, reason),
+    });
     try {
       const module = createCodeModule(runtime, {
         script: clientSource,
         sha256: sha256Of(pkg.files.get(CODE_ENTRY_CLIENT)!),
       });
-      const { id, name, version } = pkg.manifest;
       if (module.manifest.id !== id || module.manifest.name !== name || module.manifest.version !== version) {
         throw new Error('le module ne correspond pas au manifeste (identifiant, nom ou version)');
       }
-      return { module, runtime };
+      return { module, runtime, version, sha256: pkg.sha256 };
     } catch (err) {
       runtime.dispose();
       throw err;
@@ -159,29 +183,79 @@ export class CodeGameService {
     this.active.delete(id);
   }
 
-  /** Publie les jeux actifs et activés au registre. Un jeu désactivé dans l'administration reste hors du catalogue. */
+  /**
+   * Publie les jeux actifs au registre. L'activation dans l'administration n'est pas figée ici : le catalogue,
+   * la création de salle et les vues la vérifient à chaque usage. Ainsi, réactiver un jeu le rend tout de suite
+   * disponible, sans republication.
+   */
   private publish(): void {
-    const modules = [...this.active.entries()]
-      .filter(([id]) => this.store.isGameEnabled(id))
-      .map(([, loaded]) => loaded.module);
-    setCustomGames('code', modules);
+    setCustomGames(
+      'code',
+      [...this.active.values()].map((loaded) => loaded.module),
+    );
   }
 
-  /** Relit les versions actives depuis la base et les archives, et remplace les jeux de code en mémoire. */
-  reload(): void {
-    for (const id of [...this.active.keys()]) this.stop(id);
-    this.errors = new Map();
-    for (const row of this.store.listCodeGames()) {
-      if (row.active !== 1) continue;
+  /** Le runtime s'est arrêté tout seul (mémoire, délais répétés) : le jeu sort du catalogue, ses salles sont fermées. */
+  private handleStop(id: string, runtime: CodeGameRuntime, reason: string): void {
+    const current = this.active.get(id);
+    if (!current || current.runtime !== runtime) return;
+    this.active.delete(id);
+    this.errors.set(id, `arrêté : ${reason}`);
+    this.options.audit?.(
+      'code_game.stopped',
+      { id, version: current.version, sha256: current.sha256, reason },
+      `Jeu de code « ${id} » arrêté : ${reason}`,
+    );
+    this.publish();
+    this.options.onStopped?.(id, reason);
+  }
+
+  /**
+   * Relit les versions actives depuis la base et les archives. Un jeu inchangé garde son runtime, donc ses
+   * salles continuent. Un jeu retiré ou remplacé est arrêté : son identifiant est renvoyé, pour fermer ses salles.
+   */
+  reload(actor?: string): { closed: string[]; active: number } {
+    const wanted = new Map<string, CodeGameRow>();
+    for (const row of this.store.listCodeGames()) if (row.active === 1) wanted.set(row.id, row);
+
+    // Un jeu inchangé garde son runtime, mais sa signature est vérifiée de nouveau : une clé retirée révoque ce qu'elle a signé.
+    const closed: string[] = [];
+    for (const [id, loaded] of [...this.active]) {
+      const row = wanted.get(id);
+      if (row && row.version === loaded.version && row.sha256 === loaded.sha256 && this.stillTrusted(row)) continue;
+      this.stop(id);
+      closed.push(id);
+    }
+    for (const id of [...this.errors.keys()]) if (!wanted.has(id)) this.errors.delete(id);
+    for (const row of wanted.values()) {
+      if (this.active.has(row.id)) continue;
       try {
         this.activate(row);
       } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
+        const message = errorMessage(err);
         this.errors.set(row.id, message);
         this.options.onError?.(`Jeu de code « ${row.id} » non chargé : ${message}`);
       }
     }
     this.publish();
+    if (actor !== undefined) {
+      this.options.audit?.(
+        'code_game.reloaded',
+        { actor, closed, active: this.active.size },
+        `Jeux de code relus (${this.active.size} actif(s)) par ${actor}`,
+      );
+    }
+    return { closed, active: this.active.size };
+  }
+
+  /** Vrai si l'archive d'une version est encore signée par une clé de confiance. */
+  private stillTrusted(row: CodeGameRow): boolean {
+    try {
+      this.validate(fs.readFileSync(this.archivePath(row.id, row.version)));
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   /** Charge une version active : archive, empreinte approuvée, signature et contrôle du jeu. */
@@ -198,7 +272,7 @@ export class CodeGameService {
   }
 
   /** Installe un paquet signé en attente de revue. Rien ne s'exécute encore hors du contrôle de lancement. */
-  install(bytes: Uint8Array): CodeGameInstallResult {
+  install(bytes: Uint8Array, actor = 'inconnu'): CodeGameInstallResult {
     let pkg: ValidatedCodePackage;
     try {
       pkg = this.validate(bytes);
@@ -251,7 +325,37 @@ export class CodeGameService {
       manifest: JSON.stringify(pkg.manifest),
       installed_at: new Date().toISOString(),
     });
+    this.options.audit?.(
+      'code_game.installed',
+      { id, version, sha256: pkg.sha256, signer: pkg.signer ?? '', actor },
+      `Jeu de code « ${id} » ${version} installé en attente de revue par ${actor}`,
+    );
     return { ok: true, id, version, sha256: pkg.sha256, signer: pkg.signer ?? '', unchanged: false };
+  }
+
+  /** Toutes les versions avec leur paquet, pour la sauvegarde complète. Une version dont l'archive manque est omise. */
+  exportAll(): {
+    id: string;
+    version: string;
+    sha256: string;
+    active: boolean;
+    approved: boolean;
+    bytes: Uint8Array;
+  }[] {
+    return this.store.listCodeGames().flatMap((row) => {
+      const file = this.archivePath(row.id, row.version);
+      if (!fs.existsSync(file)) return [];
+      return [
+        {
+          id: row.id,
+          version: row.version,
+          sha256: row.sha256,
+          active: row.active === 1,
+          approved: row.approved_sha256 !== null,
+          bytes: new Uint8Array(fs.readFileSync(file)),
+        },
+      ];
+    });
   }
 
   /** Liste des versions, avec leur état. */
@@ -295,12 +399,36 @@ export class CodeGameService {
     }
     if (pkg.sha256 !== row.sha256) return { error: 'L’archive ne correspond plus à l’empreinte enregistrée.' };
     const text = (name: string) => Buffer.from(pkg.files.get(name) ?? new Uint8Array()).toString('utf8');
+    const active = this.store.getActiveCodeGame(id);
     return {
       ...this.summaryOf(row),
       description: pkg.manifest.description,
       author: pkg.manifest.author,
       files: pkg.manifest.files.map((f) => ({ path: f.path, size: f.size, sha256: f.sha256 })),
       sources: { server: text(CODE_ENTRY_SERVER), client: text(CODE_ENTRY_CLIENT) },
+      changes: active && active.version !== version ? this.changesFrom(active, pkg) : null,
+    };
+  }
+
+  /** Lignes modifiées entre la version active et la version relue. Null si la version active ne se lit plus. */
+  private changesFrom(previous: CodeGameRow, current: ValidatedCodePackage): CodeGameChanges | null {
+    let old: ValidatedCodePackage;
+    try {
+      old = this.validate(fs.readFileSync(this.archivePath(previous.id, previous.version)));
+    } catch {
+      return null;
+    }
+    const lines = (pkg: ValidatedCodePackage, name: string) =>
+      Buffer.from(pkg.files.get(name) ?? new Uint8Array())
+        .toString('utf8')
+        .split('\n');
+    const server = diffLines(lines(old, CODE_ENTRY_SERVER), lines(current, CODE_ENTRY_SERVER));
+    const client = diffLines(lines(old, CODE_ENTRY_CLIENT), lines(current, CODE_ENTRY_CLIENT));
+    return {
+      from: previous.version,
+      server: changedHunks(server),
+      client: changedHunks(client),
+      counts: { server: countChanges(server), client: countChanges(client) },
     };
   }
 
@@ -308,7 +436,7 @@ export class CodeGameService {
    * Approuve une version : l'administrateur confirme l'empreinte qu'il a relue. Elle devient active,
    * et remplace la version active précédente.
    */
-  approve(id: string, version: string, sha256: string): CodeGameOutcome {
+  approve(id: string, version: string, sha256: string, actor = 'inconnu'): CodeGameOutcome {
     const row = this.store.getCodeGame(id, version);
     if (!row) return { ok: false, error: 'Version inconnue.' };
     if (row.sha256 !== sha256) {
@@ -329,16 +457,27 @@ export class CodeGameService {
       return { ok: false, error: `Approbation refusée : ${errorMessage(err)}` };
     }
     this.store.activateCodeGame(id, version, sha256, new Date().toISOString());
-    this.store.setGameEnabled(id, true);
     this.errors.delete(id);
     this.publish();
-    return { ok: true };
+    // Approuver ne change pas l'activation du jeu : un jeu désactivé par l'administrateur le reste.
+    const enabled = this.store.isGameEnabled(id);
+    this.options.audit?.(
+      'code_game.approved',
+      { id, version, sha256, signer: row.signer, enabled, actor },
+      `Jeu de code « ${id} » ${version} approuvé par ${actor}${enabled ? '' : ' (jeu désactivé : indisponible jusqu’à sa réactivation)'}`,
+    );
+    return { ok: true, enabled };
   }
 
   /** Supprime une version. Supprimer la version active retire le jeu entier. */
-  remove(id: string, version: string): CodeGameOutcome {
+  remove(id: string, version: string, actor = 'inconnu'): CodeGameOutcome {
     const row = this.store.getCodeGame(id, version);
     if (!row) return { ok: false, error: 'Version inconnue.' };
+    this.options.audit?.(
+      'code_game.removed',
+      { id, version, sha256: row.sha256, actor },
+      `Jeu de code « ${id} » ${version} supprimé par ${actor}`,
+    );
     if (row.active === 1) {
       this.stop(id);
       this.store.deleteCodeGameAll(id, id);
@@ -355,6 +494,8 @@ export class CodeGameService {
   viewScript(id: string, sha256: string): string | undefined {
     const module = this.active.get(id)?.module;
     if (!module?.codeView || module.codeView.sha256 !== sha256) return undefined;
+    // Un jeu désactivé n'est plus publié : ses vues ne sont plus servies non plus.
+    if (!this.store.isGameEnabled(id)) return undefined;
     return module.codeView.script;
   }
 }

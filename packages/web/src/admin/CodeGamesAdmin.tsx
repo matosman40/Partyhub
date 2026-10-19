@@ -17,11 +17,26 @@ export interface CodeGameSummary {
   error?: string;
 }
 
+/** Ligne de différence : inchangée (' '), ajoutée (+), retirée (-), ou passage masqué (…). */
+export interface DiffLine {
+  kind: ' ' | '+' | '-' | '…';
+  text: string;
+}
+
+/** Différence avec la version active (seulement les lignes modifiées et leur contexte). */
+export interface CodeGameChanges {
+  from: string;
+  server: DiffLine[];
+  client: DiffLine[];
+  counts: { server: { added: number; removed: number }; client: { added: number; removed: number } };
+}
+
 export interface CodeGameReview extends CodeGameSummary {
   description: string;
   author: string;
   files: { path: string; size: number; sha256: string }[];
   sources: { server: string; client: string };
+  changes: CodeGameChanges | null;
 }
 
 const STATUS_LABEL: Record<CodeGameStatus, string> = {
@@ -36,6 +51,35 @@ const keyOf = (game: CodeGameSummary) => `${game.id}@${game.version}`;
 /** Taille lisible, pour le code affiché à la revue. */
 function kilo(bytes: number): string {
   return bytes < 1024 ? `${bytes} o` : `${(bytes / 1024).toFixed(1)} Ko`;
+}
+
+/** Ce qui change par rapport à la version active : seulement les lignes modifiées, avec leur contexte. */
+function ChangesView({ changes }: { changes: CodeGameChanges }) {
+  return (
+    <section className="stack" aria-label={`Changements depuis la version ${changes.from}`}>
+      <h4>Changements depuis la version {changes.from}</h4>
+      <p className="small muted">
+        Code serveur : {changes.counts.server.added} ligne(s) ajoutée(s), {changes.counts.server.removed} retirée(s).
+        Vues : {changes.counts.client.added} ligne(s) ajoutée(s), {changes.counts.client.removed} retirée(s).
+      </p>
+      <DiffBlock title="Code serveur" lines={changes.server} />
+      <DiffBlock title="Vues" lines={changes.client} />
+    </section>
+  );
+}
+
+function DiffBlock({ title, lines }: { title: string; lines: DiffLine[] }) {
+  if (lines.length === 0) return <p className="small muted">{title} : aucun changement.</p>;
+  return (
+    <details open>
+      <summary>{title} : lignes modifiées</summary>
+      <pre className="small" style={{ maxHeight: '60vh', overflow: 'auto' }}>
+        {lines.map((line, index) => (
+          <div key={index}>{line.kind === '…' ? '…' : `${line.kind} ${line.text}`}</div>
+        ))}
+      </pre>
+    </details>
+  );
 }
 
 export function CodeGamesAdmin({ refreshToken, onChanged }: { refreshToken: number; onChanged: () => void }) {
@@ -78,13 +122,39 @@ export function CodeGamesAdmin({ refreshToken, onChanged }: { refreshToken: numb
     setBusy(true);
     setError(null);
     try {
-      const res = await api<{ closedRooms: number }>(
+      const res = await api<{ closedRooms: number; enabled?: boolean }>(
         `/api/admin/code-games/${encodeURIComponent(current.id)}/${encodeURIComponent(current.version)}/approve`,
         { method: 'POST', body: JSON.stringify({ sha256: current.sha256 }) },
       );
       const closed = res.closedRooms > 0 ? ` ${res.closedRooms} salle(s) de l’ancienne version ont été fermées.` : '';
-      setNotice(`« ${current.name} » ${current.version} est approuvé et active.${closed}`);
+      const state =
+        res.enabled === false
+          ? ' Le jeu reste désactivé : réactivez-le dans l’administration des jeux.'
+          : ' Il est actif.';
+      setNotice(`« ${current.name} » ${current.version} est approuvé.${state}${closed}`);
       setReview(null);
+      await load();
+      onChanged();
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  /** Relit les clés de confiance et les versions actives : une clé retirée arrête les jeux qu'elle a signés. */
+  async function reloadAll() {
+    setError(null);
+    setNotice(null);
+    setBusy(true);
+    try {
+      const res = await api<{ stopped: string[]; closedRooms: number; active: number }>(
+        '/api/admin/code-games/reload',
+        { method: 'POST' },
+      );
+      const stopped =
+        res.stopped.length > 0 ? ` Arrêtés : ${res.stopped.join(', ')} (${res.closedRooms} salle(s) fermée(s)).` : '';
+      setNotice(`Jeux de code relus : ${res.active} actif(s).${stopped}`);
       await load();
       onChanged();
     } catch (err) {
@@ -123,6 +193,11 @@ export function CodeGamesAdmin({ refreshToken, onChanged }: { refreshToken: numb
         fichiers. Il ne joue qu’après votre approbation, une fois le code relu. Une version approuvée n’est remplacée
         que par une autre version approuvée.
       </p>
+      <div className="row">
+        <button type="button" className="btn ghost small" onClick={reloadAll} disabled={busy}>
+          Recharger les clés et les jeux
+        </button>
+      </div>
 
       {error && (
         <p className="error" role="alert">
@@ -208,6 +283,7 @@ export function CodeGamesAdmin({ refreshToken, onChanged }: { refreshToken: numb
               {review.sources.client}
             </pre>
           </details>
+          {review.changes && <ChangesView changes={review.changes} />}
           {review.status === 'en_attente' && (
             <div className="row">
               <label className="row small">

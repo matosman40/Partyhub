@@ -18,6 +18,11 @@ import type { BotSuggestion, GameContext, GameManifest, GameModule, GameResult, 
 export const CODE_MEMORY_MB = 64;
 /** Durée maximale d'un appel, en millisecondes : au-delà, l'appel échoue. */
 export const CODE_CALL_TIMEOUT_MS = 2000;
+/**
+ * Dépassements de temps tolérés avant l'arrêt du jeu. Chaque dépassement bloque le serveur pendant
+ * la durée du délai : le budget borne donc le temps total qu'un jeu peut immobiliser.
+ */
+export const CODE_MAX_TIMEOUTS = 5;
 
 /** Nom de la variable globale que le bundle serveur (format iife) renseigne. */
 export const CODE_SERVER_GLOBAL = '__partyhubGame';
@@ -115,6 +120,19 @@ interface SafeParseLike {
   error?: { issues: { path: PropertyKey[]; message: string; code: string }[] };
 }
 
+/** Ce qui se passe quand le runtime s'arrête tout seul (mémoire dépassée, délais répétés). */
+export interface RuntimeHooks {
+  /** Appelé une seule fois, avec la raison, quand le runtime s'arrête. */
+  onStop?: (reason: string) => void;
+  /** Dépassements de temps tolérés avant l'arrêt. */
+  maxTimeouts?: number;
+}
+
+/** Vrai pour l'erreur que renvoie l'isolat quand un appel dépasse son délai. */
+function isTimeout(err: unknown): boolean {
+  return err instanceof Error && /timed out/i.test(err.message);
+}
+
 /** Un isolat par jeu de code installé : les appels sont synchrones, comme le moteur l'attend. */
 export class CodeGameRuntime {
   private readonly isolate: ivm.Isolate;
@@ -122,10 +140,12 @@ export class CodeGameRuntime {
   private readonly dispatch: ivm.Reference;
   private scope: CallScope = NO_SCOPE;
   private disposed = false;
+  private timeouts = 0;
 
   constructor(
     serverBundle: string,
     private readonly timeoutMs: number = CODE_CALL_TIMEOUT_MS,
+    private readonly hooks: RuntimeHooks = {},
   ) {
     this.isolate = new ivm.Isolate({ memoryLimit: CODE_MEMORY_MB });
     this.context = this.isolate.createContextSync();
@@ -170,9 +190,38 @@ export class CodeGameRuntime {
         timeout: this.timeoutMs,
       }) as string;
       return JSON.parse(text).v as T;
+    } catch (err) {
+      this.observeFailure(err);
+      throw err;
     } finally {
       this.scope = previous;
     }
+  }
+
+  /** Dépassements de temps constatés depuis le démarrage du runtime. */
+  get timeoutCount(): number {
+    return this.timeouts;
+  }
+
+  /** Arrête le runtime si l'isolat est tombé, ou si le budget de dépassements de temps est épuisé. */
+  private observeFailure(err: unknown): void {
+    if (this.isolate.isDisposed) {
+      this.stop('mémoire dépassée');
+      return;
+    }
+    if (!isTimeout(err)) return;
+    this.timeouts++;
+    const limit = this.hooks.maxTimeouts ?? CODE_MAX_TIMEOUTS;
+    if (this.timeouts >= limit) {
+      this.stop(`${this.timeouts} dépassements de temps de ${this.timeoutMs} ms`);
+    }
+  }
+
+  /** Arrêt par le runtime lui-même : une seule fois, puis le rappel est prévenu. */
+  private stop(reason: string): void {
+    if (this.disposed) return;
+    this.dispose();
+    this.hooks.onStop?.(reason);
   }
 
   /** Lit les métadonnées du module et vérifie que toutes les méthodes requises existent. */

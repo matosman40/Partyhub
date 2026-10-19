@@ -325,3 +325,140 @@ describe('jeux de code : archive altérée', () => {
     expect(await statusOf(OTHER, '0.1.0')).toMatchObject({ status: 'erreur' });
   });
 });
+
+/** Paquet signé dont le code a été modifié (une ligne ajoutée au module serveur), pour la revue par différence. */
+async function buildEdited(id: string, version: string): Promise<Uint8Array> {
+  const src = path.join(work, `src-${id}-${version}-modifie`);
+  newCodeGame(src, { id, name: 'Pile essai', author: 'Test' });
+  setVersion(src, version);
+  const serverFile = path.join(src, 'src', 'server.ts');
+  fs.writeFileSync(
+    serverFile,
+    `${fs.readFileSync(serverFile, 'utf8')}\nexport const nouveaute = 'nouveauté relue par l’administrateur';\n`,
+  );
+  const out = path.join(work, `${id}-${version}-modifie.phgame`);
+  await packCode(src, out, path.join(work, 'confiance.key.pem'));
+  return new Uint8Array(fs.readFileSync(out));
+}
+
+const approveRoute = (id: string, version: string, sha256: string) =>
+  call(`/api/admin/code-games/${id}/${version}/approve`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ sha256 }),
+  });
+
+describe('jeux de code : désactivation, révocation, revue par différence', () => {
+  it('un jeu désactivé reste désactivé après l’approbation d’une nouvelle version', async () => {
+    const ID2 = 'desactive-essai';
+    expect((await upload(await buildSigned('confiance', ID2, '0.1.0'))).status).toBe(201);
+    const first = await call(`/api/admin/code-games/${ID2}/0.1.0/review`);
+    expect((await approveRoute(ID2, '0.1.0', first.data.sha256)).data.enabled).toBe(true);
+    expect(await catalogIds()).toContain(ID2);
+
+    const off = await call(`/api/admin/games/${ID2}`, {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ enabled: false }),
+    });
+    expect(off.status).toBe(200);
+
+    expect((await upload(await buildSigned('confiance', ID2, '0.2.0'))).status).toBe(201);
+    const second = await call(`/api/admin/code-games/${ID2}/0.2.0/review`);
+    const approved = await approveRoute(ID2, '0.2.0', second.data.sha256);
+    expect(approved.status).toBe(200);
+    expect(approved.data.enabled).toBe(false);
+    expect(await catalogIds()).not.toContain(ID2);
+
+    // Ses vues ne sont plus servies tant que le jeu est désactivé (adressées par l'empreinte du bundle des vues).
+    const viewSha = second.data.files.find((f: { path: string }) => f.path === 'code/client.js').sha256;
+    const views = await fetch(`${base}/api/code-games/${ID2}/${viewSha}/view.html`);
+    expect(views.status).toBe(404);
+
+    await call(`/api/admin/games/${ID2}`, {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ enabled: true }),
+    });
+    expect(await catalogIds()).toContain(ID2);
+    expect((await fetch(`${base}/api/code-games/${ID2}/${viewSha}/view.html`)).status).toBe(200);
+  });
+
+  it('retirer une clé de confiance arrête le jeu qu’elle a signé, et le remettre la rétablit', async () => {
+    const ID3 = 'cle-essai';
+    expect((await upload(await buildSigned('confiance', ID3, '0.1.0'))).status).toBe(201);
+    const review = await call(`/api/admin/code-games/${ID3}/0.1.0/review`);
+    expect((await approveRoute(ID3, '0.1.0', review.data.sha256)).status).toBe(200);
+    expect(await catalogIds()).toContain(ID3);
+
+    const keyFile = path.join(dataDir, TRUST_DIR_NAME, 'confiance.pub.pem');
+    const savedKey = fs.readFileSync(keyFile);
+    try {
+      fs.rmSync(keyFile);
+      const reload = await call('/api/admin/code-games/reload', { method: 'POST' });
+      expect(reload.status).toBe(200);
+      expect(reload.data.stopped).toContain(ID3);
+      expect(await catalogIds()).not.toContain(ID3);
+      expect(await statusOf(ID3, '0.1.0')).toMatchObject({ status: 'erreur' });
+    } finally {
+      fs.writeFileSync(keyFile, savedKey);
+    }
+
+    const back = await call('/api/admin/code-games/reload', { method: 'POST' });
+    expect(back.data.stopped).not.toContain(ID3);
+    expect(await catalogIds()).toContain(ID3);
+    expect(await statusOf(ID3, '0.1.0')).toMatchObject({ status: 'active' });
+  });
+
+  it('la revue montre ce qui change par rapport à la version active', async () => {
+    const ID4 = 'diff-essai';
+    expect((await upload(await buildSigned('confiance', ID4, '0.1.0'))).status).toBe(201);
+    const first = await call(`/api/admin/code-games/${ID4}/0.1.0/review`);
+    expect((await approveRoute(ID4, '0.1.0', first.data.sha256)).status).toBe(200);
+    expect(first.data.changes).toBeNull();
+
+    expect((await upload(await buildEdited(ID4, '0.2.0'))).status).toBe(201);
+    const second = await call(`/api/admin/code-games/${ID4}/0.2.0/review`);
+    expect(second.status).toBe(200);
+    expect(second.data.changes.from).toBe('0.1.0');
+    expect(second.data.changes.counts.server.added).toBeGreaterThan(0);
+    const added = (second.data.changes.server as { kind: string; text: string }[]).filter((l) => l.kind === '+');
+    // esbuild écrit les accents en échappements : on cherche la déclaration, pas le texte français.
+    expect(added.some((l) => l.text.includes('var nouveaute'))).toBe(true);
+  });
+});
+
+describe('jeux de code : sauvegarde complète', () => {
+  it('la sauvegarde contient les jeux de code, et la restauration les remet en attente, sans les réactiver', async () => {
+    const ID5 = 'sauve-essai';
+    expect((await upload(await buildSigned('confiance', ID5, '0.1.0'))).status).toBe(201);
+    const review = await call(`/api/admin/code-games/${ID5}/0.1.0/review`);
+    expect((await approveRoute(ID5, '0.1.0', review.data.sha256)).status).toBe(200);
+    expect(await catalogIds()).toContain(ID5);
+
+    const exported = await fetch(`${base}/api/admin/backup/archive`, { headers: { cookie } });
+    expect(exported.status).toBe(200);
+    const archive = new Uint8Array(await exported.arrayBuffer());
+
+    // Le jeu disparaît, puis la sauvegarde est restaurée.
+    expect((await call(`/api/admin/code-games/${ID5}/0.1.0`, { method: 'DELETE' })).status).toBe(200);
+    expect(await catalogIds()).not.toContain(ID5);
+
+    const restored = await fetch(`${base}/api/admin/backup/archive`, {
+      method: 'POST',
+      headers: { cookie, 'content-type': 'application/zip' },
+      body: archive,
+    });
+    const body = (await restored.json()) as { ok: boolean; summary: { codeGames: number; skipped: string[] } };
+    expect(restored.status).toBe(200);
+    expect(body.summary.codeGames).toBe(1);
+    expect(body.summary.skipped.filter((line) => line.includes(ID5))).toEqual([]);
+
+    // Restaurée en attente de revue : ni active, ni au catalogue, tant qu'elle n'est pas approuvée à nouveau.
+    expect(await statusOf(ID5, '0.1.0')).toMatchObject({ status: 'en_attente' });
+    expect(await catalogIds()).not.toContain(ID5);
+    const again = await call(`/api/admin/code-games/${ID5}/0.1.0/review`);
+    expect((await approveRoute(ID5, '0.1.0', again.data.sha256)).status).toBe(200);
+    expect(await catalogIds()).toContain(ID5);
+  });
+});

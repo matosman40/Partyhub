@@ -191,3 +191,43 @@ describe('jeu de code : isolat V8', () => {
     }
   });
 });
+
+describe('jeu de code : arrêt automatique du runtime', () => {
+  it('s’arrête après le budget de dépassements de temps, et prévient une seule fois', () => {
+    const reasons: string[] = [];
+    const runtime = new CodeGameRuntime(PROBE, 50, { maxTimeouts: 3, onStop: (reason) => reasons.push(reason) });
+    const mod = createCodeModule(runtime);
+    const ctx = ctxOf();
+    const state = mod.initialize({}, [{ id: 'a', name: 'A' }], ctx);
+    for (let i = 0; i < 2; i++) {
+      expect(() => mod.handleAction(state, { id: 'a', name: 'A' }, 'boucle', {}, ctx)).toThrow();
+    }
+    expect(runtime.isDisposed).toBe(false);
+    expect(() => mod.handleAction(state, { id: 'a', name: 'A' }, 'boucle', {}, ctx)).toThrow();
+    expect(runtime.isDisposed).toBe(true);
+    expect(reasons).toHaveLength(1);
+    expect(reasons[0]).toContain('dépassements de temps');
+    // Un runtime arrêté refuse tout appel, sans relancer la prévention.
+    expect(() => mod.getPublicState(state)).toThrow(/arrêté/);
+    expect(reasons).toHaveLength(1);
+  });
+
+  it('prévient quand la mémoire est dépassée', () => {
+    const reasons: string[] = [];
+    const runtime = new CodeGameRuntime(PROBE, 5000, { onStop: (reason) => reasons.push(reason) });
+    const mod = createCodeModule(runtime);
+    const ctx = ctxOf();
+    const state = mod.initialize({}, [{ id: 'a', name: 'A' }], ctx);
+    expect(() => mod.handleAction(state, { id: 'a', name: 'A' }, 'memoire', {}, ctx)).toThrow();
+    expect(runtime.isDisposed).toBe(true);
+    expect(reasons).toEqual(['mémoire dépassée']);
+  });
+
+  it('ne prévient pas quand le serveur arrête le runtime lui-même', () => {
+    const reasons: string[] = [];
+    const runtime = new CodeGameRuntime(PROBE, 500, { onStop: (reason) => reasons.push(reason) });
+    runtime.dispose();
+    expect(runtime.isDisposed).toBe(true);
+    expect(reasons).toEqual([]);
+  });
+});

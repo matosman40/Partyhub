@@ -31,4 +31,15 @@ export default tseslint.config(
       ],
     },
   },
+  {
+    // Scénarios de bout en bout : scripts CommonJS lancés par Node, qui pilotent un navigateur.
+    files: ['e2e/**/*.cjs'],
+    languageOptions: {
+      sourceType: 'commonjs',
+      globals: { ...globals.node, ...globals.browser },
+    },
+    rules: {
+      '@typescript-eslint/no-require-imports': 'off',
+    },
+  },
 );

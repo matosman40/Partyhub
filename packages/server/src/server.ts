@@ -119,9 +119,13 @@ export async function createServer(opts: ServerOptions): Promise<PartyServer> {
   for (const problem of loadTrustedKeys(config.dataDir).problems) {
     logger.warn({ event: 'code-game.trust', problem }, 'Clé de confiance ignorée');
   }
+  // Les salles d'un jeu de code qui s'arrête sont fermées dès que le gestionnaire de salles existe (plus bas).
+  let closeCodeGameRooms: (id: string) => void = () => undefined;
   const codeGames = new CodeGameService(store, config.dataDir, {
     trustedKeys: () => loadTrustedKeys(config.dataDir).keys,
     onError: (message) => logger.error({ event: 'code-game.load', message }, message),
+    audit: (event, data, message) => logger.info({ event, ...data }, message),
+    onStopped: (id) => closeCodeGameRooms(id),
   });
   const packageSources = new PackageSourceService(store, packages, { token: config.githubToken });
   // Magasin : les jeux intégrés au code ne sont jamais téléchargés, ils restent dans l’application.
@@ -189,6 +193,10 @@ export async function createServer(opts: ServerOptions): Promise<PartyServer> {
     200,
     () => store.getSettings().roomCodeLength,
   );
+  closeCodeGameRooms = (id) => {
+    const closed = manager.closeWhere((room) => room.module.manifest.id === id, 'admin');
+    if (closed > 0) logger.info({ event: 'code-game.rooms-closed', id, closed }, 'Salles fermées : jeu de code arrêté');
+  };
 
   const dbBackups = config.backup ? new DbBackupScheduler(store, config.backup, logger) : undefined;
   const update: UpdateService = new UpdateService({
