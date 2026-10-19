@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { parseTimeInput, parseYoutubeId, youtubeStartFromUrl } from '@partyhub/shared';
 import type { PlayerViewProps } from '../../client/types.js';
 import { useRemaining } from '../../client/hooks.js';
@@ -73,6 +73,9 @@ export function KaraokePlayer({ publicState: pub, playerState: me, send, now }: 
   const [recording, setRecording] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** Micro du passage en cours, et drapeau posé quand le chanteur arrête : la voix n’est alors pas envoyée. */
+  const micStream = useRef<MediaStream | null>(null);
+  const passageStopped = useRef(false);
   if (!pub) return null;
 
   const seconds = Math.ceil(remaining / 1000);
@@ -83,6 +86,13 @@ export function KaraokePlayer({ publicState: pub, playerState: me, send, now }: 
     const result = await send(type, payload);
     setBusy(false);
     if (!result.ok) setError(result.error ?? fallback);
+  }
+
+  /** Le chanteur arrête son passage : le micro se coupe tout de suite, et la voix enregistrée n’est pas envoyée. */
+  function abandonSong() {
+    passageStopped.current = true;
+    micStream.current?.getTracks().forEach((track) => track.stop());
+    void run('abandon', {}, 'Passage refusé.');
   }
 
   async function search() {
@@ -147,6 +157,7 @@ export function KaraokePlayer({ publicState: pub, playerState: me, send, now }: 
       return;
     }
     setError(null);
+    passageStopped.current = false;
     let stream: MediaStream;
     try {
       stream = await requestMicrophone(prefs);
@@ -154,6 +165,7 @@ export function KaraokePlayer({ publicState: pub, playerState: me, send, now }: 
       setError(micMessage(err));
       return;
     }
+    micStream.current = stream;
     const stop = () => stream.getTracks().forEach((track) => track.stop());
     setBusy(true);
     const started = await send('sing', {
@@ -173,14 +185,17 @@ export function KaraokePlayer({ publicState: pub, playerState: me, send, now }: 
       const clip = await recordClip(stream, (pub.segmentSeconds ?? 12) * 1000);
       stop();
       setRecording(false);
+      // Arrêt pendant l’enregistrement : l’écran a déjà passé à la suite, la voix n’est pas envoyée.
+      if (passageStopped.current) return;
       const sent = await send('recording', { dataUrl: clip });
       if (!sent.ok) setError(sent.error ?? 'Enregistrement refusé.');
     } catch (err) {
       stop();
       setRecording(false);
+      if (passageStopped.current) return;
       // Le passage s’arrête tout de suite plutôt que d’attendre la fin du délai.
       await send('abandon', {});
-      setError(micMessage(err));
+      setError(`${micMessage(err)} Votre passage est arrêté.`);
     }
   }
 
@@ -310,13 +325,8 @@ export function KaraokePlayer({ publicState: pub, playerState: me, send, now }: 
         <section className="karaoke-play fade-in">
           <h2 className="karaoke-title">Chantez !</h2>
           <p className="karaoke-count">{recording ? `Enregistrement en cours · ${seconds} s` : 'Préparation'}</p>
-          <button
-            type="button"
-            className="link-btn"
-            disabled={busy || recording}
-            onClick={() => void run('abandon', {}, 'Passage refusé.')}
-          >
-            Je ne peux pas chanter, passer mon tour
+          <button type="button" className="link-btn" disabled={busy} onClick={abandonSong}>
+            {recording ? 'Arrêter mon passage' : 'Je ne peux pas chanter, passer mon tour'}
           </button>
           {error && (
             <p className="error" role="alert">
