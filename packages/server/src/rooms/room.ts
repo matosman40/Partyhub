@@ -63,6 +63,8 @@ export interface RoomEnv {
   gameData?: (gameId: string) => ProfileDataStore;
   /** Images générées (portraits, fonds), absent si aucun fournisseur d’images n’est configuré. */
   images?: GameImages;
+  /** Raison pour laquelle aucune partie ne peut démarrer (mise à jour demandée), ou null. */
+  startBlocked?: () => string | null;
 }
 
 export interface RoomHooks {
@@ -685,6 +687,8 @@ export class Room {
 
   start(): Outcome {
     if (!this.inLobby) return { ok: false, error: 'Une partie est déjà en cours.' };
+    const blocked = this.env.startBlocked?.();
+    if (blocked) return { ok: false, error: blocked };
     const min = this.module.manifest.minPlayers;
     if (this.players.size < min) {
       return { ok: false, error: `Il faut au moins ${min} joueur${min > 1 ? 's' : ''} pour lancer la partie.` };

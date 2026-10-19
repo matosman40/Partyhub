@@ -11150,3 +11150,27 @@ input[type='file']::file-selector-button {
   font-weight: 700;
   margin: 0.8em 0;
 }
+
+
+/* Mise à jour depuis l’administration : notes de version en texte seul (titres et puces), sans HTML interprété. */
+.update-notes {
+  margin: 0.5rem 0 0;
+  padding: 0.25rem 0.75rem;
+  border-left: 3px solid currentColor;
+  overflow-wrap: anywhere;
+  font-size: 0.95em;
+}
+
+.update-notes p,
+.update-notes ul {
+  margin: 0.4rem 0;
+}
+
+.update-notes ul {
+  padding-left: 1.2rem;
+}
+
+.update-releases summary {
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}

@@ -1,0 +1,12 @@
+[Unit]
+Description=Mise à jour de PartyHub (demandes de l’administration)
+Documentation=file://@INSTALL_DIR@/docs/MISE-A-JOUR.md
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=-/etc/partyhub-updater.env
+ExecStart=@INSTALL_DIR@/deploy/updater/partyhub-update.sh
+# Un téléchargement d’image peut être long : on laisse 20 minutes.
+TimeoutStartSec=20min
