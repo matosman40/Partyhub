@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import {
+  SFX_NAMES,
   boardGameDefinitionSchema,
   cardGameDefinitionSchema,
   mediaQuizDefinitionSchema,
@@ -8,6 +9,7 @@ import {
   type CardGameDefinition,
   type MediaQuizDefinition,
   type RecipeDefinition,
+  type SfxName,
 } from '@partyhub/shared';
 import { PARTYHUB_ENGINE } from './engine.js';
 import { readZip, ZipError, type ZipFileEntry, type ZipReadLimits } from './zip.js';
@@ -19,11 +21,17 @@ import { compareVersions, isValidVersion } from './semver.js';
  * - Version 1 : jeux de cartes.
  * - Version 2 : jeux de cartes, jeux de plateau et jeux de questions (médias YouTube seulement).
  * - Version 3 : recettes (module « recipe ») : règles déclaratives, écrans par rôle, génération IA avec repli.
+ * - Version 4 : sons dans assets/ (.ogg, .mp3) et bloc « sons » dans game/definition.json.
  */
-export const PHGAME_FORMAT_VERSIONS = [1, 2, 3] as const;
-export const PHGAME_FORMAT_VERSION = 3;
+export const PHGAME_FORMAT_VERSIONS = [1, 2, 3, 4] as const;
+export const PHGAME_FORMAT_VERSION = 4;
 /** Première version du moteur qui comprend le format 3. */
 export const RECIPE_MIN_ENGINE_VERSION = '0.12.0';
+/** Première version du moteur qui comprend le format 4 (sons dans les paquets). */
+export const SOUNDS_MIN_ENGINE_VERSION = '0.14.0';
+
+/** Musique de partie d’un paquet. Les musiques de l’accueil, des menus et de la fin restent globales. */
+export const PACKAGE_MUSIC_SLOTS = ['partie'] as const;
 
 /** Module de jeu porté par un paquet. Un paquet en porte exactement un. */
 export type PackageModule = (typeof PARTYHUB_ENGINE.modules)[number];
@@ -53,6 +61,12 @@ export interface PackageLimits {
   maxImageSide: number;
   /** Poids maximal d'une image, en octets. */
   maxImageBytes: number;
+  /** Poids maximal d'un fichier audio, en octets. */
+  maxAudioBytes: number;
+  /** Poids cumulé des fichiers audio d'un paquet, en octets. */
+  maxAudioTotalBytes: number;
+  /** Nombre maximal de fichiers audio dans un paquet. */
+  maxAudioFiles: number;
 }
 
 /**
@@ -72,6 +86,9 @@ export const DEFAULT_PACKAGE_LIMITS: PackageLimits = {
   maxManifestBytes: 8 * 1024,
   maxImageSide: 1024,
   maxImageBytes: 200 * 1024,
+  maxAudioBytes: 512 * 1024,
+  maxAudioTotalBytes: 2 * 1024 * 1024,
+  maxAudioFiles: 16,
 };
 
 const ID = /^[a-z0-9][a-z0-9-]{1,47}$/;
@@ -81,15 +98,71 @@ const SEGMENT = /^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$/;
 /** Dossiers autorisés à la racine du paquet, avec les extensions admises dans chacun. */
 const TOP_DIRS: Record<string, readonly string[]> = {
   game: ['.json'],
-  assets: ['.png', '.jpg', '.jpeg', '.webp'],
+  assets: ['.png', '.jpg', '.jpeg', '.webp', '.ogg', '.mp3'],
   data: ['.json'],
   licenses: ['.txt', '.md'],
 };
 
+const AUDIO_EXTENSIONS: readonly string[] = ['.ogg', '.mp3'];
+
+/** Vrai pour un fichier audio, selon son extension (le contenu est vérifié à part). */
+export function isAudioPath(name: string): boolean {
+  const dot = name.lastIndexOf('.');
+  return dot > 0 && AUDIO_EXTENSIONS.includes(name.slice(dot).toLowerCase());
+}
+
+/**
+ * Signature d'un fichier audio : Ogg commence par « OggS » ; MP3 par une étiquette ID3 ou une trame MPEG
+ * (11 bits à 1). La durée n'est pas vérifiée : seule la taille l'est.
+ */
+export function audioProblem(data: Uint8Array, ext: string): string | null {
+  if (ext === '.ogg') {
+    const ogg = data[0] === 0x4f && data[1] === 0x67 && data[2] === 0x67 && data[3] === 0x53;
+    return ogg ? null : 'fichier .ogg invalide';
+  }
+  if (ext === '.mp3') {
+    const id3 = data[0] === 0x49 && data[1] === 0x44 && data[2] === 0x33;
+    const frame = data[0] === 0xff && ((data[1] ?? 0) & 0xe0) === 0xe0;
+    return id3 || frame ? null : 'fichier .mp3 invalide';
+  }
+  return 'type audio non admis';
+}
+
+/** Sons d'un paquet, déclarés dans game/definition.json : fichiers de assets/, par nom de bruitage. */
+export interface PackageSounds {
+  sfx: Partial<Record<SfxName, string>>;
+  music: { partie?: string };
+}
+
+const EMPTY_SOUNDS: PackageSounds = { sfx: {}, music: {} };
+
+const soundsSchema = z
+  .object({
+    sfx: z
+      .object(
+        Object.fromEntries(SFX_NAMES.map((name) => [name, z.string().min(1).max(200).optional()])) as Record<
+          SfxName,
+          z.ZodOptional<z.ZodString>
+        >,
+      )
+      .strict()
+      .optional(),
+    music: z
+      .object(
+        Object.fromEntries(PACKAGE_MUSIC_SLOTS.map((slot) => [slot, z.string().min(1).max(200).optional()])) as Record<
+          (typeof PACKAGE_MUSIC_SLOTS)[number],
+          z.ZodOptional<z.ZodString>
+        >,
+      )
+      .strict()
+      .optional(),
+  })
+  .strict();
+
 export const manifestSchema = z
   .object({
     format: z.literal('phgame'),
-    formatVersion: z.union([z.literal(1), z.literal(2), z.literal(3)]),
+    formatVersion: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]),
     id: z.string().regex(ID, 'Identifiant : minuscules, chiffres et tirets (2 à 48 caractères).'),
     name: z.string().trim().min(2).max(40),
     version: z.string().max(64).refine(isValidVersion, 'Version attendue au format X.Y.Z.'),
@@ -274,6 +347,8 @@ interface ValidatedBase {
   files: Map<string, Uint8Array>;
   sha256: string;
   size: number;
+  /** Sons du jeu (format 4). Vides pour les formats précédents. */
+  sounds: PackageSounds;
 }
 
 export type ValidatedPackage = ValidatedBase & DefinitionValue;
@@ -416,6 +491,9 @@ export function validatePackage(bytes: Uint8Array, limits: PackageLimits = DEFAU
       issues.push(`Le format 3 demande PartyHub ${RECIPE_MIN_ENGINE_VERSION} au minimum.`);
     }
   }
+  if (manifest.formatVersion === 4 && compareVersions(manifest.engine.minVersion, SOUNDS_MIN_ENGINE_VERSION) < 0) {
+    issues.push(`Le format 4 demande PartyHub ${SOUNDS_MIN_ENGINE_VERSION} au minimum.`);
+  }
 
   // Fichiers déclarés : présents, sans doublon, de la bonne taille et de la bonne empreinte.
   const declared = new Map<string, (typeof manifest.files)[number]>();
@@ -462,23 +540,47 @@ export function validatePackage(bytes: Uint8Array, limits: PackageLimits = DEFAU
   }
   if (licensePaths.size === 0) issues.push('Aucune licence déclarée.');
 
-  // Ressources : images valides, couverture déclarée dans assets/.
+  // Ressources : images valides, couverture déclarée dans assets/ ; sons : signature, poids et nombre.
+  const audioNames = [...files.keys()].filter((n) => n.startsWith('assets/') && isAudioPath(n));
+  if (audioNames.length > limits.maxAudioFiles) {
+    issues.push(`Trop de fichiers audio : ${audioNames.length} (maximum ${limits.maxAudioFiles}).`);
+  }
+  let audioTotal = 0;
   for (const name of files.keys()) {
     if (!name.startsWith('assets/')) continue;
     const dot = name.lastIndexOf('.');
+    const ext = name.slice(dot).toLowerCase();
     const data = files.get(name)!;
+    if (isAudioPath(name)) {
+      audioTotal += data.byteLength;
+      if (data.byteLength > limits.maxAudioBytes) {
+        issues.push(`« ${name} » : fichier audio trop lourd (maximum ${Math.round(limits.maxAudioBytes / 1024)} Ko).`);
+      }
+      const problem = audioProblem(data, ext);
+      if (problem) issues.push(`« ${name} » : ${problem}.`);
+      continue;
+    }
     if (data.byteLength > limits.maxImageBytes) {
       issues.push(`« ${name} » : image trop lourde (maximum ${Math.round(limits.maxImageBytes / 1024)} Ko).`);
     }
-    const problem = imageProblem(data, name.slice(dot).toLowerCase(), limits);
+    const problem = imageProblem(data, ext, limits);
     if (problem) issues.push(`« ${name} » : ${problem}.`);
   }
-  if (manifest.cover !== undefined && !(manifest.cover.startsWith('assets/') && declared.has(manifest.cover))) {
-    issues.push('La couverture doit être un fichier déclaré dans assets/.');
+  if (audioTotal > limits.maxAudioTotalBytes) {
+    issues.push(
+      `Sons trop lourds au total : ${Math.round(audioTotal / 1024)} Ko (maximum ${Math.round(limits.maxAudioTotalBytes / (1024 * 1024))} Mio).`,
+    );
+  }
+  if (
+    manifest.cover !== undefined &&
+    !(manifest.cover.startsWith('assets/') && declared.has(manifest.cover) && !isAudioPath(manifest.cover))
+  ) {
+    issues.push('La couverture doit être une image déclarée dans assets/.');
   }
 
-  // Définition du jeu, selon son module.
+  // Définition du jeu, selon son module. Le bloc « sons » (format 4) est lu à part, puis contrôlé.
   let definition: DefinitionValue | null = null;
+  let sounds: PackageSounds = EMPTY_SOUNDS;
   const rawDefinition = files.get(manifest.entry);
   if (rawDefinition) {
     if (rawDefinition.byteLength > limits.maxJsonBytes) {
@@ -493,7 +595,13 @@ export function validatePackage(bytes: Uint8Array, limits: PackageLimits = DEFAU
         issues.push(`${manifest.entry} n’est pas un JSON valide.`);
       }
       if (readable) {
-        const checked = checkDefinition(module, data, manifest.entry);
+        const { rest, sons } = splitSounds(data);
+        if (sons !== undefined) {
+          const checkedSounds = checkSounds(sons, manifest.entry, manifest.formatVersion, declared);
+          issues.push(...checkedSounds.issues);
+          if (checkedSounds.value) sounds = checkedSounds.value;
+        }
+        const checked = checkDefinition(module, rest, manifest.entry);
         issues.push(...checked.issues);
         definition = checked.value ?? null;
       }
@@ -503,5 +611,55 @@ export function validatePackage(bytes: Uint8Array, limits: PackageLimits = DEFAU
   if (issues.length > 0 || !definition) {
     throw new PackageValidationError(issues.length > 0 ? issues : ['Définition du jeu illisible.']);
   }
-  return { manifest, files, sha256: sha256Hex(bytes), size: bytes.byteLength, ...definition };
+  return { manifest, files, sha256: sha256Hex(bytes), size: bytes.byteLength, sounds, ...definition };
+}
+
+/** Sépare le bloc « sons » du reste de la définition, pour que le schéma du module ne le voie pas. */
+function splitSounds(data: unknown): { rest: unknown; sons: unknown } {
+  if (data && typeof data === 'object' && !Array.isArray(data) && 'sons' in data) {
+    const { sons, ...rest } = data as Record<string, unknown>;
+    return { rest, sons };
+  }
+  return { rest: data, sons: undefined };
+}
+
+/**
+ * Contrôle le bloc « sons » : noms de bruitages connus, musique de partie seulement, fichiers audio déclarés
+ * dans assets/, et format 4 demandé.
+ */
+function checkSounds(
+  raw: unknown,
+  entry: string,
+  formatVersion: number,
+  declared: Map<string, unknown>,
+): { issues: string[]; value?: PackageSounds } {
+  const issues: string[] = [];
+  if (formatVersion !== 4) issues.push(`${entry} (sons) : les sons demandent le format 4.`);
+  const parsed = soundsSchema.safeParse(raw);
+  if (!parsed.success) {
+    issues.push(
+      ...parsed.error.issues.map((i) => `${entry} (sons.${i.path.map(String).join('.') || 'racine'}) : ${i.message}`),
+    );
+    return { issues };
+  }
+  const sounds: PackageSounds = { sfx: {}, music: {} };
+  const targets: [string, string][] = [];
+  for (const [name, path] of Object.entries(parsed.data.sfx ?? {}) as [SfxName, string | undefined][]) {
+    if (path === undefined) continue;
+    sounds.sfx[name] = path;
+    targets.push([`sons.sfx.${name}`, path]);
+  }
+  for (const [slot, path] of Object.entries(parsed.data.music ?? {}) as [string, string | undefined][]) {
+    if (path === undefined) continue;
+    if (slot === 'partie') sounds.music.partie = path;
+    targets.push([`sons.music.${slot}`, path]);
+  }
+  for (const [where, path] of targets) {
+    if (!path.startsWith('assets/') || !isAudioPath(path)) {
+      issues.push(`${entry} (${where}) : « ${path} » doit être un fichier .ogg ou .mp3 de assets/.`);
+    } else if (!declared.has(path)) {
+      issues.push(`${entry} (${where}) : « ${path} » n’est pas déclaré dans le manifeste.`);
+    }
+  }
+  return issues.length > 0 ? { issues } : { issues, value: sounds };
 }

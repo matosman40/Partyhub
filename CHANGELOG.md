@@ -2,6 +2,22 @@
 
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [versionnement sémantique](https://semver.org/lang/fr/).
 
+## [Non publié]
+
+### Ajouté
+
+- Magasin de jeux : la section *Magasin de jeux* de l’administration liste les jeux publiés dans le dépôt de jeux (`matosman40/jeux-partyhub` par défaut, variable `PARTYHUB_STORE_REPO`, modifiable dans l’administration). Chaque jeu montre sa couverture, son auteur, sa version et son état. Un jeu s’installe d’un clic, se met à jour chaque jour ou à la demande, et se supprime ; ses parties en cours sont fermées. Seuls les paquets déclaratifs (cartes, plateau, questions, recettes) s’installent : les jeux écrits dans le code de PartyHub restent dans l’application. Guide : `docs/MAGASIN.md`.
+
+- Sons dans les paquets (format 4) : un paquet peut porter des bruitages (`.ogg` ou `.mp3`) et une musique de partie, déclarés dans `game/definition.json` (bloc `sons`). Ils remplacent les bruitages globaux pendant que la salle du jeu est affichée, et la musique de partie tourne sur l’écran principal. Budgets : 512 Ko par fichier, 2 Mio par paquet, 16 fichiers. Le format 4 demande PartyHub 0.14.0 au minimum. Route publique : `GET /api/game-sounds/<identifiant>`. Documentation : `docs/PHGAME.md`, section Sons.
+
+- Mise à jour depuis l’administration : la rubrique *Système* affiche la version en cours et le changelog de chaque version publiée, et propose d’installer une version plus récente. Avant chaque mise à jour, la base est copiée. Pendant qu’elle est demandée, aucune nouvelle partie ne démarre, et une partie en cours est menée à son terme. Un service installé une fois sur l’hôte (`deploy/updater/install.sh`) fait le travail : si le serveur ne répond pas dans la nouvelle version, il revient à la précédente, et remet la base d’avant si la nouvelle l’avait migrée. L’application n’a pas accès à Docker. Le guide est dans `docs/MISE-A-JOUR.md`. Pour une mise à jour à la main, le dépôt se place désormais sur un tag : `git fetch --tags`, puis `git checkout vX.Y.Z`.
+
+- Paquets `.phgame` : script npm racine `npm run phgame` (`pack` pour construire un paquet, `check` pour le vérifier et lancer une partie de contrôle avec des robots). Les quatre paquets d’exemple passent ce contrôle.
+
+### Corrigé
+
+- Écran noir au démarrage : si l’application ne se lance pas (script bloqué, réseau coupé, mise à jour en cours), la page n’affichait qu’un fond sombre. Au bout de 12 secondes, elle indique maintenant de vérifier la connexion et propose de recharger la page. Une salle qui ne répond pas affiche déjà un message et un bouton « Réessayer » après 6 secondes.
+
 ## [0.12.0] - 2026-10-18
 
 ### Ajouté

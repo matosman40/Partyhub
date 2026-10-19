@@ -4,7 +4,7 @@
  */
 export const PARTYHUB_ENGINE = {
   /** Doit correspondre à la version publiée (package.json, CHANGELOG). Vérifié par les tests. */
-  version: '0.12.0',
+  version: '0.14.0',
   /** Version de l’API des paquets. Un paquet demande exactement cette version. */
   api: 1,
   /**

@@ -1,6 +1,6 @@
 {
   "name": "partyhub",
-  "version": "0.12.0",
+  "version": "0.14.0",
   "private": true,
   "description": "Plateforme de jeux multijoueurs sur navigateur (TV + smartphones)",
   "type": "module",
@@ -15,14 +15,15 @@
   },
   "scripts": {
     "build": "npm run build -w @partyhub/shared && npm run build -w @partyhub/games && npm run build -w @partyhub/web && npm run build -w @partyhub/server",
-    "test": "npm run build -w @partyhub/shared && npm run build -w @partyhub/games && npm test -w @partyhub/shared && npm test -w @partyhub/games && npm test -w @partyhub/server && npm test -w @partyhub/web",
+    "test": "npm run build -w @partyhub/shared && npm run build -w @partyhub/games && npm test -w @partyhub/shared && npm test -w @partyhub/games && npm test -w @partyhub/server && npm test -w @partyhub/web && bash deploy/updater/test/partyhub-update.test.sh",
     "typecheck": "npm run typecheck -w @partyhub/shared && npm run typecheck -w @partyhub/games && npm run typecheck -w @partyhub/server && npm run typecheck -w @partyhub/web",
     "lint": "eslint .",
     "format": "prettier --write \"packages/*/src/**/*.{ts,tsx,css}\"",
     "format:check": "prettier --check \"packages/*/src/**/*.{ts,tsx,css}\"",
     "dev:server": "npm run dev -w @partyhub/server",
     "dev:web": "npm run dev -w @partyhub/web",
-    "start": "node packages/server/dist/index.js"
+    "start": "node packages/server/dist/index.js",
+    "phgame": "node packages/server/dist/cli/phgame.js"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

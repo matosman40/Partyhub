@@ -1,0 +1,10 @@
+[Unit]
+Description=Vérifie chaque minute les demandes de mise à jour de PartyHub
+
+[Timer]
+OnCalendar=*-*-* *:*:00
+AccuracySec=5s
+Persistent=true
+
+[Install]
+WantedBy=timers.target

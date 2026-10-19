@@ -11,6 +11,7 @@ import {
   validatePackage,
   type PackageLimits,
   type PackageModule,
+  type PackageSounds,
   type ValidatedPackage,
 } from './format.js';
 import { createPackageGame } from './factory.js';
@@ -32,7 +33,11 @@ const CONTENT_TYPES: Record<string, string> = {
   '.jpg': 'image/jpeg',
   '.jpeg': 'image/jpeg',
   '.webp': 'image/webp',
+  '.ogg': 'audio/ogg',
+  '.mp3': 'audio/mpeg',
 };
+
+const NO_SOUNDS: PackageSounds = { sfx: {}, music: {} };
 
 export function gameIdOf(packageId: string, module: PackageModule = 'cards'): string {
   return packageGameId(packageId, module);
@@ -57,8 +62,10 @@ export interface PackageRecord {
 
 interface Loaded {
   record: PackageRecord;
-  /** Ressources graphiques seulement (assets/), servies par l’API publique. */
+  /** Ressources seulement (assets/ : images et sons), servies par l’API publique. */
   assets: Map<string, Uint8Array>;
+  /** Sons déclarés par le jeu (format 4). */
+  sounds: PackageSounds;
 }
 
 export type InstallResult =
@@ -148,12 +155,14 @@ export class PackageService {
         next.set(row.id, {
           record: { ...base, status: enabled ? 'actif' : 'désactivé' },
           assets: assetsOf(pkg),
+          sounds: pkg.sounds,
         });
         if (enabled) modules.push(module);
       } catch (err) {
         next.set(row.id, {
           record: { ...base, status: 'erreur', error: errorMessage(err) },
           assets: new Map(),
+          sounds: NO_SOUNDS,
         });
       }
     }
@@ -381,6 +390,25 @@ export class PackageService {
   }
 
   /** Ressource graphique d’un paquet actif. Retourne null pour tout autre cas (y compris un chemin inconnu). */
+  /**
+   * Adresses publiques des sons d'un jeu importé, par identifiant du registre (pkg-…). Vide pour un jeu qui n'est
+   * pas un paquet actif, ou un paquet sans sons.
+   */
+  gameSounds(gameId: string): PackageSounds {
+    for (const [id, entry] of this.loaded) {
+      if (entry.record.status !== 'actif' || entry.record.gameId !== gameId) continue;
+      const url = (path: string) => `/api/packages/${id}/${path}`;
+      const sfx: PackageSounds['sfx'] = {};
+      for (const [name, path] of Object.entries(entry.sounds.sfx)) {
+        if (path) sfx[name as keyof PackageSounds['sfx']] = url(path);
+      }
+      const music: PackageSounds['music'] = {};
+      if (entry.sounds.music.partie) music.partie = url(entry.sounds.music.partie);
+      return { sfx, music };
+    }
+    return { sfx: {}, music: {} };
+  }
+
   asset(id: string, name: string): { bytes: Uint8Array; contentType: string } | null {
     const entry = this.loaded.get(id);
     if (!entry || entry.record.status !== 'actif') return null;

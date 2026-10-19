@@ -13,8 +13,10 @@ import {
   voiceNameSchema,
 } from '@partyhub/shared';
 import { resolveGame } from '../games-registry.js';
+import type { UpdateService } from '../update/service.js';
 import type { BoardGameService } from '../boards/service.js';
 import type { PackageSourceService } from '../sources/service.js';
+import type { StoreService } from '../store/service.js';
 import type { CardGameService } from '../cards/service.js';
 import { embedCardAssets, restoreCardAssets } from '../cards/assets.js';
 import { PROPOSAL_MAX_PENDING, PROPOSAL_MAX_PER_DAY, type BoumBankService } from '../boum/service.js';
@@ -91,6 +93,8 @@ export interface AppDeps {
   boardGames: BoardGameService;
   /** Sources GitHub des paquets .phgame. */
   packageSources: PackageSourceService;
+  /** Magasin : jeux du dépôt de jeux, installés ou supprimés depuis l’administration. */
+  gameStore: StoreService;
   assets: AssetService;
   mediaGames: MediaQuizService;
   /** Paquets .phgame installés (jeux déclaratifs). */
@@ -105,6 +109,8 @@ export interface AppDeps {
   imageLibrary?: ImageLibrary;
   /** Captures de la première partie de chaque jeu, montrées dans la fiche. */
   gamePhotos: GamePhotoStore;
+  /** Mise à jour depuis l’administration (absente hors serveur complet). */
+  update?: UpdateService;
 }
 
 const GAME_PHOTO_ERRORS: Record<GamePhotoRejection, string> = {
@@ -132,9 +138,11 @@ export function createApp(deps: AppDeps): express.Express {
     boumBank,
     boardGames,
     packageSources,
+    gameStore,
     assets,
     mediaGames,
     dbBackups,
+    update,
     packages,
     characterPacks,
   } = deps;
@@ -299,6 +307,13 @@ export function createApp(deps: AppDeps): express.Express {
     res.setHeader('Cache-Control', 'public, max-age=3600');
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.type(asset.contentType).send(Buffer.from(asset.bytes));
+  });
+
+  // Sons d’un jeu importé (format 4) : adresses publiques des bruitages et de la musique de partie. Vide pour un
+  // jeu intégré à l’application, ou un paquet sans sons : l’écran garde alors les sons d’origine.
+  app.get('/api/game-sounds/:gameId', (req, res) => {
+    res.setHeader('Cache-Control', 'public, max-age=60');
+    res.json(packages.gameSounds(String(req.params.gameId ?? '')));
   });
 
   // Erreurs du navigateur (écran de secours, erreurs de script, appels API en échec). Limité par adresse.
@@ -974,6 +989,55 @@ export function createApp(deps: AppDeps): express.Express {
     res.json({ ok: true });
   });
 
+  /**
+   * Magasin : liste des jeux du dépôt de jeux, installation, mise à jour et suppression. Les jeux intégrés à
+   * l’application sont listés pour information seulement.
+   */
+  admin.get('/store', async (req, res) => {
+    res.json(await gameStore.catalog(req.query.refresh === '1'));
+  });
+
+  admin.put('/store/repo', (req, res) => {
+    const result = gameStore.setRepo((req.body as { repo?: unknown } | undefined)?.repo);
+    if (!result.ok) {
+      res.status(400).json({ error: result.error });
+      return;
+    }
+    res.json({ ok: true, repo: result.repo });
+  });
+
+  admin.post('/store/games/:id/install', async (req, res) => {
+    res.json({ outcome: await gameStore.install(req.params.id ?? '') });
+  });
+
+  admin.post('/store/games/:id/update', async (req, res) => {
+    res.json({ outcome: await gameStore.update(req.params.id ?? '') });
+  });
+
+  admin.delete('/store/games/:id', (req, res) => {
+    const result = gameStore.uninstall(req.params.id ?? '', (gameId) =>
+      manager.closeWhere((room) => room.module.manifest.id === gameId, 'admin'),
+    );
+    if (!result.ok) {
+      res.status(result.notFound ? 404 : 400).json({ error: result.error });
+      return;
+    }
+    res.json({ ok: true, closedRooms: result.closedRooms });
+  });
+
+  /** Couverture d’un jeu du magasin, lue à sa version publiée. Jamais un fichier qui n’est pas une image. */
+  admin.get('/store/games/:id/cover', async (req, res) => {
+    const image = await gameStore.cover(req.params.id ?? '');
+    if (!image) {
+      res.status(404).end();
+      return;
+    }
+    res.setHeader('Content-Type', image.contentType);
+    res.setHeader('Cache-Control', 'private, max-age=600');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.end(Buffer.from(image.bytes));
+  });
+
   /** Paquets .phgame : liste, envoi du fichier brut, activation et suppression. */
   admin.get('/packages', (_req, res) => {
     res.json({ packages: packages.list() });
@@ -1274,6 +1338,42 @@ export function createApp(deps: AppDeps): express.Express {
       return;
     }
     res.status(201).json({ ok: true, name: result.name });
+  });
+
+  /** Mise à jour : version en cours, versions publiées avec leur changelog, et demande à l’hôte. */
+  admin.get('/update', async (req, res) => {
+    if (!update) {
+      res.status(404).json({ error: 'La mise à jour n’est pas disponible sur ce serveur.' });
+      return;
+    }
+    res.json(await update.view(req.query.refresh === '1'));
+  });
+
+  admin.post('/update', async (req, res) => {
+    if (!update) {
+      res.status(404).json({ error: 'La mise à jour n’est pas disponible sur ce serveur.' });
+      return;
+    }
+    const version = typeof req.body?.version === 'string' ? req.body.version : '';
+    const result = await update.request(version);
+    if (!result.ok) {
+      res.status(result.status).json({ error: result.error });
+      return;
+    }
+    res.status(202).json({ ok: true, request: result.request });
+  });
+
+  admin.delete('/update', (_req, res) => {
+    if (!update) {
+      res.status(404).json({ error: 'La mise à jour n’est pas disponible sur ce serveur.' });
+      return;
+    }
+    const result = update.cancel();
+    if (!result.ok) {
+      res.status(result.status).json({ error: result.error });
+      return;
+    }
+    res.json({ ok: true });
   });
 
   /** Sauvegarde complète : jeux personnalisés, textes et notices des jeux intégrés. */

@@ -345,3 +345,48 @@ export function stopMusic(): void {
     timer = null;
   }
 }
+
+// ---------------------------------------------------------------------------
+// Musique d’un paquet : un fichier en boucle sur le bus de musique (musique de partie d’un jeu importé).
+// ---------------------------------------------------------------------------
+
+let loopSource: AudioBufferSourceNode | null = null;
+let loopToken = 0;
+
+/** Joue un fichier audio en boucle, à la place de la boucle précédente. Ignoré si le son n’est pas disponible. */
+export function playLoopFile(url: string): void {
+  stopLoopFile();
+  const token = loopToken;
+  const c = context();
+  const bus = musicBus;
+  if (!c || !bus) return;
+  fetch(url)
+    .then((res) => (res.ok ? res.arrayBuffer() : Promise.reject(new Error(String(res.status)))))
+    .then((bytes) => c.decodeAudioData(bytes))
+    .then((buffer) => {
+      if (token !== loopToken) return; // arrêtée entre-temps
+      const src = c.createBufferSource();
+      src.buffer = buffer;
+      src.loop = true;
+      src.connect(bus);
+      src.start(c.currentTime + 0.05);
+      loopSource = src;
+    })
+    .catch(() => {
+      /* fichier illisible : pas de musique de partie */
+    });
+}
+
+/** Arrête la boucle de musique d’un paquet, s’il y en a une. */
+export function stopLoopFile(): void {
+  loopToken++;
+  if (loopSource) {
+    try {
+      loopSource.stop();
+    } catch {
+      /* déjà arrêtée */
+    }
+    loopSource.disconnect();
+    loopSource = null;
+  }
+}

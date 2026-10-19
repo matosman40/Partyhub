@@ -21,6 +21,7 @@ services:
       DATA_DIR: /data
       ADMIN_PASSWORD: '${ADMIN_PASSWORD:-}'
       GITHUB_TOKEN: '${GITHUB_TOKEN:-}'
+      PARTYHUB_STORE_REPO: '${PARTYHUB_STORE_REPO:-}'
       LOG_LEVEL: '${LOG_LEVEL:-info}'
       LOG_DIR: '${LOG_DIR:-}'
       LOG_MAX_MB: '${LOG_MAX_MB:-5}'

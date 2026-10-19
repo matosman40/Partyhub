@@ -2,6 +2,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { compileTrustProxy } from './trust-proxy.js';
 import { imagesFromEnv, type ImagesConfig } from './images/config.js';
+import { isValidRepo } from './sources/github.js';
 
 /** Protocole d’appel : Anthropic (Messages) ou compatible OpenAI (chat/completions). */
 export type AiProtocol = 'anthropic' | 'openai';
@@ -48,6 +49,8 @@ export interface AppConfig {
   adminPassword?: string;
   /** Jeton GitHub pour les sources privées et les limites d’appels (GITHUB_TOKEN). Jamais affiché ni sauvegardé. */
   githubToken?: string;
+  /** Dépôt de jeux du magasin (PARTYHUB_STORE_REPO, auteur/nom). Absent = matosman40/jeux-partyhub. */
+  storeRepo?: string;
   /**
    * Jeux intégrés sur une installation neuve. `false` (défaut de la production) : ils restent dans le code
    * mais sont désactivés, l’administrateur les active un par un. Absent : ils restent actifs (tests, usage en bibliothèque).
@@ -337,6 +340,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     staticDir: env.STATIC_DIR?.trim() || path.resolve(here, '../../web/dist'),
     adminPassword,
     githubToken: env.GITHUB_TOKEN?.trim() || undefined,
+    storeRepo: storeRepoFromEnv(env.PARTYHUB_STORE_REPO),
     builtinGames: builtinGamesFromEnv(env.BUILTIN_GAMES),
     ai: aiFromEnv(env),
     images: imagesFromEnv(env),
@@ -360,4 +364,12 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
       keep,
     },
   };
+}
+
+/** Dépôt de jeux du magasin : auteur/nom. Une valeur mal formée arrête le démarrage, comme TRUST_PROXY. */
+function storeRepoFromEnv(value: string | undefined): string | undefined {
+  const repo = value?.trim();
+  if (!repo) return undefined;
+  if (!isValidRepo(repo)) throw new Error(`PARTYHUB_STORE_REPO invalide : « ${repo} » (attendu : auteur/nom).`);
+  return repo;
 }
