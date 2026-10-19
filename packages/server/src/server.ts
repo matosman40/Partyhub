@@ -13,6 +13,7 @@ import { CardGameService } from './cards/service.js';
 import { BoumBankService } from './boum/service.js';
 import { BoardGameService } from './boards/service.js';
 import { PackageSourceService } from './sources/service.js';
+import { StoreService } from './store/service.js';
 import { AssetService } from './assets/service.js';
 import { MediaQuizService } from './media/service.js';
 import { PackageService } from './packages/service.js';
@@ -114,6 +115,13 @@ export async function createServer(opts: ServerOptions): Promise<PartyServer> {
   const mediaGames = new MediaQuizService(store, assets);
   const packages = new PackageService(store, config.dataDir);
   const packageSources = new PackageSourceService(store, packages, { token: config.githubToken });
+  // Magasin : les jeux intégrés au code ne sont jamais téléchargés, ils restent dans l’application.
+  const builtinIds = new Set(gameRegistry.map((game) => game.manifest.id));
+  const gameStore = new StoreService(store, packageSources, packages, {
+    defaultRepo: config.storeRepo,
+    token: config.githubToken,
+    isBuiltin: (gameId) => builtinIds.has(gameId),
+  });
   const characterPacks = new CharacterPackService(store.db);
   const hub = new RealtimeHub(compileTrustProxy(config.trustProxy ?? 'loopback'), opts.joinThrottle);
   hub.setCadence(() => appliedCadence(store.getTestMode()));
@@ -202,6 +210,7 @@ export async function createServer(opts: ServerOptions): Promise<PartyServer> {
     boumBank,
     boardGames,
     packageSources,
+    gameStore,
     assets,
     mediaGames,
     packages,
