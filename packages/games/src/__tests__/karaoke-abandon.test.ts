@@ -50,6 +50,8 @@ describe('Karaoké : abandon du passage', () => {
     expect(abandoned.state.phase).toBe('reveal');
     expect(abandoned.state.points[singer]).toBe(0);
     expect(abandoned.state.clip).toBeNull();
+    expect(abandoned.state.abandoned).toBe(true);
+    expect((karaoke.getPublicState(abandoned.state) as { abandoned: boolean }).abandoned).toBe(true);
     // Aucun minuteur de vote ne reste en route.
     expect(env.timers.has('vote-timeout')).toBe(false);
     expect(env.timers.has('sing-timeout')).toBe(false);
@@ -82,5 +84,15 @@ describe('Karaoké : abandon du passage', () => {
     const next = karaoke.onTimer(abandoned.state, 'reveal-next', env.ctx);
     expect(next.phase).toBe('pick');
     expect(next.index).toBe(1);
+    // Le drapeau retombe avec le tour suivant : le passage suivant n’est pas marqué comme arrêté.
+    expect(next.abandoned).toBe(false);
+  });
+
+  it('un passage sans note (délai de choix dépassé) n’est pas marqué comme arrêté', () => {
+    const { env, state } = started();
+    const timedOut = karaoke.onTimer(state, 'pick-timeout', env.ctx);
+    expect(timedOut.phase).toBe('reveal');
+    expect(timedOut.abandoned).toBe(false);
+    expect((karaoke.getPublicState(timedOut) as { abandoned: boolean }).abandoned).toBe(false);
   });
 });

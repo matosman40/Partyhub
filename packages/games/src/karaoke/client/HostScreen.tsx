@@ -90,7 +90,9 @@ export function KaraokeHost({ publicState: pub, hostState, now }: HostViewProps)
 
       {pub.phase === 'reveal' && (
         <div className="karaoke-line">
-          {pub.average === null ? (
+          {pub.abandoned ? (
+            <p>Passage arrêté : aucun point.</p>
+          ) : pub.average === null ? (
             <p>Pas de note pour ce passage.</p>
           ) : (
             <p>

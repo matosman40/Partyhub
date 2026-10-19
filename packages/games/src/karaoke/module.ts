@@ -81,6 +81,8 @@ export interface KaraokeState {
   gains: Record<string, number>;
   /** Moyenne des étoiles du passage, révélée à la fin. */
   average: number | null;
+  /** Passage arrêté par le chanteur : aucun vote, aucun point. Remis à faux à chaque nouveau tour. */
+  abandoned: boolean;
 }
 
 function clearTimers(ctx: GameContext): void {
@@ -117,6 +119,7 @@ function openPick(s: KaraokeState, ctx: GameContext): KaraokeState {
     ratings: {},
     gains: {},
     average: null,
+    abandoned: false,
     endsAt: ctx.now() + ms,
   };
 }
@@ -213,6 +216,7 @@ function publicView(s: KaraokeState) {
     return {
       ...base,
       average: s.average,
+      abandoned: s.abandoned,
       gained: singer !== undefined ? (s.gains[singer] ?? 0) : 0,
     };
   }
@@ -294,6 +298,7 @@ export const karaoke: GameModule<KaraokeState, KaraokeSettings> = {
       ratings: {},
       gains: {},
       average: null,
+      abandoned: false,
     };
   },
 
@@ -346,7 +351,7 @@ export const karaoke: GameModule<KaraokeState, KaraokeSettings> = {
       if (s.phase !== 'sing') return fail('Rien à interrompre maintenant');
       if (p.id !== singer) return fail('Seul le chanteur peut passer son tour');
       // Passage interrompu : pas de vote sur une prestation qu’on n’a pas entendue en entier.
-      return ok(reveal({ ...s, clip: null }, ctx));
+      return ok(reveal({ ...s, clip: null, abandoned: true }, ctx));
     }
 
     if (type === 'rate') {

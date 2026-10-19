@@ -401,13 +401,17 @@ export function KaraokePlayer({ publicState: pub, playerState: me, send, now }: 
         <p className="karaoke-count">Moyenne : {Number(pub.average).toFixed(1).replace('.', ',')} sur 5</p>
       )}
       <p className="notice">
-        {me?.isSinger
-          ? gained > 0
-            ? `+${gained} points pour votre passage`
-            : 'Pas de note pour votre passage cette fois'
-          : gained > 0
-            ? `${pub.singerName} gagne ${gained} points`
-            : 'Aucun point pour ce passage'}
+        {pub.abandoned
+          ? me?.isSinger
+            ? 'Vous avez arrêté votre passage. Aucun point.'
+            : `${pub.singerName} a arrêté son passage. Aucun point.`
+          : me?.isSinger
+            ? gained > 0
+              ? `+${gained} points pour votre passage`
+              : 'Pas de note pour votre passage cette fois'
+            : gained > 0
+              ? `${pub.singerName} gagne ${gained} points`
+              : 'Aucun point pour ce passage'}
       </p>
       {me?.rank && <p className="muted small">Vous êtes {me.rank}ᵉ</p>}
       {error && (
