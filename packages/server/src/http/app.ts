@@ -316,6 +316,13 @@ export function createApp(deps: AppDeps): express.Express {
     res.type(asset.contentType).send(Buffer.from(asset.bytes));
   });
 
+  // Sons d’un jeu importé (format 4) : adresses publiques des bruitages et de la musique de partie. Vide pour un
+  // jeu intégré à l’application, ou un paquet sans sons : l’écran garde alors les sons d’origine.
+  app.get('/api/game-sounds/:gameId', (req, res) => {
+    res.setHeader('Cache-Control', 'public, max-age=60');
+    res.json(packages.gameSounds(String(req.params.gameId ?? '')));
+  });
+
   // Erreurs du navigateur (écran de secours, erreurs de script, appels API en échec). Limité par adresse.
   const clientLogLimiter = new BatchLimiter();
   api.post('/logs/client', (req, res) => {
