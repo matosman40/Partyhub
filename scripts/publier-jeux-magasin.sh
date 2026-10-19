@@ -6,7 +6,7 @@
 # lit ce dossier au tag : pas de release, pas de fichier .phgame, pas de signature (voir docs/MAGASIN.md).
 #
 # Usage :  scripts/publier-jeux-magasin.sh <dossier-export> [auteur/depot] [branche]
-#   <dossier-export>  dossier qui contient un sous-dossier par jeu (jeux-du-magasin/ après l'export)
+#   <dossier-export>  dossier qui contient un sous-dossier par jeu : jeux de code (export) et jeux déclaratifs
 #   auteur/depot      dépôt de jeux (défaut : matosman40/jeux-partyhub)
 #   branche           branche où committer (défaut : main)
 # Variables :
@@ -82,13 +82,21 @@ for (const id of fs
     continue;
   }
   if (m.id !== id) errors.push(`${id} : le manifeste annonce « ${m.id} »`);
-  if (m.kind !== 'code') errors.push(`${id} : "kind" doit valoir "code"`);
-  if (m.requires !== undefined) errors.push(`${id} : "requires" ne se met pas dans un jeu de code`);
   if (m.signature !== undefined) errors.push(`${id} : un manifeste du magasin ne porte pas de signature`);
   if (typeof m.name !== 'string' || m.name.trim().length < 1) errors.push(`${id} : "name" absent`);
   if (!VERSION.test(String(m.version))) errors.push(`${id} : version « ${m.version} » : forme X.Y.Z attendue`);
-  if (!fs.existsSync(path.join(dir, 'src', 'server.ts')) || !fs.existsSync(path.join(dir, 'src', 'client.tsx'))) {
-    errors.push(`${id} : src/server.ts et src/client.tsx sont requis`);
+  if (m.kind === 'code') {
+    if (m.requires !== undefined) errors.push(`${id} : "requires" ne se met pas dans un jeu de code`);
+    if (!fs.existsSync(path.join(dir, 'src', 'server.ts')) || !fs.existsSync(path.join(dir, 'src', 'client.tsx'))) {
+      errors.push(`${id} : src/server.ts et src/client.tsx sont requis`);
+    }
+  } else if (m.kind === 'declarative') {
+    // Jeu déclaratif (cartes, plateau, questions, recettes) : son module doit être nommé. Le paquet est fait par le magasin.
+    if (!Array.isArray(m.requires?.modules) || m.requires.modules.length === 0) {
+      errors.push(`${id} : "requires.modules" doit nommer le module du jeu`);
+    }
+  } else {
+    errors.push(`${id} : "kind" doit valoir "code" ou "declarative"`);
   }
   checkTree(dir, id, '');
   games.push(`${id} ${m.version}`);
