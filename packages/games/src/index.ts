@@ -72,6 +72,9 @@ export { association } from './association/module.js';
 export { plutotQui } from './plutot-qui/module.js';
 export { imposteur } from './imposteur/module.js';
 export { aventureIa } from './aventure/module.js';
+// Travaux d'IA exécutés côté serveur pour les jeux de code (voir code-games/ai-jobs.ts).
+export { runAventureJob } from './aventure/ai.js';
+export { runPhrasesJob, PHRASES_JOB_KIND } from './phrases-trous/ai.js';
 export { plusOuMoins } from './plus-ou-moins/module.js';
 export { reflexe } from './reflexe/module.js';
 export { microDefis, microDefisSettingsSchema } from './micro-defis/module.js';

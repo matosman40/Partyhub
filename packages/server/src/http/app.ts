@@ -1169,6 +1169,24 @@ export function createApp(deps: AppDeps): express.Express {
     res.json({ games: codeGames.list() });
   });
 
+  /**
+   * Autorise l'IA du serveur pour un jeu de code (ou la retire). La clé ne quitte jamais le serveur : le jeu
+   * reçoit seulement le résultat de ses travaux, et seulement une fois ce réglage activé.
+   */
+  admin.put('/code-games/:id/ai', (req, res) => {
+    const body = (req.body ?? {}) as { enabled?: unknown };
+    if (typeof body.enabled !== 'boolean') {
+      res.status(400).json({ error: 'Attendu : enabled (vrai ou faux).' });
+      return;
+    }
+    const result = codeGames.setAi(req.params.id ?? '', body.enabled, actorOf(req));
+    if (!result.ok) {
+      res.status(400).json({ error: result.error });
+      return;
+    }
+    res.json({ ok: true, enabled: result.enabled });
+  });
+
   /** Ce qu'il faut relire avant d'approuver : fichiers, empreintes et code exécuté. */
   admin.get('/code-games/:id/:version/review', (req, res) => {
     const review = codeGames.review(req.params.id ?? '', req.params.version ?? '');

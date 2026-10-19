@@ -12,6 +12,7 @@ import {
   type ValidatedCodePackage,
 } from '../packages/code-format.js';
 import { CodeGameRuntime, createCodeModule } from '../packages/code-runtime.js';
+import { codeJobRunner, hasKnownAiJobs } from './ai-jobs.js';
 import { launchCheckAsync, type LaunchCheckOptions, type LaunchCheckResult } from '../packages/launch-check.js';
 import { PackageValidationError } from '../packages/format.js';
 import { changedHunks, countChanges, diffLines, type DiffLine } from './diff.js';
@@ -69,6 +70,10 @@ export interface CodeGameSummary {
   installedAt: string;
   status: CodeGameStatus;
   error?: string;
+  /** Le jeu active demande des travaux d'IA : l'administrateur peut l'autoriser à utiliser la clé du serveur. */
+  aiJobs: boolean;
+  /** L'administrateur a autorisé ce jeu à utiliser l'IA du serveur. */
+  aiEnabled: boolean;
 }
 
 /** Différence avec la version active : seulement les lignes modifiées, et leur contexte. */
@@ -179,10 +184,11 @@ export class CodeGameService implements CodeGamesPort {
       onStop: (reason) => this.handleStop(id, runtime, reason),
     });
     try {
-      const module = createCodeModule(runtime, {
-        script: clientSource,
-        sha256: sha256Of(pkg.files.get(CODE_ENTRY_CLIENT)!),
-      });
+      const module = createCodeModule(
+        runtime,
+        { script: clientSource, sha256: sha256Of(pkg.files.get(CODE_ENTRY_CLIENT)!) },
+        codeJobRunner(id, () => this.store.isAiGameEnabled(id)),
+      );
       if (module.manifest.id !== id || module.manifest.name !== name || module.manifest.version !== version) {
         throw new Error('le module ne correspond pas au manifeste (identifiant, nom ou version)');
       }
@@ -424,6 +430,8 @@ export class CodeGameService implements CodeGamesPort {
     } else {
       status = 'en_attente';
     }
+    const aiJobs =
+      row.active === 1 && hasKnownAiJobs(row.id) && this.active.get(row.id)?.module.pendingJob !== undefined;
     return {
       id: row.id,
       version: row.version,
@@ -434,6 +442,8 @@ export class CodeGameService implements CodeGamesPort {
       installedAt: row.installed_at,
       status,
       ...(error ? { error } : {}),
+      aiJobs,
+      aiEnabled: this.store.isAiGameEnabled(row.id),
     };
   }
 
@@ -533,6 +543,29 @@ export class CodeGameService implements CodeGamesPort {
       'code_game.approved',
       { id, version, sha256, signer: row.signer, enabled, actor },
       `Jeu de code « ${id} » ${version} approuvé par ${actor}${enabled ? '' : ' (jeu désactivé : indisponible jusqu’à sa réactivation)'}`,
+    );
+    return { ok: true, enabled };
+  }
+
+  /**
+   * Autorise ou retire l'IA du serveur pour un jeu de code actif qui en demande. Le réglage est relu à chaque
+   * travail : rien à recharger, et retirer l'autorisation coupe l'accès tout de suite (le jeu prend son repli).
+   */
+  setAi(
+    id: string,
+    enabled: boolean,
+    actor = 'inconnu',
+  ): { ok: true; enabled: boolean } | { ok: false; error: string } {
+    const loaded = this.active.get(id);
+    if (!loaded) return { ok: false, error: 'Ce jeu n’est pas actif.' };
+    if (!hasKnownAiJobs(id) || loaded.module.pendingJob === undefined) {
+      return { ok: false, error: 'Ce jeu n’a pas de travail d’IA.' };
+    }
+    this.store.setAiGameEnabled(id, enabled);
+    this.options.audit?.(
+      'code_game.ai',
+      { id, enabled, actor },
+      `IA ${enabled ? 'autorisée' : 'retirée'} pour le jeu de code « ${id} » par ${actor}`,
     );
     return { ok: true, enabled };
   }

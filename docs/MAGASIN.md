@@ -37,6 +37,9 @@ les supprimer depuis l'administration, dans la section **Magasin de jeux**.
   continue à tourner.
 - **Supprimer** retire toutes les versions du jeu, en attente ou approuvées, ferme ses salons et supprime la source.
   Un jeu retiré depuis **Jeux de code** se réinstalle avec **Installer**.
+- Un jeu de code qui utilise l'IA (`aventure-ia`, `phrases-trous`) demande ses textes au serveur. Le serveur n'exécute
+  que les travaux de ces deux jeux intégrés, et ne donne la clé du modèle que si l'administrateur coche **Autoriser
+  l'IA du serveur** pour ce jeu, dans **Jeux de code**. Sans cela, ou si le modèle échoue, le jeu prend son repli habituel.
 
 ## Limites
 

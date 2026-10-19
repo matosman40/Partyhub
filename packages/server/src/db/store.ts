@@ -659,6 +659,27 @@ export class Store {
       .run(gameId, enabled ? 1 : 0);
   }
 
+  /** Jeux de code autorisés à utiliser l'IA du serveur. Désactivé tant que l'administrateur ne l'a pas activé. */
+  aiGameIds(): string[] {
+    try {
+      const parsed = JSON.parse(this.getKv('ai_games') ?? '[]') as unknown;
+      return Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === 'string') : [];
+    } catch {
+      return [];
+    }
+  }
+
+  isAiGameEnabled(gameId: string): boolean {
+    return this.aiGameIds().includes(gameId);
+  }
+
+  setAiGameEnabled(gameId: string, enabled: boolean): void {
+    const ids = new Set(this.aiGameIds());
+    if (enabled) ids.add(gameId);
+    else ids.delete(gameId);
+    this.setKv('ai_games', JSON.stringify([...ids].sort()));
+  }
+
   incrementStat(key: string, by = 1): void {
     this.db
       .prepare(
