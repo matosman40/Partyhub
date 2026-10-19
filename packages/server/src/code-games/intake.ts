@@ -1,5 +1,6 @@
 import dns from 'node:dns/promises';
 import fs from 'node:fs';
+import https from 'node:https';
 import net from 'node:net';
 import path from 'node:path';
 import { DEFAULT_PACKAGE_LIMITS } from '../packages/format.js';
@@ -38,11 +39,25 @@ export interface DropState {
   files: DropFileReport[];
 }
 
+/** Réponse d'un téléchargement : code, redirection éventuelle, corps lu au fil de l'eau. */
+export interface HttpResponse {
+  status: number;
+  location?: string;
+  contentLength?: number;
+  body: AsyncIterable<Uint8Array>;
+  /** Abandonne la réponse sans la lire (redirection, erreur). */
+  discard(): void;
+}
+
 /** Accès réseau et résolution de noms, remplaçables dans les tests. */
 export interface IntakeDeps {
-  fetch: typeof fetch;
   /** Adresses IP d'un nom d'hôte. */
   lookup: (host: string) => Promise<string[]>;
+  /**
+   * Télécharge une adresse HTTPS en se connectant à l'adresse IP déjà vérifiée : le nom n'est résolu qu'une fois,
+   * par `lookup`, et la connexion ne peut pas aller ailleurs.
+   */
+  get: (url: URL, address: string) => Promise<HttpResponse>;
 }
 
 /**
@@ -89,6 +104,56 @@ async function defaultLookup(host: string): Promise<string[]> {
   return found.map((entry) => entry.address);
 }
 
+/**
+ * Requête HTTPS vers une adresse déjà vérifiée. Le nom de l'URL reste celui du certificat, du SNI et de l'en-tête
+ * Host ; seule la connexion est fixée à `address`. Le certificat est toujours vérifié.
+ */
+export function httpsGet(
+  url: URL,
+  address: string,
+  options: { timeoutMs?: number; ca?: string } = {},
+): Promise<HttpResponse> {
+  const timeoutMs = options.timeoutMs ?? FETCH_TIMEOUT_MS;
+  const family = net.isIPv6(address) ? 6 : 4;
+  return new Promise((resolve, reject) => {
+    const req = https.request(
+      url,
+      {
+        method: 'GET',
+        // Une connexion neuve par téléchargement : aucune session réutilisée avec un autre certificat de confiance.
+        agent: false,
+        ca: options.ca,
+        headers: { 'user-agent': 'PartyHub' },
+        // La « résolution » rend l'adresse vérifiée : aucune seconde interrogation du DNS.
+        lookup: (_host, lookupOptions, callback) => {
+          if (lookupOptions.all) callback(null, [{ address, family }]);
+          else callback(null, address, family);
+        },
+      },
+      (res) => {
+        res.once('close', () => clearTimeout(timer));
+        resolve({
+          status: res.statusCode ?? 0,
+          location: typeof res.headers.location === 'string' ? res.headers.location : undefined,
+          contentLength:
+            res.headers['content-length'] !== undefined ? Number(res.headers['content-length']) : undefined,
+          body: res,
+          discard: () => {
+            res.resume();
+          },
+        });
+      },
+    );
+    // Délai total, corps compris : au-delà, la requête est coupée.
+    const timer = setTimeout(() => req.destroy(new Error('délai dépassé')), timeoutMs);
+    req.on('error', (err) => {
+      clearTimeout(timer);
+      reject(err);
+    });
+    req.end();
+  });
+}
+
 function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
 }
@@ -100,23 +165,14 @@ function urlProblem(url: URL): string | null {
   return null;
 }
 
-/** Corps de la réponse, ou null s'il dépasse la limite. Le téléchargement s'arrête dès que la limite est franchie. */
-async function readCapped(res: Response, max: number): Promise<Uint8Array | null> {
-  const declared = Number(res.headers.get('content-length'));
-  if (Number.isFinite(declared) && declared > max) return null;
-  if (!res.body) return new Uint8Array(0);
-  const reader = res.body.getReader();
+/** Corps de la réponse, ou null s'il dépasse la limite. La lecture s'arrête dès que la limite est franchie. */
+async function readCapped(body: AsyncIterable<Uint8Array>, max: number): Promise<Uint8Array | null> {
   const chunks: Uint8Array[] = [];
   let total = 0;
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    total += value.byteLength;
-    if (total > max) {
-      await reader.cancel();
-      return null;
-    }
-    chunks.push(value);
+  for await (const chunk of body) {
+    total += chunk.byteLength;
+    if (total > max) return null;
+    chunks.push(chunk);
   }
   const out = new Uint8Array(total);
   let offset = 0;
@@ -140,7 +196,10 @@ export class CodeIntake {
     private readonly audit?: CodeGameAudit,
     deps: Partial<IntakeDeps> = {},
   ) {
-    this.deps = { fetch: deps.fetch ?? fetch, lookup: deps.lookup ?? defaultLookup };
+    this.deps = {
+      lookup: deps.lookup ?? defaultLookup,
+      get: deps.get ?? ((url, address) => httpsGet(url, address)),
+    };
     fs.mkdirSync(this.folder(), { recursive: true });
   }
 
@@ -254,40 +313,43 @@ export class CodeIntake {
     };
   }
 
-  /** Ce qui empêche d'appeler cette adresse : protocole, identifiants, ou hôte qui n'est pas public. */
-  private async hostProblem(url: URL): Promise<string | null> {
+  /**
+   * L'adresse à laquelle se connecter, ou la raison du refus. Le nom n'est résolu qu'ici : la connexion
+   * part vers cette adresse, et nulle part ailleurs.
+   */
+  private async checkedAddress(url: URL): Promise<{ address: string } | { problem: string }> {
     const problem = urlProblem(url);
-    if (problem) return problem;
+    if (problem) return { problem };
     const host = url.hostname.replace(/^\[|\]$/g, '');
     let addresses: string[];
     try {
       addresses = await this.deps.lookup(host);
     } catch {
-      return 'Serveur introuvable.';
+      return { problem: 'Serveur introuvable.' };
     }
-    if (addresses.length === 0 || addresses.some(isPrivateAddress)) return 'Adresse locale ou privée refusée.';
-    return null;
+    const address = addresses[0];
+    if (address === undefined || addresses.some(isPrivateAddress)) {
+      return { problem: 'Adresse locale ou privée refusée.' };
+    }
+    return { address };
   }
 
-  /** Suit les redirections une par une : chaque adresse est vérifiée avant d'être appelée. */
-  private async download(start: URL): Promise<Response | string> {
+  /** Suit les redirections une par une : chaque adresse est vérifiée, puis appelée à cette adresse seule. */
+  private async download(start: URL): Promise<HttpResponse | string> {
     let current = start;
     for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
-      const problem = await this.hostProblem(current);
-      if (problem) return problem;
-      let res: Response;
+      const checked = await this.checkedAddress(current);
+      if ('problem' in checked) return checked.problem;
+      let res: HttpResponse;
       try {
-        res = await this.deps.fetch(current.toString(), {
-          redirect: 'manual',
-          signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-        });
+        res = await this.deps.get(current, checked.address);
       } catch {
         return 'Téléchargement impossible.';
       }
-      const location = res.headers.get('location');
-      if (res.status >= 300 && res.status < 400 && location) {
+      if (res.status >= 300 && res.status < 400 && res.location) {
+        res.discard();
         try {
-          current = new URL(location, current);
+          current = new URL(res.location, current);
         } catch {
           return 'Redirection vers une adresse invalide.';
         }
@@ -318,12 +380,17 @@ export class CodeIntake {
   private async fetchAndInstall(url: URL, actor: string): Promise<CodeGameInstallResult> {
     const downloaded = await this.download(url);
     if (typeof downloaded === 'string') return { ok: false, error: downloaded };
-    if (!downloaded.ok) {
+    if (downloaded.status < 200 || downloaded.status >= 300) {
+      downloaded.discard();
       return { ok: false, error: `Le serveur distant répond ${downloaded.status} : rien n’a été reçu.` };
+    }
+    if (downloaded.contentLength !== undefined && downloaded.contentLength > MAX_BYTES) {
+      downloaded.discard();
+      return { ok: false, error: `Paquet trop volumineux (maximum ${MAX_MEGABYTES} Mio).` };
     }
     let bytes: Uint8Array | null;
     try {
-      bytes = await readCapped(downloaded, MAX_BYTES);
+      bytes = await readCapped(downloaded.body, MAX_BYTES);
     } catch {
       return { ok: false, error: 'Téléchargement interrompu.' };
     }

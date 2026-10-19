@@ -1,4 +1,6 @@
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
+import https from 'node:https';
 import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
@@ -7,13 +9,14 @@ import { createServer, type PartyServer } from '../server.js';
 import { createLogger } from '../logger.js';
 import type { AppConfig } from '../config.js';
 import { buildCodePackage, newCodeGame } from '../code-games/build.js';
-import { DROP_DIR_NAME, isPrivateAddress } from '../code-games/intake.js';
+import { DROP_DIR_NAME, httpsGet, isPrivateAddress, type HttpResponse } from '../code-games/intake.js';
 import { generateSigningKeys } from '../packages/code-format.js';
 import { DEFAULT_PACKAGE_LIMITS } from '../packages/format.js';
 
 /**
  * Deux voies d'ajout des jeux de code : le dossier de dépôt (DATA_DIR/depot-jeux) et l'adresse HTTPS.
- * Dans les deux cas, le paquet signé par l'auteur arrive en attente de revue. Le réseau et le DNS sont simulés.
+ * Dans les deux cas, le paquet signé par l'auteur arrive en attente de revue. Le DNS et le téléchargement
+ * sont simulés, sauf dans le dernier bloc, qui parle à un vrai serveur HTTPS.
  */
 
 const ADMIN_PASSWORD = 'ajout-jeux-123';
@@ -29,7 +32,10 @@ let base: string;
 let cookie: string;
 let depotBytes: Uint8Array;
 let urlBytes: Uint8Array;
-const requested: string[] = [];
+/** Chaque appel au téléchargement simulé, avec l'adresse à laquelle il se connecte. */
+const requested: { url: string; address: string }[] = [];
+/** Nombre de résolutions par nom : un nom ne doit être résolu qu'une fois par adresse à vérifier. */
+const lookups: Record<string, number> = {};
 const author = generateSigningKeys();
 
 async function call(route: string, init: RequestInit = {}) {
@@ -50,30 +56,62 @@ function json(body: unknown): RequestInit {
   return { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) };
 }
 
-/** Réseau simulé : seules les adresses publiques répondent, et chaque appel est noté. */
+/** Résolution simulée. Le nom « rebind » change d'adresse à la deuxième résolution. */
 async function fakeLookup(host: string): Promise<string[]> {
   if (net.isIP(host)) return [host];
+  lookups[host] = (lookups[host] ?? 0) + 1;
+  if (host === 'rebind.exemple.test') return lookups[host] === 1 ? ['93.184.216.34'] : ['10.0.0.9'];
   const found = HOSTS[host];
   if (!found) throw new Error('ENOTFOUND');
   return found;
 }
 
-async function fakeFetch(input: string | URL | Request, init?: RequestInit): Promise<Response> {
-  const url = String(input);
-  requested.push(url);
-  if (init?.redirect !== 'manual') throw new Error('le téléchargement doit suivre les redirections à la main');
-  switch (url) {
+function reply(status: number, body: Uint8Array = new Uint8Array(0), location?: string): HttpResponse {
+  return {
+    status,
+    location,
+    body: (async function* () {
+      if (body.byteLength > 0) yield body;
+    })(),
+    discard: () => undefined,
+  };
+}
+
+/** Corps plus grand que la limite, envoyé par morceaux : la lecture doit s'arrêter avant la fin. */
+function oversizedReply(size: number): HttpResponse {
+  const piece = new Uint8Array(1024 * 1024);
+  return {
+    status: 200,
+    body: (async function* () {
+      for (let sent = 0; sent < size; sent += piece.byteLength) yield piece;
+    })(),
+    discard: () => undefined,
+  };
+}
+
+/** Téléchargement simulé : chaque appel est noté avec l'adresse utilisée. */
+async function fakeGet(url: URL, address: string): Promise<HttpResponse> {
+  requested.push({ url: url.toString(), address });
+  switch (url.toString()) {
     case 'https://jeux.exemple.test/jeu.phgame':
-      return new Response(urlBytes, { status: 200 });
+      return reply(200, urlBytes);
     case 'https://jeux.exemple.test/redirige-http.phgame':
-      return new Response(null, { status: 302, headers: { location: 'http://jeux.exemple.test/jeu.phgame' } });
+      return reply(302, undefined, 'http://jeux.exemple.test/jeu.phgame');
     case 'https://jeux.exemple.test/redirige-interne.phgame':
-      return new Response(null, { status: 302, headers: { location: 'https://interne.exemple.test/jeu.phgame' } });
+      return reply(302, undefined, 'https://interne.exemple.test/jeu.phgame');
     case 'https://jeux.exemple.test/gros.phgame':
-      return new Response(new Uint8Array(DEFAULT_PACKAGE_LIMITS.maxArchiveBytes + 1), { status: 200 });
+      return oversizedReply(DEFAULT_PACKAGE_LIMITS.maxArchiveBytes + 1);
+    case 'https://rebind.exemple.test/jeu.phgame':
+      return reply(200, urlBytes);
     default:
-      return new Response('introuvable', { status: 404 });
+      return reply(404, new TextEncoder().encode('introuvable'));
   }
+}
+
+async function readAll(body: AsyncIterable<Uint8Array>): Promise<Uint8Array> {
+  const parts: Uint8Array[] = [];
+  for await (const part of body) parts.push(part);
+  return Buffer.concat(parts);
 }
 
 async function buildPackage(id: string): Promise<Uint8Array> {
@@ -105,10 +143,7 @@ beforeAll(async () => {
     config,
     logger: createLogger('silent', true),
     sweepEveryMs: 0,
-    codeIntake: {
-      deps: { fetch: fakeFetch as unknown as typeof fetch, lookup: fakeLookup },
-      watchEveryMs: 0,
-    },
+    codeIntake: { deps: { lookup: fakeLookup, get: fakeGet }, watchEveryMs: 0 },
   });
   const port = await server.listen(0, '127.0.0.1');
   base = `http://127.0.0.1:${port}`;
@@ -196,10 +231,12 @@ describe('adresse HTTPS', () => {
     expect(requested).toEqual([]);
   });
 
-  it('télécharge le paquet signé et le met en attente de revue', async () => {
+  it('télécharge le paquet signé vers l’adresse vérifiée et le met en attente de revue', async () => {
+    requested.length = 0;
     const res = await call('/api/admin/code-intake/url', json({ url: 'https://jeux.exemple.test/jeu.phgame' }));
     expect(res.status).toBe(201);
     expect(res.data).toMatchObject({ kind: 'code', id: 'url-essai', unchanged: false });
+    expect(requested).toEqual([{ url: 'https://jeux.exemple.test/jeu.phgame', address: '93.184.216.34' }]);
 
     const games = await call('/api/admin/code-games');
     expect(games.data.games.find((g: { id: string }) => g.id === 'url-essai')).toMatchObject({
@@ -211,6 +248,15 @@ describe('adresse HTTPS', () => {
     const res = await call('/api/admin/code-intake/url', json({ url: 'https://jeux.exemple.test/jeu.phgame' }));
     expect(res.status).toBe(200);
     expect(res.data.unchanged).toBe(true);
+  }, 120_000);
+
+  it('un nom qui change d’adresse après vérification n’est résolu qu’une fois', async () => {
+    requested.length = 0;
+    lookups['rebind.exemple.test'] = 0;
+    const res = await call('/api/admin/code-intake/url', json({ url: 'https://rebind.exemple.test/jeu.phgame' }));
+    expect(res.status).toBeLessThan(300);
+    expect(lookups['rebind.exemple.test']).toBe(1);
+    expect(requested.at(-1)).toEqual({ url: 'https://rebind.exemple.test/jeu.phgame', address: '93.184.216.34' });
   }, 120_000);
 
   it('ne suit pas une redirection vers HTTP, ni vers une adresse locale', async () => {
@@ -228,8 +274,8 @@ describe('adresse HTTPS', () => {
     );
     expect(toInternal.status).toBe(400);
     expect(toInternal.data.error).toContain('privée');
-    expect(requested.some((u) => u.includes('interne.exemple.test'))).toBe(false);
-    expect(requested.some((u) => u.startsWith('http://'))).toBe(false);
+    expect(requested.some((r) => r.url.includes('interne.exemple.test'))).toBe(false);
+    expect(requested.some((r) => r.url.startsWith('http://'))).toBe(false);
   });
 
   it('refuse un fichier trop lourd, et une réponse d’erreur du serveur distant', async () => {
@@ -256,5 +302,92 @@ describe('adresses publiques et privées', () => {
       expect(isPrivateAddress(address), address).toBe(false);
     }
     expect(net.isIP('93.184.216.34')).toBe(4);
+  });
+});
+
+/**
+ * Transport réel, contre un vrai serveur HTTPS sur 127.0.0.1 avec un certificat auto-signé créé pour l'essai.
+ * Le nom `jeux.exemple.test` n'est jamais résolu : la connexion va à l'adresse fixée, et le certificat doit
+ * être valide pour le nom de l'URL.
+ */
+const canMakeCertificate = (() => {
+  try {
+    execFileSync('openssl', ['version'], { stdio: 'ignore' });
+    return true;
+  } catch {
+    return false;
+  }
+})();
+
+describe.skipIf(!canMakeCertificate)('transport HTTPS réel', () => {
+  let tlsDir = '';
+  let tlsServer: https.Server | undefined;
+  let tlsPort = 0;
+  let caPem = '';
+
+  beforeAll(async () => {
+    tlsDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ph-tls-'));
+    const keyPath = path.join(tlsDir, 'cle.pem');
+    const certPath = path.join(tlsDir, 'cert.pem');
+    execFileSync(
+      'openssl',
+      [
+        'req',
+        '-x509',
+        '-newkey',
+        'rsa:2048',
+        '-nodes',
+        '-keyout',
+        keyPath,
+        '-out',
+        certPath,
+        '-days',
+        '2',
+        '-subj',
+        '/CN=jeux.exemple.test',
+        '-addext',
+        'subjectAltName=DNS:jeux.exemple.test',
+      ],
+      { stdio: 'ignore' },
+    );
+    caPem = fs.readFileSync(certPath, 'utf8');
+    tlsServer = https.createServer({ key: fs.readFileSync(keyPath), cert: caPem }, (req, res) => {
+      if (req.url === '/jeu.phgame') {
+        res.writeHead(200, { 'content-type': 'application/octet-stream' });
+        res.end(urlBytes);
+        return;
+      }
+      res.writeHead(404);
+      res.end();
+    });
+    await new Promise<void>((resolve) => tlsServer!.listen(0, '127.0.0.1', () => resolve()));
+    tlsPort = (tlsServer!.address() as net.AddressInfo).port;
+  }, 60_000);
+
+  afterAll(async () => {
+    if (tlsServer) {
+      tlsServer.closeAllConnections();
+      await new Promise<void>((resolve) => tlsServer!.close(() => resolve()));
+    }
+    if (tlsDir) fs.rmSync(tlsDir, { recursive: true, force: true });
+  });
+
+  it('se connecte à l’adresse fixée, sans résoudre le nom, et lit le paquet', async () => {
+    const res = await httpsGet(new URL(`https://jeux.exemple.test:${tlsPort}/jeu.phgame`), '127.0.0.1', {
+      ca: caPem,
+    });
+    expect(res.status).toBe(200);
+    const bytes = await readAll(res.body);
+    expect(bytes.byteLength).toBe(urlBytes.byteLength);
+  });
+
+  it('refuse un certificat qui ne correspond pas au nom de l’URL', async () => {
+    await expect(
+      httpsGet(new URL(`https://autre.exemple.test:${tlsPort}/jeu.phgame`), '127.0.0.1', { ca: caPem }),
+    ).rejects.toThrow();
+  });
+
+  it('refuse un certificat qu’aucune autorité de confiance ne signe', async () => {
+    await expect(httpsGet(new URL(`https://jeux.exemple.test:${tlsPort}/jeu.phgame`), '127.0.0.1')).rejects.toThrow();
   });
 });
