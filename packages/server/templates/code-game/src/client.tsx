@@ -73,15 +73,7 @@ function Host({ publicState }: { publicState: HostView }) {
   );
 }
 
-function Player({
-  publicState,
-  playerState,
-  send,
-}: {
-  publicState: PublicView;
-  playerState: PlayerView;
-  send: Send;
-}) {
+function Player({ publicState, playerState, send }: { publicState: PublicView; playerState: PlayerView; send: Send }) {
   const [error, setError] = useState<string | null>(null);
   const open = publicState.phase === 'pick' && playerState.yourChoice === null;
 

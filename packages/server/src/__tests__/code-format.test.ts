@@ -9,6 +9,7 @@ import {
   validateCodePackage,
 } from '../packages/code-format.js';
 import { CODE_NOT_INSTALLABLE, PackageValidationError, validatePackage } from '../packages/format.js';
+import { PARTYHUB_ENGINE } from '../packages/engine.js';
 import { writeZip, type ZipFileEntry } from '../packages/zip.js';
 import { isCodePackage } from '../cli/code-game.js';
 
@@ -25,6 +26,7 @@ function buildCode(options: {
   tamperAfterSign?: (manifest: Record<string, unknown>) => void;
   serverCode?: string;
   extra?: ZipFileEntry[];
+  engineMinVersion?: string;
 }): Uint8Array {
   const entries: ZipFileEntry[] = [
     { name: CODE_ENTRY_SERVER, data: enc(options.serverCode ?? SERVER) },
@@ -40,7 +42,7 @@ function buildCode(options: {
     version: '1.0.0',
     description: 'Un jeu de test.',
     author: 'Test',
-    engine: { minVersion: '0.15.0', api: 1 },
+    engine: { minVersion: options.engineMinVersion ?? '0.15.0', api: 1 },
     entry: { server: CODE_ENTRY_SERVER, client: CODE_ENTRY_CLIENT },
     licenses: [{ path: 'licenses/LICENCE.txt', covers: [] }],
     files: entries.map((e) => ({ path: e.name, size: e.data.byteLength, sha256: sha(e.data) })),
@@ -78,6 +80,15 @@ describe('format 5 : jeu de code signé', () => {
     const pkg = validateCodePackage(buildCode({ key }), { trustedKeys: trustOf(key), requireSignature: true });
     expect(pkg.signer).toBe(key.keyId);
     expect(pkg.manifest.id).toBe('essai-jeu');
+  });
+
+  it('refuse un paquet qui demande un moteur plus récent que celui de l’installation', () => {
+    const issues = issuesFor(buildCode({ engineMinVersion: '99.0.0' }));
+    expect(issues.join(' ')).toContain('Ce paquet demande PartyHub 99.0.0 au minimum');
+  });
+
+  it('accepte un paquet qui demande exactement le moteur de l’installation', () => {
+    expect(issuesFor(buildCode({ engineMinVersion: PARTYHUB_ENGINE.version }))).toEqual([]);
   });
 
   it('accepte un paquet non signé quand la signature n’est pas exigée (contrôle de structure)', () => {

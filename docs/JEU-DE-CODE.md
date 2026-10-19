@@ -14,7 +14,7 @@ Dans l'administration, « Créer des jeux » → « Jeux de code » → « Crée
 2. **Modifier.** Choisir un fichier (`src/server.ts` pour les règles, `src/client.tsx` pour les écrans, `manifest.json`, `README.md`, `licenses/`), le modifier, puis enregistrer (Ctrl+S ou « Enregistrer le fichier »). Le nom, la description et la version se règlent dans « Informations du jeu » : ils sont écrits dans `manifest.json` et dans `src/server.ts` ensemble, pour rester identiques.
 3. **Vérifier.** Construit le jeu sans signature, puis joue une partie complète avec des robots dans l'isolat de production. La suite n'est proposée qu'après une vérification réussie de la version actuelle : toute modification la rend caduque.
 4. **Signer hors de PartyHub.** L'éditeur affiche alors la commande de signature. Elle se lance avec la clé privée de l'auteur, qui ne quitte jamais son poste : `phgame pack DATA_DIR/jeux-en-cours/<identifiant> <identifiant>.phgame <cle-privee.pem>`. La clé publique correspondante doit être dans `DATA_DIR/cles-de-confiance/` (voir « Installer dans PartyHub »).
-5. **Ajouter le paquet.** Trois voies, au choix : déposer le `.phgame` dans le dossier `DATA_DIR/depot-jeux`, coller son adresse HTTPS dans « Ajouter un jeu de code », ou le téléverser dans « Paquets de jeux (.phgame) ». Le jeu arrive dans « Jeux de code », en attente de revue : relire le code, cocher la case et approuver. Il ne joue qu'après approbation, comme tout paquet.
+5. **Ajouter le paquet.** Au choix : déposer le `.phgame` dans le dossier `DATA_DIR/depot-jeux`, coller son adresse HTTPS dans « Ajouter un jeu de code », le téléverser dans « Paquets de jeux (.phgame) », ou le publier dans le dépôt de jeux du magasin. Le jeu arrive dans « Jeux de code », en attente de revue : relire le code, cocher la case et approuver. Il ne joue qu'après approbation, comme tout paquet.
 
 Règles :
 
@@ -117,12 +117,14 @@ Trois composants, exportés par défaut dans un objet `{ Settings, Host, Player 
 ### Installer dans PartyHub
 
 1. **Clé de confiance.** PartyHub n'accepte que les paquets signés par une clé qu'il connaît. L'auteur crée sa clé avec `keygen` et dépose la partie publique (`.pub.pem`) dans `DATA_DIR/cles-de-confiance/`, avant le premier paquet signé avec elle. Sans clé de confiance, l'installation est refusée avec un message qui indique ce dossier.
-2. **Dépôt.** Le paquet arrive par l'une des trois voies de l'administration :
+2. **Dépôt.** Le paquet arrive par l'une des voies de l'administration :
    - le dossier `DATA_DIR/depot-jeux` : PartyHub le relit toutes les dix secondes, et « Relire le dossier maintenant » le relit tout de suite. Un fichier inchangé n'est pas relu par la relecture automatique. Un fichier refusé (paquet invalide, lien symbolique) est signalé avec sa raison ;
    - « Ajouter un jeu de code » : l'adresse HTTPS du fichier. Seules les adresses HTTPS sont acceptées, sans mot de passe dans l'adresse. Les adresses locales et privées sont refusées, y compris après une redirection : chaque étape est vérifiée avant d'être appelée, cinq redirections au plus. Le nom n'est résolu qu'une fois, et la connexion va à l'adresse vérifiée : un nom qui changerait d'adresse entre-temps n'y change rien. Le certificat doit valoir pour le nom de l'URL. Le téléchargement est limité à 8 Mio et à 20 secondes ;
-   - « Paquets de jeux (.phgame) » : téléversement du fichier.
+   - « Paquets de jeux (.phgame) » : téléversement du fichier ;
+   - le magasin de jeux (`docs/MAGASIN.md`, section « Jeux de code ») : un jeu de code publié dans le dépôt de jeux, installé d'un clic.
 
-   Dans les trois cas, le paquet passe en attente de revue : il ne change rien au jeu actif.
+   Dans tous les cas, le paquet passe en attente de revue : il ne change rien au jeu actif.
+
 3. **Revue.** Dans « Jeux de code », ouvrir la revue : fichiers, empreintes, code serveur et code des vues. Cocher la case d'approbation, puis « Approuver et activer ».
 4. **Effet.** La version approuvée devient active et apparaît au catalogue. Une nouvelle version approuvée remplace l'ancienne, et les salles en cours de l'ancienne version sont fermées (le nombre est affiché).
 
@@ -142,7 +144,7 @@ Règles d'installation :
 - **Budget de temps.** Un appel trop long est interrompu. Au cinquième dépassement (`CODE_MAX_TIMEOUTS`), ou dès qu'un échec détruit l'isolat (mémoire dépassée), le jeu est arrêté : il passe en « Erreur », ses salles sont fermées, et il reste arrêté jusqu'au prochain rechargement des jeux.
 - **Vues** : dans un iframe `sandbox="allow-scripts"`, servi depuis `/api/code-games/<id>/<empreinte>/view.html`. Ce document a sa propre politique : un seul script (celui du même paquet), aucune connexion réseau. La page et la vue échangent uniquement des messages (`postMessage`).
 - **Contrôle** (`check`) : passe par le même isolat que la production, pour tester ce qui tournera réellement.
-- **Charge.** Chaque version chargée a son isolat : environ 2 Mio de mémoire et une quinzaine de millisecondes à créer, plus la taille de son code. Un contexte par salle, dans un seul isolat, a été mesuré et écarté : environ 0,3 Mio par salle, et une limite de 64 Mio partagée par toutes les salles d'un même jeu, qui atteindrait sa limite vers 200 salles et couperait toutes ses salles d'un coup.
+- **Charge.** Chaque version chargée a son isolat : environ 2 Mio de tas V8, et environ 4 Mio de mémoire du processus une fois chargée (mesuré : 20 jeux actifs, environ 80 Mio de plus qu'un serveur vide). Une quinzaine de millisecondes à créer, plus la taille de son code. Un contexte par salle, dans un seul isolat, a été mesuré et écarté : environ 0,3 Mio par salle, et une limite de 64 Mio partagée par toutes les salles d'un même jeu, qui atteindrait sa limite vers 200 salles et couperait toutes ses salles d'un coup.
 
 ## Tests de bout en bout
 

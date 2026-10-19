@@ -1,6 +1,7 @@
 import { createHash, createPublicKey, generateKeyPairSync, sign, verify, type KeyObject } from 'node:crypto';
 import { z } from 'zod';
 import { PARTYHUB_ENGINE } from './engine.js';
+import { compareVersions } from './semver.js';
 import {
   DEFAULT_PACKAGE_LIMITS,
   PackageValidationError,
@@ -222,6 +223,12 @@ export function validateCodePackage(bytes: Uint8Array, options: CodePackageOptio
   }
   const manifest = parsed.data;
   const raw = json as Record<string, unknown>;
+  // Un paquet ne s'installe que sur un moteur au moins aussi récent que celui qu'il demande.
+  if (compareVersions(manifest.engine.minVersion, PARTYHUB_ENGINE.version) > 0) {
+    issues.push(
+      `Ce paquet demande PartyHub ${manifest.engine.minVersion} au minimum ; cette installation est en ${PARTYHUB_ENGINE.version}.`,
+    );
+  }
 
   // Signature : couvre le manifeste entier, donc toutes les empreintes des fichiers.
   let signer: string | null = null;

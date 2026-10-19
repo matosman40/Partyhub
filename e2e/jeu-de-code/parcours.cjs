@@ -63,7 +63,8 @@ async function administrer(browser, errors) {
   await shot(page, 'admin-revue');
 
   const approuver = page.getByRole('button', { name: 'Approuver et activer' });
-  if (!(await approuver.isDisabled())) throw new Error('le bouton d’approbation doit rester désactivé avant la relecture');
+  if (!(await approuver.isDisabled()))
+    throw new Error('le bouton d’approbation doit rester désactivé avant la relecture');
   await page.getByRole('checkbox', { name: /relu ce code/ }).check();
   await approuver.click();
   await page.getByRole('status').filter({ hasText: 'est approuvé' }).first().waitFor({ timeout: 20000 });

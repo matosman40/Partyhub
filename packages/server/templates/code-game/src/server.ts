@@ -190,7 +190,11 @@ const game: GameModule<State, Settings> = {
   /** Mode test : un robot choisit au hasard, une fois par manche. */
   suggest(state: State, playerId: string, random: () => number) {
     if (state.phase !== 'pick' || !(playerId in state.players) || state.choices[playerId]) return null;
-    return { type: 'choisir', payload: { choice: random() < 0.5 ? 'pile' : 'face' }, key: `${state.round}:${playerId}` };
+    return {
+      type: 'choisir',
+      payload: { choice: random() < 0.5 ? 'pile' : 'face' },
+      key: `${state.round}:${playerId}`,
+    };
   },
 };
 

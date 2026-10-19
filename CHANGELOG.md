@@ -4,9 +4,15 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 
 ## [Non publié]
 
+## [0.15.0] - 2026-10-19
+
 ### Ajouté
 
-- Magasin de jeux : la section *Magasin de jeux* de l’administration liste les jeux publiés dans le dépôt de jeux (`matosman40/jeux-partyhub` par défaut, variable `PARTYHUB_STORE_REPO`, modifiable dans l’administration). Chaque jeu montre sa couverture, son auteur, sa version et son état. Un jeu s’installe d’un clic, se met à jour chaque jour ou à la demande, et se supprime ; ses parties en cours sont fermées. Seuls les paquets déclaratifs (cartes, plateau, questions, recettes) s’installent : les jeux écrits dans le code de PartyHub restent dans l’application. Guide : `docs/MAGASIN.md`.
+- Jeux de code (format 5) : un jeu écrit en TypeScript et React tourne dans un isolat V8 séparé, et ses vues dans un iframe sandboxé servi par le serveur. Chaque jeu est limité à 64 Mio de mémoire et à 2 secondes par appel ; au cinquième dépassement, il est arrêté. Le paquet est signé hors de PartyHub avec la clé de son auteur, puis reçu par le dossier `DATA_DIR/depot-jeux`, par un lien HTTPS, par téléversement ou par le magasin. Seules les clés de `DATA_DIR/cles-de-confiance/` sont acceptées. Rien ne s’active sans approbation dans *Jeux de code* : la revue montre les fichiers, leurs empreintes, le code serveur et le code des vues, et la différence avec la version active. Le format demande PartyHub 0.15.0 au minimum. Documentation : `docs/JEU-DE-CODE.md`, `docs/PROMPT-JEU-DE-CODE.md`.
+
+- Éditeur de jeux de code dans l’administration : créer un jeu depuis un modèle, modifier ses fichiers, fixer son nom, sa description et sa version, puis le vérifier par une partie jouée par des robots. L’éditeur ne propose aucune clé de signature : la commande `phgame pack` s’exécute hors de PartyHub.
+
+- Magasin de jeux : la section *Magasin de jeux* de l’administration liste les jeux publiés dans le dépôt de jeux (`matosman40/jeux-partyhub` par défaut, variable `PARTYHUB_STORE_REPO`, modifiable dans l’administration). Chaque jeu montre sa couverture, son auteur, sa version et son état. Un jeu s’installe d’un clic, se met à jour chaque jour ou à la demande, et se supprime ; ses parties en cours sont fermées. Les paquets déclaratifs (cartes, plateau, questions, recettes) s’installent. Les jeux de code s’installent aussi, mais attendent l’approbation d’un administrateur (voir *Jeux de code* ci-dessous). Les jeux écrits dans le code de PartyHub restent dans l’application. Guide : `docs/MAGASIN.md`.
 
 - Sons dans les paquets (format 4) : un paquet peut porter des bruitages (`.ogg` ou `.mp3`) et une musique de partie, déclarés dans `game/definition.json` (bloc `sons`). Ils remplacent les bruitages globaux pendant que la salle du jeu est affichée, et la musique de partie tourne sur l’écran principal. Budgets : 512 Ko par fichier, 2 Mio par paquet, 16 fichiers. Le format 4 demande PartyHub 0.14.0 au minimum. Route publique : `GET /api/game-sounds/<identifiant>`. Documentation : `docs/PHGAME.md`, section Sons.
 
@@ -14,9 +20,19 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 
 - Paquets `.phgame` : script npm racine `npm run phgame` (`pack` pour construire un paquet, `check` pour le vérifier et lancer une partie de contrôle avec des robots). Les quatre paquets d’exemple passent ce contrôle.
 
+### Modifié
+
+- Image Docker : une seule image PartyHub. Les outils de construction des jeux de code (esbuild et les modèles) y sont inclus. Il n’y a plus d’image ni de service `jeux` séparés.
+
 ### Corrigé
 
 - Écran noir au démarrage : si l’application ne se lance pas (script bloqué, réseau coupé, mise à jour en cours), la page n’affichait qu’un fond sombre. Au bout de 12 secondes, elle indique maintenant de vérifier la connexion et propose de recharger la page. Une salle qui ne répond pas affiche déjà un message et un bouton « Réessayer » après 6 secondes.
+
+### Notes de mise à jour
+
+- Base de données : une table (`code_games`) est ajoutée au premier démarrage. Après cette mise à jour, revenir à une version antérieure refuse de démarrer sans restaurer la sauvegarde faite juste avant (`docs/MISE-A-JOUR.md`, section 5).
+- Les brouillons de jeux de code, les paquets du dossier `depot-jeux` pas encore lus et les clés de confiance ne sont pas dans l’export ZIP : à copier à part (`docs/JEU-DE-CODE.md`).
+- Aucun jeu de code n’est installable tant qu’aucune clé de confiance ne signe : la signature des paquets publiés est reportée.
 
 ## [0.12.0] - 2026-10-18
 
