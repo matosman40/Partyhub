@@ -69,7 +69,7 @@ function soundPackage(
     undeclared: options.undeclared,
     manifest: (m) => {
       m.formatVersion = 4;
-      m.engine.minVersion = '0.13.0';
+      m.engine.minVersion = '0.14.0';
       m.licenses[0].covers = Object.keys(files);
       options.manifest?.(m);
     },
@@ -115,9 +115,9 @@ describe('format 4 : sons dans les paquets', () => {
     expect(issues.join(' ')).toContain('les sons demandent le format 4');
   });
 
-  it('refuse un format 4 qui demande un moteur plus ancien que 0.13.0', () => {
-    const issues = issuesOf(soundPackage({ manifest: (m) => (m.engine.minVersion = '0.12.0') }));
-    expect(issues.join(' ')).toContain('Le format 4 demande PartyHub 0.13.0 au minimum');
+  it('refuse un format 4 qui demande un moteur plus ancien que 0.14.0', () => {
+    const issues = issuesOf(soundPackage({ manifest: (m) => (m.engine.minVersion = '0.13.0') }));
+    expect(issues.join(' ')).toContain('Le format 4 demande PartyHub 0.14.0 au minimum');
   });
 
   it('refuse un bruitage qui n’existe pas dans l’application', () => {
@@ -152,18 +152,18 @@ describe('format 4 : sons dans les paquets', () => {
     const heavy = issuesOf(soundPackage({ files: { 'assets/sons/sfx-place.ogg': big } }));
     expect(heavy.join(' ')).toContain('fichier audio trop lourd');
 
-    const each = noise(900 * 1024, [0x4f, 0x67, 0x67, 0x53]);
+    const each = noise(400 * 1024, [0x4f, 0x67, 0x67, 0x53]);
     const files: Record<string, Uint8Array> = {};
-    for (let i = 0; i < 5; i++) files[`assets/sons/s${i}.ogg`] = each;
+    for (let i = 0; i < 6; i++) files[`assets/sons/s${i}.ogg`] = each;
     const total = issuesOf(soundPackage({ sons: { sfx: { place: 'assets/sons/s0.ogg' } }, files }));
     expect(total.join(' ')).toContain('Sons trop lourds au total');
   });
 
-  it('refuse plus de 24 fichiers audio', () => {
+  it('refuse plus de 16 fichiers audio', () => {
     const files: Record<string, Uint8Array> = {};
-    for (let i = 0; i < 25; i++) files[`assets/sons/s${i}.ogg`] = ogg(16);
+    for (let i = 0; i < 17; i++) files[`assets/sons/s${i}.ogg`] = ogg(16);
     const issues = issuesOf(soundPackage({ sons: { sfx: { place: 'assets/sons/s0.ogg' } }, files }));
-    expect(issues.join(' ')).toContain('Trop de fichiers audio : 25');
+    expect(issues.join(' ')).toContain('Trop de fichiers audio : 17');
   });
 
   it('refuse un fichier audio comme couverture', () => {

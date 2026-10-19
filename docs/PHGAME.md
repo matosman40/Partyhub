@@ -62,7 +62,7 @@ Chaque paquet porte **exactement un module de jeu**, déclaré dans `requires.mo
 | `formatVersion: 1` | `cards` | 0.5.0 et suivantes |
 | `formatVersion: 2` | `cards`, `board`, `quiz` | 0.7.0 et suivantes |
 | `formatVersion: 3` | `recipe` | 0.12.0 et suivantes |
-| `formatVersion: 4` | `cards`, `board`, `quiz`, `recipe` | 0.13.0 et suivantes (sons dans le paquet) |
+| `formatVersion: 4` | `cards`, `board`, `quiz`, `recipe` | 0.14.0 et suivantes (sons dans le paquet) |
 
 | Module | Définition | Catégorie | Contraintes |
 |---|---|---|---|
@@ -168,10 +168,10 @@ et le bloc `sons` de `game/definition.json` les désigne :
 - **Bruitages** : les noms de l'application (`SFX_NAMES` : place, explode, crate, pickup, die, hit, start, win, final, click,
   card, draw, turn, chip). Une clé inconnue est refusée.
 - **Musique** : seule `partie` est admise dans un paquet. Les musiques d'accueil, de menus et de fin restent globales.
-- **Budgets** : 1 Mio par fichier audio, 4 Mio d'audio par paquet, 24 fichiers au plus. La signature est vérifiée (Ogg : `OggS` ;
+- **Budgets** : 512 Ko par fichier audio, 2 Mio d'audio par paquet, 16 fichiers au plus. La signature est vérifiée (Ogg : `OggS` ;
   MP3 : étiquette ID3 ou trame MPEG). La durée n'est pas vérifiée.
 - **Licence** : chaque fichier audio doit être couvert par une licence ou une attribution du manifeste.
-- **Moteur** : un paquet de format 4 demande PartyHub 0.13.0 au minimum. Un bloc `sons` dans un paquet de format antérieur est refusé.
+- **Moteur** : un paquet de format 4 demande PartyHub 0.14.0 au minimum. Un bloc `sons` dans un paquet de format antérieur est refusé.
 - **Lecture** : les bruitages du jeu remplacent les bruitages globaux pendant que sa salle est affichée. La musique de partie
   tourne sur l'écran principal, en boucle. Les adresses publiques sont données par `GET /api/game-sounds/<identifiant>`.
 
