@@ -62,6 +62,7 @@ Chaque paquet porte **exactement un module de jeu**, déclaré dans `requires.mo
 | `formatVersion: 1` | `cards` | 0.5.0 et suivantes |
 | `formatVersion: 2` | `cards`, `board`, `quiz` | 0.7.0 et suivantes |
 | `formatVersion: 3` | `recipe` | 0.12.0 et suivantes |
+| `formatVersion: 4` | `cards`, `board`, `quiz`, `recipe` | 0.13.0 et suivantes (sons dans le paquet) |
 
 | Module | Définition | Catégorie | Contraintes |
 |---|---|---|---|
@@ -152,6 +153,28 @@ Le filtre des consignes de l'IA repose sur une liste de termes refusés (`packag
 première version, à relire avant une sortie publique. Les mots tapés par les joueurs ne sont pas filtrés. Aucune classe d'âge
 n'est encore déclarée pour un paquet.
 
+## Sons (format 4)
+
+Un paquet de format 4 peut porter des bruitages et une musique de partie. Les fichiers sont dans `assets/` (`.ogg` ou `.mp3`),
+et le bloc `sons` de `game/definition.json` les désigne :
+
+```json
+"sons": {
+  "sfx": { "place": "assets/sons/sfx-place.ogg", "die": "assets/sons/sfx-die.ogg" },
+  "music": { "partie": "assets/sons/musique-partie.ogg" }
+}
+```
+
+- **Bruitages** : les noms de l'application (`SFX_NAMES` : place, explode, crate, pickup, die, hit, start, win, final, click,
+  card, draw, turn, chip). Une clé inconnue est refusée.
+- **Musique** : seule `partie` est admise dans un paquet. Les musiques d'accueil, de menus et de fin restent globales.
+- **Budgets** : 1 Mio par fichier audio, 4 Mio d'audio par paquet, 24 fichiers au plus. La signature est vérifiée (Ogg : `OggS` ;
+  MP3 : étiquette ID3 ou trame MPEG). La durée n'est pas vérifiée.
+- **Licence** : chaque fichier audio doit être couvert par une licence ou une attribution du manifeste.
+- **Moteur** : un paquet de format 4 demande PartyHub 0.13.0 au minimum. Un bloc `sons` dans un paquet de format antérieur est refusé.
+- **Lecture** : les bruitages du jeu remplacent les bruitages globaux pendant que sa salle est affichée. La musique de partie
+  tourne sur l'écran principal, en boucle. Les adresses publiques sont données par `GET /api/game-sounds/<identifiant>`.
+
 ## Règles de validation
 
 Un paquet est refusé dès qu'une règle n'est pas respectée. Les anomalies du contenu sont toutes affichées ; une archive mal formée est refusée au premier problème rencontré.
@@ -240,7 +263,7 @@ La clé de chiffrement des clés d'IA (`ai-secret.key`, dans `DATA_DIR`) n'est d
 
 ## Ressources graphiques
 
-Les images d'un paquet actif sont servies par `GET /api/packages/<identifiant>/assets/<chemin>`, avec un type MIME selon
+Les images et les sons d'un paquet actif sont servis par `GET /api/packages/<identifiant>/assets/<chemin>`, avec un type MIME selon
 l'extension et l'en-tête `X-Content-Type-Options: nosniff`. Une ressource d'un paquet désactivé ou en erreur renvoie 404.
 Les vues de cartes n'affichent pas encore ces images : elles utilisent l'icône et les couleurs de la définition.
 
@@ -277,4 +300,5 @@ Le modèle de publication pour un dépôt de jeu est décrit dans [PUBLIER-UN-JE
 - Jeux JavaScript dans un bac à sable : prévus dans une version ultérieure (voir la feuille de route).
 - Jeux de temps réel et de mouvement (type Bomberman, Just Dance) : pas dans un paquet. Un paquet ne porte que des données ;
   ces mécaniques restent du code intégré à PartyHub, ou demanderont le bac à sable JavaScript.
-- Vidéos et sons de la médiathèque dans un paquet : non pris en charge. Les questions utilisent des liens YouTube.
+- Vidéos et sons de la médiathèque dans un paquet : non pris en charge. Les questions utilisent des liens YouTube, et les
+  sons passent par les fichiers du paquet (format 4).

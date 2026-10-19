@@ -28,7 +28,7 @@ import { ChampionshipSettingsForm, GameEndPanel, championshipPill, replayLabel }
 import { useActiveProfile } from '../profile/useProfile.js';
 import { useActivity } from './tv/useActivity.js';
 import { useGamePhotoCapture } from '../tv/useGamePhotoCapture.js';
-import { musicForLobby, useMusicSlot } from '../sounds.js';
+import { musicForLobby, useMusicSlot, usePackageSounds } from '../sounds.js';
 import { phaseOf, useGameCues } from '../tv/gameCues.js';
 import { canSend, OFFLINE_ACTION_ERROR, useConnection } from '../connection.js';
 
@@ -120,6 +120,8 @@ export function TvPage() {
 
   // Musique de la salle : menus avant la partie, fin de partie aux résultats, silence pendant le jeu.
   useMusicSlot(musicForLobby(view?.lobby.status));
+  // Sons du jeu importé (paquet) : bruitages et musique de partie pendant la partie.
+  usePackageSounds(view?.lobby.game.id ?? null, view?.lobby.status === 'in_game');
   // Bruitages de partie (début, bilan, fin) : tous les jeux qui annoncent leur étape en profitent.
   useGameCues(view?.lobby.status ?? null, phaseOf(view?.game?.public));
   // Une coupure est annoncée sur l’écran : sinon, il reste figé sans que personne ne sache pourquoi.

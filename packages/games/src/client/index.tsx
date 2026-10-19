@@ -41,6 +41,8 @@ export {
   setSfxFiles,
   startMusic,
   stopMusic,
+  playLoopFile,
+  stopLoopFile,
   unlockAudio,
   unlockOnFirstGesture,
 } from './audio.js';
