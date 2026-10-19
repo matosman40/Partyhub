@@ -4,6 +4,10 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 
 ## [Non publié]
 
+### Ajouté
+
+- Magasin de jeux : la section *Magasin de jeux* de l’administration liste les jeux publiés dans le dépôt de jeux (`matosman40/jeux-partyhub` par défaut, variable `PARTYHUB_STORE_REPO`, modifiable dans l’administration). Chaque jeu montre sa couverture, son auteur, sa version et son état. Un jeu s’installe d’un clic, se met à jour chaque jour ou à la demande, et se supprime ; ses parties en cours sont fermées. Seuls les paquets déclaratifs (cartes, plateau, questions, recettes) s’installent : les jeux écrits dans le code de PartyHub restent dans l’application. Guide : `docs/MAGASIN.md`.
+
 ## [0.13.0] - 2026-10-19
 
 ### Ajouté

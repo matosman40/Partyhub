@@ -8,6 +8,7 @@ import { CardGamesAdmin } from '../admin/CardGamesAdmin.js';
 import { BoardGamesAdmin } from '../admin/BoardGamesAdmin.js';
 import { PackagesAdmin } from '../admin/PackagesAdmin.js';
 import { PackageSourcesAdmin } from '../admin/PackageSourcesAdmin.js';
+import { StoreAdmin } from '../admin/StoreAdmin.js';
 import { CharacterPacksAdmin } from '../admin/CharacterPacksAdmin.js';
 import { AssetLibrary } from '../admin/AssetLibrary.js';
 import { ScreenBackgroundsAdmin } from '../admin/ScreenBackgroundsAdmin.js';
@@ -651,6 +652,11 @@ export function AdminPage() {
                   validées sont tirées.
                 </p>
                 <BoumBanksAdmin />
+              </section>
+
+              <section className="card stack">
+                <h2>Magasin de jeux</h2>
+                <StoreAdmin onChanged={load} />
               </section>
 
               <section className="card stack">
