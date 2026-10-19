@@ -78,12 +78,7 @@ export interface Release {
   checksum: ReleaseAsset;
 }
 
-async function request(
-  url: string,
-  accept: string,
-  options: GitHubOptions,
-  timeoutMs = 20_000,
-): Promise<Response> {
+async function request(url: string, accept: string, options: GitHubOptions, timeoutMs = 20_000): Promise<Response> {
   const headers: Record<string, string> = {
     Accept: accept,
     'User-Agent': 'PartyHub',
@@ -366,7 +361,9 @@ export async function tagFiles(
   const wanted = new Set(entries.map((e) => base + e.rel));
   for (const name of archived.keys()) {
     if (name.startsWith(base) && !wanted.has(name)) {
-      throw new GitHubError(`« ${name.slice(base.length)} » est dans l’archive mais pas dans le commit : lecture refusée.`);
+      throw new GitHubError(
+        `« ${name.slice(base.length)} » est dans l’archive mais pas dans le commit : lecture refusée.`,
+      );
     }
   }
 
