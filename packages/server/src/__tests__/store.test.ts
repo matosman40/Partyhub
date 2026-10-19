@@ -1,36 +1,40 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { buildCodePackage, newCodeGame } from '../code-games/build.js';
+import { newCodeGame } from '../code-games/build.js';
 import { CodeGameService, loadTrustedKeys } from '../code-games/service.js';
 import { Store } from '../db/store.js';
-import { generateSigningKeys } from '../packages/code-format.js';
+import { listFiles } from '../cli/list-files.js';
 import { PackageService } from '../packages/service.js';
+import { writeZip } from '../packages/zip.js';
 import { PackageSourceService } from '../sources/service.js';
 import { COVER_MAX_BYTES } from '../store/catalog.js';
+import { buildTagPackage } from '../store/build.js';
 import { StoreService, type StoreServiceOptions } from '../store/service.js';
-import { buildPackage, enc, sha, tinyPng } from './helpers/package-kit.js';
+import { enc, exampleDefinition, tinyPng } from './helpers/package-kit.js';
 
 const REPO = 'matosman40/jeux-partyhub';
 const TOKEN = 'ghp_secret_du_magasin_0123456789';
 
-interface Release {
-  archive: Uint8Array;
-  /** Empreinte publiée dans le .sha256 ; null = fichier absent de la release. */
-  sha: string | null;
-}
-
-/** Dépôt de jeux simulé : tags, fichiers par version (`tag|chemin`) et releases par tag. */
+/**
+ * Dépôt de jeux simulé : tags, fichiers de chaque version (`tag|chemin`, chemin complet dans le dépôt). `tampered`
+ * remplace le contenu servi pour un fichier, sans changer l’empreinte que GitHub annonce.
+ */
 interface FakeStore {
   tags: string[];
   files: Record<string, Uint8Array>;
-  releases: Record<string, Release>;
+  tampered: Record<string, Uint8Array>;
+  /** Fichiers présents dans l’archive seulement, pas dans l’arbre du commit. */
+  archiveOnly: Record<string, Uint8Array>;
+  /** Dossier racine de l’archive, s’il ne doit pas être celui du commit. */
+  archiveRoot?: string;
   limited: boolean;
   calls: { path: string; auth: string | null }[];
 }
 
-const emptyStore = (): FakeStore => ({ tags: [], files: {}, releases: {}, limited: false, calls: [] });
+const emptyStore = (): FakeStore => ({ tags: [], files: {}, tampered: {}, archiveOnly: {}, limited: false, calls: [] });
 
 function reply(body: BodyInit, status: number, url: URL, type: string): Response {
   const res = new Response(body as unknown as BodyInit, { status, headers: { 'content-type': type } });
@@ -42,7 +46,13 @@ const json = (value: unknown, status: number, url: URL) =>
   reply(JSON.stringify(value), status, url, 'application/json');
 const notFound = (url: URL) => json({ message: 'Not Found' }, 404, url);
 
-/** Faux client GitHub : les mêmes routes que le code réel (tags, matching-refs, releases, actifs, contents). */
+/** Empreintes Git, calculées comme GitHub : un blob ne dépend que de son contenu. */
+const blobSha = (bytes: Uint8Array): string =>
+  createHash('sha1').update(`blob ${bytes.byteLength}\0`).update(bytes).digest('hex');
+const commitSha = (tag: string): string => createHash('sha1').update(`commit ${tag}`).digest('hex');
+const treeSha = (tag: string): string => createHash('sha1').update(`tree ${tag}`).digest('hex');
+
+/** Faux client GitHub : les routes que le code réel appelle (tags, commit, arbre, archive, contenus). */
 function fakeFetch(state: FakeStore) {
   const fetchFn = async (input: string | URL | Request, init?: RequestInit) => {
     const url = new URL(String(input));
@@ -72,37 +82,42 @@ function fakeFetch(state: FakeStore) {
       );
     }
 
-    const release = /^\/repos\/([^/]+\/[^/]+)\/releases\/tags\/(.+)$/.exec(url.pathname);
-    if (release) {
-      if (`${release[1]}` !== REPO) return notFound(url);
-      const tag = decodeURIComponent(release[2]!);
-      const rel = state.releases[tag];
-      if (!rel) return notFound(url);
-      const game = tag.slice(0, tag.lastIndexOf('-v'));
-      const assets: { name: string; url: string; size: number }[] = [
-        {
-          name: `${game}.phgame`,
-          url: `https://api.github.com/repos/${REPO}/releases/assets/${tag}/archive`,
-          size: rel.archive.length,
-        },
-      ];
-      if (rel.sha !== null) {
-        assets.push({
-          name: `${game}.phgame.sha256`,
-          url: `https://api.github.com/repos/${REPO}/releases/assets/${tag}/sha`,
-          size: 80,
-        });
-      }
-      return json({ tag_name: tag, assets }, 200, url);
+    const commit = /^\/repos\/([^/]+\/[^/]+)\/commits\/(.+)$/.exec(url.pathname);
+    if (commit) {
+      const tag = decodeURIComponent(commit[2]!);
+      if (commit[1] !== REPO || !state.tags.includes(tag)) return notFound(url);
+      return json({ sha: commitSha(tag), commit: { tree: { sha: treeSha(tag) } } }, 200, url);
     }
 
-    const asset = /^\/repos\/([^/]+\/[^/]+)\/releases\/assets\/(.+)\/(archive|sha)$/.exec(url.pathname);
-    if (asset) {
-      const rel = state.releases[decodeURIComponent(asset[2]!)];
-      if (!rel) return notFound(url);
-      if (asset[3] === 'archive') return reply(rel.archive, 200, url, 'application/octet-stream');
-      if (rel.sha === null) return notFound(url);
-      return reply(`${rel.sha}  jeu.phgame\n`, 200, url, 'text/plain');
+    const tree = /^\/repos\/([^/]+\/[^/]+)\/git\/trees\/([0-9a-f]{40})$/.exec(url.pathname);
+    if (tree) {
+      const tag = state.tags.find((t) => treeSha(t) === tree[2]);
+      if (tree[1] !== REPO || !tag || !url.searchParams.has('recursive')) return notFound(url);
+      const entries = Object.entries(state.files)
+        .filter(([key]) => key.startsWith(`${tag}|`))
+        .map(([key, data]) => ({
+          path: key.slice(tag.length + 1),
+          mode: '100644',
+          type: 'blob',
+          sha: blobSha(data),
+          size: data.length,
+        }));
+      return json({ sha: tree[2], tree: entries, truncated: false }, 200, url);
+    }
+
+    // Archive du dépôt au tag, comme GitHub la sert : un dossier racine « auteur-dépôt-sha7 », puis les fichiers.
+    const zipball = /^\/repos\/([^/]+\/[^/]+)\/zipball\/(.+)$/.exec(url.pathname);
+    if (zipball) {
+      const tag = decodeURIComponent(zipball[2]!);
+      if (zipball[1] !== REPO || !state.tags.includes(tag)) return notFound(url);
+      const root = state.archiveRoot ?? `matosman40-jeux-partyhub-${commitSha(tag).slice(0, 7)}`;
+      const archived = Object.entries({ ...state.files, ...state.archiveOnly })
+        .filter(([key]) => key.startsWith(`${tag}|`))
+        .map(([key, data]) => ({
+          name: `${root}/${key.slice(tag.length + 1)}`,
+          data: state.tampered[key] ?? data,
+        }));
+      return reply(writeZip(archived) as unknown as BodyInit, 200, url, 'application/zip');
     }
 
     const contents = /^\/repos\/([^/]+\/[^/]+)\/contents\/(.+)$/.exec(url.pathname);
@@ -132,28 +147,47 @@ interface PublishOptions {
   module?: string;
   cover?: string;
   coverBytes?: Uint8Array;
+  /** Manifeste du dossier, tel quel. Par défaut, le manifeste généré pour le jeu. */
   manifestText?: string;
-  archive?: Uint8Array;
-  /** Empreinte publiée ; undefined = empreinte exacte ; null = pas de fichier .sha256. */
-  sha?: string | null;
+  /** Fichiers du dossier jeux/<id>/, sans manifest.json. Par défaut, le contenu d’un jeu de cartes d’exemple. */
+  sourceFiles?: Record<string, Uint8Array>;
 }
 
-/** Publie une version : tag, manifeste, couverture éventuelle et release avec son paquet. */
+/** Publie une version : tag, dossier du jeu à ce tag (manifeste, contenu, couverture éventuelle). */
 function publish(state: FakeStore, id: string, version: string, options: PublishOptions = {}): void {
   const tag = `${id}-v${version}`;
   state.tags.push(tag);
   const manifest = {
+    format: 'phgame',
+    formatVersion: 1,
     id,
     name: options.name ?? 'Frontières',
+    version,
     description: 'Un jeu de test.',
     author: 'Équipe test',
+    kind: 'declarative',
+    engine: { minVersion: '0.5.0', api: 1 },
     requires: { modules: [options.module ?? 'cards'] },
+    entry: 'game/definition.json',
+    licenses: [{ path: 'licenses/LICENCE.txt', covers: [] }],
     ...(options.cover ? { cover: options.cover } : {}),
   };
   state.files[`${tag}|jeux/${id}/manifest.json`] = enc(options.manifestText ?? JSON.stringify(manifest));
-  if (options.cover) state.files[`${tag}|jeux/${id}/${options.cover}`] = options.coverBytes ?? tinyPng(300, 200);
-  const archive = options.archive ?? buildPackage({ id, version });
-  state.releases[tag] = { archive, sha: options.sha === undefined ? sha(archive) : options.sha };
+  const files = options.sourceFiles ?? {
+    'game/definition.json': enc(JSON.stringify(exampleDefinition())),
+    'licenses/LICENCE.txt': enc('Licence de test.'),
+    ...(options.cover ? { [options.cover]: options.coverBytes ?? tinyPng(300, 200) } : {}),
+  };
+  for (const [name, data] of Object.entries(files)) state.files[`${tag}|jeux/${id}/${name}`] = data;
+}
+
+/** Fichiers d’un dossier de jeu de code, tels qu’ils seraient au tag : manifest.json à part. */
+function folderFiles(dirPath: string): { manifestText: string; files: Record<string, Uint8Array> } {
+  const files: Record<string, Uint8Array> = {};
+  for (const name of listFiles(dirPath)) {
+    if (name !== 'manifest.json') files[name] = new Uint8Array(readFileSync(path.join(dirPath, name)));
+  }
+  return { manifestText: readFileSync(path.join(dirPath, 'manifest.json'), 'utf8'), files };
 }
 
 let dir: string;
@@ -305,7 +339,12 @@ describe('installation, mise à jour et suppression', () => {
 
     expect(await gameStore.install('frontieres')).toEqual({ ok: true, status: 'installé', version: '1.0.0' });
     expect(sources.list()).toEqual([
-      expect.objectContaining({ repo: `${REPO}/frontieres`, autoUpdate: true, packageId: 'frontieres' }),
+      expect.objectContaining({
+        repo: `${REPO}/frontieres`,
+        autoUpdate: true,
+        packageId: 'frontieres',
+        origin: 'tags',
+      }),
     ]);
     expect(packages.get('frontieres')?.version).toBe('1.0.0');
     expect((await gameStore.catalog(true)).games[0]).toMatchObject({
@@ -365,13 +404,63 @@ describe('installation, mise à jour et suppression', () => {
     expect((await gameStore.catalog(true)).games[0]?.status).toBe('integre');
   });
 
-  it('refuse une empreinte qui ne correspond pas, sans rien laisser sur le serveur', async () => {
-    publish(state, 'frontieres', '1.0.0', { sha: 'f'.repeat(64) });
+  it('construit le paquet à partir des seuls fichiers du dossier du jeu au tag', async () => {
+    publish(state, 'frontieres', '1.0.0');
+    state.files['frontieres-v1.0.0|README.md'] = enc('Hors du dossier du jeu.');
+    state.files['frontieres-v1.0.0|jeux-integres/autre.md'] = enc('Un autre jeu.');
+    const { gameStore } = service();
+
+    expect(await gameStore.install('frontieres')).toEqual({ ok: true, status: 'installé', version: '1.0.0' });
+    const active = packages.readActive('frontieres');
+    expect(active.ok && active.pkg.manifest.files.map((f) => f.path).sort()).toEqual([
+      'game/definition.json',
+      'licenses/LICENCE.txt',
+    ]);
+  });
+
+  it('refuse un dossier de jeu absent à ce tag, sans rien laisser sur le serveur', async () => {
+    state.tags.push('frontieres-v1.0.0');
     const { gameStore, sources } = service();
 
     const outcome = await gameStore.install('frontieres');
     expect(outcome.ok).toBe(false);
-    expect(outcome.ok ? '' : outcome.error).toContain('empreinte');
+    expect(outcome.ok ? '' : outcome.error).toContain('absent à la version');
+    expect(packages.list()).toEqual([]);
+    expect(sources.list()).toEqual([]);
+  });
+
+  it('refuse un fichier qui ne correspond pas à son empreinte GitHub, sans rien laisser sur le serveur', async () => {
+    publish(state, 'frontieres', '1.0.0');
+    state.tampered['frontieres-v1.0.0|jeux/frontieres/game/definition.json'] = enc('{"modifié":true}');
+    const { gameStore, sources } = service();
+
+    const outcome = await gameStore.install('frontieres');
+    expect(outcome.ok).toBe(false);
+    expect(outcome.ok ? '' : outcome.error).toContain('empreinte GitHub');
+    expect(packages.list()).toEqual([]);
+    expect(sources.list()).toEqual([]);
+  });
+
+  it('refuse une archive qui ne vient pas du commit du tag', async () => {
+    publish(state, 'frontieres', '1.0.0');
+    state.archiveRoot = 'matosman40-jeux-partyhub-0000000';
+    const { gameStore, sources } = service();
+
+    const outcome = await gameStore.install('frontieres');
+    expect(outcome.ok).toBe(false);
+    expect(outcome.ok ? '' : outcome.error).toContain('ne correspond pas au commit');
+    expect(packages.list()).toEqual([]);
+    expect(sources.list()).toEqual([]);
+  });
+
+  it('refuse un fichier présent dans l’archive mais absent du commit', async () => {
+    publish(state, 'frontieres', '1.0.0');
+    state.archiveOnly['frontieres-v1.0.0|jeux/frontieres/game/cache.bin'] = enc('ajouté hors du commit');
+    const { gameStore, sources } = service();
+
+    const outcome = await gameStore.install('frontieres');
+    expect(outcome.ok).toBe(false);
+    expect(outcome.ok ? '' : outcome.error).toContain('pas dans le commit');
     expect(packages.list()).toEqual([]);
     expect(sources.list()).toEqual([]);
   });
@@ -435,13 +524,12 @@ function bumpVersion(dir: string, version: string): void {
   }
 }
 
-describe('jeux de code dans le magasin', { timeout: 30_000 }, () => {
+describe('jeux de code dans le magasin', { timeout: 60_000 }, () => {
   const CODE_ID = 'magasin-code';
-  const author = generateSigningKeys();
-  let codeV1: Uint8Array;
-  let codeV2: Uint8Array;
+  let codeV1: ReturnType<typeof folderFiles>;
+  let codeV2: ReturnType<typeof folderFiles>;
 
-  beforeAll(async () => {
+  beforeAll(() => {
     const work = mkdtempSync(path.join(os.tmpdir(), 'ph-magasin-code-'));
     const v1 = path.join(work, CODE_ID);
     newCodeGame(v1, { id: CODE_ID, name: 'Magasin code', author: 'Équipe test' });
@@ -449,29 +537,13 @@ describe('jeux de code dans le magasin', { timeout: 30_000 }, () => {
     cpSync(v1, v2, { recursive: true });
     bumpVersion(v1, '1.0.0');
     bumpVersion(v2, '1.1.0');
-    codeV1 = (await buildCodePackage(v1, author.privatePem)).bytes;
-    codeV2 = (await buildCodePackage(v2, author.privatePem)).bytes;
+    codeV1 = folderFiles(v1);
+    codeV2 = folderFiles(v2);
     rmSync(work, { recursive: true, force: true });
-  }, 120_000);
+  });
 
-  /** Fiche du dépôt pour un jeu de code : `kind: "code"`, sans modules déclaratifs. */
-  const codeManifest = () =>
-    JSON.stringify({
-      id: CODE_ID,
-      name: 'Magasin code',
-      description: 'Un jeu de code de test.',
-      author: 'Équipe test',
-      kind: 'code',
-    });
-
-  const publishCode = (version: string, archive: Uint8Array) =>
-    publish(state, CODE_ID, version, { manifestText: codeManifest(), archive });
-
-  /** La clé de l'auteur est une clé de confiance de cette installation : sans elle, le paquet est refusé. */
-  const trustAuthor = () => {
-    mkdirSync(path.join(dir, 'cles-de-confiance'), { recursive: true });
-    writeFileSync(path.join(dir, 'cles-de-confiance', `${author.keyId}.pub.pem`), author.publicPem);
-  };
+  const publishCode = (version: string, source: ReturnType<typeof folderFiles>) =>
+    publish(state, CODE_ID, version, { manifestText: source.manifestText, sourceFiles: source.files });
 
   function codeService() {
     const fetch = fakeFetch(state);
@@ -487,13 +559,14 @@ describe('jeux de code dans le magasin', { timeout: 30_000 }, () => {
     return { gameStore, sources, codes };
   }
 
-  it('installe un jeu de code en attente de revue, sans l’activer', async () => {
-    trustAuthor();
+  it('installe un jeu de code sans signature, en attente de revue, sans clé de confiance', async () => {
     publishCode('1.0.0', codeV1);
     const { gameStore, codes } = codeService();
 
     expect(await gameStore.install(CODE_ID)).toEqual({ ok: true, status: 'en attente de revue', version: '1.0.0' });
-    expect(codes.list()).toEqual([expect.objectContaining({ id: CODE_ID, version: '1.0.0', status: 'en_attente' })]);
+    expect(codes.list()).toEqual([
+      expect.objectContaining({ id: CODE_ID, version: '1.0.0', status: 'en_attente', signer: '' }),
+    ]);
     expect((await gameStore.catalog(true)).games[0]).toMatchObject({
       status: 'en_revue',
       pendingVersion: '1.0.0',
@@ -503,7 +576,6 @@ describe('jeux de code dans le magasin', { timeout: 30_000 }, () => {
   });
 
   it('une fois approuvé dans « Jeux de code », le jeu est à jour dans le magasin', async () => {
-    trustAuthor();
     publishCode('1.0.0', codeV1);
     const { gameStore, codes } = codeService();
     await gameStore.install(CODE_ID);
@@ -516,8 +588,30 @@ describe('jeux de code dans le magasin', { timeout: 30_000 }, () => {
     });
   });
 
+  it('un paquet de code sans signature n’est accepté que par le magasin, jamais par une autre voie', async () => {
+    const bytes = await buildTagPackage(
+      CODE_ID,
+      new Map(Object.entries({ 'manifest.json': enc(codeV1.manifestText), ...codeV1.files })),
+    );
+    const { codes } = codeService();
+
+    expect(codes.inspect(bytes).ok).toBe(false);
+    expect((await codes.install(bytes, 'test')).ok).toBe(false);
+    expect(codes.list()).toEqual([]);
+    expect(codes.inspect(bytes, { unsigned: true })).toMatchObject({ ok: true, id: CODE_ID, version: '1.0.0' });
+  });
+
+  it('une version approuvée sans signature reste active après un redémarrage du serveur', async () => {
+    publishCode('1.0.0', codeV1);
+    const { gameStore, codes } = codeService();
+    await gameStore.install(CODE_ID);
+    await codes.approve(CODE_ID, '1.0.0', codes.list()[0]!.sha256, 'test');
+
+    const restarted = new CodeGameService(store, dir, { trustedKeys: () => loadTrustedKeys(dir).keys });
+    expect(restarted.list()).toEqual([expect.objectContaining({ id: CODE_ID, version: '1.0.0', status: 'active' })]);
+  });
+
   it('une nouvelle version attend sa revue, et l’ancienne reste active entre-temps', async () => {
-    trustAuthor();
     publishCode('1.0.0', codeV1);
     const { gameStore, codes } = codeService();
     await gameStore.install(CODE_ID);
@@ -545,8 +639,10 @@ describe('jeux de code dans le magasin', { timeout: 30_000 }, () => {
     ).toEqual(['1.0.0:active', '1.1.0:en_attente']);
   });
 
-  it('refuse un jeu de code qu’aucune clé de confiance ne signe, sans rien laisser sur le serveur', async () => {
-    publishCode('1.0.0', codeV1);
+  it('refuse un jeu de code dont le dossier porte une signature, sans rien laisser sur le serveur', async () => {
+    const signed = JSON.parse(codeV1.manifestText) as Record<string, unknown>;
+    signed.signature = { alg: 'ed25519', keyId: 'inconnue', value: 'AAAA' };
+    publish(state, CODE_ID, '1.0.0', { manifestText: JSON.stringify(signed), sourceFiles: codeV1.files });
     const { gameStore, sources, codes } = codeService();
 
     expect((await gameStore.install(CODE_ID)).ok).toBe(false);
@@ -556,7 +652,6 @@ describe('jeux de code dans le magasin', { timeout: 30_000 }, () => {
   });
 
   it('retire un jeu de code du magasin : toutes ses versions, en attente ou non, et sa source', async () => {
-    trustAuthor();
     publishCode('1.0.0', codeV1);
     const { gameStore, sources, codes } = codeService();
     await gameStore.install(CODE_ID);
@@ -578,7 +673,6 @@ describe('jeux de code dans le magasin', { timeout: 30_000 }, () => {
   });
 
   it('réinstalle un jeu de code retiré depuis « Jeux de code », au lieu de le croire toujours présent', async () => {
-    trustAuthor();
     publishCode('1.0.0', codeV1);
     const { gameStore, codes } = codeService();
     await gameStore.install(CODE_ID);

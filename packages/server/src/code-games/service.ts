@@ -102,16 +102,25 @@ export type CodeGameInstallResult =
 /** `enabled` : le jeu est-il activé dans l'administration (une approbation ne le change pas). */
 export type CodeGameOutcome = { ok: true; enabled?: boolean } | { ok: false; error: string };
 
+export interface CodeInstallOptions {
+  /**
+   * Paquet construit par le magasin depuis les sources d'un tag : il n'est pas signé, et aucune clé n'est demandée.
+   * La revue reste obligatoire : rien ne s'exécute avant l'approbation de l'administrateur.
+   */
+  unsigned?: boolean;
+}
+
 /**
  * Ce que le magasin et les sources GitHub utilisent des jeux de code. Rien ici n'active un jeu : une installation
  * arrive en attente de revue, et seul l'administrateur l'approuve (voir `approve`).
  */
 export interface CodeGamesPort {
-  /** Identifiant et version d'un paquet, signature comprise, sans rien installer. */
+  /** Identifiant et version d'un paquet, après les mêmes contrôles que l'installation, sans rien installer. */
   inspect(
     bytes: Uint8Array,
+    options?: CodeInstallOptions,
   ): { ok: true; id: string; version: string } | { ok: false; error: string; issues: string[] };
-  install(bytes: Uint8Array, actor?: string): Promise<CodeGameInstallResult>;
+  install(bytes: Uint8Array, actor?: string, options?: CodeInstallOptions): Promise<CodeGameInstallResult>;
   /** Vrai si cette version est déjà installée (en attente, active ou remplacée). */
   has(id: string, version: string): boolean;
   list(): CodeGameSummary[];
@@ -165,14 +174,18 @@ export class CodeGameService implements CodeGamesPort {
     return path.join(this.archiveDir(id, version), ARCHIVE_NAME);
   }
 
-  private validate(bytes: Uint8Array): ValidatedCodePackage {
+  /**
+   * Contrôle d'un paquet de code. Sans `unsigned`, il doit être signé par une clé de confiance. Avec `unsigned`
+   * (paquet du magasin), il ne doit porter aucune signature : une signature annoncée par une clé inconnue reste refusée.
+   */
+  private validate(bytes: Uint8Array, unsigned = false): ValidatedCodePackage {
     const trusted = this.options.trustedKeys();
-    if (trusted.size === 0) {
+    if (!unsigned && trusted.size === 0) {
       throw new PackageValidationError([
         `Aucune clé de confiance n’est configurée. Déposez la clé publique dans DATA_DIR/${TRUST_DIR_NAME}/.`,
       ]);
     }
-    return validateCodePackage(bytes, { trustedKeys: trusted, requireSignature: true });
+    return validateCodePackage(bytes, { trustedKeys: trusted, requireSignature: !unsigned });
   }
 
   /** Crée le runtime d'un paquet validé, après contrôle de son manifeste. Lève une erreur si le jeu ne fonctionne pas. */
@@ -270,10 +283,13 @@ export class CodeGameService implements CodeGamesPort {
     return { closed, active: this.active.size };
   }
 
-  /** Vrai si l'archive d'une version est encore signée par une clé de confiance. */
+  /**
+   * Vrai si l'archive d'une version est encore valide : signée par une clé de confiance, ou, pour une version du
+   * magasin (signer vide), sans signature. L'empreinte approuvée reste le vrai contrôle de contenu.
+   */
   private stillTrusted(row: CodeGameRow): boolean {
     try {
-      this.validate(fs.readFileSync(this.archivePath(row.id, row.version)));
+      this.validate(fs.readFileSync(this.archivePath(row.id, row.version)), row.signer === '');
       return true;
     } catch {
       return false;
@@ -286,23 +302,20 @@ export class CodeGameService implements CodeGamesPort {
     if (sha256Of(bytes) !== row.sha256 || row.approved_sha256 !== row.sha256) {
       throw new Error('l’archive ne correspond plus à l’empreinte approuvée');
     }
-    const pkg = this.validate(bytes);
+    const pkg = this.validate(bytes, row.signer === '');
     const loaded = this.load(pkg);
     this.stop(row.id);
     this.active.set(row.id, loaded);
     this.errors.delete(row.id);
   }
 
-  /**
-   * Installe un paquet signé en attente de revue. Le contrôle de lancement rend la main au serveur pendant son
-   * calcul ; la version est revérifiée ensuite, car une autre requête a pu la fournir entre-temps.
-   */
   /** Identifiant et version d'un paquet, après les mêmes vérifications que l'installation. Rien n'est écrit. */
   inspect(
     bytes: Uint8Array,
+    options: CodeInstallOptions = {},
   ): { ok: true; id: string; version: string } | { ok: false; error: string; issues: string[] } {
     try {
-      const pkg = this.validate(bytes);
+      const pkg = this.validate(bytes, options.unsigned === true);
       return { ok: true, id: pkg.manifest.id, version: pkg.manifest.version };
     } catch (err) {
       if (err instanceof PackageValidationError) return { ok: false, error: 'Paquet refusé.', issues: err.issues };
@@ -314,10 +327,18 @@ export class CodeGameService implements CodeGamesPort {
     return this.store.getCodeGame(id, version) !== undefined;
   }
 
-  async install(bytes: Uint8Array, actor = 'inconnu'): Promise<CodeGameInstallResult> {
+  /**
+   * Installe un paquet en attente de revue. Le contrôle de lancement rend la main au serveur pendant son
+   * calcul ; la version est revérifiée ensuite, car une autre requête a pu la fournir entre-temps.
+   */
+  async install(
+    bytes: Uint8Array,
+    actor = 'inconnu',
+    options: CodeInstallOptions = {},
+  ): Promise<CodeGameInstallResult> {
     let pkg: ValidatedCodePackage;
     try {
-      pkg = this.validate(bytes);
+      pkg = this.validate(bytes, options.unsigned === true);
     } catch (err) {
       if (err instanceof PackageValidationError) return { ok: false, error: 'Paquet refusé.', issues: err.issues };
       throw err;
@@ -453,7 +474,7 @@ export class CodeGameService implements CodeGamesPort {
     if (!row) return { error: 'Version inconnue.' };
     let pkg: ValidatedCodePackage;
     try {
-      pkg = this.validate(fs.readFileSync(this.archivePath(id, version)));
+      pkg = this.validate(fs.readFileSync(this.archivePath(id, version)), row.signer === '');
     } catch (err) {
       return { error: `Archive refusée : ${errorMessage(err)}` };
     }
@@ -474,7 +495,7 @@ export class CodeGameService implements CodeGamesPort {
   private changesFrom(previous: CodeGameRow, current: ValidatedCodePackage): CodeGameChanges | null {
     let old: ValidatedCodePackage;
     try {
-      old = this.validate(fs.readFileSync(this.archivePath(previous.id, previous.version)));
+      old = this.validate(fs.readFileSync(this.archivePath(previous.id, previous.version)), previous.signer === '');
     } catch {
       return null;
     }
@@ -504,7 +525,7 @@ export class CodeGameService implements CodeGamesPort {
     }
     let loaded: Loaded;
     try {
-      const pkg = this.validate(fs.readFileSync(this.archivePath(id, version)));
+      const pkg = this.validate(fs.readFileSync(this.archivePath(id, version)), row.signer === '');
       if (pkg.sha256 !== sha256) throw new Error('l’archive ne correspond plus à l’empreinte confirmée');
       loaded = this.load(pkg);
     } catch (err) {

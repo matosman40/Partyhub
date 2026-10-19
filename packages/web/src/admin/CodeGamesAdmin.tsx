@@ -402,7 +402,8 @@ export function CodeGamesAdmin({ refreshToken, onChanged }: { refreshToken: numb
             <div className="ed-list-body">
               <strong>{g.name}</strong>
               <span className="muted small">
-                {g.id} · version {g.version} · {STATUS_LABEL[g.status]} · signé par {g.signer}
+                {g.id} · version {g.version} · {STATUS_LABEL[g.status]} ·{' '}
+                {g.signer ? `signé par ${g.signer}` : 'non signé (magasin)'}
               </span>
               {g.error && <span className="error small">{g.error}</span>}
             </div>
@@ -435,7 +436,15 @@ export function CodeGamesAdmin({ refreshToken, onChanged }: { refreshToken: numb
             {review.author ? ` · par ${review.author}` : ''}
           </p>
           <p className="small muted">
-            Empreinte du paquet : <code>{review.sha256}</code> · clé de signature <code>{review.signer}</code>
+            Empreinte du paquet : <code>{review.sha256}</code>
+            {review.signer ? (
+              <>
+                {' '}
+                · clé de signature <code>{review.signer}</code>
+              </>
+            ) : (
+              ' · non signé : installé depuis le magasin, à relire avant approbation'
+            )}
           </p>
           <table className="small">
             <thead>
