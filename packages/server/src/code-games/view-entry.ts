@@ -5,7 +5,7 @@ import { CODE_VIEW_MESSAGE } from '@partyhub/shared';
  * (donc relue et empreintée comme le reste). Elle rend les vues du jeu (Hôte, Joueur, Réglages)
  * dans l'iframe, et relaie les appels à la page par postMessage. Pas d'autre accès au monde.
  */
-export function viewEntrySource(): string {
+export function viewEntrySource(options: { styles?: string } = {}): string {
   return `import * as React from 'react';
 import { createRoot } from 'react-dom/client';
 import views from './client';
@@ -44,6 +44,11 @@ class Boundary extends React.Component<{ children?: React.ReactNode }, { failed:
 
 document.documentElement.style.height = '100%';
 document.body.style.cssText = 'margin:0;height:100%;font-family:system-ui,sans-serif;color:#111;background:#fff;';
+${
+  options.styles
+    ? `const appStyle = document.createElement('style');\nappStyle.textContent = ${JSON.stringify(options.styles)};\ndocument.head.appendChild(appStyle);`
+    : ''
+}
 const root = createRoot(document.getElementById('root') as HTMLElement);
 
 function render(role: string, props: Record<string, unknown>, flags: { onAction?: boolean }): void {
