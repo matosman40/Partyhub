@@ -4,8 +4,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createPackageGame } from '../packages/factory.js';
 import { launchCheck } from '../packages/launch-check.js';
-import { DEFAULT_PACKAGE_LIMITS, PackageValidationError, pathProblem, validatePackage } from '../packages/format.js';
-import { writeZip, type ZipFileEntry } from '../packages/zip.js';
+import { PackageValidationError, validatePackage } from '../packages/format.js';
+import { packDeclarative } from '../packages/pack.js';
+import type { ZipFileEntry } from '../packages/zip.js';
 import { checkCode, isCodePackage, keygen, newCodeGame, packCode } from './code-game.js';
 import { listFiles } from './list-files.js';
 
@@ -26,20 +27,11 @@ function sha256(data: Uint8Array): string {
 /** Construit un paquet déclaratif (cartes, plateau, questions, recettes). */
 function pack(source: string, output: string): void {
   const manifest = JSON.parse(fs.readFileSync(path.join(source, 'manifest.json'), 'utf8')) as Record<string, unknown>;
-  const names = listFiles(source).filter((name) => name !== 'manifest.json');
-  for (const name of names) {
-    const problem = pathProblem(name, DEFAULT_PACKAGE_LIMITS);
-    if (problem) throw new Error(`« ${name} » : ${problem}.`);
-  }
-  const entries: ZipFileEntry[] = names.map((name) => ({ name, data: fs.readFileSync(path.join(source, name)) }));
-  const files = entries.map((entry) => ({ path: entry.name, size: entry.data.byteLength, sha256: sha256(entry.data) }));
-  const finalManifest = { ...manifest, files };
-  const archive = writeZip([
-    { name: 'manifest.json', data: Buffer.from(`${JSON.stringify(finalManifest, null, 2)}\n`, 'utf8') },
-    ...entries,
-  ]);
+  const entries: ZipFileEntry[] = listFiles(source)
+    .filter((name) => name !== 'manifest.json')
+    .map((name) => ({ name, data: fs.readFileSync(path.join(source, name)) }));
   // Le paquet produit doit passer exactement les mêmes contrôles que ceux de l’administration.
-  const checked = validatePackage(archive);
+  const { bytes: archive, checked } = packDeclarative(manifest, entries);
   fs.writeFileSync(output, archive);
   console.log(`Paquet créé : ${output}`);
   console.log(`  ${checked.manifest.name} (${checked.manifest.id}) version ${checked.manifest.version}`);

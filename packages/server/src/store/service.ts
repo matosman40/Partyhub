@@ -17,9 +17,10 @@ import {
 } from './catalog.js';
 
 /**
- * Magasin : les jeux publiés dans le dépôt de jeux, installés, mis à jour ou supprimés d’un clic. Le magasin ne fait
- * que piloter les sources GitHub existantes : une source par jeu (`auteur/depot/jeu`), mise à jour chaque jour.
- * Les jeux intégrés à l’application ne sont jamais téléchargés.
+ * Magasin : les jeux publiés dans le dépôt de jeux, installés, mis à jour ou supprimés d’un clic. Chaque jeu installé
+ * a une source d’origine « tags » (`auteur/depot/jeu`), mise à jour chaque jour : le paquet se construit à partir du
+ * dossier `jeux/<jeu>/` au tag le plus haut, sans release ni signature (voir store/build.ts). Les jeux intégrés à
+ * l’application ne sont jamais téléchargés.
  */
 
 export const DEFAULT_STORE_REPO = 'matosman40/jeux-partyhub';
@@ -146,7 +147,7 @@ export class StoreService {
     let source = this.findSource(gameId);
     let created = false;
     if (!source) {
-      const added = this.sources.add({ repo: `${this.repo}/${gameId}`, autoUpdate: true, private: false });
+      const added = this.sources.addFromStore(`${this.repo}/${gameId}`);
       if (!added.ok) return fail(added.error);
       source = this.sources.list().find((row) => row.id === added.id);
       created = true;
@@ -232,9 +233,10 @@ export class StoreService {
     return this.options.now?.() ?? Date.now();
   }
 
+  /** La source du magasin pour ce jeu. Une source GitHub ajoutée à la main pour le même dépôt n’est pas la sienne. */
   private findSource(gameId: string): PackageSourceRecord | undefined {
     const ref = `${this.repo}/${gameId}`;
-    return this.sources.list().find((row) => row.repo === ref);
+    return this.sources.list().find((row) => row.repo === ref && row.origin === 'tags');
   }
 
   private async load(refresh: boolean): Promise<Loaded> {
@@ -295,7 +297,7 @@ export class StoreService {
     codeRows: CodeGameSummary[],
   ): StoreGameView {
     const builtin = this.options.isBuiltin(game.id);
-    const source = sources.find((row) => row.repo === `${repo}/${game.id}`) ?? null;
+    const source = sources.find((row) => row.repo === `${repo}/${game.id}` && row.origin === 'tags') ?? null;
     const versions = codeVersions(codeRows, game.id);
     let status: StoreStatus;
     let installedVersion: string | null;
