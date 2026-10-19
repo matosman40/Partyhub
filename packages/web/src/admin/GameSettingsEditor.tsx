@@ -12,7 +12,7 @@ type Settings = Record<string, unknown>;
  * salles partent de ces valeurs ; une salle déjà ouverte garde les siennes.
  */
 export function GameSettingsEditor({ game, onSaved }: { game: CatalogGame; onSaved: () => void }) {
-  const Settings = viewsFor(game.id)?.Settings;
+  const Settings = viewsFor(game)?.Settings;
   const [draft, setDraft] = useState<Settings>(game.settings);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const [busy, setBusy] = useState(false);

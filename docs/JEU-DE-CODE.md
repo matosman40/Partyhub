@@ -1,6 +1,6 @@
-# Jeux de code (format 5) : créer, construire, signer, contrôler
+# Jeux de code (format 5) : créer, construire, signer, installer
 
-**Statut : prototype.** Un jeu de code se crée, se construit, se signe et se contrôle avec les outils ci-dessous. En revanche, PartyHub **n'installe pas encore** ces paquets : la voie d'installation refuse explicitement un paquet de code (« pas encore installable »). L'exécution isolée du code sur le serveur n'existe pas encore : elle est décrite dans les limites en fin de document.
+**Statut : prototype testé de bout en bout.** Un jeu de code se crée, se construit, se signe et se contrôle avec les outils ci-dessous, puis s'installe depuis l'administration après relecture. Le module serveur (les règles) s'exécute dans un isolat V8 sans réseau ; les vues s'exécutent dans un iframe sandboxé. Les limites sont en fin de document.
 
 Un jeu de code est un paquet `.phgame` (format 5) qui contient le code compilé du jeu : un module serveur (les règles) et des vues pour l'écran principal, le téléphone et les réglages.
 
@@ -25,6 +25,8 @@ docker compose -f compose.dev.yaml run --rm jeux check /jeu/mon-jeu.phgame /cles
 ```
 
 Le service `jeux` n'a **pas de réseau** (`network_mode: none`) : le code du jeu ne peut ni joindre internet ni lire autre chose que le dossier monté.
+
+**Non vérifié :** l'image Docker et le service `jeux` n'ont pas pu être construits dans l'environnement où ce prototype a été mis au point (le téléchargement des images est bloqué). Les mêmes commandes, lancées avec Node, ont été testées (voir ci-dessous).
 
 Sans Docker, les mêmes commandes existent avec `npm run phgame -- <commande>` à la racine du dépôt (après `npm ci` et `npm run build`).
 
@@ -60,7 +62,7 @@ mon-jeu/
 }
 ```
 
-`id` : minuscules, chiffres et tirets. `version` : X.Y.Z. La liste `files` et la `signature` sont ajoutées par `pack`.
+`id` : minuscules, chiffres et tirets. `version` : X.Y.Z, **écrite à deux endroits** : ici et dans le manifeste de `src/server.ts`. Les deux doivent être identiques : `pack` le vérifie et refuse sinon. La liste `files` et la `signature` sont ajoutées par `pack`.
 
 ### Module serveur (src/server.ts)
 
@@ -71,7 +73,8 @@ Points à respecter :
 - Une partie doit toujours se terminer. Le contrôle échoue si elle reste bloquée ou dépasse 3 000 pas.
 - `getPublicState`, `getHostState` et `getPlayerState` ne doivent jamais révéler ce qu'un joueur n'a pas le droit de voir (un choix secret, une réponse avant la révélation).
 - Le hasard passe par `ctx.random()`, le temps par `ctx.now()`, les minuteurs par `ctx.schedule` et `ctx.cancel`. Les règles restent ainsi reproductibles.
-- Le module ne touche ni au réseau, ni aux fichiers, ni aux variables d'environnement.
+- **Aucun état hors de la partie.** Un même isolat sert toutes les salles d'un jeu : une variable du module modifiée d'un appel à l'autre mélangerait les salles. Tout l'état vit dans l'objet de partie.
+- Le module ne touche ni au réseau, ni aux fichiers, ni aux variables d'environnement : l'isolat n'en a pas.
 
 Le modèle (`templates/code-game` dans `packages/server`) est un jeu complet, « pile ou face », qui sert d'exemple.
 
@@ -85,17 +88,38 @@ Trois composants, exportés par défaut dans un objet `{ Settings, Host, Player 
 
 `send` renvoie `{ ok, error }`. Les vues ne doivent pas avoir d'effet hors de l'écran.
 
-## Signature et confiance
+## Signature, confiance et revue
 
 - `keygen` crée une paire Ed25519 : `<préfixe>.key.pem` (privée) et `<préfixe>.pub.pem` (publique). L'identifiant de clé est dérivé de la clé publique.
 - `pack` avec une clé privée signe le manifeste entier, donc aussi l'empreinte de chaque fichier. Modifier un seul octet casse la signature.
 - `check` avec une clé publique vérifie que le paquet est signé par cette clé. Sans clé, il vérifie seulement la structure et le signale comme non signé.
 
-Décision validée : un jeu de code est signé, puis relu par l'administrateur avant activation. Ces deux étapes ne sont pas encore branchées dans PartyHub.
+### Installer dans PartyHub
+
+1. **Clé de confiance.** PartyHub n'accepte que les paquets signés par une clé qu'il connaît : déposer la clé publique (`.pub.pem`) dans `DATA_DIR/cles-de-confiance/`. Sans clé de confiance, l'installation est refusée avec un message qui indique ce dossier.
+2. **Dépôt.** Dans l'administration, section « Paquets de jeux (.phgame) », téléverser le `.phgame`. Le paquet passe alors en attente de revue : il ne change rien au jeu actif.
+3. **Revue.** Dans « Jeux de code », ouvrir la revue : fichiers, empreintes, code serveur et code des vues. Cocher la case d'approbation, puis « Approuver et activer ».
+4. **Effet.** La version approuvée devient active et apparaît au catalogue. Une nouvelle version approuvée remplace l'ancienne, et les salles en cours de l'ancienne version sont fermées (le nombre est affiché).
+
+Règles d'installation :
+
+- Une archive déjà approuvée, réinstallée à l'identique, ne crée rien de nouveau.
+- Une même version avec un contenu différent est refusée : il faut monter la version.
+- Une version en attente ne remplace jamais la version active tant qu'elle n'est pas approuvée.
+
+## Exécution
+
+- **Module serveur** : dans un isolat V8 séparé (`isolated-vm`). Pas de réseau, pas de système de fichiers, pas de processus, pas d'API Node. Mémoire limitée à 64 Mio, et 2 secondes au plus par appel. Un appel trop long est interrompu, et l'isolat reste utilisable.
+- **Vues** : dans un iframe `sandbox="allow-scripts"`, servi depuis `/api/code-games/<id>/<empreinte>/view.html`. Ce document a sa propre politique : un seul script (celui du même paquet), aucune connexion réseau. La page et la vue échangent uniquement des messages (`postMessage`).
+- **Contrôle** (`check`) : passe par le même isolat que la production, pour tester ce qui tournera réellement.
 
 ## Limites actuelles
 
-- **Pas encore installable.** Un paquet de code est refusé par la voie d'installation, avec un message explicite.
-- **Pas d'isolation côté serveur.** Le contrôle exécute le code sur le poste du développeur (ou dans le conteneur `jeux`, sans réseau). Le serveur de production ne l'exécute pas.
-- **Pas de contrôle de taille propre aux jeux de code.** Les budgets du format existant s'appliquent : archive de 8 Mio au plus, images et sons selon leurs limites actuelles.
-- **Vues non isolées.** Les vues seront exécutées dans une iframe sandboxée au moment de l'installation ; ce n'est pas encore le cas.
+- **Installation par l'administration seulement.** Pas encore de magasin ni de galerie pour les jeux de code.
+- **Pas de sauvegarde.** Les jeux de code ne sont pas inclus dans les sauvegardes du serveur.
+- **Un isolat par jeu, partagé entre les salles.** D'où la règle : aucun état hors de la partie (voir plus haut).
+- **Pas d'images ni de sons à l'exécution** pour les jeux de code. Les fichiers de `assets/` sont dans le paquet, mais les vues ne les affichent pas encore.
+- **Taille.** L'archive est limitée à 8 Mio, la limite du format. Aucun autre plafond n'est fixé pour l'instant : à confirmer.
+- **Jeu désactivé.** Un jeu désactivé ne se joue plus, mais ses vues restent accessibles tant qu'il est dans le registre.
+- **Historique.** L'administration relit, approuve et supprime une version ; elle ne gère pas encore l'historique complet des versions.
+- **Docker non vérifié** (voir plus haut).

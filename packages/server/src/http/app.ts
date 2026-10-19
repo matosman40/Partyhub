@@ -24,6 +24,8 @@ import { IMPORT_MAX_BYTES, isBankType } from '@partyhub/games';
 import { z } from 'zod';
 import type { AssetService } from '../assets/service.js';
 import { PackageExportError, type PackageService } from '../packages/service.js';
+import type { CodeGameService } from '../code-games/service.js';
+import { peekPackageKind } from '../packages/format.js';
 import {
   copyPackageToEditable,
   packageCopyStatuses,
@@ -99,6 +101,8 @@ export interface AppDeps {
   mediaGames: MediaQuizService;
   /** Paquets .phgame installés (jeux déclaratifs). */
   packages: PackageService;
+  /** Jeux de code signés : installation en attente, revue et approbation par l’administrateur. */
+  codeGames: CodeGameService;
   /** Packs de personnages (sprites) importés dans l’administration. */
   characterPacks: CharacterPackService;
   /** Sauvegardes automatiques de la base. Absent = fonction non configurée. */
@@ -144,6 +148,7 @@ export function createApp(deps: AppDeps): express.Express {
     dbBackups,
     update,
     packages,
+    codeGames,
     characterPacks,
   } = deps;
   const app = express();
@@ -186,7 +191,7 @@ export function createApp(deps: AppDeps): express.Express {
       // blob: : aperçus créés par la page elle-même (image du test, enregistrement du micro, photo de profil).
       // Une URL blob ne peut être créée que par ce site ; elle n’autorise pas de script ni de contenu externe.
       "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; " +
-        "script-src 'self' https://www.youtube.com; frame-src https://www.youtube.com https://www.youtube-nocookie.com; " +
+        "script-src 'self' https://www.youtube.com; frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com; " +
         "media-src 'self' data: blob:; connect-src 'self' ws: wss: https://www.youtube.com; object-src 'none'; " +
         "base-uri 'self'; frame-ancestors 'self'",
     );
@@ -294,6 +299,44 @@ export function createApp(deps: AppDeps): express.Express {
       return;
     }
     res.status(201).json({ count: result.count });
+  });
+
+  // Document des vues d’un jeu de code : chargé par l’iframe. Sa politique est propre (pas d’héritage de la page) :
+  // seul le script de vues de la même empreinte peut s’exécuter, et aucune connexion réseau n’est permise.
+  app.get('/api/code-games/:id/:sha256/view.html', (req, res) => {
+    const id = String(req.params.id ?? '');
+    const sha = String(req.params.sha256 ?? '');
+    if (!/^[a-f0-9]{64}$/.test(sha) || codeGames.viewScript(id, sha) === undefined) {
+      res.status(404).type('text/plain').send('Vues introuvables.');
+      return;
+    }
+    const scriptUrl = `/api/code-games/${encodeURIComponent(id)}/${sha}/views.js`;
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader(
+      'Content-Security-Policy',
+      "default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; media-src data: blob:; connect-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'self'",
+    );
+    res
+      .type('text/html; charset=utf-8')
+      .send(
+        `<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Vue du jeu</title></head><body style="margin:0;font-family:system-ui,sans-serif"><div id="root"></div><script src="${scriptUrl}"></script></body></html>`,
+      );
+  });
+
+  // Vues d’un jeu de code (iframe). Adressé par empreinte : le navigateur peut garder la réponse sans limite.
+  app.get('/api/code-games/:id/:sha256/views.js', (req, res) => {
+    const id = String(req.params.id ?? '');
+    const script = /^[a-f0-9]{64}$/.test(String(req.params.sha256 ?? ''))
+      ? codeGames.viewScript(id, String(req.params.sha256))
+      : undefined;
+    if (script === undefined) {
+      res.status(404).type('text/plain').send('Vues introuvables.');
+      return;
+    }
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.type('application/javascript; charset=utf-8').send(script);
   });
 
   // Ressources graphiques d’un paquet installé et activé. Lecture publique : rien de privé n’est exposé.
@@ -1089,12 +1132,69 @@ export function createApp(deps: AppDeps): express.Express {
       res.status(400).json({ error: 'Aucun fichier reçu.' });
       return;
     }
+    if (peekPackageKind(body) === 'code') {
+      // Jeu de code : installé en attente de revue, il ne s’exécute qu’après approbation.
+      const result = codeGames.install(body);
+      if (!result.ok) {
+        res.status(400).json({ error: result.error, issues: result.issues ?? [] });
+        return;
+      }
+      res.status(result.unchanged ? 200 : 201).json({ kind: 'code', ...result });
+      return;
+    }
     const result = packages.install(body);
     if (!result.ok) {
       res.status(400).json({ error: result.error, issues: result.issues ?? [] });
       return;
     }
     res.status(result.unchanged ? 200 : 201).json(result);
+  });
+
+  /** Jeux de code : versions et leur état (en attente, active, remplacée, erreur). */
+  admin.get('/code-games', (_req, res) => {
+    res.json({ games: codeGames.list() });
+  });
+
+  /** Ce qu'il faut relire avant d'approuver : fichiers, empreintes et code exécuté. */
+  admin.get('/code-games/:id/:version/review', (req, res) => {
+    const review = codeGames.review(req.params.id ?? '', req.params.version ?? '');
+    if ('error' in review) {
+      res.status(404).json({ error: review.error });
+      return;
+    }
+    res.json(review);
+  });
+
+  /**
+   * Approbation : l'empreinte confirmée doit être celle de la version relue. Les salles qui jouaient
+   * l'ancienne version active sont fermées, car elles tiendraient un runtime arrêté.
+   */
+  admin.post('/code-games/:id/:version/approve', (req, res) => {
+    const id = req.params.id ?? '';
+    const sha256 = (req.body as { sha256?: unknown } | undefined)?.sha256;
+    if (typeof sha256 !== 'string' || !/^[a-f0-9]{64}$/.test(sha256)) {
+      res.status(400).json({ error: 'Empreinte attendue : sha256 de la version relue.' });
+      return;
+    }
+    const result = codeGames.approve(id, req.params.version ?? '', sha256);
+    if (!result.ok) {
+      res.status(400).json({ error: result.error });
+      return;
+    }
+    const closed = manager.closeWhere((r) => r.module.manifest.id === id, 'admin');
+    res.json({ ok: true, closedRooms: closed });
+  });
+
+  /** Suppression d'une version ; supprimer la version active retire le jeu et ferme ses salles. */
+  admin.delete('/code-games/:id/:version', (req, res) => {
+    const id = req.params.id ?? '';
+    const result = codeGames.remove(id, req.params.version ?? '');
+    if (!result.ok) {
+      res.status(404).json({ error: result.error });
+      return;
+    }
+    const closed = manager.closeWhere((r) => r.module.manifest.id === id, 'admin');
+    res.json({ ok: true, closedRooms: closed });
   });
 
   admin.post('/packages/:id/status', (req, res) => {

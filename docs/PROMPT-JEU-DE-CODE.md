@@ -29,6 +29,7 @@ Un jeu complet et jouable :
 2. Écris les règles dans src/server.ts, en gardant le modèle comme base :
    - manifest : reprends id, name, category, description (160 caractères au plus), minPlayers, maxPlayers,
      durationMin et notice (but, étapes, conseils). Les textes sont en français, à l'impératif ou au présent.
+   - La version (X.Y.Z) est écrite à deux endroits, manifest.json et le manifeste de src/server.ts : elles doivent être identiques, sinon la construction échoue.
    - settingsSchema et defaultSettings : seulement les réglages utiles, avec des bornes.
    - actions : un schéma zod par action que les téléphones peuvent envoyer. Valide toujours le payload.
    - handleAction : refuse proprement (ok: false, error en français) toute action invalide ou hors moment.
@@ -38,6 +39,7 @@ Un jeu complet et jouable :
      (onTimer est appelé à échéance).
    - suggest : un coup simple et légal pour un robot, pour que le contrôle puisse jouer une partie.
    - La partie doit toujours se terminer (isFinished devient vrai). Une partie bloquée fait échouer le contrôle.
+   - Aucun état hors de la partie : pas de variable du module modifiée d'un appel à l'autre. Un même isolat sert toutes les salles du jeu.
 
 3. Écris l'écran dans src/client.tsx : Settings, Host et Player, exportés dans un objet par défaut.
    - Host reçoit publicState et hostState ; Player reçoit publicState, playerState, playerId, send.
@@ -45,11 +47,11 @@ Un jeu complet et jouable :
    - Textes en français. Lisible sur une TV (grands caractères) et sur un téléphone (boutons larges).
 
 4. Construis le paquet, puis contrôle-le :
-   docker compose -f compose.dev.yaml run --rm jeux pack /jeu/[ID-DU-JEU] /jeu/[ID-DU-JEU].phgame
-   docker compose -f compose.dev.yaml run --rm jeux check /jeu/[ID-DU-JEU].phgame
+   docker compose -f compose.dev.yaml run --rm jeux pack /jeu/[ID-DU-JEU] /jeu/[ID-DU-JEU].phgame /cles/[ID-DU-JEU].key.pem
+   docker compose -f compose.dev.yaml run --rm jeux check /jeu/[ID-DU-JEU].phgame /cles/[ID-DU-JEU].pub.pem
    Le contrôle vérifie la structure, la syntaxe des deux bundles, la cohérence du manifeste avec le module,
    et une partie complète jouée par des robots. Corrige jusqu'à ce qu'il réussisse, sans contourner un contrôle.
-   (Le paquet n'est pas signé à ce stade : c'est normal. La signature est faite par l'administrateur.)
+   (La clé de signature est fournie par l'auteur, dans ./cles. Sans clé, le paquet n'est pas signé et PartyHub refuse de l'installer.)
 
 5. Termine par un compte rendu court : le chemin du fichier .phgame, la sortie complète de check,
    et ce qui reste à vérifier à la main (lisibilité des écrans, équilibre des règles).
@@ -73,6 +75,6 @@ Un jeu complet et jouable :
 
 ## Ce que le prompt ne peut pas faire (à lire avant)
 
-- Un jeu créé ainsi **n'est pas encore installable** dans PartyHub : la voie d'installation le refuse. Le prompt produit un paquet qui se contrôle, pas un jeu jouable sur une installation.
-- Le contrôle exécute le code du jeu sur le poste ou dans le conteneur `jeux` (sans réseau). Il ne remplace pas une relecture humaine : c'est l'administrateur qui relit le code et le signe.
+- Pour jouer, le paquet doit être signé par une clé de confiance de l'installation (`DATA_DIR/cles-de-confiance/`), puis approuvé par un administrateur dans « Paquets de jeux (.phgame) ». Le prompt produit un paquet qui se contrôle ; l'installation et l'approbation se font ensuite, à la main.
+- Le contrôle exécute le code du jeu sur le poste ou dans le conteneur `jeux` (sans réseau). Il ne remplace pas une relecture humaine : c'est l'administrateur qui relit le code avant d'approuver.
 - Le prompt ne vérifie pas l'équilibre des règles ni la lisibilité des écrans : il faut un essai réel sur une TV et un téléphone.

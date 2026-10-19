@@ -59,6 +59,24 @@ export interface PackageRow {
   updated_at: string;
 }
 
+/** Jeu de code tel qu'il est stocké : une ligne par version, une seule version active par identifiant. */
+export interface CodeGameRow {
+  id: string;
+  version: string;
+  name: string;
+  sha256: string;
+  size: number;
+  signer: string;
+  manifest: string;
+  installed_at: string;
+  active: number;
+  approved_sha256: string | null;
+  approved_at: string | null;
+}
+
+const CODE_GAME_COLUMNS =
+  'id, version, name, sha256, size, signer, manifest, installed_at, active, approved_sha256, approved_at';
+
 export const adminSettingsSchema = z.object({
   maxPlayers: z.number().int().min(2).max(20),
   graceSeconds: z.number().int().min(10).max(600),
@@ -385,6 +403,28 @@ export const MIGRATIONS: Migration[] = [
           created_at TEXT NOT NULL
         );
         CREATE INDEX IF NOT EXISTS ai_images_by_tag ON ai_images (kind, tag, created_at);
+      `);
+    },
+  },
+  {
+    version: 14,
+    description: 'Jeux de code : paquets signés, en attente de revue puis approuvés par l’administrateur',
+    up(db) {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS code_games (
+          id              TEXT NOT NULL,
+          version         TEXT NOT NULL,
+          name            TEXT NOT NULL,
+          sha256          TEXT NOT NULL,
+          size            INTEGER NOT NULL,
+          signer          TEXT NOT NULL,
+          manifest        TEXT NOT NULL,
+          installed_at    TEXT NOT NULL,
+          active          INTEGER NOT NULL DEFAULT 0,
+          approved_sha256 TEXT,
+          approved_at     TEXT,
+          PRIMARY KEY (id, version)
+        );
       `);
     },
   },
@@ -953,6 +993,53 @@ export class Store {
   deletePackage(id: string, gameId: string): void {
     this.db.prepare('DELETE FROM packages WHERE id = ?').run(id);
     this.db.prepare('DELETE FROM package_archives WHERE package_id = ?').run(id);
+    this.db.prepare('DELETE FROM game_flags WHERE game_id = ?').run(gameId);
+    this.clearGameOverrides(gameId);
+  }
+
+  listCodeGames(): CodeGameRow[] {
+    return this.db.prepare(`SELECT ${CODE_GAME_COLUMNS} FROM code_games ORDER BY installed_at`).all() as CodeGameRow[];
+  }
+
+  getCodeGame(id: string, version: string): CodeGameRow | undefined {
+    return this.db
+      .prepare(`SELECT ${CODE_GAME_COLUMNS} FROM code_games WHERE id = ? AND version = ?`)
+      .get(id, version) as CodeGameRow | undefined;
+  }
+
+  /** Version active d'un jeu de code, ou undefined. */
+  getActiveCodeGame(id: string): CodeGameRow | undefined {
+    return this.db.prepare(`SELECT ${CODE_GAME_COLUMNS} FROM code_games WHERE id = ? AND active = 1`).get(id) as
+      CodeGameRow | undefined;
+  }
+
+  /** Enregistre une version en attente de revue. Une version déjà présente est remplacée. */
+  saveCodeGame(row: Omit<CodeGameRow, 'active' | 'approved_sha256' | 'approved_at'>): void {
+    this.db
+      .prepare(
+        `INSERT OR REPLACE INTO code_games (id, version, name, sha256, size, signer, manifest, installed_at, active, approved_sha256, approved_at)
+         VALUES (@id, @version, @name, @sha256, @size, @signer, @manifest, @installed_at, 0, NULL, NULL)`,
+      )
+      .run(row);
+  }
+
+  /** Rend une version active et approuvée ; l'ancienne version active est désactivée. Une seule transaction. */
+  activateCodeGame(id: string, version: string, approvedSha256: string, approvedAt: string): void {
+    this.db.transaction(() => {
+      this.db.prepare('UPDATE code_games SET active = 0 WHERE id = ?').run(id);
+      this.db
+        .prepare('UPDATE code_games SET active = 1, approved_sha256 = ?, approved_at = ? WHERE id = ? AND version = ?')
+        .run(approvedSha256, approvedAt, id, version);
+    })();
+  }
+
+  deleteCodeGame(id: string, version: string): void {
+    this.db.prepare('DELETE FROM code_games WHERE id = ? AND version = ?').run(id, version);
+  }
+
+  /** Supprime toutes les versions d'un jeu de code, avec ses réglages de jeu. */
+  deleteCodeGameAll(id: string, gameId: string): void {
+    this.db.prepare('DELETE FROM code_games WHERE id = ?').run(id);
     this.db.prepare('DELETE FROM game_flags WHERE game_id = ?').run(gameId);
     this.clearGameOverrides(gameId);
   }

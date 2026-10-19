@@ -17,6 +17,7 @@ import { StoreService } from './store/service.js';
 import { AssetService } from './assets/service.js';
 import { MediaQuizService } from './media/service.js';
 import { PackageService } from './packages/service.js';
+import { CodeGameService, loadTrustedKeys } from './code-games/service.js';
 import { hashPassword } from './auth.js';
 import { effectiveNotice } from './catalog.js';
 import { gameDataFor } from './profiles/game-data.js';
@@ -114,6 +115,14 @@ export async function createServer(opts: ServerOptions): Promise<PartyServer> {
   const assets = new AssetService(store, config.dataDir, config.assetLimits);
   const mediaGames = new MediaQuizService(store, assets);
   const packages = new PackageService(store, config.dataDir);
+  // Jeux de code : clés de confiance relues à chaque opération, et journal des problèmes de clés au démarrage.
+  for (const problem of loadTrustedKeys(config.dataDir).problems) {
+    logger.warn({ event: 'code-game.trust', problem }, 'Clé de confiance ignorée');
+  }
+  const codeGames = new CodeGameService(store, config.dataDir, {
+    trustedKeys: () => loadTrustedKeys(config.dataDir).keys,
+    onError: (message) => logger.error({ event: 'code-game.load', message }, message),
+  });
   const packageSources = new PackageSourceService(store, packages, { token: config.githubToken });
   // Magasin : les jeux intégrés au code ne sont jamais téléchargés, ils restent dans l’application.
   const builtinIds = new Set(gameRegistry.map((game) => game.manifest.id));
@@ -214,6 +223,7 @@ export async function createServer(opts: ServerOptions): Promise<PartyServer> {
     assets,
     mediaGames,
     packages,
+    codeGames,
     characterPacks,
     dbBackups,
     update,

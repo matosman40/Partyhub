@@ -3,7 +3,7 @@ import { createHash, createPrivateKey, createPublicKey, type KeyObject } from 'n
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import type { GameModule } from '@partyhub/shared';
+import { CODE_SERVER_GLOBAL, CODE_VIEW_GLOBAL, CodeGameRuntime, createCodeModule } from '../packages/code-runtime.js';
 import { launchCheck } from '../packages/launch-check.js';
 import {
   CODE_ENTRY_CLIENT,
@@ -17,6 +17,7 @@ import {
 } from '../packages/code-format.js';
 import { PackageValidationError, peekPackageKind } from '../packages/format.js';
 import { writeZip, type ZipFileEntry } from '../packages/zip.js';
+import { viewEntrySource } from '../code-games/view-entry.js';
 import { listFiles } from './list-files.js';
 
 /**
@@ -42,16 +43,35 @@ function issuesOf(error: { issues: { path: PropertyKey[]; message: string }[] })
   return error.issues.map((i) => `manifest.json (${i.path.map(String).join('.') || 'racine'}) : ${i.message}`);
 }
 
-async function bundle(entry: string, platform: 'node' | 'browser'): Promise<Buffer> {
-  if (!fs.existsSync(entry)) {
-    throw new PackageValidationError([`Fichier source absent : ${path.basename(entry)}.`]);
+/**
+ * Construit un script autonome (format iife) : le module exporté est rangé dans la variable globale `globalName`.
+ * Pas de plateforme Node : le code du jeu ne doit importer aucun module système.
+ */
+async function bundle(
+  globalName: string,
+  input: { entry: string } | { source: string; resolveDir: string },
+): Promise<Buffer> {
+  if ('entry' in input && !fs.existsSync(input.entry)) {
+    throw new PackageValidationError([`Fichier source absent : ${path.basename(input.entry)}.`]);
   }
+  const entry =
+    'entry' in input
+      ? { entryPoints: [input.entry] }
+      : {
+          stdin: {
+            contents: input.source,
+            resolveDir: input.resolveDir,
+            sourcefile: 'partyhub-view.ts',
+            loader: 'ts' as const,
+          },
+        };
   const result = await build({
-    entryPoints: [entry],
+    ...entry,
     bundle: true,
-    format: 'esm',
-    platform,
-    target: platform === 'node' ? 'node22' : 'es2022',
+    format: 'iife',
+    globalName,
+    platform: 'browser',
+    target: 'es2022',
     jsx: 'automatic',
     write: false,
     nodePaths: [REPO_NODE_MODULES],
@@ -72,8 +92,25 @@ export async function packCode(sourceDir: string, outFile: string, keyFile?: str
   );
   if (!source.success) throw new PackageValidationError(issuesOf(source.error));
 
-  const server = await bundle(path.join(sourceDir, 'src', 'server.ts'), 'node');
-  const client = await bundle(path.join(sourceDir, 'src', 'client.tsx'), 'browser');
+  const server = await bundle(CODE_SERVER_GLOBAL, { entry: path.join(sourceDir, 'src', 'server.ts') });
+  // Les vues sont rendues par une amorce générée (incluse dans le paquet) qui importe src/client.tsx.
+  const client = await bundle(CODE_VIEW_GLOBAL, {
+    source: viewEntrySource(),
+    resolveDir: path.join(sourceDir, 'src'),
+  });
+  // Le module doit annoncer le même identifiant, nom et version que manifest.json : vérifié dès la construction.
+  const runtime = new CodeGameRuntime(server.toString('utf8'));
+  try {
+    const declared = createCodeModule(runtime).manifest;
+    const { id, name, version } = source.data;
+    if (declared.id !== id || declared.name !== name || declared.version !== version) {
+      throw new PackageValidationError([
+        `src/server.ts : le manifeste du module (${declared.id} ${declared.version}) ne correspond pas à manifest.json (${id} ${version}). Mettez les deux à jour ensemble.`,
+      ]);
+    }
+  } finally {
+    runtime.dispose();
+  }
   const copied = listFiles(sourceDir).filter((n) => n.startsWith('assets/') || n.startsWith('licenses/'));
   const entries: ZipFileEntry[] = [
     { name: CODE_ENTRY_SERVER, data: server },
@@ -133,25 +170,28 @@ export async function checkCode(file: string, publicKeyFile?: string): Promise<C
 
   for (const name of [CODE_ENTRY_SERVER, CODE_ENTRY_CLIENT]) {
     // Analyse seule : une erreur de syntaxe est signalée sans rien exécuter.
-    await transform(Buffer.from(pkg.files.get(name)!).toString('utf8'), { loader: 'js', format: 'esm' });
+    await transform(Buffer.from(pkg.files.get(name)!).toString('utf8'), { loader: 'js', format: 'iife' });
   }
 
-  const serverCode = Buffer.from(pkg.files.get(CODE_ENTRY_SERVER)!).toString('base64');
-  const loaded = (await import(`data:text/javascript;base64,${serverCode}`)) as { default?: GameModule };
-  const mod = loaded.default;
-  if (!mod?.manifest) throw new Error('Le code serveur n’exporte pas de module de jeu par défaut.');
-  const { id, name, version } = pkg.manifest;
-  if (mod.manifest.id !== id || mod.manifest.name !== name || mod.manifest.version !== version) {
-    throw new Error('Le module de jeu ne correspond pas au manifeste (identifiant, nom ou version).');
-  }
+  // Le contrôle passe par le même isolat que la production : ce qui est testé est ce qui tournera.
+  const runtime = new CodeGameRuntime(Buffer.from(pkg.files.get(CODE_ENTRY_SERVER)!).toString('utf8'));
+  try {
+    const mod = createCodeModule(runtime);
+    const { id, name, version } = pkg.manifest;
+    if (mod.manifest.id !== id || mod.manifest.name !== name || mod.manifest.version !== version) {
+      throw new Error('Le module de jeu ne correspond pas au manifeste (identifiant, nom ou version).');
+    }
 
-  const result = launchCheck(mod);
-  if (!result.ok) {
-    lines.push(`Lancement de contrôle échoué : ${result.error}.`);
-    return { ok: false, lines };
+    const result = launchCheck(mod);
+    if (!result.ok) {
+      lines.push(`Lancement de contrôle échoué : ${result.error}.`);
+      return { ok: false, lines };
+    }
+    lines.push(`Lancement de contrôle : 2 parties jouées par des robots, ${result.actions} actions.`);
+    return { ok: true, lines };
+  } finally {
+    runtime.dispose();
   }
-  lines.push(`Lancement de contrôle : 2 parties jouées par des robots, ${result.actions} actions.`);
-  return { ok: true, lines };
 }
 
 /** Crée un dossier de jeu de code à partir du modèle. Le dossier doit être absent ou vide. */
