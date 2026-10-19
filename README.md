@@ -59,11 +59,14 @@ sudo docker compose logs -f     # Ctrl+C pour quitter
 Ouvrir `http://<adresse-du-serveur>:8282` sur l'écran principal, puis `http://<adresse-du-serveur>:8282/join`
 sur les téléphones (ou scanner le QR code). Le détail pour CasaOS est dans [docs/CASAOS.md](docs/CASAOS.md).
 
-**Mise à jour** (les données du volume `partyhub-data` sont conservées) :
+**Mise à jour** (les données du volume `partyhub-data` sont conservées) : depuis la rubrique *Système* de
+l'administration, après une installation unique du service de mise à jour, ou à la main. Le détail, les règles et le
+dépannage sont dans [docs/MISE-A-JOUR.md](docs/MISE-A-JOUR.md).
 
 ```bash
 cd /DATA/AppData/partyhub
-sudo git pull                      # récupère la nouvelle version du compose.yaml
+sudo git fetch --tags
+sudo git checkout vX.Y.Z           # la version voulue (liste : git tag -l 'v*')
 sudo docker compose pull           # télécharge l'image de cette version
 sudo docker compose up -d
 ```

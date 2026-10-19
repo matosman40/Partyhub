@@ -3,6 +3,7 @@ import { randomBytes } from 'node:crypto';
 import { writeFileSync } from 'node:fs';
 import { createServer as createHttpServer, type Server as HttpServer } from 'node:http';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { Server } from 'socket.io';
 import type { ClientToServerEvents, ServerToClientEvents } from '@partyhub/shared';
 import { appliedCadence } from '@partyhub/shared';
@@ -32,6 +33,7 @@ import { createGameImages } from './images/game-images.js';
 import { ImageLibrary } from './images/library.js';
 import { GamePhotoStore } from './game-photos/store.js';
 import { DbBackupScheduler } from './db/backup.js';
+import { UpdateService, readAppVersion } from './update/service.js';
 import { compileTrustProxy } from './trust-proxy.js';
 import type { JoinThrottleOptions } from './realtime/join-throttle.js';
 
@@ -54,6 +56,8 @@ export interface ServerOptions {
   sweepEveryMs?: number;
   /** Réglages du ralentissement des codes inconnus (valeurs par défaut sinon). */
   joinThrottle?: Partial<JoinThrottleOptions>;
+  /** Mise à jour depuis l’administration : essais seulement (faux GitHub, version simulée). */
+  update?: { fetch?: typeof fetch; repo?: string; version?: string };
 }
 
 /**
@@ -128,13 +132,14 @@ export async function createServer(opts: ServerOptions): Promise<PartyServer> {
     timeoutMs: imageConfig.timeoutMs,
     logger,
   });
-  const manager = new RoomManager(
+  const manager: RoomManager = new RoomManager(
     {
       now: () => Date.now(),
       random: () => Math.random(),
       logger,
       ai: aiRuntime,
       images: gameImages,
+      startBlocked: (): string | null => update.startBlockedReason(),
       gameData: gameDataFor(store),
       maxPlayers: () => store.getSettings().maxPlayers,
       graceMs: () => store.getSettings().graceSeconds * 1000,
@@ -169,6 +174,19 @@ export async function createServer(opts: ServerOptions): Promise<PartyServer> {
   );
 
   const dbBackups = config.backup ? new DbBackupScheduler(store, config.backup, logger) : undefined;
+  const update: UpdateService = new UpdateService({
+    dataDir: config.dataDir,
+    currentVersion: opts.update?.version ?? readAppVersion(path.dirname(fileURLToPath(import.meta.url))),
+    repo: opts.update?.repo,
+    github: { fetch: opts.update?.fetch, token: config.githubToken },
+    logger,
+    counts: (): { inGame: number; openRooms: number } => {
+      const rooms = manager.all();
+      return { inGame: rooms.filter((r) => r.status === 'in_game').length, openRooms: rooms.length };
+    },
+    backup: () => dbBackups?.runNow() ?? { ok: false, error: 'sauvegardes non configurées' },
+  });
+  const stopUpdateHeartbeat = update.startHeartbeat();
   const app = createApp({
     config,
     logger,
@@ -189,6 +207,7 @@ export async function createServer(opts: ServerOptions): Promise<PartyServer> {
     packages,
     characterPacks,
     dbBackups,
+    update,
   });
   dbBackups?.start();
   const httpServer = createHttpServer(app);
@@ -235,6 +254,7 @@ export async function createServer(opts: ServerOptions): Promise<PartyServer> {
     },
     async close() {
       if (sweeper) clearInterval(sweeper);
+      stopUpdateHeartbeat();
       dbBackups?.stop();
       clearInterval(sourcesTimer);
       manager.destroyAll();

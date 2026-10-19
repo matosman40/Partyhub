@@ -13,6 +13,7 @@ import {
   voiceNameSchema,
 } from '@partyhub/shared';
 import { resolveGame } from '../games-registry.js';
+import type { UpdateService } from '../update/service.js';
 import type { BoardGameService } from '../boards/service.js';
 import type { PackageSourceService } from '../sources/service.js';
 import type { CardGameService } from '../cards/service.js';
@@ -112,6 +113,8 @@ export interface AppDeps {
   imageLibrary?: ImageLibrary;
   /** Captures de la première partie de chaque jeu, montrées dans la fiche. */
   gamePhotos: GamePhotoStore;
+  /** Mise à jour depuis l’administration (absente hors serveur complet). */
+  update?: UpdateService;
 }
 
 const GAME_PHOTO_ERRORS: Record<GamePhotoRejection, string> = {
@@ -142,6 +145,7 @@ export function createApp(deps: AppDeps): express.Express {
     assets,
     mediaGames,
     dbBackups,
+    update,
     packages,
     characterPacks,
   } = deps;
@@ -1323,6 +1327,42 @@ export function createApp(deps: AppDeps): express.Express {
       return;
     }
     res.status(201).json({ ok: true, name: result.name });
+  });
+
+  /** Mise à jour : version en cours, versions publiées avec leur changelog, et demande à l’hôte. */
+  admin.get('/update', async (req, res) => {
+    if (!update) {
+      res.status(404).json({ error: 'La mise à jour n’est pas disponible sur ce serveur.' });
+      return;
+    }
+    res.json(await update.view(req.query.refresh === '1'));
+  });
+
+  admin.post('/update', async (req, res) => {
+    if (!update) {
+      res.status(404).json({ error: 'La mise à jour n’est pas disponible sur ce serveur.' });
+      return;
+    }
+    const version = typeof req.body?.version === 'string' ? req.body.version : '';
+    const result = await update.request(version);
+    if (!result.ok) {
+      res.status(result.status).json({ error: result.error });
+      return;
+    }
+    res.status(202).json({ ok: true, request: result.request });
+  });
+
+  admin.delete('/update', (_req, res) => {
+    if (!update) {
+      res.status(404).json({ error: 'La mise à jour n’est pas disponible sur ce serveur.' });
+      return;
+    }
+    const result = update.cancel();
+    if (!result.ok) {
+      res.status(result.status).json({ error: result.error });
+      return;
+    }
+    res.json({ ok: true });
   });
 
   /** Sauvegarde complète : jeux personnalisés, textes et notices des jeux intégrés. */

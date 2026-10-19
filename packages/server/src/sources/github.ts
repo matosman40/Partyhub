@@ -102,6 +102,16 @@ async function request(url: string, accept: string, options: GitHubOptions): Pro
   return res;
 }
 
+/** Lit une réponse JSON de l’API GitHub, avec les mêmes contrôles d’hôte et de statut que le reste. */
+export async function githubGetJson(url: string, options: GitHubOptions): Promise<unknown> {
+  const res = await request(url, 'application/vnd.github+json', options);
+  try {
+    return (await res.json()) as unknown;
+  } catch {
+    throw new GitHubError('Réponse GitHub illisible.');
+  }
+}
+
 function parseAsset(raw: unknown): ReleaseAsset | null {
   if (!raw || typeof raw !== 'object') return null;
   const { name, url, size } = raw as Record<string, unknown>;
