@@ -4,6 +4,10 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 
 ## [Non publié]
 
+### Modifié
+
+- Magasin : un jeu s’installe et se met à jour depuis son dossier `jeux/<jeu>/` au tag le plus haut du dépôt de jeux. Aucune release, aucun fichier `.phgame` et aucune signature ne sont nécessaires : PartyHub construit le paquet avec les contrôles de `phgame pack`, et vérifie chaque fichier contre l’empreinte que GitHub publie pour lui. Un jeu de code du magasin n’est pas signé, mais il attend la revue de *Jeux de code* avant de s’exécuter. Les sources GitHub de paquets (`auteur/depot/jeu`) gardent leur fonctionnement par release et signature. Base de données : migration 15 (colonne `package_sources.origin`). Guide : `docs/MAGASIN.md`.
+
 ## [0.15.0] - 2026-10-19
 
 ### Ajouté
