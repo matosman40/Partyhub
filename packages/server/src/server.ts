@@ -142,13 +142,15 @@ export async function createServer(opts: ServerOptions): Promise<PartyServer> {
   );
   const dropEvery = opts.codeIntake?.watchEveryMs ?? 10_000;
   const stopDropWatch = dropEvery > 0 ? codeIntake.watch(dropEvery) : () => undefined;
-  const packageSources = new PackageSourceService(store, packages, { token: config.githubToken });
+  // Les jeux de code des sources GitHub et du magasin arrivent en attente de revue, comme les autres voies.
+  const packageSources = new PackageSourceService(store, packages, { token: config.githubToken, code: codeGames });
   // Magasin : les jeux intégrés au code ne sont jamais téléchargés, ils restent dans l’application.
   const builtinIds = new Set(gameRegistry.map((game) => game.manifest.id));
   const gameStore = new StoreService(store, packageSources, packages, {
     defaultRepo: config.storeRepo,
     token: config.githubToken,
     isBuiltin: (gameId) => builtinIds.has(gameId),
+    code: codeGames,
   });
   const characterPacks = new CharacterPackService(store.db);
   const hub = new RealtimeHub(compileTrustProxy(config.trustProxy ?? 'loopback'), opts.joinThrottle);

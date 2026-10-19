@@ -163,7 +163,7 @@ L'export ZIP des sauvegardes inclut les jeux de code (`code-games.json` et `code
 ## Limites actuelles
 
 - **Frontière d'isolation.** L'isolat tourne dans le processus du serveur, ce qui est moins fort qu'un processus séparé. À valider avant d'ouvrir l'installation à des auteurs extérieurs.
-- **Installation par l'administration seulement.** Pas encore de magasin ni de galerie pour les jeux de code : le magasin GitHub viendra plus tard. Les voies actuelles sont l'éditeur, le dossier de dépôt, le lien HTTPS et le téléversement.
+- **Pas de galerie.** Un jeu de code arrive par l'éditeur, le dossier de dépôt, le lien HTTPS, le téléversement ou le magasin GitHub (`docs/MAGASIN.md`, section « Jeux de code »). Toutes ces voies s'arrêtent à la revue : aucune n'active un jeu sans l'approbation d'un administrateur.
 - **Un isolat par jeu, partagé entre les salles.** D'où la règle : aucun état hors de la partie (voir plus haut). Un contexte par salle est reporté : il demande un point de fermeture des salles et une mesure de mémoire.
 - **Pas d'images ni de sons à l'exécution** pour les jeux de code. Les fichiers de `assets/` sont dans le paquet, mais les vues ne les affichent pas encore.
 - **Taille.** L'archive est limitée à 8 Mio, la limite du format. Aucun autre plafond n'est fixé pour l'instant : à confirmer.

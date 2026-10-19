@@ -17,11 +17,15 @@ const COVER_PATH = /^assets\/[A-Za-z0-9][A-Za-z0-9._-]*(\/[A-Za-z0-9][A-Za-z0-9.
 const TAG_PAGE_SIZE = 100;
 const MAX_TAG_PAGES = 10;
 
+/** Type d’un jeu de code : sa fiche porte `kind: "code"` au lieu de modules déclaratifs. */
+export const CODE_MODULE = 'code';
+
 const MODULE_LABELS: Record<string, string> = {
   cards: 'Jeu de cartes',
   board: 'Jeu de plateau',
   quiz: 'Questions (vidéos YouTube)',
   recipe: 'Recette',
+  [CODE_MODULE]: 'Jeu de code',
 };
 
 export interface StoreManifest {
@@ -112,7 +116,8 @@ const manifestSchema = z
     name: z.string().trim().min(1).max(80),
     description: z.string().max(400).optional(),
     author: z.string().max(80).optional(),
-    requires: z.object({ modules: z.array(z.string()).min(1) }),
+    kind: z.string().optional(),
+    requires: z.object({ modules: z.array(z.string()).min(1) }).optional(),
     cover: z.string().max(200).optional(),
   })
   .passthrough();
@@ -128,6 +133,8 @@ export function parseStoreManifest(bytes: Uint8Array, gameId: string): StoreMani
   const parsed = manifestSchema.safeParse(json);
   if (!parsed.success) throw new GitHubError('Le manifeste est incomplet ou mal formé.');
   const manifest = parsed.data;
+  const isCode = manifest.kind === 'code';
+  if (!isCode && !manifest.requires) throw new GitHubError('Le manifeste est incomplet ou mal formé.');
   if (manifest.id !== gameId) {
     throw new GitHubError(`Le manifeste annonce « ${manifest.id} », pas « ${gameId} ».`);
   }
@@ -137,7 +144,7 @@ export function parseStoreManifest(bytes: Uint8Array, gameId: string): StoreMani
     name: manifest.name,
     description: manifest.description ?? '',
     author: manifest.author ?? '',
-    module: manifest.requires.modules[0] ?? '',
+    module: isCode ? CODE_MODULE : (manifest.requires?.modules[0] ?? ''),
     coverPath: cover,
   };
 }

@@ -97,6 +97,22 @@ export type CodeGameInstallResult =
 /** `enabled` : le jeu est-il activé dans l'administration (une approbation ne le change pas). */
 export type CodeGameOutcome = { ok: true; enabled?: boolean } | { ok: false; error: string };
 
+/**
+ * Ce que le magasin et les sources GitHub utilisent des jeux de code. Rien ici n'active un jeu : une installation
+ * arrive en attente de revue, et seul l'administrateur l'approuve (voir `approve`).
+ */
+export interface CodeGamesPort {
+  /** Identifiant et version d'un paquet, signature comprise, sans rien installer. */
+  inspect(
+    bytes: Uint8Array,
+  ): { ok: true; id: string; version: string } | { ok: false; error: string; issues: string[] };
+  install(bytes: Uint8Array, actor?: string): Promise<CodeGameInstallResult>;
+  /** Vrai si cette version est déjà installée (en attente, active ou remplacée). */
+  has(id: string, version: string): boolean;
+  list(): CodeGameSummary[];
+  remove(id: string, version: string, actor?: string): CodeGameOutcome;
+}
+
 interface Loaded {
   module: GameModule;
   runtime: CodeGameRuntime;
@@ -124,7 +140,7 @@ export interface CodeGameServiceOptions {
  * Seule la version approuvée et active s'exécute, dans un isolat V8 (voir code-runtime.ts).
  * Une archive dont l'empreinte ou la signature ne correspond plus n'est jamais chargée.
  */
-export class CodeGameService {
+export class CodeGameService implements CodeGamesPort {
   private active = new Map<string, Loaded>();
   private errors = new Map<string, string>();
 
@@ -275,6 +291,23 @@ export class CodeGameService {
    * Installe un paquet signé en attente de revue. Le contrôle de lancement rend la main au serveur pendant son
    * calcul ; la version est revérifiée ensuite, car une autre requête a pu la fournir entre-temps.
    */
+  /** Identifiant et version d'un paquet, après les mêmes vérifications que l'installation. Rien n'est écrit. */
+  inspect(
+    bytes: Uint8Array,
+  ): { ok: true; id: string; version: string } | { ok: false; error: string; issues: string[] } {
+    try {
+      const pkg = this.validate(bytes);
+      return { ok: true, id: pkg.manifest.id, version: pkg.manifest.version };
+    } catch (err) {
+      if (err instanceof PackageValidationError) return { ok: false, error: 'Paquet refusé.', issues: err.issues };
+      throw err;
+    }
+  }
+
+  has(id: string, version: string): boolean {
+    return this.store.getCodeGame(id, version) !== undefined;
+  }
+
   async install(bytes: Uint8Array, actor = 'inconnu'): Promise<CodeGameInstallResult> {
     let pkg: ValidatedCodePackage;
     try {
