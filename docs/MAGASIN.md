@@ -50,6 +50,15 @@ les supprimer depuis l'administration, dans la section **Magasin de jeux**.
   que les travaux de ces deux jeux intégrés, et ne donne la clé du modèle que si l'administrateur coche **Autoriser
   l'IA du serveur** pour ce jeu, dans **Jeux de code**. Sans cela, ou si le modèle échoue, le jeu prend son repli habituel.
 
+## Publier les jeux de code
+
+- `scripts/publier-jeux-magasin.sh <dossier-export> [auteur/depot] [branche]` copie chaque jeu d'un dossier d'export
+  (`jeux-du-magasin/`, produit par `scripts/exporter-jeux-de-code.mjs`) dans `jeux/<jeu>/` du dépôt, committe une fois
+  et pose un tag `<jeu>-vX.Y.Z` par jeu. Il ne signe rien et ne crée aucune release.
+- Une version publiée ne change jamais : si un tag existe avec un autre contenu, le script s'arrête. Augmentez
+  `version` du jeu, relancez l'export, puis le script. Un jeu inchangé est ignoré.
+- `DRY_RUN=1` prépare le commit et les tags sans rien pousser.
+
 ## Limites
 
 - Un jeu de code (format 5) s'installe par le magasin, mais jamais seul : il reste en attente de revue, et un
