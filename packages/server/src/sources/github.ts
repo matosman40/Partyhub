@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { DEFAULT_PACKAGE_LIMITS } from '../packages/format.js';
 import { compareVersions, isValidVersion } from '../packages/semver.js';
+import { readZip, ZipError, type ZipFileEntry } from '../packages/zip.js';
 
 /**
  * Client minimal de l’API GitHub pour les releases. Seules les releases publiques ou accessibles
@@ -16,6 +17,8 @@ export const ALLOWED_HOSTS = [
   'objects.githubusercontent.com',
   'release-assets.githubusercontent.com',
   'github-releases.githubusercontent.com',
+  // Hôte officiel des archives de dépôt (zipball) : la requête y est redirigée, sans le jeton.
+  'codeload.github.com',
 ];
 
 /** « auteur/depot » : caractères GitHub admis, sans chemin ni segment supplémentaire. */
@@ -75,7 +78,12 @@ export interface Release {
   checksum: ReleaseAsset;
 }
 
-async function request(url: string, accept: string, options: GitHubOptions): Promise<Response> {
+async function request(
+  url: string,
+  accept: string,
+  options: GitHubOptions,
+  timeoutMs = 20_000,
+): Promise<Response> {
   const headers: Record<string, string> = {
     Accept: accept,
     'User-Agent': 'PartyHub',
@@ -86,7 +94,7 @@ async function request(url: string, accept: string, options: GitHubOptions): Pro
   const doFetch = options.fetch ?? fetch;
   let res: Response;
   try {
-    res = await doFetch(url, { headers, redirect: 'follow', signal: AbortSignal.timeout(20_000) });
+    res = await doFetch(url, { headers, redirect: 'follow', signal: AbortSignal.timeout(timeoutMs) });
   } catch {
     throw new GitHubError('GitHub est injoignable (réseau ou pare-feu).');
   }
@@ -234,10 +242,79 @@ function gitBlobSha(bytes: Uint8Array): string {
   return createHash('sha1').update(`blob ${bytes.byteLength}\0`).update(bytes).digest('hex');
 }
 
+/** Archive du dépôt au tag : tout le dépôt est téléchargé, donc les limites sont celles d’un dépôt entier. */
+export const REPO_ARCHIVE_LIMITS = {
+  maxArchiveBytes: 128 * 1024 * 1024,
+  maxEntries: 20_000,
+  maxEntryBytes: 32 * 1024 * 1024,
+  maxTotalBytes: 256 * 1024 * 1024,
+  maxRatio: 100,
+  ratioCheckBytes: 1024 * 1024,
+  allowDirectories: true,
+};
+
+const ARCHIVE_TIMEOUT_MS = 120_000;
+
+/** Archive du dépôt au tag (zipball) : une requête d’API, puis le téléchargement suit la redirection. */
+async function repoArchive(repo: string, tag: string, options: GitHubOptions): Promise<Uint8Array> {
+  const res = await request(
+    `${GITHUB_API}/repos/${repo}/zipball/${encodeURIComponent(tag)}`,
+    'application/octet-stream',
+    options,
+    ARCHIVE_TIMEOUT_MS,
+  );
+  const max = REPO_ARCHIVE_LIMITS.maxArchiveBytes;
+  if (Number(res.headers.get('content-length') ?? '0') > max) {
+    throw new GitHubError('L’archive du dépôt dépasse la taille maximale.');
+  }
+  const bytes = new Uint8Array(await res.arrayBuffer());
+  if (bytes.byteLength > max) throw new GitHubError('L’archive du dépôt dépasse la taille maximale.');
+  return bytes;
+}
+
 /**
- * Fichiers d’un dossier, tels qu’ils sont au tag demandé (un jeu du magasin). La lecture passe par le commit du tag,
- * puis son arbre et chaque fichier, chacun vérifié contre son empreinte Git : un contenu modifié en route est refusé.
- * Les chemins renvoyés sont relatifs au dossier. Rien n’est écrit sur le disque.
+ * Lit l’archive d’un dépôt. Son dossier racine doit être celui du commit du tag (« auteur-dépôt-sha »), sinon
+ * l’archive ne vient pas de ce commit et elle est refusée.
+ */
+function unpackRepo(
+  bytes: Uint8Array,
+  repo: string,
+  tag: string,
+  commitId: string,
+): { root: string; files: Map<string, Uint8Array> } {
+  let entries: ZipFileEntry[];
+  try {
+    entries = readZip(bytes, REPO_ARCHIVE_LIMITS, (name) => {
+      if (name.startsWith('/') || /[\\\0]/.test(name) || name.split('/').includes('..')) {
+        throw new GitHubError(`Nom refusé dans l’archive du dépôt : « ${name} ».`);
+      }
+    });
+  } catch (error) {
+    if (error instanceof ZipError) throw new GitHubError(`Archive du dépôt illisible : ${error.message}`);
+    throw error;
+  }
+
+  const roots = [...new Set(entries.map((e) => e.name.split('/')[0]!))];
+  const root = roots.length === 1 ? roots[0]! : '';
+  const [owner, name] = repo.split('/') as [string, string];
+  const head = `${owner}-${name}-`.toLowerCase();
+  const short = root.toLowerCase().startsWith(head) ? root.slice(head.length) : '';
+  if (short.length < 7 || !commitId.startsWith(short.toLowerCase())) {
+    throw new GitHubError(`L’archive ne correspond pas au commit du tag « ${tag} ».`);
+  }
+
+  const files = new Map<string, Uint8Array>();
+  for (const entry of entries) {
+    if (!entry.name.endsWith('/')) files.set(entry.name, entry.data);
+  }
+  return { root, files };
+}
+
+/**
+ * Fichiers d’un dossier, tels qu’ils sont au tag demandé (un jeu du magasin). Le tag désigne un commit : son arbre
+ * complet donne l’empreinte attendue de chaque fichier, et l’archive du dépôt à ce commit fournit les contenus. Un
+ * fichier du dossier absent, en trop ou modifié fait échouer la lecture. Les chemins renvoyés sont relatifs au
+ * dossier. Rien n’est écrit sur le disque.
  */
 export async function tagFiles(
   repo: string,
@@ -247,10 +324,12 @@ export async function tagFiles(
   limits: typeof SNAPSHOT_LIMITS = SNAPSHOT_LIMITS,
 ): Promise<Map<string, Uint8Array>> {
   const commit = (await githubGetJson(`${GITHUB_API}/repos/${repo}/commits/${encodeURIComponent(tag)}`, options)) as {
+    sha?: unknown;
     commit?: { tree?: { sha?: unknown } };
   } | null;
+  const commitId = commit?.sha;
   const treeSha = commit?.commit?.tree?.sha;
-  if (typeof treeSha !== 'string' || !SHA1.test(treeSha)) {
+  if (typeof commitId !== 'string' || !SHA1.test(commitId) || typeof treeSha !== 'string' || !SHA1.test(treeSha)) {
     throw new GitHubError(`Le tag « ${tag} » ne désigne pas un commit lisible.`);
   }
   const tree = (await githubGetJson(`${GITHUB_API}/repos/${repo}/git/trees/${treeSha}?recursive=1`, options)) as {
@@ -282,19 +361,21 @@ export async function tagFiles(
     throw new GitHubError('Le dossier du jeu dépasse la taille maximale.');
   }
 
+  const { root, files: archived } = unpackRepo(await repoArchive(repo, tag, options), repo, tag, commitId);
+  const base = `${root}/${prefix}`;
+  const wanted = new Set(entries.map((e) => base + e.rel));
+  for (const name of archived.keys()) {
+    if (name.startsWith(base) && !wanted.has(name)) {
+      throw new GitHubError(`« ${name.slice(base.length)} » est dans l’archive mais pas dans le commit : lecture refusée.`);
+    }
+  }
+
   const files = new Map<string, Uint8Array>();
   for (const entry of entries) {
-    if (entry.size > limits.maxFileBytes) throw new GitHubError(`« ${entry.rel} » dépasse la taille autorisée.`);
-    const blob = (await githubGetJson(`${GITHUB_API}/repos/${repo}/git/blobs/${entry.sha}`, options)) as {
-      content?: unknown;
-      encoding?: unknown;
-    } | null;
-    if (!blob || blob.encoding !== 'base64' || typeof blob.content !== 'string') {
-      throw new GitHubError(`« ${entry.rel} » ne peut pas être lu.`);
-    }
-    const bytes = new Uint8Array(Buffer.from(blob.content.replace(/\s+/g, ''), 'base64'));
+    const bytes = archived.get(base + entry.rel);
+    if (!bytes) throw new GitHubError(`« ${entry.rel} » est absent de l’archive du tag.`);
     if (bytes.byteLength > limits.maxFileBytes) throw new GitHubError(`« ${entry.rel} » dépasse la taille autorisée.`);
-    if (gitBlobSha(bytes) !== entry.sha) {
+    if (bytes.byteLength !== entry.size || gitBlobSha(bytes) !== entry.sha) {
       throw new GitHubError(`« ${entry.rel} » ne correspond pas à son empreinte GitHub : lecture refusée.`);
     }
     files.set(entry.rel, bytes);

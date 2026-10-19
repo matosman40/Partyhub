@@ -21,9 +21,9 @@ les supprimer depuis l'administration, dans la section **Magasin de jeux**.
 ## Installer, mettre à jour, supprimer
 
 - **Installer** crée une source du magasin pour le jeu, avec mise à jour automatique, puis construit le paquet à partir
-  du dossier du jeu au tag le plus haut. Chaque fichier est vérifié contre l'empreinte que GitHub publie pour lui
-  (une modification en route est refusée), puis le paquet passe la validation : identifiant, version, contenu. Un
-  échec n'installe rien et ne laisse pas de source.
+  du dossier du jeu au tag le plus haut. Le dépôt est lu à ce tag, par son archive : chaque fichier du dossier doit
+  correspondre à l'arbre du commit (une modification en route, ou un fichier en trop, est refusé). Le paquet passe
+  ensuite la validation : identifiant, version, contenu. Un échec n'installe rien et ne laisse pas de source.
 - **Mettre à jour** (ou **Vérifier**) interroge le dépôt tout de suite, et installe la version la plus haute si elle est
   plus récente.
   Les jeux installés depuis le magasin se mettent aussi à jour une fois par jour.
@@ -53,9 +53,10 @@ les supprimer depuis l'administration, dans la section **Magasin de jeux**.
 - Les jeux intégrés à l'application ne sont pas dans `jeux/` du dépôt : leurs fiches sont dans `jeux-integres/`, à
   titre d'information. Ils restent dans l'application et s'activent dans l'administration.
 - Un dépôt privé demande `GITHUB_TOKEN`.
-- Sans `GITHUB_TOKEN`, GitHub limite les appels à 60 par heure. Un jeu coûte environ deux appels, plus un par fichier de
-  son dossier, à chaque construction. Le catalogue est gardé dix minutes. Une erreur n'est jamais gardée : elle est
-  relue au chargement suivant.
+- Sans `GITHUB_TOKEN`, GitHub limite les appels à 60 par heure. Un jeu coûte quatre appels à l'API (version, commit,
+  arbre, archive), à chaque construction, quel que soit le nombre de fichiers. L'archive contient tout le dépôt : elle
+  grandit avec les musiques et les images. Limites : 128 Mio compressés, 256 Mio décompressés. Le catalogue est gardé
+  dix minutes. Une erreur n'est jamais gardée : elle est relue au chargement suivant.
 
 ## Routes d'administration
 

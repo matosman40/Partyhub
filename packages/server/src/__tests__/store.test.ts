@@ -8,6 +8,7 @@ import { CodeGameService, loadTrustedKeys } from '../code-games/service.js';
 import { Store } from '../db/store.js';
 import { listFiles } from '../cli/list-files.js';
 import { PackageService } from '../packages/service.js';
+import { writeZip } from '../packages/zip.js';
 import { PackageSourceService } from '../sources/service.js';
 import { COVER_MAX_BYTES } from '../store/catalog.js';
 import { buildTagPackage } from '../store/build.js';
@@ -25,11 +26,15 @@ interface FakeStore {
   tags: string[];
   files: Record<string, Uint8Array>;
   tampered: Record<string, Uint8Array>;
+  /** Fichiers présents dans l’archive seulement, pas dans l’arbre du commit. */
+  archiveOnly: Record<string, Uint8Array>;
+  /** Dossier racine de l’archive, s’il ne doit pas être celui du commit. */
+  archiveRoot?: string;
   limited: boolean;
   calls: { path: string; auth: string | null }[];
 }
 
-const emptyStore = (): FakeStore => ({ tags: [], files: {}, tampered: {}, limited: false, calls: [] });
+const emptyStore = (): FakeStore => ({ tags: [], files: {}, tampered: {}, archiveOnly: {}, limited: false, calls: [] });
 
 function reply(body: BodyInit, status: number, url: URL, type: string): Response {
   const res = new Response(body as unknown as BodyInit, { status, headers: { 'content-type': type } });
@@ -47,7 +52,7 @@ const blobSha = (bytes: Uint8Array): string =>
 const commitSha = (tag: string): string => createHash('sha1').update(`commit ${tag}`).digest('hex');
 const treeSha = (tag: string): string => createHash('sha1').update(`tree ${tag}`).digest('hex');
 
-/** Faux client GitHub : les routes que le code réel appelle (tags, commit, arbre, blobs, contenus). */
+/** Faux client GitHub : les routes que le code réel appelle (tags, commit, arbre, archive, contenus). */
 function fakeFetch(state: FakeStore) {
   const fetchFn = async (input: string | URL | Request, init?: RequestInit) => {
     const url = new URL(String(input));
@@ -100,13 +105,19 @@ function fakeFetch(state: FakeStore) {
       return json({ sha: tree[2], tree: entries, truncated: false }, 200, url);
     }
 
-    const blob = /^\/repos\/([^/]+\/[^/]+)\/git\/blobs\/([0-9a-f]{40})$/.exec(url.pathname);
-    if (blob) {
-      if (blob[1] !== REPO) return notFound(url);
-      const key = Object.keys(state.files).find((k) => blobSha(state.files[k]!) === blob[2]);
-      if (!key) return notFound(url);
-      const bytes = state.tampered[key] ?? state.files[key]!;
-      return json({ content: Buffer.from(bytes).toString('base64'), encoding: 'base64', size: bytes.length }, 200, url);
+    // Archive du dépôt au tag, comme GitHub la sert : un dossier racine « auteur-dépôt-sha7 », puis les fichiers.
+    const zipball = /^\/repos\/([^/]+\/[^/]+)\/zipball\/(.+)$/.exec(url.pathname);
+    if (zipball) {
+      const tag = decodeURIComponent(zipball[2]!);
+      if (zipball[1] !== REPO || !state.tags.includes(tag)) return notFound(url);
+      const root = state.archiveRoot ?? `matosman40-jeux-partyhub-${commitSha(tag).slice(0, 7)}`;
+      const archived = Object.entries({ ...state.files, ...state.archiveOnly })
+        .filter(([key]) => key.startsWith(`${tag}|`))
+        .map(([key, data]) => ({
+          name: `${root}/${key.slice(tag.length + 1)}`,
+          data: state.tampered[key] ?? data,
+        }));
+      return reply(writeZip(archived) as unknown as BodyInit, 200, url, 'application/zip');
     }
 
     const contents = /^\/repos\/([^/]+\/[^/]+)\/contents\/(.+)$/.exec(url.pathname);
@@ -426,6 +437,30 @@ describe('installation, mise à jour et suppression', () => {
     const outcome = await gameStore.install('frontieres');
     expect(outcome.ok).toBe(false);
     expect(outcome.ok ? '' : outcome.error).toContain('empreinte GitHub');
+    expect(packages.list()).toEqual([]);
+    expect(sources.list()).toEqual([]);
+  });
+
+  it('refuse une archive qui ne vient pas du commit du tag', async () => {
+    publish(state, 'frontieres', '1.0.0');
+    state.archiveRoot = 'matosman40-jeux-partyhub-0000000';
+    const { gameStore, sources } = service();
+
+    const outcome = await gameStore.install('frontieres');
+    expect(outcome.ok).toBe(false);
+    expect(outcome.ok ? '' : outcome.error).toContain('ne correspond pas au commit');
+    expect(packages.list()).toEqual([]);
+    expect(sources.list()).toEqual([]);
+  });
+
+  it('refuse un fichier présent dans l’archive mais absent du commit', async () => {
+    publish(state, 'frontieres', '1.0.0');
+    state.archiveOnly['frontieres-v1.0.0|jeux/frontieres/game/cache.bin'] = enc('ajouté hors du commit');
+    const { gameStore, sources } = service();
+
+    const outcome = await gameStore.install('frontieres');
+    expect(outcome.ok).toBe(false);
+    expect(outcome.ok ? '' : outcome.error).toContain('pas dans le commit');
     expect(packages.list()).toEqual([]);
     expect(sources.list()).toEqual([]);
   });
