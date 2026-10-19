@@ -2,7 +2,7 @@
 
 Copiez le bloc ci-dessous dans votre assistant, en remplaçant les valeurs entre crochets. L'assistant doit avoir accès au dépôt PartyHub et à Docker (ou à `npm`). Le guide de référence est `docs/JEU-DE-CODE.md`.
 
-Le jeu peut aussi être créé et modifié directement dans l'administration de PartyHub (« Créer et modifier un jeu de code »), sans ligne de commande : l'assistant écrit alors le code, et les étapes 1, 4 et 5 se font dans l'éditeur.
+Le jeu peut aussi être créé et modifié directement dans l'administration de PartyHub (« Créer et modifier un jeu de code »), sans ligne de commande : l'assistant écrit alors le code dans l'éditeur, et la vérification se lance depuis l'écran. La signature reste hors de PartyHub, avec la clé de l'auteur (voir `docs/JEU-DE-CODE.md`).
 
 ---
 
@@ -77,6 +77,6 @@ Un jeu complet et jouable :
 
 ## Ce que le prompt ne peut pas faire (à lire avant)
 
-- Pour jouer, le paquet doit être signé par une clé de confiance de l'installation (`DATA_DIR/cles-de-confiance/`), puis approuvé par un administrateur dans « Paquets de jeux (.phgame) ». Le prompt produit un paquet qui se contrôle ; l'installation et l'approbation se font ensuite, à la main.
+- Pour jouer, le paquet doit être signé par une clé de confiance de l'installation (`DATA_DIR/cles-de-confiance/`), puis reçu par le dossier de dépôt, par un lien HTTPS ou par téléversement, et approuvé par un administrateur dans « Jeux de code ». Le prompt produit un paquet qui se contrôle ; la réception et l'approbation se font ensuite, à la main.
 - Le contrôle exécute le code du jeu, dans la même image PartyHub (commande `phgame`) ou sur le poste. Il ne remplace pas une relecture humaine : c'est l'administrateur qui relit le code avant d'approuver.
 - Le prompt ne vérifie pas l'équilibre des règles ni la lisibilité des écrans : il faut un essai réel sur une TV et un téléphone.

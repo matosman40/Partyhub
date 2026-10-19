@@ -1,8 +1,27 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { api } from '../api.js';
 import { CodeEditorAdmin } from './CodeEditorAdmin.js';
 
 /** Jeux de code : chaque version installée, son état, et la revue avant approbation. */
+
+/** Un fichier du dossier de dépôt, tel que la dernière lecture l'a trouvé. */
+interface DropFileReport {
+  name: string;
+  status: 'en_attente' | 'deja_recu' | 'refuse';
+  message: string;
+  issues: string[];
+}
+
+interface DropState {
+  folder: string;
+  files: DropFileReport[];
+}
+
+const DROP_LABEL: Record<DropFileReport['status'], string> = {
+  en_attente: 'En attente de revue',
+  deja_recu: 'Déjà reçu',
+  refuse: 'Refusé',
+};
 
 export type CodeGameStatus = 'en_attente' | 'active' | 'remplacee' | 'erreur';
 
@@ -90,6 +109,11 @@ export function CodeGamesAdmin({ refreshToken, onChanged }: { refreshToken: numb
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [drop, setDrop] = useState<DropState | null>(null);
+  const [url, setUrl] = useState('');
+  const [issues, setIssues] = useState<string[]>([]);
+  /** Signature de la dernière lecture du dossier : la liste des jeux ne se recharge que si elle change. */
+  const lastDrop = useRef('');
 
   async function load() {
     try {
@@ -104,6 +128,73 @@ export function CodeGamesAdmin({ refreshToken, onChanged }: { refreshToken: numb
     // Un nouvel import (refreshToken) relance la liste.
     void load();
   }, [refreshToken]);
+
+  /** Le serveur relit le dossier de dépôt toutes les dix secondes : l'écran suit. */
+  useEffect(() => {
+    void loadDrop();
+    const timer = setInterval(() => void loadDrop(), 10_000);
+    return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function loadDrop() {
+    try {
+      applyDrop(await api<DropState>('/api/admin/code-intake'));
+    } catch {
+      // Le dossier de dépôt est un confort : son erreur ne doit pas masquer la liste des jeux.
+    }
+  }
+
+  function applyDrop(next: DropState) {
+    setDrop(next);
+    const signature = next.files.map((f) => `${f.name}:${f.status}`).join('|');
+    if (signature !== lastDrop.current) {
+      lastDrop.current = signature;
+      void load();
+    }
+  }
+
+  async function scanNow() {
+    setError(null);
+    setIssues([]);
+    setNotice(null);
+    setBusy(true);
+    try {
+      applyDrop(await api<DropState>('/api/admin/code-intake/scan', { method: 'POST' }));
+      setNotice('Dossier de dépôt relu.');
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function importUrl(event: FormEvent) {
+    event.preventDefault();
+    setError(null);
+    setIssues([]);
+    setNotice(null);
+    setBusy(true);
+    try {
+      const res = await api<{ id: string; version: string; unchanged: boolean }>('/api/admin/code-intake/url', {
+        method: 'POST',
+        body: JSON.stringify({ url: url.trim() }),
+      });
+      setNotice(
+        res.unchanged
+          ? `« ${res.id} » ${res.version} est déjà reçu, sans modification.`
+          : `« ${res.id} » ${res.version} est reçu. Relisez-le et approuvez-le ci-dessous.`,
+      );
+      setUrl('');
+      await load();
+      onChanged();
+    } catch (err) {
+      setError((err as Error).message);
+      setIssues((err as { issues?: string[] }).issues ?? []);
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function openReview(game: CodeGameSummary) {
     setError(null);
@@ -210,6 +301,73 @@ export function CodeGamesAdmin({ refreshToken, onChanged }: { refreshToken: numb
           {notice}
         </p>
       )}
+      <section className="stack" aria-label="Ajouter un jeu de code">
+        <h4>Ajouter un jeu de code</h4>
+        <p className="muted small">
+          Un jeu ajouté ici arrive en revue. Il ne joue qu’après votre approbation. L’auteur le signe avec sa clé, hors
+          de PartyHub.
+        </p>
+
+        <div className="stack small">
+          <strong>Dossier de dépôt</strong>
+          <p className="muted small">
+            Déposez les fichiers .phgame dans le dossier « {drop?.folder ?? 'depot-jeux'} » de DATA_DIR. PartyHub le
+            relit toutes les dix secondes.
+          </p>
+          {drop && drop.files.length === 0 && <span className="muted small">Aucun fichier dans le dossier.</span>}
+          {drop && drop.files.length > 0 && (
+            <ul className="ed-list">
+              {drop.files.map((f) => (
+                <li key={f.name} className="ed-list-item">
+                  <div className="ed-list-body">
+                    <strong>{f.name}</strong>
+                    <span className="muted small">
+                      {DROP_LABEL[f.status]} : {f.message}
+                    </span>
+                    {f.issues.map((issue) => (
+                      <span key={issue} className="error small">
+                        {issue}
+                      </span>
+                    ))}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+          <div className="row">
+            <button type="button" className="btn ghost small" onClick={scanNow} disabled={busy}>
+              Relire le dossier maintenant
+            </button>
+          </div>
+        </div>
+
+        <form className="stack small" onSubmit={importUrl} aria-label="Importer depuis un lien">
+          <strong>Lien HTTPS</strong>
+          <label className="field">
+            <span>Adresse du fichier .phgame</span>
+            <input
+              type="url"
+              placeholder="https://…/mon-jeu-0.1.0.phgame"
+              value={url}
+              disabled={busy}
+              onChange={(e) => setUrl(e.target.value)}
+            />
+          </label>
+          {issues.length > 0 && (
+            <ul className="error small">
+              {issues.map((issue) => (
+                <li key={issue}>{issue}</li>
+              ))}
+            </ul>
+          )}
+          <div className="row">
+            <button type="submit" className="btn ghost small" disabled={busy || !url.trim()}>
+              Importer depuis ce lien
+            </button>
+          </div>
+        </form>
+      </section>
+
       {games === null && <p className="muted">Chargement…</p>}
       {games?.length === 0 && <p className="muted">Aucun jeu de code importé.</p>}
 
@@ -312,13 +470,7 @@ export function CodeGamesAdmin({ refreshToken, onChanged }: { refreshToken: numb
         </section>
       )}
       <hr />
-      {/* Un brouillon signé arrive dans la liste ci-dessus : elle se recharge tout de suite. */}
-      <CodeEditorAdmin
-        onSigned={() => {
-          void load();
-          onChanged();
-        }}
-      />
+      <CodeEditorAdmin />
     </div>
   );
 }

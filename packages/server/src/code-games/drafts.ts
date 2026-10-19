@@ -4,18 +4,13 @@ import { resolveGame } from '../games-registry.js';
 import { PackageValidationError } from '../packages/format.js';
 import { listFiles } from '../cli/list-files.js';
 import { buildCodePackage, checkCodeBytes, newCodeGame, type CodeCheckReport } from './build.js';
-import type { CodeGameInstallResult, CodeGameService, CodeGameSummary } from './service.js';
-import {
-  createSigningKey as writeSigningKey,
-  loadSigningPrivatePem,
-  signingKeyInfo,
-  type SigningKeyInfo,
-} from './signing-key.js';
+import type { CodeGameService, CodeGameSummary } from './service.js';
 
 /**
  * Brouillons des jeux de code : le dossier source d'un jeu, modifié dans l'administration.
- * Un brouillon vit dans DATA_DIR/jeux-en-cours/<id>/. Il ne joue jamais : il devient un paquet par « Signer »,
- * qui l'envoie en attente de revue. Seule la revue de l'administrateur l'active.
+ * Un brouillon vit dans DATA_DIR/jeux-en-cours/<id>/ et ne joue jamais. PartyHub ne détient aucune clé de
+ * signature : l'auteur signe le dossier hors de PartyHub (commande phgame pack), puis le paquet arrive par le
+ * dossier de dépôt ou par un lien HTTPS, en attente de revue.
  */
 
 export const DRAFTS_DIR_NAME = 'jeux-en-cours';
@@ -123,8 +118,8 @@ function checkMetadata(field: keyof DraftMetadata, value: string): void {
 }
 
 /**
- * Brouillons de jeux de code et leur construction. Les opérations qui exécutent du code (vérifier, signer)
- * passent par les mêmes contrôles que la commande phgame, dans l'isolat de production.
+ * Brouillons de jeux de code et leur construction. La vérification exécute le code du jeu, avec les mêmes
+ * contrôles que la commande phgame check.
  */
 export class CodeDraftService {
   constructor(
@@ -335,40 +330,5 @@ export class CodeDraftService {
     } catch (err) {
       return { ok: false, lines: errorLines(err) };
     }
-  }
-
-  /** Construit le brouillon signé par la clé de l'installation, puis l'installe en attente de revue. */
-  async sign(id: string, actor: string): Promise<CodeGameInstallResult> {
-    const dir = this.requireDraft(id);
-    const privatePem = loadSigningPrivatePem(this.dataDir);
-    if (!privatePem) return { ok: false, error: 'Aucune clé de signature. Créez-la avant de signer.' };
-    let bytes: Uint8Array;
-    try {
-      ({ bytes } = await buildCodePackage(dir, privatePem));
-    } catch (err) {
-      return {
-        ok: false,
-        error: 'Le brouillon ne se construit pas : corrigez-le puis vérifiez-le.',
-        issues: errorLines(err),
-      };
-    }
-    return this.codeGames.install(bytes, actor);
-  }
-
-  /** Clé de signature : identifiant et clé publique seulement. */
-  signingKey(): SigningKeyInfo | null {
-    try {
-      return signingKeyInfo(this.dataDir);
-    } catch {
-      throw new DraftError(
-        'La clé de signature est illisible. Vérifiez le dossier cles-de-signature de DATA_DIR.',
-        500,
-      );
-    }
-  }
-
-  createSigningKey(): SigningKeyInfo {
-    if (this.signingKey()) throw new DraftError('Une clé de signature existe déjà pour cette installation.', 409);
-    return writeSigningKey(this.dataDir);
   }
 }

@@ -41,9 +41,10 @@ les choix des téléphones dans `jouer()`.
 
 ## Parcours de l'éditeur
 
-`editeur.cjs` suit l'éditeur de l'administration à l'écran : clé de signature, création depuis le modèle,
-renommage, vérification (partie de robots), signature, puis approbation dans « Jeux de code ». Il n'a pas besoin
-de paquet : le serveur doit être neuf (aucune clé de signature, aucun jeu de code).
+`editeur.cjs` suit l'éditeur de l'administration à l'écran : création depuis le modèle, nom et version, vérification
+(partie de robots). Il vérifie aussi qu'aucune clé de signature n'est proposée, et que l'écran indique la commande de
+signature hors de PartyHub ainsi que les deux voies d'ajout (dossier de dépôt, lien HTTPS). Il n'a besoin ni de
+paquet ni de clé.
 
 ```bash
 PARTYHUB_URL=http://127.0.0.1:8290 \

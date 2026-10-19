@@ -2,8 +2,8 @@ import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 
 import { api } from '../api.js';
 
 /**
- * Éditeur des jeux de code : création depuis le modèle, fichiers, vérification et signature.
- * Un brouillon ne joue jamais. « Signer » l'envoie en attente de revue, dans « Jeux de code » ci-dessus.
+ * Éditeur des jeux de code : création depuis le modèle, fichiers et vérification.
+ * Un brouillon ne joue jamais, et PartyHub ne signe rien : l'auteur signe le paquet hors de PartyHub.
  */
 
 interface DraftSummary {
@@ -19,11 +19,6 @@ interface DraftDetail extends DraftSummary {
   description: string;
   author: string;
   files: { path: string; size: number; protected: boolean }[];
-}
-
-interface SigningKey {
-  keyId: string;
-  publicPem: string;
 }
 
 interface CheckReport {
@@ -43,10 +38,8 @@ const DEFAULT_FILE = 'src/server.ts';
 
 const enc = encodeURIComponent;
 
-export function CodeEditorAdmin({ onSigned }: { onSigned: () => void }) {
+export function CodeEditorAdmin() {
   const [drafts, setDrafts] = useState<DraftSummary[] | null>(null);
-  /** undefined : pas encore lue. null : pas de clé de signature. */
-  const [key, setKey] = useState<SigningKey | null | undefined>(undefined);
   const [draft, setDraft] = useState<DraftDetail | null>(null);
   const [filePath, setFilePath] = useState('');
   const [content, setContent] = useState('');
@@ -64,7 +57,8 @@ export function CodeEditorAdmin({ onSigned }: { onSigned: () => void }) {
   const [notice, setNotice] = useState<string | null>(null);
 
   const dirty = draft !== null && filePath !== '' && content !== saved;
-  const canSign = Boolean(draft && key && check?.ok && check.revision === revision && !dirty && !busy);
+  /** Vrai quand la dernière vérification vaut pour le code affiché : le paquet peut alors être signé hors de PartyHub. */
+  const readyToSign = Boolean(draft && check?.ok && check.revision === revision && !dirty && !busy);
 
   function fail(err: unknown) {
     setError((err as Error).message);
@@ -90,18 +84,9 @@ export function CodeEditorAdmin({ onSigned }: { onSigned: () => void }) {
     }
   }
 
-  async function loadKey() {
-    try {
-      setKey((await api<{ key: SigningKey | null }>('/api/admin/signing-key')).key);
-    } catch (err) {
-      fail(err);
-    }
-  }
-
   // Chargement initial seulement : les fonctions ci-dessus ne dépendent que de l'état qu'elles mettent à jour.
   useEffect(() => {
     void loadDrafts();
-    void loadKey();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -314,43 +299,6 @@ export function CodeEditorAdmin({ onSigned }: { onSigned: () => void }) {
     }
   }
 
-  async function runSign() {
-    if (!draft) return;
-    if (!(await saveFile())) return;
-    clearMessages();
-    setBusy(true);
-    try {
-      const res = await api<{ unchanged: boolean; version: string }>(`/api/admin/code-drafts/${enc(draft.id)}/sign`, {
-        method: 'POST',
-      });
-      setNotice(
-        res.unchanged
-          ? `Cette version (${res.version}) est déjà en revue, sans modification.`
-          : `« ${draft.name} » ${res.version} est envoyé en revue. Relisez-le et approuvez-le dans « Jeux de code » : il ne jouera qu’après approbation.`,
-      );
-      await loadDrafts();
-      onSigned();
-    } catch (err) {
-      fail(err);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function createKey() {
-    clearMessages();
-    setBusy(true);
-    try {
-      const res = await api<{ key: SigningKey }>('/api/admin/signing-key', { method: 'POST' });
-      setKey(res.key);
-      setNotice('Clé de signature créée. Sa partie privée reste sur ce serveur et n’est jamais affichée.');
-    } catch (err) {
-      fail(err);
-    } finally {
-      setBusy(false);
-    }
-  }
-
   /** Ctrl+S (ou Cmd+S) enregistre le fichier ouvert, sans quitter l'éditeur. */
   function onEditorKey(event: KeyboardEvent<HTMLTextAreaElement>) {
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
@@ -371,27 +319,9 @@ export function CodeEditorAdmin({ onSigned }: { onSigned: () => void }) {
     <div className="stack">
       <h4>Créer et modifier un jeu de code</h4>
       <p className="muted small">
-        Un brouillon est le dossier source d’un jeu. Il ne joue jamais : « Signer » l’envoie en revue, puis vous
-        l’approuvez dans la liste ci-dessus.
+        Un brouillon est le dossier source d’un jeu. Il ne joue jamais. PartyHub ne détient aucune clé : l’auteur signe
+        le paquet hors de PartyHub, puis le paquet arrive en revue par le dossier de dépôt ou par un lien.
       </p>
-
-      <div className="stack small">
-        {key === undefined && <span className="muted">Clé de signature : lecture…</span>}
-        {key === null && (
-          <div className="row wrap">
-            <span>Aucune clé de signature. Elle est nécessaire pour envoyer un jeu en revue.</span>
-            <button type="button" className="btn primary small" onClick={createKey} disabled={busy}>
-              Créer la clé de signature
-            </button>
-          </div>
-        )}
-        {key && (
-          <span className="muted">
-            Clé de signature <code>{key.keyId}</code> : seule la clé publique est affichée, la clé privée reste sur ce
-            serveur.
-          </span>
-        )}
-      </div>
 
       {error && (
         <p className="error" role="alert">
@@ -607,15 +537,21 @@ export function CodeEditorAdmin({ onSigned }: { onSigned: () => void }) {
               </button>
             </li>
             <li>
-              <strong>Signer et envoyer en revue.</strong>{' '}
-              {!key
-                ? 'Créez d’abord la clé de signature.'
-                : canSign
-                  ? 'Prêt.'
-                  : 'Disponible après une vérification réussie de la version actuelle.'}{' '}
-              <button type="button" className="btn primary small" onClick={runSign} disabled={!canSign}>
-                Signer et envoyer en revue
-              </button>
+              <strong>Signer hors de PartyHub.</strong>{' '}
+              {readyToSign
+                ? 'La vérification est réussie. Signez le dossier avec la clé de l’auteur, par exemple :'
+                : 'Disponible après une vérification réussie de la version actuelle.'}
+              {readyToSign && (
+                <>
+                  <pre className="small">
+                    <code>{`phgame pack DATA_DIR/jeux-en-cours/${draft.id} ${draft.id}.phgame cle-privee.pem`}</code>
+                  </pre>
+                  <span className="muted small">
+                    Puis déposez le fichier .phgame dans le dossier « depot-jeux » de DATA_DIR, ou collez son lien HTTPS
+                    dans « Ajouter un jeu de code » ci-dessus. Le jeu arrive en revue et ne joue qu’après approbation.
+                  </span>
+                </>
+              )}
             </li>
           </ol>
           {check && (

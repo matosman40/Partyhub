@@ -7,11 +7,13 @@ import { createServer, type PartyServer } from '../server.js';
 import { createLogger } from '../logger.js';
 import type { AppConfig } from '../config.js';
 import { DRAFTS_DIR_NAME, MAX_DRAFT_FILE_BYTES } from '../code-games/drafts.js';
-import { SIGNING_DIR_NAME } from '../code-games/signing-key.js';
+import { buildCodePackage } from '../code-games/build.js';
+import { generateSigningKeys } from '../packages/code-format.js';
 
 /**
  * Éditeur des jeux de code, par l'API d'administration : brouillon créé depuis le modèle, fichiers contrôlés,
- * clé de signature sans fuite de la partie privée, signature, revue et approbation.
+ * vérification, puis paquet signé hors de PartyHub (comme le fait l'auteur avec phgame pack), reçu par l'import,
+ * relu et approuvé. PartyHub ne détient aucune clé de signature.
  */
 
 const ADMIN_PASSWORD = 'editeur-jeux-123';
@@ -47,6 +49,30 @@ function putFile(id: string, filePath: string, content: string) {
     method: 'PUT',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ path: filePath, content }),
+  });
+}
+
+/** Clé de l'auteur : elle signe hors de PartyHub, et sa partie publique rejoint les clés de confiance. */
+const author = generateSigningKeys();
+
+function trustAuthorKey(): void {
+  const trust = path.join(dataDir, 'cles-de-confiance');
+  fs.mkdirSync(trust, { recursive: true });
+  fs.writeFileSync(path.join(trust, `${author.keyId}.pub.pem`), author.publicPem);
+}
+
+/** Paquet signé hors de PartyHub, comme `phgame pack` le fait sur le poste de l'auteur. */
+async function signOutside(id: string): Promise<Uint8Array> {
+  const { bytes } = await buildCodePackage(path.join(dataDir, DRAFTS_DIR_NAME, id), author.privatePem);
+  return bytes;
+}
+
+/** Envoi du paquet par l'import de l'administration : il arrive en attente de revue. */
+function importPackage(bytes: Uint8Array) {
+  return call('/api/admin/packages', {
+    method: 'POST',
+    headers: { 'content-type': 'application/octet-stream' },
+    body: bytes,
   });
 }
 
@@ -149,45 +175,17 @@ describe('éditeur : création et fichiers', () => {
   });
 });
 
-describe('éditeur : clé de signature', () => {
-  it("n'a pas de clé au départ, et signer sans clé est refusé", async () => {
+describe('éditeur : aucune clé de signature dans PartyHub', () => {
+  it('n’expose ni clé ni signature, et ne crée aucun dossier de clé', async () => {
     const key = await call('/api/admin/signing-key');
-    expect(key.status).toBe(200);
-    expect(key.data.key).toBeNull();
+    expect(key.status).toBe(404);
     const sign = await call(`/api/admin/code-drafts/${ID}/sign`, { method: 'POST' });
-    expect(sign.status).toBe(400);
-    expect(sign.data.error).toContain('Aucune clé de signature');
-  });
-
-  it('crée la clé, sans jamais renvoyer la partie privée', async () => {
-    const res = await call('/api/admin/signing-key', { method: 'POST' });
-    expect(res.status).toBe(201);
-    expect(res.data.key.publicPem).toContain('BEGIN PUBLIC KEY');
-    expect(res.text).not.toContain('PRIVATE KEY');
-
-    const again = await call('/api/admin/signing-key', { method: 'POST' });
-    expect(again.status).toBe(409);
-
-    const read = await call('/api/admin/signing-key');
-    expect(read.data.key.keyId).toBe(res.data.key.keyId);
-    expect(read.text).not.toContain('PRIVATE KEY');
-  });
-
-  it('range la partie privée dans DATA_DIR et la clé publique dans les clés de confiance', () => {
-    const signing = path.join(dataDir, SIGNING_DIR_NAME);
-    const names = fs.readdirSync(signing);
-    expect(names.some((n) => n.endsWith('.key.pem'))).toBe(true);
-    if (process.platform !== 'win32') {
-      const mode = fs.statSync(path.join(signing, names[0]!)).mode & 0o777;
-      expect(mode).toBe(0o600);
-    }
-    const trusted = fs.readdirSync(path.join(dataDir, 'cles-de-confiance'));
-    expect(trusted.some((n) => n.endsWith('.pub.pem'))).toBe(true);
-    expect(trusted.some((n) => n.includes('key'))).toBe(false);
+    expect(sign.status).toBe(404);
+    expect(fs.existsSync(path.join(dataDir, 'cles-de-signature'))).toBe(false);
   });
 });
 
-describe('éditeur : vérifier, métadonnées, signer, revue', () => {
+describe('éditeur : vérifier, métadonnées, paquet signé hors de PartyHub, revue', () => {
   it('vérifie le brouillon : partie complète jouée par des robots', async () => {
     const res = await call(`/api/admin/code-drafts/${ID}/check`, { method: 'POST' });
     expect(res.status).toBe(200);
@@ -211,8 +209,9 @@ describe('éditeur : vérifier, métadonnées, signer, revue', () => {
     expect((await call(`/api/admin/code-drafts/${ID}/metadata`, json({ name: 'Essai "x"' }))).status).toBe(400);
   });
 
-  it('signe et envoie en revue ; une seconde signature identique ne change rien', async () => {
-    const first = await call(`/api/admin/code-drafts/${ID}/sign`, { method: 'POST' });
+  it('reçoit le paquet signé hors de PartyHub : il arrive en attente de revue, un second envoi ne change rien', async () => {
+    trustAuthorKey();
+    const first = await importPackage(await signOutside(ID));
     expect(first.status).toBe(201);
     expect(first.data.kind).toBe('code');
     expect(first.data.unchanged).toBe(false);
@@ -221,7 +220,7 @@ describe('éditeur : vérifier, métadonnées, signer, revue', () => {
     const row = list.data.games.find((g: { id: string }) => g.id === ID);
     expect(row).toMatchObject({ version: '0.2.0', status: 'en_attente' });
 
-    const second = await call(`/api/admin/code-drafts/${ID}/sign`, { method: 'POST' });
+    const second = await importPackage(await signOutside(ID));
     expect(second.status).toBe(200);
     expect(second.data.unchanged).toBe(true);
 
@@ -234,7 +233,7 @@ describe('éditeur : vérifier, métadonnées, signer, revue', () => {
     // src/aide.ts n'est importé par personne : le bundle ne change pas. On modifie src/server.ts, qui entre dans le paquet.
     const current = await call(`/api/admin/code-drafts/${ID}/file?path=src/server.ts`);
     await putFile(ID, 'src/server.ts', `${current.data.content}\nexport const essai = 2;\n`);
-    const res = await call(`/api/admin/code-drafts/${ID}/sign`, { method: 'POST' });
+    const res = await importPackage(await signOutside(ID));
     expect(res.status).toBe(400);
     expect(res.data.error).toContain('contenu différent');
   }, 60_000);
@@ -261,8 +260,8 @@ describe('éditeur : brouillon cassé et suppression', () => {
 
     const check = await call('/api/admin/code-drafts/casse-essai/check', { method: 'POST' });
     expect(check.data.ok).toBe(false);
-    const sign = await call('/api/admin/code-drafts/casse-essai/sign', { method: 'POST' });
-    expect(sign.status).toBe(400);
+    // Un brouillon qui ne se construit pas ne donne aucun paquet, même signé hors de PartyHub.
+    await expect(signOutside('casse-essai')).rejects.toThrow();
   }, 60_000);
 
   it('supprime un brouillon sans toucher aux versions installées', async () => {

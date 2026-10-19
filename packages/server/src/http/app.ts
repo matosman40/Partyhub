@@ -26,6 +26,7 @@ import type { AssetService } from '../assets/service.js';
 import { PackageExportError, type PackageService } from '../packages/service.js';
 import type { CodeGameService } from '../code-games/service.js';
 import { DraftError, type CodeDraftService } from '../code-games/drafts.js';
+import type { CodeIntake } from '../code-games/intake.js';
 import { peekPackageKind } from '../packages/format.js';
 import {
   copyPackageToEditable,
@@ -106,6 +107,8 @@ export interface AppDeps {
   codeGames: CodeGameService;
   /** Brouillons de jeux de code, modifiés dans l’éditeur de l’administration. */
   codeDrafts: CodeDraftService;
+  /** Ajout des jeux de code par le dossier de dépôt et par un lien HTTPS. */
+  codeIntake: CodeIntake;
   /** Packs de personnages (sprites) importés dans l’administration. */
   characterPacks: CharacterPackService;
   /** Sauvegardes automatiques de la base. Absent = fonction non configurée. */
@@ -158,6 +161,7 @@ export function createApp(deps: AppDeps): express.Express {
     packages,
     codeGames,
     codeDrafts,
+    codeIntake,
     characterPacks,
   } = deps;
   const app = express();
@@ -1208,6 +1212,27 @@ export function createApp(deps: AppDeps): express.Express {
     res.json({ ok: true, stopped: result.closed, closedRooms, active: result.active });
   });
 
+  /** Dossier de dépôt (DATA_DIR/depot-jeux) : dernière lecture, avec l'état de chaque fichier. */
+  admin.get('/code-intake', (_req, res) => {
+    res.json(codeIntake.state());
+  });
+
+  /** Relecture immédiate du dossier de dépôt, y compris des fichiers déjà lus. */
+  admin.post('/code-intake/scan', async (req, res) => {
+    res.json(await codeIntake.scan(actorOf(req), true));
+  });
+
+  /** Jeu de code téléchargé depuis une adresse HTTPS, puis installé en attente de revue. */
+  admin.post('/code-intake/url', async (req, res) => {
+    const body = (req.body ?? {}) as Record<string, unknown>;
+    const result = await codeIntake.importUrl(typeof body.url === 'string' ? body.url : '', actorOf(req));
+    if (!result.ok) {
+      res.status(400).json({ error: result.error, issues: result.issues ?? [] });
+      return;
+    }
+    res.status(result.unchanged ? 200 : 201).json({ kind: 'code', ...result });
+  });
+
   /** Suppression d'une version ; supprimer la version active retire le jeu et ferme ses salles. */
   admin.delete('/code-games/:id/:version', (req, res) => {
     const id = req.params.id ?? '';
@@ -1326,39 +1351,6 @@ export function createApp(deps: AppDeps): express.Express {
     '/code-drafts/:id/check',
     draftRoute(async (req, res) => {
       res.json(await codeDrafts.check(paramOf(req, 'id')));
-    }),
-  );
-
-  /** Signer : construction signée par la clé de l'installation, puis installation en attente de revue. */
-  admin.post(
-    '/code-drafts/:id/sign',
-    draftRoute(async (req, res) => {
-      const result = await codeDrafts.sign(paramOf(req, 'id'), actorOf(req));
-      if (!result.ok) {
-        res.status(400).json({ error: result.error, issues: result.issues ?? [] });
-        return;
-      }
-      res.status(result.unchanged ? 200 : 201).json({ kind: 'code', ...result });
-    }),
-  );
-
-  /** Clé de signature : seule la clé publique et son identifiant sortent. */
-  admin.get(
-    '/signing-key',
-    draftRoute((_req, res) => {
-      res.json({ key: codeDrafts.signingKey() });
-    }),
-  );
-
-  admin.post(
-    '/signing-key',
-    draftRoute((req, res) => {
-      const key = codeDrafts.createSigningKey();
-      logger.info(
-        { event: 'code_game.signing_key', keyId: key.keyId, actor: actorOf(req) },
-        `Clé de signature créée (${key.keyId}) par ${actorOf(req)}`,
-      );
-      res.status(201).json({ key });
     }),
   );
 

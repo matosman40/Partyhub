@@ -19,6 +19,7 @@ import { MediaQuizService } from './media/service.js';
 import { PackageService } from './packages/service.js';
 import { CodeGameService, loadTrustedKeys } from './code-games/service.js';
 import { CodeDraftService } from './code-games/drafts.js';
+import { CodeIntake, type IntakeDeps } from './code-games/intake.js';
 import { hashPassword } from './auth.js';
 import { effectiveNotice } from './catalog.js';
 import { gameDataFor } from './profiles/game-data.js';
@@ -61,6 +62,8 @@ export interface ServerOptions {
   joinThrottle?: Partial<JoinThrottleOptions>;
   /** Mise à jour depuis l’administration : essais seulement (faux GitHub, version simulée). */
   update?: { fetch?: typeof fetch; repo?: string; version?: string };
+  /** Jeux de code ajoutés par lien HTTPS : réseau et DNS remplaçables. Relecture du dossier de dépôt : 0 = désactivée. */
+  codeIntake?: { deps?: Partial<IntakeDeps>; watchEveryMs?: number };
 }
 
 /**
@@ -130,6 +133,15 @@ export async function createServer(opts: ServerOptions): Promise<PartyServer> {
   });
   // Brouillons de jeux de code créés et modifiés dans l’administration (DATA_DIR/jeux-en-cours).
   const codeDrafts = new CodeDraftService(config.dataDir, codeGames);
+  // Ajout des jeux par le dossier de dépôt (DATA_DIR/depot-jeux, relu régulièrement) et par lien HTTPS.
+  const codeIntake = new CodeIntake(
+    config.dataDir,
+    codeGames,
+    (event, data, message) => logger.info({ event, ...data }, message),
+    opts.codeIntake?.deps,
+  );
+  const dropEvery = opts.codeIntake?.watchEveryMs ?? 10_000;
+  const stopDropWatch = dropEvery > 0 ? codeIntake.watch(dropEvery) : () => undefined;
   const packageSources = new PackageSourceService(store, packages, { token: config.githubToken });
   // Magasin : les jeux intégrés au code ne sont jamais téléchargés, ils restent dans l’application.
   const builtinIds = new Set(gameRegistry.map((game) => game.manifest.id));
@@ -236,6 +248,7 @@ export async function createServer(opts: ServerOptions): Promise<PartyServer> {
     packages,
     codeGames,
     codeDrafts,
+    codeIntake,
     characterPacks,
     dbBackups,
     update,
@@ -285,6 +298,7 @@ export async function createServer(opts: ServerOptions): Promise<PartyServer> {
     },
     async close() {
       if (sweeper) clearInterval(sweeper);
+      stopDropWatch();
       stopUpdateHeartbeat();
       dbBackups?.stop();
       clearInterval(sourcesTimer);
