@@ -1,5 +1,5 @@
 import type { ProgressPoint } from './progress.js';
-import { formatClock, formatElapsed, timeAtPercent } from './progress.js';
+import { formatClock, formatElapsed, medalOf, timeAtPercent } from './progress.js';
 
 export interface StandingRow {
   playerId: string;
@@ -19,10 +19,15 @@ export interface StandingRow {
 export function SoloComparison({
   rows,
   colorOf,
+  avatarOf,
+  medals = false,
   history,
 }: {
   rows: StandingRow[];
   colorOf: (playerId: string) => string;
+  avatarOf: (playerId: string) => string;
+  /** Au classement final, les trois premières places reçoivent une médaille. */
+  medals?: boolean;
   history: Record<string, ProgressPoint[]>;
 }) {
   return (
@@ -59,10 +64,13 @@ export function SoloComparison({
             const color = colorOf(row.playerId);
             return (
               <tr key={row.playerId} className={row.done ? 'is-done' : undefined}>
-                <td className="solo-place">{i + 1}</td>
+                <td className="solo-place">{(medals && medalOf(i + 1)) || i + 1}</td>
                 <td>
                   <span className="solo-name-cell">
                     <span className="solo-key" style={{ background: color }} aria-hidden="true" />
+                    <span className="solo-avatar" aria-hidden="true">
+                      {avatarOf(row.playerId)}
+                    </span>
                     <span className="solo-name">{row.name}</span>
                   </span>
                 </td>

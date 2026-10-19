@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { extendTrail, type ProgressPoint } from '../solo/engine.js';
-import { axisScale, formatClock, formatElapsed, seriesColor, timeAtPercent, valueAt } from '../solo/client/progress.js';
+import {
+  avatarOf,
+  axisScale,
+  formatClock,
+  formatElapsed,
+  medalOf,
+  seriesColor,
+  timeAtPercent,
+  valueAt,
+} from '../solo/client/progress.js';
 
 describe('courbe d’avancement', () => {
   it('garde un point par palier de 10 %, sans recul, et note toujours la résolution', () => {
@@ -81,5 +90,17 @@ describe('formats de temps et teintes', () => {
     expect(seriesColor(7)).toBe('var(--solo-s8)');
     expect(seriesColor(8)).toBe('var(--solo-s1)');
     expect(seriesColor(-1)).toBe('var(--solo-s1)');
+  });
+
+  it('attribue un personnage par place, distinct pour huit joueurs, cyclique ensuite', () => {
+    const eight = Array.from({ length: 8 }, (_, i) => avatarOf(i));
+    expect(new Set(eight).size).toBe(8);
+    expect(avatarOf(8)).toBe(avatarOf(0));
+    expect(avatarOf(-1)).toBe(avatarOf(0));
+  });
+
+  it('médaille les trois premières places du classement final, rien au-delà', () => {
+    expect([medalOf(1), medalOf(2), medalOf(3)]).toEqual(['🥇', '🥈', '🥉']);
+    expect(medalOf(4)).toBeNull();
   });
 });

@@ -7,6 +7,8 @@ export interface ChartSeries {
   name: string;
   /** Teinte de la marque (variable CSS), attribuée une fois pour toute la partie. */
   color: string;
+  /** Personnage qui court sur la courbe : il porte l’identité sans compter sur la couleur. */
+  avatar: string;
   trail: ProgressPoint[];
   /** Avancement exact à l’instant de la vue : la courbe ne garde que les paliers. */
   current: number;
@@ -92,7 +94,13 @@ export function SoloChart({ series, xMaxMs, liveMs }: { series: ChartSeries[]; x
   const hoverRows =
     hoverMs === null
       ? []
-      : series.map((s) => ({ id: s.id, name: s.name, color: s.color, percent: percentAt(s, hoverMs) }));
+      : series.map((s) => ({
+          id: s.id,
+          name: s.name,
+          color: s.color,
+          avatar: s.avatar,
+          percent: percentAt(s, hoverMs),
+        }));
 
   return (
     <div className="solo-chart">
@@ -133,11 +141,14 @@ export function SoloChart({ series, xMaxMs, liveMs }: { series: ChartSeries[]; x
             const ex = x(end.ms);
             const ey = y(end.percent);
             return (
-              <g key={`end-${s.id}`}>
-                <circle className="end" cx={ex} cy={ey} r={s.done ? 6 : 5} style={{ fill: s.color }} />
+              <g key={`end-${s.id}`} className="racer">
+                <circle className="ring" cx={ex} cy={ey} r={15} style={{ stroke: s.color }} />
+                <text className="avatar" x={ex} y={ey} aria-hidden="true">
+                  {s.avatar}
+                </text>
                 {labelled.has(s.id) && (
-                  <text className="label" x={ex + 12} y={ey + 5}>
-                    {s.name} · {end.percent} %
+                  <text className="label" x={ex + 22} y={ey + 5}>
+                    {s.name} · {end.percent} %{s.done ? ' 🏁' : ''}
                   </text>
                 )}
               </g>
@@ -156,6 +167,7 @@ export function SoloChart({ series, xMaxMs, liveMs }: { series: ChartSeries[]; x
               <div key={r.id} className="solo-tip-row">
                 <span className="solo-tip-name">
                   <span className="solo-key" style={{ background: r.color }} />
+                  <span aria-hidden="true">{r.avatar}</span>
                   {r.name}
                 </span>
                 <strong>{r.percent} %</strong>
@@ -170,6 +182,7 @@ export function SoloChart({ series, xMaxMs, liveMs }: { series: ChartSeries[]; x
           {series.map((s) => (
             <li key={s.id}>
               <span className="solo-legend-key" style={{ background: s.color }} aria-hidden="true" />
+              <span aria-hidden="true">{s.avatar}</span>
               {s.name}
             </li>
           ))}

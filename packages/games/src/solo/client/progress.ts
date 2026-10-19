@@ -7,6 +7,21 @@ export function seriesColor(index: number): string {
   return `var(--solo-s${(Math.max(0, index) % 8) + 1})`;
 }
 
+const AVATARS = ['🦊', '🐸', '🐼', '🐙', '🦄', '🐯', '🐵', '🐧'] as const;
+
+/** Personnage d’un joueur, attribué comme sa teinte : il porte l’identité sans compter sur la couleur. */
+export function avatarOf(index: number): string {
+  return AVATARS[Math.max(0, index) % AVATARS.length]!;
+}
+
+/** Médaille du podium pour les trois premières places, sinon rien. */
+export function medalOf(rank: number): string | null {
+  if (rank === 1) return '🥇';
+  if (rank === 2) return '🥈';
+  if (rank === 3) return '🥉';
+  return null;
+}
+
 /** Avancement d’une courbe à un instant : le dernier palier atteint avant cet instant. */
 export function valueAt(trail: ProgressPoint[], ms: number): number {
   let value = 0;

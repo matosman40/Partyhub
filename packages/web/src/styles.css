@@ -6038,9 +6038,133 @@ html.is-tv #root > .tv {
   stroke-linejoin: round;
   stroke-linecap: round;
 }
-.solo-chart-svg .end {
-  stroke: var(--solo-surface);
-  stroke-width: 2;
+/* Le personnage au bout de sa courbe, dans un anneau de sa couleur. */
+.solo-chart-svg .ring {
+  fill: var(--solo-surface);
+  stroke-width: 3;
+}
+.solo-chart-svg .avatar {
+  font-size: 17px;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+
+/* Bandeau de tête : rebondit quand le leader change (la clé du rendu le relance). */
+.solo-lead {
+  justify-self: center;
+  max-width: 100%;
+  margin: 0;
+  padding: 0.5rem 1.1rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: var(--bg1);
+  color: var(--text);
+  font-family: var(--display);
+  font-size: clamp(1.05rem, 2vw, 1.4rem);
+  text-align: center;
+  animation: solo-pop 0.5s ease-out;
+}
+.solo-lead.is-done {
+  border-color: var(--sun);
+}
+@keyframes solo-pop {
+  0% {
+    transform: scale(0.85);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.05);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.solo-avatar {
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+/* Classement final : podium, puis confettis derrière le contenu. */
+.solo-final {
+  position: relative;
+  overflow: hidden;
+}
+/* Le titre passe sous le logo, comme le bandeau de l’écran de jeu. */
+.solo-final > .big-title {
+  margin-top: 2.6rem;
+}
+.solo-final > :not(.solo-confetti) {
+  position: relative;
+}
+.solo-podium {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 0.8rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.solo-podium-card {
+  display: grid;
+  justify-items: center;
+  gap: 0.3rem;
+  padding: 0.9rem 0.6rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-md);
+  background: var(--bg1);
+  color: var(--text);
+  text-align: center;
+}
+.solo-podium-card:first-child {
+  border-color: var(--sun);
+}
+.solo-podium-medal {
+  font-size: 2.2rem;
+  line-height: 1;
+}
+.solo-podium-avatar {
+  font-size: 2rem;
+  line-height: 1;
+}
+.solo-podium-name {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.solo-podium-points {
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+}
+.solo-confetti {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.solo-confetti i {
+  position: absolute;
+  top: 0;
+  width: 0.55rem;
+  height: 0.85rem;
+  border-radius: 2px;
+  opacity: 0.9;
+  animation: solo-fall 3.2s ease-in 1 both;
+}
+@keyframes solo-fall {
+  to {
+    transform: translateY(120vh) rotate(540deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .solo-lead,
+  .solo-confetti i {
+    animation: none;
+  }
+  .solo-confetti {
+    display: none;
+  }
 }
 .solo-tip {
   position: absolute;
