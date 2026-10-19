@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { defaultCharacterFor } from '@partyhub/shared';
 import { Character } from '../../client/character.js';
+import { useMediaUrl } from '../../client/media-relay.js';
 import { Avatar } from '../../client/ui.js';
 import type { Resolution, RoundReport } from '../module.js';
 import { KIND_LABELS, STAT_LABELS, type SceneKind, type StatKey } from '../schemas.js';
@@ -111,16 +112,11 @@ export function artUrl(id: string): string {
  */
 export function ArtFrame({ id, alt = '', fallback }: { id: string; alt?: string; fallback: ReactNode }) {
   const [failed, setFailed] = useState(false);
-  if (failed) return <>{fallback}</>;
+  // Dans une vue de jeu de code, l'image arrive par le relais : le repli reste affiché le temps du chargement.
+  const src = useMediaUrl(artUrl(id));
+  if (failed || !src) return <>{fallback}</>;
   return (
-    <img
-      className="aventure-art"
-      src={artUrl(id)}
-      alt={alt}
-      loading="lazy"
-      decoding="async"
-      onError={() => setFailed(true)}
-    />
+    <img className="aventure-art" src={src} alt={alt} loading="lazy" decoding="async" onError={() => setFailed(true)} />
   );
 }
 

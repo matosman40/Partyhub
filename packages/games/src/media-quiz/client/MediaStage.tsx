@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { MediaKind } from '@partyhub/shared';
+import { useMediaUrl } from '../../client/media-relay.js';
 
 /**
  * Lecteur de l’écran principal. Il ne sert qu’à l’hôte : les téléphones ne reçoivent
@@ -187,6 +188,8 @@ export function MediaStage({ media, active, kind }: MediaStageProps) {
     yt.current?.pauseVideo();
   }, [active]);
 
+  const assetSrc = useMediaUrl(media?.source.type === 'asset' ? `/api/assets/${media.source.assetId}` : null);
+
   if (!media) {
     return <div className="mq-stage mq-stage-empty" aria-hidden="true" />;
   }
@@ -204,7 +207,7 @@ export function MediaStage({ media, active, kind }: MediaStageProps) {
             mediaEl.current = el;
           }}
           className="mq-media"
-          src={`/api/assets/${media.source.assetId}`}
+          src={assetSrc || undefined}
           playsInline
           preload="auto"
           onError={() => setError('Le fichier vidéo ne peut pas être lu.')}
@@ -216,7 +219,7 @@ export function MediaStage({ media, active, kind }: MediaStageProps) {
           ref={(el) => {
             mediaEl.current = el;
           }}
-          src={`/api/assets/${media.source.assetId}`}
+          src={assetSrc || undefined}
           preload="auto"
           onError={() => setError('Le fichier audio ne peut pas être lu.')}
         />

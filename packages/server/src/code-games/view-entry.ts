@@ -28,6 +28,23 @@ function call(method: string, args: unknown[]): Promise<Result> {
   });
 }
 
+// Médias de l'installation : pas de réseau dans la vue, la page les apporte (voir CodeFrame). Le jeu les lit
+// par ce relais (games/client/media-relay.tsx), qui fabrique ensuite des adresses locales pour les balises.
+type MediaReply = { ok: boolean; type?: string; data?: ArrayBuffer; error?: string };
+const pendingMedia = new Map<number, (reply: MediaReply) => void>();
+(globalThis as Record<string, unknown>).__partyhubMedia = {
+  get(url: string): Promise<{ type: string; data: ArrayBuffer }> {
+    return new Promise((resolve, reject) => {
+      const id = nextId++;
+      pendingMedia.set(id, (reply) => {
+        if (reply.ok && reply.data) resolve({ type: reply.type ?? 'application/octet-stream', data: reply.data });
+        else reject(new Error(reply.error ?? 'Média indisponible.'));
+      });
+      post({ ph: MSG.media, id, url });
+    });
+  },
+};
+
 class Boundary extends React.Component<{ children?: React.ReactNode }, { failed: boolean }> {
   state = { failed: false };
   static getDerivedStateFromError() {
@@ -78,9 +95,24 @@ window.addEventListener('message', (event) => {
     role?: string;
     props?: Record<string, unknown>;
     flags?: { onAction?: boolean };
+    ok?: boolean;
+    type?: string;
+    data?: ArrayBuffer;
+    error?: string;
+    sfx?: unknown;
   } | null;
   if (!data || typeof data !== 'object') return;
   if (data.ph === MSG.render) render(String(data.role), data.props ?? {}, data.flags ?? {});
+  if (data.ph === MSG.mediaReply && typeof data.id === 'number') {
+    const done = pendingMedia.get(data.id);
+    pendingMedia.delete(data.id);
+    done?.({ ok: data.ok === true, type: data.type, data: data.data, error: data.error });
+  }
+  if (data.ph === MSG.sounds) {
+    // Les bruitages de l'installation : réglés par le module son du jeu, s'il est chargé.
+    const sink = (globalThis as { __partyhubSfxSink?: (files: unknown) => void }).__partyhubSfxSink;
+    sink?.(data.sfx);
+  }
   if (data.ph === MSG.reply && typeof data.id === 'number') {
     const resolve = pending.get(data.id);
     pending.delete(data.id);
