@@ -22,7 +22,8 @@
     "format:check": "prettier --check \"packages/*/src/**/*.{ts,tsx,css}\"",
     "dev:server": "npm run dev -w @partyhub/server",
     "dev:web": "npm run dev -w @partyhub/web",
-    "start": "node packages/server/dist/index.js"
+    "start": "node packages/server/dist/index.js",
+    "phgame": "node packages/server/dist/cli/phgame.js"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
