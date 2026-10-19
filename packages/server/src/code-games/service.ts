@@ -12,7 +12,7 @@ import {
   type ValidatedCodePackage,
 } from '../packages/code-format.js';
 import { CodeGameRuntime, createCodeModule } from '../packages/code-runtime.js';
-import { launchCheck, type LaunchCheckOptions } from '../packages/launch-check.js';
+import { launchCheckAsync, type LaunchCheckOptions, type LaunchCheckResult } from '../packages/launch-check.js';
 import { PackageValidationError } from '../packages/format.js';
 import { changedHunks, countChanges, diffLines, type DiffLine } from './diff.js';
 
@@ -271,8 +271,11 @@ export class CodeGameService {
     this.errors.delete(row.id);
   }
 
-  /** Installe un paquet signé en attente de revue. Rien ne s'exécute encore hors du contrôle de lancement. */
-  install(bytes: Uint8Array, actor = 'inconnu'): CodeGameInstallResult {
+  /**
+   * Installe un paquet signé en attente de revue. Le contrôle de lancement rend la main au serveur pendant son
+   * calcul ; la version est revérifiée ensuite, car une autre requête a pu la fournir entre-temps.
+   */
+  async install(bytes: Uint8Array, actor = 'inconnu'): Promise<CodeGameInstallResult> {
     let pkg: ValidatedCodePackage;
     try {
       pkg = this.validate(bytes);
@@ -281,20 +284,8 @@ export class CodeGameService {
       throw err;
     }
     const { id, version } = pkg.manifest;
-    const own = this.store.listCodeGames().some((row) => row.id === id);
-    if (!own && resolveGame(id)) {
-      return { ok: false, error: `L’identifiant « ${id} » est déjà utilisé par un autre jeu.` };
-    }
-    const existing = this.store.getCodeGame(id, version);
-    if (existing) {
-      if (existing.sha256 === pkg.sha256) {
-        return { ok: true, id, version, sha256: pkg.sha256, signer: existing.signer, unchanged: true };
-      }
-      return {
-        ok: false,
-        error: `La version ${version} est déjà présente avec un contenu différent. Augmentez le numéro de version.`,
-      };
-    }
+    const early = this.conflictOf(id, version, pkg);
+    if (early) return early;
 
     let loaded: Loaded;
     try {
@@ -302,12 +293,16 @@ export class CodeGameService {
     } catch (err) {
       return { ok: false, error: `Le jeu ne peut pas être créé : ${errorMessage(err)}.` };
     }
+    let check: LaunchCheckResult;
     try {
-      const check = launchCheck(loaded.module, this.options.launch);
-      if (!check.ok) return { ok: false, error: `Le jeu ne se lance pas correctement : ${check.error}.` };
+      check = await launchCheckAsync(loaded.module, this.options.launch);
     } finally {
       loaded.runtime.dispose();
     }
+    if (!check.ok) return { ok: false, error: `Le jeu ne se lance pas correctement : ${check.error}.` };
+    // Pendant le contrôle, une autre installation a pu arriver : on revérifie avant d'écrire.
+    const late = this.conflictOf(id, version, pkg);
+    if (late) return late;
 
     const dir = this.archiveDir(id, version);
     fs.mkdirSync(dir, { recursive: true });
@@ -331,6 +326,28 @@ export class CodeGameService {
       `Jeu de code « ${id} » ${version} installé en attente de revue par ${actor}`,
     );
     return { ok: true, id, version, sha256: pkg.sha256, signer: pkg.signer ?? '', unchanged: false };
+  }
+
+  /**
+   * Ce qui empêche d'installer ce paquet, ou la réponse à donner s'il est déjà là (sans rien écrire).
+   * Null si l'installation peut se faire.
+   */
+  private conflictOf(id: string, version: string, pkg: ValidatedCodePackage): CodeGameInstallResult | null {
+    const own = this.store.listCodeGames().some((row) => row.id === id);
+    if (!own && resolveGame(id)) {
+      return { ok: false, error: `L’identifiant « ${id} » est déjà utilisé par un autre jeu.` };
+    }
+    const existing = this.store.getCodeGame(id, version);
+    if (existing) {
+      if (existing.sha256 === pkg.sha256) {
+        return { ok: true, id, version, sha256: pkg.sha256, signer: existing.signer, unchanged: true };
+      }
+      return {
+        ok: false,
+        error: `La version ${version} est déjà présente avec un contenu différent. Augmentez le numéro de version.`,
+      };
+    }
+    return null;
   }
 
   /** Toutes les versions avec leur paquet, pour la sauvegarde complète. Une version dont l'archive manque est omise. */
@@ -436,26 +453,44 @@ export class CodeGameService {
    * Approuve une version : l'administrateur confirme l'empreinte qu'il a relue. Elle devient active,
    * et remplace la version active précédente.
    */
-  approve(id: string, version: string, sha256: string, actor = 'inconnu'): CodeGameOutcome {
+  async approve(id: string, version: string, sha256: string, actor = 'inconnu'): Promise<CodeGameOutcome> {
     const row = this.store.getCodeGame(id, version);
     if (!row) return { ok: false, error: 'Version inconnue.' };
     if (row.sha256 !== sha256) {
       return { ok: false, error: 'L’empreinte ne correspond pas : le paquet a changé depuis la revue.' };
     }
+    let loaded: Loaded;
     try {
       const pkg = this.validate(fs.readFileSync(this.archivePath(id, version)));
       if (pkg.sha256 !== sha256) throw new Error('l’archive ne correspond plus à l’empreinte confirmée');
-      const loaded = this.load(pkg);
-      const check = launchCheck(loaded.module, this.options.launch);
-      if (!check.ok) {
-        loaded.runtime.dispose();
-        return { ok: false, error: `Le jeu ne se lance pas correctement : ${check.error}.` };
-      }
-      this.stop(id);
-      this.active.set(id, loaded);
+      loaded = this.load(pkg);
     } catch (err) {
       return { ok: false, error: `Approbation refusée : ${errorMessage(err)}` };
     }
+    let check: LaunchCheckResult;
+    try {
+      check = await launchCheckAsync(loaded.module, this.options.launch);
+    } catch (err) {
+      loaded.runtime.dispose();
+      return { ok: false, error: `Approbation refusée : ${errorMessage(err)}` };
+    }
+    if (!check.ok) {
+      loaded.runtime.dispose();
+      return { ok: false, error: `Le jeu ne se lance pas correctement : ${check.error}.` };
+    }
+    // Pendant le contrôle, la version a pu être supprimée ou remplacée : seule la version encore relue est approuvée.
+    const current = this.store.getCodeGame(id, version);
+    if (!current || current.sha256 !== sha256) {
+      loaded.runtime.dispose();
+      return { ok: false, error: 'Le paquet a changé pendant le contrôle : relisez-le avant d’approuver.' };
+    }
+    // Double demande : cette version est déjà active, rien à remplacer.
+    if (this.active.get(id)?.sha256 === sha256) {
+      loaded.runtime.dispose();
+      return { ok: true, enabled: this.store.isGameEnabled(id) };
+    }
+    this.stop(id);
+    this.active.set(id, loaded);
     this.store.activateCodeGame(id, version, sha256, new Date().toISOString());
     this.errors.delete(id);
     this.publish();

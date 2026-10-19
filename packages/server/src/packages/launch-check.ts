@@ -163,7 +163,13 @@ const ISOLATION =
  * une vue qui ne se sérialise pas, une partie non reproductible, et un état partagé entre parties.
  * Appelé avant chaque installation et chaque approbation.
  */
-export function launchCheck(mod: GameModule, options: LaunchCheckOptions = {}): LaunchCheckResult {
+type Check = Generator<void, LaunchCheckResult, void>;
+
+/**
+ * Le contrôle, découpé en pas : une pause après chaque pas de partie. Les deux pilotes (`launchCheck` et
+ * `launchCheckAsync`) suivent exactement les mêmes étapes : ils donnent donc le même résultat.
+ */
+function* checkSteps(mod: GameModule, options: LaunchCheckOptions = {}): Check {
   const maxSteps = options.maxSteps ?? 3000;
   const games = options.games ?? 2;
 
@@ -172,7 +178,7 @@ export function launchCheck(mod: GameModule, options: LaunchCheckOptions = {}): 
   let actions = 0;
   for (let seed = 1; seed <= games; seed++) {
     const run = new BotRun(mod, seed, maxSteps);
-    const failure = playToEnd(run);
+    const failure = yield* playToEnd(run);
     if (failure) return { ok: false, error: `partie ${seed} : ${failure}` };
     solo.push(run.trace);
     actions += run.actions;
@@ -180,7 +186,7 @@ export function launchCheck(mod: GameModule, options: LaunchCheckOptions = {}): 
 
   // 2. Reproductibilité : la partie 1, rejouée après les autres, doit donner exactement la même suite d'états.
   const again = new BotRun(mod, 1, maxSteps);
-  const againFailure = playToEnd(again);
+  const againFailure = yield* playToEnd(again);
   if (againFailure) return { ok: false, error: `partie 1 (rejouée) : ${againFailure}` };
   if (!sameTrace(again.trace, solo[0] ?? [])) return { ok: false, error: `partie 1 : ${REPRODUCIBILITY}` };
 
@@ -197,6 +203,7 @@ export function launchCheck(mod: GameModule, options: LaunchCheckOptions = {}): 
       const step = run.advance();
       if (step.kind === 'fail') return { ok: false, error: `partie ${run.seed} : ${step.error}` };
       if (step.kind === 'continue') next.push(run);
+      yield;
     }
     pending = next;
   }
@@ -211,14 +218,41 @@ export function launchCheck(mod: GameModule, options: LaunchCheckOptions = {}): 
   return { ok: true, actions };
 }
 
+/** Sans pause : le contrôle s'exécute d'un bloc. Le CLI et les tests l'utilisent. */
+export function launchCheck(mod: GameModule, options: LaunchCheckOptions = {}): LaunchCheckResult {
+  const steps = checkSteps(mod, options);
+  for (;;) {
+    const next = steps.next();
+    if (next.done) return next.value;
+  }
+}
+
+/** Nombre de pas joués avant de rendre la main à la boucle du serveur. */
+export const LAUNCH_CHECK_YIELD_EVERY = 25;
+
+/**
+ * Le même contrôle, pour le serveur en fonctionnement : il rend la main à la boucle des événements toutes les
+ * LAUNCH_CHECK_YIELD_EVERY étapes. Les salles et les autres requêtes restent servies pendant une installation.
+ */
+export async function launchCheckAsync(mod: GameModule, options: LaunchCheckOptions = {}): Promise<LaunchCheckResult> {
+  const steps = checkSteps(mod, options);
+  let count = 0;
+  for (;;) {
+    const next = steps.next();
+    if (next.done) return next.value;
+    if (++count % LAUNCH_CHECK_YIELD_EVERY === 0) await new Promise<void>((resolve) => setImmediate(resolve));
+  }
+}
+
 /** Démarre puis fait avancer une partie jusqu'à sa fin. Renvoie le motif d'échec, ou null. */
-function playToEnd(run: BotRun): string | null {
+function* playToEnd(run: BotRun): Generator<void, string | null, void> {
   const started = startOf(run);
   if (started) return started;
   for (;;) {
     const step = run.advance();
     if (step.kind === 'fail') return step.error;
     if (step.kind === 'done') break;
+    yield;
   }
   return run.finish();
 }

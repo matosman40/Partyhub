@@ -453,10 +453,10 @@ function restorePackages(
  * restauration, l'administrateur relit et approuve à nouveau. Une version refusée (clé de confiance absente, etc.)
  * est signalée sans bloquer les autres.
  */
-function restoreCodeGames(
+async function restoreCodeGames(
   parsed: ParsedArchive,
-  codeGames: { install(bytes: Uint8Array, actor?: string): CodeGameInstallResult } | undefined,
-): { installed: number; present: number; skipped: string[] } {
+  codeGames: { install(bytes: Uint8Array, actor?: string): Promise<CodeGameInstallResult> } | undefined,
+): Promise<{ installed: number; present: number; skipped: string[] }> {
   const out = { installed: 0, present: 0, skipped: [] as string[] };
   if (parsed.codeGames.length === 0) return out;
   if (!codeGames) {
@@ -469,7 +469,7 @@ function restoreCodeGames(
       out.skipped.push(`Jeu de code « ${item.id} » ${item.version} : fichier absent de l’archive.`);
       continue;
     }
-    const result = codeGames.install(new Uint8Array(bytes), 'restauration');
+    const result = await codeGames.install(new Uint8Array(bytes), 'restauration');
     if (!result.ok) {
       out.skipped.push(`Jeu de code « ${item.id} » ${item.version} : ${result.error}`);
     } else if (result.unchanged) {
@@ -481,7 +481,7 @@ function restoreCodeGames(
   return out;
 }
 
-export function restoreArchive(
+export async function restoreArchive(
   bytes: Uint8Array,
   deps: {
     store: Store;
@@ -490,10 +490,10 @@ export function restoreArchive(
     boards: BoardGameService;
     assets: AssetService;
     packages?: PackageService;
-    codeGames?: { install(bytes: Uint8Array, actor?: string): CodeGameInstallResult };
+    codeGames?: { install(bytes: Uint8Array, actor?: string): Promise<CodeGameInstallResult> };
   },
   options: RestoreOptions,
-): { ok: true; summary: RestoreSummary } | { ok: false; error: string } {
+): Promise<{ ok: true; summary: RestoreSummary } | { ok: false; error: string }> {
   let parsed: ParsedArchive;
   try {
     parsed = readArchive(bytes);
@@ -515,7 +515,7 @@ export function restoreArchive(
   const restored = restoreBackup(parsed.backup, deps.store, deps.cards, deps.media, deps.boards, options);
   if (!restored.ok) return restored;
   const pkg = restorePackages(parsed, deps.packages, options.conflict);
-  const code = restoreCodeGames(parsed, deps.codeGames);
+  const code = await restoreCodeGames(parsed, deps.codeGames);
   return {
     ok: true,
     summary: {

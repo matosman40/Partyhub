@@ -1131,7 +1131,7 @@ export function createApp(deps: AppDeps): express.Express {
     res.json({ ok: true });
   });
 
-  admin.post('/packages', express.raw({ type: () => true, limit: '16mb' }), (req, res) => {
+  admin.post('/packages', express.raw({ type: () => true, limit: '16mb' }), async (req, res) => {
     const body = req.body as unknown;
     if (!Buffer.isBuffer(body) || body.length === 0) {
       res.status(400).json({ error: 'Aucun fichier reçu.' });
@@ -1139,7 +1139,7 @@ export function createApp(deps: AppDeps): express.Express {
     }
     if (peekPackageKind(body) === 'code') {
       // Jeu de code : installé en attente de revue, il ne s’exécute qu’après approbation.
-      const result = codeGames.install(body, actorOf(req));
+      const result = await codeGames.install(body, actorOf(req));
       if (!result.ok) {
         res.status(400).json({ error: result.error, issues: result.issues ?? [] });
         return;
@@ -1174,14 +1174,14 @@ export function createApp(deps: AppDeps): express.Express {
    * Approbation : l'empreinte confirmée doit être celle de la version relue. Les salles qui jouaient
    * l'ancienne version active sont fermées, car elles tiendraient un runtime arrêté.
    */
-  admin.post('/code-games/:id/:version/approve', (req, res) => {
+  admin.post('/code-games/:id/:version/approve', async (req, res) => {
     const id = req.params.id ?? '';
     const sha256 = (req.body as { sha256?: unknown } | undefined)?.sha256;
     if (typeof sha256 !== 'string' || !/^[a-f0-9]{64}$/.test(sha256)) {
       res.status(400).json({ error: 'Empreinte attendue : sha256 de la version relue.' });
       return;
     }
-    const result = codeGames.approve(id, req.params.version ?? '', sha256, actorOf(req));
+    const result = await codeGames.approve(id, req.params.version ?? '', sha256, actorOf(req));
     if (!result.ok) {
       res.status(400).json({ error: result.error });
       return;
@@ -1545,13 +1545,13 @@ export function createApp(deps: AppDeps): express.Express {
   admin.post(
     '/backup/archive',
     express.raw({ type: () => true, limit: ARCHIVE_MAX_BYTES + 8 * 1024 * 1024 }),
-    (req, res) => {
+    async (req, res) => {
       const body = req.body as unknown;
       if (!Buffer.isBuffer(body) || body.length === 0) {
         res.status(400).json({ error: 'Archive vide.' });
         return;
       }
-      const result = restoreArchive(
+      const result = await restoreArchive(
         body,
         { store, cards: cardGames, media: mediaGames, boards: boardGames, assets, packages, codeGames },
         { conflict: conflictMode(req.query.conflict) },

@@ -462,3 +462,24 @@ describe('jeux de code : sauvegarde complète', () => {
     expect(await catalogIds()).toContain(ID5);
   });
 });
+
+describe('jeux de code : requêtes simultanées', () => {
+  const ID6 = 'simultane-essai';
+
+  it('deux installations simultanées de la même version : une seule est écrite, l’autre répond « inchangé »', async () => {
+    const bytes = await buildSigned('confiance', ID6, '0.1.0');
+    const [first, second] = await Promise.all([upload(bytes), upload(bytes)]);
+    expect([first.status, second.status].sort()).toEqual([200, 201]);
+    expect(await statusOf(ID6, '0.1.0')).toMatchObject({ status: 'en_attente' });
+    const rows = (await call('/api/admin/code-games')).data.games as { id: string }[];
+    expect(rows.filter((g) => g.id === ID6)).toHaveLength(1);
+  });
+
+  it('deux approbations simultanées : la seconde constate que la version est déjà active', async () => {
+    const review = await call(`/api/admin/code-games/${ID6}/0.1.0/review`);
+    const sha256 = review.data.sha256 as string;
+    const [first, second] = await Promise.all([approveRoute(ID6, '0.1.0', sha256), approveRoute(ID6, '0.1.0', sha256)]);
+    expect([first.status, second.status]).toEqual([200, 200]);
+    expect(await catalogIds()).toContain(ID6);
+  });
+});

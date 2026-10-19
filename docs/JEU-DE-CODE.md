@@ -108,6 +108,7 @@ Règles d'installation :
 - Une même version avec un contenu différent est refusée : il faut monter la version.
 - Une version en attente ne remplace jamais la version active tant qu'elle n'est pas approuvée.
 - L'approbation ne réactive pas un jeu désactivé : le message le signale, et il faut le réactiver dans l'administration des jeux. Réactiver un jeu ne demande pas de nouvelle approbation.
+- Le contrôle de lancement (deux parties de robots, rejouées) peut prendre plusieurs secondes pour un jeu de cartes. Il rend la main au serveur toutes les 25 étapes : les salles restent servies pendant une installation ou une approbation. Deux demandes simultanées pour une même version ne créent qu'une seule version ; une suppression pendant la revue annule l'approbation.
 
 **Revue par différence.** Quand une version remplace une version active, la revue affiche seulement les lignes modifiées du code serveur et des vues, avec quelques lignes de contexte, depuis la version active. Au-delà de 2 000 modifications, la zone concernée est montrée en bloc (tout retiré, tout ajouté).
 
@@ -117,6 +118,7 @@ Règles d'installation :
 - **Budget de temps.** Un appel trop long est interrompu. Au cinquième dépassement (`CODE_MAX_TIMEOUTS`), ou dès qu'un échec détruit l'isolat (mémoire dépassée), le jeu est arrêté : il passe en « Erreur », ses salles sont fermées, et il reste arrêté jusqu'au prochain rechargement des jeux.
 - **Vues** : dans un iframe `sandbox="allow-scripts"`, servi depuis `/api/code-games/<id>/<empreinte>/view.html`. Ce document a sa propre politique : un seul script (celui du même paquet), aucune connexion réseau. La page et la vue échangent uniquement des messages (`postMessage`).
 - **Contrôle** (`check`) : passe par le même isolat que la production, pour tester ce qui tournera réellement.
+- **Charge.** Chaque version chargée a son isolat : environ 2 Mio de mémoire et une quinzaine de millisecondes à créer, plus la taille de son code. Un contexte par salle, dans un seul isolat, a été mesuré et écarté : environ 0,3 Mio par salle, et une limite de 64 Mio partagée par toutes les salles d'un même jeu, qui atteindrait sa limite vers 200 salles et couperait toutes ses salles d'un coup.
 
 ## Tests de bout en bout
 
@@ -140,4 +142,5 @@ L'export ZIP des sauvegardes inclut les jeux de code (`code-games.json` et `code
 - **Pas d'images ni de sons à l'exécution** pour les jeux de code. Les fichiers de `assets/` sont dans le paquet, mais les vues ne les affichent pas encore.
 - **Taille.** L'archive est limitée à 8 Mio, la limite du format. Aucun autre plafond n'est fixé pour l'instant : à confirmer.
 - **Historique.** L'administration relit, approuve et supprime une version ; elle ne gère pas encore l'historique complet des versions.
+- **Horloge.** Le contrôle ne repère un jeu qui lit l'horloge réelle (`Date.now()`) que si la valeur change entre deux parties, ce qui n'est pas garanti quand elles tournent dans la même milliseconde. Le jeu doit utiliser `ctx.now()`.
 - **Docker non vérifié** (voir plus haut).

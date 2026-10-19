@@ -60,10 +60,13 @@ describe('contrôle de lancement', () => {
     if (!result.ok) expect(result.error).toMatch(/partie \d/);
   });
 
-  it('refuse un jeu qui lit l’horloge réelle', () => {
+  it('refuse un jeu dont la vue change d’une partie à l’autre (une horloge lue directement)', () => {
+    // Une horloge qui avance : deux parties ne peuvent pas la lire à l'identique. Avec l'horloge réelle, le test
+    // dépendrait de la milliseconde où tourne chaque partie.
+    let clock = 0;
     const clocked = wrap(first, (mod) => {
       const host = mod.getHostState.bind(mod);
-      return { ...mod, getHostState: (state: unknown) => ({ ...(host(state) as object), at: Date.now() }) };
+      return { ...mod, getHostState: (state: unknown) => ({ ...(host(state) as object), at: ++clock }) };
     });
     const result = launchCheck(clocked);
     expect(result.ok).toBe(false);
