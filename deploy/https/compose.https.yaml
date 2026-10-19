@@ -28,6 +28,8 @@ services:
       PARTYHUB_HOST: "${PARTYHUB_HOST:-localhost}"
     ports:
       - "${PARTYHUB_HTTPS_PORT:-443}:443"
+      # Certificat racine en clair, à installer avant HTTPS : http://<adresse>:8281/certificat/racine.crt
+      - "${PARTYHUB_CERT_PORT:-8281}:8281"
     volumes:
       - ./deploy/https/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy-data:/data

@@ -1,7 +1,7 @@
 # Magasin de jeux
 
 Le magasin liste les jeux publiés dans un dépôt GitHub de jeux, et permet de les installer, de les mettre à jour et de
-les supprimer depuis l'administration, dans la section **Magasin de jeux**.
+les supprimer depuis l'administration : carte **Jeux**, section **Magasin de jeux** (les sources GitHub sont juste en dessous).
 
 ## Dépôt de jeux
 

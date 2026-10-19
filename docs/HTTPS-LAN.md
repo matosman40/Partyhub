@@ -48,18 +48,24 @@ sudo docker compose up -d
 
 Pensez alors à remettre `COOKIE_SECURE=false` dans `.env` (le mode HTTP ne fonctionne plus avec `true`).
 
-## 2. Installer le certificat racine
+## 2. Installer le certificat racine (en premier)
 
-Le certificat racine se télécharge depuis PartyHub, sans passer par le serveur :
+Faites cette étape sur chaque appareil **avant** d'ouvrir l'adresse en `https://`. Tant que le certificat n'est pas
+installé, le navigateur bloque les pages et les appels de PartyHub.
 
-1. Ouvrez `https://192.168.1.156` sur l'appareil. Le navigateur affiche un avertissement : c'est normal tant que le
-   certificat n'est pas installé. Choisissez **Avancé**, puis **Continuer**.
-2. Ouvrez la page **Installer le certificat HTTPS** (menu de l'accueil, ou `https://192.168.1.156/certificat`).
-3. Touchez **Télécharger le certificat**, puis suivez les étapes affichées pour votre appareil.
+1. Ouvrez `http://192.168.1.156:8281/certificat/racine.crt`. Notez bien `http://` et le port `8281`. Le fichier
+   `partyhub-autorite-locale.crt` se télécharge, sans avertissement.
+2. Installez-le sur l'appareil :
+   - **Windows** : double-cliquez sur le fichier, choisissez **Ordinateur local**, puis **Placer tous les certificats
+     dans le magasin suivant**, puis **Autorités de certification racines de confiance**.
+   - **Mac, iPhone, iPad, Android** : suivez les étapes qui s'affichent après le téléchargement.
+3. Fermez complètement le navigateur, rouvrez-le, puis ouvrez `https://192.168.1.156`.
 
-La page reconnaît l'appareil et ouvre les instructions correspondantes : iPhone et iPad, Android, Windows, Mac, Linux.
-Les autres appareils restent disponibles dans une section repliée. Les libellés des menus varient selon la marque et
-la version du système.
+Le port `8281` vient des fichiers `compose` : mettez-les à jour avec la version 0.15.0. Ce port ne sert qu'au
+certificat. Le reste des requêtes en `http://…:8281` est redirigé vers HTTPS.
+
+Une fois l'avertissement accepté, la page **Installer le certificat HTTPS** de PartyHub (`/certificat`) propose le même
+fichier, avec les instructions de votre appareil.
 
 Le certificat est le même pour tous les appareils. Il s'installe une fois par appareil, et il reste valable tant que le
 volume `partyhub-caddy-data` n'est pas supprimé.

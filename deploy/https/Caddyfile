@@ -28,3 +28,20 @@ https://{$PARTYHUB_HOST} {
 		reverse_proxy partyhub:8282
 	}
 }
+
+# Certificat racine en clair, à télécharger AVANT toute installation : http://<adresse>:8281/certificat/racine.crt.
+# Le navigateur n'a alors aucun avertissement à accepter. Le fichier ne contient aucune clé privée.
+# Tout le reste du port 8281 renvoie vers HTTPS.
+http://{$PARTYHUB_HOST}:8281 {
+	handle /certificat/racine.crt {
+		root * {$CADDY_CA_DIR:/data/caddy/pki/authorities/local}
+		rewrite * /root.crt
+		header Content-Type application/x-x509-ca-cert
+		header Content-Disposition attachment;filename=partyhub-autorite-locale.crt
+		file_server
+	}
+
+	handle {
+		redir https://{$PARTYHUB_HOST}{uri} permanent
+	}
+}

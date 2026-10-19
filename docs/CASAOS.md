@@ -127,15 +127,16 @@ PartyHub **et** Caddy dans un seul fichier : il s'installe depuis l'interface Ca
 2. Dans CasaOS : **Install a customized app** (ou « Importer un compose »), coller le contenu.
 3. Remplacer `192.168.1.156` par l'adresse fixe de votre serveur. Elle apparaît à deux endroits, dans la commande de
    Caddy : la ligne `default_sni` et le bloc `https://`. Renseigner `ADMIN_PASSWORD` si besoin, puis valider.
-4. Ouvrir `https://<adresse-du-serveur>` sur le téléphone : passer l'avertissement (**Avancé**, **Continuer**).
-5. Ouvrir **Installer le certificat HTTPS** dans le menu de l'accueil, télécharger le certificat, et suivre les étapes
-   de l'appareil. Le détail est dans [HTTPS-LAN.md](HTTPS-LAN.md).
+4. **Installer le certificat en premier** : sur chaque appareil, ouvrir `http://<adresse-du-serveur>:8281/certificat/racine.crt`
+   (en `http://`, avec le port 8281). Le fichier se télécharge sans avertissement. L'installer comme indiqué dans
+   [HTTPS-LAN.md](HTTPS-LAN.md), étape 2.
+5. Ouvrir `https://<adresse-du-serveur>` sur l'appareil, une fois le certificat installé et le navigateur redémarré.
 
-Le port d'accès devient **443** (`https://<adresse-du-serveur>`), et non plus 8282. Le port 443 doit être libre sur le
-serveur. Les données restent dans le volume `partyhub-data` : le même que le compose de base.
+Les ports d'accès sont **443** (`https://<adresse-du-serveur>`) et **8281** (certificat seulement). Ils doivent être
+libres sur le serveur. Les données restent dans le volume `partyhub-data` : le même que le compose de base.
 
-La page `/certificat` est disponible à partir de la version 0.9.3 de l'image, dont le numéro est indiqué dans le fichier.
-Le téléchargement du certificat ne dépend que de Caddy : il fonctionne dès que Caddy tourne.
+Le téléchargement du certificat ne dépend que de Caddy : il fonctionne dès que Caddy tourne, sans avertissement sur le
+port 8281.
 
 Pour mettre à jour : réimporter le fichier de la version suivante, en gardant le même nom d'application et les mêmes
 variables, comme dans la section 6.

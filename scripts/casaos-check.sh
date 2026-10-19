@@ -65,6 +65,14 @@ else
   fail "certificat racine absent ou illisible : $BASE/certificat/racine.crt"
 fi
 
+# 3 bis. Le certificat doit aussi se télécharger en clair, sur le port 8281, avant toute installation.
+clair="$(curl -s -o "$TMP/racine-clair.crt" -w '%{http_code}' --max-time 10 "http://$HOST:8281/certificat/racine.crt" || true)"
+if [ "$clair" = "200" ] && head -1 "$TMP/racine-clair.crt" 2>/dev/null | grep -q 'BEGIN CERTIFICATE'; then
+  pass "certificat téléchargeable avant HTTPS : http://$HOST:8281/certificat/racine.crt"
+else
+  fail "certificat absent sur le port 8281 (code $clair) : http://$HOST:8281/certificat/racine.crt"
+fi
+
 # 4. Le certificat téléchargé doit être reconnu : c'est ce que fait l'installation sur un appareil.
 if [ -s "$TMP/racine.crt" ]; then
   trusted="$(curl -s --cacert "$TMP/racine.crt" -o /dev/null -w '%{http_code}' --max-time 10 "$BASE/api/health")"

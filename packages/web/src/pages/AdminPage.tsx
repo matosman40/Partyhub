@@ -337,12 +337,12 @@ const ADMIN_CATEGORIES = [
   {
     id: 'jeux',
     title: 'Jeux',
-    text: 'Activer ou désactiver les jeux, leur présentation, leurs notices et leurs réglages par défaut.',
+    text: 'Activer ou désactiver les jeux, installer des jeux depuis le magasin ou GitHub, leur présentation et leurs réglages.',
   },
   {
     id: 'creation',
     title: 'Créer des jeux',
-    text: 'Jeux de cartes, de plateau et de questions médias, banques BOUM !, paquets importés.',
+    text: 'Jeux de cartes, de plateau et de questions médias, banques BOUM !, paquets .phgame et jeux de code.',
   },
   {
     id: 'ambiance',
@@ -591,6 +591,16 @@ export function AdminPage() {
               </section>
 
               <section className="card stack">
+                <h2>Magasin de jeux</h2>
+                <StoreAdmin onChanged={load} />
+              </section>
+
+              <section className="card stack">
+                <h2>Sources GitHub</h2>
+                <PackageSourcesAdmin onChanged={load} />
+              </section>
+
+              <section className="card stack">
                 <h2>Présentation des jeux intégrés et importés</h2>
                 <p className="muted">
                   Nom, icône, description et durée estimée s’affichent partout dans l’application. Les règles et le
@@ -655,15 +665,8 @@ export function AdminPage() {
               </section>
 
               <section className="card stack">
-                <h2>Magasin de jeux</h2>
-                <StoreAdmin onChanged={load} />
-              </section>
-
-              <section className="card stack">
                 <h2>Paquets de jeux (.phgame)</h2>
                 <PackagesAdmin onChanged={load} />
-                <h3>Sources GitHub</h3>
-                <PackageSourcesAdmin onChanged={load} />
               </section>
             </>
           )}
