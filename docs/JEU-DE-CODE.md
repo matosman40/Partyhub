@@ -8,25 +8,26 @@ Pour créer un jeu avec un assistant IA, utiliser le prompt de `docs/PROMPT-JEU-
 
 ## Créer un jeu avec Docker
 
-Aucune installation de Node n'est nécessaire. Depuis la racine du dépôt :
+Aucune installation de Node n'est nécessaire : les outils sont dans l'image PartyHub. Depuis la racine du dépôt, définissez une fois la commande, puis lancez les étapes :
 
 ```bash
 # 1. Créer un jeu depuis le modèle (dans ./jeux-en-cours/mon-jeu)
-docker compose -f compose.dev.yaml run --rm jeux new /jeu/mon-jeu mon-jeu "Mon jeu" "Votre nom"
+PHGAME='docker compose -f compose.dev.yaml run --rm -v ./jeux-en-cours:/jeu -v ./cles:/cles --entrypoint node partyhub /app/packages/server/dist/cli/phgame.js'
+$PHGAME new /jeu/mon-jeu mon-jeu "Mon jeu" "Votre nom"
 
 # 2. Créer les clés de signature (une fois ; la clé privée reste dans ./cles, jamais dans le dépôt)
-docker compose -f compose.dev.yaml run --rm jeux keygen /cles/mon-jeu
+$PHGAME keygen /cles/mon-jeu
 
 # 3. Construire et signer le paquet
-docker compose -f compose.dev.yaml run --rm jeux pack /jeu/mon-jeu /jeu/mon-jeu.phgame /cles/mon-jeu.key.pem
+$PHGAME pack /jeu/mon-jeu /jeu/mon-jeu.phgame /cles/mon-jeu.key.pem
 
 # 4. Contrôler : structure, signature, syntaxe, puis une partie complète jouée par des robots
-docker compose -f compose.dev.yaml run --rm jeux check /jeu/mon-jeu.phgame /cles/mon-jeu.pub.pem
+$PHGAME check /jeu/mon-jeu.phgame /cles/mon-jeu.pub.pem
 ```
 
-Le service `jeux` n'a **pas de réseau** (`network_mode: none`) : le code du jeu ne peut ni joindre internet ni lire autre chose que le dossier monté.
+Il n'y a plus d'image `jeux` séparée : les outils tournent dans le conteneur PartyHub, qui a accès au réseau pour servir la page. Le code d'un jeu, lui, tourne dans un isolat (isolated-vm) auquel PartyHub ne fournit que le moteur de jeu : aucune API réseau ni accès fichier n'y est injecté. Seuls les dossiers `jeux-en-cours` et `cles` sont montés.
 
-**Non vérifié :** l'image Docker et le service `jeux` n'ont pas pu être construits dans l'environnement où ce prototype a été mis au point (le téléchargement des images est bloqué). Les mêmes commandes, lancées avec Node, ont été testées (voir ci-dessous).
+**Non vérifié :** l'image Docker n'a pas pu être construite dans l'environnement où ce prototype a été mis au point (le téléchargement des images est bloqué). Les mêmes commandes, lancées avec Node, ont été testées (voir ci-dessous).
 
 Sans Docker, les mêmes commandes existent avec `npm run phgame -- <commande>` à la racine du dépôt (après `npm ci` et `npm run build`).
 

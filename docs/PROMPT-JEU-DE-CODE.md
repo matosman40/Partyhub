@@ -23,7 +23,7 @@ Un jeu complet et jouable :
 ## Méthode
 
 1. Crée le squelette avec le modèle, dans ./jeux-en-cours/[ID-DU-JEU] :
-   docker compose -f compose.dev.yaml run --rm jeux new /jeu/[ID-DU-JEU] [ID-DU-JEU] "[NOM DU JEU]" "[AUTEUR]"
+   docker compose -f compose.dev.yaml run --rm -v ./jeux-en-cours:/jeu -v ./cles:/cles --entrypoint node partyhub /app/packages/server/dist/cli/phgame.js new /jeu/[ID-DU-JEU] [ID-DU-JEU] "[NOM DU JEU]" "[AUTEUR]"
    (Sans Docker : node packages/server/dist/cli/phgame.js new ... après npm ci et npm run build.)
 
 2. Écris les règles dans src/server.ts, en gardant le modèle comme base :
@@ -47,8 +47,8 @@ Un jeu complet et jouable :
    - Textes en français. Lisible sur une TV (grands caractères) et sur un téléphone (boutons larges).
 
 4. Construis le paquet, puis contrôle-le :
-   docker compose -f compose.dev.yaml run --rm jeux pack /jeu/[ID-DU-JEU] /jeu/[ID-DU-JEU].phgame /cles/[ID-DU-JEU].key.pem
-   docker compose -f compose.dev.yaml run --rm jeux check /jeu/[ID-DU-JEU].phgame /cles/[ID-DU-JEU].pub.pem
+   docker compose -f compose.dev.yaml run --rm -v ./jeux-en-cours:/jeu -v ./cles:/cles --entrypoint node partyhub /app/packages/server/dist/cli/phgame.js pack /jeu/[ID-DU-JEU] /jeu/[ID-DU-JEU].phgame /cles/[ID-DU-JEU].key.pem
+   docker compose -f compose.dev.yaml run --rm -v ./jeux-en-cours:/jeu -v ./cles:/cles --entrypoint node partyhub /app/packages/server/dist/cli/phgame.js check /jeu/[ID-DU-JEU].phgame /cles/[ID-DU-JEU].pub.pem
    Le contrôle vérifie la structure, la syntaxe des deux bundles, la cohérence du manifeste avec le module,
    et une partie complète jouée par des robots, puis deux parties rejouées : elles doivent donner exactement la même suite d'états, même jouées en alternance. Corrige jusqu'à ce qu'il réussisse, sans contourner un contrôle.
    (La clé de signature est fournie par l'auteur, dans ./cles. Sans clé, le paquet n'est pas signé et PartyHub refuse de l'installer.)
@@ -76,5 +76,5 @@ Un jeu complet et jouable :
 ## Ce que le prompt ne peut pas faire (à lire avant)
 
 - Pour jouer, le paquet doit être signé par une clé de confiance de l'installation (`DATA_DIR/cles-de-confiance/`), puis approuvé par un administrateur dans « Paquets de jeux (.phgame) ». Le prompt produit un paquet qui se contrôle ; l'installation et l'approbation se font ensuite, à la main.
-- Le contrôle exécute le code du jeu sur le poste ou dans le conteneur `jeux` (sans réseau). Il ne remplace pas une relecture humaine : c'est l'administrateur qui relit le code avant d'approuver.
+- Le contrôle exécute le code du jeu, dans la même image PartyHub (commande `phgame`) ou sur le poste. Il ne remplace pas une relecture humaine : c'est l'administrateur qui relit le code avant d'approuver.
 - Le prompt ne vérifie pas l'équilibre des règles ni la lisibilité des écrans : il faut un essai réel sur une TV et un téléphone.

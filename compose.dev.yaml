@@ -84,29 +84,8 @@ services:
     cap_drop:
       - ALL
 
-  # Outils de création de jeux (phgame) : pour lancer, par exemple,
-  #   docker compose -f compose.dev.yaml run --rm jeux new /jeu/mon-jeu mon-jeu "Mon jeu" "Mon nom"
-  #   docker compose -f compose.dev.yaml run --rm jeux keygen /cles/mon-jeu
-  #   docker compose -f compose.dev.yaml run --rm jeux pack /jeu/mon-jeu /jeu/mon-jeu.phgame /cles/mon-jeu.key.pem
-  #   docker compose -f compose.dev.yaml run --rm jeux check /jeu/mon-jeu.phgame /cles/mon-jeu.pub.pem
-  # Pas de réseau : le contrôle exécute le code du jeu, il n'a pas besoin d'internet.
+  # Outils de création de jeux (phgame) : même image que PartyHub, voir docs/JEU-DE-CODE.md.
   # Les clés privées restent dans ./cles (hors du dépôt, voir .gitignore).
-  jeux:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: jeux
-    image: partyhub-jeux:dev
-    network_mode: none
-    cap_drop:
-      - ALL
-    security_opt:
-      - no-new-privileges:true
-    volumes:
-      - ./jeux-en-cours:/jeu
-      - ./cles:/cles
-    profiles:
-      - jeux
 
 volumes:
   partyhub-data:

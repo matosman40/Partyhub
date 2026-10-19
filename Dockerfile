@@ -25,15 +25,6 @@ FROM build AS prod
 RUN npm prune --omit=dev --no-audit --no-fund
 
 # ---------------------------------------------------------------------------
-# Outils de création de jeux (phgame) : tout le nécessaire, dont esbuild et le modèle de jeu.
-# Image séparée, jamais déployée : elle sert à créer, construire, signer et contrôler un jeu de code.
-# ---------------------------------------------------------------------------
-FROM build AS jeux
-WORKDIR /jeu
-USER node
-ENTRYPOINT ["node", "/app/packages/server/dist/cli/phgame.js"]
-
-# ---------------------------------------------------------------------------
 # Étape 2 : image finale minimale, utilisateur non privilégié
 # ---------------------------------------------------------------------------
 FROM node:24-bookworm-slim AS runtime
@@ -60,7 +51,9 @@ COPY --from=prod /app/packages/server/dist ./packages/server/dist
 COPY --from=prod /app/packages/web/dist ./packages/web/dist
 # La licence MIT demande que son texte accompagne toute copie du logiciel.
 COPY LICENSE ./
-# Ni les modèles de jeu ni l'outillage phgame ne sont dans l'image de production (voir la cible « jeux »).
+# Modèles de jeu pour la création de jeux de code (commande phgame, voir docs/JEU-DE-CODE.md).
+# esbuild reste installé en production : il construit les paquets de jeux de code.
+COPY --from=prod /app/packages/server/templates ./packages/server/templates
 
 # Métadonnées OCI : relient l'image au dépôt, à la version et au commit source.
 ARG VERSION=dev
