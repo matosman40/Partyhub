@@ -4,12 +4,13 @@
 # Une seule modification : remplacez 192.168.1.156 par l'adresse fixe de votre serveur. Elle apparaît à deux
 # endroits, dans la commande de Caddy : la ligne « default_sni » et le bloc « https:// ».
 #
-# Ensuite, ouvrez https://<adresse-du-serveur> : l'avertissement du navigateur est normal avant l'installation.
-# Choisissez « Avancé », « Continuer », puis téléchargez le certificat sur la page /certificat (lien « Installer
-# le certificat HTTPS » dans le menu de l'accueil) et installez-le une fois sur chaque appareil.
+# D'abord, installez le certificat : ouvrez http://<adresse-du-serveur>:8281/certificat/racine.crt (sans avertissement),
+# puis installez-le sur chaque appareil. Ensuite, ouvrez https://<adresse-du-serveur>.
+# Sans installation, l'avertissement du navigateur est normal. Le certificat s'installe une fois par appareil
+# (détail dans docs/HTTPS-LAN.md). Les ports 8281 et 443 doivent être libres sur le serveur.
 #
-# La page /certificat existe à partir de la version 0.9.3 de l'image. Les données sont dans le volume
-# partyhub-data, comme avec le compose de base : vous pouvez passer de l'un à l'autre sans les perdre.
+# Les données sont dans le volume partyhub-data, comme avec le compose de base : vous pouvez passer de l'un à
+# l'autre sans les perdre.
 
 name: partyhub
 
@@ -78,11 +79,13 @@ services:
       - partyhub
     ports:
       - '443:443'
+      # Certificat racine en clair, à installer avant HTTPS : http://<adresse>:8281/certificat/racine.crt
+      - '8281:8281'
     # La configuration de Caddy est écrite au démarrage, à partir de ce texte (adresse du serveur comprise).
     entrypoint:
       - /bin/sh
       - -c
-      - 'printf "%b" "{\n  default_sni 192.168.1.156\n}\nhttps://192.168.1.156 {\n  tls internal\n  encode zstd gzip\n  handle /certificat/racine.crt {\n    root * /data/caddy/pki/authorities/local\n    rewrite * /root.crt\n    header Content-Type application/x-x509-ca-cert\n    header Content-Disposition attachment;filename=partyhub-autorite-locale.crt\n    file_server\n  }\n  handle {\n    reverse_proxy partyhub:8282\n  }\n}\n" > /etc/caddy/Caddyfile && exec caddy run --config /etc/caddy/Caddyfile --adapter caddyfile'
+      - 'printf "%b" "{\n  default_sni 192.168.1.156\n}\nhttps://192.168.1.156 {\n  tls internal\n  encode zstd gzip\n  handle /certificat/racine.crt {\n    root * /data/caddy/pki/authorities/local\n    rewrite * /root.crt\n    header Content-Type application/x-x509-ca-cert\n    header Content-Disposition attachment;filename=partyhub-autorite-locale.crt\n    file_server\n  }\n  handle {\n    reverse_proxy partyhub:8282\n  }\n}\nhttp://192.168.1.156:8281 {\n  handle /certificat/racine.crt {\n    root * /data/caddy/pki/authorities/local\n    rewrite * /root.crt\n    header Content-Type application/x-x509-ca-cert\n    header Content-Disposition attachment;filename=partyhub-autorite-locale.crt\n    file_server\n  }\n  handle {\n    redir https://192.168.1.156{uri} permanent\n  }\n}\n" > /etc/caddy/Caddyfile && exec caddy run --config /etc/caddy/Caddyfile --adapter caddyfile'
     volumes:
       # caddy-data contient l'autorité interne : le supprimer oblige à réinstaller le certificat partout.
       - partyhub-caddy-data:/data
