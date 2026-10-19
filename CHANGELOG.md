@@ -7,7 +7,7 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 ### Ajouté
 
 - Magasin de jeux : la section *Magasin de jeux* de l’administration liste les jeux publiés dans le dépôt de jeux (`matosman40/jeux-partyhub` par défaut, variable `PARTYHUB_STORE_REPO`, modifiable dans l’administration). Chaque jeu montre sa couverture, son auteur, sa version et son état. Un jeu s’installe d’un clic, se met à jour chaque jour ou à la demande, et se supprime ; ses parties en cours sont fermées. Seuls les paquets déclaratifs (cartes, plateau, questions, recettes) s’installent : les jeux écrits dans le code de PartyHub restent dans l’application. Guide : `docs/MAGASIN.md`.
-- Sons dans les paquets (format 4) : un paquet peut porter des bruitages (`.ogg` ou `.mp3`) et une musique de partie, déclarés dans `game/definition.json` (bloc `sons`). Ils remplacent les bruitages globaux pendant que la salle du jeu est affichée, et la musique de partie tourne sur l’écran principal. Budgets : 1 Mio par fichier, 4 Mio par paquet, 24 fichiers. Route publique : `GET /api/game-sounds/<identifiant>`. Documentation : `docs/PHGAME.md`, section Sons.
+- Sons dans les paquets (format 4) : un paquet peut porter des bruitages (`.ogg` ou `.mp3`) et une musique de partie, déclarés dans `game/definition.json` (bloc `sons`). Ils remplacent les bruitages globaux pendant que la salle du jeu est affichée, et la musique de partie tourne sur l’écran principal. Budgets : 512 Ko par fichier, 2 Mio par paquet, 16 fichiers. Le format 4 demande PartyHub 0.14.0 au minimum. Route publique : `GET /api/game-sounds/<identifiant>`. Documentation : `docs/PHGAME.md`, section Sons.
 
 ## [0.13.0] - 2026-10-19
 

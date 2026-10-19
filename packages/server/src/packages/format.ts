@@ -28,7 +28,7 @@ export const PHGAME_FORMAT_VERSION = 4;
 /** Première version du moteur qui comprend le format 3. */
 export const RECIPE_MIN_ENGINE_VERSION = '0.12.0';
 /** Première version du moteur qui comprend le format 4 (sons dans les paquets). */
-export const SOUNDS_MIN_ENGINE_VERSION = '0.13.0';
+export const SOUNDS_MIN_ENGINE_VERSION = '0.14.0';
 
 /** Musique de partie d’un paquet. Les musiques de l’accueil, des menus et de la fin restent globales. */
 export const PACKAGE_MUSIC_SLOTS = ['partie'] as const;
@@ -86,9 +86,9 @@ export const DEFAULT_PACKAGE_LIMITS: PackageLimits = {
   maxManifestBytes: 8 * 1024,
   maxImageSide: 1024,
   maxImageBytes: 200 * 1024,
-  maxAudioBytes: 1024 * 1024,
-  maxAudioTotalBytes: 4 * 1024 * 1024,
-  maxAudioFiles: 24,
+  maxAudioBytes: 512 * 1024,
+  maxAudioTotalBytes: 2 * 1024 * 1024,
+  maxAudioFiles: 16,
 };
 
 const ID = /^[a-z0-9][a-z0-9-]{1,47}$/;
