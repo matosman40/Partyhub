@@ -254,7 +254,8 @@ const ARCHIVE_TIMEOUT_MS = 120_000;
 async function repoArchive(repo: string, tag: string, options: GitHubOptions): Promise<Uint8Array> {
   const res = await request(
     `${GITHUB_API}/repos/${repo}/zipball/${encodeURIComponent(tag)}`,
-    'application/octet-stream',
+    // L'archive répond 302 vers codeload pour « */* » ; « application/octet-stream » renvoie 415 sur l'API.
+    '*/*',
     options,
     ARCHIVE_TIMEOUT_MS,
   );

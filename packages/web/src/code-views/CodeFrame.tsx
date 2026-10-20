@@ -178,6 +178,9 @@ export function CodeFrame({ role, url, data, send, onAction, onChange }: CodeFra
         ref={frameRef}
         title={role === 'host' ? 'Écran du jeu' : role === 'player' ? 'Écran du téléphone' : 'Réglages du jeu'}
         sandbox="allow-scripts"
+        // Capteurs et médias demandés par les jeux (gyroscope, caméra, micro) : le navigateur demande toujours
+        // l'autorisation. Rien d'autre n'est ouvert : pas de réseau, pas de stockage (voir la politique de la vue).
+        allow="accelerometer; gyroscope; camera; microphone"
         src={url}
         style={{ width: '100%', height: '100%', minHeight: '60vh', border: 0, display: 'block' }}
       />
