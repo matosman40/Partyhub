@@ -14,6 +14,14 @@ les supprimer depuis l'administration, dans la section **Magasin de jeux**.
 - Une couverture se trouve sous `assets/`, au format PNG, JPEG ou WebP, et pèse 200 Ko au plus. Un fichier qui n'a
   pas la signature de son format n'est jamais affiché.
 
+## Parcourir le magasin
+
+- La recherche porte sur le nom, l'auteur, le type et la description du jeu, sans tenir compte des majuscules.
+- Les filtres « À installer », « Installés », « Mises à jour » et « En revue » restreignent la liste à un état.
+- Les étiquettes de type restreignent la liste au type choisi. Le tri se fait par état (mises à jour d'abord) ou par nom.
+- Le jeu « À la une » est le premier jeu téléchargeable qui a une couverture. Il n'apparaît que sans filtre ni recherche.
+- Cliquer sur une carte (ou « Voir la fiche ») ouvre la fiche du jeu : couverture, auteur, type, versions, description complète.
+
 ## Installer, mettre à jour, supprimer
 
 - **Installer** crée une source GitHub pour le jeu, avec mise à jour automatique, puis installe la dernière release.

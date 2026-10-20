@@ -66,15 +66,18 @@ export function ProfilePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active?.token]);
 
-  async function run<T>(action: () => Promise<T>, done?: (value: T) => string | null): Promise<void> {
+  /** Lance une action et affiche son résultat. Renvoie vrai seulement si elle a réussi. */
+  async function run<T>(action: () => Promise<T>, done?: (value: T) => string | null): Promise<boolean> {
     setBusy(true);
     setMessage(null);
     try {
       const value = await action();
       const text = done ? done(value) : null;
       if (text) setMessage({ ok: true, text });
+      return true;
     } catch (err) {
       setMessage({ ok: false, text: (err as Error).message });
+      return false;
     } finally {
       setBusy(false);
     }
@@ -143,7 +146,7 @@ export function ProfilePage() {
   const perGame = profile.stats.perGame;
 
   return (
-    <main className="page fade-in" style={{ maxWidth: 760 }}>
+    <main className="page fade-in profile-page" style={{ maxWidth: 760 }}>
       <p className="page-nav">
         <BackButton to="/">Retour à l’accueil</BackButton>
         <Link to="/join">Rejoindre une salle</Link>
@@ -190,7 +193,36 @@ export function ProfilePage() {
         </p>
       )}
 
-      <section className="card stack" aria-labelledby="stats-title">
+      <nav className="profile-nav" aria-label="Rubriques du profil">
+        <a className="chip" href="#stats">
+          Statistiques
+        </a>
+        <a className="chip" href="#personnage">
+          Personnage
+        </a>
+        <a className="chip" href="#pseudo">
+          Pseudo
+        </a>
+        <a className="chip" href="#appareil">
+          Micro et caméra
+        </a>
+        {profile.hasPassword && (
+          <a className="chip" href="#mot-de-passe">
+            Mot de passe
+          </a>
+        )}
+        <a className="chip" href="#voix">
+          Voix
+        </a>
+        <a className="chip" href="#boum">
+          BOUM !
+        </a>
+        <a className="chip" href="#supprimer">
+          Supprimer
+        </a>
+      </nav>
+
+      <section id="stats" className="card stack" aria-labelledby="stats-title">
         <h2 id="stats-title">Statistiques</h2>
         <div className="stats-row">
           <div>
@@ -252,7 +284,7 @@ export function ProfilePage() {
         }
       />
 
-      <section className="card stack" aria-labelledby="name-title">
+      <section id="pseudo" className="card stack" aria-labelledby="name-title">
         <h2 id="name-title">Pseudo affiché</h2>
         <NameForm
           current={profile.displayName}
@@ -275,7 +307,7 @@ export function ProfilePage() {
         />
       </section>
 
-      <section className="card stack" aria-labelledby="devices-title">
+      <section id="appareil" className="card stack" aria-labelledby="devices-title">
         <h2 id="devices-title">Micro et caméra</h2>
         <p className="muted small">
           Ce choix vaut pour cet appareil, pas pour le compte : il s’applique à tous les jeux qui utilisent le micro ou
@@ -285,7 +317,7 @@ export function ProfilePage() {
       </section>
 
       {profile.hasPassword && (
-        <section className="card stack" aria-labelledby="password-title">
+        <section id="mot-de-passe" className="card stack" aria-labelledby="password-title">
           <h2 id="password-title">Mot de passe</h2>
           <PasswordForm
             busy={busy}
@@ -307,32 +339,40 @@ export function ProfilePage() {
         </section>
       )}
 
-      <VoicesSection />
+      <div id="voix">
+        <VoicesSection />
+      </div>
 
-      <section className="card stack" aria-labelledby="boum-title">
+      <section id="boum" className="card stack" aria-labelledby="boum-title">
         <h2 id="boum-title">Proposer une carte pour BOUM !</h2>
         <ProposeBoumCard />
       </section>
 
-      <section className="card stack danger-zone" aria-labelledby="delete-title">
+      <section id="supprimer" className="card stack danger-zone" aria-labelledby="delete-title">
         <h2 id="delete-title">Supprimer le profil</h2>
         <p className="muted">Le profil, ses statistiques et son image sont effacés. Cette action est définitive.</p>
         <button
           type="button"
           className="btn ghost"
           disabled={busy}
-          onClick={() => {
-            if (!window.confirm('Supprimer définitivement ce profil ?')) return;
-            void run(
+          onClick={async () => {
+            if (
+              !window.confirm(
+                `Supprimer définitivement « ${profile.displayName} » ? Le profil, ses statistiques et son image seront effacés. Cette action est irréversible.`,
+              )
+            )
+              return;
+            const deleted = await run(
               () => api('/api/profiles/me', { method: 'DELETE', headers: authHeaders() }),
               () => null,
-            ).then(() => {
-              const removed = activeDeviceProfile();
-              if (removed) forgetDeviceProfile(removed.token);
-              // S’il reste un autre profil sur l’appareil, la page le charge toute seule (effet ci-dessus).
-              setSession(null);
-              setMessage({ ok: true, text: 'Profil supprimé.' });
-            });
+            );
+            // Un échec laisse le profil en place : le message d’erreur est déjà affiché.
+            if (!deleted) return;
+            const removed = activeDeviceProfile();
+            if (removed) forgetDeviceProfile(removed.token);
+            // S’il reste un autre profil sur l’appareil, la page le charge toute seule (effet ci-dessus).
+            setSession(null);
+            setMessage({ ok: true, text: 'Profil supprimé.' });
           }}
         >
           Supprimer mon profil
@@ -440,7 +480,7 @@ function AvatarSection({
   }
 
   return (
-    <section className="card stack" aria-labelledby="avatar-title">
+    <section id="personnage" className="card stack" aria-labelledby="avatar-title">
       <h2 id="avatar-title">Mon personnage</h2>
       <div className="profile-hero">
         <PlayerAvatar avatar={profile.avatar} name={profile.displayName} size="lg" />

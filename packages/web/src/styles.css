@@ -8413,6 +8413,15 @@ html:not([data-theme='dark']) .corner-drawer {
   margin: 0.2rem 0 0;
 }
 
+/* Les sections d’une rubrique ne s’affichent que dans leur sous-menu. */
+.admin [hidden] {
+  display: none !important;
+}
+
+.admin-sub-title {
+  margin: 0.2rem 0 0;
+}
+
 /* Journal des erreurs (administration). */
 .log-toolbar {
   display: flex;
@@ -11216,4 +11225,262 @@ input[type='file']::file-selector-button {
 .update-releases summary {
   cursor: pointer;
   overflow-wrap: anywhere;
+}
+
+/* Magasin de jeux : recherche, filtres et fiche détaillée. */
+.store-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem 1rem;
+}
+
+.store-toolbar .field {
+  flex: 1 1 260px;
+}
+
+.store-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.store-details {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.25rem 0.75rem;
+  margin: 0.25rem 0 0;
+  font-size: 0.9rem;
+}
+
+.store-details dt {
+  color: var(--muted);
+}
+
+.store-details dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Profils de l’appareil : une ligne par profil, avec son action de retrait. */
+.profile-panel-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+}
+
+.profile-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.profile-row .link-btn {
+  white-space: nowrap;
+}
+
+/* Magasin, présentation « boutique » : bannière, étiquettes de type, pastilles d’état et fiche de jeu. */
+.store-card {
+  transition:
+    transform 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.store-card:hover,
+.store-card:focus-within {
+  transform: translateY(-2px);
+  border-color: var(--accent);
+}
+
+.store-card-open {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.store-card-title {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.store-pill {
+  align-self: flex-start;
+  padding: 0.12rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.store-pill-a_jour {
+  border-color: var(--ok);
+  color: var(--ok);
+}
+
+.store-pill-mise_a_jour,
+.store-pill-en_revue {
+  border-color: var(--sun);
+  color: var(--sun);
+}
+
+.store-pill-erreur {
+  border-color: var(--ko);
+  color: var(--ko);
+}
+
+.store-pill-integre {
+  border-color: var(--cyan);
+  color: var(--cyan);
+}
+
+.store-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.store-tag {
+  padding: 0.25rem 0.7rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.store-tag.active,
+.store-tag:hover,
+.store-tag:focus-visible {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.store-tag.active {
+  background: var(--glass);
+}
+
+.store-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: center;
+  padding: 0.9rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-md);
+  background: var(--glass);
+}
+
+.store-hero-art {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: var(--r-sm);
+  background: var(--line);
+}
+
+.store-hero-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.store-hero-info h3 {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.store-hero-info p {
+  margin: 0;
+}
+
+.store-kicker {
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.store-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+.store-detail-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.store-detail-cover {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: var(--r-md);
+  background: var(--line);
+}
+
+.store-detail-cover.store-cover-empty {
+  display: grid;
+  place-items: center;
+  font-size: 3rem;
+}
+
+.store-detail-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.store-detail-info h3 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.store-detail-section h4 {
+  margin: 0 0 0.35rem;
+}
+
+.store-detail-section p {
+  margin: 0;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 720px) {
+  .store-hero,
+  .store-detail-head {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Page de profil : navigation par rubriques, pour ne pas faire défiler une page trop longue. */
+.profile-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.profile-nav .chip {
+  text-decoration: none;
+}
+
+.profile-page section[id] {
+  scroll-margin-top: 1rem;
 }

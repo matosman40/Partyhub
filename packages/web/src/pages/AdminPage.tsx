@@ -1,4 +1,11 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import {
+  ADMIN_CATEGORIES,
+  ADMIN_SUBSECTIONS,
+  isAdminCategory,
+  type AdminCategoryId,
+  type AdminSubsection,
+} from './admin-menu.js';
 import { useSearchParams } from 'react-router-dom';
 import { DEVICE_KIND_ICONS, type CatalogGame, type DeviceKind } from '@partyhub/shared';
 import { DEFAULT_TEST_MODE, TEST_MODE_FACTORS, testModeLabel, type TestMode } from '@partyhub/shared';
@@ -327,46 +334,19 @@ function TestModeForm() {
   );
 }
 
-/** Rubriques du menu de l’administration. Le choix est dans l’adresse (?section=…) : le bouton précédent fonctionne. */
-const ADMIN_CATEGORIES = [
-  {
-    id: 'salles',
-    title: 'Salles et statistiques',
-    text: 'Salles ouvertes, parties lancées, nettoyage des salles sans connexion.',
-  },
-  {
-    id: 'jeux',
-    title: 'Jeux',
-    text: 'Activer ou désactiver les jeux, leur présentation, leurs notices et leurs réglages par défaut.',
-  },
-  {
-    id: 'creation',
-    title: 'Créer des jeux',
-    text: 'Jeux de cartes, de plateau et de questions médias, banques BOUM !, paquets importés.',
-  },
-  {
-    id: 'ambiance',
-    title: 'Médias et ambiance',
-    text: 'Médiathèque, fonds d’écran, musiques, bruitages et personnages illustrés.',
-  },
-  {
-    id: 'systeme',
-    title: 'Système',
-    text: 'Mise à jour, journal des erreurs, clés d’IA, réglages généraux, sauvegardes et base de données.',
-  },
-] as const;
-
-type AdminCategoryId = (typeof ADMIN_CATEGORIES)[number]['id'];
-
-function isAdminCategory(value: string | null): value is AdminCategoryId {
-  return ADMIN_CATEGORIES.some((c) => c.id === value);
-}
-
 export function AdminPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const sectionParam = searchParams.get('section');
   const category = isAdminCategory(sectionParam) ? sectionParam : null;
   const openCategory = (id: AdminCategoryId | null) => setSearchParams(id ? { section: id } : {});
+  const subParam = searchParams.get('sub');
+  const subsections: readonly AdminSubsection[] = category ? ADMIN_SUBSECTIONS[category] : [];
+  const currentSub = subsections.find((s) => s.id === subParam) ?? (subsections.length === 1 ? subsections[0] : null);
+  const activeSub = currentSub?.id ?? null;
+  const openSub = (id: string | null) => {
+    if (!category) return;
+    setSearchParams(id ? { section: category, sub: id } : { section: category });
+  };
 
   const [authenticated, setAuthenticated] = useState<boolean | null>(null);
   const [overview, setOverview] = useState<Overview | null>(null);
@@ -482,15 +462,39 @@ export function AdminPage() {
 
       {current ? (
         <>
-          <div className="admin-category-head">
-            {backToMenu}
-            <h2>{current.title}</h2>
-            <p className="muted">{current.text}</p>
-          </div>
+          {activeSub && subsections.length > 1 ? (
+            <div className="admin-category-head">
+              {backToMenu}
+              <BackButton onClick={() => openSub(null)}>{current.title}</BackButton>
+            </div>
+          ) : (
+            <div className="admin-category-head">
+              {backToMenu}
+              <h2>{current.title}</h2>
+              <p className="muted">{current.text}</p>
+            </div>
+          )}
+
+          {!activeSub && subsections.length > 1 && (
+            <nav aria-label={`Sous-menu : ${current.title}`}>
+              <ul className="admin-menu">
+                {subsections.map((sub) => (
+                  <li key={sub.id}>
+                    <button type="button" className="card admin-menu-card" onClick={() => openSub(sub.id)}>
+                      <span className="admin-menu-title">{sub.title}</span>
+                      <span className="muted small">{sub.text}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          )}
+
+          {activeSub && subsections.length > 1 && currentSub && <h2 className="admin-sub-title">{currentSub.title}</h2>}
 
           {category === 'salles' && (
             <>
-              <section className="card">
+              <section hidden={activeSub !== 'apercu'} className="card">
                 <h2>Statistiques</h2>
                 <div className="stats">
                   <div className="admin-stat">
@@ -512,7 +516,7 @@ export function AdminPage() {
                 </div>
               </section>
 
-              <section className="card">
+              <section hidden={activeSub !== 'apercu'} className="card">
                 <div className="section-head">
                   <h2>Salles</h2>
                   <button type="button" className="btn ghost" onClick={purgeIdle}>
@@ -569,7 +573,7 @@ export function AdminPage() {
 
           {category === 'jeux' && (
             <>
-              <section className="card">
+              <section hidden={activeSub !== 'activation'} className="card">
                 <h2>Activation des jeux</h2>
                 <ul className="games-admin">
                   {overview.games.map((g) => (
@@ -590,7 +594,11 @@ export function AdminPage() {
                 </ul>
               </section>
 
-              <section className="card stack">
+              <section hidden={activeSub !== 'magasin'} className="card stack">
+                <h2>Magasin de jeux</h2>
+                <StoreAdmin onChanged={load} />
+              </section>
+              <section hidden={activeSub !== 'presentation'} className="card stack">
                 <h2>Présentation des jeux intégrés et importés</h2>
                 <p className="muted">
                   Nom, icône, description et durée estimée s’affichent partout dans l’application. Les règles et le
@@ -604,7 +612,7 @@ export function AdminPage() {
                   ))}
               </section>
 
-              <section className="card stack">
+              <section hidden={activeSub !== 'reglages-parties'} className="card stack">
                 <h2>Réglages par défaut des parties</h2>
                 <p className="muted">
                   Durées, nombre de manches et autres options proposées à l’hôte quand il crée une salle. Une salle déjà
@@ -618,7 +626,7 @@ export function AdminPage() {
                   ))}
               </section>
 
-              <section className="card stack">
+              <section hidden={activeSub !== 'notices'} className="card stack">
                 <h2>Notices des jeux</h2>
                 <p className="muted">Ce que voient les joueurs avant de jouer. La notice d’origine reste disponible.</p>
                 {overview.games.map((g) => (
@@ -630,22 +638,22 @@ export function AdminPage() {
 
           {category === 'creation' && (
             <>
-              <section className="card stack">
+              <section hidden={activeSub !== 'cartes'} className="card stack">
                 <h2>Jeux de cartes</h2>
                 <CardGamesAdmin onChanged={load} />
               </section>
 
-              <section className="card stack">
+              <section hidden={activeSub !== 'plateau'} className="card stack">
                 <h2>Jeux de plateau</h2>
                 <BoardGamesAdmin onChanged={load} />
               </section>
 
-              <section className="card stack">
+              <section hidden={activeSub !== 'questions'} className="card stack">
                 <h2>Jeux de questions médias</h2>
                 <MediaGamesAdmin onChanged={load} />
               </section>
 
-              <section className="card stack">
+              <section hidden={activeSub !== 'boum'} className="card stack">
                 <h2>Banques BOUM !</h2>
                 <p className="muted small">
                   Textes des manches : validez les entrées avant qu’elles ne sortent en partie. Seules les entrées
@@ -654,12 +662,7 @@ export function AdminPage() {
                 <BoumBanksAdmin />
               </section>
 
-              <section className="card stack">
-                <h2>Magasin de jeux</h2>
-                <StoreAdmin onChanged={load} />
-              </section>
-
-              <section className="card stack">
+              <section hidden={activeSub !== 'paquets'} className="card stack">
                 <h2>Paquets de jeux (.phgame)</h2>
                 <PackagesAdmin onChanged={load} />
                 <h3>Sources GitHub</h3>
@@ -670,7 +673,7 @@ export function AdminPage() {
 
           {category === 'ambiance' && (
             <>
-              <section className="card stack">
+              <section hidden={activeSub !== 'mediatheque'} className="card stack">
                 <h2>Médiathèque</h2>
                 <AssetLibrary
                   onChanged={() => {
@@ -680,7 +683,7 @@ export function AdminPage() {
                 />
               </section>
 
-              <section className="card stack">
+              <section hidden={activeSub !== 'fonds'} className="card stack">
                 <h2>Fonds d’écran</h2>
                 <p className="muted small">
                   Une image de la médiathèque par écran. Le voile sombre reste par-dessus pour garder le texte lisible.
@@ -688,7 +691,7 @@ export function AdminPage() {
                 <ScreenBackgroundsAdmin libraryVersion={libraryVersion} />
               </section>
 
-              <section className="card stack">
+              <section hidden={activeSub !== 'sons'} className="card stack">
                 <h2>Musiques et bruitages</h2>
                 <p className="muted small">
                   Musique de fond pour les menus, l’accueil et la fin de partie, et un fichier pour chaque bruitage des
@@ -697,7 +700,7 @@ export function AdminPage() {
                 <SoundSettingsAdmin libraryVersion={libraryVersion} />
               </section>
 
-              <section className="card stack">
+              <section hidden={activeSub !== 'personnages'} className="card stack">
                 <h2>Personnages illustrés (zip)</h2>
                 <CharacterPacksAdmin onChanged={load} />
               </section>
@@ -706,32 +709,32 @@ export function AdminPage() {
 
           {category === 'systeme' && (
             <>
-              <section className="card stack">
+              <section hidden={activeSub !== 'maj'} className="card stack">
                 <h2>Mise à jour</h2>
                 <UpdatePanel />
               </section>
 
-              <section className="card stack">
+              <section hidden={activeSub !== 'journal'} className="card stack">
                 <h2>Journal des erreurs</h2>
                 <LogsAdmin />
               </section>
 
-              <section className="card stack">
+              <section hidden={activeSub !== 'ia'} className="card stack">
                 <h2>Intelligence artificielle</h2>
                 <AiSettingsAdmin />
               </section>
 
-              <section className="card">
+              <section hidden={activeSub !== 'reglages'} className="card">
                 <h2>Réglages généraux</h2>
                 <SettingsForm settings={overview.settings} onSaved={load} />
               </section>
 
-              <section className="card">
+              <section hidden={activeSub !== 'reglages'} className="card">
                 <h2>Mode test</h2>
                 <TestModeForm />
               </section>
 
-              <section className="card stack">
+              <section hidden={activeSub !== 'sauvegarde'} className="card stack">
                 <h2>Sauvegarde et restauration</h2>
                 <BackupPanel onChanged={load} />
                 <h3>Base de données</h3>
