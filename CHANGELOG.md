@@ -6,7 +6,7 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 
 ### Ajouté
 
-- Réglages du serveur dans l'administration (Système → Réglages du serveur) : jeton GitHub, mot de passe administrateur, journal, sauvegardes, réseau, images et réglages d'IA sont modifiables sans éditer `.env`. Une valeur saisie l'emporte sur `.env`, elle s'applique après un redémarrage (bouton proposé). Les secrets ne sont jamais réaffichés, et une combinaison qui casserait la configuration est refusée.
+- Réglages du serveur dans l'administration (Système → Réglages du serveur) : jeton GitHub, mot de passe administrateur, journal, sauvegardes, réseau, images et réglages d'IA sont modifiables sans éditer `.env`. Une valeur saisie l'emporte sur `.env`, elle s'applique après un redémarrage (bouton proposé). Les secrets ne sont jamais réaffichés, sont chiffrés dans la base, et une combinaison qui casserait la configuration est refusée.
 - Installation directe en HTTPS : `sudo sh install.sh` détecte l'adresse du serveur, prépare `.env`, démarre PartyHub avec Caddy et attend qu'il réponde.
 
 - Magasin de jeux accessible à tous, depuis l'accueil (menu, « Magasin de jeux », adresse `/magasin`). Il n'est plus dans l'administration. Installer, mettre à jour et supprimer demandent la session administrateur.
