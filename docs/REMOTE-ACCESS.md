@@ -33,7 +33,8 @@ partyhub.example.com {
     respond @admin 403
 
     # Transmission HTTP et WebSocket (Caddy gère l'upgrade automatiquement).
-    reverse_proxy 127.0.0.1:8282
+    # PartyHub n'est plus publié sur l'hôte : ce proxy rejoint le conteneur sur le réseau Docker (voir le README).
+    reverse_proxy partyhub:8282
 
     header {
         Strict-Transport-Security "max-age=31536000"

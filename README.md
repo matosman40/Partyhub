@@ -38,25 +38,23 @@ Prérequis : Docker avec le plugin Compose (`docker compose version`), et un ter
 (sur CasaOS : application Terminal, ou SSH). L'image est téléchargée depuis GHCR : aucune compilation n'est nécessaire.
 
 ```bash
-# 1. Télécharger PartyHub (le fichier compose.yaml indique la version à installer)
+# 1. Télécharger PartyHub
 sudo mkdir -p /DATA/AppData && cd /DATA/AppData
 sudo git clone https://github.com/matosman40/Partyhub.git partyhub
 cd partyhub
 
-# 2. Configurer (adapter ADMIN_PASSWORD, et PARTYHUB_PORT si 8282 est déjà utilisé)
-sudo cp .env.example .env
-sudo nano .env
-
-# 3. Télécharger l'image et démarrer
-sudo docker compose up -d
-
-# 4. Vérifier : le service doit afficher « healthy » après quelques secondes
-sudo docker compose ps
-sudo docker compose logs -f     # Ctrl+C pour quitter
+# 2. Installer : l'installation se fait directement en HTTPS sur le réseau local (Caddy, certificat interne).
+#    L'adresse du serveur est détectée ; sinon, indiquez-la : sudo sh install.sh 192.168.1.156
+sudo sh install.sh
 ```
 
-Ouvrir `http://<adresse-du-serveur>:8282` sur l'écran principal, puis `http://<adresse-du-serveur>:8282/join`
-sur les téléphones (ou scanner le QR code). Le détail pour CasaOS est dans [docs/CASAOS.md](docs/CASAOS.md).
+Le script démarre PartyHub, attend qu'il réponde, puis indique l'adresse à ouvrir : `https://<adresse-du-serveur>`.
+Le certificat étant interne, il faut une fois l'installer sur chaque appareil (page `/certificat`, voir
+[docs/HTTPS-LAN.md](docs/HTTPS-LAN.md)). Les réglages se modifient ensuite dans l'administration, rubrique
+**Système → Réglages du serveur**, sans éditer `.env`. Pour vérifier à la main : `sudo docker compose ps` (le service
+doit afficher « healthy »), et `sudo docker compose logs -f` pour le journal.
+
+Le détail pour CasaOS est dans [docs/CASAOS.md](docs/CASAOS.md).
 
 **Mise à jour** (les données du volume `partyhub-data` sont conservées) : depuis la rubrique *Système* de
 l'administration, après une installation unique du service de mise à jour, ou à la main. Le détail, les règles et le
@@ -136,10 +134,14 @@ la bonne réponse n'apparaît qu'à la révélation, et les réponses privées r
 
 ## Variables d'environnement
 
+Le fichier `.env` sert à l'installation. Les réglages du serveur se modifient ensuite dans l'administration (**Système → Réglages du serveur**) : une valeur saisie l'emporte sur `.env`, et s'applique après un redémarrage (bouton proposé dans l'administration). « Rétablir » revient à la valeur du fichier. Les clés d'IA se règlent dans **Système → Intelligence artificielle**.
+
+
 | Variable                             | Défaut                         | Rôle                                                                                                                                                                                                                                                                                                               |
 | ------------------------------------ | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `PARTYHUB_PORT`                      | `8282`                         | Port publié sur la machine hôte (Compose)                                                                                                                                                                                                                                                                          |
-| `PARTYHUB_HOST`                      | vide                           | Adresse du serveur pour le HTTPS du réseau local (surcouche `deploy/https`, voir [docs/HTTPS-LAN.md](docs/HTTPS-LAN.md))                                                                                                                                                                                           |
+| `PARTYHUB_PORT`                      | `8282`                         | Port HTTP de `compose.dev.yaml` (développement seulement)
+| `PARTYHUB_HTTPS_PORT`                | `443`                          | Port HTTPS publié sur la machine hôte (Caddy)
+| `PARTYHUB_HOST`                      | renseignée par `install.sh`    | Adresse du serveur pour le HTTPS (voir [docs/HTTPS-LAN.md](docs/HTTPS-LAN.md))
 | `ADMIN_PASSWORD`                     | généré                         | Mot de passe de l'administration, prioritaire s'il est défini                                                                                                                                                                                                                                                      |
 | `LOG_LEVEL`                          | `info`                         | `fatal`, `error`, `warn`, `info`, `debug`, `trace`                                                                                                                                                                                                                                                                 |
 | `LOG_DIR`                            | `DATA_DIR/logs`                | Dossier du journal des erreurs (fichier `partyhub.log`, JSON une ligne par événement)                                                                                                                                                                                                                              |
@@ -246,7 +248,7 @@ Pour un accès depuis Internet, voir [docs/REMOTE-ACCESS.md](docs/REMOTE-ACCESS.
 bloquée depuis l'extérieur, de préférence via un VPN.
 
 Pour que le micro, la caméra et les capteurs de mouvement (gyroscope) des téléphones fonctionnent sur le réseau local, PartyHub doit être servi en HTTPS :
-voir [docs/HTTPS-LAN.md](docs/HTTPS-LAN.md) (surcouche Caddy avec certificat interne).
+voir [docs/HTTPS-LAN.md](docs/HTTPS-LAN.md) : Caddy avec certificat interne, déjà inclus dans `compose.yaml`.
 
 ## Sauvegarde et restauration de la base
 

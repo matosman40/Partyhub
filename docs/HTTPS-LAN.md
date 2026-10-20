@@ -11,42 +11,27 @@ par défaut. Il faut une fois installer le **certificat racine** de Caddy sur ch
 
 Pour un accès depuis Internet, voir plutôt [REMOTE-ACCESS.md](REMOTE-ACCESS.md).
 
-## 1. Démarrer PartyHub en HTTPS
+## 1. Installer PartyHub en HTTPS
 
-Depuis le dossier de PartyHub (là où se trouve `compose.yaml`) :
-
-```bash
-cp -n .env.example .env
-```
-
-Dans `.env`, indiquez l'adresse du serveur sur le réseau local (celle que vous tapez aujourd'hui, sans `http://`
-ni port) :
+L'installation sert PartyHub en HTTPS directement, il n'y a pas d'étape supplémentaire. Depuis le dossier de PartyHub
+(là où se trouve `compose.yaml`) :
 
 ```bash
-PARTYHUB_HOST=192.168.1.156
+sudo sh install.sh
 ```
 
-Puis lancez PartyHub avec la surcouche HTTPS :
+Le script détecte l'adresse du serveur sur le réseau local (par exemple `192.168.1.156`), la note dans `.env` comme
+`PARTYHUB_HOST`, puis lance PartyHub. Pour la fixer soi-même : `sudo sh install.sh 192.168.1.156`.
 
-```bash
-sudo docker compose -f compose.yaml -f deploy/https/compose.https.yaml up -d
-```
+Ce que cela met en place :
 
-Cette commande :
+- Caddy sert `https://192.168.1.156` sur le port 443 ; PartyHub n'est plus accessible en clair sur le port 8282 ;
+- les cookies de session ne circulent qu'en HTTPS (réglage `COOKIE_SECURE`, activé par défaut) ;
+- Caddy transmet l'adresse réelle des joueurs à PartyHub (réglage `TRUST_PROXY`, réseau Docker par défaut).
 
-- lance Caddy sur le port 443 de la machine, qui sert `https://192.168.1.156` ;
-- ferme l'accès direct en `http://…:8282` (les cookies de session ne circulent qu'en HTTPS) ;
-- règle `COOKIE_SECURE=true` et `TRUST_PROXY` pour le réseau Docker.
-
-> Docker Compose 2.24.4 ou plus récent est nécessaire. Vérifiez avec `docker compose version`.
-
-Pour revenir au mode HTTP d'origine, relancez sans la surcouche :
-
-```bash
-sudo docker compose up -d
-```
-
-Pensez alors à remettre `COOKIE_SECURE=false` dans `.env` (le mode HTTP ne fonctionne plus avec `true`).
+Ces réglages, comme les autres de `.env`, se modifient dans l'administration (**Système → Réglages du serveur**).
+Seule l'adresse (`PARTYHUB_HOST`) et le port HTTPS (`PARTYHUB_HTTPS_PORT`) restent dans `.env` : ils dépendent du
+conteneur, pas du serveur. Après un changement de `PARTYHUB_HOST`, relancez avec `sudo docker compose up -d`.
 
 ## 2. Installer le certificat racine
 
@@ -65,7 +50,7 @@ Le certificat est le même pour tous les appareils. Il s'installe une fois par a
 volume `partyhub-caddy-data` n'est pas supprimé.
 
 > Version plus ancienne (sans la page) : le fichier se récupère sur le serveur avec
-> `sudo docker compose -f compose.yaml -f deploy/https/compose.https.yaml cp caddy:/data/caddy/pki/authorities/local/root.crt ./partyhub-root.crt`,
+> `sudo docker compose cp caddy:/data/caddy/pki/authorities/local/root.crt ./partyhub-root.crt`,
 > puis se transfère à l'appareil (AirDrop, mail, clé USB).
 
 ## 3. Vérifier
@@ -92,5 +77,5 @@ Si l'avertissement persiste, le certificat racine n'est pas installé ou n'est p
   Funambule indiquent que le téléphone ne transmet pas le mouvement, et le défi ne peut pas être réussi. Sur iPhone, un
   refus se corrige dans les réglages de Safari (Mouvement et orientation), ou en effaçant les données du site.
 - **En-tête `Permissions-Policy`** : PartyHub autorise lui-même le gyroscope, l'accéléromètre, le micro et la caméra
-  pour ses pages. Le proxy Caddy transmet cet en-tête sans le modifier, dans les deux surcouches Docker (et CasaOS).
-- La surcouche n'a été vérifiée qu'à la syntaxe de ses fichiers. Testez-la sur votre serveur avant une soirée.
+  pour ses pages. Le proxy Caddy transmet cet en-tête sans le modifier, dans Docker et sur CasaOS.
+- Testez la configuration sur votre serveur avant une soirée (étape 3).

@@ -30,6 +30,7 @@ import { UpdatePanel } from '../admin/UpdatePanel.js';
 import { BackButton } from '../components/BackButton.js';
 import { LogsAdmin } from '../admin/LogsAdmin.js';
 import { AiSettingsAdmin } from '../admin/AiSettingsAdmin.js';
+import { ServerSettings } from '../admin/ServerSettings.js';
 
 const ORIGIN_LABEL: Record<CatalogGame['origin'], string | null> = {
   builtin: null,
@@ -719,6 +720,10 @@ export function AdminPage() {
                 <AiSettingsAdmin />
               </section>
 
+              <section hidden={activeSub !== 'serveur'} className="card stack">
+                <h2>Réglages du serveur</h2>
+                <ServerSettings />
+              </section>
               <section hidden={activeSub !== 'reglages'} className="card">
                 <h2>Réglages généraux</h2>
                 <SettingsForm settings={overview.settings} onSaved={load} />

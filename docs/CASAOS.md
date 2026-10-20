@@ -20,7 +20,7 @@ sudo mkdir -p /DATA/AppData && cd /DATA/AppData
 sudo git clone https://github.com/matosman40/Partyhub.git partyhub
 cd partyhub
 sudo cp .env.example .env
-sudo nano .env                     # ADMIN_PASSWORD, et PARTYHUB_PORT si besoin
+sudo nano .env                     # ADMIN_PASSWORD, et l'adresse du serveur (voir HTTPS-LAN.md)
 sudo docker compose up -d
 sudo docker compose ps             # doit afficher « healthy » après quelques secondes
 ```

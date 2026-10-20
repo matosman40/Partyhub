@@ -23,7 +23,7 @@ STATE="$HERE/partyhub-update-state.py"
 INSTALL_DIR="${PARTYHUB_DIR:-/DATA/AppData/partyhub}"
 COMPOSE_FILE="${PARTYHUB_COMPOSE_FILE:-compose.yaml}"
 VOLUME="${PARTYHUB_VOLUME:-partyhub-data}"
-HEALTH_URL="${PARTYHUB_HEALTH_URL:-http://127.0.0.1:8282/api/health}"
+HEALTH_URL="${PARTYHUB_HEALTH_URL:-https://127.0.0.1/api/health}"
 HEALTH_TIMEOUT="${PARTYHUB_HEALTH_TIMEOUT:-240}"
 LOCK_FILE="${PARTYHUB_LOCK_FILE:-/run/partyhub-update.lock}"
 
@@ -45,7 +45,7 @@ finish() { # état, version demandée, version précédente, message
 wait_for_version() { # version attendue
   local deadline=$((SECONDS + HEALTH_TIMEOUT))
   while (( SECONDS < deadline )); do
-    if curl -fsS -m 5 "$HEALTH_URL" >/dev/null 2>&1 \
+    if curl -fsSk -m 5 "$HEALTH_URL" >/dev/null 2>&1 \
       && python3 -I "$STATE" version-live "$UPD/server-heartbeat.json" "$1" 120; then
       return 0
     fi

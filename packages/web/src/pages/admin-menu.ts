@@ -63,6 +63,11 @@ export const ADMIN_SUBSECTIONS: Record<AdminCategoryId, readonly AdminSubsection
     { id: 'personnages', title: 'Personnages illustrés', text: 'Importer des personnages en archive zip.' },
   ],
   systeme: [
+    {
+      id: 'serveur',
+      title: 'Réglages du serveur',
+      text: 'Tout ce qui se réglait dans le fichier .env : jeton GitHub, journal, sauvegardes, réseau, images.',
+    },
     { id: 'maj', title: 'Mise à jour', text: 'Version en cours et installation d’une version plus récente.' },
     { id: 'journal', title: 'Journal des erreurs', text: 'Erreurs signalées par l’application.' },
     { id: 'ia', title: 'Intelligence artificielle', text: 'Clés et réglages des fonctions d’IA.' },

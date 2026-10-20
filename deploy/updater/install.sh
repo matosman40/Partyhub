@@ -30,8 +30,13 @@ fi
 
 ENV_FILE=/etc/partyhub-updater.env
 if [[ ! -f "$ENV_FILE" ]]; then
+  # Contrôle après mise à jour : l’HTTPS de l’installation, à l’adresse PARTYHUB_HOST du .env (sinon localhost).
+  HOST_ADDR="$(sed -n 's/^PARTYHUB_HOST=//p' "$INSTALL_DIR/.env" 2>/dev/null | tail -n 1 | tr -d '\r')"
+  HTTPS_PORT="$(sed -n 's/^PARTYHUB_HTTPS_PORT=//p' "$INSTALL_DIR/.env" 2>/dev/null | tail -n 1 | tr -d '\r')"
+  HEALTH_HOST="${HOST_ADDR:-127.0.0.1}"
+  HEALTH_URL="https://$HEALTH_HOST${HTTPS_PORT:+:$HTTPS_PORT}/api/health"
   sed -e "s#^PARTYHUB_DIR=.*#PARTYHUB_DIR=$INSTALL_DIR#" \
-      -e "s#^PARTYHUB_HEALTH_URL=.*#PARTYHUB_HEALTH_URL=http://127.0.0.1:${PARTYHUB_PORT:-8282}/api/health#" \
+      -e "s#^PARTYHUB_HEALTH_URL=.*#PARTYHUB_HEALTH_URL=$HEALTH_URL#" \
       "$HERE/partyhub-updater.env.example" > "$ENV_FILE"
   chmod 644 "$ENV_FILE"
   echo "Réglages écrits dans $ENV_FILE."

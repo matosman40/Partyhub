@@ -26,6 +26,7 @@ import { gameDataFor } from './profiles/game-data.js';
 import { ProfileService } from './profiles/service.js';
 import type { AppConfig } from './config.js';
 import { createApp } from './http/app.js';
+import { ServerSettingsService } from './server-settings.js';
 import { Store } from './db/store.js';
 import type { Logger } from './logger.js';
 import type { RotatingFile } from './logs/rotating-file.js';
@@ -64,6 +65,12 @@ export interface ServerOptions {
   update?: { fetch?: typeof fetch; repo?: string; version?: string };
   /** Jeux de code ajoutés par lien HTTPS : réseau et DNS remplaçables. Relecture du dossier de dépôt : 0 = désactivée. */
   codeIntake?: { deps?: Partial<IntakeDeps>; watchEveryMs?: number };
+  /** Environnement du fichier .env, sans les réglages enregistrés (administration). Absent : process.env. */
+  bootEnv?: NodeJS.ProcessEnv;
+  /** Réglages appliqués au démarrage (voir server-settings.ts). */
+  bootOverrides?: Record<string, string>;
+  /** Redémarrage demandé depuis l’administration. Absent : la demande n’est pas proposée (tests). */
+  onRestart?: () => void;
 }
 
 /**
@@ -230,9 +237,15 @@ export async function createServer(opts: ServerOptions): Promise<PartyServer> {
     backup: () => dbBackups?.runNow() ?? { ok: false, error: 'sauvegardes non configurées' },
   });
   const stopUpdateHeartbeat = update.startHeartbeat();
+  const serverSettings = new ServerSettingsService(store, {
+    baseEnv: opts.bootEnv ?? process.env,
+    booted: opts.bootOverrides ?? {},
+  });
   const app = createApp({
     config,
     logger,
+    serverSettings,
+    onRestart: opts.onRestart,
     ai: aiRuntime,
     imageLibrary,
     gamePhotos,

@@ -79,11 +79,16 @@ import type { ImageLibrary } from '../images/library.js';
 import { GAME_PHOTO_MAX_BYTES, type GamePhotoRejection, type GamePhotoStore } from '../game-photos/store.js';
 import { GAME_IMAGE_ID } from '@partyhub/shared';
 import { aiProviderUpdateSchema } from '../ai/settings.js';
+import type { ServerSettingsService } from '../server-settings.js';
 import { PRESETS } from '../config.js';
 
 export interface AppDeps {
   config: AppConfig;
   logger: Logger;
+  /** Réglages du serveur modifiables depuis l’administration. */
+  serverSettings?: ServerSettingsService;
+  /** Redémarrage du serveur, demandé depuis l’administration (le conteneur redémarre seul). */
+  onRestart?: () => void;
   /** Journal fichier consultable par l’administrateur. Absent = pas de consultation (tests). */
   journal?: RotatingFile;
   store: Store;
@@ -1979,6 +1984,42 @@ export function createApp(deps: AppDeps): express.Express {
     }
     store.saveSettings(parsed.data);
     res.json({ settings: parsed.data });
+  });
+
+  /** Réglages du serveur : valeurs du fichier .env remplaçables ici. Les secrets ne sont jamais renvoyés. */
+  admin.get('/server-settings', (_req, res) => {
+    if (!deps.serverSettings) {
+      res.status(404).json({ error: 'Réglages non disponibles sur ce serveur.' });
+      return;
+    }
+    res.json(deps.serverSettings.list());
+  });
+
+  admin.put('/server-settings/:env', (req, res) => {
+    if (!deps.serverSettings) {
+      res.status(404).json({ error: 'Réglages non disponibles sur ce serveur.' });
+      return;
+    }
+    const env = req.params.env ?? '';
+    const result = deps.serverSettings.set(env, (req.body as { value?: unknown } | undefined)?.value);
+    if (!result.ok) {
+      res.status(result.status).json({ error: result.error });
+      return;
+    }
+    // Journal : le nom du réglage et l’action, jamais sa valeur (un secret peut en être une).
+    logger.info({ event: 'admin.server-setting', setting: env, action: result.action }, 'Réglage du serveur modifié');
+    res.json(deps.serverSettings.list());
+  });
+
+  admin.post('/server-settings/restart', (_req, res) => {
+    if (!deps.onRestart) {
+      res.status(404).json({ error: 'Le redémarrage n’est pas proposé sur ce serveur.' });
+      return;
+    }
+    logger.info({ event: 'admin.restart-requested' }, 'Redémarrage demandé par l’administrateur');
+    res.status(202).json({ ok: true });
+    // Laisse la réponse partir avant de fermer : Docker relance le conteneur (restart: unless-stopped).
+    setTimeout(() => deps.onRestart?.(), 300);
   });
 
   /** Mode test : curseur de cadence pour les émotions et les voix. Sans effet quand il est éteint. */
