@@ -434,7 +434,7 @@ export const promoteur: GameModule<PromoteurState, PromoteurSettings> = {
     name: 'Le Promoteur',
     description: 'Achetez des rues, construisez des immeubles et ruinez vos adversaires.',
     icon: '🏙️',
-    version: '1.0.0',
+    version: '1.0.1',
     apiVersion: 1,
     minPlayers: 2,
     maxPlayers: 6,

@@ -895,7 +895,7 @@ export const aventureIa: GameModule<AventureState, AventureSettings> = {
     description:
       'Une aventure racontée en direct : chacun incarne un personnage, vote les choix et affronte les ennemis tour par tour.',
     icon: '🐉',
-    version: '1.2.0',
+    version: '1.2.1',
     apiVersion: 1,
     minPlayers: 2,
     maxPlayers: MAX_CHARACTERS,

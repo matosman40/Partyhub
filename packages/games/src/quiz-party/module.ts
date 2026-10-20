@@ -260,7 +260,7 @@ export const quizParty: GameModule<QuizState, QuizSettings> = {
       'Questions à choix multiples, points et bonus de rapidité. Peut aussi partir des mots-clés de chaque joueur : l’IA écrit alors les questions.',
     icon: '🧠',
     category: 'quiz',
-    version: '1.1.0',
+    version: '1.1.1',
     apiVersion: 1,
     minPlayers: 1,
     maxPlayers: 12,

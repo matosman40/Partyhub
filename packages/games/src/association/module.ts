@@ -121,7 +121,7 @@ export const association: GameModule<AssociationState, AssociationSettings> = {
     name: 'Association express',
     description: 'Écrivez le premier mot qui vous vient, puis votez pour le plus drôle.',
     icon: '💭',
-    version: '1.0.0',
+    version: '1.0.1',
     apiVersion: 1,
     minPlayers: 2,
     maxPlayers: 12,

@@ -534,7 +534,7 @@ export function createRamiGame(): GameModule<RamiState, RamiSettings> {
     description:
       'Le rami à la française : ouvrez à 51 avec une tierce franche, posez tout, et gardez le plus petit total.',
     icon: '♦️',
-    version: '1.0.0',
+    version: '1.0.1',
     apiVersion: 1,
     minPlayers: 2,
     maxPlayers: 5,

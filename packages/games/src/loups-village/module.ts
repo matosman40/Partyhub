@@ -249,7 +249,7 @@ export const loupsVillage: GameModule<LoupsState, LoupsSettings> = {
     name: 'Les Loups du village',
     description: 'Les loups dévorent le village la nuit. Le jour, démasquez-les avant qu’il ne soit trop tard.',
     icon: '🐺',
-    version: '1.0.0',
+    version: '1.0.1',
     apiVersion: 1,
     minPlayers: 4,
     maxPlayers: 12,

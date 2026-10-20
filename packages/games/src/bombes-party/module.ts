@@ -649,7 +649,7 @@ export const bombesParty: GameModule<BombesPartyState, BombesPartySettings> = {
     name: 'Bombes party',
     description: 'Posez vos bombes, détruisez les caisses et soyez le dernier debout !',
     icon: '💣',
-    version: '1.0.0',
+    version: '1.0.1',
     apiVersion: 1,
     minPlayers: 2,
     maxPlayers: 10,

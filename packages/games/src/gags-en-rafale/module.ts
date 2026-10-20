@@ -178,7 +178,7 @@ export const gagsEnRafale: GameModule<GagsState, GagsSettings> = {
     name: 'Gags en rafale',
     description: 'Des gags absurdes d’une seconde : glissez, tapez, gonflez, ou restez de marbre. Seul ou à plusieurs.',
     icon: '🤪',
-    version: '1.0.0',
+    version: '1.0.1',
     apiVersion: 1,
     minPlayers: 1,
     maxPlayers: 12,

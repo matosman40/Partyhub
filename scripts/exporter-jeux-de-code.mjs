@@ -130,7 +130,7 @@ function moduleExportOf(text, file) {
 
 /**
  * Métadonnées du jeu : bloc manifest du module, ou bloc createSoloGame de l'export `exportName` (jeux solo).
- * La version est 1.0.0 pour un jeu solo, qui n'en déclare pas.
+ * Un jeu solo n'en déclare pas : sa version est celle du moteur partagé (solo/engine.ts).
  */
 function manifestOf(text, exportName) {
   let block;
@@ -225,6 +225,12 @@ async function exportGame(id) {
   const moduleFile = path.join(SRC, moduleRel);
   const moduleText = fs.readFileSync(moduleFile, 'utf8');
   const meta = manifestOf(moduleText, solo);
+  if (solo) {
+    const engine = fs.readFileSync(path.join(SRC, "solo/engine.ts"), "utf8");
+    const declared = /\bversion:\s*'(\d+\.\d+\.\d+)'/.exec(engine);
+    if (!declared) throw new Error("version du moteur solo introuvable");
+    meta.version = declared[1];
+  }
   if (meta.id !== id) throw new Error(`identifiant du module « ${meta.id} » ≠ « ${id} »`);
   const exported = solo ?? moduleExportOf(moduleText, moduleFile);
   const index = INDEX_VIEWS[id];

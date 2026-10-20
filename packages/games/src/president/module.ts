@@ -263,7 +263,7 @@ export function createPresidentGame(): GameModule<PresidentState, PresidentSetti
     name: 'Président',
     description: 'Le classique des soirées : montez en grade, de Trou du cul à Président.',
     icon: '👑',
-    version: '1.0.0',
+    version: '1.0.1',
     apiVersion: 1,
     minPlayers: 3,
     maxPlayers: 6,

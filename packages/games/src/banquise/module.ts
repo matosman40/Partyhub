@@ -306,7 +306,7 @@ export const banquise: GameModule<BanquiseState, BanquiseSettings> = {
     name: 'Banquise',
     description: 'Restez sur la glace : trois niveaux, des trous et du vent. Le dernier debout gagne.',
     icon: '🧊',
-    version: '1.0.0',
+    version: '1.0.1',
     apiVersion: 1,
     minPlayers: 2,
     maxPlayers: 8,

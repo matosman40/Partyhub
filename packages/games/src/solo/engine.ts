@@ -103,7 +103,7 @@ export function createSoloGame<B>(opts: SoloOptions<B>): GameModule<SoloState<B>
     name: opts.name,
     description: opts.description,
     icon: opts.icon,
-    version: '1.0.0',
+    version: '1.0.1',
     apiVersion: 1,
     minPlayers: 1,
     maxPlayers: 8,

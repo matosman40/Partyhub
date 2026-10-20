@@ -302,7 +302,7 @@ export const phrasesTrous: GameModule<PhrasesState, PhrasesSettings> = {
       'Remplissez le trou de la phrase avec la carte la plus drôle ou la plus juste, puis votez pour la meilleure. Les mots-clés de chacun servent de thème.',
     icon: '🧩',
     category: 'quiz',
-    version: '1.0.0',
+    version: '1.0.1',
     apiVersion: 1,
     minPlayers: 2,
     maxPlayers: 8,

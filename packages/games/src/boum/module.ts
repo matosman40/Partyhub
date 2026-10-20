@@ -536,7 +536,7 @@ export function createBoum(getBank: () => BankSnapshot = currentBoumBank): GameM
       name: 'BOUM !',
       description: 'Des manches tirées au hasard : écrivez, votez, bluffez. Chaque manche change de mode.',
       icon: '💥',
-      version: '1.0.0',
+      version: '1.0.1',
       apiVersion: 1,
       minPlayers: 2,
       maxPlayers: 12,
