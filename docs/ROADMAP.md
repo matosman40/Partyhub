@@ -33,6 +33,7 @@ Légende : **Fait** = dans le dépôt. **À faire** = pas commencé. **En cours*
 | 0.11.0 | Réactivité et capteurs | Funambule, Micro-défis, capteurs relayés, retours immédiats au téléphone, premier chargement allégé | **Publiée** (tag `v0.11.0`) |
 | 0.12.0 | Recettes et sauvegarde complète | Format 3 (recettes et écrans déclaratifs), catalogue en fiches, championnat, Banquise, sauvegarde avec les paquets installés | **Publiée** (tag `v0.12.0`) |
 | 0.15.0 | Jeux de code et magasin | Jeux de code signés (format 5) : isolat, vues en iframe, éditeur, dépôt, lien HTTPS, magasin en revue. Sons dans les paquets (format 4), mise à jour depuis l'administration, magasin de jeux. Les versions 0.13.0 et 0.14.0 n'ont pas été publiées : leur contenu part dans celle-ci | **En validation** sur la branche `format-code` (pas encore fusionnée, tag à poser après fusion) |
+| 0.16.0 | Administration et magasin | Menu de l’administration à sous-menus ; magasin en présentation de boutique (à la une, types, tri, fiche) ; gestion des profils de l’appareil ; correction de la suppression de profil | **Publiée** (tag `v0.16.0`) |
 | 1.0.0 | Première version stable | Critères ci-dessous | À faire |
 
 ## Détail par version

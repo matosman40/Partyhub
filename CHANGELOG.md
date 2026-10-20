@@ -4,6 +4,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 
 ## [Non publié]
 
+## [0.16.0] - 2026-10-20
+
 ### Ajouté
 
 - Administration : sous-menus dans chaque rubrique. Une rubrique ne présente plus qu'une page courte à la fois, avec un fil d'Ariane (menu, rubrique, sous-menu). L'adresse garde le choix (`?section=…&sub=…`), et le bouton précédent fonctionne.
