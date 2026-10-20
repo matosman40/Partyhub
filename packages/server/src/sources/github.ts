@@ -15,6 +15,8 @@ export const ALLOWED_HOSTS = [
   'objects.githubusercontent.com',
   'release-assets.githubusercontent.com',
   'github-releases.githubusercontent.com',
+  // Fichiers bruts d’un dépôt (manifestes, couvertures) : hors de l’API, donc hors de sa limite de requêtes.
+  'raw.githubusercontent.com',
 ];
 
 /** « auteur/depot » : caractères GitHub admis, sans chemin ni segment supplémentaire. */
@@ -53,7 +55,10 @@ export function parseSource(value: string): SourceRef | null {
   return null;
 }
 
-export class GitHubError extends Error {}
+export class GitHubError extends Error {
+  /** Quand GitHub limite les appels : heure (ms) à partir de laquelle un nouvel essai est utile. */
+  resetAt?: number;
+}
 
 export interface GitHubOptions {
   fetch?: typeof fetch;
@@ -74,11 +79,17 @@ export interface Release {
   checksum: ReleaseAsset;
 }
 
-async function request(url: string, accept: string, options: GitHubOptions): Promise<Response> {
+async function request(
+  url: string,
+  accept: string,
+  options: GitHubOptions,
+  extra: Record<string, string> = {},
+): Promise<Response> {
   const headers: Record<string, string> = {
     Accept: accept,
     'User-Agent': 'PartyHub',
     'X-GitHub-Api-Version': '2022-11-28',
+    ...extra,
   };
   if (options.token) headers.Authorization = `Bearer ${options.token}`;
 
@@ -92,14 +103,61 @@ async function request(url: string, accept: string, options: GitHubOptions): Pro
   if (!ALLOWED_HOSTS.includes(new URL(res.url || url).hostname)) {
     throw new GitHubError('Redirection vers un site non autorisé refusée.');
   }
+  // 304 : la version gardée par le serveur est toujours la bonne ; rien à relire.
+  if (res.status === 304) return res;
   if (res.status === 404) {
     throw new GitHubError('Dépôt ou release introuvable. Pour un dépôt privé, GITHUB_TOKEN doit être configuré.');
   }
-  if (res.status === 401 || res.status === 403) {
+  if (res.status === 429 || res.status === 401 || res.status === 403) {
+    const limited = res.status === 429 || res.headers.get('x-ratelimit-remaining') === '0';
+    if (limited) {
+      const err = new GitHubError('GitHub limite les appels pour le moment.');
+      const reset = Number(res.headers.get('x-ratelimit-reset'));
+      err.resetAt = Number.isFinite(reset) && reset > 0 ? reset * 1000 : Date.now() + 60 * 60 * 1000;
+      throw err;
+    }
     throw new GitHubError('GitHub refuse l’accès (jeton absent ou invalide, ou limite de requêtes atteinte).');
   }
   if (!res.ok) throw new GitHubError(`GitHub a répondu ${res.status}.`);
   return res;
+}
+
+/**
+ * Lecture conditionnelle d’un JSON de l’API : avec l’étiquette `etag` de la version gardée, GitHub répond 304 sans
+ * décompter de requête. Renvoie `modified: false` dans ce cas.
+ */
+export async function githubGetJsonConditional(
+  url: string,
+  etag: string | null,
+  options: GitHubOptions,
+): Promise<{ modified: false } | { modified: true; etag: string | null; data: unknown }> {
+  const res = await request(url, 'application/vnd.github+json', options, etag ? { 'If-None-Match': etag } : {});
+  if (res.status === 304) return { modified: false };
+  try {
+    return { modified: true, etag: res.headers.get('etag'), data: (await res.json()) as unknown };
+  } catch {
+    throw new GitHubError('Réponse GitHub illisible.');
+  }
+}
+
+/** Fichier brut d’un dépôt à une version (raw.githubusercontent.com). Sans jeton : il n’en a pas besoin. */
+export async function rawGithubFile(
+  repo: string,
+  filePath: string,
+  ref: string,
+  options: GitHubOptions,
+  maxBytes: number,
+): Promise<Uint8Array> {
+  const encoded = filePath.split('/').map(encodeURIComponent).join('/');
+  const url = `https://raw.githubusercontent.com/${repo}/${encodeURIComponent(ref)}/${encoded}`;
+  const res = await request(url, '*/*', { ...options, token: undefined });
+  const declared = Number(res.headers.get('content-length'));
+  if (Number.isFinite(declared) && declared > maxBytes) {
+    throw new GitHubError(`« ${filePath} » dépasse la taille autorisée.`);
+  }
+  const bytes = new Uint8Array(await res.arrayBuffer());
+  if (bytes.byteLength > maxBytes) throw new GitHubError(`« ${filePath} » dépasse la taille autorisée.`);
+  return bytes;
 }
 
 /** Lit une réponse JSON de l’API GitHub, avec les mêmes contrôles d’hôte et de statut que le reste. */

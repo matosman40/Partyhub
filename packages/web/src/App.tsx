@@ -19,6 +19,7 @@ const PlayerPage = lazy(() => import('./pages/PlayerPage.js').then((m) => ({ def
 const ObserverPage = lazy(() => import('./pages/ObserverPage.js').then((m) => ({ default: m.ObserverPage })));
 const ProfilePage = lazy(() => import('./pages/ProfilePage.js').then((m) => ({ default: m.ProfilePage })));
 const AdminPage = lazy(() => import('./pages/AdminPage.js').then((m) => ({ default: m.AdminPage })));
+const StorePage = lazy(() => import('./pages/StorePage.js').then((m) => ({ default: m.StorePage })));
 const DeviceTestPage = lazy(() => import('./pages/DeviceTestPage.js').then((m) => ({ default: m.DeviceTestPage })));
 const CertificatePage = lazy(() => import('./pages/CertificatePage.js').then((m) => ({ default: m.CertificatePage })));
 
@@ -84,6 +85,7 @@ function RoutedPages() {
           />
           <Route path="/spectate/:code" element={<ObserverPage />} />
           <Route path="/profil" element={<ProfilePage />} />
+          <Route path="/magasin" element={<StorePage />} />
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/test-appareils" element={<DeviceTestPage />} />
           <Route path="/certificat" element={<CertificatePage />} />

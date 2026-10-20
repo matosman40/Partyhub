@@ -38,9 +38,9 @@ describe('menu de l’administration', () => {
     }
   });
 
-  it('le magasin de jeux se trouve dans la rubrique Jeux', () => {
-    expect(ADMIN_SUBSECTIONS.jeux.map((s) => s.id)).toContain('magasin');
-    expect(ADMIN_SUBSECTIONS.creation.map((s) => s.id)).not.toContain('magasin');
+  it('le magasin de jeux est une page publique, hors de l’administration', () => {
+    expect(ADMIN_SUBSECTIONS.jeux.map((s) => s.id)).not.toContain('magasin');
+    expect(adminPageSource).not.toContain('StoreAdmin');
   });
 
   it('reconnaît uniquement les rubriques existantes', () => {

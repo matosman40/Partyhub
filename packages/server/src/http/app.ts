@@ -1047,11 +1047,11 @@ export function createApp(deps: AppDeps): express.Express {
   });
 
   /**
-   * Magasin : liste des jeux du dépôt de jeux, installation, mise à jour et suppression. Les jeux intégrés à
-   * l’application sont listés pour information seulement.
+   * Magasin : installation, mise à jour et suppression réservées à l’administrateur. La liste et les couvertures sont
+   * publiques (routes ci-dessous). Une actualisation manuelle est limitée à une par heure.
    */
-  admin.get('/store', async (req, res) => {
-    res.json(await gameStore.catalog(req.query.refresh === '1'));
+  admin.post('/store/refresh', async (_req, res) => {
+    res.json(await gameStore.catalog(true));
   });
 
   admin.put('/store/repo', (req, res) => {
@@ -1082,17 +1082,22 @@ export function createApp(deps: AppDeps): express.Express {
     res.json({ ok: true, closedRooms: result.closedRooms });
   });
 
-  /** Couverture d’un jeu du magasin, lue à sa version publiée. Jamais un fichier qui n’est pas une image. */
-  admin.get('/store/games/:id/cover', async (req, res) => {
+  /** Couverture d’un jeu du magasin, lue sur disque. Jamais un fichier qui n’est pas une image. */
+  api.get('/store/games/:id/cover', async (req, res) => {
     const image = await gameStore.cover(req.params.id ?? '');
     if (!image) {
       res.status(404).end();
       return;
     }
     res.setHeader('Content-Type', image.contentType);
-    res.setHeader('Cache-Control', 'private, max-age=600');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.end(Buffer.from(image.bytes));
+  });
+
+  /** Catalogue du magasin : lu dans l’instantané quotidien, sans appel à GitHub à chaque visite. */
+  api.get('/store', async (_req, res) => {
+    res.json(await gameStore.catalog(false));
   });
 
   /** Paquets .phgame : liste, envoi du fichier brut, activation et suppression. */

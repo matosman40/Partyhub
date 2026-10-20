@@ -92,6 +92,9 @@ export function HomePage() {
             <Link to="/join" onClick={() => setMenuOpen(false)}>
               Rejoindre une salle
             </Link>
+            <Link to="/magasin" onClick={() => setMenuOpen(false)}>
+              Magasin de jeux
+            </Link>
             <Link to="/profil" onClick={() => setMenuOpen(false)}>
               Mon profil
             </Link>

@@ -147,6 +147,7 @@ export async function createServer(opts: ServerOptions): Promise<PartyServer> {
   // Magasin : les jeux intégrés au code ne sont jamais téléchargés, ils restent dans l’application.
   const builtinIds = new Set(gameRegistry.map((game) => game.manifest.id));
   const gameStore = new StoreService(store, packageSources, packages, {
+    dataDir: config.dataDir,
     defaultRepo: config.storeRepo,
     token: config.githubToken,
     isBuiltin: (gameId) => builtinIds.has(gameId),

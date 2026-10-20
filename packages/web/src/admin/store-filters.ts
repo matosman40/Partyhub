@@ -20,6 +20,8 @@ export interface StoreGame {
   pendingVersion: string | null;
   autoUpdate: boolean;
   lastError: string | null;
+  /** Taille du paquet de la dernière version, en octets ; null si inconnue. */
+  size: number | null;
 }
 
 export type StoreFilter = 'tous' | 'a_installer' | 'installes' | 'mises_a_jour' | 'revue';
@@ -103,4 +105,12 @@ export function matchesType(game: StoreGame, type: string | null): boolean {
  */
 export function featuredGame(games: readonly StoreGame[]): StoreGame | null {
   return games.find((g) => !g.builtin && g.hasCover) ?? games[0] ?? null;
+}
+
+/** Taille lisible d’un paquet : « 840 o », « 412 Ko », « 2,4 Mo ». Tiret si inconnue. */
+export function formatSize(bytes: number | null): string {
+  if (bytes === null) return '—';
+  if (bytes < 1024) return `${bytes} o`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} Ko`;
+  return `${(bytes / (1024 * 1024)).toFixed(1).replace('.', ',')} Mo`;
 }

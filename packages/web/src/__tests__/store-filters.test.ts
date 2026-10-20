@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   featuredGame,
+  formatSize,
   matchesFilter,
   matchesQuery,
   matchesType,
@@ -27,6 +28,7 @@ function game(overrides: Partial<StoreGame> = {}): StoreGame {
     pendingVersion: null,
     autoUpdate: false,
     lastError: null,
+    size: null,
     ...overrides,
   };
 }
@@ -120,5 +122,14 @@ describe('tri, types et jeu mis en avant', () => {
   it('sans couverture, met en avant le premier jeu ; sans jeu, rien', () => {
     expect(featuredGame([game({ id: 'x' })])?.id).toBe('x');
     expect(featuredGame([])).toBeNull();
+  });
+});
+
+describe('taille des paquets', () => {
+  it('affiche des octets, des kilo-octets ou des méga-octets, en français', () => {
+    expect(formatSize(null)).toBe('—');
+    expect(formatSize(840)).toBe('840 o');
+    expect(formatSize(412 * 1024)).toBe('412 Ko');
+    expect(formatSize(Math.round(2.4 * 1024 * 1024))).toBe('2,4 Mo');
   });
 });

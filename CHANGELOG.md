@@ -4,6 +4,17 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 
 ## [Non publié]
 
+### Ajouté
+
+- Magasin de jeux accessible à tous, depuis l'accueil (menu, « Magasin de jeux », adresse `/magasin`). Il n'est plus dans l'administration. Installer, mettre à jour et supprimer demandent la session administrateur.
+- Magasin : couvertures et taille de chaque paquet affichées, fiche enrichie.
+
+### Modifié
+
+- Magasin : le catalogue est gardé sur le serveur (`DATA_DIR/store`) et relu une fois par jour, au lieu de toutes les dix minutes. Les fiches et couvertures passent par les fichiers bruts du dépôt, hors de la limite de requêtes de l'API.
+- Magasin : « Actualiser le catalogue » est limité à une fois par heure. Une limite de GitHub garde l'instantané et indique l'heure de reprise.
+- Routes : `GET /api/store` et la couverture sont publiques ; `GET /api/admin/store` devient `POST /api/admin/store/refresh`.
+
 ## [0.16.0] - 2026-10-20
 
 ### Ajouté
