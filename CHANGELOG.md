@@ -52,6 +52,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 
 - Vue TV sur téléphone : le fond couvre toute la hauteur de l’écran, sans bande sombre sous le contenu.
 
+- Jeu Boum : le libellé des aperçus de banque reste lisible en thème clair.
+
 - Karaoké : les étoiles de notation et les titres longs passent à la ligne sur petit écran. Un passage arrêté est affiché comme tel, et non « sans note ». Un micro refusé ou en panne arrête le passage.
 
 - Jeux de code : `structuredClone` est disponible dans l’isolat, comme l’utilisent les jeux.

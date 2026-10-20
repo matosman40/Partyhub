@@ -8937,6 +8937,10 @@ html:not([data-theme='dark']) .corner-drawer {
   margin: 0 0 4px;
   font-size: 1.1rem;
 }
+/* L'aperçu garde un fond sombre dans les deux thèmes : son libellé secondaire ne suit pas le thème clair. */
+.boum-preview .muted {
+  color: #b3acdb;
+}
 .boum-blank {
   display: inline-block;
   min-width: 4em;
