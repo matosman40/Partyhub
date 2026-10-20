@@ -42,8 +42,9 @@ trap 'rm -rf "$WORK"' EXIT
 # 1. Contrôles des dossiers, avant de toucher au dépôt. Sortie : une ligne « identifiant version » par jeu.
 LISTE="$WORK/jeux.txt"
 node - "$SOURCE" >"$LISTE" <<'JS'
-const fs = require('node:fs');
-const path = require('node:path');
+// Node ancien (12 et plus) : pas de préfixe « node: » ni d'opérateur « ?. » dans ce script.
+const fs = require('fs');
+const path = require('path');
 const root = process.argv[2];
 const GAME_ID = /^[a-z0-9][a-z0-9-]{1,47}$/;
 const VERSION = /^\d+\.\d+\.\d+$/;
@@ -77,7 +78,7 @@ for (const id of fs
   let m;
   try {
     m = JSON.parse(fs.readFileSync(file, 'utf8'));
-  } catch {
+  } catch (err) {
     errors.push(`${id} : manifest.json n'est pas du JSON valide`);
     continue;
   }
@@ -92,7 +93,8 @@ for (const id of fs
     }
   } else if (m.kind === 'declarative') {
     // Jeu déclaratif (cartes, plateau, questions, recettes) : son module doit être nommé. Le paquet est fait par le magasin.
-    if (!Array.isArray(m.requires?.modules) || m.requires.modules.length === 0) {
+    const modules = m.requires && m.requires.modules;
+    if (!Array.isArray(modules) || modules.length === 0) {
       errors.push(`${id} : "requires.modules" doit nommer le module du jeu`);
     }
   } else {
