@@ -4,6 +4,16 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 
 ## [Non publié]
 
+### Ajouté
+
+- Administration : sous-menus dans chaque rubrique. Une rubrique ne présente plus qu'une page courte à la fois, avec un fil d'Ariane (menu, rubrique, sous-menu). L'adresse garde le choix (`?section=…&sub=…`), et le bouton précédent fonctionne.
+- Magasin de jeux : recherche par nom, auteur, type ou description ; filtres « Tous », « À installer », « Installés », « Mises à jour » et « En revue » ; fiche détaillée de chaque jeu (identifiant, versions disponible, installée et en attente, auteur, type, mise à jour automatique, description complète).
+
+### Modifié
+
+- Le magasin de jeux est rangé dans la rubrique *Jeux*, avec l'activation et la présentation des jeux.
+- Profils de l'appareil : chaque profil de la liste peut être choisi ou retiré, y compris ceux qui ne sont pas actifs. Le retrait demande confirmation et ne touche pas au compte.
+
 ## [0.15.0] - 2026-10-19
 
 ### Ajouté

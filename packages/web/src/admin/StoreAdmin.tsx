@@ -1,25 +1,13 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { api } from '../api.js';
-
-type StoreStatus = 'integre' | 'non_installe' | 'a_jour' | 'mise_a_jour' | 'erreur' | 'en_revue';
-
-interface StoreGame {
-  id: string;
-  tag: string;
-  latestVersion: string;
-  name: string;
-  description: string;
-  author: string;
-  moduleLabel: string;
-  hasCover: boolean;
-  error: string | null;
-  builtin: boolean;
-  status: StoreStatus;
-  installedVersion: string | null;
-  pendingVersion: string | null;
-  autoUpdate: boolean;
-  lastError: string | null;
-}
+import {
+  FILTER_LABEL,
+  matchesFilter,
+  matchesQuery,
+  type StoreFilter,
+  type StoreGame,
+  type StoreStatus,
+} from './store-filters.js';
 
 interface Catalog {
   repo: string;
@@ -65,6 +53,9 @@ export function StoreAdmin({ onChanged }: { onChanged: () => void }) {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [query, setQuery] = useState('');
+  const [filter, setFilter] = useState<StoreFilter>('tous');
+  const [openDetails, setOpenDetails] = useState<string | null>(null);
 
   async function load(refresh = false) {
     try {
@@ -132,6 +123,9 @@ export function StoreAdmin({ onChanged }: { onChanged: () => void }) {
     });
   }
 
+  const games = catalog?.games ?? [];
+  const visible = games.filter((g) => matchesFilter(g, filter) && matchesQuery(g, query));
+
   return (
     <div className="stack">
       <p className="muted">
@@ -185,8 +179,40 @@ export function StoreAdmin({ onChanged }: { onChanged: () => void }) {
         <p className="muted">Aucun jeu publié dans ce dépôt pour l’instant.</p>
       )}
 
+      {games.length > 0 && (
+        <div className="store-toolbar">
+          <label className="field">
+            <span>Rechercher</span>
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Nom, auteur, type ou description"
+            />
+          </label>
+          <div className="store-filters" role="group" aria-label="Filtrer les jeux">
+            {(Object.keys(FILTER_LABEL) as StoreFilter[]).map((key) => (
+              <button
+                key={key}
+                type="button"
+                className={`btn small ${filter === key ? 'primary' : 'ghost'}`}
+                aria-pressed={filter === key}
+                onClick={() => setFilter(key)}
+              >
+                {FILTER_LABEL[key]}
+              </button>
+            ))}
+          </div>
+          <p className="muted small" aria-live="polite">
+            {visible.length} jeu(x) affiché(s) sur {games.length}.
+          </p>
+        </div>
+      )}
+
+      {games.length > 0 && visible.length === 0 && <p className="muted">Aucun jeu ne correspond à ce filtre.</p>}
+
       <ul className="store-grid">
-        {catalog?.games.map((game) => (
+        {visible.map((game) => (
           <li key={game.id} className="store-card">
             {game.hasCover ? (
               <img
@@ -214,6 +240,44 @@ export function StoreAdmin({ onChanged }: { onChanged: () => void }) {
               {game.autoUpdate && <span className="muted small">Mise à jour automatique chaque jour</span>}
               {game.error && <span className="error small">{game.error}</span>}
               {game.lastError && <span className="error small">Dernier échec : {game.lastError}</span>}
+              <button
+                type="button"
+                className="btn ghost small"
+                aria-expanded={openDetails === game.id}
+                onClick={() => setOpenDetails(openDetails === game.id ? null : game.id)}
+              >
+                {openDetails === game.id ? 'Masquer les détails' : 'Détails'}
+              </button>
+              {openDetails === game.id && (
+                <dl className="store-details">
+                  <dt>Identifiant</dt>
+                  <dd>
+                    <code>{game.id}</code>
+                  </dd>
+                  <dt>Version disponible</dt>
+                  <dd>{game.latestVersion}</dd>
+                  <dt>Version installée</dt>
+                  <dd>{game.installedVersion ?? 'aucune'}</dd>
+                  {game.pendingVersion && (
+                    <>
+                      <dt>Version en attente de revue</dt>
+                      <dd>{game.pendingVersion}</dd>
+                    </>
+                  )}
+                  <dt>Auteur</dt>
+                  <dd>{game.author || 'non renseigné'}</dd>
+                  <dt>Type</dt>
+                  <dd>{game.moduleLabel}</dd>
+                  <dt>Mise à jour automatique</dt>
+                  <dd>{game.autoUpdate ? 'oui, chaque jour' : 'non'}</dd>
+                  {game.description && (
+                    <>
+                      <dt>Description</dt>
+                      <dd>{game.description}</dd>
+                    </>
+                  )}
+                </dl>
+              )}
             </div>
             <div className="store-card-actions">
               {!game.builtin && (game.status === 'non_installe' || game.status === 'erreur') && (

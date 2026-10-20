@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { hashText } from '@partyhub/shared';
 import { CreateProfileForm } from './CreateProfileForm.js';
 import { useDeviceProfiles } from './useProfile.js';
-import { forgetDeviceProfile, switchDeviceProfile } from './session.js';
+import { forgetDeviceProfile, switchDeviceProfile, type DeviceProfile } from './session.js';
 
 /**
  * Profil de cet appareil : le profil actif s’affiche, et on en choisit un autre d’un geste.
@@ -14,6 +14,18 @@ export function ProfileSwitcher({ onChange }: { onChange?: () => void }) {
   const [open, setOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   if (!active) return null;
+
+  /** Retire un profil de la liste de l’appareil, après confirmation. Le compte, lui, reste intact. */
+  function forget(profile: DeviceProfile) {
+    if (
+      !window.confirm(
+        `Retirer « ${profile.name} » de cet appareil ? Le compte reste en place. Sans mot de passe, ce profil ne pourra plus être rouvert.`,
+      )
+    )
+      return;
+    forgetDeviceProfile(profile.token);
+    onChange?.();
+  }
 
   const initial = active.name.trim().charAt(0).toUpperCase() || '?';
   const hue = hashText(active.id) % 360;
@@ -38,26 +50,35 @@ export function ProfileSwitcher({ onChange }: { onChange?: () => void }) {
 
       {open && (
         <div id="profile-switcher-panel" className="profile-panel" role="group" aria-label="Profils sur cet appareil">
-          {list.length > 1 && (
-            <ul className="profile-list">
-              {list.map((p) => (
-                <li key={p.id}>
-                  <button
-                    type="button"
-                    className={`chip${p.id === active.id ? ' active' : ''}`}
-                    aria-pressed={p.id === active.id}
-                    onClick={() => {
-                      switchDeviceProfile(p.token);
-                      setOpen(false);
-                      onChange?.();
-                    }}
-                  >
-                    {p.name}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
+          <h3 className="profile-panel-title">Profils sur cet appareil</h3>
+          <ul className="profile-list" aria-label="Liste des profils">
+            {list.map((p) => (
+              <li key={p.id} className="profile-row">
+                <button
+                  type="button"
+                  className={`chip${p.id === active.id ? ' active' : ''}`}
+                  aria-pressed={p.id === active.id}
+                  disabled={p.id === active.id}
+                  onClick={() => {
+                    switchDeviceProfile(p.token);
+                    setOpen(false);
+                    onChange?.();
+                  }}
+                >
+                  {p.name}
+                  {p.id === active.id ? ' (actif)' : ''}
+                </button>
+                <button
+                  type="button"
+                  className="link-btn small"
+                  aria-label={`Retirer ${p.name} de cet appareil`}
+                  onClick={() => forget(p)}
+                >
+                  Retirer
+                </button>
+              </li>
+            ))}
+          </ul>
 
           {creating ? (
             <CreateProfileForm
@@ -78,23 +99,6 @@ export function ProfileSwitcher({ onChange }: { onChange?: () => void }) {
             <Link to="/profil" onClick={() => setOpen(false)}>
               Mon profil et mon personnage
             </Link>
-            <button
-              type="button"
-              className="link-btn"
-              onClick={() => {
-                if (
-                  !window.confirm(
-                    `Retirer « ${active.name} » de cet appareil ? Sans mot de passe, ce profil ne pourra plus être rouvert.`,
-                  )
-                )
-                  return;
-                forgetDeviceProfile(active.token);
-                setOpen(false);
-                onChange?.();
-              }}
-            >
-              Retirer ce profil de cet appareil
-            </button>
           </div>
         </div>
       )}

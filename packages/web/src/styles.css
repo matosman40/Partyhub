@@ -8413,6 +8413,15 @@ html:not([data-theme='dark']) .corner-drawer {
   margin: 0.2rem 0 0;
 }
 
+/* Les sections d’une rubrique ne s’affichent que dans leur sous-menu. */
+.admin [hidden] {
+  display: none !important;
+}
+
+.admin-sub-title {
+  margin: 0.2rem 0 0;
+}
+
 /* Journal des erreurs (administration). */
 .log-toolbar {
   display: flex;
@@ -11216,4 +11225,56 @@ input[type='file']::file-selector-button {
 .update-releases summary {
   cursor: pointer;
   overflow-wrap: anywhere;
+}
+
+/* Magasin de jeux : recherche, filtres et fiche détaillée. */
+.store-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem 1rem;
+}
+
+.store-toolbar .field {
+  flex: 1 1 260px;
+}
+
+.store-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.store-details {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.25rem 0.75rem;
+  margin: 0.25rem 0 0;
+  font-size: 0.9rem;
+}
+
+.store-details dt {
+  color: var(--muted);
+}
+
+.store-details dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Profils de l’appareil : une ligne par profil, avec son action de retrait. */
+.profile-panel-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+}
+
+.profile-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.profile-row .link-btn {
+  white-space: nowrap;
 }
