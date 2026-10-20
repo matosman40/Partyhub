@@ -7,14 +7,14 @@ name: partyhub
 
 services:
   partyhub:
-    image: ghcr.io/matosman40/partyhub:0.16.0
+    image: ghcr.io/matosman40/partyhub:0.17.0
     pull_policy: missing
     container_name: partyhub
     restart: unless-stopped
     stop_grace_period: 20s
-    ports:
-      # Seul le port HTTP est publié ; le port interne n'est jamais exposé directement.
-      - '${PARTYHUB_PORT:-8282}:8282'
+    # Aucun port publié : seul Caddy (service ci-dessous) reçoit les connexions, en HTTPS.
+    expose:
+      - '8282'
     environment:
       PORT: '8282'
       HOST: '0.0.0.0'
@@ -26,8 +26,8 @@ services:
       LOG_DIR: '${LOG_DIR:-}'
       LOG_MAX_MB: '${LOG_MAX_MB:-5}'
       LOG_FILES: '${LOG_FILES:-6}'
-      COOKIE_SECURE: '${COOKIE_SECURE:-false}'
-      TRUST_PROXY: '${TRUST_PROXY:-loopback}'
+      COOKIE_SECURE: '${COOKIE_SECURE:-true}'
+      TRUST_PROXY: '${TRUST_PROXY:-172.16.0.0/12}'
       DB_BACKUP_EVERY_HOURS: '${DB_BACKUP_EVERY_HOURS:-24}'
       DB_BACKUP_KEEP: '${DB_BACKUP_KEEP:-7}'
       ANTHROPIC_API_KEY: '${ANTHROPIC_API_KEY:-}'
@@ -97,12 +97,36 @@ services:
         fr_FR: Jeux de soirée sur votre réseau local
       developer: PartyHub contributors
       category: Games
-      port_map: '${PARTYHUB_PORT:-8282}'
+      port_map: '${PARTYHUB_HTTPS_PORT:-443}'
       index: /
       title:
         en_US: PartyHub
         fr_FR: PartyHub
 
+  # HTTPS sur le réseau local : Caddy présente un certificat interne (voir docs/HTTPS-LAN.md).
+  caddy:
+    image: caddy:2.10-alpine
+    pull_policy: missing
+    container_name: partyhub-caddy
+    restart: unless-stopped
+    depends_on:
+      - partyhub
+    environment:
+      PARTYHUB_HOST: '${PARTYHUB_HOST:-localhost}'
+    ports:
+      - '${PARTYHUB_HTTPS_PORT:-443}:443'
+    volumes:
+      - ./deploy/https/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    security_opt:
+      - no-new-privileges:true
+
 volumes:
   partyhub-data:
     name: partyhub-data
+  # Le dossier caddy-data contient l'autorité interne : le supprimer oblige à réinstaller le certificat racine.
+  caddy-data:
+    name: partyhub-caddy-data
+  caddy-config:
+    name: partyhub-caddy-config

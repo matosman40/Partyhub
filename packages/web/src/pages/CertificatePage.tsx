@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BackButton } from '../components/BackButton.js';
+import { Breadcrumb } from '../components/Breadcrumb.js';
 import { detectPlatform, type Platform } from '../certificate/platform.js';
 
 /** Fichier servi par Caddy : le certificat racine de l’autorité interne. */
@@ -75,7 +75,7 @@ export function CertificatePage({ platform: forced }: { platform?: Platform }) {
   return (
     <main className="page certificate fade-in" style={{ maxWidth: 680 }}>
       <p className="page-nav">
-        <BackButton to="/">Retour à l’accueil</BackButton>
+        <Breadcrumb items={[{ label: 'Accueil', to: '/' }, { label: 'Certificat HTTPS' }]} />
       </p>
 
       <h1>Installer le certificat</h1>

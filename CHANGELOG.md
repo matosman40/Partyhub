@@ -4,6 +4,28 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 
 ## [Non publié]
 
+## [0.17.0] - 2026-10-20
+
+### Ajouté
+
+- Réglages du serveur dans l'administration (Système → Réglages du serveur) : jeton GitHub, mot de passe administrateur, journal, sauvegardes, réseau, images et réglages d'IA sont modifiables sans éditer `.env`. Une valeur saisie l'emporte sur `.env`, elle s'applique après un redémarrage (bouton proposé). Les secrets ne sont jamais réaffichés, sont chiffrés dans la base, et une combinaison qui casserait la configuration est refusée.
+- Installation directe en HTTPS : `sudo sh install.sh` détecte l'adresse du serveur, prépare `.env`, démarre PartyHub avec Caddy et attend qu'il réponde.
+
+- Magasin de jeux accessible à tous, depuis l'accueil (menu, « Magasin de jeux », adresse `/magasin`). Il n'est plus dans l'administration. Installer, mettre à jour et supprimer demandent la session administrateur.
+- Magasin : couvertures et taille de chaque paquet affichées, fiche enrichie.
+- Recherche unique (Ctrl/Cmd+K, ou le bouton « Rechercher » sur l'accueil, l'administration et le magasin) : une page, une sous-section de l'administration ou un jeu. Se pilote aux flèches et à Entrée, donc à la télécommande d'un téléviseur. Le clavier de l'écran ne s'ouvre que sur un appareil avec pavé.
+- Pages récentes : la recherche propose les dernières pages ouvertes, et l'administration propose « Reprendre là où vous étiez » (gardé sur l'appareil seulement).
+- Fil d'Ariane commun (Accueil › … › page) sur le magasin, le profil, le certificat, le test d'appareils, « Rejoindre une salle » et l'administration, au lieu des boutons « retour » dispersés.
+- Accueil : quatre actions visibles et grandes (Rejoindre une salle, Magasin de jeux, Rechercher, Administration), à la place de la carte « Magasin ».
+- Magasin : recherche, filtre, type et tri sont dans l'adresse (`?q=…&f=…&t=…&s=…`) : un lien partagé ouvre la même liste.
+- Liens croisés : fiche d'un jeu du magasin vers « Paquets et sources » (en revue) ou vers la présentation du jeu (installé) ; réglages du serveur vers les clés d'IA et le magasin.
+
+### Modifié
+
+- Magasin : le catalogue est gardé sur le serveur (`DATA_DIR/store`) et relu une fois par jour, au lieu de toutes les dix minutes. Les fiches et couvertures passent par les fichiers bruts du dépôt, hors de la limite de requêtes de l'API.
+- Magasin : « Actualiser le catalogue » est limité à une fois par heure. Une limite de GitHub garde l'instantané et indique l'heure de reprise.
+- Routes : `GET /api/store` et la couverture sont publiques ; `GET /api/admin/store` devient `POST /api/admin/store/refresh`.
+
 ## [0.16.0] - 2026-10-20
 
 ### Ajouté
@@ -13,7 +35,7 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 
 ### Modifié
 
-- Le magasin de jeux est rangé dans la rubrique *Jeux*, avec l'activation et la présentation des jeux.
+- Le magasin de jeux est rangé dans la rubrique _Jeux_, avec l'activation et la présentation des jeux.
 - Profils de l'appareil : chaque profil de la liste peut être choisi ou retiré, y compris ceux qui ne sont pas actifs. Le retrait demande confirmation et ne touche pas au compte.
 - Page de profil : une navigation par rubriques (statistiques, personnage, pseudo, micro et caméra, mot de passe, voix, BOUM !, suppression) évite de faire défiler une page longue.
 
@@ -25,15 +47,15 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 
 ### Ajouté
 
-- Jeux de code (format 5) : un jeu écrit en TypeScript et React tourne dans un isolat V8 séparé, et ses vues dans un iframe sandboxé servi par le serveur. Chaque jeu est limité à 64 Mio de mémoire et à 2 secondes par appel ; au cinquième dépassement, il est arrêté. Le paquet est signé hors de PartyHub avec la clé de son auteur, puis reçu par le dossier `DATA_DIR/depot-jeux`, par un lien HTTPS, par téléversement ou par le magasin. Seules les clés de `DATA_DIR/cles-de-confiance/` sont acceptées. Rien ne s’active sans approbation dans *Jeux de code* : la revue montre les fichiers, leurs empreintes, le code serveur et le code des vues, et la différence avec la version active. Le format demande PartyHub 0.15.0 au minimum. Documentation : `docs/JEU-DE-CODE.md`, `docs/PROMPT-JEU-DE-CODE.md`.
+- Jeux de code (format 5) : un jeu écrit en TypeScript et React tourne dans un isolat V8 séparé, et ses vues dans un iframe sandboxé servi par le serveur. Chaque jeu est limité à 64 Mio de mémoire et à 2 secondes par appel ; au cinquième dépassement, il est arrêté. Le paquet est signé hors de PartyHub avec la clé de son auteur, puis reçu par le dossier `DATA_DIR/depot-jeux`, par un lien HTTPS, par téléversement ou par le magasin. Seules les clés de `DATA_DIR/cles-de-confiance/` sont acceptées. Rien ne s’active sans approbation dans _Jeux de code_ : la revue montre les fichiers, leurs empreintes, le code serveur et le code des vues, et la différence avec la version active. Le format demande PartyHub 0.15.0 au minimum. Documentation : `docs/JEU-DE-CODE.md`, `docs/PROMPT-JEU-DE-CODE.md`.
 
 - Éditeur de jeux de code dans l’administration : créer un jeu depuis un modèle, modifier ses fichiers, fixer son nom, sa description et sa version, puis le vérifier par une partie jouée par des robots. L’éditeur ne propose aucune clé de signature : la commande `phgame pack` s’exécute hors de PartyHub.
 
-- Magasin de jeux : la section *Magasin de jeux* de l’administration liste les jeux publiés dans le dépôt de jeux (`matosman40/jeux-partyhub` par défaut, variable `PARTYHUB_STORE_REPO`, modifiable dans l’administration). Chaque jeu montre sa couverture, son auteur, sa version et son état. Un jeu s’installe d’un clic, se met à jour chaque jour ou à la demande, et se supprime ; ses parties en cours sont fermées. Les paquets déclaratifs (cartes, plateau, questions, recettes) s’installent. Les jeux de code s’installent aussi, mais attendent l’approbation d’un administrateur (voir *Jeux de code* ci-dessous). Les jeux écrits dans le code de PartyHub restent dans l’application. Guide : `docs/MAGASIN.md`.
+- Magasin de jeux : la section _Magasin de jeux_ de l’administration liste les jeux publiés dans le dépôt de jeux (`matosman40/jeux-partyhub` par défaut, variable `PARTYHUB_STORE_REPO`, modifiable dans l’administration). Chaque jeu montre sa couverture, son auteur, sa version et son état. Un jeu s’installe d’un clic, se met à jour chaque jour ou à la demande, et se supprime ; ses parties en cours sont fermées. Les paquets déclaratifs (cartes, plateau, questions, recettes) s’installent. Les jeux de code s’installent aussi, mais attendent l’approbation d’un administrateur (voir _Jeux de code_ ci-dessous). Les jeux écrits dans le code de PartyHub restent dans l’application. Guide : `docs/MAGASIN.md`.
 
 - Sons dans les paquets (format 4) : un paquet peut porter des bruitages (`.ogg` ou `.mp3`) et une musique de partie, déclarés dans `game/definition.json` (bloc `sons`). Ils remplacent les bruitages globaux pendant que la salle du jeu est affichée, et la musique de partie tourne sur l’écran principal. Budgets : 512 Ko par fichier, 2 Mio par paquet, 16 fichiers. Le format 4 demande PartyHub 0.14.0 au minimum. Route publique : `GET /api/game-sounds/<identifiant>`. Documentation : `docs/PHGAME.md`, section Sons.
 
-- Mise à jour depuis l’administration : la rubrique *Système* affiche la version en cours et le changelog de chaque version publiée, et propose d’installer une version plus récente. Avant chaque mise à jour, la base est copiée. Pendant qu’elle est demandée, aucune nouvelle partie ne démarre, et une partie en cours est menée à son terme. Un service installé une fois sur l’hôte (`deploy/updater/install.sh`) fait le travail : si le serveur ne répond pas dans la nouvelle version, il revient à la précédente, et remet la base d’avant si la nouvelle l’avait migrée. L’application n’a pas accès à Docker. Le guide est dans `docs/MISE-A-JOUR.md`. Pour une mise à jour à la main, le dépôt se place désormais sur un tag : `git fetch --tags`, puis `git checkout vX.Y.Z`.
+- Mise à jour depuis l’administration : la rubrique _Système_ affiche la version en cours et le changelog de chaque version publiée, et propose d’installer une version plus récente. Avant chaque mise à jour, la base est copiée. Pendant qu’elle est demandée, aucune nouvelle partie ne démarre, et une partie en cours est menée à son terme. Un service installé une fois sur l’hôte (`deploy/updater/install.sh`) fait le travail : si le serveur ne répond pas dans la nouvelle version, il revient à la précédente, et remet la base d’avant si la nouvelle l’avait migrée. L’application n’a pas accès à Docker. Le guide est dans `docs/MISE-A-JOUR.md`. Pour une mise à jour à la main, le dépôt se place désormais sur un tag : `git fetch --tags`, puis `git checkout vX.Y.Z`.
 
 - Paquets `.phgame` : script npm racine `npm run phgame` (`pack` pour construire un paquet, `check` pour le vérifier et lancer une partie de contrôle avec des robots). Les quatre paquets d’exemple passent ce contrôle.
 

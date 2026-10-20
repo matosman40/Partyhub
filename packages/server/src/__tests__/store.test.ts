@@ -1,4 +1,5 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { createHash } from 'node:crypto';
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -42,23 +43,58 @@ const json = (value: unknown, status: number, url: URL) =>
   reply(JSON.stringify(value), status, url, 'application/json');
 const notFound = (url: URL) => json({ message: 'Not Found' }, 404, url);
 
+/** Réponse de GitHub à une limite atteinte : les en-têtes indiquent l’heure de reprise (une heure plus tard). */
+function limitedReply(url: URL, nowMs: number): Response {
+  const res = new Response(JSON.stringify({ message: 'API rate limit exceeded' }), {
+    status: 403,
+    headers: {
+      'content-type': 'application/json',
+      'x-ratelimit-remaining': '0',
+      'x-ratelimit-reset': String(Math.floor(nowMs / 1000) + 3600),
+    },
+  });
+  Object.defineProperty(res, 'url', { value: url.href });
+  return res;
+}
+
+/** Étiquette de version de la liste des tags : change avec la liste, comme celle de GitHub. */
+const tagsEtag = (tags: string[]) => `W/"${createHash('sha1').update(tags.join('\n')).digest('hex')}"`;
+
 /** Faux client GitHub : les mêmes routes que le code réel (tags, matching-refs, releases, actifs, contents). */
 function fakeFetch(state: FakeStore) {
   const fetchFn = async (input: string | URL | Request, init?: RequestInit) => {
     const url = new URL(String(input));
-    state.calls.push({ path: `${url.pathname}${url.search}`, auth: new Headers(init?.headers).get('authorization') });
-    if (state.limited) return json({ message: 'API rate limit exceeded' }, 403, url);
+    const headers = new Headers(init?.headers);
+    state.calls.push({ path: `${url.pathname}${url.search}`, auth: headers.get('authorization') });
+
+    // Fichiers bruts : hors de l’API, donc jamais limités par la limite de requêtes.
+    if (url.hostname === 'raw.githubusercontent.com') {
+      const [owner, repoName, ref, ...rest] = url.pathname.slice(1).split('/');
+      if (`${owner}/${repoName}` !== REPO) return notFound(url);
+      const bytes = state.files[`${decodeURIComponent(ref!)}|${rest.map((p) => decodeURIComponent(p)).join('/')}`];
+      if (!bytes) return notFound(url);
+      return reply(bytes, 200, url, 'application/octet-stream');
+    }
+
+    if (state.limited) return limitedReply(url, now);
 
     const tags = /^\/repos\/([^/]+\/[^/]+)\/tags$/.exec(url.pathname);
     if (tags) {
       if (`${tags[1]}` !== REPO) return notFound(url);
       const page = Number(url.searchParams.get('page') ?? '1');
       const size = Number(url.searchParams.get('per_page') ?? '30');
-      return json(
-        state.tags.slice((page - 1) * size, page * size).map((name) => ({ name })),
-        200,
-        url,
+      const etag = tagsEtag(state.tags);
+      if (page === 1 && headers.get('if-none-match') === etag) {
+        const res = new Response(null, { status: 304, headers: { etag } });
+        Object.defineProperty(res, 'url', { value: url.href });
+        return res;
+      }
+      const res = new Response(
+        JSON.stringify(state.tags.slice((page - 1) * size, page * size).map((name) => ({ name }))),
+        { status: 200, headers: { 'content-type': 'application/json', etag } },
       );
+      Object.defineProperty(res, 'url', { value: url.href });
+      return res;
     }
 
     const refs = /^\/repos\/([^/]+\/[^/]+)\/git\/matching-refs\/tags\/(.+)$/.exec(url.pathname);
@@ -182,6 +218,7 @@ function service(options: Partial<StoreServiceOptions> = {}, token?: string) {
     defaultRepo: REPO,
     token,
     fetch,
+    dataDir: dir,
     isBuiltin: () => false,
     now: () => now,
     ...options,
@@ -235,6 +272,7 @@ describe('lecture du dépôt de jeux', () => {
     state.files['casse-v1.0.0|jeux/casse/manifest.json'] = enc(
       JSON.stringify({ id: 'casse', name: 'Casse', requires: { modules: ['cards'] } }),
     );
+    now += 61 * 60 * 1000; // une actualisation manuelle par heure
     catalog = await gameStore.catalog(true);
     expect(catalog.games[0]).toMatchObject({ name: 'Casse', error: null });
   });
@@ -255,10 +293,11 @@ describe('lecture du dépôt de jeux', () => {
 
     state.limited = true;
     let catalog = await gameStore.catalog(true);
-    expect(catalog.error).toContain('limite de requêtes');
+    expect(catalog.error).toMatch(/^GitHub limite les appels : prochaine tentative vers \d{2} h \d{2}\.$/);
     expect(catalog.games).toEqual([]);
 
     state.limited = false;
+    now += 61 * 60 * 1000; // l’heure de reprise est passée, et la manuelle d’une heure est écoulée
     catalog = await gameStore.catalog(true);
     expect(catalog.error).toBeNull();
     expect(catalog.games).toHaveLength(1);
@@ -273,17 +312,64 @@ describe('lecture du dépôt de jeux', () => {
     expect(listings()).toBe(1);
   });
 
-  it('garde le catalogue dix minutes, puis le relit', async () => {
+  it('relit l’instantané gardé sur disque après redémarrage, sans appeler GitHub', async () => {
+    publish(state, 'frontieres', '1.0.0');
+    await service().gameStore.catalog(true);
+    const callsBefore = state.calls.length;
+
+    const restarted = service().gameStore;
+    const catalog = await restarted.catalog();
+    expect(catalog.games.map((g) => g.id)).toEqual(['frontieres']);
+    expect(state.calls.length).toBe(callsBefore);
+  });
+
+  it('donne la taille du paquet, lue dans la release', async () => {
+    publish(state, 'frontieres', '1.0.0');
+    const { gameStore } = service();
+
+    const catalog = await gameStore.catalog(true);
+    expect(catalog.games[0]?.size).toBe(state.releases['frontieres-v1.0.0']!.archive.length);
+  });
+
+  it('ne relit pas les fiches quand la liste des tags n’a pas changé', async () => {
+    publish(state, 'frontieres', '1.0.0');
+    const { gameStore } = service();
+    const manifests = () => state.calls.filter((c) => c.path.includes('manifest.json')).length;
+
+    await gameStore.catalog(true);
+    expect(manifests()).toBe(1);
+
+    now += 25 * 60 * 60 * 1000; // une lecture automatique, dont la liste des tags répond « inchangé »
+    await gameStore.catalog();
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(state.calls.filter((c) => c.path.includes('/tags?')).length).toBe(2);
+    expect(manifests()).toBe(1);
+  });
+
+  it('garde la couverture sur disque : elle est servie après redémarrage, sans appel à GitHub', async () => {
+    publish(state, 'plateau-x', '1.0.0', { module: 'board', cover: 'assets/couverture.png' });
+    await service().gameStore.catalog(true);
+    const callsBefore = state.calls.length;
+
+    const image = await service().gameStore.cover('plateau-x');
+    expect(image?.contentType).toBe('image/png');
+    expect(state.calls.length).toBe(callsBefore);
+  });
+
+  it('garde le catalogue un jour entier, puis le relit en arrière-plan', async () => {
     publish(state, 'frontieres', '1.0.0');
     const { gameStore } = service();
     const listings = () => state.calls.filter((c) => c.path.includes('/tags?')).length;
 
     await gameStore.catalog();
     await gameStore.catalog();
+    now += 23 * 60 * 60 * 1000;
+    await gameStore.catalog();
     expect(listings()).toBe(1);
 
-    now += 11 * 60 * 1000;
+    now += 2 * 60 * 60 * 1000; // plus de 24 h : une relecture part, l’instantané actuel répond tout de suite
     await gameStore.catalog();
+    await new Promise((resolve) => setTimeout(resolve, 10));
     expect(listings()).toBe(2);
   });
 
@@ -294,7 +380,11 @@ describe('lecture du dépôt de jeux', () => {
     const catalog = await gameStore.catalog(true);
     expect(JSON.stringify(catalog)).not.toContain(TOKEN);
     expect(catalog.tokenConfigured).toBe(true);
-    expect(state.calls.every((c) => c.auth === `Bearer ${TOKEN}`)).toBe(true);
+    // L’API reçoit le jeton ; les fichiers bruts (manifestes, couvertures) partent sans jeton, hors de l’API.
+    const apiCalls = state.calls.filter((c) => c.path.startsWith('/repos/'));
+    expect(apiCalls.length).toBeGreaterThan(0);
+    expect(apiCalls.every((c) => c.auth === `Bearer ${TOKEN}`)).toBe(true);
+    expect(state.calls.filter((c) => !c.path.startsWith('/repos/')).every((c) => c.auth === null)).toBe(true);
   });
 });
 

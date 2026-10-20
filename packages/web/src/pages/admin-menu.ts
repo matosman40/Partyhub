@@ -45,11 +45,6 @@ export const ADMIN_SUBSECTIONS: Record<AdminCategoryId, readonly AdminSubsection
   salles: [{ id: 'apercu', title: 'Salles et statistiques', text: 'Salles ouvertes, parties lancées, nettoyage.' }],
   jeux: [
     { id: 'activation', title: 'Activation des jeux', text: 'Activer ou désactiver chaque jeu.' },
-    {
-      id: 'magasin',
-      title: 'Magasin de jeux',
-      text: 'Installer, mettre à jour et supprimer les jeux publiés dans le dépôt de jeux.',
-    },
     { id: 'presentation', title: 'Présentation des jeux', text: 'Nom, couverture et description de chaque jeu.' },
     { id: 'reglages-parties', title: 'Réglages par défaut', text: 'Réglages de départ de chaque partie.' },
     { id: 'notices', title: 'Notices des jeux', text: 'Les explications affichées aux joueurs.' },
@@ -68,6 +63,11 @@ export const ADMIN_SUBSECTIONS: Record<AdminCategoryId, readonly AdminSubsection
     { id: 'personnages', title: 'Personnages illustrés', text: 'Importer des personnages en archive zip.' },
   ],
   systeme: [
+    {
+      id: 'serveur',
+      title: 'Réglages du serveur',
+      text: 'Tout ce qui se réglait dans le fichier .env : jeton GitHub, journal, sauvegardes, réseau, images.',
+    },
     { id: 'maj', title: 'Mise à jour', text: 'Version en cours et installation d’une version plus récente.' },
     { id: 'journal', title: 'Journal des erreurs', text: 'Erreurs signalées par l’application.' },
     { id: 'ia', title: 'Intelligence artificielle', text: 'Clés et réglages des fonctions d’IA.' },

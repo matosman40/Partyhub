@@ -1,20 +1,12 @@
+import fs from 'node:fs';
 import type { CodeGameSummary, CodeGamesPort } from '../code-games/service.js';
 import type { Store } from '../db/store.js';
 import { compareVersions } from '../packages/semver.js';
 import type { PackageService } from '../packages/service.js';
 import { isValidRepo, type GitHubOptions } from '../sources/github.js';
 import type { CheckOutcome, PackageSourceRecord, PackageSourceService } from '../sources/service.js';
-import {
-  CODE_MODULE,
-  COVER_MAX_BYTES,
-  GAME_ID,
-  coverContentType,
-  looksLikeImage,
-  readCatalog,
-  repoFile,
-  type StoreGameInfo,
-  type StoreManifest,
-} from './catalog.js';
+import { CODE_MODULE, GAME_ID, coverContentType, type StoreGameInfo } from './catalog.js';
+import { StoreSnapshot, type SnapshotData, type SnapshotGame } from './snapshot.js';
 
 /**
  * Magasin : les jeux publiés dans le dépôt de jeux, installés, mis à jour ou supprimés d’un clic. Le magasin ne fait
@@ -23,8 +15,6 @@ import {
  */
 
 export const DEFAULT_STORE_REPO = 'matosman40/jeux-partyhub';
-const CATALOG_TTL_MS = 10 * 60 * 1000;
-const COVER_CACHE_MAX = 60;
 const KV_REPO = 'store_repo';
 
 /**
@@ -34,6 +24,8 @@ const KV_REPO = 'store_repo';
 export type StoreStatus = 'integre' | 'non_installe' | 'a_jour' | 'mise_a_jour' | 'erreur' | 'en_revue';
 
 export interface StoreGameView extends StoreGameInfo {
+  /** Taille du paquet de la dernière version, en octets ; null si inconnue. */
+  size: number | null;
   builtin: boolean;
   status: StoreStatus;
   installedVersion: string | null;
@@ -48,7 +40,9 @@ export interface StoreGameView extends StoreGameInfo {
 export interface CatalogView {
   repo: string;
   tokenConfigured: boolean;
+  /** Dernière lecture du dépôt, et prochaine actualisation automatique. */
   checkedAt: string | null;
+  nextCheckAt: string | null;
   games: StoreGameView[];
   error: string | null;
 }
@@ -60,6 +54,8 @@ export interface StoreServiceOptions {
   token?: string;
   /** Client HTTP injectable (tests). */
   fetch?: typeof fetch;
+  /** DATA_DIR : l’instantané du magasin et les couvertures y sont gardés. */
+  dataDir?: string;
   /** Vrai pour un identifiant de jeu déjà intégré à l’application : rien à télécharger. */
   isBuiltin: (gameId: string) => boolean;
   now?: () => number;
@@ -82,25 +78,26 @@ function codeVersions(rows: CodeGameSummary[], gameId: string): { active: string
   return { active, pending };
 }
 
-type Loaded =
-  { ok: true; repo: string; at: number; games: StoreGameInfo[] } | { ok: false; repo: string; error: string };
-
 function fail(error: string): CheckOutcome {
   return { ok: false, error };
 }
 
 export class StoreService {
-  private cache: { repo: string; at: number; games: StoreGameInfo[] } | null = null;
-  private reading: { repo: string; promise: Promise<Loaded> } | null = null;
-  private readonly manifests = new Map<string, StoreManifest>();
-  private readonly covers = new Map<string, { bytes: Uint8Array; contentType: string }>();
+  private readonly snapshot: StoreSnapshot;
 
   constructor(
     private readonly store: Store,
     private readonly sources: PackageSourceService,
     private readonly packages: PackageService,
     private readonly options: StoreServiceOptions,
-  ) {}
+  ) {
+    this.snapshot = new StoreSnapshot({
+      dataDir: options.dataDir ?? null,
+      repo: this.repo,
+      github: () => this.github(),
+      now: () => this.now(),
+    });
+  }
 
   /** Dépôt utilisé : le choix de l’administration, sinon la configuration, sinon le dépôt par défaut. */
   get repo(): string {
@@ -120,23 +117,23 @@ export class StoreService {
       return { ok: false, error: 'Dépôt invalide : indiquez auteur/nom, le dépôt qui contient le dossier jeux/.' };
     }
     this.store.setKv(KV_REPO, repo);
-    this.cache = null;
+    this.snapshot.setRepo(repo);
     return { ok: true, repo };
   }
 
-  /** Jeux du dépôt et leur état sur ce serveur. `refresh` ignore le cache de dix minutes. */
-  async catalog(refresh = false): Promise<CatalogView> {
-    const loaded = await this.load(refresh);
-    if (!loaded.ok) {
-      return {
-        repo: loaded.repo,
-        tokenConfigured: this.tokenConfigured,
-        checkedAt: null,
-        games: [],
-        error: loaded.error,
-      };
+  /**
+   * Jeux du dépôt et leur état sur ce serveur. Lu dans l’instantané quotidien ; `manual` force une actualisation,
+   * refusée si la précédente date de moins d’une heure.
+   */
+  async catalog(manual = false): Promise<CatalogView> {
+    this.snapshot.setRepo(this.repo);
+    if (manual) {
+      const refreshed = await this.snapshot.refreshNow();
+      const view = this.view(this.snapshot.snapshot);
+      return refreshed.ok ? view : { ...view, error: refreshed.error };
     }
-    return this.view(loaded.repo, loaded.games, loaded.at);
+    await this.snapshot.get();
+    return this.view(this.snapshot.snapshot);
   }
 
   /** Installe la dernière version d’un jeu du dépôt. Une source est créée pour lui, avec mise à jour automatique. */
@@ -194,31 +191,16 @@ export class StoreService {
     return { ok: true, closedRooms };
   }
 
-  /** Couverture d’un jeu du dépôt, lue à sa version publiée. Null si le jeu n’en a pas, ou si elle est refusée. */
+  /** Couverture d’un jeu du dépôt, lue depuis DATA_DIR/store/covers. Null si le jeu n’en a pas. */
   async cover(gameId: string): Promise<{ bytes: Uint8Array; contentType: string } | null> {
-    if (!GAME_ID.test(gameId)) return null;
-    const loaded = await this.load(false);
-    if (!loaded.ok) return null;
-    const game = loaded.games.find((item) => item.id === gameId);
-    if (!game?.coverPath) return null;
-    const contentType = coverContentType(game.coverPath);
+    // Un visiteur peut demander une couverture avant la première lecture du dépôt : on attend l’instantané.
+    await this.snapshot.get();
+    const file = this.snapshot.coverFile(gameId);
+    if (!file) return null;
+    const contentType = coverContentType(file);
     if (!contentType) return null;
-    const key = `${loaded.repo}\n${game.tag}\n${game.coverPath}`;
-    const known = this.covers.get(key);
-    if (known) return known;
     try {
-      const bytes = await repoFile(
-        loaded.repo,
-        `jeux/${gameId}/${game.coverPath}`,
-        game.tag,
-        this.github(),
-        COVER_MAX_BYTES,
-      );
-      if (!looksLikeImage(bytes, contentType)) return null;
-      const image = { bytes, contentType };
-      this.covers.set(key, image);
-      while (this.covers.size > COVER_CACHE_MAX) this.covers.delete(this.covers.keys().next().value!);
-      return image;
+      return { bytes: new Uint8Array(await fs.promises.readFile(file)), contentType };
     } catch {
       return null;
     }
@@ -237,44 +219,16 @@ export class StoreService {
     return this.sources.list().find((row) => row.repo === ref);
   }
 
-  private async load(refresh: boolean): Promise<Loaded> {
-    const repo = this.repo;
-    const cache = this.cache;
-    if (!refresh && cache && cache.repo === repo && this.now() - cache.at < CATALOG_TTL_MS) {
-      return { ok: true, repo, at: cache.at, games: cache.games };
-    }
-    // Une seule lecture à la fois : les couvertures demandées ensemble attendent la même réponse.
-    if (!refresh && this.reading?.repo === repo) return this.reading.promise;
-    const promise = this.read(repo);
-    this.reading = { repo, promise };
-    try {
-      return await promise;
-    } finally {
-      if (this.reading?.promise === promise) this.reading = null;
-    }
-  }
-
-  private async read(repo: string): Promise<Loaded> {
-    const now = this.now();
-    try {
-      const games = await readCatalog(repo, this.github(), this.manifests);
-      this.cache = { repo, at: now, games };
-      return { ok: true, repo, at: now, games };
-    } catch (err) {
-      this.cache = null;
-      return { ok: false, repo, error: err instanceof Error ? err.message : 'Dépôt de jeux injoignable.' };
-    }
-  }
-
-  private view(repo: string, games: StoreGameInfo[], at: number): CatalogView {
+  private view(data: SnapshotData): CatalogView {
     const sources = this.sources.list();
     const codeRows = this.options.code?.list() ?? [];
     return {
-      repo,
+      repo: data.repo,
       tokenConfigured: this.tokenConfigured,
-      checkedAt: new Date(at).toISOString(),
-      error: null,
-      games: games.map((game) => this.gameView(repo, game, sources, codeRows)),
+      checkedAt: data.checkedAt === null ? null : new Date(data.checkedAt).toISOString(),
+      nextCheckAt: data.checkedAt === null ? null : new Date(data.nextCheckAt).toISOString(),
+      error: data.lastError,
+      games: data.games.map((game) => this.gameView(data.repo, game, sources, codeRows)),
     };
   }
 
@@ -290,7 +244,7 @@ export class StoreService {
 
   private gameView(
     repo: string,
-    game: StoreGameInfo,
+    game: SnapshotGame,
     sources: PackageSourceRecord[],
     codeRows: CodeGameSummary[],
   ): StoreGameView {
@@ -319,6 +273,7 @@ export class StoreService {
     }
     return {
       ...game,
+      size: game.size,
       builtin,
       status,
       installedVersion,
@@ -326,7 +281,7 @@ export class StoreService {
       autoUpdate: source?.autoUpdate ?? false,
       lastError: source?.lastError ?? null,
       lastCheckedAt: source?.lastCheckedAt ?? null,
-      hasCover: game.coverPath !== null,
+      hasCover: game.cover !== null,
     };
   }
 }

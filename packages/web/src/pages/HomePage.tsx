@@ -22,6 +22,7 @@ import {
   type SortKey,
 } from '../catalog/filters.js';
 import { readRecent } from '../catalog/recentGames.js';
+import { SearchButton } from '../nav/SearchButton.js';
 
 const SORT_CHOICES = Object.keys(SORT_LABEL) as SortKey[];
 const MAX_RECENT_SHOWN = 6;
@@ -92,6 +93,9 @@ export function HomePage() {
             <Link to="/join" onClick={() => setMenuOpen(false)}>
               Rejoindre une salle
             </Link>
+            <Link to="/magasin" onClick={() => setMenuOpen(false)}>
+              Magasin de jeux
+            </Link>
             <Link to="/profil" onClick={() => setMenuOpen(false)}>
               Mon profil
             </Link>
@@ -136,6 +140,28 @@ export function HomePage() {
           </li>
         </ul>
       </header>
+
+      <nav className="home-actions" aria-label="Actions principales">
+        <Link className="home-action" to="/join">
+          <span className="home-action-icon" aria-hidden="true">
+            📱
+          </span>
+          <span className="home-action-text">Rejoindre une salle</span>
+        </Link>
+        <Link className="home-action" to="/magasin">
+          <span className="home-action-icon" aria-hidden="true">
+            🛍️
+          </span>
+          <span className="home-action-text">Magasin de jeux</span>
+        </Link>
+        <SearchButton className="home-action" />
+        <Link className="home-action" to="/admin">
+          <span className="home-action-icon" aria-hidden="true">
+            ⚙️
+          </span>
+          <span className="home-action-text">Administration</span>
+        </Link>
+      </nav>
 
       {error && (
         <p className="error" role="alert">

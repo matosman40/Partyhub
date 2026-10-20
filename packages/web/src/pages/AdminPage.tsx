@@ -6,7 +6,7 @@ import {
   type AdminCategoryId,
   type AdminSubsection,
 } from './admin-menu.js';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { DEVICE_KIND_ICONS, type CatalogGame, type DeviceKind } from '@partyhub/shared';
 import { DEFAULT_TEST_MODE, TEST_MODE_FACTORS, testModeLabel, type TestMode } from '@partyhub/shared';
 import { api } from '../api.js';
@@ -15,7 +15,6 @@ import { CardGamesAdmin } from '../admin/CardGamesAdmin.js';
 import { BoardGamesAdmin } from '../admin/BoardGamesAdmin.js';
 import { PackagesAdmin } from '../admin/PackagesAdmin.js';
 import { PackageSourcesAdmin } from '../admin/PackageSourcesAdmin.js';
-import { StoreAdmin } from '../admin/StoreAdmin.js';
 import { CharacterPacksAdmin } from '../admin/CharacterPacksAdmin.js';
 import { AssetLibrary } from '../admin/AssetLibrary.js';
 import { ScreenBackgroundsAdmin } from '../admin/ScreenBackgroundsAdmin.js';
@@ -31,6 +30,10 @@ import { UpdatePanel } from '../admin/UpdatePanel.js';
 import { BackButton } from '../components/BackButton.js';
 import { LogsAdmin } from '../admin/LogsAdmin.js';
 import { AiSettingsAdmin } from '../admin/AiSettingsAdmin.js';
+import { ServerSettings } from '../admin/ServerSettings.js';
+import { Breadcrumb, type Crumb } from '../components/Breadcrumb.js';
+import { SearchButton } from '../nav/SearchButton.js';
+import { readRecents } from '../nav/recents.js';
 
 const ORIGIN_LABEL: Record<CatalogGame['origin'], string | null> = {
   builtin: null,
@@ -125,7 +128,7 @@ function Login({ onDone }: { onDone: () => void }) {
           {error}
         </p>
       )}
-      <BackButton to="/">Retour à l’accueil</BackButton>
+      <Breadcrumb items={[{ label: 'Accueil', to: '/' }, { label: 'Administration' }]} />
     </main>
   );
 }
@@ -442,12 +445,30 @@ export function AdminPage() {
 
   const backToMenu = <BackButton onClick={() => openCategory(null)}>Menu de l’administration</BackButton>;
 
+  const crumbs: Crumb[] = [
+    { label: 'Accueil', to: '/' },
+    { label: 'Administration', onClick: () => openCategory(null) },
+    ...(current
+      ? [
+          {
+            label: current.title,
+            onClick: activeSub && subsections.length > 1 ? () => openSub(null) : undefined,
+          },
+        ]
+      : []),
+    ...(current && activeSub && subsections.length > 1 && currentSub ? [{ label: currentSub.title }] : []),
+  ];
+
+  /** Dernière sous-section ouverte, proposée au menu pour reprendre là où l’on s’était arrêté. */
+  const resume = readRecents().find((entry) => entry.to.startsWith('/admin?section='));
+
   return (
     <main className="page admin fade-in">
       <header className="admin-top">
         <h1>Administration</h1>
         <div>
           <span className="muted small">En service depuis {Math.floor(overview.uptimeSec / 60)} min</span>{' '}
+          <SearchButton className="btn ghost" />{' '}
           <button type="button" className="btn ghost" onClick={logout}>
             Déconnexion
           </button>
@@ -462,14 +483,10 @@ export function AdminPage() {
 
       {current ? (
         <>
-          {activeSub && subsections.length > 1 ? (
+          <Breadcrumb items={crumbs} />
+
+          {!(activeSub && subsections.length > 1) && (
             <div className="admin-category-head">
-              {backToMenu}
-              <BackButton onClick={() => openSub(null)}>{current.title}</BackButton>
-            </div>
-          ) : (
-            <div className="admin-category-head">
-              {backToMenu}
               <h2>{current.title}</h2>
               <p className="muted">{current.text}</p>
             </div>
@@ -594,10 +611,6 @@ export function AdminPage() {
                 </ul>
               </section>
 
-              <section hidden={activeSub !== 'magasin'} className="card stack">
-                <h2>Magasin de jeux</h2>
-                <StoreAdmin onChanged={load} />
-              </section>
               <section hidden={activeSub !== 'presentation'} className="card stack">
                 <h2>Présentation des jeux intégrés et importés</h2>
                 <p className="muted">
@@ -724,6 +737,10 @@ export function AdminPage() {
                 <AiSettingsAdmin />
               </section>
 
+              <section hidden={activeSub !== 'serveur'} className="card stack">
+                <h2>Réglages du serveur</h2>
+                <ServerSettings />
+              </section>
               <section hidden={activeSub !== 'reglages'} className="card">
                 <h2>Réglages généraux</h2>
                 <SettingsForm settings={overview.settings} onSaved={load} />
@@ -747,6 +764,13 @@ export function AdminPage() {
         </>
       ) : (
         <>
+          <Breadcrumb items={crumbs} />
+          {resume && (
+            <Link className="card admin-resume" to={resume.to}>
+              <span className="muted small">Reprendre là où vous étiez</span>
+              <span className="admin-menu-title">{resume.title}</span>
+            </Link>
+          )}
           <nav aria-label="Rubriques de l’administration">
             <ul className="admin-menu">
               {ADMIN_CATEGORIES.map((c) => (
@@ -760,8 +784,6 @@ export function AdminPage() {
               ))}
             </ul>
           </nav>
-
-          <BackButton to="/">Retour à l’accueil</BackButton>
         </>
       )}
     </main>

@@ -49,7 +49,8 @@ describe('CertificatePage', () => {
   it('explique l’avertissement qui précède l’installation, et offre un retour', () => {
     const html = page('ios');
     expect(html).toContain('Continuer');
-    expect(html).toContain('Retour à l’accueil');
+    expect(html).toContain('aria-label="Fil d’Ariane"');
+    expect(html).toContain('href="/"');
     expect(html).toContain('Caddy Local Authority');
     expect(html).not.toMatch(/NaN|undefined/);
   });

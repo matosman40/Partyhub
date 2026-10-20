@@ -11484,3 +11484,228 @@ input[type='file']::file-selector-button {
 .profile-page section[id] {
   scroll-margin-top: 1rem;
 }
+
+/* ---------- Navigation commune : fil d’Ariane, actions d’accueil, recherche, reprise (tous écrans). ---------- */
+
+.breadcrumb ol {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.95rem;
+}
+
+.breadcrumb li {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.breadcrumb a,
+.breadcrumb button,
+.breadcrumb [aria-current] {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0.2rem 0.5rem;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.breadcrumb a:hover,
+.breadcrumb button:hover {
+  color: var(--text);
+  text-decoration: underline;
+}
+
+.breadcrumb [aria-current] {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.breadcrumb-sep {
+  color: var(--muted);
+}
+
+.store-top {
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.home-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 0.75rem;
+  margin: 0.5rem 0 1.25rem;
+}
+
+.home-action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-height: 5.5rem;
+  padding: 0.9rem 0.75rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-md);
+  background: var(--glass);
+  color: inherit;
+  font: inherit;
+  font-size: 1.05rem;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.home-action:hover {
+  filter: brightness(1.08);
+}
+
+.home-action:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+
+.home-action-icon {
+  font-size: 1.8rem;
+  line-height: 1;
+}
+
+.admin-resume {
+  display: grid;
+  gap: 0.15rem;
+  margin-bottom: 1rem;
+  border-left: 4px solid var(--accent);
+  color: inherit;
+  text-decoration: none;
+}
+
+.admin-resume:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+
+/* Palette de recherche : dialogue modal, centré sur ordinateur, plein écran sur téléphone. */
+
+.palette-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 6vh 1rem;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.palette {
+  display: flex;
+  flex-direction: column;
+  width: min(640px, 100%);
+  max-height: 80vh;
+  overflow: hidden;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-lg);
+  background: var(--bg1);
+  color: var(--text);
+}
+
+.palette-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.palette-input {
+  flex: 1;
+  min-height: 48px;
+  font-size: 1.1rem;
+}
+
+.palette-close {
+  min-height: 48px;
+}
+
+.palette-empty {
+  margin: 0;
+  padding: 1rem;
+}
+
+.palette-list {
+  flex: 1;
+  margin: 0;
+  padding: 0.25rem;
+  overflow: auto;
+  list-style: none;
+}
+
+.palette-list:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: -3px;
+}
+
+.palette-group-title {
+  display: block;
+  padding: 0.6rem 0.9rem 0.2rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.palette-group-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.palette-item {
+  display: grid;
+  gap: 0.1rem;
+  min-height: 52px;
+  padding: 0.7rem 0.9rem;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+}
+
+.palette-item.active {
+  background: var(--glass-2);
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
+.palette-item-title {
+  font-size: 1.1rem;
+}
+
+.palette-hint {
+  margin: 0;
+  padding: 0.5rem 0.9rem;
+  border-top: 1px solid var(--line);
+}
+
+@media (max-width: 640px) {
+  .palette-backdrop {
+    padding: 0;
+  }
+
+  .palette {
+    width: 100%;
+    height: 100%;
+    max-height: none;
+    border: 0;
+    border-radius: 0;
+  }
+}
