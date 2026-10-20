@@ -4,9 +4,76 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 
 ## [Non publié]
 
+## [0.16.0] - 2026-10-20
+
+### Ajouté
+
+- Magasin de jeux : installer, mettre à jour ou supprimer plusieurs jeux d’un coup, en arrière-plan, avec leur progression (200 jeux au plus, une file à la fois). La page propose une recherche, un tri, des filtres (disponibles, installés, mises à jour, en revue, intégrés, erreurs) et une fiche par jeu. Un interrupteur règle la mise à jour automatique de tout le dépôt. Sans `GITHUB_TOKEN`, le quota restant de GitHub s’affiche, un avertissement prévient avant « Installer tout » s’il ne suffit pas, et la file s’arrête quand il est épuisé. Un jeu dont la fiche est illisible le dit, au lieu de paraître disponible. Guide : `docs/MAGASIN.md`.
+
+- Tennis party (2 à 4 joueurs) : chacun défend son côté du court avec une raquette pilotée par l’inclinaison du téléphone. Le serveur valide chaque coup. Au choix, les vies ou le vrai tennis (points, jeux, sets, tie-break). Championnats en poule ou en tableau. Sur l’écran principal, le court est vu en perspective 3D.
+
+- Bombes party : niveau de 25 × 19 pour dix joueurs. Le téléphone suit son personnage.
+
+- Plateau fête (version 1.1.0) : enregistré dans l’application, avec douze défis du téléphone (gestes, caméra, micro). Les défis caméra et micro ne gardent ni image ni flux : seul un nombre est envoyé au serveur.
+
+- Trois jeux : Tribunal de l’absurde (une défense écrite par joueur, puis un vote du jury), L’imposteur parmi nous (quatre modes) et Téléphone arabe illustré (dessiner, puis décrire, en chaîne).
+
+- Karaoké : un joueur chante un passage de vidéo YouTube depuis son téléphone, 12 secondes au maximum, et les autres le notent. La recherche et la vérification des vidéos passent par le serveur, avec `YOUTUBE_API_KEY`. Le chanteur peut arrêter son passage, sans point.
+
+- Jeux solo : chaque joueur a son personnage, et un bandeau annonce la tête de course. L’écran principal trace l’avancement de chacun au fil du temps, avec un tableau comparatif (temps à 25, 50 et 75 %).
+
+- Fiches de jeu : numéro de version et journal des versions pour chacun des 28 jeux du registre.
+
+- Jeux de code : `aventure-ia` et `phrases-trous` demandent leurs textes à l’IA par le serveur, jeu par jeu. Les vues reçoivent les médias de l’installation (bibliothèque, avatars, sons), la feuille de style et les polices. Les jeux qui en ont besoin peuvent demander les capteurs et le micro, avec l’autorisation du navigateur.
+
+- Aventure IA : sur l’écran principal, le personnage qui parle est affiché en grand, avec sa réplique.
+
 ### Modifié
 
-- Magasin : un jeu s’installe et se met à jour depuis son dossier `jeux/<jeu>/` au tag le plus haut du dépôt de jeux. Aucune release, aucun fichier `.phgame` et aucune signature ne sont nécessaires : PartyHub construit le paquet avec les contrôles de `phgame pack`, et vérifie chaque fichier de son dossier contre l’arbre du commit du tag (le dépôt est lu par son archive, sans appel par fichier). Un jeu de code du magasin n’est pas signé, mais il attend la revue de *Jeux de code* avant de s’exécuter. Les sources GitHub de paquets (`auteur/depot/jeu`) gardent leur fonctionnement par release et signature. Base de données : migration 15 (colonne `package_sources.origin`). Guide : `docs/MAGASIN.md`.
+- Magasin : le dépôt de jeux est lu par son archive au tag. Un jeu ne coûte plus un appel par fichier, ce qui évite de dépasser vite la limite de 60 appels par heure sans jeton.
+
+- Personnages illustrés et images générées : stockés dans des fichiers (`PERSONNAGES_DIR`), et non plus dans la base. Les jeux installés sont dans `JEUX_DIR`. Sous Docker, un second volume, `partyhub-contenu`, les accueille.
+
+- Sauvegarde complète : l’archive inclut les personnages.
+
+- Mise à jour automatique du magasin : un interrupteur pour tout le dépôt, activé par défaut.
+
+- Sources GitHub des paquets : la page n’affiche plus que les sources par release, sous le titre « Jeux depuis une release GitHub ». Les sources du magasin restent dans le magasin.
+
+- Contrôle de lancement : le robot-hôte joue les jeux pilotés par l’écran principal (tennis party). Un jeu à plusieurs joueurs qui ne joue aucune action de robot échoue le contrôle.
+
+### Retiré
+
+- Le jeu « L’Imposteur » (`imposteur`) quitte le catalogue. « L’imposteur parmi nous » le remplace.
+
+### Corrigé
+
+- Magasin : l’archive du tag est demandée avec un type accepté par GitHub. Avant, GitHub répondait 415.
+
+- Vue TV sur téléphone : le fond couvre toute la hauteur de l’écran, sans bande sombre sous le contenu.
+
+- Karaoké : les étoiles de notation et les titres longs passent à la ligne sur petit écran. Un passage arrêté est affiché comme tel, et non « sans note ». Un micro refusé ou en panne arrête le passage.
+
+- Jeux de code : `structuredClone` est disponible dans l’isolat, comme l’utilisent les jeux.
+
+- Contrôle de lancement : le temps avance entre les coups des robots, et la partie ne reste plus figée.
+
+### Notes de mise à jour
+
+- Docker : le fichier `compose.yaml` ajoute le volume `partyhub-contenu`, monté sur `/contenu`, et les variables `JEUX_DIR` et `PERSONNAGES_DIR`. La mise à jour depuis l’administration, ou `git checkout v0.16.0` suivi de `docker compose up -d`, crée le volume. Au premier démarrage, les jeux installés, puis les personnages et les images, sont copiés de `/data` vers `/contenu`, et les originaux sont supprimés après la copie. Pendant la copie, l’espace disque utilisé double.
+
+- Base de données : migration 15 (colonne `package_sources.origin`). Les personnages et les images quittent la base au premier démarrage.
+
+- Retour à 0.15.0 : le retour automatique remet la base de la sauvegarde faite avant la mise à jour, qui contient encore les personnages. Un retour à la main doit suivre la même étape : depuis 0.16.0, les personnages sont dans des fichiers, et la base seule ne suffit pas.
+
+- Sauvegarde de la base seule : elle ne contient ni les personnages, ni les images, ni les jeux installés. La sauvegarde complète les contient.
+
+- Karaoké : la recherche et la vérification YouTube demandent `YOUTUBE_API_KEY` sur le serveur. Sans clé, un lien collé reste utilisable, sans vérification de sa durée.
+
+- Magasin : sans `GITHUB_TOKEN`, la limite de 60 appels par heure s’applique à tout le magasin.
+
+- Problèmes connus : tennis party, karaoké, plateau fête et les trois nouveaux jeux n’ont pas encore été essayés sur de vrais téléphones et téléviseurs.
+
 
 ## [0.15.0] - 2026-10-19
 
