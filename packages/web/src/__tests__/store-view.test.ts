@@ -6,10 +6,14 @@ import {
   installableIds,
   jobProgress,
   normalizeText,
+  quotaLine,
+  quotaWarning,
   removableIds,
   shortStatus,
+  statusText,
   updatableIds,
   type JobView,
+  type RateLimit,
   type StoreGame,
 } from '../admin/storeView.js';
 
@@ -148,5 +152,35 @@ describe('file d’installation', () => {
     };
     expect(jobProgress(job)).toEqual({ done: 2, total: 4, finished: false });
     expect(jobProgress({ ...job, finishedAt: '2026-10-20T08:05:00.000Z' }).finished).toBe(true);
+  });
+});
+
+describe('fiches illisibles', () => {
+  it('une fiche illisible le dit, au lieu d’afficher « Disponible »', () => {
+    const broken = game({ id: 'ponts', name: 'Ponts', error: 'manifest.json invalide à ce tag.' });
+    expect(shortStatus(broken)).toBe('Fiche illisible');
+    expect(statusText(broken)).toBe('manifest.json invalide à ce tag.');
+  });
+});
+
+describe('quota GitHub', () => {
+  const now = Date.parse('2026-10-20T08:00:00Z');
+
+  it('affiche le quota restant et le délai de réinitialisation', () => {
+    const rate: RateLimit = { limit: 60, remaining: 12, resetAt: now + 25 * 60_000 };
+    expect(quotaLine(rate, now)).toBe('Appels GitHub restants : 12 sur 60, réinitialisés dans environ 25 min.');
+    // Une réinitialisation imminente compte pour au moins une minute.
+    expect(quotaLine({ ...rate, remaining: 0, resetAt: now + 5_000 }, now)).toContain('environ 1 min');
+  });
+
+  it('avertit quand le quota ne suffit pas pour la file, et se tait sinon', () => {
+    const later = now + 30 * 60_000;
+    // Quatre appels par jeu : trois jeux demandent environ douze appels.
+    expect(quotaWarning({ limit: 60, remaining: 10, resetAt: later }, 3, now)).toContain('Il reste 10 appel(s) GitHub');
+    expect(quotaWarning({ limit: 60, remaining: 12, resetAt: later }, 3, now)).toBeNull();
+    expect(quotaWarning(null, 3, now)).toBeNull();
+    expect(quotaWarning({ limit: 60, remaining: 0, resetAt: later }, 0, now)).toBeNull();
+    // Un quota dont la réinitialisation est passée ne compte plus.
+    expect(quotaWarning({ limit: 60, remaining: 0, resetAt: now - 1 }, 3, now)).toBeNull();
   });
 });

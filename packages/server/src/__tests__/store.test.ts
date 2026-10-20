@@ -31,10 +31,20 @@ interface FakeStore {
   /** Dossier racine de l’archive, s’il ne doit pas être celui du commit. */
   archiveRoot?: string;
   limited: boolean;
+  /** Quota annoncé dans les en-têtes de chaque réponse, s’il est fixé. */
+  quota: { remaining: number; resetAt: number } | null;
   calls: { path: string; auth: string | null }[];
 }
 
-const emptyStore = (): FakeStore => ({ tags: [], files: {}, tampered: {}, archiveOnly: {}, limited: false, calls: [] });
+const emptyStore = (): FakeStore => ({
+  tags: [],
+  files: {},
+  tampered: {},
+  archiveOnly: {},
+  limited: false,
+  quota: null,
+  calls: [],
+});
 
 function reply(body: BodyInit, status: number, url: URL, type: string): Response {
   const res = new Response(body as unknown as BodyInit, { status, headers: { 'content-type': type } });
@@ -209,8 +219,23 @@ afterEach(() => {
   rmSync(dir, { recursive: true, force: true });
 });
 
+/** Ajoute les en-têtes de quota de GitHub à chaque réponse, quand l’état en fixe un. */
+function withQuota(inner: typeof fetch): typeof fetch {
+  return async (input, init) => {
+    const res = await inner(input, init);
+    if (!state.quota) return res;
+    const headers = new Headers(res.headers);
+    headers.set('x-ratelimit-limit', '60');
+    headers.set('x-ratelimit-remaining', String(state.quota.remaining));
+    headers.set('x-ratelimit-reset', String(Math.floor(state.quota.resetAt / 1000)));
+    const out = new Response(res.body, { status: res.status, headers });
+    Object.defineProperty(out, 'url', { value: res.url });
+    return out;
+  };
+}
+
 function service(options: Partial<StoreServiceOptions> = {}, token?: string) {
-  const fetch = fakeFetch(state);
+  const fetch = withQuota(fakeFetch(state));
   const sources = new PackageSourceService(store, packages, { fetch, token });
   const gameStore = new StoreService(store, sources, packages, {
     defaultRepo: REPO,
@@ -764,5 +789,68 @@ describe('dépôt entier : file, mise à jour automatique, suppression multiple'
       closedRooms: 0,
     });
     expect(packages.list()).toEqual([]);
+  });
+});
+
+describe('quota GitHub', () => {
+  /** Attend la fin de la file en cours (elle tourne en arrière-plan). */
+  async function waitForJob(gameStore: StoreService) {
+    for (let i = 0; i < 400; i++) {
+      const job = gameStore.currentJob();
+      if (job && job.finishedAt !== null) return job;
+      await new Promise((resolve) => setTimeout(resolve, 5));
+    }
+    throw new Error('la file ne se termine pas');
+  }
+
+  it('lit le quota dans chaque réponse, et le donne au catalogue', async () => {
+    publish(state, 'frontieres', '1.0.0');
+    state.quota = { remaining: 42, resetAt: now + 30 * 60_000 };
+    const { gameStore } = service();
+
+    const catalog = await gameStore.catalog(true);
+    expect(catalog.rateLimit).toEqual({
+      limit: 60,
+      remaining: 42,
+      resetAt: Math.floor((now + 30 * 60_000) / 1000) * 1000,
+    });
+  });
+
+  it('n’a pas de quota tant qu’aucune réponse n’en annonce', async () => {
+    const { gameStore } = service();
+    expect((await gameStore.catalog(true)).rateLimit).toBeNull();
+  });
+
+  it('arrête la file quand le quota est épuisé, et marque les jeux qui restent sans les appeler', async () => {
+    publish(state, 'cartes-coco', '1.0.0');
+    publish(state, 'frontieres', '1.0.0');
+    publish(state, 'ponts', '1.0.0');
+    state.limited = true;
+    state.quota = { remaining: 0, resetAt: now + 30 * 60_000 };
+    const { gameStore, sources } = service();
+
+    expect(gameStore.startJob('install', ['cartes-coco', 'frontieres', 'ponts']).ok).toBe(true);
+    const job = await waitForJob(gameStore);
+
+    expect(job.items[0]).toMatchObject({ id: 'cartes-coco', state: 'erreur' });
+    expect(job.items[0]!.message).toContain('Limite de requêtes GitHub atteinte');
+    const skipped =
+      'Non traité : la limite de requêtes GitHub est atteinte. Relancez la file après la réinitialisation.';
+    expect(job.items.slice(1)).toEqual([
+      { id: 'frontieres', name: 'frontieres', state: 'erreur', message: skipped },
+      { id: 'ponts', name: 'ponts', state: 'erreur', message: skipped },
+    ]);
+    expect(sources.list()).toEqual([]);
+  });
+
+  it('ignore un quota ancien : une réinitialisation passée ne bloque pas la file', async () => {
+    publish(state, 'frontieres', '1.0.0');
+    publish(state, 'ponts', '1.0.0');
+    state.quota = { remaining: 0, resetAt: now - 60_000 };
+    const { gameStore } = service();
+
+    expect(gameStore.startJob('install', ['frontieres', 'ponts']).ok).toBe(true);
+    const job = await waitForJob(gameStore);
+    expect(job.items.map((item) => item.state)).toEqual(['ok', 'ok']);
   });
 });

@@ -150,6 +150,8 @@ export function countByFilter(games: StoreGame[]): Record<StoreFilter, number> {
 
 /** Libellé d’état avec la version : l’installée, et la nouvelle quand une mise à jour est prête. */
 export function statusText(game: StoreGame): string {
+  // Le serveur donne déjà une phrase lisible (« Fiche illisible. » ou la raison précise).
+  if (game.error !== null) return game.error;
   if (game.status === 'mise_a_jour') return `Mise à jour disponible : ${game.installedVersion} → ${game.latestVersion}`;
   if (game.status === 'a_jour') return `Installé, à jour (${game.installedVersion})`;
   if (game.status === 'en_revue') {
@@ -160,6 +162,8 @@ export function statusText(game: StoreGame): string {
 
 /** Libellé court du badge d’état, pour la liste. */
 export function shortStatus(game: StoreGame): string {
+  // Une fiche illisible ne se télécharge pas : le badge doit le dire, pas afficher « Disponible ».
+  if (game.error !== null) return 'Fiche illisible';
   if (game.status === 'mise_a_jour') return 'Mise à jour';
   if (game.status === 'a_jour') return 'Installé';
   if (game.status === 'en_revue') return 'En revue';
@@ -169,6 +173,34 @@ export function shortStatus(game: StoreGame): string {
 }
 
 /** Identifiants des jeux à installer, parmi ceux donnés. */
+/** Quota de l’API GitHub, tel que le serveur l’a lu. Sans jeton : 60 appels par heure. */
+export interface RateLimit {
+  limit: number;
+  remaining: number;
+  /** Heure de réinitialisation, en millisecondes depuis l’époque. */
+  resetAt: number;
+}
+
+/** Appels GitHub à compter pour un jeu : lecture, commit, arbre, archive (estimation de la doc). */
+export const CALLS_PER_GAME = 4;
+
+/** Ligne d’information sur le quota restant, avec le délai avant réinitialisation. */
+export function quotaLine(rate: RateLimit, now: number): string {
+  const minutes = Math.max(1, Math.ceil((rate.resetAt - now) / 60_000));
+  return `Appels GitHub restants : ${rate.remaining} sur ${rate.limit}, réinitialisés dans environ ${minutes} min.`;
+}
+
+/**
+ * Avertissement avant une installation en lot : le quota restant suffit-il pour les jeux demandés ?
+ * Null si oui, ou si le quota n’est pas connu (serveur avec jeton, ou aucun appel encore).
+ */
+export function quotaWarning(rate: RateLimit | null, gamesWanted: number, now: number): string | null {
+  if (rate === null || gamesWanted === 0 || rate.resetAt <= now) return null;
+  const needed = gamesWanted * CALLS_PER_GAME;
+  if (rate.remaining >= needed) return null;
+  return `Il reste ${rate.remaining} appel(s) GitHub, et ${gamesWanted} jeu(x) en demandent environ ${needed}. La file s’arrêtera à la limite : relancez-la après la réinitialisation pour le reste.`;
+}
+
 export function installableIds(games: StoreGame[]): string[] {
   return games.filter(isInstallable).map((game) => game.id);
 }

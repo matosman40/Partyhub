@@ -59,10 +59,53 @@ export function parseSource(value: string): SourceRef | null {
 
 export class GitHubError extends Error {}
 
+/** Quota de l’API GitHub, lu dans les en-têtes de chaque réponse. Sans jeton : 60 appels par heure. */
+export interface GitHubRateLimit {
+  limit: number;
+  remaining: number;
+  /** Heure de réinitialisation, en millisecondes depuis l’époque. */
+  resetAt: number;
+}
+
+/** Garde la dernière valeur lue : l’administration l’affiche, et une file s’arrête quand le quota est épuisé. */
+export class GitHubQuota {
+  private latest: GitHubRateLimit | null = null;
+
+  record(rate: GitHubRateLimit): void {
+    this.latest = rate;
+  }
+
+  current(): GitHubRateLimit | null {
+    return this.latest;
+  }
+}
+
+/** Limite de requêtes atteinte : réessayer tout de suite ne servirait à rien. */
+export class GitHubRateLimitError extends GitHubError {
+  readonly resetAt: number;
+
+  constructor(resetAt: number, now = Date.now()) {
+    const minutes = Math.max(1, Math.ceil((resetAt - now) / 60_000));
+    super(`Limite de requêtes GitHub atteinte. Réessayez dans environ ${minutes} min, à la réinitialisation.`);
+    this.resetAt = resetAt;
+  }
+}
+
+function readRateLimit(headers: Headers): GitHubRateLimit | null {
+  const limit = headers.get('x-ratelimit-limit');
+  const remaining = headers.get('x-ratelimit-remaining');
+  const reset = headers.get('x-ratelimit-reset');
+  if (limit === null || remaining === null || reset === null) return null;
+  const rate = { limit: Number(limit), remaining: Number(remaining), resetAt: Number(reset) * 1000 };
+  return Number.isFinite(rate.limit) && Number.isFinite(rate.remaining) && Number.isFinite(rate.resetAt) ? rate : null;
+}
+
 export interface GitHubOptions {
   fetch?: typeof fetch;
   /** Jeton GitHub du serveur (GITHUB_TOKEN). Envoyé seulement à GitHub, jamais journalisé. */
   token?: string;
+  /** Suivi du quota : chaque réponse de GitHub y est notée. */
+  quota?: GitHubQuota;
 }
 
 export interface ReleaseAsset {
@@ -96,10 +139,13 @@ async function request(url: string, accept: string, options: GitHubOptions, time
   if (!ALLOWED_HOSTS.includes(new URL(res.url || url).hostname)) {
     throw new GitHubError('Redirection vers un site non autorisé refusée.');
   }
+  const rate = readRateLimit(res.headers);
+  if (rate) options.quota?.record(rate);
   if (res.status === 404) {
     throw new GitHubError('Dépôt ou release introuvable. Pour un dépôt privé, GITHUB_TOKEN doit être configuré.');
   }
-  if (res.status === 401 || res.status === 403) {
+  if (res.status === 401 || res.status === 403 || res.status === 429) {
+    if (rate && rate.remaining === 0) throw new GitHubRateLimitError(rate.resetAt);
     throw new GitHubError('GitHub refuse l’accès (jeton absent ou invalide, ou limite de requêtes atteinte).');
   }
   if (!res.ok) throw new GitHubError(`GitHub a répondu ${res.status}.`);

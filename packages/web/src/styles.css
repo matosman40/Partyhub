@@ -8100,6 +8100,13 @@ html:not([data-theme='dark']) .corner-drawer {
 .store-detail-card p {
   margin: 0;
 }
+.store-quota {
+  margin: 0.35rem 0 0;
+}
+.store-quota.is-warning {
+  color: var(--danger);
+  font-weight: 600;
+}
 @media (max-width: 900px) {
   .store-body {
     grid-template-columns: minmax(0, 1fr);
@@ -8109,6 +8116,19 @@ html:not([data-theme='dark']) .corner-drawer {
   }
   .store-list {
     max-height: none;
+  }
+}
+@media (max-width: 600px) {
+  /* Téléphone : la vignette prend moins de place, le titre et l’auteur gardent de la largeur. */
+  .store-thumb {
+    width: 3.2rem;
+  }
+  .store-row {
+    gap: 0.45rem;
+    padding: 0.4rem 0.45rem;
+  }
+  .store-row-main {
+    gap: 0.45rem;
   }
 }
 .pack-admin-form {

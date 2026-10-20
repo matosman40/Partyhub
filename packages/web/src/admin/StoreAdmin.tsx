@@ -15,6 +15,8 @@ import {
   isUpdatable,
   jobProgress,
   jobTitle,
+  quotaLine,
+  quotaWarning,
   removableIds,
   shortStatus,
   statusText,
@@ -22,6 +24,7 @@ import {
   type JobAction,
   type JobView,
   type Outcome,
+  type RateLimit,
   type StoreFilter,
   type StoreGame,
   type StoreSort,
@@ -32,6 +35,7 @@ interface Catalog {
   tokenConfigured: boolean;
   autoUpdate: boolean;
   checkedAt: string | null;
+  rateLimit: RateLimit | null;
   games: StoreGame[];
   error: string | null;
 }
@@ -248,6 +252,10 @@ export function StoreAdmin({ onChanged }: { onChanged: () => void }) {
   const allUpdate = updatableIds(games);
   const allRemovable = removableIds(games);
   const locked = busy || jobRunning;
+  // Le quota ne concerne que les serveurs sans jeton : avec un jeton, GitHub accorde beaucoup plus d’appels.
+  const quota = catalog && !catalog.tokenConfigured ? catalog.rateLimit : null;
+  const now = Date.now();
+  const installWarning = quotaWarning(quota, allInstall.length, now);
 
   return (
     <div className="store-admin">
@@ -260,6 +268,11 @@ export function StoreAdmin({ onChanged }: { onChanged: () => void }) {
               !catalog.tokenConfigured &&
               ' · sans GITHUB_TOKEN, GitHub limite les appels à 60 par heure : le catalogue est gardé dix minutes.'}
           </p>
+          {quota && (
+            <p className="store-quota small" role="status">
+              {quotaLine(quota, now)}
+            </p>
+          )}
           <div className="row">
             <button type="button" className="btn ghost small" disabled={locked} onClick={() => run(async () => {})}>
               Actualiser le catalogue
@@ -328,6 +341,11 @@ export function StoreAdmin({ onChanged }: { onChanged: () => void }) {
         ))}
       </div>
 
+      {installWarning && (
+        <p className="store-quota is-warning small" role="alert">
+          {installWarning}
+        </p>
+      )}
       <div className="store-bulk">
         <button
           type="button"

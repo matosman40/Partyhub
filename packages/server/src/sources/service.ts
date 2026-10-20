@@ -7,6 +7,7 @@ import type { PackageService } from '../packages/service.js';
 import { buildTagPackage } from '../store/build.js';
 import {
   GitHubError,
+  GitHubQuota,
   downloadArchive,
   latestRelease,
   latestTag,
@@ -88,16 +89,22 @@ export interface PackageSourceOptions {
    * release de code est refusée comme avant.
    */
   code?: CodeGamesPort;
+  /** Quota GitHub partagé avec le magasin. Absent : un quota propre à ce service. */
+  quota?: GitHubQuota;
 }
 
 export class PackageSourceService {
   private readonly running = new Set<string>();
+  /** Quota GitHub lu par chaque appel, partagé avec le magasin de jeux. */
+  readonly quota: GitHubQuota;
 
   constructor(
     private readonly store: Store,
     private readonly packages: PackageService,
     private readonly options: PackageSourceOptions = {},
-  ) {}
+  ) {
+    this.quota = options.quota ?? new GitHubQuota();
+  }
 
   /** Vrai si le serveur dispose d’un jeton GitHub. Le jeton lui-même n’est jamais exposé. */
   get tokenConfigured(): boolean {
@@ -372,7 +379,7 @@ export class PackageSourceService {
   }
 
   private async run(row: PackageSourceRow): Promise<CheckOutcome> {
-    const github: GitHubOptions = { fetch: this.options.fetch, token: this.options.token };
+    const github: GitHubOptions = { fetch: this.options.fetch, token: this.options.token, quota: this.quota };
     const checkedAt = new Date().toISOString();
     try {
       if (row.private === 1 && !this.options.token) throw new GitHubError('GITHUB_TOKEN n’est pas configuré.');

@@ -2,7 +2,7 @@ import type { CodeGameSummary, CodeGamesPort } from '../code-games/service.js';
 import type { Store } from '../db/store.js';
 import { compareVersions } from '../packages/semver.js';
 import type { PackageService } from '../packages/service.js';
-import { isValidRepo, type GitHubOptions } from '../sources/github.js';
+import { isValidRepo, type GitHubOptions, type GitHubRateLimit } from '../sources/github.js';
 import type { CheckOutcome, PackageSourceRecord, PackageSourceService } from '../sources/service.js';
 import {
   CODE_MODULE,
@@ -55,6 +55,8 @@ export interface CatalogView {
   /** Mise à jour automatique de tous les jeux du dépôt (réglage unique, appliqué aux sources). */
   autoUpdate: boolean;
   checkedAt: string | null;
+  /** Dernier quota GitHub lu sur ce serveur, ou null si aucun appel n’a encore eu lieu. */
+  rateLimit: GitHubRateLimit | null;
   games: StoreGameView[];
   error: string | null;
 }
@@ -178,6 +180,7 @@ export class StoreService {
         tokenConfigured: this.tokenConfigured,
         autoUpdate: this.autoUpdate,
         checkedAt: null,
+        rateLimit: this.quota.current(),
         games: [],
         error: loaded.error,
       };
@@ -303,7 +306,7 @@ export class StoreService {
   }
 
   private async runJob(job: StoreJobView): Promise<void> {
-    for (const item of job.items) {
+    for (const [index, item] of job.items.entries()) {
       item.state = 'en_cours';
       try {
         const outcome = job.action === 'install' ? await this.install(item.id) : await this.update(item.id);
@@ -314,6 +317,16 @@ export class StoreService {
       } catch (err) {
         item.state = 'erreur';
         item.message = err instanceof Error ? err.message : 'Échec.';
+      }
+      // Quota GitHub épuisé : les jeux suivants échoueraient tous. On s'arrête, et on le dit pour chacun.
+      const rate = this.quota.current();
+      if (item.state === 'erreur' && rate !== null && rate.remaining === 0 && rate.resetAt > this.now()) {
+        for (const rest of job.items.slice(index + 1)) {
+          rest.state = 'erreur';
+          rest.message =
+            'Non traité : la limite de requêtes GitHub est atteinte. Relancez la file après la réinitialisation.';
+        }
+        break;
       }
     }
     job.finishedAt = new Date(this.now()).toISOString();
@@ -349,8 +362,13 @@ export class StoreService {
     }
   }
 
+  /** Quota GitHub partagé avec les sources : le magasin et les installations lisent la même mesure. */
+  private get quota() {
+    return this.sources.quota;
+  }
+
   private github(): GitHubOptions {
-    return { fetch: this.options.fetch, token: this.options.token };
+    return { fetch: this.options.fetch, token: this.options.token, quota: this.quota };
   }
 
   private now(): number {
@@ -400,6 +418,7 @@ export class StoreService {
       tokenConfigured: this.tokenConfigured,
       autoUpdate: this.autoUpdate,
       checkedAt: new Date(at).toISOString(),
+      rateLimit: this.quota.current(),
       error: null,
       games: games.map((game) => this.gameView(repo, game, sources, codeRows)),
     };

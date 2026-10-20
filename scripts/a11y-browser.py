@@ -110,6 +110,11 @@ def main() -> int:
         page.wait_for_selector("text=Salles ouvertes", timeout=10000)
         audit(page, "administration (connectée)")
 
+        # Magasin de jeux : la page reste auditée même sans accès à GitHub (message d’erreur, filtres, liste vide).
+        page.goto(f"{BASE_URL}/admin?section=creation", wait_until="networkidle")
+        page.wait_for_selector("h2:has-text('Magasin de jeux')", timeout=10000)
+        audit(page, "administration (magasin)")
+
         phone = browser.new_context(viewport={"width": 390, "height": 844}, is_mobile=True, has_touch=True, bypass_csp=True)
         mobile = phone.new_page()
         mobile.goto(f"{BASE_URL}/j/{code}", wait_until="networkidle")
