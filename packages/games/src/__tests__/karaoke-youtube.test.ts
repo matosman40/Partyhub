@@ -91,7 +91,12 @@ describe('karaoké : recherche et vérification YouTube par le serveur', () => {
 
   it('pas de recherche ni de vérification hors du choix de la chanson', () => {
     const { env, state, singer } = start();
-    const singing = act(state, env, singer, 'sing', { videoId: hit.videoId, title: hit.title, channel: '', startSec: 0 });
+    const singing = act(state, env, singer, 'sing', {
+      videoId: hit.videoId,
+      title: hit.title,
+      channel: '',
+      startSec: 0,
+    });
     expect(refusedWith(singing, env, singer, 'search', { query: 'Stromae' })).toMatch(/pendant le choix/);
   });
 
@@ -99,8 +104,18 @@ describe('karaoké : recherche et vérification YouTube par le serveur', () => {
     const { env, state, singer } = start();
     const asked = act(state, env, singer, 'search', { query: 'Stromae' });
     const job = karaoke.pendingJob!(asked)!;
-    const singing = act(asked, env, singer, 'sing', { videoId: hit.videoId, title: hit.title, channel: '', startSec: 0 });
-    const late = karaoke.completeJob!(singing, job.id, { ok: true, value: { ok: true, value: [hit] } }, env.ctx) as KaraokeState;
+    const singing = act(asked, env, singer, 'sing', {
+      videoId: hit.videoId,
+      title: hit.title,
+      channel: '',
+      startSec: 0,
+    });
+    const late = karaoke.completeJob!(
+      singing,
+      job.id,
+      { ok: true, value: { ok: true, value: [hit] } },
+      env.ctx,
+    ) as KaraokeState;
     expect(late.answers[singer]).toBeUndefined();
     expect(late.requests).toHaveLength(0);
   });
@@ -113,7 +128,12 @@ describe('karaoké : recherche et vérification YouTube par le serveur', () => {
     const checked = serve(asked, env, { ok: true, value: video });
     expect(lookupOf(checked, singer).answer).toEqual({ kind: 'check', video, unverified: false });
 
-    const singing = act(checked, env, singer, 'sing', { videoId: hit.videoId, title: hit.title, channel: '', startSec: 45 });
+    const singing = act(checked, env, singer, 'sing', {
+      videoId: hit.videoId,
+      title: hit.title,
+      channel: '',
+      startSec: 45,
+    });
     expect(singing.phase).toBe('sing');
   });
 
@@ -131,7 +151,11 @@ describe('karaoké : recherche et vérification YouTube par le serveur', () => {
   it('une erreur YouTube est affichée au chanteur', () => {
     const { env, state, singer } = start();
     const asked = act(state, env, singer, 'search', { query: 'Stromae' });
-    const failed = serve(asked, env, { ok: false, code: 'quota', message: 'YouTube a atteint sa limite pour aujourd’hui.' });
+    const failed = serve(asked, env, {
+      ok: false,
+      code: 'quota',
+      message: 'YouTube a atteint sa limite pour aujourd’hui.',
+    });
     expect(lookupOf(failed, singer).answer).toEqual({
       kind: 'error',
       message: 'YouTube a atteint sa limite pour aujourd’hui.',
@@ -163,7 +187,9 @@ describe('karaoké : recherche et vérification YouTube par le serveur', () => {
 
   it('sans fournisseur YouTube, le travail répond « désactivé » sans rien appeler', async () => {
     setKaraokeYoutube(null);
-    await expect(runKaraokeJob({ id: 'x', kind: 'youtube-search', input: { query: 'Stromae' } })).resolves.toMatchObject({
+    await expect(
+      runKaraokeJob({ id: 'x', kind: 'youtube-search', input: { query: 'Stromae' } }),
+    ).resolves.toMatchObject({
       ok: false,
       code: 'disabled',
     });
@@ -187,10 +213,12 @@ describe('karaoké : recherche et vérification YouTube par le serveur', () => {
         ok: true,
         value: [hit],
       });
-      await expect(runKaraokeJob({ id: 'b', kind: 'youtube-check', input: { videoId: hit.videoId } })).resolves.toEqual({
-        ok: true,
-        value: video,
-      });
+      await expect(runKaraokeJob({ id: 'b', kind: 'youtube-check', input: { videoId: hit.videoId } })).resolves.toEqual(
+        {
+          ok: true,
+          value: video,
+        },
+      );
       expect(calls).toEqual([`search:Stromae`, `video:${hit.videoId}`]);
     } finally {
       setKaraokeYoutube(null);

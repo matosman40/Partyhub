@@ -60,7 +60,12 @@ export const RELEASE_NOTES: Readonly<Partial<Record<string, readonly GameRelease
       ],
     },
   ],
-  'quiz-party': [    { version: '1.1.1', date: '2026-10-20', changes: ['Mise à jour technique : version alignée sur le code actuel de PartyHub.'] },
+  'quiz-party': [
+    {
+      version: '1.1.1',
+      date: '2026-10-20',
+      changes: ['Mise à jour technique : version alignée sur le code actuel de PartyHub.'],
+    },
 
     {
       version: '1.1.0',
@@ -72,7 +77,12 @@ export const RELEASE_NOTES: Readonly<Partial<Record<string, readonly GameRelease
     },
     { version: '1.0.0', date: '2026-10-14', changes: ['Première version publique.'] },
   ],
-  'phrases-trous': [    { version: '1.0.1', date: '2026-10-20', changes: ['Mise à jour technique : version alignée sur le code actuel de PartyHub.'] },
+  'phrases-trous': [
+    {
+      version: '1.0.1',
+      date: '2026-10-20',
+      changes: ['Mise à jour technique : version alignée sur le code actuel de PartyHub.'],
+    },
 
     {
       version: '1.0.0',
@@ -84,12 +94,27 @@ export const RELEASE_NOTES: Readonly<Partial<Record<string, readonly GameRelease
     },
   ],
   association: [
-    { version: '1.0.1', date: '2026-10-20', changes: ['Mise à jour technique : version alignée sur le code actuel de PartyHub.'] },
-    { version: '1.0.0', date: '2026-10-14', changes: ['Première version publique.'] }],
+    {
+      version: '1.0.1',
+      date: '2026-10-20',
+      changes: ['Mise à jour technique : version alignée sur le code actuel de PartyHub.'],
+    },
+    { version: '1.0.0', date: '2026-10-14', changes: ['Première version publique.'] },
+  ],
   'plutot-qui': [
-    { version: '1.0.1', date: '2026-10-20', changes: ['Mise à jour technique : version alignée sur le code actuel de PartyHub.'] },
-    { version: '1.0.0', date: '2026-10-14', changes: ['Première version publique.'] }],
-  'aventure-ia': [    { version: '1.2.1', date: '2026-10-20', changes: ['Mise à jour technique : version alignée sur le code actuel de PartyHub.'] },
+    {
+      version: '1.0.1',
+      date: '2026-10-20',
+      changes: ['Mise à jour technique : version alignée sur le code actuel de PartyHub.'],
+    },
+    { version: '1.0.0', date: '2026-10-14', changes: ['Première version publique.'] },
+  ],
+  'aventure-ia': [
+    {
+      version: '1.2.1',
+      date: '2026-10-20',
+      changes: ['Mise à jour technique : version alignée sur le code actuel de PartyHub.'],
+    },
 
     {
       version: '1.2.0',
@@ -118,11 +143,21 @@ export const RELEASE_NOTES: Readonly<Partial<Record<string, readonly GameRelease
     },
   ],
   'plus-ou-moins': [
-    { version: '1.0.1', date: '2026-10-20', changes: ['Mise à jour technique : version alignée sur le code actuel de PartyHub.'] },
-    { version: '1.0.0', date: '2026-10-14', changes: ['Première version publique.'] }],
+    {
+      version: '1.0.1',
+      date: '2026-10-20',
+      changes: ['Mise à jour technique : version alignée sur le code actuel de PartyHub.'],
+    },
+    { version: '1.0.0', date: '2026-10-14', changes: ['Première version publique.'] },
+  ],
   reflexe: [
-    { version: '1.0.1', date: '2026-10-20', changes: ['Mise à jour technique : version alignée sur le code actuel de PartyHub.'] },
-    { version: '1.0.0', date: '2026-10-14', changes: ['Première version publique.'] }],
+    {
+      version: '1.0.1',
+      date: '2026-10-20',
+      changes: ['Mise à jour technique : version alignée sur le code actuel de PartyHub.'],
+    },
+    { version: '1.0.0', date: '2026-10-14', changes: ['Première version publique.'] },
+  ],
   'micro-defis': [
     {
       version: '1.1.0',
@@ -142,7 +177,12 @@ export const RELEASE_NOTES: Readonly<Partial<Record<string, readonly GameRelease
       ],
     },
   ],
-  'gags-en-rafale': [    { version: '1.0.1', date: '2026-10-20', changes: ['Mise à jour technique : version alignée sur le code actuel de PartyHub.'] },
+  'gags-en-rafale': [
+    {
+      version: '1.0.1',
+      date: '2026-10-20',
+      changes: ['Mise à jour technique : version alignée sur le code actuel de PartyHub.'],
+    },
 
     {
       version: '1.0.0',
@@ -153,7 +193,12 @@ export const RELEASE_NOTES: Readonly<Partial<Record<string, readonly GameRelease
       ],
     },
   ],
-  funambule: [    { version: '1.0.1', date: '2026-10-20', changes: ['Mise à jour technique : version alignée sur le code actuel de PartyHub.'] },
+  funambule: [
+    {
+      version: '1.0.1',
+      date: '2026-10-20',
+      changes: ['Mise à jour technique : version alignée sur le code actuel de PartyHub.'],
+    },
 
     {
       version: '1.0.0',
@@ -165,7 +210,12 @@ export const RELEASE_NOTES: Readonly<Partial<Record<string, readonly GameRelease
       ],
     },
   ],
-  'bombes-party': [    { version: '1.0.1', date: '2026-10-20', changes: ['Mise à jour technique : version alignée sur le code actuel de PartyHub.'] },
+  'bombes-party': [
+    {
+      version: '1.0.1',
+      date: '2026-10-20',
+      changes: ['Mise à jour technique : version alignée sur le code actuel de PartyHub.'],
+    },
 
     {
       version: '1.0.0',
@@ -209,7 +259,12 @@ export const RELEASE_NOTES: Readonly<Partial<Record<string, readonly GameRelease
     },
     { version: '1.0.0', date: '2026-10-14', changes: ['Première version publique.'] },
   ],
-  president: [    { version: '1.0.1', date: '2026-10-20', changes: ['Mise à jour technique : version alignée sur le code actuel de PartyHub.'] },
+  president: [
+    {
+      version: '1.0.1',
+      date: '2026-10-20',
+      changes: ['Mise à jour technique : version alignée sur le code actuel de PartyHub.'],
+    },
 
     {
       version: '1.0.0',
@@ -221,12 +276,27 @@ export const RELEASE_NOTES: Readonly<Partial<Record<string, readonly GameRelease
     { version: '1.0.0', date: '2026-10-14', changes: ['Première version publique.'] },
   ],
   promoteur: [
-    { version: '1.0.1', date: '2026-10-20', changes: ['Mise à jour technique : version alignée sur le code actuel de PartyHub.'] },
-    { version: '1.0.0', date: '2026-10-14', changes: ['Première version publique.'] }],
+    {
+      version: '1.0.1',
+      date: '2026-10-20',
+      changes: ['Mise à jour technique : version alignée sur le code actuel de PartyHub.'],
+    },
+    { version: '1.0.0', date: '2026-10-14', changes: ['Première version publique.'] },
+  ],
   'loups-village': [
-    { version: '1.0.1', date: '2026-10-20', changes: ['Mise à jour technique : version alignée sur le code actuel de PartyHub.'] },
-    { version: '1.0.0', date: '2026-10-14', changes: ['Première version publique.'] }],
-  sudoku: [    { version: '1.0.1', date: '2026-10-20', changes: ['Mise à jour technique : version alignée sur le code actuel de PartyHub.'] },
+    {
+      version: '1.0.1',
+      date: '2026-10-20',
+      changes: ['Mise à jour technique : version alignée sur le code actuel de PartyHub.'],
+    },
+    { version: '1.0.0', date: '2026-10-14', changes: ['Première version publique.'] },
+  ],
+  sudoku: [
+    {
+      version: '1.0.1',
+      date: '2026-10-20',
+      changes: ['Mise à jour technique : version alignée sur le code actuel de PartyHub.'],
+    },
 
     {
       version: '1.0.0',
@@ -240,7 +310,12 @@ export const RELEASE_NOTES: Readonly<Partial<Record<string, readonly GameRelease
     },
     { version: '1.0.0', date: '2026-10-14', changes: ['Première version publique.'] },
   ],
-  solitaire: [    { version: '1.0.1', date: '2026-10-20', changes: ['Mise à jour technique : version alignée sur le code actuel de PartyHub.'] },
+  solitaire: [
+    {
+      version: '1.0.1',
+      date: '2026-10-20',
+      changes: ['Mise à jour technique : version alignée sur le code actuel de PartyHub.'],
+    },
 
     {
       version: '1.0.0',
@@ -254,7 +329,12 @@ export const RELEASE_NOTES: Readonly<Partial<Record<string, readonly GameRelease
     },
     { version: '1.0.0', date: '2026-10-14', changes: ['Première version publique.'] },
   ],
-  taquin: [    { version: '1.0.1', date: '2026-10-20', changes: ['Mise à jour technique : version alignée sur le code actuel de PartyHub.'] },
+  taquin: [
+    {
+      version: '1.0.1',
+      date: '2026-10-20',
+      changes: ['Mise à jour technique : version alignée sur le code actuel de PartyHub.'],
+    },
 
     {
       version: '1.0.0',
@@ -271,7 +351,12 @@ export const RELEASE_NOTES: Readonly<Partial<Record<string, readonly GameRelease
     },
     { version: '1.0.0', date: '2026-10-14', changes: ['Première version publique.'] },
   ],
-  'mots-croises': [    { version: '1.0.1', date: '2026-10-20', changes: ['Mise à jour technique : version alignée sur le code actuel de PartyHub.'] },
+  'mots-croises': [
+    {
+      version: '1.0.1',
+      date: '2026-10-20',
+      changes: ['Mise à jour technique : version alignée sur le code actuel de PartyHub.'],
+    },
 
     {
       version: '1.0.0',
@@ -285,7 +370,12 @@ export const RELEASE_NOTES: Readonly<Partial<Record<string, readonly GameRelease
     },
     { version: '1.0.0', date: '2026-10-14', changes: ['Première version publique.'] },
   ],
-  'rami-51': [    { version: '1.0.1', date: '2026-10-20', changes: ['Mise à jour technique : version alignée sur le code actuel de PartyHub.'] },
+  'rami-51': [
+    {
+      version: '1.0.1',
+      date: '2026-10-20',
+      changes: ['Mise à jour technique : version alignée sur le code actuel de PartyHub.'],
+    },
 
     {
       version: '1.0.0',
@@ -296,7 +386,12 @@ export const RELEASE_NOTES: Readonly<Partial<Record<string, readonly GameRelease
       ],
     },
   ],
-  tarot: [    { version: '1.0.1', date: '2026-10-20', changes: ['Mise à jour technique : version alignée sur le code actuel de PartyHub.'] },
+  tarot: [
+    {
+      version: '1.0.1',
+      date: '2026-10-20',
+      changes: ['Mise à jour technique : version alignée sur le code actuel de PartyHub.'],
+    },
 
     {
       version: '1.0.0',
@@ -311,7 +406,12 @@ export const RELEASE_NOTES: Readonly<Partial<Record<string, readonly GameRelease
       ],
     },
   ],
-  'poker-texas': [    { version: '1.0.1', date: '2026-10-20', changes: ['Mise à jour technique : version alignée sur le code actuel de PartyHub.'] },
+  'poker-texas': [
+    {
+      version: '1.0.1',
+      date: '2026-10-20',
+      changes: ['Mise à jour technique : version alignée sur le code actuel de PartyHub.'],
+    },
 
     {
       version: '1.0.0',
@@ -334,7 +434,12 @@ export const RELEASE_NOTES: Readonly<Partial<Record<string, readonly GameRelease
       changes: ['Première version : chanter un passage de chanson YouTube, noté par les autres.'],
     },
   ],
-  'imite-moi': [    { version: '1.0.1', date: '2026-10-20', changes: ['Mise à jour technique : version alignée sur le code actuel de PartyHub.'] },
+  'imite-moi': [
+    {
+      version: '1.0.1',
+      date: '2026-10-20',
+      changes: ['Mise à jour technique : version alignée sur le code actuel de PartyHub.'],
+    },
 
     {
       version: '1.0.0',
@@ -350,7 +455,12 @@ export const RELEASE_NOTES: Readonly<Partial<Record<string, readonly GameRelease
       ],
     },
   ],
-  banquise: [    { version: '1.0.1', date: '2026-10-20', changes: ['Mise à jour technique : version alignée sur le code actuel de PartyHub.'] },
+  banquise: [
+    {
+      version: '1.0.1',
+      date: '2026-10-20',
+      changes: ['Mise à jour technique : version alignée sur le code actuel de PartyHub.'],
+    },
 
     {
       version: '1.0.0',
@@ -361,7 +471,12 @@ export const RELEASE_NOTES: Readonly<Partial<Record<string, readonly GameRelease
       ],
     },
   ],
-  boum: [    { version: '1.0.1', date: '2026-10-20', changes: ['Mise à jour technique : version alignée sur le code actuel de PartyHub.'] },
+  boum: [
+    {
+      version: '1.0.1',
+      date: '2026-10-20',
+      changes: ['Mise à jour technique : version alignée sur le code actuel de PartyHub.'],
+    },
 
     {
       version: '1.0.0',

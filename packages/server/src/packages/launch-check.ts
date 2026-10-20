@@ -131,9 +131,11 @@ class BotRun {
             const schema = this.mod.hostActions?.[suggestion.type];
             if (!schema) return { kind: 'fail', error: `action hôte « ${suggestion.type} » absente de hostActions` };
             const parsed = schema.safeParse(suggestion.payload);
-            if (!parsed.success) return { kind: 'fail', error: `action hôte « ${suggestion.type} » : payload invalide` };
+            if (!parsed.success)
+              return { kind: 'fail', error: `action hôte « ${suggestion.type} » : payload invalide` };
             const result = this.mod.handleHostAction(this.state, suggestion.type, parsed.data, this.ctx);
-            if (!result.ok) return { kind: 'fail', error: `action hôte « ${suggestion.type} » refusée : ${result.error}` };
+            if (!result.ok)
+              return { kind: 'fail', error: `action hôte « ${suggestion.type} » refusée : ${result.error}` };
             this.state = result.state;
             this.actions++;
             this.hostReadyAt = this.clock.t + ROBOT_PERIOD_MS;

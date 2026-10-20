@@ -280,7 +280,11 @@ function answerOf(request: KaraokeRequest, outcome: JobOutcome): KaraokeAnswer {
 /** Travail YouTube de la salle : la recherche ou la vérification, faites par le serveur (clé incluse). */
 export async function runKaraokeJob(job: GameJob): Promise<KaraokeLookup<unknown>> {
   if (!provider) {
-    return { ok: false, code: 'disabled', message: 'YouTube n’est pas activé sur ce serveur. Demandez à l’administrateur.' };
+    return {
+      ok: false,
+      code: 'disabled',
+      message: 'YouTube n’est pas activé sur ce serveur. Demandez à l’administrateur.',
+    };
   }
   const input = (job.input ?? {}) as { query?: unknown; videoId?: unknown };
   if (job.kind === 'youtube-search') return provider.search(String(input.query ?? ''));
