@@ -4,6 +4,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 
 ## [Non publié]
 
+## [0.17.0] - 2026-10-20
+
 ### Ajouté
 
 - Réglages du serveur dans l'administration (Système → Réglages du serveur) : jeton GitHub, mot de passe administrateur, journal, sauvegardes, réseau, images et réglages d'IA sont modifiables sans éditer `.env`. Une valeur saisie l'emporte sur `.env`, elle s'applique après un redémarrage (bouton proposé). Les secrets ne sont jamais réaffichés, sont chiffrés dans la base, et une combinaison qui casserait la configuration est refusée.
