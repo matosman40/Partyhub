@@ -32,8 +32,9 @@ sudo docker compose ps             # doit afficher « healthy » après quelques
 3. Coller le contenu copié, renseigner les variables (au minimum `ADMIN_PASSWORD`), puis valider.
 4. Attendre que l'application passe à l'état « en cours d'exécution ».
 
-Les données sont stockées dans le volume Docker `partyhub-data`. Ce volume est créé une seule fois et réutilisé
-lors des installations et mises à jour suivantes.
+Les données sont stockées dans deux volumes Docker : `partyhub-data` (base, réglages, sauvegardes) et
+`partyhub-contenu` (jeux installés et personnages, qui peuvent être volumineux). Ils sont créés une seule fois et
+réutilisés lors des installations et mises à jour suivantes.
 
 ## 4. Ouvrir le site depuis un téléphone
 
@@ -95,6 +96,8 @@ Sauvegarde complète du volume (à faire avant une mise à jour importante) :
 ```bash
 sudo docker run --rm -v partyhub-data:/data -v "$PWD":/backup alpine \
   tar czf /backup/partyhub-data-$(date +%F).tar.gz -C /data .
+sudo docker run --rm -v partyhub-contenu:/contenu -v "$PWD":/backup alpine \
+  tar czf /backup/partyhub-contenu-$(date +%F).tar.gz -C /contenu .
 ```
 
 Restauration : arrêter l'application (`sudo docker compose stop`), extraire l'archive dans le volume avec la même commande
@@ -132,7 +135,7 @@ PartyHub **et** Caddy dans un seul fichier : il s'installe depuis l'interface Ca
    de l'appareil. Le détail est dans [HTTPS-LAN.md](HTTPS-LAN.md).
 
 Le port d'accès devient **443** (`https://<adresse-du-serveur>`), et non plus 8282. Le port 443 doit être libre sur le
-serveur. Les données restent dans le volume `partyhub-data` : le même que le compose de base.
+serveur. Les données restent dans les volumes `partyhub-data` et `partyhub-contenu` : les mêmes que le compose de base.
 
 La page `/certificat` est disponible à partir de la version 0.9.3 de l'image, dont le numéro est indiqué dans le fichier.
 Le téléchargement du certificat ne dépend que de Caddy : il fonctionne dès que Caddy tourne.

@@ -44,6 +44,16 @@ export interface AppConfig {
   images?: ImagesConfig;
   host: string;
   dataDir: string;
+  /**
+   * Dossier des jeux installés (JEUX_DIR) : il reçoit `games/` (paquets) et `code-games/` (jeux de code).
+   * Absent = dossier de données (`dataDir`), comme avant.
+   */
+  jeuxDir?: string;
+  /**
+   * Dossier des personnages (PERSONNAGES_DIR) : packs de sprites et images générées, en fichiers.
+   * Absent = `<dataDir>/personnages`.
+   */
+  personnagesDir?: string;
   dbFile: string;
   staticDir: string;
   adminPassword?: string;
@@ -66,6 +76,8 @@ export interface AppConfig {
   assetLimits?: { audio: number; video: number; image: number; font: number };
   /** IA générative (jeux racontés). Absent = IA désactivée : les jeux utilisent leur histoire de secours. */
   ai?: AiConfig;
+  /** Recherche de vidéos (karaoké) : clé de l’API YouTube (YOUTUBE_API_KEY). Absent = recherche désactivée. */
+  youtube?: { apiKey?: string };
   /** Sauvegardes automatiques de la base. Absent = pas de sauvegarde (tests). */
   backup?: {
     dir: string;
@@ -336,6 +348,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     port,
     host: env.HOST?.trim() || '0.0.0.0',
     dataDir,
+    jeuxDir: env.JEUX_DIR?.trim() || dataDir,
+    personnagesDir: env.PERSONNAGES_DIR?.trim() || path.join(dataDir, 'personnages'),
     dbFile: path.join(dataDir, 'partyhub.db'),
     staticDir: env.STATIC_DIR?.trim() || path.resolve(here, '../../web/dist'),
     adminPassword,
@@ -343,6 +357,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     storeRepo: storeRepoFromEnv(env.PARTYHUB_STORE_REPO),
     builtinGames: builtinGamesFromEnv(env.BUILTIN_GAMES),
     ai: aiFromEnv(env),
+    youtube: { apiKey: env.YOUTUBE_API_KEY?.trim() || undefined },
     images: imagesFromEnv(env),
     logLevel: env.LOG_LEVEL?.trim() || 'info',
     logFile: {

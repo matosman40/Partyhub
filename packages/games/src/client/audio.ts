@@ -6,6 +6,7 @@
  */
 
 import type { SfxName } from '@partyhub/shared';
+import { loadMediaBytes } from './media-relay.js';
 
 export type Sfx = SfxName;
 
@@ -132,11 +133,13 @@ export function setSfxFiles(files: Partial<Record<Sfx, string | null>>): void {
   sfxUrls = next;
 }
 
+// Une vue de jeu de code (iframe) reçoit la table des bruitages de la page : elle la règle ici.
+(globalThis as { __partyhubSfxSink?: typeof setSfxFiles }).__partyhubSfxSink = setSfxFiles;
+
 function loadSfxFile(c: AudioContext, url: string): void {
   if (sfxBuffers.has(url) || sfxPending.has(url)) return;
   sfxPending.add(url);
-  fetch(url)
-    .then((res) => (res.ok ? res.arrayBuffer() : Promise.reject(new Error(String(res.status)))))
+  loadMediaBytes(url)
     .then((bytes) => c.decodeAudioData(bytes))
     .then((buffer) => sfxBuffers.set(url, buffer))
     .catch(() => {
@@ -360,8 +363,7 @@ export function playLoopFile(url: string): void {
   const c = context();
   const bus = musicBus;
   if (!c || !bus) return;
-  fetch(url)
-    .then((res) => (res.ok ? res.arrayBuffer() : Promise.reject(new Error(String(res.status)))))
+  loadMediaBytes(url)
     .then((bytes) => c.decodeAudioData(bytes))
     .then((buffer) => {
       if (token !== loopToken) return; // arrêtée entre-temps

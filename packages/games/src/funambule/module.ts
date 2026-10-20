@@ -135,7 +135,7 @@ export const funambule: GameModule<FunambuleState, FunambuleSettings> = {
     name: 'Funambule',
     description: 'Tenez votre funambule sur le fil : penchez le téléphone pour contrer le vent.',
     icon: '🤸',
-    version: '1.0.0',
+    version: '1.0.1',
     apiVersion: 1,
     minPlayers: 1,
     maxPlayers: 12,

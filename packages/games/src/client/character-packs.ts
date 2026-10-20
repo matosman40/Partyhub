@@ -1,5 +1,6 @@
 import { useEffect, useSyncExternalStore } from 'react';
 import type { CharacterPackInfo } from '@partyhub/shared';
+import { loadMediaBytes } from './media-relay.js';
 
 /**
  * Liste des packs de personnages (sprites importés dans l’administration).
@@ -29,9 +30,8 @@ export function loadCharacterPacks(): Promise<void> {
   publish({ ...state, status: 'loading' });
   pending = (async () => {
     try {
-      const res = await fetch('/api/character-packs', { credentials: 'same-origin' });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const body = (await res.json()) as { packs?: CharacterPackInfo[] };
+      const bytes = await loadMediaBytes('/api/character-packs');
+      const body = JSON.parse(new TextDecoder().decode(bytes)) as { packs?: CharacterPackInfo[] };
       publish({ status: 'ready', packs: Array.isArray(body.packs) ? body.packs : [] });
     } catch {
       publish({ status: 'error', packs: state.packs });

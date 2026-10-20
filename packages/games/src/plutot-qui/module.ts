@@ -98,7 +98,7 @@ export const plutotQui: GameModule<PlutotQuiState, PlutotQuiSettings> = {
     name: 'Plutôt qui ?',
     description: 'Qui est le plus susceptible de… ? Votez en secret et suivez la majorité.',
     icon: '👉',
-    version: '1.0.0',
+    version: '1.0.1',
     apiVersion: 1,
     minPlayers: 2,
     maxPlayers: 12,

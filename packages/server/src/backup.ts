@@ -9,6 +9,7 @@ import type { Store } from './db/store.js';
 import { detailsOverride } from './game-details.js';
 import type { MediaQuizService } from './media/service.js';
 import type { CodeGameInstallResult } from './code-games/service.js';
+import { PERSONNAGE_ENTRY, restorePersonnages, type PersonnageFile } from './contenu/personnages.js';
 import type { PackageBackupEntry, PackageService } from './packages/service.js';
 import { compareVersions } from './packages/semver.js';
 import { formatBytes, readZip, writeZip, ZipError, type ZipFileEntry, type ZipReadLimits } from './packages/zip.js';
@@ -84,6 +85,9 @@ export interface RestoreSummary {
   /** Versions de jeux de code restaurées : elles sont en attente de revue, jamais réactivées d'office. */
   codeGames: number;
   codeGamesPresent: number;
+  /** Personnages et images ajoutés, et déjà présents (non remplacés). */
+  personnages: number;
+  personnagesPresent: number;
   /** Jeux, fichiers ou paquets non restaurés, avec la raison. */
   skipped: string[];
 }
@@ -103,6 +107,8 @@ function emptySummary(): RestoreSummary {
     packagesPresent: 0,
     codeGames: 0,
     codeGamesPresent: 0,
+    personnages: 0,
+    personnagesPresent: 0,
     skipped: [],
   };
 }
@@ -253,19 +259,27 @@ export class ArchiveTooLargeError extends Error {}
 
 /**
  * Archive ZIP : backup.json (définitions), assets.json (fiches), assets/<id> (fichiers),
- * packages.json (paquets installés) et packages/<id>/<version>.phgame (leurs archives).
+ * packages.json (paquets installés), packages/<id>/<version>.phgame (leurs archives) et
+ * personnages/… (packs de personnages et images générées, en fichiers).
  */
 export function buildArchive(
   backup: Backup,
   assets: AssetService,
   packages: PackageBackupEntry[] = [],
   codeGames: CodeGameBackupEntry[] = [],
+  personnages: PersonnageFile[] = [],
 ): Uint8Array {
   const records = assets.list().filter((r) => existsSync(assets.filePath(r.id)));
   const total = records.reduce((sum, r) => sum + r.size, 0);
   if (total > ARCHIVE_MAX_BYTES) {
     throw new ArchiveTooLargeError(
       `La médiathèque pèse ${formatBytes(total)} : au-delà de ${formatBytes(ARCHIVE_MAX_BYTES)}, l’archive complète est trop lourde. Copiez le dossier des médias à part.`,
+    );
+  }
+  const personnagesTotal = personnages.reduce((sum, f) => sum + f.data.byteLength, 0);
+  if (total + personnagesTotal > ARCHIVE_MAX_BYTES) {
+    throw new ArchiveTooLargeError(
+      `Les personnages pèsent ${formatBytes(personnagesTotal)} : avec la médiathèque, l’archive complète dépasse ${formatBytes(ARCHIVE_MAX_BYTES)}. Copiez le dossier des personnages à part.`,
     );
   }
   const enc = (text: string) => new TextEncoder().encode(text);
@@ -290,6 +304,7 @@ export function buildArchive(
     ...records.map((r) => ({ name: `assets/${r.id}`, data: readFileSync(assets.filePath(r.id)) })),
     ...packages.map((p) => ({ name: `packages/${p.id}/${p.version}.phgame`, data: p.bytes })),
     ...codeGames.map((c) => ({ name: `code-games/${c.id}/${c.version}.phgame`, data: c.bytes })),
+    ...personnages.map((f) => ({ name: f.name, data: f.data })),
   ];
   return writeZip(files);
 }
@@ -303,6 +318,8 @@ export interface ParsedArchive {
   codeFiles: Map<string, Buffer>;
   /** Archives des paquets, par « identifiant/version ». */
   packageFiles: Map<string, Buffer>;
+  /** Fichiers des personnages et images, par nom d’archive (`personnages/…`). */
+  personnageFiles: Map<string, Buffer>;
 }
 
 const SHA256_HEX = /^[0-9a-f]{64}$/;
@@ -357,7 +374,8 @@ export function readArchive(bytes: Uint8Array): ParsedArchive {
       name === ARCHIVE_CODE_LIST ||
       ARCHIVE_ASSET_ENTRY.test(name) ||
       ARCHIVE_PACKAGE_ENTRY.test(name) ||
-      ARCHIVE_CODE_ENTRY.test(name)
+      ARCHIVE_CODE_ENTRY.test(name) ||
+      PERSONNAGE_ENTRY.test(name)
     )
       return;
     throw new ZipError(`Élément inattendu dans la sauvegarde : « ${name} ».`);
@@ -373,7 +391,9 @@ export function readArchive(bytes: Uint8Array): ParsedArchive {
   const files = new Map<string, Buffer>();
   const packageFiles = new Map<string, Buffer>();
   const codeFiles = new Map<string, Buffer>();
+  const personnageFiles = new Map<string, Buffer>();
   for (const [name, data] of byName) {
+    if (PERSONNAGE_ENTRY.test(name)) personnageFiles.set(name, Buffer.from(data));
     const match = ARCHIVE_ASSET_ENTRY.exec(name);
     if (match) files.set(match[1]!, Buffer.from(data));
     const pkg = ARCHIVE_PACKAGE_ENTRY.exec(name);
@@ -389,6 +409,7 @@ export function readArchive(bytes: Uint8Array): ParsedArchive {
     packageFiles,
     codeGames: parseArchivedCodeGames(byName.get(ARCHIVE_CODE_LIST)),
     codeFiles,
+    personnageFiles,
   };
 }
 
@@ -491,6 +512,8 @@ export async function restoreArchive(
     assets: AssetService;
     packages?: PackageService;
     codeGames?: { install(bytes: Uint8Array, actor?: string): Promise<CodeGameInstallResult> };
+    /** Dossier des personnages (PERSONNAGES_DIR) : où écrire les personnages et images de l’archive. */
+    personnagesDir?: string;
   },
   options: RestoreOptions,
 ): Promise<{ ok: true; summary: RestoreSummary } | { ok: false; error: string }> {
@@ -516,6 +539,9 @@ export async function restoreArchive(
   if (!restored.ok) return restored;
   const pkg = restorePackages(parsed, deps.packages, options.conflict);
   const code = await restoreCodeGames(parsed, deps.codeGames);
+  const personnages = deps.personnagesDir
+    ? restorePersonnages(deps.personnagesDir, parsed.personnageFiles)
+    : { added: 0, present: 0 };
   return {
     ok: true,
     summary: {
@@ -526,6 +552,8 @@ export async function restoreArchive(
       packagesPresent: pkg.present,
       codeGames: code.installed,
       codeGamesPresent: code.present,
+      personnages: personnages.added,
+      personnagesPresent: personnages.present,
       skipped: [...summary.skipped, ...restored.summary.skipped, ...pkg.skipped, ...code.skipped],
     },
   };

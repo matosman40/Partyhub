@@ -20,7 +20,8 @@ import type { StoreService } from '../store/service.js';
 import type { CardGameService } from '../cards/service.js';
 import { embedCardAssets, restoreCardAssets } from '../cards/assets.js';
 import { PROPOSAL_MAX_PENDING, PROPOSAL_MAX_PER_DAY, type BoumBankService } from '../boum/service.js';
-import { IMPORT_MAX_BYTES, isBankType } from '@partyhub/games';
+import { IMPORT_MAX_BYTES, isBankType, setKaraokeYoutube } from '@partyhub/games';
+import { karaokeYoutube } from '../youtube/karaoke.js';
 import { z } from 'zod';
 import type { AssetService } from '../assets/service.js';
 import { PackageExportError, type PackageService } from '../packages/service.js';
@@ -35,6 +36,13 @@ import {
   type CopyServices,
 } from '../packages/copy.js';
 import type { MediaQuizService } from '../media/service.js';
+import {
+  createSearchLimiter,
+  createYoutube,
+  YOUTUBE_ERROR_MESSAGES,
+  YoutubeError,
+  type YoutubeErrorCode,
+} from '../youtube/search.js';
 import { AdminSessions, LoginLimiter, readCookie, verifyPassword } from '../auth.js';
 import { catalog, gameInfo, originOf } from '../catalog.js';
 import { withOverrides } from '../game-details.js';
@@ -76,6 +84,7 @@ import { type DbBackupScheduler, listDbBackups } from '../db/backup.js';
 import type { CharacterPackService } from '../characters/packs.js';
 import type { AiRuntime } from '../ai/runtime.js';
 import type { ImageLibrary } from '../images/library.js';
+import { personnageFiles } from '../contenu/personnages.js';
 import { GAME_PHOTO_MAX_BYTES, type GamePhotoRejection, type GamePhotoStore } from '../game-photos/store.js';
 import { GAME_IMAGE_ID } from '@partyhub/shared';
 import { aiProviderUpdateSchema } from '../ai/settings.js';
@@ -329,7 +338,8 @@ export function createApp(deps: AppDeps): express.Express {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader(
       'Content-Security-Policy',
-      "default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; media-src data: blob:; connect-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'self'",
+      // Cadres YouTube seulement (extraits du karaoké) : le jeu n'a toujours ni réseau, ni script externe.
+      "default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; media-src data: blob:; connect-src 'none'; frame-src https://www.youtube-nocookie.com https://www.youtube.com; base-uri 'none'; form-action 'none'; frame-ancestors 'self'",
     );
     res
       .type('text/html; charset=utf-8')
@@ -388,6 +398,50 @@ export function createApp(deps: AppDeps): express.Express {
     }
     recordClientEntries(logger, parsed.data.entries, ip);
     res.status(204).end();
+  });
+
+  // YouTube pour le karaoké : recherche et vérification d’une vidéo. La clé reste ici, le quota est limité par adresse.
+  const youtube = createYoutube({ apiKey: config.youtube?.apiKey });
+  // Le karaoké, y compris en jeu de code, cherche et vérifie ses vidéos par le serveur (clé chez lui).
+  setKaraokeYoutube(karaokeYoutube(youtube));
+  const youtubeLimiter = createSearchLimiter();
+  const YOUTUBE_STATUS: Record<YoutubeErrorCode, number> = {
+    invalid: 400,
+    badId: 400,
+    notFound: 404,
+    notEmbeddable: 422,
+    live: 422,
+    disabled: 503,
+    quota: 503,
+    unavailable: 502,
+  };
+  const sendYoutubeError = (res: Response, error: unknown) => {
+    const code: YoutubeErrorCode = error instanceof YoutubeError ? error.code : 'unavailable';
+    res.status(YOUTUBE_STATUS[code]).json({ error: YOUTUBE_ERROR_MESSAGES[code], code });
+  };
+  api.get('/youtube/search', async (req, res) => {
+    if (!youtubeLimiter.allow(req.ip ?? 'inconnue')) {
+      res.status(429).json({ error: 'Trop de recherches. Patientez une minute.' });
+      return;
+    }
+    try {
+      const results = await youtube.search(typeof req.query.q === 'string' ? req.query.q : '');
+      res.json({ results });
+    } catch (error) {
+      sendYoutubeError(res, error);
+    }
+  });
+  api.get('/youtube/video', async (req, res) => {
+    if (!youtubeLimiter.allow(req.ip ?? 'inconnue')) {
+      res.status(429).json({ error: 'Trop de recherches. Patientez une minute.' });
+      return;
+    }
+    try {
+      const video = await youtube.video(typeof req.query.id === 'string' ? req.query.id : '');
+      res.json({ video });
+    } catch (error) {
+      sendYoutubeError(res, error);
+    }
   });
 
   app.use('/api', api);
@@ -1071,6 +1125,55 @@ export function createApp(deps: AppDeps): express.Express {
     res.json({ outcome: await gameStore.update(req.params.id ?? '') });
   });
 
+  /** Mise à jour automatique de tout le dépôt : coupée ou rétablie pour chacun de ses jeux installés. */
+  admin.put('/store/auto-update', (req, res) => {
+    const enabled = (req.body as { enabled?: unknown } | undefined)?.enabled;
+    if (typeof enabled !== 'boolean') {
+      res.status(400).json({ error: 'Indiquez enabled : true ou false.' });
+      return;
+    }
+    const touched = gameStore.setAutoUpdate(enabled);
+    res.json({ ok: true, autoUpdate: gameStore.autoUpdate, touched });
+  });
+
+  /** Plusieurs jeux d’un coup : une file installée ou mise à jour en arrière-plan, suivie par /store/jobs/current. */
+  admin.post('/store/jobs', (req, res) => {
+    const body = req.body as { action?: unknown; ids?: unknown } | undefined;
+    const { action, ids } = body ?? {};
+    if (
+      (action !== 'install' && action !== 'update') ||
+      !Array.isArray(ids) ||
+      !ids.every((id) => typeof id === 'string')
+    ) {
+      res.status(400).json({ error: 'Indiquez action (install ou update) et ids (liste d’identifiants).' });
+      return;
+    }
+    const result = gameStore.startJob(action, ids as string[]);
+    if (!result.ok) {
+      res.status(result.busy ? 409 : 400).json({ error: result.error });
+      return;
+    }
+    res.status(202).json({ job: result.job });
+  });
+
+  admin.get('/store/jobs/current', (_req, res) => {
+    res.json({ job: gameStore.currentJob() });
+  });
+
+  /** Suppression de plusieurs jeux installés depuis le magasin. Une erreur sur un jeu n’arrête pas les autres. */
+  admin.post('/store/remove', (req, res) => {
+    const ids = (req.body as { ids?: unknown } | undefined)?.ids;
+    if (!Array.isArray(ids) || !ids.every((id) => typeof id === 'string')) {
+      res.status(400).json({ error: 'Liste d’identifiants attendue.' });
+      return;
+    }
+    res.json(
+      gameStore.removeMany(ids as string[], (gameId) =>
+        manager.closeWhere((room) => room.module.manifest.id === gameId, 'admin'),
+      ),
+    );
+  });
+
   admin.delete('/store/games/:id', (req, res) => {
     const result = gameStore.uninstall(req.params.id ?? '', (gameId) =>
       manager.closeWhere((room) => room.module.manifest.id === gameId, 'admin'),
@@ -1167,6 +1270,24 @@ export function createApp(deps: AppDeps): express.Express {
   /** Jeux de code : versions et leur état (en attente, active, remplacée, erreur). */
   admin.get('/code-games', (_req, res) => {
     res.json({ games: codeGames.list() });
+  });
+
+  /**
+   * Autorise l'IA du serveur pour un jeu de code (ou la retire). La clé ne quitte jamais le serveur : le jeu
+   * reçoit seulement le résultat de ses travaux, et seulement une fois ce réglage activé.
+   */
+  admin.put('/code-games/:id/ai', (req, res) => {
+    const body = (req.body ?? {}) as { enabled?: unknown };
+    if (typeof body.enabled !== 'boolean') {
+      res.status(400).json({ error: 'Attendu : enabled (vrai ou faux).' });
+      return;
+    }
+    const result = codeGames.setAi(req.params.id ?? '', body.enabled, actorOf(req));
+    if (!result.ok) {
+      res.status(400).json({ error: result.error });
+      return;
+    }
+    res.json({ ok: true, enabled: result.enabled });
   });
 
   /** Ce qu'il faut relire avant d'approuver : fichiers, empreintes et code exécuté. */
@@ -1655,7 +1776,10 @@ export function createApp(deps: AppDeps): express.Express {
     res.json({ ok: true, summary: result.summary });
   });
 
-  /** Archive complète (ZIP) : sauvegarde, fichiers de la médiathèque et paquets installés. */
+  /** Dossier des personnages (PERSONNAGES_DIR), par défaut dans le dossier de données. */
+  const personnagesRoot = (): string => config.personnagesDir ?? path.join(config.dataDir, 'personnages');
+
+  /** Archive complète (ZIP) : sauvegarde, fichiers de la médiathèque, paquets installés et personnages. */
   admin.get('/backup/archive', (_req, res) => {
     try {
       const bytes = buildArchive(
@@ -1663,6 +1787,7 @@ export function createApp(deps: AppDeps): express.Express {
         assets,
         packages.exportAll(),
         codeGames.exportAll(),
+        personnageFiles(personnagesRoot()),
       );
       const stamp = new Date().toISOString().slice(0, 10);
       res.setHeader('Content-Type', 'application/zip');
@@ -1692,7 +1817,16 @@ export function createApp(deps: AppDeps): express.Express {
       }
       const result = await restoreArchive(
         body,
-        { store, cards: cardGames, media: mediaGames, boards: boardGames, assets, packages, codeGames },
+        {
+          store,
+          cards: cardGames,
+          media: mediaGames,
+          boards: boardGames,
+          assets,
+          packages,
+          codeGames,
+          personnagesDir: personnagesRoot(),
+        },
         { conflict: conflictMode(req.query.conflict) },
       );
       if (!result.ok) {

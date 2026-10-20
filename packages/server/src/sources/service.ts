@@ -1,22 +1,29 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { z } from 'zod';
-import type { PackageSourceRow, Store } from '../db/store.js';
+import type { PackageSourceOrigin, PackageSourceRow, Store } from '../db/store.js';
 import type { CodeGamesPort } from '../code-games/service.js';
 import { PackageValidationError, peekPackageKind, validatePackage } from '../packages/format.js';
 import type { PackageService } from '../packages/service.js';
+import { buildTagPackage } from '../store/build.js';
 import {
   GitHubError,
+  GitHubQuota,
   downloadArchive,
   latestRelease,
+  latestTag,
   parseSource,
+  tagFiles,
   type GitHubOptions,
   type SourceRef,
 } from './github.js';
 
 /**
- * Sources GitHub des paquets : chaque source est un dépôt dont la dernière release contient un
- * `.phgame` et son `.sha256`. Une seule version par jeu est installée : la mise à jour remplace
- * l’ancienne, comme pour un import manuel. Un dépôt ne peut pas prendre un paquet qui n’est pas le sien.
+ * Sources GitHub des paquets. Deux origines :
+ * - « release » : la dernière release du dépôt contient un `.phgame` et son `.sha256` ;
+ * - « tags » : le magasin. Le paquet est construit à partir du dossier `jeux/<jeu>/` au tag le plus haut, sans release
+ *   ni signature (voir store/build.ts).
+ * Une seule version par jeu est installée : la mise à jour remplace l’ancienne, comme pour un import manuel.
+ * Un dépôt ne peut pas prendre un paquet qui n’est pas le sien.
  */
 
 export interface PackageSourceRecord {
@@ -29,6 +36,7 @@ export interface PackageSourceRecord {
   latestVersion: string | null;
   lastCheckedAt: string | null;
   lastError: string | null;
+  origin: PackageSourceOrigin;
 }
 
 export type CheckOutcome =
@@ -65,6 +73,7 @@ function toRecord(row: PackageSourceRow): PackageSourceRecord {
     latestVersion: row.latest_version,
     lastCheckedAt: row.last_checked_at,
     lastError: row.last_error,
+    origin: row.origin,
   };
 }
 
@@ -80,16 +89,22 @@ export interface PackageSourceOptions {
    * release de code est refusée comme avant.
    */
   code?: CodeGamesPort;
+  /** Quota GitHub partagé avec le magasin. Absent : un quota propre à ce service. */
+  quota?: GitHubQuota;
 }
 
 export class PackageSourceService {
   private readonly running = new Set<string>();
+  /** Quota GitHub lu par chaque appel, partagé avec le magasin de jeux. */
+  readonly quota: GitHubQuota;
 
   constructor(
     private readonly store: Store,
     private readonly packages: PackageService,
     private readonly options: PackageSourceOptions = {},
-  ) {}
+  ) {
+    this.quota = options.quota ?? new GitHubQuota();
+  }
 
   /** Vrai si le serveur dispose d’un jeton GitHub. Le jeton lui-même n’est jamais exposé. */
   get tokenConfigured(): boolean {
@@ -124,6 +139,34 @@ export class PackageSourceService {
       latest_version: null,
       last_checked_at: null,
       last_error: null,
+      origin: 'release',
+      created_at: new Date().toISOString(),
+    });
+    return { ok: true, id };
+  }
+
+  /**
+   * Source du magasin : un jeu d’un dépôt commun (« auteur/depot/jeu »), lu à ses tags. Aucune release n’est
+   * nécessaire, et la source se met à jour chaque jour comme les autres.
+   */
+  addFromStore(repo: string): { ok: true; id: string } | { ok: false; error: string } {
+    const source = parseSource(repo);
+    if (!source?.game) return { ok: false, error: 'Dépôt du magasin invalide : auteur/depot/jeu attendu.' };
+    if (this.store.listPackageSources().some((row) => row.repo === repo)) {
+      return { ok: false, error: 'Cette source existe déjà.' };
+    }
+    const id = `src-${randomBytes(4).toString('hex')}`;
+    this.store.savePackageSource({
+      id,
+      repo,
+      private: 0,
+      auto_update: 1,
+      package_id: null,
+      installed_version: null,
+      latest_version: null,
+      last_checked_at: null,
+      last_error: null,
+      origin: 'tags',
       created_at: new Date().toISOString(),
     });
     return { ok: true, id };
@@ -201,7 +244,8 @@ export class PackageSourceService {
 
   /**
    * Jeu de code : même contrôle de version et de dépôt qu'un paquet, puis installation en attente de revue.
-   * La signature est vérifiée par l'installation elle-même, avec les clés de confiance de ce serveur.
+   * Sans `unsigned`, la signature est vérifiée par l'installation, avec les clés de confiance de ce serveur. Avec
+   * `unsigned` (paquet construit par le magasin), aucune signature n'est demandée : la revue reste obligatoire.
    */
   private async installCode(
     row: PackageSourceRow,
@@ -209,17 +253,16 @@ export class PackageSourceService {
     releaseVersion: string,
     bytes: Uint8Array,
     code: CodeGamesPort,
+    unsigned: boolean,
   ): Promise<CheckOutcome> {
-    const inspected = code.inspect(bytes);
+    const inspected = code.inspect(bytes, { unsigned });
     if (!inspected.ok) {
       this.patch(row.id, { last_error: 'Paquet refusé.' });
       return { ok: false, error: 'Paquet refusé.', issues: inspected.issues };
     }
     const { id, version } = inspected;
     if (version !== releaseVersion) {
-      throw new GitHubError(
-        `Le fichier annonce la version ${version}, mais la release est la version ${releaseVersion}.`,
-      );
+      throw new GitHubError(`Le fichier annonce la version ${version}, mais la version publiée est ${releaseVersion}.`);
     }
     if (source.game && source.game !== id) {
       throw new GitHubError(`Ce jeu du dépôt commun s’appelle « ${source.game} », pas « ${id} ».`);
@@ -231,7 +274,7 @@ export class PackageSourceService {
       throw new GitHubError(`Un paquet « ${id} » est déjà installé et n’est pas lié à cette source.`);
     }
 
-    const result = await code.install(bytes, 'magasin');
+    const result = await code.install(bytes, 'magasin', { unsigned });
     if (!result.ok) {
       this.patch(row.id, { last_error: result.error });
       return { ok: false, error: result.error, issues: result.issues };
@@ -242,14 +285,109 @@ export class PackageSourceService {
       : { ok: true, status: 'en attente de revue', version };
   }
 
+  /**
+   * Installe un paquet vérifié pour cette source : jeu de code (en attente de revue) ou paquet déclaratif (activé si
+   * la version est la plus haute). `unsigned` vaut vrai seulement pour un paquet construit par le magasin.
+   */
+  private async installBytes(
+    row: PackageSourceRow,
+    source: SourceRef,
+    version: string,
+    bytes: Uint8Array,
+    unsigned: boolean,
+  ): Promise<CheckOutcome> {
+    if (this.options.code && peekPackageKind(bytes) === 'code') {
+      return this.installCode(row, source, version, bytes, this.options.code, unsigned);
+    }
+
+    let manifestId: string;
+    let manifestVersion: string;
+    try {
+      const pkg = validatePackage(bytes);
+      manifestId = pkg.manifest.id;
+      manifestVersion = pkg.manifest.version;
+    } catch (err) {
+      if (err instanceof PackageValidationError) {
+        this.patch(row.id, { last_error: 'Paquet refusé.' });
+        return { ok: false, error: 'Paquet refusé.', issues: err.issues };
+      }
+      throw err;
+    }
+
+    if (manifestVersion !== version) {
+      throw new GitHubError(
+        `Le fichier annonce la version ${manifestVersion}, mais la version publiée est ${version}.`,
+      );
+    }
+    if (source.game && source.game !== manifestId) {
+      throw new GitHubError(`Ce jeu du dépôt commun s’appelle « ${source.game} », pas « ${manifestId} ».`);
+    }
+    if (row.package_id && row.package_id !== manifestId) {
+      throw new GitHubError(`Cette source fournit « ${manifestId} », pas « ${row.package_id} ».`);
+    }
+    const installed = this.store.getPackage(manifestId);
+    if (installed && row.package_id !== manifestId) {
+      throw new GitHubError(`Un paquet « ${manifestId} » est déjà installé et n’est pas lié à cette source.`);
+    }
+
+    const result = this.packages.install(bytes);
+    if (!result.ok) {
+      this.patch(row.id, { last_error: result.error });
+      return { ok: false, error: result.error, issues: result.issues };
+    }
+    if (!result.active) {
+      // Version plus ancienne que la version active : conservée pour un retour arrière, mais pas activée.
+      this.patch(row.id, { package_id: result.id, last_error: null });
+      return { ok: true, status: 'conservée', version: result.version };
+    }
+    this.patch(row.id, { package_id: result.id, installed_version: result.version, last_error: null });
+    const status = result.unchanged ? 'à jour' : installed ? 'mis à jour' : 'installé';
+    return { ok: true, status, version: result.version };
+  }
+
+  /**
+   * Source du magasin : le tag le plus haut du jeu donne la version. Son dossier `jeux/<jeu>/` est lu, puis le paquet
+   * est construit et installé sans signature. Rien n’est lu depuis une release.
+   */
+  private async runTags(
+    row: PackageSourceRow,
+    source: SourceRef,
+    github: GitHubOptions,
+    checkedAt: string,
+  ): Promise<CheckOutcome> {
+    if (!source.game) throw new GitHubError('Source du magasin invalide : auteur/depot/jeu attendu.');
+    const tag = await latestTag(source.repo, github, source.game);
+    this.patch(row.id, { latest_version: tag.version, last_checked_at: checkedAt });
+
+    if (row.package_id && row.installed_version === tag.version) {
+      this.patch(row.id, { last_error: null });
+      return { ok: true, status: 'à jour', version: tag.version };
+    }
+
+    const files = await tagFiles(source.repo, tag.tag, `jeux/${source.game}`, github);
+    let bytes: Uint8Array;
+    try {
+      bytes = await buildTagPackage(source.game, files);
+    } catch (err) {
+      if (err instanceof PackageValidationError) {
+        this.patch(row.id, { last_error: 'Paquet refusé.' });
+        return { ok: false, error: 'Paquet refusé.', issues: err.issues };
+      }
+      throw err;
+    }
+    return this.installBytes(row, source, tag.version, bytes, true);
+  }
+
   private async run(row: PackageSourceRow): Promise<CheckOutcome> {
-    const github: GitHubOptions = { fetch: this.options.fetch, token: this.options.token };
+    const github: GitHubOptions = { fetch: this.options.fetch, token: this.options.token, quota: this.quota };
     const checkedAt = new Date().toISOString();
     try {
       if (row.private === 1 && !this.options.token) throw new GitHubError('GITHUB_TOKEN n’est pas configuré.');
 
       const source = parseSource(row.repo);
       if (!source) throw new GitHubError('Source invalide : indiquez auteur/nom ou auteur/depot/jeu.');
+      if (row.origin === 'tags') return await this.runTags(row, source, github, checkedAt);
+
       const release = await latestRelease(source.repo, github, source.game);
       this.patch(row.id, { latest_version: release.version, last_checked_at: checkedAt });
 
@@ -265,54 +403,7 @@ export class PackageSourceService {
           'L’empreinte du fichier ne correspond pas à celle publiée avec la release. Fichier refusé.',
         );
       }
-
-      if (this.options.code && peekPackageKind(bytes) === 'code') {
-        return this.installCode(row, source, release.version, bytes, this.options.code);
-      }
-
-      let manifestId: string;
-      let manifestVersion: string;
-      try {
-        const pkg = validatePackage(bytes);
-        manifestId = pkg.manifest.id;
-        manifestVersion = pkg.manifest.version;
-      } catch (err) {
-        if (err instanceof PackageValidationError) {
-          this.patch(row.id, { last_error: 'Paquet refusé.' });
-          return { ok: false, error: 'Paquet refusé.', issues: err.issues };
-        }
-        throw err;
-      }
-
-      if (manifestVersion !== release.version) {
-        throw new GitHubError(
-          `Le fichier annonce la version ${manifestVersion}, mais la release est la version ${release.version}.`,
-        );
-      }
-      if (source.game && source.game !== manifestId) {
-        throw new GitHubError(`Ce jeu du dépôt commun s’appelle « ${source.game} », pas « ${manifestId} ».`);
-      }
-      if (row.package_id && row.package_id !== manifestId) {
-        throw new GitHubError(`Cette source fournit « ${manifestId} », pas « ${row.package_id} ».`);
-      }
-      const installed = this.store.getPackage(manifestId);
-      if (installed && row.package_id !== manifestId) {
-        throw new GitHubError(`Un paquet « ${manifestId} » est déjà installé et n’est pas lié à cette source.`);
-      }
-
-      const result = this.packages.install(bytes);
-      if (!result.ok) {
-        this.patch(row.id, { last_error: result.error });
-        return { ok: false, error: result.error, issues: result.issues };
-      }
-      if (!result.active) {
-        // Version plus ancienne que la version active : conservée pour un retour arrière, mais pas activée.
-        this.patch(row.id, { package_id: result.id, last_error: null });
-        return { ok: true, status: 'conservée', version: result.version };
-      }
-      this.patch(row.id, { package_id: result.id, installed_version: result.version, last_error: null });
-      const status = result.unchanged ? 'à jour' : installed ? 'mis à jour' : 'installé';
-      return { ok: true, status, version: result.version };
+      return await this.installBytes(row, source, release.version, bytes, false);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Erreur inconnue.';
       this.patch(row.id, { last_checked_at: checkedAt, last_error: message });

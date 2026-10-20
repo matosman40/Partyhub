@@ -1,5 +1,12 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { CODE_VIEW_MESSAGE, type CodeViewMethod, type CodeViewRole } from '@partyhub/shared';
+import {
+  CODE_MEDIA_MAX_BYTES,
+  CODE_VIEW_MESSAGE,
+  isCodeMediaUrl,
+  type CodeViewMethod,
+  type CodeViewRole,
+} from '@partyhub/shared';
+import { usePublicSounds } from '../sounds.js';
 
 /**
  * Vue d'un jeu de code : elle tourne dans un iframe sandboxé (`allow-scripts` seulement : ni même origine,
@@ -55,6 +62,32 @@ export function CodeFrame({ role, url, data, send, onAction, onChange }: CodeFra
     };
     const reply = (id: number, result: Result) => post({ ph: CODE_VIEW_MESSAGE.reply, id, result });
 
+    // Médias de l'installation pour la vue : seules les adresses de `isCodeMediaUrl` sont servies, et seulement
+    // à cette vue. Les octets voyagent (transfert, sans copie) vers l'iframe.
+    async function serveMedia(id: number, url: unknown): Promise<void> {
+      const answer = (body: Record<string, unknown>, transfer: Transferable[] = []) =>
+        frameRef.current?.contentWindow?.postMessage({ ph: CODE_VIEW_MESSAGE.mediaReply, id, ...body }, '*', transfer);
+      if (typeof url !== 'string' || !isCodeMediaUrl(url)) {
+        answer({ ok: false, error: 'Média non autorisé.' });
+        return;
+      }
+      try {
+        const res = await fetch(url, { credentials: 'same-origin' });
+        if (!res.ok) {
+          answer({ ok: false, error: `Média indisponible (${res.status}).` });
+          return;
+        }
+        const data = await res.arrayBuffer();
+        if (data.byteLength > CODE_MEDIA_MAX_BYTES) {
+          answer({ ok: false, error: 'Média trop volumineux.' });
+          return;
+        }
+        answer({ ok: true, type: res.headers.get('content-type') ?? 'application/octet-stream', data }, [data]);
+      } catch {
+        answer({ ok: false, error: 'Média injoignable.' });
+      }
+    }
+
     function onMessage(event: MessageEvent) {
       const frame = frameRef.current;
       // Seul l'iframe de cette vue peut parler à la page.
@@ -66,6 +99,7 @@ export function CodeFrame({ role, url, data, send, onAction, onChange }: CodeFra
         args?: unknown[];
         settings?: Record<string, unknown>;
         message?: string;
+        url?: unknown;
       } | null;
       if (!message || typeof message !== 'object') return;
       switch (message.ph) {
@@ -73,6 +107,9 @@ export function CodeFrame({ role, url, data, send, onAction, onChange }: CodeFra
           readyRef.current = true;
           setReady(true);
           renderNow();
+          return;
+        case CODE_VIEW_MESSAGE.media:
+          void serveMedia(typeof message.id === 'number' ? message.id : 0, message.url);
           return;
         case CODE_VIEW_MESSAGE.call: {
           const id = typeof message.id === 'number' ? message.id : 0;
@@ -116,6 +153,13 @@ export function CodeFrame({ role, url, data, send, onAction, onChange }: CodeFra
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dataKey, role, ready, Boolean(onAction)]);
 
+  // Bruitages de l'installation : la vue les règle dès qu'elle est prête, puis à chaque changement de réglage.
+  const sounds = usePublicSounds();
+  useEffect(() => {
+    if (!readyRef.current) return;
+    frameRef.current?.contentWindow?.postMessage({ ph: CODE_VIEW_MESSAGE.sounds, sfx: sounds?.sfx ?? {} }, '*');
+  }, [sounds, ready]);
+
   if (viewError) {
     return (
       <p className="error" role="alert">
@@ -134,6 +178,10 @@ export function CodeFrame({ role, url, data, send, onAction, onChange }: CodeFra
         ref={frameRef}
         title={role === 'host' ? 'Écran du jeu' : role === 'player' ? 'Écran du téléphone' : 'Réglages du jeu'}
         sandbox="allow-scripts"
+        // Capteurs et médias demandés par les jeux (gyroscope, caméra, micro) : le navigateur demande toujours
+        // l'autorisation. L'autoplay et le DRM servent seulement aux cadres YouTube des extraits (karaoké).
+        // Rien d'autre n'est ouvert : pas de réseau, pas de stockage (voir la politique de la vue).
+        allow="accelerometer; autoplay; encrypted-media; gyroscope; camera; microphone"
         src={url}
         style={{ width: '100%', height: '100%', minHeight: '60vh', border: 0, display: 'block' }}
       />

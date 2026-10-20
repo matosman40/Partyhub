@@ -107,6 +107,25 @@ async function bundle(
 }
 
 /**
+ * Feuille de style du dossier du jeu (styles/app.css), si elle existe. Les polices qu'elle cite (/fonts/NOM.woff2) sont
+ * intégrées en data: : la politique de l'iframe ne charge que les données embarquées. Chaque police vient de
+ * styles/fonts/ du jeu : elle n'entre pas dans le paquet, seulement dans la vue. Une police absente refuse la construction.
+ */
+function appStyles(sourceDir: string): string | undefined {
+  const file = path.join(sourceDir, 'styles', 'app.css');
+  if (!fs.existsSync(file)) return undefined;
+  const fontDir = path.join(sourceDir, 'styles', 'fonts');
+  return fs
+    .readFileSync(file, 'utf8')
+    .replace(/url\((['"]?)\/fonts\/([a-z0-9-]+\.woff2)\1\)/g, (_match, _quote: string, name: string) => {
+      const font = path.join(fontDir, name);
+      if (!fs.existsSync(font))
+        throw new PackageValidationError([`Police absente du paquet : ${name} (styles/fonts/).`]);
+      return `url(data:font/woff2;base64,${fs.readFileSync(font).toString('base64')})`;
+    });
+}
+
+/**
  * Construit un jeu de code en mémoire : compile src/server.ts et src/client.tsx, copie assets/ et licenses/,
  * écrit le manifeste avec les empreintes, signe si une clé privée (PEM) est donnée, puis revalide le résultat.
  */
@@ -124,7 +143,7 @@ export async function buildCodePackage(
   // Les vues sont rendues par une amorce générée (incluse dans le paquet) qui importe src/client.tsx.
   const client = await bundle(
     CODE_VIEW_GLOBAL,
-    { source: viewEntrySource(), resolveDir: path.join(sourceDir, 'src') },
+    { source: viewEntrySource({ styles: appStyles(sourceDir) }), resolveDir: path.join(sourceDir, 'src') },
     roots,
   );
   // Le module doit annoncer le même identifiant, nom et version que manifest.json : vérifié dès la construction.

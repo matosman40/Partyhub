@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { defaultCharacterFor } from '@partyhub/shared';
 import { Character } from '../../client/character.js';
+import { useMediaUrl } from '../../client/media-relay.js';
 import { Avatar } from '../../client/ui.js';
 import type { Resolution, RoundReport } from '../module.js';
 import { KIND_LABELS, STAT_LABELS, type SceneKind, type StatKey } from '../schemas.js';
@@ -111,16 +112,11 @@ export function artUrl(id: string): string {
  */
 export function ArtFrame({ id, alt = '', fallback }: { id: string; alt?: string; fallback: ReactNode }) {
   const [failed, setFailed] = useState(false);
-  if (failed) return <>{fallback}</>;
+  // Dans une vue de jeu de code, l'image arrive par le relais : le repli reste affiché le temps du chargement.
+  const src = useMediaUrl(artUrl(id));
+  if (failed || !src) return <>{fallback}</>;
   return (
-    <img
-      className="aventure-art"
-      src={artUrl(id)}
-      alt={alt}
-      loading="lazy"
-      decoding="async"
-      onError={() => setFailed(true)}
-    />
+    <img className="aventure-art" src={src} alt={alt} loading="lazy" decoding="async" onError={() => setFailed(true)} />
   );
 }
 
@@ -236,6 +232,29 @@ export function NpcCard({ npc }: { npc: NpcView }) {
         {npc.relation && <RelationTag relation={npc.relation} />}
         {npc.line && <blockquote className="aventure-npc-line">« {npc.line} »</blockquote>}
       </figcaption>
+    </figure>
+  );
+}
+
+/**
+ * Personnage qui parle dans la scène, en grand sur l’écran principal : corps entier, son nom, son lien avec
+ * le groupe et sa réplique. Il est lisible de loin, à la différence de la carte compacte.
+ */
+export function StageFigure({ npc }: { npc: NpcView }) {
+  return (
+    <figure className="aventure-stage-figure">
+      <div className="aventure-stage-art">
+        <Character spec={defaultCharacterFor(npc.name)} framing="full" label={npc.name} />
+      </div>
+      <figcaption className="aventure-stage-caption">
+        <strong>
+          <span aria-hidden="true">{npc.emoji} </span>
+          {npc.name}
+        </strong>{' '}
+        <span className="muted">{npc.title}</span>
+        {npc.relation && <RelationTag relation={npc.relation} />}
+      </figcaption>
+      {npc.line && <blockquote className="aventure-stage-line">« {npc.line} »</blockquote>}
     </figure>
   );
 }

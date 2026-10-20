@@ -1,0 +1,808 @@
+/*
+ * Plateau fête : écran principal (plateau incliné en 3D, pions debout, annonces au centre) et téléphone.
+ * Palette de fête foraine de nuit : violet profond, or, rose, menthe. Les titres reprennent la police d’affichage
+ * déjà chargée par l’application (Luckiest Guy), le reste du texte garde la police de l’interface.
+ */
+
+.pf-host {
+  --pf-night: #0b0620;
+  --pf-violet: #2a1450;
+  --pf-pink: #ff4f9a;
+  --pf-gold: #ffc83d;
+  --pf-mint: #3ddc97;
+  --pf-cyan: #5ad8ff;
+  --pf-orange: #ff8a3d;
+  --pf-cream: #fff5e1;
+  --pf-ink: #2a0d3f;
+  --tile: clamp(26px, 3.1vw, 46px);
+  --pawn: clamp(46px, 5.4vw, 84px);
+  --die: 64px;
+
+  position: relative;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 0.6rem;
+  width: 100%;
+  height: clamp(520px, calc(100vh - 9.5rem), 900px);
+  min-height: 0;
+  padding: 0.6rem 0.7rem 0.7rem;
+  box-sizing: border-box;
+  border-radius: 22px;
+  color: var(--pf-cream);
+  text-align: center;
+  background:
+    radial-gradient(ellipse at 50% 35%, rgba(255, 79, 154, 0.18), transparent 55%),
+    radial-gradient(ellipse at 50% 120%, rgba(90, 216, 255, 0.12), transparent 60%),
+    linear-gradient(180deg, var(--pf-violet), var(--pf-night));
+  overflow: hidden;
+}
+
+.pf-top {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.pf-status {
+  margin: 0;
+  font-weight: 800;
+  font-size: clamp(0.95rem, 1.5vw, 1.2rem);
+}
+
+.pf-next {
+  opacity: 0.75;
+  font-weight: 600;
+}
+
+/* Troisième colonne de l’en-tête : l’horloge reste à droite, hors de la zone où passent les pions du haut. */
+.pf-clock {
+  grid-column: 3;
+  justify-self: end;
+}
+
+.pf-clock .countdown {
+  font-family: 'Luckiest Guy', system-ui, sans-serif;
+  font-size: clamp(1.1rem, 2vw, 1.6rem);
+  color: var(--pf-gold);
+}
+
+.pf-body {
+  display: grid;
+  grid-template-columns: minmax(190px, 19%) minmax(0, 1fr);
+  gap: 0.8rem;
+  min-height: 0;
+}
+
+.pf-side {
+  display: grid;
+  grid-template-rows: auto auto;
+  align-content: start;
+  gap: 0.6rem;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.pf-panel {
+  padding: 0.6rem 0.75rem;
+  border-radius: 16px;
+  background: rgba(10, 4, 26, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  text-align: left;
+}
+
+.pf-panel-title {
+  margin: 0 0 0.35rem;
+  text-transform: none;
+  font-family: 'Luckiest Guy', system-ui, sans-serif;
+  font-weight: 400;
+  font-size: 1.05rem;
+  color: var(--pf-cyan);
+}
+
+.pf-standings {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.pf-standings li {
+  display: grid;
+  grid-template-columns: 1.3rem auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    'rank av who who'
+    'rank av coins stars';
+  align-items: center;
+  column-gap: 0.45rem;
+  padding: 0.3rem 0.2rem;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.12);
+}
+
+.pf-standings li > :nth-child(1) {
+  grid-area: rank;
+}
+.pf-standings li > :nth-child(2) {
+  grid-area: av;
+}
+.pf-standings li > :nth-child(3) {
+  grid-area: who;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 700;
+}
+.pf-standings li > :nth-child(4) {
+  grid-area: coins;
+  font-size: 0.85rem;
+}
+.pf-standings li > :nth-child(5) {
+  grid-area: stars;
+  font-size: 0.85rem;
+}
+
+.pf-standings li.is-first {
+  color: var(--pf-gold);
+}
+
+.pf-rank {
+  font-family: 'Luckiest Guy', system-ui, sans-serif;
+  font-size: 1rem;
+}
+
+.pf-legend ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.2rem;
+  font-size: 0.88rem;
+}
+
+/* ---------- Plateau ---------- */
+
+.pf-board {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+}
+
+/* Plateau à plat : la profondeur vient de l’échelle des cases et des pions (voir `depthScale`). */
+.pf-table {
+  position: absolute;
+  inset: 0;
+}
+
+.pf-track {
+  position: absolute;
+  left: 4%;
+  right: 4%;
+  top: 6%;
+  bottom: 6%;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 200, 61, 0.45);
+  background: radial-gradient(ellipse at center, rgba(42, 20, 80, 0.85), rgba(11, 6, 32, 0.92) 72%);
+  box-shadow:
+    0 0 60px rgba(255, 79, 154, 0.3),
+    inset 0 0 60px rgba(90, 216, 255, 0.15),
+    0 40px 0 rgba(0, 0, 0, 0.35);
+}
+
+.pf-tile {
+  position: absolute;
+  width: var(--tile);
+  height: var(--tile);
+  transform: translate(-50%, -50%) scale(var(--k, 1));
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  font-size: calc(var(--tile) * 0.5);
+  line-height: 1;
+  background: #2f2658;
+  border: 2px solid rgba(255, 255, 255, 0.14);
+  box-shadow:
+    0 6px 0 rgba(0, 0, 0, 0.35),
+    inset 0 2px 0 rgba(255, 255, 255, 0.18);
+}
+
+.pf-tile.k-pieces {
+  background: linear-gradient(180deg, #ffe38a, #ffc83d);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+.pf-tile.k-perte {
+  background: linear-gradient(180deg, #ff8aab, #ff4f7b);
+}
+.pf-tile.k-event {
+  background: linear-gradient(180deg, #b7a4ff, #7b5cff);
+  box-shadow:
+    0 0 18px rgba(123, 92, 255, 0.75),
+    0 6px 0 rgba(0, 0, 0, 0.35);
+}
+.pf-tile.k-avance {
+  background: linear-gradient(180deg, #8af5c6, #3ddc97);
+}
+.pf-tile.k-recule {
+  background: linear-gradient(180deg, #ffbf8f, #ff8a3d);
+}
+.pf-tile.k-depart {
+  background:
+    conic-gradient(#fff8ec 25%, #2a0d3f 0 50%, #fff8ec 0 75%, #2a0d3f 0) 0 0 / 40% 40%,
+    #fff8ec;
+  border: 2px solid var(--pf-gold);
+}
+.pf-tile.k-depart > span {
+  background: rgba(11, 6, 32, 0.75);
+  border-radius: 50%;
+  padding: 0.1em;
+}
+
+.pf-star {
+  position: absolute;
+  top: calc(var(--tile) * -0.85);
+  left: 50%;
+  translate: -50% 0;
+  font-size: calc(var(--tile) * 0.9);
+  filter: drop-shadow(0 0 8px rgba(255, 200, 61, 0.9));
+  animation: pf-star 1.6s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.pf-pawn {
+  position: absolute;
+  width: var(--pawn);
+  height: calc(var(--pawn) * 1.31);
+  transform: translate(calc(-50% + var(--dx, 0) * var(--pawn) * 0.55), -100%) scale(var(--k, 1));
+  transform-origin: 50% 100%;
+  transition:
+    left 0.34s linear,
+    top 0.34s linear;
+  z-index: 2;
+}
+
+.pf-pawn-fig {
+  display: block;
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 8px 5px rgba(0, 0, 0, 0.5));
+}
+
+.pf-pawn-name {
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  transform: translate(-50%, -4px);
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+  background: rgba(11, 6, 32, 0.85);
+  border: 1px solid rgba(255, 200, 61, 0.5);
+  font-size: clamp(0.7rem, 0.95vw, 0.95rem);
+  font-weight: 800;
+  white-space: nowrap;
+  color: var(--pf-cream);
+}
+
+.pf-pawn.is-waiting .pf-pawn-fig {
+  animation: pf-bob 1s ease-in-out infinite;
+}
+
+/* Remonté et plus bas : les pions du bas de l’anneau restent visibles sous le panneau. */
+.pf-centre {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  transform: translate(-50%, -50%);
+  width: 56%;
+  max-height: 50%;
+  display: grid;
+  place-items: center;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.pf-board.has-mini .pf-centre {
+  width: 78%;
+  max-height: 92%;
+}
+
+.pf-card {
+  display: grid;
+  justify-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  max-height: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
+  padding: clamp(0.8rem, 1.8vw, 1.4rem) clamp(1rem, 2.6vw, 2rem);
+  border-radius: 22px;
+  background: rgba(14, 6, 36, 0.86);
+  border: 2px solid rgba(255, 200, 61, 0.4);
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.5),
+    inset 0 0 40px rgba(255, 79, 154, 0.12);
+  animation: pf-pop 0.45s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+
+.pf-kicker {
+  margin: 0;
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: var(--pf-gold);
+}
+
+.pf-big {
+  margin: 0;
+  text-transform: none;
+  font-family: 'Luckiest Guy', system-ui, sans-serif;
+  font-size: clamp(1.3rem, 2.8vw, 2.5rem);
+  line-height: 1.1;
+  color: var(--pf-cream);
+}
+
+.pf-muted {
+  margin: 0;
+  opacity: 0.78;
+  font-size: 0.95rem;
+}
+
+.pf-choice-line {
+  margin: 0;
+  font-weight: 800;
+}
+
+.pf-inline-count {
+  color: var(--pf-gold);
+}
+
+.pf-card .countdown {
+  font-family: 'Luckiest Guy', system-ui, sans-serif;
+  font-size: 1.1rem;
+  color: var(--pf-gold);
+}
+
+.pf-dice {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.7rem 0.9rem;
+}
+
+.pf-dice-item {
+  display: grid;
+  justify-items: center;
+  gap: 0.15rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.pf-dice-item.has-rolled .pf-die-cube {
+  box-shadow: none;
+}
+
+.pf-dice-name {
+  max-width: 6.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pf-notes {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.25rem;
+  width: 100%;
+  max-height: clamp(4rem, 14vh, 9rem);
+  overflow: hidden;
+  font-size: clamp(0.8rem, 1.1vw, 0.98rem);
+}
+
+.pf-notes li {
+  padding: 0.25rem 0.55rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  animation: pf-in 0.4s both;
+}
+
+.pf-event {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.5rem 0.75rem;
+  border-radius: 14px;
+  text-align: left;
+  background: rgba(123, 92, 255, 0.22);
+  border: 1px solid rgba(123, 92, 255, 0.7);
+  animation: pf-pop 0.5s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+
+.pf-event-icon {
+  font-size: clamp(1.8rem, 3vw, 2.4rem);
+}
+
+.pf-event-name {
+  margin: 0;
+  font-weight: 800;
+}
+
+.pf-event-text {
+  margin: 0.1rem 0 0;
+  font-size: 0.92rem;
+  opacity: 0.9;
+}
+
+/* ---------- Mini-jeux ---------- */
+
+.pf-mini {
+  width: min(100%, 620px);
+}
+
+.pf-sequence {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+.pf-sequence li {
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  font-weight: 700;
+  font-size: 0.92rem;
+}
+
+.pf-defi-icon {
+  margin: 0;
+  font-size: clamp(2.6rem, 6vw, 4.4rem);
+  animation: pf-pop 0.6s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+
+.pf-instruction {
+  margin: 0;
+  font-weight: 800;
+  font-size: clamp(1rem, 1.8vw, 1.3rem);
+  color: var(--pf-gold);
+}
+
+.pf-defi .timer-bar {
+  width: 100%;
+}
+
+.pf-reveal {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.3rem;
+  width: 100%;
+  min-width: min(440px, 70vw);
+}
+
+.pf-reveal li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  font-weight: 700;
+}
+
+.pf-reveal li.is-ok {
+  color: var(--pf-mint);
+}
+
+.pf-reveal li.is-miss {
+  color: #ff9ab4;
+}
+
+.pf-payouts li {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
+.pf-gain {
+  font-family: 'Luckiest Guy', system-ui, sans-serif;
+  font-weight: 400;
+  color: var(--pf-gold);
+}
+
+.pf-points {
+  opacity: 0.85;
+}
+
+/* ---------- Podium final ---------- */
+
+.pf-podium {
+  position: absolute;
+  inset: 4.6rem 1rem 1rem;
+  z-index: 5;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 0.6rem;
+  border-radius: 22px;
+  background: rgba(8, 4, 22, 0.92);
+  border: 2px solid rgba(255, 200, 61, 0.45);
+  animation: pf-pop 0.6s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+
+.pf-podium ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.pf-podium li {
+  display: grid;
+  grid-template-columns: 2rem auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.7rem;
+  min-width: min(560px, 80vw);
+  padding: 0.35rem 0.7rem;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  font-size: 1.15rem;
+  font-weight: 700;
+  text-align: left;
+}
+
+.pf-podium li.is-first {
+  color: var(--pf-gold);
+  background: rgba(255, 200, 61, 0.14);
+}
+
+.pf-podium .pf-who {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- Téléphone ---------- */
+
+.pf-phone {
+  gap: 0.9rem;
+}
+
+.pf-phone-head {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.6rem;
+  text-align: left;
+}
+
+.pf-phone-fig {
+  width: 64px;
+  height: auto;
+}
+
+.pf-phone-name {
+  margin: 0;
+  font-family: 'Luckiest Guy', system-ui, sans-serif;
+  font-size: 1.25rem;
+  color: var(--pf-gold);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pf-phone-stats {
+  display: grid;
+  gap: 0.15rem;
+  font-weight: 800;
+  text-align: right;
+}
+
+.pf-phone .pf-die {
+  margin: 0.4rem auto;
+}
+
+.pf-choices {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.pf-choices .btn {
+  width: 100%;
+}
+
+.pf-roll {
+  font-family: 'Luckiest Guy', system-ui, sans-serif;
+  font-weight: 400;
+}
+
+/* ---------- Dé 3D ---------- */
+
+.pf-die {
+  position: relative;
+  width: var(--die);
+  height: var(--die);
+  margin: 0 auto;
+  perspective: 600px;
+}
+
+.pf-die-sm {
+  --die: 46px;
+}
+.pf-die-md {
+  --die: 64px;
+}
+.pf-die-lg {
+  --die: 104px;
+}
+
+.pf-die-cube {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.9s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.pf-die.is-waiting .pf-die-cube {
+  animation: pf-idle 2.4s ease-in-out infinite;
+}
+
+.pf-die.is-rolling .pf-die-cube {
+  animation: pf-roll 0.9s ease-out;
+}
+
+.pf-face {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  padding: 14%;
+  box-sizing: border-box;
+  border-radius: 16%;
+  background: linear-gradient(160deg, #fffdf6, #ffe9c4);
+  box-shadow: inset 0 0 0 2px rgba(42, 13, 63, 0.18);
+  backface-visibility: visible;
+}
+
+.pf-face i {
+  display: block;
+  width: 62%;
+  height: 62%;
+  margin: auto;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #6b3b8c, #2a0d3f 70%);
+}
+
+.pf-face-q {
+  grid-column: 1 / -1;
+  grid-row: 1 / -1;
+  place-self: center;
+  font-family: 'Luckiest Guy', system-ui, sans-serif;
+  font-size: 2.2em;
+  color: #7b5cff;
+}
+
+.pf-face-front {
+  transform: translateZ(calc(var(--die) / 2));
+}
+.pf-face-back {
+  transform: rotateY(180deg) translateZ(calc(var(--die) / 2));
+}
+.pf-face-right {
+  transform: rotateY(90deg) translateZ(calc(var(--die) / 2));
+}
+.pf-face-left {
+  transform: rotateY(-90deg) translateZ(calc(var(--die) / 2));
+}
+.pf-face-top {
+  transform: rotateX(90deg) translateZ(calc(var(--die) / 2));
+}
+.pf-face-bottom {
+  transform: rotateX(-90deg) translateZ(calc(var(--die) / 2));
+}
+
+/* ---------- Animations ---------- */
+
+@keyframes pf-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes pf-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pf-star {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-6deg);
+  }
+  50% {
+    transform: translateY(-5px) rotate(6deg);
+  }
+}
+
+@keyframes pf-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes pf-idle {
+  0%,
+  100% {
+    transform: rotateX(-12deg) rotateY(-14deg);
+  }
+  50% {
+    transform: rotateX(8deg) rotateY(12deg);
+  }
+}
+
+@keyframes pf-roll {
+  0% {
+    transform: rotateX(0deg) rotateY(0deg);
+  }
+  100% {
+    transform: rotateX(720deg) rotateY(540deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pf-host *,
+  .pf-host *::before,
+  .pf-host *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Écrans étroits (téléphone ou fenêtre réduite) : le classement passe sous le plateau. */
+@media (max-width: 720px) {
+  .pf-host {
+    height: auto;
+    min-height: 70vh;
+  }
+
+  .pf-body {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(360px, 1fr);
+  }
+
+  .pf-side {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .pf-legend {
+    display: none;
+  }
+
+  .pf-board {
+    min-height: 420px;
+  }
+}

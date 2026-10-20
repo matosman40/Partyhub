@@ -7,7 +7,7 @@ name: partyhub
 
 services:
   partyhub:
-    image: ghcr.io/matosman40/partyhub:0.15.0
+    image: ghcr.io/matosman40/partyhub:0.16.0
     pull_policy: missing
     container_name: partyhub
     restart: unless-stopped
@@ -19,6 +19,8 @@ services:
       PORT: '8282'
       HOST: '0.0.0.0'
       DATA_DIR: /data
+      JEUX_DIR: /contenu/jeux
+      PERSONNAGES_DIR: /contenu/personnages
       ADMIN_PASSWORD: '${ADMIN_PASSWORD:-}'
       GITHUB_TOKEN: '${GITHUB_TOKEN:-}'
       PARTYHUB_STORE_REPO: '${PARTYHUB_STORE_REPO:-}'
@@ -60,6 +62,7 @@ services:
       AI_MAX_CALLS_PER_HOUR: '${AI_MAX_CALLS_PER_HOUR:-300}'
       CLOUDFLARE_ACCOUNT_ID: '${CLOUDFLARE_ACCOUNT_ID:-}'
       CLOUDFLARE_API_TOKEN: '${CLOUDFLARE_API_TOKEN:-}'
+      YOUTUBE_API_KEY: '${YOUTUBE_API_KEY:-}'
       MODELSCOPE_API_KEY: '${MODELSCOPE_API_KEY:-}'
       MODELSCOPE_ALLOW_NONCOMMERCIAL: '${MODELSCOPE_ALLOW_NONCOMMERCIAL:-}'
       IMAGE_PROVIDERS: '${IMAGE_PROVIDERS:-}'
@@ -68,6 +71,7 @@ services:
       BUILTIN_GAMES: '${BUILTIN_GAMES:-off}'
     volumes:
       - partyhub-data:/data
+      - partyhub-contenu:/contenu
     healthcheck:
       test:
         - CMD
@@ -106,3 +110,5 @@ services:
 volumes:
   partyhub-data:
     name: partyhub-data
+  partyhub-contenu:
+    name: partyhub-contenu

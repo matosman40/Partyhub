@@ -1,0 +1,236 @@
+/* Jeux absurdes : Tribunal de l’absurde, L’imposteur parmi nous, Téléphone arabe illustré. */
+
+/* ---------- Tribunal de l’absurde ---------- */
+
+.tribunal-docket {
+  display: grid;
+  gap: 0.25rem;
+  justify-items: start;
+  margin-bottom: 0.75rem;
+}
+
+.tribunal-case {
+  margin: 0;
+  font-family: var(--display);
+  font-size: clamp(1.1rem, 2.6vw, 1.6rem);
+  color: var(--sun);
+}
+
+.tribunal-hint {
+  margin: 0;
+  color: var(--muted);
+}
+
+.tribunal-own {
+  color: var(--muted);
+  font-size: 0.9em;
+}
+
+.defense-card .author {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--muted);
+  font-size: 0.85em;
+}
+
+.verdict-badge {
+  display: inline-block;
+  padding: 0.2rem 0.7rem;
+  border: 2px solid currentColor;
+  border-radius: 999px;
+  font-family: var(--display);
+  font-size: 0.95rem;
+}
+
+.verdict-badge.acquittee {
+  color: var(--lime);
+}
+
+.verdict-badge.condamnee {
+  color: var(--danger);
+}
+
+/* ---------- L’imposteur parmi nous ---------- */
+
+.imposteur-header {
+  display: grid;
+  gap: 0.2rem;
+  margin-bottom: 0.75rem;
+}
+
+.imposteur-header .label {
+  margin: 0;
+}
+
+.imposteur-category {
+  margin: 0;
+  font-family: var(--display);
+  font-size: clamp(1.3rem, 3vw, 2rem);
+  color: var(--cyan);
+}
+
+.imposteur-verdict {
+  margin: 0.5rem 0;
+  font-family: var(--display);
+  font-size: clamp(1.6rem, 4vw, 2.6rem);
+}
+
+.imposteur-verdict.imposteur {
+  color: var(--magenta);
+}
+
+.imposteur-verdict.equipe {
+  color: var(--lime);
+}
+
+.role-word {
+  margin: 0.25rem 0;
+  font-family: var(--display);
+  font-size: clamp(2rem, 7vw, 3rem);
+}
+
+.role-hint {
+  margin: 0.5rem 0 0;
+  font-size: 1.15rem;
+  line-height: 1.35;
+}
+
+.forbidden {
+  margin: 0.6rem 0 0;
+  color: var(--sun);
+}
+
+/* ---------- Téléphone arabe illustré ---------- */
+
+.telephone-header {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.telephone-instruction {
+  margin: 0;
+  font-family: var(--display);
+  font-size: clamp(1.4rem, 4vw, 2.2rem);
+}
+
+.telephone-prompt {
+  margin: 0.25rem 0 0;
+  font-family: var(--display);
+  font-size: clamp(1.4rem, 5vw, 2rem);
+  line-height: 1.2;
+  color: var(--sun);
+}
+
+/* Dessin : feuille claire, traits d’encre. Le même rendu sert à la saisie, à la lecture et au bilan. */
+.drawing {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 14px;
+}
+
+.drawing-paper {
+  fill: #fff6dc;
+}
+
+.drawing-ink {
+  fill: none;
+  stroke: #1c1450;
+  stroke-width: 16;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Un simple appui donne un point, rendu en rond plein. */
+circle.drawing-ink {
+  fill: #1c1450;
+  stroke: none;
+}
+
+.draw-pad {
+  display: grid;
+  gap: 0.75rem;
+  width: min(100%, 62vh);
+  margin-inline: auto;
+}
+
+/* Le doigt trace sans faire défiler la page. */
+.draw-surface {
+  touch-action: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  cursor: crosshair;
+  border-radius: 14px;
+  box-shadow: 0 0 0 2px var(--line);
+}
+
+.draw-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.chain-list {
+  display: grid;
+  gap: 1.1rem;
+  width: min(100%, 1100px);
+  margin: 0.75rem auto 0;
+}
+
+.chain {
+  padding: 0.9rem 1rem;
+  overflow-x: auto;
+  background: var(--glass);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+}
+
+.chain-steps {
+  display: flex;
+  align-items: stretch;
+  gap: 0.6rem;
+  min-width: min-content;
+  margin: 0;
+  padding: 0 0 0.25rem;
+  list-style: none;
+}
+
+/* Sept étapes tiennent sur une ligne à la largeur d’un téléviseur, à côté du panneau latéral. */
+.chain-step {
+  display: grid;
+  align-content: start;
+  gap: 0.4rem;
+  flex: 0 0 auto;
+  width: 7rem;
+}
+
+.chain-meta {
+  display: grid;
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.chain-kind {
+  font-weight: 600;
+}
+
+.chain-step.sentence .chain-kind {
+  color: var(--sun);
+}
+
+.chain-step.draw .chain-kind {
+  color: var(--magenta);
+}
+
+.chain-step.describe .chain-kind {
+  color: var(--cyan);
+}
+
+.chain-text {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.3;
+}

@@ -66,12 +66,13 @@ LABEL org.opencontainers.image.title="PartyHub" \
       org.opencontainers.image.version="${VERSION}" \
       org.opencontainers.image.revision="${REVISION}"
 
-# Dossier persistant (SQLite) appartenant à l'utilisateur « node ».
-RUN mkdir -p /data && chown node:node /data
+# Dossiers persistants, appartenant à l'utilisateur « node » : /data (base SQLite, réglages, sauvegardes) et
+# /contenu (jeux installés et personnages, souvent volumineux, voir JEUX_DIR et PERSONNAGES_DIR).
+RUN mkdir -p /data /contenu && chown node:node /data /contenu
 
 USER node
 EXPOSE 8282
-VOLUME ["/data"]
+VOLUME ["/data", "/contenu"]
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
   CMD node -e "fetch('http://127.0.0.1:' + (process.env.PORT || 8282) + '/api/health').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"

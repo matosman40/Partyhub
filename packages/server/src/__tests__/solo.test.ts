@@ -266,3 +266,90 @@ describe('Mots croisés', () => {
     }
   });
 });
+
+describe('Classement en direct des jeux solo', () => {
+  const alice: PlayerRef = { id: 'a', name: 'Alice' };
+  const bruno: PlayerRef = { id: 'b', name: 'Bruno' };
+  const chloe: PlayerRef = { id: 'c', name: 'Chloé' };
+  type SudokuState = Extract<ReturnType<typeof sudoku.start>, { ok: true }>['state'];
+
+  function startSudoku(list: PlayerRef[]) {
+    const env = makeCtx(
+      list.map((p) => p.id),
+      11,
+    );
+    const s0 = sudoku.initialize({ timeLimitSec: 0, difficulty: 'facile' }, list, env.ctx);
+    const started = sudoku.start(s0, env.ctx);
+    if (!started.ok) throw new Error(started.error);
+    return { env, s: started.state as SudokuState };
+  }
+
+  /** Fait jouer `id` : `count` cases justes, ou toutes les cases vides si `count` est absent. */
+  function fillCells(env: ReturnType<typeof makeCtx>, s: SudokuState, id: string, count = Infinity): SudokuState {
+    let state = s;
+    let played = 0;
+    const solution = state.boards[id]!.solution;
+    for (let i = 0; i < 81 && played < count; i++) {
+      if (state.boards[id]!.puzzle[i] !== 0) continue;
+      const res = sudoku.handleAction(state, { id, name: id }, 'play', { index: i, value: solution[i] }, env.ctx);
+      if (!res.ok) throw new Error(res.error);
+      state = res.state;
+      played++;
+    }
+    return state;
+  }
+
+  it('garde la courbe d’avancement de chacun : un point par palier, puis la résolution', () => {
+    const { env, s: start } = startSudoku([alice, bruno]);
+    env.advance(4_000);
+    let s = fillCells(env, start, 'a', 20);
+    const trail = s.history.a!;
+    expect(trail[0]!.ms).toBe(0);
+    expect(trail.length).toBeGreaterThan(1);
+    for (let i = 1; i < trail.length; i++) {
+      expect(trail[i]!.ms).toBeGreaterThanOrEqual(trail[i - 1]!.ms);
+      expect(Math.floor(trail[i]!.percent / 10)).toBeGreaterThan(Math.floor(trail[i - 1]!.percent / 10));
+    }
+    expect(s.history.b).toHaveLength(1);
+
+    s = fillCells(env, s, 'a');
+    expect(s.history.a!.at(-1)).toEqual({ ms: s.doneMs.a, percent: 100 });
+  });
+
+  it('l’avancement part de zéro : les cases données du Sudoku ne comptent pas', () => {
+    const { s: start } = startSudoku([alice]);
+    expect(sudoku.getPlayerState(start, 'a').percent).toBe(0);
+  });
+
+  it('classe les joueurs qui n’ont pas fini selon leur avancement, et leur donne des points', () => {
+    const { env, s: start } = startSudoku([alice, bruno]);
+    let s = fillCells(env, start, 'a', 5);
+    s = fillCells(env, s, 'b', 25);
+    expect(sudoku.getPublicState(s).standings.map((r) => r.playerId)).toEqual(['b', 'a']);
+
+    const ended = sudoku.nextRound(s, env.ctx);
+    expect(ended.phase).toBe('final');
+    const ranking = sudoku.calculateScores(ended);
+    expect(ranking.map((e) => [e.playerId, e.points])).toEqual([
+      ['b', 100],
+      ['a', 90],
+    ]);
+  });
+
+  it('l’écran principal reçoit l’ordre d’arrivée, les points fixés, la salle et les courbes', () => {
+    const { env, s: start } = startSudoku([alice, bruno, chloe]);
+    let s = fillCells(env, start, 'a');
+    s = fillCells(env, s, 'b', 10);
+    const view = sudoku.getPublicState(s);
+
+    expect(view.roster.map((r) => r.playerId)).toEqual(['a', 'b', 'c']);
+    expect(view.standings.map((r) => r.playerId)).toEqual(['a', 'b', 'c']);
+    expect(view.standings[0]).toMatchObject({ done: true, points: 100 });
+    expect(view.standings[1]).toMatchObject({ done: false, points: null });
+    // Les cases données comptent dans l’avancement : Chloé n’a pas joué, mais n’est pas à 0 %.
+    expect(view.standings[2]).toMatchObject({ done: false, points: null });
+    expect(view.standings[2]!.percent).toBeLessThan(view.standings[1]!.percent);
+    expect(view.startedAt).toBe(s.startedAt);
+    expect(Object.keys(view.history).sort()).toEqual(['a', 'b', 'c']);
+  });
+});

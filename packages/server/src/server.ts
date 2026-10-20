@@ -1,4 +1,5 @@
 import { CharacterPackService } from './characters/packs.js';
+import { moveCharactersFromDatabase, moveLegacyGameFolders } from './contenu/migration.js';
 import { randomBytes } from 'node:crypto';
 import { writeFileSync } from 'node:fs';
 import { createServer as createHttpServer, type Server as HttpServer } from 'node:http';
@@ -112,20 +113,27 @@ export async function createServer(opts: ServerOptions): Promise<PartyServer> {
   }
   await ensureAdminPassword(store, config, logger);
 
+  // Dossiers des jeux et des personnages (JEUX_DIR, PERSONNAGES_DIR). Sans ces réglages, tout reste dans DATA_DIR.
+  // Avant de créer les services : les jeux déjà installés et les personnages de la base sont déplacés d’abord.
+  const jeuxDir = config.jeuxDir ?? config.dataDir;
+  const personnagesDir = config.personnagesDir ?? path.join(config.dataDir, 'personnages');
+  moveLegacyGameFolders(config.dataDir, jeuxDir, logger);
+  moveCharactersFromDatabase(store.db, personnagesDir, logger);
+
   const profiles = new ProfileService(store);
   const cardGames = new CardGameService(store);
   const boumBank = new BoumBankService(store);
   const boardGames = new BoardGameService(store);
   const assets = new AssetService(store, config.dataDir, config.assetLimits);
   const mediaGames = new MediaQuizService(store, assets);
-  const packages = new PackageService(store, config.dataDir);
+  const packages = new PackageService(store, jeuxDir);
   // Jeux de code : clés de confiance relues à chaque opération, et journal des problèmes de clés au démarrage.
   for (const problem of loadTrustedKeys(config.dataDir).problems) {
     logger.warn({ event: 'code-game.trust', problem }, 'Clé de confiance ignorée');
   }
   // Les salles d'un jeu de code qui s'arrête sont fermées dès que le gestionnaire de salles existe (plus bas).
   let closeCodeGameRooms: (id: string) => void = () => undefined;
-  const codeGames = new CodeGameService(store, config.dataDir, {
+  const codeGames = new CodeGameService(store, jeuxDir, {
     trustedKeys: () => loadTrustedKeys(config.dataDir).keys,
     onError: (message) => logger.error({ event: 'code-game.load', message }, message),
     audit: (event, data, message) => logger.info({ event, ...data }, message),
@@ -152,14 +160,14 @@ export async function createServer(opts: ServerOptions): Promise<PartyServer> {
     isBuiltin: (gameId) => builtinIds.has(gameId),
     code: codeGames,
   });
-  const characterPacks = new CharacterPackService(store.db);
+  const characterPacks = new CharacterPackService(personnagesDir);
   const hub = new RealtimeHub(compileTrustProxy(config.trustProxy ?? 'loopback'), opts.joinThrottle);
   hub.setCadence(() => appliedCadence(store.getTestMode()));
   // Les fournisseurs viennent de l’environnement et de l’administration (clés saisies dans l’interface).
   const aiRuntime = new AiRuntime(store, config.ai, config.dataDir, logger);
   // Images générées (portraits, fonds) : une bibliothèque partagée par les jeux, alimentée par les fournisseurs
   // configurés (Cloudflare, ModelScope). Sans fournisseur, les jeux gardent leur rendu de secours.
-  const imageLibrary = new ImageLibrary(store);
+  const imageLibrary = new ImageLibrary(store, personnagesDir);
   // Captures de la première partie de chaque jeu (fiche du jeu), rangées dans le dossier de données.
   const gamePhotos = new GamePhotoStore(config.dataDir);
   const imageConfig = config.images ?? { providers: [], ...IMAGES_DEFAULTS };

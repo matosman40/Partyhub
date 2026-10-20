@@ -165,10 +165,16 @@ export const sudokuEngine: SoloEngine<SudokuBoard> = {
     return { ok: true, state: { ...board, grid, conflicts: conflictsOf(grid) } };
   },
 
+  /** Avancement : part des cases à remplir (les cases données ne comptent pas) déjà justes. */
   progress(board) {
     let right = 0;
-    for (let i = 0; i < 81; i++) if (board.grid[i] === board.solution[i]) right++;
-    return right / 81;
+    let toFill = 0;
+    for (let i = 0; i < 81; i++) {
+      if (board.puzzle[i] !== 0) continue;
+      toFill++;
+      if (board.grid[i] === board.solution[i]) right++;
+    }
+    return toFill === 0 ? 1 : right / toFill;
   },
 
   solved(board) {

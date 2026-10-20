@@ -438,7 +438,7 @@ export const pokerTexas: GameModule<PokerState, PokerSettings> = {
     name: 'Poker Texas',
     description: 'Le poker Texas hold’em avec des jetons : blindes, mises, tapis et showdown.',
     icon: '♠️',
-    version: '1.0.0',
+    version: '1.0.1',
     apiVersion: 1,
     minPlayers: 2,
     maxPlayers: 8,

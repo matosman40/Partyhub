@@ -129,6 +129,14 @@ Détail du format et des règles : `docs/PHGAME.md`.
 - Critère : un jeu JavaScript d'exemple est installé et joué ; des tests montrent qu'il ne peut ni lire un fichier du serveur ni appeler le réseau.
 - Reste à décider : le sous-ensemble d'API exposé aux paquets.
 
+### 0.13.0 : mise à jour depuis l'administration et nouveaux jeux
+- **Fait** : rubrique *Système* avec la version en cours, le changelog de chaque version et l'installation d'une version plus récente, après confirmation. Service d'hôte (`deploy/updater`, installé une fois), retour arrière automatique, sauvegarde de la base avant chaque mise à jour. Détail : `docs/MISE-A-JOUR.md`.
+- **Fait** : karaoké, Tribunal de l'absurde, L'imposteur parmi nous (remplace L'Imposteur, retiré), Téléphone arabe illustré, Plateau fête, Tennis party (règles du tennis et championnats).
+- **Fait** : `npm run phgame` avec `pack` et `check`, fiches de jeu avec version et journal.
+- **Reste à faire avant publication** : autorisation explicite, commit, pull request vers `main`, tag `v0.13.0`.
+- **Reste à faire après publication** : première bascule à la main sur le serveur, puis installation du service ; essai réel de la mise à jour et du retour arrière sur Docker ; essai sur de vrais téléphones.
+- Critère : une mise à jour depuis 0.12.0 réussit sur un serveur réel, et le retour arrière est testé.
+
 ### 1.0.0 : première version stable
 Critères, tous requis :
 - Installation CasaOS validée depuis la documentation, sur au moins un serveur réel.

@@ -15,6 +15,8 @@ interface RestoreSummary {
   packagesPresent: number;
   codeGames: number;
   codeGamesPresent: number;
+  personnages: number;
+  personnagesPresent: number;
   skipped: string[];
 }
 
@@ -147,6 +149,8 @@ export function BackupPanel({ onChanged }: { onChanged: () => void }) {
           <br />
           Jeux de code : {summary.codeGames} version(s) remise(s) en attente de revue, {summary.codeGamesPresent} déjà
           présente(s). Rien n’est réactivé d’office : approuvez-les à nouveau dans « Jeux de code ».
+          <br />
+          Personnages : {summary.personnages} ajouté(s), {summary.personnagesPresent} déjà présent(s).
           {summary.skipped.length > 0 && (
             <>
               <br />

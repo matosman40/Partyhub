@@ -8,10 +8,27 @@
  * peut pas voir le mouvement : il borne la valeur par ce qui est possible dans le temps écoulé.
  */
 
-export type MicrogameId = 'secousse' | 'equilibre' | 'tour' | 'souffle' | 'tapote' | 'pile';
+export type MicrogameId =
+  | 'secousse'
+  | 'equilibre'
+  | 'tour'
+  | 'souffle'
+  | 'tapote'
+  | 'pile'
+  | 'glisse'
+  | 'vibre'
+  | 'lumiere'
+  | 'applaudis'
+  | 'pince'
+  | 'lance';
 
-/** Capteur du téléphone qu’un défi utilise. `tap` et `timing` n’ont besoin d’aucun capteur. */
-export type MicrogameSensor = 'shake' | 'tilt' | 'spin' | 'mic' | 'tap' | 'timing';
+/**
+ * Capteur ou geste du téléphone qu’un défi utilise. `tap` et `timing` n’ont besoin d’aucun capteur ; `swipe`,
+ * `pinch` et `flick` sont des gestes sur l’écran ; `vibrate` fait vibrer le téléphone ; `camera` regarde la
+ * lumière de l’objectif arrière, sans jamais garder ni envoyer d’image ; `clap` écoute le micro.
+ */
+export type MicrogameSensor =
+  'shake' | 'tilt' | 'spin' | 'mic' | 'tap' | 'timing' | 'swipe' | 'vibrate' | 'camera' | 'clap' | 'pinch' | 'flick';
 
 export interface Microgame {
   id: MicrogameId;
@@ -89,9 +106,74 @@ export const MICROGAMES: Record<MicrogameId, Microgame> = {
     sensor: 'timing',
     target: 0,
   },
+  glisse: {
+    id: 'glisse',
+    name: 'Glisse-moi',
+    icon: '👉',
+    instruction: 'Glissez dans le sens des flèches, dans l’ordre.',
+    hint: 'Six glissés justes avant la fin du temps. Un glissé dans le mauvais sens ne compte pas.',
+    durationMs: 8000,
+    sensor: 'swipe',
+    target: 6,
+  },
+  vibre: {
+    id: 'vibre',
+    name: 'Répète le motif',
+    icon: '📳',
+    instruction: 'Écoutez le motif, puis répétez-le.',
+    hint: 'Court = un tapotement, long = un maintien. Le téléphone vibre, et le motif s’affiche aussi.',
+    durationMs: 12000,
+    sensor: 'vibrate',
+    target: 4,
+  },
+  lumiere: {
+    id: 'lumiere',
+    name: 'Cache la lumière',
+    icon: '🔦',
+    instruction: 'Couvrez l’objectif arrière avec votre doigt.',
+    hint: 'Deux secondes sans bouger. La caméra ne garde aucune image. Il faut autoriser la caméra.',
+    durationMs: 8000,
+    sensor: 'camera',
+    target: 2000,
+  },
+  applaudis: {
+    id: 'applaudis',
+    name: 'Applaudissez !',
+    icon: '👏',
+    instruction: 'Applaudissez cinq fois, près du téléphone !',
+    hint: 'Cinq claquements avant la fin du temps. Il faut autoriser le micro.',
+    durationMs: 6000,
+    sensor: 'clap',
+    target: 5,
+  },
+  pince: {
+    id: 'pince',
+    name: 'Pince la taille',
+    icon: '🤏',
+    instruction: 'Pincez l’écran à la taille du repère, et tenez-le.',
+    hint: 'Deux doigts. Tenez la bonne taille une seconde et demie.',
+    durationMs: 8000,
+    sensor: 'pinch',
+    target: 1500,
+  },
+  lance: {
+    id: 'lance',
+    name: 'Lance le ballon',
+    icon: '⚽',
+    instruction: 'Glissez vers le haut pour envoyer le ballon.',
+    hint: 'Un seul lancer : assez fort pour atteindre le but, pas trop.',
+    durationMs: 6000,
+    sensor: 'flick',
+    target: 200,
+  },
 };
 
 export const MICROGAME_IDS = Object.keys(MICROGAMES) as MicrogameId[];
+
+/** Écart minimal entre deux glissés justes, deux claquements et deux symboles du motif, en millisecondes. */
+export const GLISSE_GAP_MS = 250;
+export const CLAP_GAP_MS = 180;
+export const VIBRE_GAP_MS = 300;
 
 /** Période d’un aller-retour du curseur du défi « Pile », en millisecondes. */
 export const PILE_PERIOD_MS = 1200;
@@ -151,6 +233,30 @@ export function judge(game: Microgame, value: number, elapsedMs: number): Judgem
       success = inside && value >= 0 && value <= game.durationMs && value <= elapsed + slack;
       break;
     }
+    case 'glisse':
+      // Un glissé juste ne peut pas être compté plus vite que toutes les 250 ms.
+      success = value >= game.target && value <= 2 + elapsed / GLISSE_GAP_MS;
+      break;
+    case 'vibre':
+      // Le motif se joue d’abord, puis chaque symbole saisi prend au moins 300 ms.
+      success = value >= game.target && value <= 1 + elapsed / VIBRE_GAP_MS;
+      break;
+    case 'lumiere':
+      // Deux secondes d’objectif couvert : même règle que l’équilibre.
+      success = value >= game.target && value <= elapsed + slack;
+      break;
+    case 'applaudis':
+      // Deux claquements ne peuvent pas être séparés de moins de 180 ms.
+      success = value >= game.target && value <= 2 + elapsed / CLAP_GAP_MS;
+      break;
+    case 'pince':
+      // Le maintien de la bonne taille : même règle que l’équilibre.
+      success = value >= game.target && value <= elapsed + slack;
+      break;
+    case 'lance':
+      // Un lancer réussit dans une fenêtre : au moins la cible, et au plus le double (trop fort, il sort du terrain).
+      success = value >= game.target && value <= game.target * 2;
+      break;
   }
   if (!success) return { success: false, points: 0 };
   const speed = Math.max(0, 1 - elapsed / game.durationMs);

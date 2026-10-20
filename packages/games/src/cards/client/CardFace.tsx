@@ -7,6 +7,7 @@ import {
   type CardGameDefinition,
   type CardTheme,
 } from '@partyhub/shared';
+import { MediaImage } from '../../client/media-relay.js';
 import { assetFontFamily, presetFontFamily } from './fonts.js';
 
 /**
@@ -661,8 +662,8 @@ function CustomBack({ back, uid }: { back: CardBack; uid: string }) {
           <BackPattern pattern={back.pattern} color={color} />
         )}
         {back.imageAssetId && (
-          <image
-            href={`/api/assets/${back.imageAssetId}`}
+          <MediaImage
+            url={`/api/assets/${back.imageAssetId}`}
             x="8"
             y="8"
             width="184"

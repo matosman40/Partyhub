@@ -153,15 +153,39 @@ export const clientViews: Record<string, GameClientViews> = {
       Player: PlutotQuiPlayer,
     };
   }),
-  imposteur: lazyViews(async () => {
-    const [{ ImposteurHost }, { ImposteurPlayer }] = await Promise.all([
-      import('../imposteur/client/HostScreen.js'),
-      import('../imposteur/client/PlayerScreen.js'),
+  'tribunal-absurde': lazyViews(async () => {
+    const [{ TribunalHost }, { TribunalPlayer }, { TribunalSettings }] = await Promise.all([
+      import('../tribunal-absurde/client/HostScreen.js'),
+      import('../tribunal-absurde/client/PlayerScreen.js'),
+      import('../tribunal-absurde/client/Settings.js'),
+    ]);
+    return { Settings: TribunalSettings, Host: TribunalHost, Player: TribunalPlayer };
+  }),
+  'imposteur-parmi-nous': lazyViews(async () => {
+    const [{ ImposteurPartageHost }, { ImposteurPartagePlayer }, { ImposteurPartageSettings }] = await Promise.all([
+      import('../imposteur-parmi-nous/client/HostScreen.js'),
+      import('../imposteur-parmi-nous/client/PlayerScreen.js'),
+      import('../imposteur-parmi-nous/client/Settings.js'),
+    ]);
+    return { Settings: ImposteurPartageSettings, Host: ImposteurPartageHost, Player: ImposteurPartagePlayer };
+  }),
+  'telephone-arabe': lazyViews(async () => {
+    const [{ TelephoneHost }, { TelephonePlayer }, { TelephoneArabeSettings }] = await Promise.all([
+      import('../telephone-arabe/client/HostScreen.js'),
+      import('../telephone-arabe/client/PlayerScreen.js'),
+      import('../telephone-arabe/client/Settings.js'),
+    ]);
+    return { Settings: TelephoneArabeSettings, Host: TelephoneHost, Player: TelephonePlayer };
+  }),
+  'plateau-fete': lazyViews(async () => {
+    const [{ PlateauHost }, { PlateauPlayer }] = await Promise.all([
+      import('../plateau-fete/client/HostScreen.js'),
+      import('../plateau-fete/client/PlayerScreen.js'),
     ]);
     return {
-      Settings: fieldSettings([{ key: 'rounds', label: 'Manches', min: 1, max: 8 }]),
-      Host: ImposteurHost,
-      Player: ImposteurPlayer,
+      Settings: fieldSettings([]),
+      Host: PlateauHost,
+      Player: PlateauPlayer,
     };
   }),
   'micro-defis': lazyViews(async () => {
@@ -242,6 +266,20 @@ export const clientViews: Record<string, GameClientViews> = {
     ]);
     return { Settings: ImiteSettings, Host: ImiteHost, Player: ImitePlayer };
   }),
+  karaoke: lazyViews(async () => {
+    const [{ KaraokeHost }, { KaraokePlayer }] = await Promise.all([
+      import('../karaoke/client/HostScreen.js'),
+      import('../karaoke/client/PlayerScreen.js'),
+    ]);
+    return {
+      Settings: fieldSettings([
+        { key: 'segmentSeconds', label: 'Secondes par passage', min: 6, max: 12 },
+        { key: 'pickSeconds', label: 'Secondes pour choisir', min: 20, max: 180 },
+      ]),
+      Host: KaraokeHost,
+      Player: KaraokePlayer,
+    };
+  }),
   'bombes-party': lazyViews(async () => {
     const [{ BombesPartyHost }, { BombesPartyPlayer }] = await Promise.all([
       import('../bombes-party/client/HostScreen.js'),
@@ -251,6 +289,44 @@ export const clientViews: Record<string, GameClientViews> = {
       Settings: fieldSettings([{ key: 'rounds', label: 'Manches', min: 1, max: 5 }]),
       Host: BombesPartyHost,
       Player: BombesPartyPlayer,
+    };
+  }),
+  'tennis-party': lazyViews(async () => {
+    const [{ TennisHost }, { TennisPlayer }] = await Promise.all([
+      import('../tennis/client/HostScreen.js'),
+      import('../tennis/client/PlayerScreen.js'),
+    ]);
+    return {
+      Settings: fieldSettings([
+        {
+          key: 'rules',
+          label: 'Règles',
+          options: [
+            { value: 'vies', label: 'Simples : des vies' },
+            { value: 'tennis', label: 'Vrai tennis : points, jeux, sets' },
+          ],
+        },
+        {
+          key: 'format',
+          label: 'Forme de jeu',
+          options: [
+            { value: 'libre', label: 'Partie libre' },
+            { value: 'poule', label: 'Championnat en poule' },
+            { value: 'eliminatoire', label: 'Championnat à élimination' },
+          ],
+        },
+        { key: 'lives', label: 'Vies par joueur (règles simples)', min: 1, max: 5 },
+        {
+          key: 'sets',
+          label: 'Sets par match (vrai tennis)',
+          options: [
+            { value: '1', label: 'Un set' },
+            { value: '3', label: 'Meilleur de trois sets' },
+          ],
+        },
+      ]),
+      Host: TennisHost,
+      Player: TennisPlayer,
     };
   }),
   banquise: lazyViews(async () => {

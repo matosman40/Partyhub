@@ -77,6 +77,10 @@ export function DbBackups() {
         Les fichiers sont enregistrés sur le serveur. Ils contiennent les profils et les statistiques : traitez-les
         comme des données personnelles.
       </p>
+      <p className="muted small">
+        Ces copies ne contiennent ni les personnages illustrés, ni les images générées, ni les jeux installés (ils sont
+        en fichiers). Pour tout sauvegarder, utilisez la sauvegarde complète, section « Sauvegarde et restauration ».
+      </p>
       <div>
         <button type="button" className="btn ghost" disabled={busy} onClick={() => void createNow()}>
           {busy ? 'Sauvegarde en cours…' : 'Sauvegarder la base maintenant'}

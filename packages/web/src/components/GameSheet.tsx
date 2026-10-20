@@ -6,6 +6,13 @@ import { photoOrigin } from '../catalog/photos.js';
 import { GameLogo } from './GameLogo.js';
 import { GameCard } from './GameCard.js';
 
+/** Date d’une version, en français : « 14 octobre 2026 ». Une date illisible est montrée telle quelle. */
+export function releaseDateText(date: string): string {
+  const day = new Date(`${date}T12:00:00`);
+  if (Number.isNaN(day.getTime())) return date;
+  return day.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
 /** « 1 joueur », « 4 joueurs », « 2 à 6 joueurs ». */
 export function playersText(game: Pick<CatalogGame, 'minPlayers' | 'maxPlayers'>): string {
   if (game.minPlayers === game.maxPlayers) return game.minPlayers === 1 ? '1 joueur' : `${game.minPlayers} joueurs`;
@@ -85,6 +92,8 @@ export function GameSheet({
 }) {
   const busy = creating || trying;
   const { notice } = game;
+  const releases = game.changelog ?? [];
+  const latest = releases[0];
 
   return (
     <article className="game-sheet">
@@ -147,6 +156,29 @@ export function GameSheet({
               </>
             )}
           </section>
+
+          {releases.length > 0 && (
+            <section className="sheet-section sheet-releases" aria-labelledby="sheet-releases">
+              <h2 id="sheet-releases">Journal des versions</h2>
+              {releases.map((release, i) => (
+                <article key={`${release.version}-${release.date}-${i}`} className="sheet-release">
+                  <h3>
+                    Version {release.version}
+                    <span className="sheet-release-date">
+                      {' · '}
+                      <time dateTime={release.date}>{releaseDateText(release.date)}</time>
+                    </span>
+                    {i === 0 && <span className="tag sheet-release-current">Actuelle</span>}
+                  </h3>
+                  <ul>
+                    {release.changes.map((change, j) => (
+                      <li key={j}>{change}</li>
+                    ))}
+                  </ul>
+                </article>
+              ))}
+            </section>
+          )}
         </div>
 
         <aside className="sheet-facts" aria-labelledby="sheet-facts-title">
@@ -176,6 +208,14 @@ export function GameSheet({
               <dt>Version</dt>
               <dd>{game.version}</dd>
             </div>
+            {latest && (
+              <div>
+                <dt>Dernière mise à jour</dt>
+                <dd>
+                  <time dateTime={latest.date}>{releaseDateText(latest.date)}</time>
+                </dd>
+              </div>
+            )}
             <div>
               <dt>Sur cet appareil</dt>
               <dd>{recent ? 'Joué récemment' : 'Pas encore lancé depuis cet appareil'}</dd>

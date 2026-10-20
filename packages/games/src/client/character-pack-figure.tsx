@@ -5,6 +5,7 @@ import type {
   CharacterPackInfo,
   CharacterPackLook,
 } from '@partyhub/shared';
+import { MediaImage } from './media-relay.js';
 
 /**
  * Affichage d’un look de pack de sprites. La case de la planche est découpée par un viewBox SVG : le dessin
@@ -98,7 +99,13 @@ export function PackFigure({ pack, look, mood = 'idle', face, framing = 'full', 
       data-pack={pack.id}
       data-look={look.id}
     >
-      <image href={packAtlasUrl(pack.id, look.id, atlasName)} x={0} y={0} width={atlas.width} height={atlas.height} />
+      <MediaImage
+        url={packAtlasUrl(pack.id, look.id, atlasName)}
+        x={0}
+        y={0}
+        width={atlas.width}
+        height={atlas.height}
+      />
     </svg>
   );
 }

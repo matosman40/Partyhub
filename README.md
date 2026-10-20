@@ -13,7 +13,8 @@ Sur une installation neuve, les jeux intégrés sont désactivés : l'administra
 | 🧩 **Phrases à trous**     | Quiz      | L’IA écrit des phrases à trou. Chacun pose une carte dans le trou, puis tout le monde vote anonymement. |
 | 💭 **Association express** | Soirée    | Écrivez le premier mot qui vous vient, puis votez anonymement pour le plus drôle. |
 | 👉 **Plutôt qui ?**        | Soirée    | « Qui est le plus susceptible de… ? » Votez en secret et suivez la majorité.      |
-| 🕵️ **L'Imposteur**         | Soirée    | Un imposteur ignore le mot secret : donnez des indices, puis démasquez-le.        |
+| 🫣 **L’imposteur parmi nous** | Soirée  | Un imposteur ignore le mot secret : donnez des indices, puis démasquez-le. Quatre modes de jeu. |
+| 🎤 **Karaoké** | Soirée | Cherchez une chanson sur YouTube et chantez un passage : l’écran le joue, votre voix est rejouée, et les autres notent. |
 | 🃏 **Plus ou moins**       | Cartes    | Un paquet de 52 cartes : la suivante sera-t-elle plus haute ou plus basse ?       |
 | ⚡ **Réflexe**             | Adresse   | Attendez le vert, puis touchez le plus vite possible.                             |
 | 🃏 **Rami 51**             | Cartes    | Ouvrez à 51 points, posez vos combinaisons, videz votre main le premier.          |
@@ -30,7 +31,7 @@ Sur une installation neuve, les jeux intégrés sont désactivés : l'administra
 - Administration protégée par mot de passe : activer ou désactiver les jeux, consulter les salles,
   supprimer les salles inactives, régler les limites.
 - Persistance SQLite (réglages, jeux activés, statistiques) dans un volume Docker.
-- Aucun service externe, aucune clé API : tout fonctionne sur le réseau local.
+- Le jeu tourne sur le réseau local, sans internet. Quelques fonctions optionnelles utilisent un service externe : l’IA (Aventure IA et images, avec une clé), la recherche de chansons du karaoké (avec une clé YouTube), et la lecture des vidéos YouTube (avec une connexion internet).
 
 ## Installation (Docker Compose, CasaOS)
 
@@ -58,7 +59,7 @@ sudo docker compose logs -f     # Ctrl+C pour quitter
 Ouvrir `http://<adresse-du-serveur>:8282` sur l'écran principal, puis `http://<adresse-du-serveur>:8282/join`
 sur les téléphones (ou scanner le QR code). Le détail pour CasaOS est dans [docs/CASAOS.md](docs/CASAOS.md).
 
-**Mise à jour** (les données du volume `partyhub-data` sont conservées) : depuis la rubrique *Système* de
+**Mise à jour** (les données des volumes `partyhub-data` et `partyhub-contenu` sont conservées) : depuis la rubrique *Système* de
 l'administration, après une installation unique du service de mise à jour, ou à la main. Le détail, les règles et le
 dépannage sont dans [docs/MISE-A-JOUR.md](docs/MISE-A-JOUR.md).
 
@@ -147,7 +148,9 @@ la bonne réponse n'apparaît qu'à la révélation, et les réponses privées r
 | `LOG_FILES`                          | `6`                            | Nombre d'anciens fichiers gardés en plus du courant                                                                                                                                                                                                                                                                |
 | `COOKIE_SECURE`                      | `false`                        | `true` uniquement derrière un proxy HTTPS                                                                                                                                                                                                                                                                          |
 | `TRUST_PROXY`                        | `loopback`                     | Proxys de confiance pour lire l'adresse réelle des joueurs dans `X-Forwarded-For`. Même syntaxe qu'Express : `loopback`, une adresse, ou un réseau comme `172.16.0.0/12` (voir [docs/REMOTE-ACCESS.md](docs/REMOTE-ACCESS.md))                                                                                     |
-| `DATA_DIR`                           | `./data` (`/data` dans Docker) | Dossier de la base SQLite                                                                                                                                                                                                                                                                                          |
+| `DATA_DIR`                           | `./data` (`/data` dans Docker) | Dossier de la base SQLite, des réglages et des sauvegardes                                                                    
+| `JEUX_DIR`                           | `DATA_DIR` (`/contenu/jeux` dans Docker) | Dossier des jeux installés (`games/`, `code-games/`). Au démarrage, ils sont déplacés depuis `DATA_DIR` s'ils y sont encore |
+| `PERSONNAGES_DIR`                    | `DATA_DIR/personnages` (`/contenu/personnages` dans Docker) | Personnages importés et images générées, en fichiers (plus dans la base) |                                                                                                                                                                                     |
 | `DB_BACKUP_EVERY_HOURS`              | `24`                           | Sauvegarde automatique de la base, en heures (`0` pour la désactiver)                                                                                                                                                                                                                                              |
 | `DB_BACKUP_KEEP`                     | `7`                            | Nombre de sauvegardes de la base conservées                                                                                                                                                                                                                                                                        |
 | `DB_BACKUP_DIR`                      | `<DATA_DIR>/backups`           | Dossier des sauvegardes de la base                                                                                                                                                                                                                                                                                 |
@@ -165,6 +168,7 @@ la bonne réponse n'apparaît qu'à la révélation, et les réponses privées r
 | `AI_<FOURNISSEUR>_MAX_CALLS_PER_DAY` | illimité                       | Plafond d'appels sur 24 heures glissantes pour ce fournisseur (1 à 1000000). Une fois atteint, le fournisseur suivant de la liste répond. Sert à rester dans un palier gratuit                                                                                                                                     |
 | `AI_TIMEOUT_MS`                      | `30000`                        | Délai maximal d'un appel à l'IA, de 5000 à 120000 ms                                                                                                                                                                                                                                                               |
 | `AI_MAX_CALLS_PER_HOUR`              | `300`                          | Plafond global d'appels à l'IA par heure, tous fournisseurs confondus (1 à 100000)                                                                                                                                                                                                                                 |
+| `YOUTUBE_API_KEY`                    | vide                           | Clé de l'API YouTube Data v3 : recherche de chansons du jeu « Karaoké ». Sans clé, les joueurs peuvent toujours coller un lien YouTube. Reste sur le serveur. Quota de 10 000 unités par jour (une recherche en coûte 100)                                                                                              |
 | `PORT`, `HOST`                       | `8282`, `0.0.0.0`              | Écoute du serveur dans le conteneur                                                                                                                                                                                                                                                                                |
 
 ### Fournisseurs d'IA
@@ -275,7 +279,8 @@ sudo docker compose start partyhub
 ```
 
 Remplacez `partyhub-AAAAMMJJ-HHMMSS.db` par le nom voulu (date en UTC, affichée dans l'administration). Les fichiers
-de la médiathèque (dossier `assets`) ne sont pas dans la sauvegarde : copiez-les à part.
+de la médiathèque (dossier `assets`), les jeux installés et les personnages (volume `partyhub-contenu`) ne
+sont pas dans cette sauvegarde : copiez-les à part, ou utilisez la sauvegarde complète ci-dessous.
 
 ## Sauvegarde complète des jeux et de la médiathèque
 

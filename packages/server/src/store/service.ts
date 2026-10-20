@@ -2,7 +2,7 @@ import type { CodeGameSummary, CodeGamesPort } from '../code-games/service.js';
 import type { Store } from '../db/store.js';
 import { compareVersions } from '../packages/semver.js';
 import type { PackageService } from '../packages/service.js';
-import { isValidRepo, type GitHubOptions } from '../sources/github.js';
+import { isValidRepo, type GitHubOptions, type GitHubRateLimit } from '../sources/github.js';
 import type { CheckOutcome, PackageSourceRecord, PackageSourceService } from '../sources/service.js';
 import {
   CODE_MODULE,
@@ -17,15 +17,19 @@ import {
 } from './catalog.js';
 
 /**
- * Magasin : les jeux publiés dans le dépôt de jeux, installés, mis à jour ou supprimés d’un clic. Le magasin ne fait
- * que piloter les sources GitHub existantes : une source par jeu (`auteur/depot/jeu`), mise à jour chaque jour.
- * Les jeux intégrés à l’application ne sont jamais téléchargés.
+ * Magasin : les jeux publiés dans le dépôt de jeux, installés, mis à jour ou supprimés d’un clic. Chaque jeu installé
+ * a une source d’origine « tags » (`auteur/depot/jeu`), mise à jour chaque jour : le paquet se construit à partir du
+ * dossier `jeux/<jeu>/` au tag le plus haut, sans release ni signature (voir store/build.ts). Les jeux intégrés à
+ * l’application ne sont jamais téléchargés.
  */
 
 export const DEFAULT_STORE_REPO = 'matosman40/jeux-partyhub';
 const CATALOG_TTL_MS = 10 * 60 * 1000;
 const COVER_CACHE_MAX = 60;
 const KV_REPO = 'store_repo';
+const KV_AUTO_UPDATE = 'store_auto_update';
+/** Nombre maximal de jeux dans une même file d’installation ou de mise à jour. */
+export const STORE_JOB_MAX = 200;
 
 /**
  * integre : déjà dans l’application ; non_installe ; a_jour ; mise_a_jour ; erreur (échec, rien d’installé) ;
@@ -48,9 +52,33 @@ export interface StoreGameView extends StoreGameInfo {
 export interface CatalogView {
   repo: string;
   tokenConfigured: boolean;
+  /** Mise à jour automatique de tous les jeux du dépôt (réglage unique, appliqué aux sources). */
+  autoUpdate: boolean;
   checkedAt: string | null;
+  /** Dernier quota GitHub lu sur ce serveur, ou null si aucun appel n’a encore eu lieu. */
+  rateLimit: GitHubRateLimit | null;
   games: StoreGameView[];
   error: string | null;
+}
+
+export type StoreJobAction = 'install' | 'update';
+export type StoreJobState = 'attente' | 'en_cours' | 'ok' | 'erreur';
+
+export interface StoreJobItem {
+  id: string;
+  name: string;
+  state: StoreJobState;
+  /** Résultat, ou raison de l’échec, une fois le jeu traité. */
+  message: string | null;
+}
+
+/** File d’installation ou de mise à jour : les jeux se traitent un par un, en arrière-plan. */
+export interface StoreJobView {
+  action: StoreJobAction;
+  items: StoreJobItem[];
+  startedAt: string;
+  /** Null tant que la file n’est pas terminée. */
+  finishedAt: string | null;
 }
 
 export interface StoreServiceOptions {
@@ -94,6 +122,7 @@ export class StoreService {
   private reading: { repo: string; promise: Promise<Loaded> } | null = null;
   private readonly manifests = new Map<string, StoreManifest>();
   private readonly covers = new Map<string, { bytes: Uint8Array; contentType: string }>();
+  private job: StoreJobView | null = null;
 
   constructor(
     private readonly store: Store,
@@ -114,6 +143,24 @@ export class StoreService {
     return Boolean(this.options.token);
   }
 
+  /** Mise à jour automatique de tous les jeux du dépôt. Vrai par défaut, comme pour un jeu installé ici. */
+  get autoUpdate(): boolean {
+    return this.store.getKv(KV_AUTO_UPDATE) !== 'off';
+  }
+
+  /** Active ou coupe la mise à jour automatique de tous les jeux du dépôt. Renvoie le nombre de sources touchées. */
+  setAutoUpdate(enabled: boolean): number {
+    this.store.setKv(KV_AUTO_UPDATE, enabled ? 'on' : 'off');
+    const prefix = `${this.repo}/`;
+    let touched = 0;
+    for (const row of this.sources.list()) {
+      if (row.origin !== 'tags' || !row.repo.startsWith(prefix)) continue;
+      this.sources.update(row.id, { autoUpdate: enabled });
+      touched++;
+    }
+    return touched;
+  }
+
   setRepo(input: unknown): { ok: true; repo: string } | { ok: false; error: string } {
     const repo = typeof input === 'string' ? input.trim() : '';
     if (!isValidRepo(repo)) {
@@ -131,7 +178,9 @@ export class StoreService {
       return {
         repo: loaded.repo,
         tokenConfigured: this.tokenConfigured,
+        autoUpdate: this.autoUpdate,
         checkedAt: null,
+        rateLimit: this.quota.current(),
         games: [],
         error: loaded.error,
       };
@@ -146,12 +195,13 @@ export class StoreService {
     let source = this.findSource(gameId);
     let created = false;
     if (!source) {
-      const added = this.sources.add({ repo: `${this.repo}/${gameId}`, autoUpdate: true, private: false });
+      const added = this.sources.addFromStore(`${this.repo}/${gameId}`);
       if (!added.ok) return fail(added.error);
       source = this.sources.list().find((row) => row.id === added.id);
       created = true;
     }
     if (!source) return fail('Source introuvable après création.');
+    if (created && !this.autoUpdate) this.sources.update(source.id, { autoUpdate: false });
     // La source garde la version d’un jeu retiré depuis « Paquets » ou « Jeux de code » : on la réinstalle.
     if (source.packageId && !this.installedHere(source.packageId)) this.sources.forgetInstalled(source.id);
     const outcome = await this.sources.check(source.id);
@@ -194,6 +244,94 @@ export class StoreService {
     return { ok: true, closedRooms };
   }
 
+  /**
+   * Supprime plusieurs jeux installés depuis le magasin. Chaque jeu passe par `uninstall` : une erreur sur l’un
+   * n’empêche pas les autres.
+   */
+  removeMany(
+    gameIds: string[],
+    closeRooms: (packageGameId: string) => number,
+  ): { removed: string[]; failed: { id: string; error: string }[]; closedRooms: number } {
+    const removed: string[] = [];
+    const failed: { id: string; error: string }[] = [];
+    let closedRooms = 0;
+    for (const id of [...new Set(gameIds)]) {
+      const result = this.uninstall(id, closeRooms);
+      if (result.ok) {
+        removed.push(id);
+        closedRooms += result.closedRooms;
+      } else {
+        failed.push({ id, error: result.error });
+      }
+    }
+    return { removed, failed, closedRooms };
+  }
+
+  /**
+   * File d’installation ou de mise à jour : les jeux se traitent un par un, en arrière-plan, pour ne pas bloquer la
+   * page (chaque jeu télécharge une archive). Une seule file à la fois.
+   */
+  startJob(
+    action: StoreJobAction,
+    gameIds: string[],
+  ): { ok: true; job: StoreJobView } | { ok: false; error: string; busy: boolean } {
+    if (this.job && this.job.finishedAt === null) {
+      return { ok: false, error: 'Une opération est déjà en cours : attendez qu’elle se termine.', busy: true };
+    }
+    const ids = [...new Set(gameIds)];
+    if (ids.length === 0) return { ok: false, error: 'Aucun jeu choisi.', busy: false };
+    if (ids.length > STORE_JOB_MAX) {
+      return { ok: false, error: `Au plus ${STORE_JOB_MAX} jeux à la fois.`, busy: false };
+    }
+    if (ids.some((id) => !GAME_ID.test(id))) return { ok: false, error: 'Identifiant de jeu invalide.', busy: false };
+    const names = new Map((this.cache?.games ?? []).map((game) => [game.id, game.name] as const));
+    const job: StoreJobView = {
+      action,
+      items: ids.map((id): StoreJobItem => ({ id, name: names.get(id) ?? id, state: 'attente', message: null })),
+      startedAt: new Date(this.now()).toISOString(),
+      finishedAt: null,
+    };
+    this.job = job;
+    void this.runJob(job);
+    return { ok: true, job: this.snapshot(job) };
+  }
+
+  /** La file en cours, ou la dernière terminée. Null si aucune n’a encore été lancée. */
+  currentJob(): StoreJobView | null {
+    return this.job ? this.snapshot(this.job) : null;
+  }
+
+  private snapshot(job: StoreJobView): StoreJobView {
+    return { ...job, items: job.items.map((item) => ({ ...item })) };
+  }
+
+  private async runJob(job: StoreJobView): Promise<void> {
+    for (const [index, item] of job.items.entries()) {
+      item.state = 'en_cours';
+      try {
+        const outcome = job.action === 'install' ? await this.install(item.id) : await this.update(item.id);
+        item.state = outcome.ok ? 'ok' : 'erreur';
+        item.message = outcome.ok
+          ? `${outcome.status} : version ${outcome.version}.`
+          : [outcome.error, ...(outcome.issues ?? [])].join(' ');
+      } catch (err) {
+        item.state = 'erreur';
+        item.message = err instanceof Error ? err.message : 'Échec.';
+      }
+      // Quota GitHub épuisé : les jeux suivants échoueraient tous. On s'arrête, et on le dit pour chacun.
+      const rate = this.quota.current();
+      if (item.state === 'erreur' && rate !== null && rate.remaining === 0 && rate.resetAt > this.now()) {
+        for (const rest of job.items.slice(index + 1)) {
+          rest.state = 'erreur';
+          rest.message =
+            'Non traité : la limite de requêtes GitHub est atteinte. Relancez la file après la réinitialisation.';
+        }
+        break;
+      }
+    }
+    job.finishedAt = new Date(this.now()).toISOString();
+  }
+
   /** Couverture d’un jeu du dépôt, lue à sa version publiée. Null si le jeu n’en a pas, ou si elle est refusée. */
   async cover(gameId: string): Promise<{ bytes: Uint8Array; contentType: string } | null> {
     if (!GAME_ID.test(gameId)) return null;
@@ -224,17 +362,23 @@ export class StoreService {
     }
   }
 
+  /** Quota GitHub partagé avec les sources : le magasin et les installations lisent la même mesure. */
+  private get quota() {
+    return this.sources.quota;
+  }
+
   private github(): GitHubOptions {
-    return { fetch: this.options.fetch, token: this.options.token };
+    return { fetch: this.options.fetch, token: this.options.token, quota: this.quota };
   }
 
   private now(): number {
     return this.options.now?.() ?? Date.now();
   }
 
+  /** La source du magasin pour ce jeu. Une source GitHub ajoutée à la main pour le même dépôt n’est pas la sienne. */
   private findSource(gameId: string): PackageSourceRecord | undefined {
     const ref = `${this.repo}/${gameId}`;
-    return this.sources.list().find((row) => row.repo === ref);
+    return this.sources.list().find((row) => row.repo === ref && row.origin === 'tags');
   }
 
   private async load(refresh: boolean): Promise<Loaded> {
@@ -272,7 +416,9 @@ export class StoreService {
     return {
       repo,
       tokenConfigured: this.tokenConfigured,
+      autoUpdate: this.autoUpdate,
       checkedAt: new Date(at).toISOString(),
+      rateLimit: this.quota.current(),
       error: null,
       games: games.map((game) => this.gameView(repo, game, sources, codeRows)),
     };
@@ -295,7 +441,7 @@ export class StoreService {
     codeRows: CodeGameSummary[],
   ): StoreGameView {
     const builtin = this.options.isBuiltin(game.id);
-    const source = sources.find((row) => row.repo === `${repo}/${game.id}`) ?? null;
+    const source = sources.find((row) => row.repo === `${repo}/${game.id}` && row.origin === 'tags') ?? null;
     const versions = codeVersions(codeRows, game.id);
     let status: StoreStatus;
     let installedVersion: string | null;

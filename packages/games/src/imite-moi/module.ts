@@ -253,7 +253,7 @@ export const imiteMoi: GameModule<ImiteState, ImiteSettings> = {
     description: 'Imitez une scène, photographiez-la ou enregistrez-la : les autres votent pour la meilleure.',
     icon: GAME_ICON,
     category: 'quiz',
-    version: '1.0.0',
+    version: '1.0.1',
     apiVersion: 1,
     // Il faut au moins deux joueurs : on ne vote pas pour sa propre réponse.
     minPlayers: 2,

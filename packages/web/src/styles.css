@@ -2309,9 +2309,21 @@ button.bet:active:not(:disabled) {
   /* Pleine largeur : sans cela, la grille se dimensionne à son contenu et le plateau reste petit. */
   width: 100%;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) clamp(290px, 24vw, 390px);
+  /* Colonne latérale assez large pour deux colonnes de fiches (jusqu’à dix joueurs). */
+  grid-template-columns: minmax(0, 1fr) clamp(420px, 36vw, 560px);
   gap: clamp(1rem, 2vw, 1.8rem);
   align-items: center;
+}
+
+/* Classement en deux colonnes et plus compact : il ne doit pas allonger la colonne latérale. */
+.bombes-side .ranking {
+  width: 100%;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.bombes-side .ranking li {
+  gap: 0.5rem;
+  padding: 0.4rem 0.75rem 0.4rem 0.45rem;
 }
 
 .arena.arena-host {
@@ -2327,16 +2339,18 @@ button.bet:active:not(:disabled) {
   min-width: 0;
 }
 
+/* Jusqu’à dix joueurs : deux colonnes, pour que la colonne latérale ne fasse pas rétrécir tout l’écran. */
 .bombes-players {
   display: grid;
-  gap: 0.7rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
 .bombes-player {
-  padding: 0.8rem 1rem;
+  padding: 0.6rem 0.75rem;
   border-radius: 18px;
   border: 2px solid;
   background: rgba(14, 10, 40, 0.86);
@@ -2355,9 +2369,9 @@ button.bet:active:not(:disabled) {
   display: flex;
   align-items: center;
   gap: 0.55rem;
-  margin: 0 0 0.55rem;
+  margin: 0 0 0.4rem;
   font-family: var(--display);
-  font-size: clamp(1.15rem, 1.9vw, 1.6rem);
+  font-size: clamp(1rem, 1.5vw, 1.3rem);
   color: var(--text);
 }
 
@@ -5944,53 +5958,324 @@ html.is-tv #root > .tv {
   margin: 0;
 }
 
-/* Jeux solo : classement de l'écran principal, en direct. */
+/* Jeux solo : courbe d’avancement, tableau comparatif et classement final sur l’écran principal. */
 .solo-host {
   display: grid;
   gap: 1.1rem;
   width: 100%;
-  max-width: 48rem;
+  max-width: 60rem;
   margin-inline: auto;
+  /* Teintes des joueurs (palette validée pour le daltonisme et le contraste), sur fond sombre. */
+  --solo-surface: #120d31;
+  --solo-s1: #3987e5;
+  --solo-s2: #d95926;
+  --solo-s3: #199e70;
+  --solo-s4: #c98500;
+  --solo-s5: #d55181;
+  --solo-s6: #008300;
+  --solo-s7: #9085e9;
+  --solo-s8: #e66767;
+}
+:root[data-theme='light'] .solo-host {
+  --solo-surface: #ffffff;
+  --solo-s1: #2a78d6;
+  --solo-s2: #eb6834;
+  --solo-s3: #1baf7a;
+  --solo-s4: #eda100;
+  --solo-s5: #e87ba4;
+  --solo-s6: #008300;
+  --solo-s7: #6250d6;
+  --solo-s8: #e34948;
 }
 .solo-host .round-info {
   justify-self: center;
 }
-.solo-standings {
+
+.solo-chart {
   display: grid;
-  gap: 0.6rem;
+  gap: 0.7rem;
+}
+.solo-chart-wrap {
+  position: relative;
+  padding: 0.6rem 0.5rem 0.2rem;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--bg1);
+  overflow-x: auto;
+}
+.solo-chart-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  min-width: 40rem;
+  overflow: visible;
+}
+.solo-chart-svg .grid {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+.solo-chart-svg .baseline {
+  stroke: var(--line-strong);
+  stroke-width: 1;
+}
+.solo-chart-svg .crosshair {
+  stroke: var(--muted);
+  stroke-width: 1;
+}
+.solo-chart-svg .tick {
+  fill: var(--muted);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+.solo-chart-svg .label {
+  fill: var(--text);
+  font-size: 15px;
+  font-weight: 700;
+}
+.solo-chart-svg .line {
+  fill: none;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+/* Le personnage au bout de sa courbe, dans un anneau de sa couleur. */
+.solo-chart-svg .ring {
+  fill: var(--solo-surface);
+  stroke-width: 3;
+}
+.solo-chart-svg .avatar {
+  font-size: 17px;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+
+/* Bandeau de tête : rebondit quand le leader change (la clé du rendu le relance). */
+.solo-lead {
+  justify-self: center;
+  max-width: 100%;
+  margin: 0;
+  padding: 0.5rem 1.1rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: var(--bg1);
+  color: var(--text);
+  font-family: var(--display);
+  font-size: clamp(1.05rem, 2vw, 1.4rem);
+  text-align: center;
+  animation: solo-pop 0.5s ease-out;
+}
+.solo-lead.is-done {
+  border-color: var(--sun);
+}
+@keyframes solo-pop {
+  0% {
+    transform: scale(0.85);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.05);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.solo-avatar {
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+/* Classement final : podium, puis confettis derrière le contenu. */
+.solo-final {
+  position: relative;
+  overflow: hidden;
+}
+/* Le titre passe sous le logo, comme le bandeau de l’écran de jeu. */
+.solo-final > .big-title {
+  margin-top: 2.6rem;
+}
+.solo-final > :not(.solo-confetti) {
+  position: relative;
+}
+.solo-podium {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 0.8rem;
   margin: 0;
   padding: 0;
   list-style: none;
 }
-.solo-standings li {
+.solo-podium-card {
   display: grid;
-  grid-template-columns: 2.4rem minmax(0, 1.2fr) minmax(0, 2fr) auto auto;
-  align-items: center;
-  gap: 0.8rem;
-  padding: 0.75rem 1rem;
+  justify-items: center;
+  gap: 0.3rem;
+  padding: 0.9rem 0.6rem;
+  border: 1px solid var(--line-strong);
   border-radius: var(--r-md);
-  border: 1px solid var(--line);
-  background: var(--glass);
+  background: var(--bg1);
+  color: var(--text);
+  text-align: center;
 }
-.solo-standings li.is-done {
-  border-color: rgba(182, 255, 92, 0.55);
+.solo-podium-card:first-child {
+  border-color: var(--sun);
+}
+.solo-podium-medal {
+  font-size: 2.2rem;
+  line-height: 1;
+}
+.solo-podium-avatar {
+  font-size: 2rem;
+  line-height: 1;
+}
+.solo-podium-name {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.solo-podium-points {
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+}
+.solo-confetti {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.solo-confetti i {
+  position: absolute;
+  top: 0;
+  width: 0.55rem;
+  height: 0.85rem;
+  border-radius: 2px;
+  opacity: 0.9;
+  animation: solo-fall 3.2s ease-in 1 both;
+}
+@keyframes solo-fall {
+  to {
+    transform: translateY(120vh) rotate(540deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .solo-lead,
+  .solo-confetti i {
+    animation: none;
+  }
+  .solo-confetti {
+    display: none;
+  }
+}
+.solo-tip {
+  position: absolute;
+  top: 0.6rem;
+  min-width: 11rem;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  background: var(--bg1);
+  color: var(--text);
+  font-size: 0.9rem;
+  pointer-events: none;
+}
+.solo-tip-time {
+  margin-bottom: 0.25rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+.solo-tip-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.solo-tip-row strong {
+  font-variant-numeric: tabular-nums;
+}
+.solo-tip-name,
+.solo-name-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.solo-key {
+  display: inline-block;
+  flex: none;
+  width: 0.9rem;
+  height: 3px;
+  border-radius: 2px;
+}
+.solo-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.2rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--text);
+  font-size: 0.95rem;
+}
+.solo-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.solo-legend-key {
+  display: inline-block;
+  width: 1.2rem;
+  height: 3px;
+  border-radius: 2px;
+}
+
+.solo-compare-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--bg1);
+}
+.solo-compare {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
+}
+.solo-compare th,
+.solo-compare td {
+  padding: 0.6rem 0.8rem;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  white-space: nowrap;
+}
+.solo-compare tbody tr:last-child td {
+  border-bottom: 0;
+}
+.solo-compare th {
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.solo-compare .num {
+  text-align: right;
 }
 .solo-place {
+  width: 3rem;
   font-family: var(--display);
-  font-size: 1.2rem;
-  text-align: center;
+  font-size: 1.1rem;
   color: var(--sun);
 }
 .solo-name {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
   font-weight: 700;
+}
+.solo-progress {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
 }
 .solo-bar {
   display: block;
-  height: 0.7rem;
+  width: 8rem;
+  height: 0.6rem;
   overflow: hidden;
   border-radius: 999px;
   border: 1px solid var(--line);
@@ -6000,27 +6285,20 @@ html.is-tv #root > .tv {
   display: block;
   height: 100%;
   border-radius: 999px;
-  background: linear-gradient(90deg, var(--cyan), var(--lime));
   transition: width 0.4s ease;
 }
-.solo-status {
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
+.solo-pct {
+  min-width: 3.2rem;
   font-weight: 600;
 }
-.solo-moves {
-  white-space: nowrap;
-}
 @media (max-width: 640px) {
-  .solo-standings li {
-    grid-template-columns: 2rem minmax(0, 1fr) auto;
+  .solo-compare th,
+  .solo-compare td {
+    padding: 0.5rem 0.55rem;
+    font-size: 0.85rem;
   }
-  .solo-standings .solo-bar {
-    grid-column: 1 / -1;
-    grid-row: 2;
-  }
-  .solo-moves {
-    display: none;
+  .solo-bar {
+    width: 5rem;
   }
 }
 
@@ -7435,6 +7713,134 @@ html:not([data-theme='dark']) .corner-drawer {
   }
 }
 
+/* Karaoké : passage sur l’écran principal, recherche et notation sur le téléphone. */
+.karaoke-host,
+.karaoke-play {
+  display: grid;
+  gap: 14px;
+  justify-items: center;
+  text-align: center;
+  width: 100%;
+  /* Un titre de vidéo sans espace ne doit pas élargir l’écran du téléphone. */
+  overflow-wrap: anywhere;
+}
+
+.karaoke-head h2,
+.karaoke-title {
+  margin: 0;
+}
+
+.karaoke-song,
+.karaoke-line {
+  margin: 0;
+}
+
+.karaoke-line {
+  font-size: 1.1rem;
+}
+
+.karaoke-count {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.karaoke-screen {
+  width: min(960px, 92vw);
+  aspect-ratio: 16 / 9;
+  border-radius: 18px;
+  overflow: hidden;
+  background: #000;
+}
+
+.karaoke-screen .mq-stage {
+  width: 100%;
+  height: 100%;
+}
+
+.karaoke-ranking {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+  width: min(420px, 90vw);
+}
+
+.karaoke-ranking li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--glass);
+  border: 1px solid var(--line);
+}
+
+.karaoke-search {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  width: 100%;
+}
+
+.karaoke-search .field {
+  flex: 1;
+  min-width: 0;
+}
+
+.karaoke-hits {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+  width: 100%;
+}
+
+.karaoke-hits button {
+  width: 100%;
+  display: grid;
+  gap: 2px;
+  text-align: left;
+}
+
+.karaoke-hit-title {
+  font-weight: 600;
+}
+
+.karaoke-chosen {
+  width: 100%;
+  display: grid;
+  gap: 10px;
+}
+
+.karaoke-stars {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+}
+
+.karaoke-star {
+  font-size: 2.2rem;
+  line-height: 1;
+  padding: 4px 8px;
+  background: none;
+  border: 0;
+  color: var(--faint);
+  cursor: pointer;
+}
+
+.karaoke-star[aria-pressed='true'] {
+  color: var(--accent);
+}
+
+.karaoke-star:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
 /* Personnages illustrés (packs de sprites) */
 .chara-pack {
   /* La planche entière est chargée : seule la case doit rester visible, et ne pas capter les clics. */
@@ -7456,24 +7862,6 @@ html:not([data-theme='dark']) .corner-drawer {
   height: 100%;
   width: auto;
 }
-.store-grid {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
-  gap: 0.8rem;
-}
-.store-card {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  padding: 0.6rem;
-  min-width: 0;
-  border: 1px solid var(--line);
-  border-radius: var(--r-md);
-  background: var(--glass);
-}
 .store-cover {
   display: block;
   width: 100%;
@@ -7487,18 +7875,261 @@ html:not([data-theme='dark']) .corner-drawer {
   place-items: center;
   font-size: 2rem;
 }
-.store-card-body {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
 .store-card-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
   margin-top: auto;
+}
+
+/* Magasin (administration) : bibliothèque du dépôt, filtres, file d’installation et fiche du jeu. */
+.store-admin {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+.store-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.8rem 1.2rem;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--glass);
+}
+.store-repo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+.store-repo .muted {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.store-switch {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  max-width: 22rem;
+  cursor: pointer;
+}
+.store-switch input {
+  margin-top: 0.25rem;
+  width: 1.1rem;
+  height: 1.1rem;
+  flex: none;
+}
+.store-switch > span {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.store-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+.store-search {
+  flex: 1 1 16rem;
+  min-width: 0;
+}
+.store-sort {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.store-filters,
+.store-bulk {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.store-selection {
+  position: sticky;
+  top: 0.5rem;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.7rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-md);
+  background: var(--bg2);
+}
+.store-job {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--glass);
+}
+.store-job > p {
+  margin: 0;
+}
+.store-job progress {
+  width: 100%;
+  height: 0.7rem;
+}
+.store-job-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  max-height: 14rem;
+  overflow: auto;
+}
+.store-job-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem 0.6rem;
+}
+.store-job-item > span:first-child {
+  flex: 1 1 10rem;
+  min-width: 0;
+}
+.store-job-item.is-erreur > span:first-child {
+  color: var(--danger);
+}
+.store-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(16rem, 22rem);
+  align-items: start;
+  gap: 0.8rem;
+}
+.store-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  max-height: 68vh;
+  overflow: auto;
+}
+.store-row {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.4rem 0.55rem;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--glass);
+}
+.store-row.is-focus {
+  border-color: var(--focus);
+  background: var(--glass-2);
+}
+.store-row input[type='checkbox'] {
+  flex: none;
+  width: 1.05rem;
+  height: 1.05rem;
+}
+.store-row-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.store-row-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow-wrap: anywhere;
+}
+.store-thumb {
+  display: block;
+  width: 4.6rem;
+  aspect-ratio: 16 / 9;
+  flex: none;
+  object-fit: cover;
+  border-radius: var(--r-sm);
+  background: var(--line);
+}
+.store-thumb-empty {
+  display: grid;
+  place-items: center;
+  font-size: 1.2rem;
+}
+.store-badge {
+  flex: none;
+}
+.store-badge.is-erreur,
+.store-badge.is-en_revue {
+  color: var(--sun-2);
+}
+.store-detail {
+  position: sticky;
+  top: 0.5rem;
+  padding: 0.8rem;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--glass);
+}
+.store-detail-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.store-detail-card h3 {
+  margin: 0;
+}
+.store-detail-card p {
+  margin: 0;
+}
+.store-quota {
+  margin: 0.35rem 0 0;
+}
+.store-quota.is-warning {
+  color: var(--danger);
+  font-weight: 600;
+}
+@media (max-width: 900px) {
+  .store-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .store-detail {
+    position: static;
+  }
+  .store-list {
+    max-height: none;
+  }
+}
+@media (max-width: 600px) {
+  /* Téléphone : la vignette prend moins de place, le titre et l’auteur gardent de la largeur. */
+  .store-thumb {
+    width: 3.2rem;
+  }
+  .store-row {
+    gap: 0.45rem;
+    padding: 0.4rem 0.45rem;
+  }
+  .store-row-main {
+    gap: 0.45rem;
+  }
 }
 .pack-admin-form {
   max-width: 36rem;
@@ -8306,6 +8937,10 @@ html:not([data-theme='dark']) .corner-drawer {
   margin: 0 0 4px;
   font-size: 1.1rem;
 }
+/* L'aperçu garde un fond sombre dans les deux thèmes : son libellé secondaire ne suit pas le thème clair. */
+.boum-preview .muted {
+  color: #b3acdb;
+}
 .boum-blank {
   display: inline-block;
   min-width: 4em;
@@ -8935,6 +9570,7 @@ html:not([data-theme='dark']) .corner-drawer {
 
 /* Aventure IA */
 .aventure {
+  width: min(100%, 1180px);
   max-width: min(100%, 1180px);
   margin-inline: auto;
 }
@@ -9486,6 +10122,71 @@ html:not([data-theme='dark']) .corner-drawer {
 .aventure-npc-line {
   margin: 0.2rem 0 0;
   font-style: italic;
+}
+
+/* Scène et personnage qui parle côte à côte : le personnage occupe la colonne de droite, en grand. */
+.aventure-stage {
+  display: grid;
+  gap: clamp(0.8rem, 2vw, 1.4rem);
+  width: min(100%, 1180px);
+  align-items: stretch;
+}
+
+.aventure-stage.has-figure {
+  grid-template-columns: minmax(0, 1fr) minmax(17rem, 38%);
+}
+
+.aventure-stage.has-figure .aventure-scene {
+  width: 100%;
+}
+
+.aventure-stage-figure {
+  display: grid;
+  align-content: end;
+  justify-items: center;
+  gap: 0.6rem;
+  margin: 0;
+}
+
+.aventure-stage-art {
+  width: 100%;
+  max-width: 30rem;
+  aspect-ratio: 3 / 4;
+  max-height: 64vh;
+}
+
+.aventure-stage-art > * {
+  width: 100%;
+  height: 100%;
+}
+
+.aventure-stage-caption {
+  display: grid;
+  gap: 0.2rem;
+  text-align: center;
+  font-size: clamp(1rem, 1.8vw, 1.25rem);
+}
+
+.aventure-stage-line {
+  margin: 0;
+  padding: 0.7rem 0.9rem;
+  border-radius: var(--r-md);
+  background: var(--glass);
+  border: 1px solid var(--line-strong);
+  font-style: italic;
+  text-align: center;
+  line-height: 1.45;
+}
+
+@media (max-width: 760px) {
+  .aventure-stage.has-figure {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .aventure-stage-art {
+    max-width: 16rem;
+    max-height: 40vh;
+  }
 }
 
 .aventure-foe {
@@ -10075,6 +10776,200 @@ html:not([data-theme='dark']) .corner-drawer {
 
 .mdf-nosensor {
   max-width: 420px;
+}
+
+/* Défis tactiles et capteurs : glisser, motif de vibrations, pincer, lancer, applaudir, cacher la lumière. */
+.mdf-touch-none {
+  touch-action: none;
+}
+
+.mdf-vibre .mdf-pad,
+.mdf-pince .mdf-pad {
+  min-height: 26vh;
+}
+
+.mdf-pad.is-waiting {
+  opacity: 0.55;
+}
+
+.mdf-arrows {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+.mdf-arrows span {
+  display: grid;
+  place-items: center;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 12px;
+  border: 2px solid var(--line-strong);
+  font-size: 1.4rem;
+  opacity: 0.45;
+  transition:
+    transform 0.15s ease,
+    opacity 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.mdf-arrows span.is-next {
+  opacity: 1;
+  border-color: var(--sun);
+  transform: scale(1.14);
+}
+
+.mdf-arrows span.is-done {
+  opacity: 0.3;
+  border-color: var(--lime);
+}
+
+.mdf-miss {
+  margin: 0;
+  color: #ff6fae;
+  font-weight: 700;
+  animation: mdf-pop 0.3s ease both;
+}
+
+.mdf-symbol-stage {
+  display: grid;
+  place-items: center;
+  height: 110px;
+}
+
+.mdf-symbol {
+  display: block;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 3px solid var(--line-strong);
+  background: transparent;
+  transition:
+    background 0.08s linear,
+    box-shadow 0.08s linear;
+}
+
+.mdf-symbol.is-long {
+  width: 190px;
+  border-radius: 28px;
+}
+
+.mdf-symbol.is-lit {
+  background: var(--sun);
+  border-color: var(--sun);
+  box-shadow: 0 0 28px rgba(255, 200, 61, 0.7);
+}
+
+.mdf-slots {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  align-items: center;
+  min-height: 1.2rem;
+}
+
+.mdf-slot {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  border: 2px solid var(--line-strong);
+}
+
+.mdf-slot.is-long {
+  width: 2.6rem;
+  border-radius: 999px;
+}
+
+.mdf-slot.is-short,
+.mdf-slot.is-long {
+  background: var(--lime);
+  border-color: var(--lime);
+}
+
+.mdf-pinch-stage {
+  position: relative;
+  width: min(260px, 70vw);
+  aspect-ratio: 1;
+}
+
+.mdf-pinch-ring {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(110px * var(--s, 1));
+  height: calc(110px * var(--s, 1));
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 3px solid var(--sun);
+  transition:
+    width 0.1s linear,
+    height 0.1s linear,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.mdf-pinch-ring.is-goal {
+  border: 3px dashed var(--lime);
+}
+
+.mdf-pinch-ring.is-ok {
+  border-color: var(--lime);
+  box-shadow: 0 0 24px rgba(165, 255, 80, 0.6);
+}
+
+.mdf-flick-field {
+  position: relative;
+  min-height: 56vh;
+  align-content: end;
+  padding-bottom: 1.2rem;
+  overflow: hidden;
+}
+
+.mdf-goal {
+  position: absolute;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 2.6rem;
+}
+
+.mdf-ball {
+  font-size: 3.2rem;
+  transition:
+    transform 0.45s cubic-bezier(0.2, 0.8, 0.3, 1),
+    opacity 0.45s ease;
+}
+
+.mdf-ball.is-sent {
+  transform: translateY(-38vh) scale(0.6);
+  opacity: 0.2;
+}
+
+.mdf-sun {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff6c2 0%, var(--sun) 45%, rgba(255, 200, 61, 0) 72%);
+  box-shadow: 0 0 60px rgba(255, 200, 61, 0.55);
+  transition:
+    filter 0.2s ease,
+    transform 0.2s ease;
+}
+
+.mdf-sun.is-covered {
+  filter: brightness(0.25) saturate(0.4);
+  transform: scale(0.92);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mdf-arrows span,
+  .mdf-symbol,
+  .mdf-pinch-ring,
+  .mdf-ball,
+  .mdf-sun {
+    transition: none;
+  }
 }
 
 @keyframes mdf-pop {
@@ -11193,6 +12088,486 @@ input[type='file']::file-selector-button {
 .recipe-sent {
   font-weight: 700;
   margin: 0.8em 0;
+}
+
+/* ==========================================================================
+   Tennis party : terrain isométrique sur l’écran principal, raquette sur le téléphone
+   ========================================================================== */
+
+.tennis-host {
+  display: grid;
+  justify-items: center;
+  gap: 0.9rem;
+  width: 100%;
+}
+
+.tennis-head {
+  text-align: center;
+}
+
+.tennis-title {
+  margin: 0;
+  font-family: var(--display);
+}
+
+.tennis-rule {
+  margin: 0.25rem 0 0;
+}
+
+/* Largeur du terrain : toute la hauteur de l’écran, sans dépasser les trois quarts de la largeur. */
+.tennis-court-wrap {
+  display: grid;
+  gap: 0.6rem;
+  width: min(72vw, calc((100vh - 240px) / 0.7));
+  max-width: 100%;
+}
+
+.tennis-hud {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.tennis-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  padding: 0.45rem 0.6rem;
+  border-radius: 16px;
+  border: 2px solid var(--line-strong);
+  background: rgba(14, 10, 40, 0.86);
+  box-shadow: 0 12px 26px -16px rgba(0, 0, 0, 0.7);
+  transition:
+    opacity 0.3s ease,
+    filter 0.3s ease;
+}
+
+.tennis-chip.is-empty {
+  justify-content: center;
+  border-style: dashed;
+  background: transparent;
+  box-shadow: none;
+}
+
+.tennis-chip.is-out {
+  opacity: 0.5;
+  filter: grayscale(0.7);
+}
+
+.tennis-chip-text {
+  display: grid;
+  min-width: 0;
+}
+
+.tennis-chip-name {
+  overflow: hidden;
+  font-family: var(--display);
+  font-size: clamp(0.95rem, 1.5vw, 1.25rem);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text);
+}
+
+.tennis-chip-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.5rem;
+}
+
+.tennis-hearts,
+.tennis-points {
+  font-size: clamp(0.8rem, 1.2vw, 1rem);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Le terrain : fond, public, surface et lignes sont sur le canevas ; joueurs, raquettes et balle sont par-dessus. */
+.tennis-stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 0.7;
+  container-type: inline-size;
+  overflow: hidden;
+  border-radius: 22px;
+  background: #2a7062;
+  box-shadow:
+    0 0 0 3px #1c5047,
+    0 0 0 7px rgba(255, 255, 255, 0.07),
+    0 30px 60px -28px rgba(0, 0, 0, 0.75);
+}
+
+.tennis-canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.tennis-net {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* Un joueur : son personnage, sa raquette et son nom. Le pied est le point d’ancrage (transform-origin). */
+.tennis-athlete {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: calc(17cqw * 260 / 340);
+  transform-origin: 50% 92%;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.tennis-athlete::before {
+  content: '';
+  position: absolute;
+  left: 18%;
+  right: 18%;
+  bottom: 2%;
+  height: 12%;
+  z-index: -1;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(0, 20, 10, 0.5), rgba(0, 20, 10, 0) 70%);
+  pointer-events: none;
+}
+
+.tennis-athlete.is-far .tennis-tag {
+  bottom: auto;
+  top: 100%;
+  transform: translate(-50%, 0.3em);
+}
+
+.tennis-athlete.is-out {
+  opacity: 0.45;
+  filter: grayscale(0.8);
+}
+
+.tennis-tag {
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  transform: translate(-50%, -0.3em);
+  padding: 0.1em 0.6em;
+  border: 2px solid;
+  border-radius: 999px;
+  background: rgba(14, 10, 40, 0.9);
+  font-family: var(--display);
+  font-size: clamp(0.8rem, 2.2cqw, 1.2rem);
+  white-space: nowrap;
+  color: var(--text);
+}
+
+.tennis-bat {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 4.7cqw;
+  height: 9.35cqw;
+  transform-origin: 50% 100%;
+  pointer-events: none;
+}
+
+.tennis-bat.is-hidden {
+  display: none;
+}
+
+.tennis-bat svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.tennis-ball {
+  position: absolute;
+  left: 0;
+  top: 0;
+  visibility: hidden;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ffffff 0%, #eaff6a 40%, #b5d400 100%);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.3),
+    0 3px 8px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+}
+
+.tennis-shadow {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 1;
+  visibility: hidden;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+}
+
+.tennis-ring {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 900;
+  box-sizing: border-box;
+  width: 7cqw;
+  height: 7cqw;
+  border: 3px solid #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 0 18px rgba(255, 255, 255, 0.7);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Téléphone : la raquette glisse sur une piste, horizontale pour bas et haut, verticale pour gauche et droite. */
+.tennis-player {
+  display: grid;
+  justify-items: center;
+  gap: 1rem;
+}
+
+.tennis-me {
+  position: relative;
+  width: min(44vw, 170px);
+}
+
+.tennis-me-bat {
+  position: absolute;
+  left: 61%;
+  top: 27%;
+  width: 24%;
+  transform: rotate(24deg);
+  transform-origin: 50% 100%;
+  pointer-events: none;
+}
+
+.tennis-me-bat svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.tennis-side {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 1.4rem;
+}
+
+.tennis-status {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+.tennis-track {
+  position: relative;
+  width: min(100%, 360px);
+  height: 44px;
+  border-radius: 999px;
+  background: var(--glass);
+  border: 1px solid var(--line-strong);
+  overflow: hidden;
+}
+
+.tennis-racket {
+  position: absolute;
+  top: 50%;
+  width: 20%;
+  height: 22px;
+  margin-top: -11px;
+  border-radius: 999px;
+  transform: translateX(-50%);
+  transition: left 0.09s linear;
+}
+
+.tennis-player.is-vertical .tennis-track {
+  width: 64px;
+  height: min(52vh, 360px);
+}
+
+.tennis-player.is-vertical .tennis-racket {
+  top: auto;
+  left: 10%;
+  right: 10%;
+  width: auto;
+  height: 20%;
+  margin: 0;
+  transform: translateY(-50%);
+  transition: top 0.09s linear;
+}
+
+.tennis-pad {
+  display: flex;
+  gap: 0.8rem;
+}
+
+.tennis-player.is-vertical .tennis-pad {
+  flex-direction: column;
+}
+
+.tennis-btn {
+  width: 88px;
+  height: 72px;
+  border-radius: 20px;
+  border: 1px solid var(--line-strong);
+  background: var(--glass-2);
+  color: var(--text);
+  font-size: 1.8rem;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.tennis-btn:active {
+  transform: scale(0.96);
+  background: rgba(255, 255, 255, 0.18);
+}
+
+/* Score du match, au-dessus du terrain : le tour, les joueurs, puis les sets, les jeux ou les vies. */
+.tennis-matchbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.35rem 1rem;
+  width: min(72vw, calc((100vh - 240px) / 0.7));
+  max-width: 100%;
+  font-variant-numeric: tabular-nums;
+}
+
+.tennis-match-label {
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  background: var(--glass-2);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.tennis-match-names {
+  font-family: var(--display);
+  font-size: clamp(1rem, 1.6vw, 1.35rem);
+}
+
+.tennis-match-score {
+  font-weight: 700;
+  color: var(--muted);
+}
+
+/* Point de service : un point coloré devant le nom du joueur qui sert. */
+.tennis-serve {
+  color: #ffd23f;
+  font-size: 0.8em;
+}
+
+.tennis-tour {
+  width: min(92vw, 880px);
+}
+
+.tennis-next {
+  margin: 0;
+  font-size: 1.05rem;
+  text-align: center;
+}
+
+.tennis-board {
+  display: grid;
+  gap: 1rem;
+  width: 100%;
+}
+
+.tennis-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.tennis-table th,
+.tennis-table td {
+  padding: 0.45rem 0.6rem;
+  text-align: left;
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.tennis-table th {
+  font-size: 0.8rem;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.tennis-matches {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tennis-row {
+  display: grid;
+  grid-template-columns: minmax(7rem, auto) 1fr auto;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.8rem;
+  border-radius: 12px;
+  background: var(--glass-2);
+}
+
+.tennis-row.is-playing {
+  box-shadow: inset 0 0 0 2px #ffd23f;
+}
+
+.tennis-row.is-waiting,
+.tennis-row.is-bye {
+  opacity: 0.7;
+}
+
+.tennis-row-label {
+  font-weight: 700;
+}
+
+.tennis-row-result {
+  color: var(--muted);
+  text-align: right;
+}
+
+/* Compte à rebours entre deux matchs : un chiffre seul, sous la phrase du prochain match. */
+.tennis-countdown {
+  display: grid;
+  justify-items: center;
+  gap: 0.2rem;
+  margin: 0;
+}
+
+.tennis-countdown .countdown {
+  font-size: clamp(3rem, 9vw, 5.5rem);
+}
+
+.tennis-champion {
+  margin: 0;
+  text-align: center;
+  font-size: 1.1rem;
+}
+
+.tennis-final {
+  display: grid;
+  justify-items: center;
+  gap: 1rem;
+}
+
+@media (max-width: 640px) {
+  .tennis-row {
+    grid-template-columns: 1fr;
+  }
+
+  .tennis-row-result {
+    text-align: left;
+  }
 }
 
 /* Mise à jour depuis l’administration : notes de version en texte seul (titres et puces), sans HTML interprété. */

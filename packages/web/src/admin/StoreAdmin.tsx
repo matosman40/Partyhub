@@ -1,91 +1,127 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import { api } from '../api.js';
-
-type StoreStatus = 'integre' | 'non_installe' | 'a_jour' | 'mise_a_jour' | 'erreur' | 'en_revue';
-
-interface StoreGame {
-  id: string;
-  tag: string;
-  latestVersion: string;
-  name: string;
-  description: string;
-  author: string;
-  moduleLabel: string;
-  hasCover: boolean;
-  error: string | null;
-  builtin: boolean;
-  status: StoreStatus;
-  installedVersion: string | null;
-  pendingVersion: string | null;
-  autoUpdate: boolean;
-  lastError: string | null;
-}
+import {
+  FILTER_LABEL,
+  FILTER_ORDER,
+  JOB_STATE_LABEL,
+  SORT_LABEL,
+  countByFilter,
+  describeOutcome,
+  filterGames,
+  installableIds,
+  isInstallable,
+  isInstalled,
+  isRemovable,
+  isUpdatable,
+  jobProgress,
+  jobTitle,
+  quotaLine,
+  quotaWarning,
+  removableIds,
+  shortStatus,
+  statusText,
+  updatableIds,
+  type JobAction,
+  type JobView,
+  type Outcome,
+  type RateLimit,
+  type StoreFilter,
+  type StoreGame,
+  type StoreSort,
+} from './storeView.js';
 
 interface Catalog {
   repo: string;
   tokenConfigured: boolean;
+  autoUpdate: boolean;
   checkedAt: string | null;
+  rateLimit: RateLimit | null;
   games: StoreGame[];
   error: string | null;
 }
 
-type Outcome = { ok: true; status: string; version: string } | { ok: false; error: string; issues?: string[] };
-
-const STATUS_LABEL: Record<StoreStatus, string> = {
-  integre: 'Intégré à l’application',
-  non_installe: 'Non installé',
-  a_jour: 'Installé, à jour',
-  mise_a_jour: 'Mise à jour disponible',
-  erreur: 'Échec de l’installation',
-  en_revue: 'En attente de revue',
-};
-
-/** Libellé d’état avec la version : l’installée, et la nouvelle quand une mise à jour est prête. */
-function statusText(game: StoreGame): string {
-  if (game.status === 'mise_a_jour') return `Mise à jour disponible : ${game.installedVersion} → ${game.latestVersion}`;
-  if (game.status === 'a_jour') return `Installé, à jour (${game.installedVersion})`;
-  if (game.status === 'en_revue') {
-    return `En attente de revue : version ${game.pendingVersion}. Approuvez-la dans « Jeux de code » pour la lancer.`;
-  }
-  return STATUS_LABEL[game.status];
+interface RemoveResult {
+  removed: string[];
+  failed: { id: string; error: string }[];
+  closedRooms: number;
 }
 
-function describe(outcome: Outcome): string {
-  if (outcome.ok) return `${outcome.status} : version ${outcome.version}.`;
-  return [outcome.error, ...(outcome.issues ?? [])].join(' ');
-}
+/** Intervalle de lecture de la file pendant qu’elle tourne. */
+const JOB_POLL_MS = 1000;
 
 /**
- * Magasin : les jeux publiés dans le dépôt de jeux. On installe un jeu, il se met à jour chaque jour, et on peut
- * le supprimer. Les jeux intégrés à l’application restent dans le code et ne se téléchargent pas.
+ * Magasin de jeux : tout le dépôt sur une page. On cherche, on filtre, on coche les jeux à installer ou à mettre à
+ * jour, ou on installe tout d’un coup. Les jeux se traitent un par un dans une file, dont la progression s’affiche.
+ * La mise à jour automatique se règle une fois, pour tout le dépôt. Les jeux intégrés ne se téléchargent pas.
  */
 export function StoreAdmin({ onChanged }: { onChanged: () => void }) {
   const [catalog, setCatalog] = useState<Catalog | null>(null);
+  const [job, setJob] = useState<JobView | null>(null);
+  const [query, setQuery] = useState('');
+  const [filter, setFilter] = useState<StoreFilter>('tous');
+  const [sort, setSort] = useState<StoreSort>('nom');
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [focusId, setFocusId] = useState<string | null>(null);
   const [repoInput, setRepoInput] = useState('');
+  const [showRepo, setShowRepo] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const jobRunning = job !== null && job.finishedAt === null;
+  const games = useMemo(() => catalog?.games ?? [], [catalog]);
+  const visible = useMemo(() => filterGames(games, { query, filter, sort }), [games, query, filter, sort]);
+  const counts = useMemo(() => countByFilter(games), [games]);
+  const focus = games.find((game) => game.id === focusId) ?? null;
+
   async function load(refresh = false) {
     try {
-      const res = await api<Catalog>(`/api/admin/store${refresh ? '?refresh=1' : ''}`);
-      setCatalog(res);
+      setCatalog(await api<Catalog>(`/api/admin/store${refresh ? '?refresh=1' : ''}`));
     } catch (err) {
       setError((err as Error).message);
     }
   }
 
+  async function loadJob() {
+    try {
+      setJob((await api<{ job: JobView | null }>('/api/admin/store/jobs/current')).job);
+    } catch {
+      // Pas de file à afficher : la page reste utilisable.
+    }
+  }
+
   useEffect(() => {
     void load();
+    void loadJob();
+    // Une seule lecture au montage : le reste suit les actions de l’administrateur.
   }, []);
 
-  async function run(action: () => Promise<void>) {
+  // Pendant qu’une file tourne, on lit sa progression. À la fin, le catalogue est relu.
+  useEffect(() => {
+    if (!jobRunning) return;
+    const timer = window.setInterval(async () => {
+      try {
+        const current = (await api<{ job: JobView | null }>('/api/admin/store/jobs/current')).job;
+        setJob(current);
+        if (current && current.finishedAt !== null) {
+          await load(true);
+          onChanged();
+        }
+      } catch {
+        // Lecture ratée : on réessaie au tour suivant.
+      }
+    }, JOB_POLL_MS);
+    return () => window.clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [jobRunning]);
+
+  async function run(action: () => Promise<void>, refresh = true) {
     setBusy(true);
     setError(null);
     setMessage(null);
     try {
       await action();
-      await load(true);
+      if (refresh) await load(true);
       onChanged();
     } catch (err) {
       setError((err as Error).message);
@@ -94,25 +130,52 @@ export function StoreAdmin({ onChanged }: { onChanged: () => void }) {
     }
   }
 
-  async function install(game: StoreGame) {
+  async function startJob(action: JobAction, ids: string[]) {
+    setError(null);
+    setMessage(null);
+    try {
+      const res = await api<{ job: JobView }>('/api/admin/store/jobs', {
+        method: 'POST',
+        body: JSON.stringify({ action, ids }),
+      });
+      setJob(res.job);
+      setSelected(new Set());
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  }
+
+  function confirmAndStart(action: JobAction, ids: string[]) {
+    if (ids.length === 0) return;
+    const question =
+      action === 'install'
+        ? `Installer ${ids.length} jeu${ids.length > 1 ? 'x' : ''} du dépôt ? Ils sont téléchargés l’un après l’autre.`
+        : `Mettre à jour ${ids.length} jeu${ids.length > 1 ? 'x' : ''} ?`;
+    if (!window.confirm(question)) return;
+    void startJob(action, ids);
+  }
+
+  /* Actions sur un seul jeu, depuis sa fiche. */
+
+  async function installOne(game: StoreGame) {
     await run(async () => {
       const res = await api<{ outcome: Outcome }>(`/api/admin/store/games/${encodeURIComponent(game.id)}/install`, {
         method: 'POST',
       });
-      setMessage(`${game.name} : ${describe(res.outcome)}`);
+      setMessage(`${game.name} : ${describeOutcome(res.outcome)}`);
     });
   }
 
-  async function update(game: StoreGame) {
+  async function updateOne(game: StoreGame) {
     await run(async () => {
       const res = await api<{ outcome: Outcome }>(`/api/admin/store/games/${encodeURIComponent(game.id)}/update`, {
         method: 'POST',
       });
-      setMessage(`${game.name} : ${describe(res.outcome)}`);
+      setMessage(`${game.name} : ${describeOutcome(res.outcome)}`);
     });
   }
 
-  async function remove(game: StoreGame) {
+  async function removeOne(game: StoreGame) {
     if (!window.confirm(`Supprimer ${game.name} de PartyHub ? Ses parties en cours seront fermées.`)) return;
     await run(async () => {
       const res = await api<{ closedRooms: number }>(`/api/admin/store/games/${encodeURIComponent(game.id)}`, {
@@ -123,51 +186,230 @@ export function StoreAdmin({ onChanged }: { onChanged: () => void }) {
     });
   }
 
+  async function removeSelected(ids: string[]) {
+    if (ids.length === 0) return;
+    if (
+      !window.confirm(
+        `Supprimer ${ids.length} jeu${ids.length > 1 ? 'x' : ''} de PartyHub ? Leurs parties en cours seront fermées.`,
+      )
+    ) {
+      return;
+    }
+    await run(async () => {
+      const res = await api<RemoveResult>('/api/admin/store/remove', {
+        method: 'POST',
+        body: JSON.stringify({ ids }),
+      });
+      const failed =
+        res.failed.length > 0
+          ? ` ${res.failed.length} n’ont pas pu être supprimés : ${res.failed.map((f) => f.id).join(', ')}.`
+          : '';
+      setMessage(`${res.removed.length} jeu(x) supprimé(s).${failed}`);
+      setSelected(new Set());
+    });
+  }
+
+  async function setAutoUpdate(enabled: boolean) {
+    await run(async () => {
+      const res = await api<{ autoUpdate: boolean; touched: number }>('/api/admin/store/auto-update', {
+        method: 'PUT',
+        body: JSON.stringify({ enabled }),
+      });
+      setMessage(
+        res.autoUpdate
+          ? `Mise à jour automatique rétablie pour ${res.touched} jeu(x) installé(s).`
+          : `Mise à jour automatique coupée pour ${res.touched} jeu(x) installé(s).`,
+      );
+    });
+  }
+
   async function changeRepo(event: FormEvent) {
     event.preventDefault();
     await run(async () => {
       await api('/api/admin/store/repo', { method: 'PUT', body: JSON.stringify({ repo: repoInput.trim() }) });
       setMessage(`Dépôt de jeux : ${repoInput.trim()}.`);
       setRepoInput('');
+      setShowRepo(false);
+      setFocusId(null);
+      setSelected(new Set());
     });
   }
 
-  return (
-    <div className="stack">
-      <p className="muted">
-        Les jeux publiés dans le dépôt de jeux. Installez-en un : il se met à jour chaque jour, et vous pouvez le
-        supprimer à tout moment. Les jeux intégrés à l’application ne se téléchargent pas.
-      </p>
+  function toggle(id: string) {
+    setSelected((previous) => {
+      const next = new Set(previous);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
 
-      {catalog && (
-        <p className="muted small">
-          Dépôt : <code>{catalog.repo}</code>
-          {catalog.checkedAt && ` · lu à ${new Date(catalog.checkedAt).toLocaleTimeString('fr-FR')}`}
-          {!catalog.tokenConfigured &&
-            ' · sans GITHUB_TOKEN, GitHub limite les appels à 60 par heure : le catalogue est gardé dix minutes.'}
+  const chosen = games.filter((game) => selected.has(game.id));
+  const selInstall = chosen.filter(isInstallable).map((game) => game.id);
+  const selUpdate = chosen.filter(isUpdatable).map((game) => game.id);
+  const selRemove = chosen.filter(isRemovable).map((game) => game.id);
+  const allInstall = installableIds(games);
+  const allUpdate = updatableIds(games);
+  const allRemovable = removableIds(games);
+  const locked = busy || jobRunning;
+  // Le quota ne concerne que les serveurs sans jeton : avec un jeton, GitHub accorde beaucoup plus d’appels.
+  const quota = catalog && !catalog.tokenConfigured ? catalog.rateLimit : null;
+  const now = Date.now();
+  const installWarning = quotaWarning(quota, allInstall.length, now);
+
+  return (
+    <div className="store-admin">
+      <section className="store-top" aria-label="Dépôt de jeux">
+        <div className="store-repo">
+          <p className="muted small">
+            Dépôt : <code>{catalog?.repo ?? '…'}</code>
+            {catalog?.checkedAt && ` · lu à ${new Date(catalog.checkedAt).toLocaleTimeString('fr-FR')}`}
+            {catalog &&
+              !catalog.tokenConfigured &&
+              ' · sans GITHUB_TOKEN, GitHub limite les appels à 60 par heure : le catalogue est gardé dix minutes.'}
+          </p>
+          {quota && (
+            <p className="store-quota small" role="status">
+              {quotaLine(quota, now)}
+            </p>
+          )}
+          <div className="row">
+            <button type="button" className="btn ghost small" disabled={locked} onClick={() => run(async () => {})}>
+              Actualiser le catalogue
+            </button>
+            <button type="button" className="link-btn" onClick={() => setShowRepo((shown) => !shown)}>
+              {showRepo ? 'Annuler' : 'Changer de dépôt'}
+            </button>
+          </div>
+          {showRepo && (
+            <form className="ed-new" onSubmit={changeRepo}>
+              <label className="field">
+                <span>Autre dépôt de jeux : auteur/nom</span>
+                <input
+                  value={repoInput}
+                  onChange={(e) => setRepoInput(e.target.value)}
+                  placeholder="auteur/jeux-partyhub"
+                  required
+                />
+              </label>
+              <button type="submit" className="btn ghost" disabled={locked || !repoInput.trim()}>
+                Changer de dépôt
+              </button>
+            </form>
+          )}
+        </div>
+        <label className="store-switch">
+          <input
+            type="checkbox"
+            checked={catalog?.autoUpdate ?? true}
+            disabled={!catalog || locked}
+            onChange={(e) => void setAutoUpdate(e.target.checked)}
+          />
+          <span>
+            <strong>Mise à jour automatique de tous les jeux du dépôt</strong>
+            <span className="muted small">Vérifiée chaque jour. Les jeux installés plus tard suivent ce réglage.</span>
+          </span>
+        </label>
+      </section>
+
+      <div className="store-toolbar">
+        <input
+          type="search"
+          className="store-search"
+          placeholder="Chercher un jeu, un auteur, un type…"
+          aria-label="Chercher dans le magasin"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+        <label className="store-sort">
+          <span className="muted small">Trier</span>
+          <select value={sort} onChange={(e) => setSort(e.target.value as StoreSort)}>
+            {(Object.keys(SORT_LABEL) as StoreSort[]).map((key) => (
+              <option key={key} value={key}>
+                {SORT_LABEL[key]}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      <div className="store-filters" role="group" aria-label="Filtrer les jeux">
+        {FILTER_ORDER.map((key) => (
+          <button key={key} type="button" className="chip" aria-pressed={filter === key} onClick={() => setFilter(key)}>
+            {FILTER_LABEL[key]} <span className="muted small">{counts[key]}</span>
+          </button>
+        ))}
+      </div>
+
+      {installWarning && (
+        <p className="store-quota is-warning small" role="alert">
+          {installWarning}
         </p>
       )}
-
-      <div className="row">
-        <button type="button" className="btn ghost" disabled={busy} onClick={() => run(async () => {})}>
-          Actualiser le catalogue
+      <div className="store-bulk">
+        <button
+          type="button"
+          className="btn primary small"
+          disabled={locked || allInstall.length === 0}
+          onClick={() => confirmAndStart('install', allInstall)}
+        >
+          Installer tout le dépôt ({allInstall.length})
+        </button>
+        <button
+          type="button"
+          className="btn ghost small"
+          disabled={locked || allUpdate.length === 0}
+          onClick={() => confirmAndStart('update', allUpdate)}
+        >
+          Mettre à jour tout ({allUpdate.length})
+        </button>
+        <button
+          type="button"
+          className="btn ghost small"
+          disabled={locked || allRemovable.length === 0}
+          onClick={() => void removeSelected(allRemovable)}
+        >
+          Supprimer tous les jeux installés ({allRemovable.length})
         </button>
       </div>
 
-      <form className="ed-new" onSubmit={changeRepo}>
-        <label className="field">
-          <span>Autre dépôt de jeux : auteur/nom</span>
-          <input
-            value={repoInput}
-            onChange={(e) => setRepoInput(e.target.value)}
-            placeholder="auteur/jeux-partyhub"
-            required
-          />
-        </label>
-        <button type="submit" className="btn ghost" disabled={busy || !repoInput.trim()}>
-          Changer de dépôt
-        </button>
-      </form>
+      {job && <JobPanel job={job} onDismiss={() => setJob(null)} />}
+
+      {selected.size > 0 && (
+        <div className="store-selection" role="region" aria-label="Jeux sélectionnés">
+          <strong>{selected.size} sélectionné(s)</strong>
+          <button
+            type="button"
+            className="btn primary small"
+            disabled={locked || selInstall.length === 0}
+            onClick={() => confirmAndStart('install', selInstall)}
+          >
+            Installer ({selInstall.length})
+          </button>
+          <button
+            type="button"
+            className="btn ghost small"
+            disabled={locked || selUpdate.length === 0}
+            onClick={() => confirmAndStart('update', selUpdate)}
+          >
+            Mettre à jour ({selUpdate.length})
+          </button>
+          <button
+            type="button"
+            className="btn ghost small"
+            disabled={locked || selRemove.length === 0}
+            onClick={() => void removeSelected(selRemove)}
+          >
+            Supprimer ({selRemove.length})
+          </button>
+          <button type="button" className="link-btn" onClick={() => setSelected(new Set(visible.map((g) => g.id)))}>
+            Sélectionner les {visible.length} visibles
+          </button>
+          <button type="button" className="link-btn" onClick={() => setSelected(new Set())}>
+            Tout désélectionner
+          </button>
+        </div>
+      )}
 
       {message && <p role="status">{message}</p>}
       {error && (
@@ -181,71 +423,167 @@ export function StoreAdmin({ onChanged }: { onChanged: () => void }) {
         </p>
       )}
       {catalog === null && !error && <p className="muted">Chargement…</p>}
-      {catalog?.games.length === 0 && !catalog.error && (
+      {catalog && !catalog.error && games.length === 0 && (
         <p className="muted">Aucun jeu publié dans ce dépôt pour l’instant.</p>
       )}
 
-      <ul className="store-grid">
-        {catalog?.games.map((game) => (
-          <li key={game.id} className="store-card">
-            {game.hasCover ? (
-              <img
-                className="store-cover"
-                src={`/api/admin/store/games/${encodeURIComponent(game.id)}/cover`}
-                alt=""
-                loading="lazy"
-                onError={(e) => {
-                  e.currentTarget.hidden = true;
-                }}
+      <div className="store-body">
+        <ul className="store-list" aria-label="Jeux du dépôt">
+          {visible.length === 0 && games.length > 0 && <li className="muted">Aucun jeu ne correspond à ce filtre.</li>}
+          {visible.map((game) => (
+            <li key={game.id} className={`store-row${focusId === game.id ? ' is-focus' : ''}`}>
+              <input
+                type="checkbox"
+                aria-label={`Sélectionner ${game.name}`}
+                checked={selected.has(game.id)}
+                disabled={busy}
+                onChange={() => toggle(game.id)}
               />
-            ) : (
-              <div className="store-cover store-cover-empty" aria-hidden="true">
-                🧩
-              </div>
-            )}
-            <div className="store-card-body">
-              <strong>{game.name}</strong>
-              <span className="muted small">
-                {game.moduleLabel} · version {game.latestVersion}
-                {game.author ? ` · ${game.author}` : ''}
-              </span>
-              {game.description && <span className="muted small">{game.description}</span>}
-              <span className="badge">{statusText(game)}</span>
-              {game.autoUpdate && <span className="muted small">Mise à jour automatique chaque jour</span>}
-              {game.error && <span className="error small">{game.error}</span>}
-              {game.lastError && <span className="error small">Dernier échec : {game.lastError}</span>}
-            </div>
-            <div className="store-card-actions">
-              {!game.builtin && (game.status === 'non_installe' || game.status === 'erreur') && (
-                <button
-                  type="button"
-                  className="btn primary small"
-                  disabled={busy || game.error !== null}
-                  onClick={() => install(game)}
-                >
-                  Installer
-                </button>
-              )}
-              {!game.builtin && game.status === 'mise_a_jour' && (
-                <button type="button" className="btn primary small" disabled={busy} onClick={() => update(game)}>
-                  Mettre à jour
-                </button>
-              )}
-              {!game.builtin && game.status === 'a_jour' && (
-                <button type="button" className="btn ghost small" disabled={busy} onClick={() => update(game)}>
-                  Vérifier
-                </button>
-              )}
-              {!game.builtin &&
-                (game.status === 'a_jour' || game.status === 'mise_a_jour' || game.status === 'en_revue') && (
-                  <button type="button" className="btn ghost small" disabled={busy} onClick={() => remove(game)}>
-                    Supprimer
-                  </button>
-                )}
-            </div>
+              <button
+                type="button"
+                className="store-row-main"
+                aria-current={focusId === game.id ? 'true' : undefined}
+                onClick={() => setFocusId(game.id)}
+              >
+                <Thumb game={game} />
+                <span className="store-row-text">
+                  <strong>{game.name}</strong>
+                  <span className="muted small">
+                    {game.author || 'Auteur inconnu'} · {game.moduleLabel} · v{game.latestVersion}
+                  </span>
+                </span>
+                <span className={`badge store-badge is-${game.status}`}>{shortStatus(game)}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+
+        <aside className="store-detail" aria-live="polite" aria-label="Fiche du jeu">
+          {focus ? (
+            <GameDetail
+              game={focus}
+              locked={locked}
+              onInstall={() => void installOne(focus)}
+              onUpdate={() => void updateOne(focus)}
+              onRemove={() => void removeOne(focus)}
+            />
+          ) : (
+            <p className="muted">Choisissez un jeu pour voir sa fiche.</p>
+          )}
+        </aside>
+      </div>
+    </div>
+  );
+}
+
+function coverUrl(game: StoreGame): string {
+  return `/api/admin/store/games/${encodeURIComponent(game.id)}/cover`;
+}
+
+function Thumb({ game }: { game: StoreGame }) {
+  if (!game.hasCover) {
+    return (
+      <span className="store-thumb store-thumb-empty" aria-hidden="true">
+        🧩
+      </span>
+    );
+  }
+  return (
+    <img
+      className="store-thumb"
+      src={coverUrl(game)}
+      alt=""
+      loading="lazy"
+      onError={(e) => {
+        e.currentTarget.hidden = true;
+      }}
+    />
+  );
+}
+
+function GameDetail({
+  game,
+  locked,
+  onInstall,
+  onUpdate,
+  onRemove,
+}: {
+  game: StoreGame;
+  locked: boolean;
+  onInstall: () => void;
+  onUpdate: () => void;
+  onRemove: () => void;
+}): ReactNode {
+  const installedHere = isInstalled(game);
+  return (
+    <article className="store-detail-card">
+      {game.hasCover ? (
+        <img className="store-cover" src={coverUrl(game)} alt="" loading="lazy" />
+      ) : (
+        <div className="store-cover store-cover-empty" aria-hidden="true">
+          🧩
+        </div>
+      )}
+      <h3>{game.name}</h3>
+      <p className="muted small">
+        {game.author || 'Auteur inconnu'} · {game.moduleLabel} · version {game.latestVersion}
+      </p>
+      {game.description && <p>{game.description}</p>}
+      <p>
+        <span className="badge">{statusText(game)}</span>
+      </p>
+      {installedHere && game.autoUpdate && <p className="muted small">Mise à jour automatique chaque jour</p>}
+      {game.error && <p className="error small">{game.error}</p>}
+      {game.lastError && <p className="error small">Dernier échec : {game.lastError}</p>}
+      <div className="store-card-actions">
+        {isInstallable(game) && (
+          <button type="button" className="btn primary small" disabled={locked} onClick={onInstall}>
+            Installer
+          </button>
+        )}
+        {isUpdatable(game) && (
+          <button type="button" className="btn primary small" disabled={locked} onClick={onUpdate}>
+            Mettre à jour
+          </button>
+        )}
+        {installedHere && !isUpdatable(game) && !game.builtin && (
+          <button type="button" className="btn ghost small" disabled={locked} onClick={onUpdate}>
+            Vérifier
+          </button>
+        )}
+        {isRemovable(game) && (
+          <button type="button" className="btn ghost small" disabled={locked} onClick={onRemove}>
+            Supprimer
+          </button>
+        )}
+      </div>
+    </article>
+  );
+}
+
+function JobPanel({ job, onDismiss }: { job: JobView; onDismiss: () => void }) {
+  const { done, total, finished } = jobProgress(job);
+  return (
+    <section className="store-job" aria-live="polite" aria-label="Opération en cours">
+      <p>
+        <strong>{jobTitle(job.action)}</strong> :{' '}
+        {finished ? `terminée, ${done} sur ${total}.` : `${done} sur ${total} traité(s).`}
+      </p>
+      <progress max={total} value={done} aria-label={`${done} sur ${total}`} />
+      <ul className="store-job-items">
+        {job.items.map((item) => (
+          <li key={item.id} className={`store-job-item is-${item.state}`}>
+            <span>{item.name}</span>
+            <span className="badge">{JOB_STATE_LABEL[item.state]}</span>
+            {item.message && <span className="muted small">{item.message}</span>}
           </li>
         ))}
       </ul>
-    </div>
+      {finished && (
+        <button type="button" className="link-btn" onClick={onDismiss}>
+          Masquer
+        </button>
+      )}
+    </section>
   );
 }

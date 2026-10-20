@@ -1,5 +1,14 @@
 import ivm from 'isolated-vm';
-import type { BotSuggestion, GameContext, GameManifest, GameModule, GameResult, PlayerRef } from '@partyhub/shared';
+import type {
+  BotSuggestion,
+  GameContext,
+  GameJob,
+  GameManifest,
+  GameModule,
+  GameResult,
+  JobOutcome,
+  PlayerRef,
+} from '@partyhub/shared';
 
 /**
  * Runtime d'un jeu de code : le bundle serveur tourne dans un isolat V8 séparé.
@@ -10,8 +19,9 @@ import type { BotSuggestion, GameContext, GameManifest, GameModule, GameResult, 
  * - l'état de partie vit côté hôte et voyage en JSON : une erreur ou un dépassement de temps
  *   fait échouer l'action, sans corrompre la partie.
  *
- * Limites connues : le jeu n'a ni IA, ni images, ni données de profil (le contexte ne les lui donne pas),
- * et il ne doit garder aucun état en mémoire entre deux appels (un même isolat sert toutes les salles).
+ * Limites connues : le jeu n'a ni images, ni données de profil (le contexte ne les lui donne pas). Son IA passe
+ * par un pont : il demande un travail (`pendingJob`), le serveur l'exécute (code-games/ai-jobs.ts), puis le jeu
+ * l'intègre (`completeJob`). Il ne doit garder aucun état en mémoire entre deux appels (un même isolat sert toutes les salles).
  */
 
 /** Mémoire maximale de l'isolat, en Mio. */
@@ -34,6 +44,44 @@ export const CODE_VIEW_GLOBAL = '__partyhubView';
  * n'a accès qu'au contexte fourni ici (horloge, hasard, minuteurs, joueurs connectés).
  */
 const SHIM = `
+// L'isolat n'a pas les API du navigateur : structuredClone manque. Copie profonde des valeurs de jeu (objets, tableaux,
+// Map, Set, Date), avec les références circulaires. Une fonction ou un symbole ne se copie pas et fait échouer.
+if (typeof structuredClone !== 'function') {
+  globalThis.structuredClone = function structuredClone(value) {
+    var seen = new Map();
+    function copy(v) {
+      if (v === null || typeof v !== 'object') {
+        if (typeof v === 'function' || typeof v === 'symbol') throw new Error('valeur non clonable');
+        return v;
+      }
+      if (seen.has(v)) return seen.get(v);
+      if (v instanceof Date) return new Date(v.getTime());
+      if (v instanceof Map) {
+        var map = new Map();
+        seen.set(v, map);
+        v.forEach(function (x, k) { map.set(copy(k), copy(x)); });
+        return map;
+      }
+      if (v instanceof Set) {
+        var set = new Set();
+        seen.set(v, set);
+        v.forEach(function (x) { set.add(copy(x)); });
+        return set;
+      }
+      if (Array.isArray(v)) {
+        var arr = [];
+        seen.set(v, arr);
+        for (var i = 0; i < v.length; i++) arr[i] = copy(v[i]);
+        return arr;
+      }
+      var out = {};
+      seen.set(v, out);
+      Object.keys(v).forEach(function (k) { out[k] = copy(v[k]); });
+      return out;
+    }
+    return copy(value);
+  };
+}
 (function () {
   var mod = ${CODE_SERVER_GLOBAL}.default;
   var REQUIRED = ['initialize','onPlayerJoin','onPlayerLeave','start','handleAction','onTimer',
@@ -64,6 +112,8 @@ const SHIM = `
           hostActions: hostActionNames,
           hasHostActions: typeof mod.handleHostAction === 'function',
           hasSuggest: typeof mod.suggest === 'function',
+          hasSuggestHost: typeof mod.suggestHost === 'function',
+          hasJobs: typeof mod.pendingJob === 'function' && typeof mod.completeJob === 'function',
           missing: REQUIRED.filter(function (n) { return typeof mod[n] !== 'function'; })
         });
       case 'settingsParse': return ok(plain(mod.settingsSchema.safeParse(a.value)));
@@ -83,8 +133,12 @@ const SHIM = `
       case 'playerState': return ok(mod.getPlayerState(a.state, a.playerId));
       case 'hostState': return ok(mod.getHostState(a.state));
       case 'isFinished': return ok(mod.isFinished(a.state));
+      case 'pendingJob': return ok(mod.pendingJob ? mod.pendingJob(a.state) : null);
+      case 'completeJob': return ok(mod.completeJob(a.state, a.jobId, a.outcome, ctx));
       case 'suggest':
         return ok(mod.suggest ? mod.suggest(a.state, a.playerId, function () { return host('random', null, null); }, a.now) : null);
+      case 'suggestHost':
+        return ok(mod.suggestHost ? mod.suggestHost(a.state, function () { return host('random', null, null); }, a.now) : null);
       default: throw new Error('Méthode inconnue : ' + method);
     }
   };
@@ -111,8 +165,18 @@ export interface CodeMeta {
   hostActions: string[];
   hasHostActions: boolean;
   hasSuggest: boolean;
+  /** Le robot-hôte peut proposer une action (`suggestHost`). */
+  hasSuggestHost: boolean;
+  /** Le jeu demande des travaux d'IA (`pendingJob` et `completeJob`). */
+  hasJobs: boolean;
   missing: string[];
 }
+
+/**
+ * Exécuteur d'un travail d'IA, hors de l'isolat : c'est le serveur qui parle au modèle, avec sa clé. Le jeu
+ * de code ne voit ni la clé ni le réseau ; il reçoit seulement le résultat, ou une erreur qui lui fait prendre son repli.
+ */
+export type CodeJobRunner = (job: GameJob, ctx: GameContext, signal: AbortSignal) => Promise<unknown>;
 
 interface SafeParseLike {
   success: boolean;
@@ -257,7 +321,11 @@ function issuesMessage(result: SafeParseLike): string {
  * Construit un GameModule qui délègue au runtime isolé. Le moteur de salle l'utilise comme n'importe quel jeu :
  * toutes les méthodes sont synchrones, les schémas se valident dans l'isolat.
  */
-export function createCodeModule(runtime: CodeGameRuntime, codeView?: { script: string; sha256: string }): GameModule {
+export function createCodeModule(
+  runtime: CodeGameRuntime,
+  codeView?: { script: string; sha256: string },
+  jobs?: CodeJobRunner,
+): GameModule {
   const meta = runtime.meta();
   /** Schéma au sens de zod (safeParse, parse) dont la validation se fait dans l'isolat. */
   const schemaOf = (parse: (value: unknown) => SafeParseLike) => ({
@@ -307,6 +375,18 @@ export function createCodeModule(runtime: CodeGameRuntime, codeView?: { script: 
   if (meta.hasSuggest) {
     module.suggest = (state: unknown, playerId: string, random: () => number, now: number): BotSuggestion | null =>
       runtime.call<BotSuggestion | null>('suggest', { state, playerId, now }, { ctx: null, random });
+  }
+  if (meta.hasSuggestHost) {
+    module.suggestHost = (state: unknown, random: () => number, now: number): BotSuggestion | null =>
+      runtime.call<BotSuggestion | null>('suggestHost', { state, now }, { ctx: null, random });
+  }
+  if (meta.hasJobs) {
+    module.pendingJob = (state: unknown) => runtime.call<GameJob | null>('pendingJob', { state });
+    module.completeJob = (state: unknown, jobId: string, outcome: JobOutcome, ctx: GameContext) =>
+      stateCall('completeJob', { state, jobId, outcome }, ctx);
+    // Sans exécuteur, le travail échoue : le jeu prend son repli au lieu d'attendre une réponse qui ne vient pas.
+    module.runJob = (job: GameJob, ctx: GameContext, signal: AbortSignal) =>
+      jobs ? jobs(job, ctx, signal) : Promise.reject(new Error('Travail d’IA non disponible.'));
   }
   if (meta.hasHostActions) {
     module.hostActions = Object.fromEntries(

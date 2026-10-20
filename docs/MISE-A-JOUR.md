@@ -7,8 +7,8 @@ Deux façons de mettre à jour, dans l'ordre de préférence :
    (section 2).
 2. **À la main**, dans un terminal sur le serveur (section 5). Toujours possible, même sans le service.
 
-Les données (profils, statistiques, médiathèque) sont dans le volume Docker `partyhub-data` : elles ne sont jamais
-supprimées par une mise à jour. Ne lancez jamais `docker compose down -v`.
+Les données (profils, statistiques, médiathèque) sont dans le volume Docker `partyhub-data`, et les jeux installés
+et les personnages dans le volume `partyhub-contenu` : elles ne sont jamais supprimées par une mise à jour. Ne lancez jamais `docker compose down -v`.
 
 ## 1. Ce que fait une mise à jour depuis l'administration
 

@@ -428,6 +428,13 @@ export const MIGRATIONS: Migration[] = [
       `);
     },
   },
+  {
+    version: 15,
+    description: 'Sources du magasin : construites depuis les sources d’un tag, sans release (origine « tags »)',
+    up(db) {
+      db.exec(`ALTER TABLE package_sources ADD COLUMN origin TEXT NOT NULL DEFAULT 'release'`);
+    },
+  },
 ];
 
 /** Entrée d’une banque BOUM ! telle qu’elle est stockée. */
@@ -475,6 +482,12 @@ function toBoumEntry(row: BoumEntryDbRow): BoumEntryRow {
   };
 }
 
+/**
+ * Origine d’une source : « release » (la dernière release du dépôt porte le `.phgame` et son empreinte) ou « tags »
+ * (le magasin : le paquet est construit à partir du dossier `jeux/<jeu>/` du tag le plus haut, sans signature).
+ */
+export type PackageSourceOrigin = 'release' | 'tags';
+
 /** Source GitHub d’un paquet : un dépôt, sa dernière release et l’état de la dernière vérification. */
 export interface PackageSourceRow {
   id: string;
@@ -486,6 +499,7 @@ export interface PackageSourceRow {
   latest_version: string | null;
   last_checked_at: string | null;
   last_error: string | null;
+  origin: PackageSourceOrigin;
   created_at: string;
 }
 
@@ -657,6 +671,27 @@ export class Store {
         'INSERT INTO game_flags (game_id, enabled) VALUES (?, ?) ON CONFLICT(game_id) DO UPDATE SET enabled = excluded.enabled',
       )
       .run(gameId, enabled ? 1 : 0);
+  }
+
+  /** Jeux de code autorisés à utiliser l'IA du serveur. Désactivé tant que l'administrateur ne l'a pas activé. */
+  aiGameIds(): string[] {
+    try {
+      const parsed = JSON.parse(this.getKv('ai_games') ?? '[]') as unknown;
+      return Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === 'string') : [];
+    } catch {
+      return [];
+    }
+  }
+
+  isAiGameEnabled(gameId: string): boolean {
+    return this.aiGameIds().includes(gameId);
+  }
+
+  setAiGameEnabled(gameId: string, enabled: boolean): void {
+    const ids = new Set(this.aiGameIds());
+    if (enabled) ids.add(gameId);
+    else ids.delete(gameId);
+    this.setKv('ai_games', JSON.stringify([...ids].sort()));
   }
 
   incrementStat(key: string, by = 1): void {
@@ -1047,7 +1082,7 @@ export class Store {
   listPackageSources(): PackageSourceRow[] {
     return this.db
       .prepare(
-        'SELECT id, repo, private, auto_update, package_id, installed_version, latest_version, last_checked_at, last_error, created_at FROM package_sources ORDER BY created_at',
+        'SELECT id, repo, private, auto_update, package_id, installed_version, latest_version, last_checked_at, last_error, origin, created_at FROM package_sources ORDER BY created_at',
       )
       .all() as PackageSourceRow[];
   }
@@ -1055,7 +1090,7 @@ export class Store {
   getPackageSource(id: string): PackageSourceRow | undefined {
     return this.db
       .prepare(
-        'SELECT id, repo, private, auto_update, package_id, installed_version, latest_version, last_checked_at, last_error, created_at FROM package_sources WHERE id = ?',
+        'SELECT id, repo, private, auto_update, package_id, installed_version, latest_version, last_checked_at, last_error, origin, created_at FROM package_sources WHERE id = ?',
       )
       .get(id) as PackageSourceRow | undefined;
   }
@@ -1063,8 +1098,8 @@ export class Store {
   savePackageSource(row: PackageSourceRow): void {
     this.db
       .prepare(
-        `INSERT INTO package_sources (id, repo, private, auto_update, package_id, installed_version, latest_version, last_checked_at, last_error, created_at)
-         VALUES (@id, @repo, @private, @auto_update, @package_id, @installed_version, @latest_version, @last_checked_at, @last_error, @created_at)
+        `INSERT INTO package_sources (id, repo, private, auto_update, package_id, installed_version, latest_version, last_checked_at, last_error, origin, created_at)
+         VALUES (@id, @repo, @private, @auto_update, @package_id, @installed_version, @latest_version, @last_checked_at, @last_error, @origin, @created_at)
          ON CONFLICT(id) DO UPDATE SET repo = excluded.repo, private = excluded.private, auto_update = excluded.auto_update,
            package_id = excluded.package_id, installed_version = excluded.installed_version, latest_version = excluded.latest_version,
            last_checked_at = excluded.last_checked_at, last_error = excluded.last_error`,

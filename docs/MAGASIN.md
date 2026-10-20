@@ -7,8 +7,12 @@ les supprimer depuis l'administration, dans la section **Magasin de jeux**.
 
 - Le dépôt par défaut est `matosman40/jeux-partyhub`. Pour en utiliser un autre, réglez la variable
   `PARTYHUB_STORE_REPO` (auteur/nom), ou changez-le dans l'administration. Le réglage de l'administration l'emporte.
-- Un jeu est un dossier `jeux/<jeu>/` avec son `manifest.json`. Chaque version est une release, dont le tag est
-  `<jeu>-vX.Y.Z` (voir `docs/PUBLIER-UN-JEU.md`).
+- Un jeu est un dossier `jeux/<jeu>/` avec son `manifest.json`. Chaque version est un tag `<jeu>-vX.Y.Z` du dépôt.
+  Le dossier du jeu, tel qu'il est à ce tag, contient le jeu : `manifest.json`, `game/`, `assets/` et `licenses/` pour
+  un jeu déclaratif (cartes, plateau, questions, recettes), `manifest.json`, `src/`, `assets/` et `licenses/` pour un
+  jeu de code. Rien d'autre ne compte : les fichiers hors de `jeux/<jeu>/` ne font pas partie du paquet.
+- Aucune release, aucun fichier `.phgame` et aucune signature ne sont nécessaires : PartyHub construit le paquet à
+  partir du dossier, avec les mêmes contrôles que `phgame pack`.
 - Le magasin lit les tags : la version la plus haute de chaque jeu est proposée. Sa fiche (nom, description, auteur,
   type de jeu, couverture) est lue dans le manifeste à ce tag.
 - Une couverture se trouve sous `assets/`, au format PNG, JPEG ou WebP, et pèse 200 Ko au plus. Un fichier qui n'a
@@ -16,36 +20,66 @@ les supprimer depuis l'administration, dans la section **Magasin de jeux**.
 
 ## Installer, mettre à jour, supprimer
 
-- **Installer** crée une source GitHub pour le jeu, avec mise à jour automatique, puis installe la dernière release.
-  Les vérifications sont les mêmes que pour les sources GitHub : empreinte SHA-256, validation du paquet, identifiant
-  et version. Un échec n'installe rien et ne laisse pas de source.
-- **Mettre à jour** (ou **Vérifier**) interroge le dépôt tout de suite. Les jeux installés depuis le magasin se mettent
-  aussi à jour une fois par jour.
+- **Installer** crée une source du magasin pour le jeu, avec mise à jour automatique, puis construit le paquet à partir
+  du dossier du jeu au tag le plus haut. Le dépôt est lu à ce tag, par son archive : chaque fichier du dossier doit
+  correspondre à l'arbre du commit (une modification en route, ou un fichier en trop, est refusé). Le paquet passe
+  ensuite la validation : identifiant, version, contenu. Un échec n'installe rien et ne laisse pas de source.
+- **Mettre à jour** (ou **Vérifier**) interroge le dépôt tout de suite, et installe la version la plus haute si elle est
+  plus récente.
+  Les jeux installés depuis le magasin se mettent aussi à jour une fois par jour, si la mise à jour automatique est
+  activée.
 - **Supprimer** retire le paquet, toutes ses versions, et sa source. Les parties en cours de ce jeu sont fermées.
+- **Plusieurs jeux à la fois** : cochez des jeux dans la liste, ou utilisez « Tout installer », « Tout mettre à jour » et
+  « Tout supprimer » dans la barre du haut. Une seule file tourne à la fois, en arrière-plan : elle traite les jeux un
+  par un et affiche sa progression. Elle est limitée à 200 jeux. Une erreur sur un jeu n'arrête pas les autres.
+- **Mise à jour automatique du dépôt** : un interrupteur, activé par défaut, pour tous les jeux du dépôt. Il s'applique
+  aux jeux déjà installés, et aux prochains. Si l'interrupteur est coupé, un jeu installé ensuite n'est pas mis à jour
+  tout seul.
+- Les paquets installés et les jeux de code sont rangés dans `JEUX_DIR` (par défaut, `DATA_DIR`). Sous Docker, c'est le
+  dossier `/contenu/jeux` du volume `partyhub-contenu`, distinct du volume `partyhub-data`.
 - Un jeu intégré au code de PartyHub est listé comme *Intégré à l'application*. Il ne se télécharge pas, et reste
   disponible hors ligne.
 
 ## Jeux de code
 
-- Un jeu de code se publie comme les autres : `jeux/<jeu>/manifest.json` avec `"kind": "code"` (sans `requires`), et une
-  release `<jeu>-vX.Y.Z` qui contient le `<jeu>.phgame` signé et son `.sha256`.
-- Le paquet doit être signé par une clé présente dans `DATA_DIR/cles-de-confiance/`. Sans elle, l'installation est
-  refusée (« Paquet refusé »). Ajoutez la clé de l'auteur avant d'installer.
+- Un jeu de code se publie comme les autres : `jeux/<jeu>/manifest.json` avec `"kind": "code"` (sans `requires`), et son
+  code dans `src/` (`server.ts` et `client.tsx`), au tag `<jeu>-vX.Y.Z`. Le modèle de `phgame new` a cette forme.
+- **Pas de signature** : PartyHub compile le jeu lui-même et ne lui demande aucune clé. Le manifeste ne doit pas porter
+  de champ `signature` (refusé). Les clés de `DATA_DIR/cles-de-confiance/` ne servent qu'aux paquets déposés par une
+  autre voie.
 - **Installer** met la version en attente : le magasin affiche « En attente de revue ». L'approbation se fait dans
-  **Jeux de code**, après relecture du code, comme pour un jeu ajouté par une autre voie.
+  **Jeux de code**, après relecture du code, comme pour un jeu ajouté par une autre voie. Rien ne s'exécute avant.
 - La mise à jour quotidienne ne remplace jamais la version active. La nouvelle version attend la revue, et l'ancienne
-  continue à tourner.
+  continue à tourner. Une version approuvée reste active après un redémarrage.
 - **Supprimer** retire toutes les versions du jeu, en attente ou approuvées, ferme ses salons et supprime la source.
   Un jeu retiré depuis **Jeux de code** se réinstalle avec **Installer**.
+- Les médias de l'installation (bibliothèque, avatars, images générées, sons) ne sont pas embarqués dans le paquet : la
+  page les transmet à la vue du jeu, comme pour les jeux intégrés.
+- Un jeu de code qui utilise l'IA (`aventure-ia`, `phrases-trous`) demande ses textes au serveur. Le serveur n'exécute
+  que les travaux de ces deux jeux intégrés, et ne donne la clé du modèle que si l'administrateur coche **Autoriser
+  l'IA du serveur** pour ce jeu, dans **Jeux de code**. Sans cela, ou si le modèle échoue, le jeu prend son repli habituel.
+
+## Publier les jeux de code
+
+- `scripts/publier-jeux-magasin.sh <dossier-export> [auteur/depot] [branche]` copie chaque jeu d'un dossier d'export
+  (`jeux-du-magasin/`, produit par `scripts/exporter-jeux-de-code.mjs`) dans `jeux/<jeu>/` du dépôt, committe une fois
+  et pose un tag `<jeu>-vX.Y.Z` par jeu. Il ne signe rien et ne crée aucune release.
+- Une version publiée ne change jamais : si un tag existe avec un autre contenu, le script s'arrête. Augmentez
+  `version` du jeu, relancez l'export, puis le script. Un jeu inchangé est ignoré.
+- `DRY_RUN=1` prépare le commit et les tags sans rien pousser.
 
 ## Limites
 
 - Un jeu de code (format 5) s'installe par le magasin, mais jamais seul : il reste en attente de revue, et un
-  administrateur l'approuve dans **Jeux de code** avant qu'il ne s'exécute (voir la section suivante).
+  administrateur l'approuve dans **Jeux de code** avant qu'il ne s'exécute (voir la section précédente).
 - Les images d'un paquet (dossier `assets/`) sont vérifiées et installées, mais aucun jeu ne les affiche encore.
-- Le magasin lit des dépôts publics. Un dépôt privé passe par une source GitHub (`GITHUB_TOKEN` requis).
-- Sans `GITHUB_TOKEN`, GitHub limite les appels à 60 par heure. Le catalogue est gardé dix minutes. Une erreur n'est
-  jamais gardée : elle est relue au chargement suivant.
+- Les jeux intégrés à l'application ne sont pas dans `jeux/` du dépôt : leurs fiches sont dans `jeux-integres/`, à
+  titre d'information. Ils restent dans l'application et s'activent dans l'administration.
+- Un dépôt privé demande `GITHUB_TOKEN`.
+- Sans `GITHUB_TOKEN`, GitHub limite les appels à 60 par heure. Un jeu coûte quatre appels à l'API (version, commit,
+  arbre, archive), à chaque construction, quel que soit le nombre de fichiers. L'archive contient tout le dépôt : elle
+  grandit avec les musiques et les images. Limites : 128 Mio compressés, 256 Mio décompressés. Le catalogue est gardé
+  dix minutes. Une erreur n'est jamais gardée : elle est relue au chargement suivant.
 
 ## Routes d'administration
 
@@ -57,3 +91,7 @@ les supprimer depuis l'administration, dans la section **Magasin de jeux**.
 | POST | `/api/admin/store/games/:id/update` | Vérifier et mettre à jour un jeu installé |
 | DELETE | `/api/admin/store/games/:id` | Supprimer un jeu installé depuis le magasin |
 | GET | `/api/admin/store/games/:id/cover` | Couverture d'un jeu |
+| PUT | `/api/admin/store/auto-update` | Mise à jour automatique de tout le dépôt (corps : `{ "enabled": true }`) |
+| POST | `/api/admin/store/jobs` | File d'installation ou de mise à jour, en arrière-plan (corps : `{ "action": "install", "ids": [...] }`). Répond 202, ou 409 si une file tourne déjà |
+| GET | `/api/admin/store/jobs/current` | Progression de la file en cours, ou de la dernière terminée (`{ "job": null }` si aucune) |
+| POST | `/api/admin/store/remove` | Supprimer plusieurs jeux installés (corps : `{ "ids": [...] }`) |

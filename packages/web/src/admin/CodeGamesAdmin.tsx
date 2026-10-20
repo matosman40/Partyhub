@@ -35,6 +35,9 @@ export interface CodeGameSummary {
   installedAt: string;
   status: CodeGameStatus;
   error?: string;
+  /** Le jeu actif demande des travaux d’IA : l’administrateur peut l’autoriser à utiliser la clé du serveur. */
+  aiJobs: boolean;
+  aiEnabled: boolean;
 }
 
 /** Ligne de différence : inchangée (' '), ajoutée (+), retirée (-), ou passage masqué (…). */
@@ -256,6 +259,25 @@ export function CodeGamesAdmin({ refreshToken, onChanged }: { refreshToken: numb
     }
   }
 
+  async function toggleAi(game: CodeGameSummary) {
+    setError(null);
+    setNotice(null);
+    try {
+      await api(`/api/admin/code-games/${encodeURIComponent(game.id)}/ai`, {
+        method: 'PUT',
+        body: JSON.stringify({ enabled: !game.aiEnabled }),
+      });
+      setNotice(
+        game.aiEnabled
+          ? `IA retirée pour « ${game.name} » : son repli habituel reprend.`
+          : `IA autorisée pour « ${game.name} ». Elle utilise la clé du serveur.`,
+      );
+      await load();
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  }
+
   async function remove(game: CodeGameSummary) {
     const what =
       game.status === 'active'
@@ -380,7 +402,8 @@ export function CodeGamesAdmin({ refreshToken, onChanged }: { refreshToken: numb
             <div className="ed-list-body">
               <strong>{g.name}</strong>
               <span className="muted small">
-                {g.id} · version {g.version} · {STATUS_LABEL[g.status]} · signé par {g.signer}
+                {g.id} · version {g.version} · {STATUS_LABEL[g.status]} ·{' '}
+                {g.signer ? `signé par ${g.signer}` : 'non signé (magasin)'}
               </span>
               {g.error && <span className="error small">{g.error}</span>}
             </div>
@@ -389,6 +412,11 @@ export function CodeGamesAdmin({ refreshToken, onChanged }: { refreshToken: numb
                 <button type="button" className="btn ghost small" onClick={() => openReview(g)}>
                   {g.status === 'en_attente' ? 'Relire et approuver' : 'Relire'}
                 </button>
+              )}
+              {g.status === 'active' && g.aiJobs && (
+                <label className="small">
+                  <input type="checkbox" checked={g.aiEnabled} onChange={() => toggleAi(g)} /> Autoriser l’IA du serveur
+                </label>
               )}
               <button type="button" className="btn ghost small" onClick={() => remove(g)}>
                 Supprimer
@@ -408,7 +436,15 @@ export function CodeGamesAdmin({ refreshToken, onChanged }: { refreshToken: numb
             {review.author ? ` · par ${review.author}` : ''}
           </p>
           <p className="small muted">
-            Empreinte du paquet : <code>{review.sha256}</code> · clé de signature <code>{review.signer}</code>
+            Empreinte du paquet : <code>{review.sha256}</code>
+            {review.signer ? (
+              <>
+                {' '}
+                · clé de signature <code>{review.signer}</code>
+              </>
+            ) : (
+              ' · non signé : installé depuis le magasin, à relire avant approbation'
+            )}
           </p>
           <table className="small">
             <thead>

@@ -662,7 +662,7 @@ export function AdminPage() {
               <section className="card stack">
                 <h2>Paquets de jeux (.phgame)</h2>
                 <PackagesAdmin onChanged={load} />
-                <h3>Sources GitHub</h3>
+                <h3>Jeux depuis une release GitHub</h3>
                 <PackageSourcesAdmin onChanged={load} />
               </section>
             </>

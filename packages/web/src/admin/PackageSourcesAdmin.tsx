@@ -3,6 +3,8 @@ import { api } from '../api.js';
 
 interface SourceRecord {
   id: string;
+  /** « release » : ajoutée ici. « tags » : créée par le magasin, gérée dans « Magasin de jeux ». */
+  origin: 'release' | 'tags';
   repo: string;
   private: boolean;
   autoUpdate: boolean;
@@ -34,7 +36,8 @@ export function PackageSourcesAdmin({ onChanged }: { onChanged: () => void }) {
   async function load() {
     try {
       const res = await api<{ sources: SourceRecord[]; tokenConfigured: boolean }>('/api/admin/package-sources');
-      setSources(res.sources);
+      // Les sources du magasin ont leur propre liste : on ne les affiche pas deux fois.
+      setSources(res.sources.filter((source) => source.origin === 'release'));
       setTokenConfigured(res.tokenConfigured);
     } catch (err) {
       setError((err as Error).message);
@@ -157,7 +160,11 @@ export function PackageSourcesAdmin({ onChanged }: { onChanged: () => void }) {
         </p>
       )}
       {sources === null && <p className="muted">Chargement…</p>}
-      {sources?.length === 0 && <p className="muted">Aucune source GitHub pour l’instant.</p>}
+      {sources?.length === 0 && (
+        <p className="muted">
+          Aucune source par release pour l’instant. Les jeux du magasin sont dans « Magasin de jeux ».
+        </p>
+      )}
 
       <ul className="ed-list">
         {sources?.map((s) => (

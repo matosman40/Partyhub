@@ -4,7 +4,10 @@ import type { GameContext, GameModule, JobOutcome, PlayerRef } from '@partyhub/s
 export type LaunchCheckResult = { ok: true; actions: number } | { ok: false; error: string };
 
 export interface LaunchCheckOptions {
-  /** Nombre maximal de pas (actions ou minuteurs) avant de déclarer la partie bloquée. */
+  /**
+   * Nombre maximal de pas (actions, minuteurs, manches) avant de déclarer la partie bloquée. Un minuteur de
+   * 50 ms compte pour un pas : une partie longue en temps simulé en demande plusieurs milliers.
+   */
   maxSteps?: number;
   /** Nombre de parties complètes jouées par les robots, chacune avec une graine différente. */
   games?: number;
@@ -21,6 +24,8 @@ function seeded(seed: number): () => number {
 
 type Step = { kind: 'continue' } | { kind: 'done' } | { kind: 'fail'; error: string };
 const CONTINUE: Step = { kind: 'continue' };
+/** Délai simulé entre deux coups d'un même robot : le rythme d'un joueur qui tape vite. */
+const ROBOT_PERIOD_MS = 250;
 
 /** Empreinte de tout ce que le jeu montre : vue publique, vue de l'hôte et vue de chaque joueur. */
 function fingerprintOf(mod: GameModule, state: unknown, players: PlayerRef[]): string {
@@ -44,7 +49,12 @@ class BotRun {
   private steps = 0;
   private idle = 0;
   private readonly random: () => number;
+  /** Minuteurs : échéance absolue de l'horloge simulée, par clé. */
   private readonly timers = new Map<string, number>();
+  /** Instant où chaque robot peut rejouer : un robot joue au plus une fois par `ROBOT_PERIOD_MS`. */
+  private readonly readyAt = new Map<string, number>();
+  /** Instant où le robot-hôte peut rejouer (même cadence que les robots joueurs). */
+  private hostReadyAt = 0;
   private readonly clock = { t: 1_000_000 };
   private readonly players: PlayerRef[];
   private readonly ctx: GameContext;
@@ -60,7 +70,7 @@ class BotRun {
     this.players = ids.map((id, i) => ({ id, name: `Robot ${i + 1}` }));
     this.ctx = {
       now: () => this.clock.t,
-      schedule: (key, ms) => void this.timers.set(key, ms),
+      schedule: (key, ms) => void this.timers.set(key, this.clock.t + ms),
       cancel: (key) => void this.timers.delete(key),
       random: this.random,
       connectedPlayerIds: () => ids,
@@ -93,22 +103,49 @@ class BotRun {
         return this.moved();
       }
 
-      for (const player of this.players) {
-        const suggestion = this.mod.suggest?.(this.state, player.id, this.random, this.clock.t) ?? null;
-        if (!suggestion) continue;
-        const result = this.mod.handleAction(this.state, player, suggestion.type, suggestion.payload, this.ctx);
-        if (!result.ok) return { kind: 'fail', error: `action « ${suggestion.type} » refusée : ${result.error}` };
-        this.state = result.state;
-        this.actions++;
-        return this.moved();
-      }
-
-      if (this.timers.size > 0) {
-        for (const key of [...this.timers.keys()]) {
-          this.timers.delete(key);
-          this.state = this.mod.onTimer(this.state, key, this.ctx);
+      // Le temps passe entre deux coups, comme en production : un minuteur échu part en premier, puis un robot
+      // prêt joue. Sans cela, un robot qui a toujours une suggestion (même « ne bouge pas ») figerait l'horloge.
+      for (;;) {
+        const due = this.dueTimer();
+        if (due) {
+          this.timers.delete(due.key);
+          this.clock.t = Math.max(this.clock.t, due.at);
+          this.state = this.mod.onTimer(this.state, due.key, this.ctx);
+          return this.moved();
         }
-        return this.moved();
+        for (const player of this.players) {
+          if ((this.readyAt.get(player.id) ?? 0) > this.clock.t) continue;
+          const suggestion = this.mod.suggest?.(this.state, player.id, this.random, this.clock.t) ?? null;
+          if (!suggestion) continue;
+          const result = this.mod.handleAction(this.state, player, suggestion.type, suggestion.payload, this.ctx);
+          if (!result.ok) return { kind: 'fail', error: `action « ${suggestion.type} » refusée : ${result.error}` };
+          this.state = result.state;
+          this.actions++;
+          this.readyAt.set(player.id, this.clock.t + ROBOT_PERIOD_MS);
+          return this.moved();
+        }
+        // Robot-hôte : pour les jeux dont les actions viennent de l'écran principal (tennis, par exemple).
+        if (this.mod.suggestHost && this.mod.handleHostAction && this.clock.t >= this.hostReadyAt) {
+          const suggestion = this.mod.suggestHost(this.state, this.random, this.clock.t);
+          if (suggestion) {
+            const schema = this.mod.hostActions?.[suggestion.type];
+            if (!schema) return { kind: 'fail', error: `action hôte « ${suggestion.type} » absente de hostActions` };
+            const parsed = schema.safeParse(suggestion.payload);
+            if (!parsed.success)
+              return { kind: 'fail', error: `action hôte « ${suggestion.type} » : payload invalide` };
+            const result = this.mod.handleHostAction(this.state, suggestion.type, parsed.data, this.ctx);
+            if (!result.ok)
+              return { kind: 'fail', error: `action hôte « ${suggestion.type} » refusée : ${result.error}` };
+            this.state = result.state;
+            this.actions++;
+            this.hostReadyAt = this.clock.t + ROBOT_PERIOD_MS;
+            return this.moved();
+          }
+        }
+        // Rien à faire à cet instant : l'horloge avance jusqu'au prochain minuteur ou robot qui attendait.
+        const next = this.nextEvent();
+        if (next === null) break;
+        this.clock.t = next;
       }
 
       // Aucun robot ne joue et aucun minuteur n’attend : on tente la manche suivante.
@@ -136,6 +173,30 @@ class BotRun {
     } catch (err) {
       return `exception : ${err instanceof Error ? err.message : String(err)}`;
     }
+  }
+
+  /** Le minuteur échu le plus ancien, s'il en est un. */
+  private dueTimer(): { key: string; at: number } | null {
+    const [key, at] =
+      [...this.timers.entries()]
+        .filter(([, due]) => due <= this.clock.t)
+        .sort((a, b) => a[1] - b[1] || (a[0] < b[0] ? -1 : 1))[0] ?? [];
+    return key === undefined || at === undefined ? null : { key, at };
+  }
+
+  /** Prochain instant utile : une échéance de minuteur, ou la fin de l'attente d'un robot. */
+  private nextEvent(): number | null {
+    let next: number | null = null;
+    const consider = (t: number) => {
+      if (next === null || t < next) next = t;
+    };
+    for (const due of this.timers.values()) consider(due);
+    for (const player of this.players) {
+      const ready = this.readyAt.get(player.id) ?? 0;
+      if (ready > this.clock.t) consider(ready);
+    }
+    if (this.hostReadyAt > this.clock.t) consider(this.hostReadyAt);
+    return next;
   }
 
   private moved(): Step {
@@ -170,7 +231,7 @@ type Check = Generator<void, LaunchCheckResult, void>;
  * `launchCheckAsync`) suivent exactement les mêmes étapes : ils donnent donc le même résultat.
  */
 function* checkSteps(mod: GameModule, options: LaunchCheckOptions = {}): Check {
-  const maxSteps = options.maxSteps ?? 3000;
+  const maxSteps = options.maxSteps ?? 20_000;
   const games = options.games ?? 2;
 
   // 1. Chaque partie, jouée seule, doit se terminer et se sérialiser.
@@ -182,6 +243,12 @@ function* checkSteps(mod: GameModule, options: LaunchCheckOptions = {}): Check {
     if (failure) return { ok: false, error: `partie ${seed} : ${failure}` };
     solo.push(run.trace);
     actions += run.actions;
+  }
+
+  // Un jeu à plusieurs joueurs dont aucune partie n'a d'action de robot ne teste rien : il n'a pas de robot (suggest).
+  // Un jeu solo peut finir sans action de robot : il n'est pas concerné.
+  if (actions === 0 && mod.manifest.minPlayers >= 2) {
+    return { ok: false, error: 'aucune action jouée par les robots : le jeu ne se teste pas (suggest absent ou vide)' };
   }
 
   // 2. Reproductibilité : la partie 1, rejouée après les autres, doit donner exactement la même suite d'états.

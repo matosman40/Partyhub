@@ -17,7 +17,7 @@ import { seedFrom } from './rng.js';
  * la même grille (même graine), et le classement se fait sur le temps de résolution.
  *
  * Un jeu solo ne fournit que ses règles, via une `SoloEngine` : création de la grille,
- * coup, progression, victoire. Le reste (temps, classement, minuteur) est commun.
+ * coup, progression, victoire. Le reste (temps, classement, minuteur, courbes) est commun.
  */
 
 export interface SoloEngine<B> {
@@ -43,6 +43,14 @@ export interface SoloOptions<B> {
   engine: SoloEngine<B>;
 }
 
+/** Un point de la courbe d’avancement d’un joueur. */
+export interface ProgressPoint {
+  /** Temps écoulé depuis le lancement, en millisecondes. */
+  ms: number;
+  /** Avancement, de 0 à 100. */
+  percent: number;
+}
+
 export interface SoloState<B = any> {
   id: string;
   name: string;
@@ -57,6 +65,8 @@ export interface SoloState<B = any> {
   /** Temps de résolution, en millisecondes, pour les joueurs qui ont fini. */
   doneMs: Record<string, number>;
   moves: Record<string, number>;
+  /** Courbe d’avancement de chacun : au départ, à chaque palier de 10 % franchi, puis à la résolution. */
+  history: Record<string, ProgressPoint[]>;
 }
 
 const LIMIT_TIMER = 'solo-limit';
@@ -65,6 +75,18 @@ const MIN_POINTS = 20;
 
 function pointsFor(rankAmongFinished: number): number {
   return Math.max(MIN_POINTS, MAX_POINTS - (rankAmongFinished - 1) * 10);
+}
+
+/**
+ * Ajoute un point à une courbe quand l’avancement progresse. Un point par palier de 10 % (la courbe
+ * reste courte), jamais de recul, et la résolution (100 %) est toujours notée.
+ */
+export function extendTrail(trail: ProgressPoint[], ms: number, percent: number): ProgressPoint[] {
+  const last = trail[trail.length - 1];
+  if (!last) return [{ ms, percent }];
+  if (percent <= last.percent) return trail;
+  if (percent < 100 && Math.floor(percent / 10) === Math.floor(last.percent / 10)) return trail;
+  return [...trail, { ms, percent }];
 }
 
 export function createSoloGame<B>(opts: SoloOptions<B>): GameModule<SoloState<B>, Record<string, unknown>> {
@@ -81,7 +103,7 @@ export function createSoloGame<B>(opts: SoloOptions<B>): GameModule<SoloState<B>
     name: opts.name,
     description: opts.description,
     icon: opts.icon,
-    version: '1.0.0',
+    version: '1.0.1',
     apiVersion: 1,
     minPlayers: 1,
     maxPlayers: 8,
@@ -89,31 +111,45 @@ export function createSoloGame<B>(opts: SoloOptions<B>): GameModule<SoloState<B>
     notice: opts.notice,
   };
 
+  function percentOf(s: SoloState<B>, id: string): number {
+    const board = s.boards[id];
+    return board ? Math.round(engine.progress(board) * 100) : 0;
+  }
+
+  /**
+   * Ordre du classement : d’abord les grilles résolues, par temps de résolution ; ensuite les autres,
+   * par avancement (le plus avancé en tête), à égalité par nom.
+   */
+  function orderOf(s: SoloState<B>): string[] {
+    return Object.keys(s.players).sort((a, b) => {
+      const doneA = a in s.doneMs;
+      const doneB = b in s.doneMs;
+      if (doneA !== doneB) return doneA ? -1 : 1;
+      if (doneA && doneB)
+        return s.doneMs[a]! - s.doneMs[b]! || (s.players[a] ?? '').localeCompare(s.players[b] ?? '', 'fr');
+      return percentOf(s, b) - percentOf(s, a) || (s.players[a] ?? '').localeCompare(s.players[b] ?? '', 'fr');
+    });
+  }
+
+  /** Tableau de l’écran principal. Les points ne sont fixés qu’à la résolution : avant, ils sont absents. */
   function standings(s: SoloState<B>) {
-    const rows = Object.keys(s.players).map((id) => {
-      const board = s.boards[id];
+    return orderOf(s).map((id, i) => {
       const done = id in s.doneMs;
       return {
         playerId: id,
         name: s.players[id] ?? '?',
-        percent: board ? Math.round(engine.progress(board) * 100) : 0,
+        percent: percentOf(s, id),
         done,
         elapsedMs: done ? s.doneMs[id]! : null,
         moves: s.moves[id] ?? 0,
+        points: done ? pointsFor(i + 1) : null,
       };
     });
-    rows.sort((a, b) => {
-      if (a.done !== b.done) return a.done ? -1 : 1;
-      if (a.done && b.done) return a.elapsedMs! - b.elapsedMs!;
-      return b.percent - a.percent || a.name.localeCompare(b.name, 'fr');
-    });
-    return rows;
   }
 
   function scores(s: SoloState<B>): ScoreEntry[] {
-    const finished = Object.keys(s.doneMs).sort((a, b) => s.doneMs[a]! - s.doneMs[b]!);
-    const points: Record<string, number> = Object.fromEntries(Object.keys(s.players).map((id) => [id, 0]));
-    finished.forEach((id, i) => {
+    const points: Record<string, number> = {};
+    orderOf(s).forEach((id, i) => {
       points[id] = pointsFor(i + 1);
     });
     return rankEntries(s.players, points);
@@ -147,6 +183,7 @@ export function createSoloGame<B>(opts: SoloOptions<B>): GameModule<SoloState<B>
         boards: {},
         doneMs: {},
         moves: {},
+        history: {},
       };
     },
 
@@ -166,8 +203,10 @@ export function createSoloGame<B>(opts: SoloOptions<B>): GameModule<SoloState<B>
       if (s.phase !== 'ready') return fail('La partie a déjà commencé');
       if (Object.keys(s.players).length === 0) return fail('Aucun joueur dans la salle');
       const boards: Record<string, B> = {};
+      const history: Record<string, ProgressPoint[]> = {};
       for (const id of Object.keys(s.players)) {
         boards[id] = engine.create(s.seed, s.settings);
+        history[id] = [{ ms: 0, percent: Math.round(engine.progress(boards[id]!) * 100) }];
       }
       const limitMs = s.settings.timeLimitSec * 1000;
       if (limitMs > 0) ctx.schedule(LIMIT_TIMER, limitMs);
@@ -175,6 +214,7 @@ export function createSoloGame<B>(opts: SoloOptions<B>): GameModule<SoloState<B>
         ...s,
         phase: 'play',
         boards,
+        history,
         startedAt: ctx.now(),
         endsAt: limitMs > 0 ? ctx.now() + limitMs : 0,
       });
@@ -192,13 +232,17 @@ export function createSoloGame<B>(opts: SoloOptions<B>): GameModule<SoloState<B>
       const result = engine.play(board, parsed.data);
       if (!result.ok) return fail(result.error);
 
+      const elapsed = Math.max(0, ctx.now() - s.startedAt);
+      const solved = engine.solved(result.state);
+      const percent = solved ? 100 : Math.round(engine.progress(result.state) * 100);
       const next: SoloState<B> = {
         ...s,
         boards: { ...s.boards, [p.id]: result.state },
         moves: { ...s.moves, [p.id]: (s.moves[p.id] ?? 0) + 1 },
+        history: { ...s.history, [p.id]: extendTrail(s.history[p.id] ?? [], elapsed, percent) },
       };
-      if (engine.solved(result.state)) {
-        next.doneMs = { ...s.doneMs, [p.id]: Math.max(0, ctx.now() - s.startedAt) };
+      if (solved) {
+        next.doneMs = { ...s.doneMs, [p.id]: elapsed };
         const everyone = everyConnectedDone(ctx, Object.keys(next.players), (id) => id in next.doneMs);
         if (everyone) return ok(finish(next, ctx));
       }
@@ -229,8 +273,12 @@ export function createSoloGame<B>(opts: SoloOptions<B>): GameModule<SoloState<B>
         icon: s.icon,
         phase: s.phase,
         playerCount: Object.keys(s.players).length,
+        startedAt: s.startedAt,
         endsAt: s.endsAt,
         limitMs: s.settings.timeLimitSec * 1000,
+        /** Joueurs dans l’ordre d’arrivée à la salle : l’écran principal attribue leur couleur dans cet ordre. */
+        roster: Object.keys(s.players).map((id) => ({ playerId: id, name: s.players[id] ?? '?' })),
+        history: s.history,
         standings: standings(s),
         ranking: scores(s),
       };
