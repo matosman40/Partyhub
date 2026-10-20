@@ -446,6 +446,21 @@ export const tennisParty: GameModule<TennisState, TennisSettings> = {
     return ok(freeEvent(s, type, parsed.data.side, ctx));
   },
 
+  /** Robot-hôte (contrôle de lancement) : un coup, ou une balle perdue, pour un côté qui joue. */
+  suggestHost(s, random) {
+    if (s.phase !== 'play') return null;
+    const sides = s.tournament ? [0, 1] : [0, 1, 2, 3];
+    const seated = sides.filter((side) => {
+      const id = s.seats[side] ?? null;
+      if (id === null) return false;
+      return s.tournament ? Boolean(s.match) : isAlive(s, id);
+    });
+    if (seated.length === 0) return null;
+    const side = seated[Math.floor(random() * seated.length)];
+    if (side === undefined) return null;
+    return { key: 'host', type: random() < 0.8 ? 'hit' : 'lost', payload: { side } };
+  },
+
   onTimer(s, key, ctx) {
     if (key === MATCH_END && s.phase === 'play') {
       if (s.tournament && s.match) {

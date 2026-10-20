@@ -53,6 +53,8 @@ class BotRun {
   private readonly timers = new Map<string, number>();
   /** Instant où chaque robot peut rejouer : un robot joue au plus une fois par `ROBOT_PERIOD_MS`. */
   private readonly readyAt = new Map<string, number>();
+  /** Instant où le robot-hôte peut rejouer (même cadence que les robots joueurs). */
+  private hostReadyAt = 0;
   private readonly clock = { t: 1_000_000 };
   private readonly players: PlayerRef[];
   private readonly ctx: GameContext;
@@ -122,6 +124,22 @@ class BotRun {
           this.readyAt.set(player.id, this.clock.t + ROBOT_PERIOD_MS);
           return this.moved();
         }
+        // Robot-hôte : pour les jeux dont les actions viennent de l'écran principal (tennis, par exemple).
+        if (this.mod.suggestHost && this.mod.handleHostAction && this.clock.t >= this.hostReadyAt) {
+          const suggestion = this.mod.suggestHost(this.state, this.random, this.clock.t);
+          if (suggestion) {
+            const schema = this.mod.hostActions?.[suggestion.type];
+            if (!schema) return { kind: 'fail', error: `action hôte « ${suggestion.type} » absente de hostActions` };
+            const parsed = schema.safeParse(suggestion.payload);
+            if (!parsed.success) return { kind: 'fail', error: `action hôte « ${suggestion.type} » : payload invalide` };
+            const result = this.mod.handleHostAction(this.state, suggestion.type, parsed.data, this.ctx);
+            if (!result.ok) return { kind: 'fail', error: `action hôte « ${suggestion.type} » refusée : ${result.error}` };
+            this.state = result.state;
+            this.actions++;
+            this.hostReadyAt = this.clock.t + ROBOT_PERIOD_MS;
+            return this.moved();
+          }
+        }
         // Rien à faire à cet instant : l'horloge avance jusqu'au prochain minuteur ou robot qui attendait.
         const next = this.nextEvent();
         if (next === null) break;
@@ -175,6 +193,7 @@ class BotRun {
       const ready = this.readyAt.get(player.id) ?? 0;
       if (ready > this.clock.t) consider(ready);
     }
+    if (this.hostReadyAt > this.clock.t) consider(this.hostReadyAt);
     return next;
   }
 

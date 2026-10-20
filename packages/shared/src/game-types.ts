@@ -207,6 +207,12 @@ export interface GameModule<S = any, C = any> {
   suggest?(state: S, playerId: string, random: () => number, now: number): BotSuggestion | null;
 
   /**
+   * Optionnel : action que le robot-hôte jouerait maintenant (mode test), pour un jeu dont les actions viennent de
+   * l’écran principal (`hostActions`). Même règle que `suggest` : null quand il n’y a rien à faire.
+   */
+  suggestHost?(state: S, random: () => number, now: number): BotSuggestion | null;
+
+  /**
    * Optionnel : actions que l’écran principal (hôte) peut demander, par exemple « générer des personnages ».
    * Elles ne sont pas attribuées à un joueur. Les schémas valident le payload comme pour les joueurs.
    */

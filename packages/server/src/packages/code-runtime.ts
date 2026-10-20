@@ -112,6 +112,7 @@ if (typeof structuredClone !== 'function') {
           hostActions: hostActionNames,
           hasHostActions: typeof mod.handleHostAction === 'function',
           hasSuggest: typeof mod.suggest === 'function',
+          hasSuggestHost: typeof mod.suggestHost === 'function',
           hasJobs: typeof mod.pendingJob === 'function' && typeof mod.completeJob === 'function',
           missing: REQUIRED.filter(function (n) { return typeof mod[n] !== 'function'; })
         });
@@ -136,6 +137,8 @@ if (typeof structuredClone !== 'function') {
       case 'completeJob': return ok(mod.completeJob(a.state, a.jobId, a.outcome, ctx));
       case 'suggest':
         return ok(mod.suggest ? mod.suggest(a.state, a.playerId, function () { return host('random', null, null); }, a.now) : null);
+      case 'suggestHost':
+        return ok(mod.suggestHost ? mod.suggestHost(a.state, function () { return host('random', null, null); }, a.now) : null);
       default: throw new Error('Méthode inconnue : ' + method);
     }
   };
@@ -162,6 +165,8 @@ export interface CodeMeta {
   hostActions: string[];
   hasHostActions: boolean;
   hasSuggest: boolean;
+  /** Le robot-hôte peut proposer une action (`suggestHost`). */
+  hasSuggestHost: boolean;
   /** Le jeu demande des travaux d'IA (`pendingJob` et `completeJob`). */
   hasJobs: boolean;
   missing: string[];
@@ -370,6 +375,10 @@ export function createCodeModule(
   if (meta.hasSuggest) {
     module.suggest = (state: unknown, playerId: string, random: () => number, now: number): BotSuggestion | null =>
       runtime.call<BotSuggestion | null>('suggest', { state, playerId, now }, { ctx: null, random });
+  }
+  if (meta.hasSuggestHost) {
+    module.suggestHost = (state: unknown, random: () => number, now: number): BotSuggestion | null =>
+      runtime.call<BotSuggestion | null>('suggestHost', { state, now }, { ctx: null, random });
   }
   if (meta.hasJobs) {
     module.pendingJob = (state: unknown) => runtime.call<GameJob | null>('pendingJob', { state });

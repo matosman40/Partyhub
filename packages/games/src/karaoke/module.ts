@@ -368,6 +368,25 @@ export const karaoke: GameModule<KaraokeState, KaraokeSettings> = {
     return fail('Action inconnue');
   },
 
+  /** Robot (contrôle de lancement) : le chanteur choisit une chanson et envoie un son court, les autres notent. */
+  suggest(s, playerId, random) {
+    const singer = singerOf(s);
+    if (s.phase === 'pick' && playerId === singer) {
+      return {
+        key: 'sing',
+        type: 'sing',
+        payload: { videoId: 'robotTest01', title: 'Chanson du robot', channel: '', startSec: 0 },
+      };
+    }
+    if (s.phase === 'sing' && playerId === singer) {
+      return { key: 'recording', type: 'recording', payload: { dataUrl: 'data:audio/webm;base64,AAAA' } };
+    }
+    if (s.phase === 'vote' && playerId !== singer && !(playerId in s.ratings)) {
+      return { key: 'rate', type: 'rate', payload: { stars: 1 + Math.floor(random() * 5) } };
+    }
+    return null;
+  },
+
   onTimer(s, key, ctx) {
     if (key === PICK_TIMEOUT && s.phase === 'pick') return reveal(s, ctx);
     if (key === SING_TIMEOUT && s.phase === 'sing') return openVote({ ...s, clip: null }, ctx);

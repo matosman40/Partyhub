@@ -19,6 +19,8 @@ describe('contrôle de lancement', () => {
     'association',
     'plutot-qui',
     'imposteur-parmi-nous',
+    'tennis-party',
+    'karaoke',
     'aventure-ia',
     'plus-ou-moins',
     'reflexe',
@@ -48,6 +50,15 @@ describe('contrôle de lancement', () => {
       expect(launchCheck(game!), id).toMatchObject({ ok: true });
     }
   }, 300_000);
+
+  it('un jeu dont les actions viennent de l’hôte ne se teste que si le robot-hôte joue (suggestHost)', () => {
+    const tennis = gameRegistry.find((g) => g.manifest.id === 'tennis-party') as GameModule;
+    const sansRobotHote = wrap(tennis, (mod) => ({ ...mod, suggestHost: undefined }));
+    const result = launchCheck(sansRobotHote);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toMatch(/aucune action jouée par les robots/);
+    expect(launchCheck(tennis)).toMatchObject({ ok: true });
+  });
 
   it('refuse un jeu qui garde un état entre parties', () => {
     let calls = 0;
