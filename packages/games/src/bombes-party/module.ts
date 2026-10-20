@@ -27,8 +27,9 @@ const DIRS: Record<Dir, [number, number]> = {
 const DIR_NAMES = Object.keys(DIRS) as Dir[];
 const moveSchema = z.object({ dir: z.enum(['up', 'down', 'left', 'right']) });
 
-export const WIDTH = 13;
-export const HEIGHT = 11;
+/** Niveau assez grand pour dix joueurs. Sur téléphone, la caméra suit le personnage (voir render.ts). */
+export const WIDTH = 25;
+export const HEIGHT = 19;
 
 const WALL = '#';
 const CRATE = 'x';
@@ -78,12 +79,21 @@ function cooldownOf(u: Unit): number {
   return Math.max(85, MOVE_COOLDOWN_MS - u.speed * 22 - (u.mount === 'dino' ? 20 : 0));
 }
 
-/** Coins de départ (cases libres aux angles, sur les positions impaires). */
+/**
+ * Points de départ (cases libres, sur les positions impaires) : les quatre coins, deux points par bord haut
+ * et bas, et deux points sur les flancs. Dix joueurs au plus.
+ */
 const SPAWNS: Array<[number, number]> = [
   [1, 1],
   [WIDTH - 2, 1],
   [1, HEIGHT - 2],
   [WIDTH - 2, HEIGHT - 2],
+  [7, 1],
+  [17, 1],
+  [7, HEIGHT - 2],
+  [17, HEIGHT - 2],
+  [1, 9],
+  [WIDTH - 2, 9],
 ];
 
 const ROUND_LIMIT = 'round-limit';
@@ -642,7 +652,7 @@ export const bombesParty: GameModule<BombesPartyState, BombesPartySettings> = {
     version: '1.0.0',
     apiVersion: 1,
     minPlayers: 2,
-    maxPlayers: 4,
+    maxPlayers: 10,
     durationMin: 8,
     notice: {
       goal: 'Être le dernier joueur debout : détruisez les caisses et éliminez les autres avec vos bombes.',

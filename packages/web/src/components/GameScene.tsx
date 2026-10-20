@@ -347,20 +347,6 @@ const bombes: Scene = (c) => (
   </>
 );
 
-const imposteur: Scene = (c) => (
-  <>
-    <Stars c={c} count={60} maxY={H * 0.4} color="#cfffff" />
-    <Ridge c={c} base={H * 0.6} amp={90} color="#0c2c3a" />
-    <Pines c={c} base={H * 0.7} count={26} minH={120} maxH={260} color="#082330" />
-    <rect y={H * 0.6} width={W} height={160} fill="#bfefff" opacity={0.1} />
-    <Ridge c={c} base={H * 0.82} amp={60} color="#041820" />
-    <Pines c={c} base={H * 0.9} count={14} minH={160} maxH={300} color="#020d12" />
-    <circle cx={1180} cy={600} r={150} fill={c.edge} opacity={0.12} />
-    <line x1={1180} y1={626} x2={1180} y2={700} stroke={c.ink} strokeWidth={8} strokeLinecap="round" />
-    <circle cx={1180} cy={610} r={26} fill={c.fill} />
-  </>
-);
-
 const aventure: Scene = (c) => (
   <>
     <Stars c={c} count={70} maxY={H * 0.45} />
@@ -715,6 +701,34 @@ const funambule: Scene = (c) => {
   );
 };
 
+/** Tennis party : un court vu en perspective, lignes claires, et une balle en haut à droite. */
+const tennis: Scene = (c) => {
+  const top = H * 0.46;
+  return (
+    <>
+      <Stars c={c} count={30} maxY={H * 0.4} color={c.fill} />
+      <path
+        d={`M${W * 0.3} ${H} L${W * 0.7} ${H} L${W * 0.56} ${top} L${W * 0.44} ${top} Z`}
+        fill={c.fill}
+        opacity={0.16}
+      />
+      <g stroke="#ffffff" strokeWidth={3} opacity={0.35} fill="none">
+        <path d={`M${W * 0.3} ${H} L${W * 0.44} ${top} L${W * 0.56} ${top} L${W * 0.7} ${H}`} />
+        <path d={`M${W * 0.37} ${H * 0.72} L${W * 0.63} ${H * 0.72}`} />
+        <path d={`M${W * 0.5} ${top} L${W * 0.5} ${H}`} />
+      </g>
+      <circle cx={W * 0.8} cy={H * 0.22} r={H * 0.07} fill={c.edge} opacity={0.95} />
+      <path
+        d={`M${W * 0.8 - H * 0.05} ${H * 0.2} Q${W * 0.8} ${H * 0.26} ${W * 0.8 + H * 0.05} ${H * 0.19}`}
+        stroke="#ffffff"
+        strokeWidth={2}
+        opacity={0.7}
+        fill="none"
+      />
+    </>
+  );
+};
+
 /** Micro-Défis : une borne d’arcade au coucher du soleil, grille en perspective et soleil en halos. */
 const microDefis: Scene = (c) => {
   const horizon = H * 0.6;
@@ -737,6 +751,67 @@ const microDefis: Scene = (c) => {
       <g stroke={c.edge} strokeWidth={3} opacity={0.32}>
         {grid}
       </g>
+    </>
+  );
+};
+
+/** Plateau fête : une grande roue illuminée, une guirlande de lampions et des tentes sur l’horizon, de nuit. */
+const plateauFete: Scene = (c) => {
+  const horizon = H * 0.72;
+  const cx = W * 0.7;
+  const cy = H * 0.4;
+  const R = 230;
+  const spokes: ReactNode[] = [];
+  const cabins: ReactNode[] = [];
+  for (let i = 0; i < 12; i++) {
+    const a = (i / 12) * Math.PI * 2;
+    const x = cx + Math.cos(a) * R;
+    const y = cy + Math.sin(a) * R;
+    spokes.push(<line key={`s${i}`} x1={cx} y1={cy} x2={x} y2={y} />);
+    cabins.push(
+      <g key={`c${i}`}>
+        <line x1={x} y1={y} x2={x} y2={y + 26} />
+        <rect x={x - 11} y={y + 26} width={22} height={18} rx={4} fill={i % 2 ? c.fill : c.edge} stroke="none" />
+      </g>,
+    );
+  }
+  const bulbs: ReactNode[] = [];
+  for (let i = 0; i <= 26; i++) {
+    const t = i / 26;
+    const x = W * 0.06 + t * W * 0.88;
+    const sag = Math.sin(t * Math.PI) * 70;
+    bulbs.push(
+      <circle key={`b${i}`} cx={x} cy={H * 0.22 + sag} r={6} fill={i % 3 === 0 ? c.edge : c.fill} stroke="none" />,
+    );
+  }
+  const tents: ReactNode[] = [];
+  for (let i = 0; i < 9; i++) {
+    const x = span(c.r, 40, W - 40);
+    const w = span(c.r, 90, 150);
+    tents.push(
+      <polygon
+        key={`t${i}`}
+        points={`${x - w / 2},${horizon} ${x},${horizon - span(c.r, 70, 110)} ${x + w / 2},${horizon}`}
+        fill="#000"
+        opacity={0.5}
+        stroke="none"
+      />,
+    );
+  }
+  return (
+    <>
+      <Stars c={c} count={70} maxY={horizon - 120} />
+      <circle cx={cx} cy={cy} r={R + 60} fill={c.fill} opacity={0.07} />
+      <g stroke={c.edge} strokeWidth={5} opacity={0.55} fill="none">
+        <circle cx={cx} cy={cy} r={R} />
+        {spokes}
+      </g>
+      <g stroke={c.edge} strokeWidth={3} opacity={0.6}>
+        {cabins}
+      </g>
+      <rect x={0} y={horizon} width={W} height={H - horizon} fill="#000" opacity={0.35} />
+      {tents}
+      <g opacity={0.85}>{bulbs}</g>
     </>
   );
 };
@@ -1029,6 +1104,31 @@ const imiteMoi: Scene = (c) => (
   </>
 );
 
+/** KARAOKÉ : un micro au centre, des ondes sonores de chaque côté, et une scène en bas. */
+const karaoke: Scene = (c) => (
+  <>
+    <Stars c={c} count={24} maxY={H * 0.3} />
+    <rect x={W * 0.2} y={H * 0.8} width={W * 0.6} height={H * 0.2} fill={c.ink} opacity={0.4} />
+    <rect x={W * 0.5 - 36} y={H * 0.4} width={72} height={190} rx={36} fill={c.edge} />
+    <path
+      d={`M${W * 0.5 - 92} 430 Q${W * 0.5 - 92} 530 ${W * 0.5} 530 Q${W * 0.5 + 92} 530 ${W * 0.5 + 92} 430`}
+      fill="none"
+      stroke={c.fill}
+      strokeWidth={12}
+      strokeLinecap="round"
+    />
+    <path d={`M${W * 0.5} 530 V${H * 0.7}`} stroke={c.fill} strokeWidth={12} strokeLinecap="round" />
+    {[1, 2, 3].map((i) => (
+      <g key={i} fill="none" stroke={c.fill} strokeWidth={10} strokeLinecap="round" opacity={1 - i * 0.22}>
+        <path d={`M${W * 0.5 - 120 - i * 46} 390 Q${W * 0.5 - 150 - i * 46} 470 ${W * 0.5 - 120 - i * 46} 550`} />
+        <path d={`M${W * 0.5 + 120 + i * 46} 390 Q${W * 0.5 + 150 + i * 46} 470 ${W * 0.5 + 120 + i * 46} 550`} />
+      </g>
+    ))}
+    <path d={sparkle(W * 0.5 + 260, H * 0.3, 40)} fill={c.edge} />
+    <path d={sparkle(W * 0.5 - 260, H * 0.26, 28)} fill={c.fill} />
+  </>
+);
+
 /** BOUM : une explosion étoilée au centre, des étincelles, et des nuages de fumée en bas. */
 const boum: Scene = (c) => {
   const points: string[] = [];
@@ -1072,14 +1172,80 @@ const boum: Scene = (c) => {
   );
 };
 
+/** Un tribunal : rideaux de velours, banc du juge et lustre. */
+const tribunal: Scene = (c) => (
+  <>
+    <Stars c={c} count={30} maxY={H * 0.3} color="#ffe9b0" />
+    <Curtain a={0} b={330} bottom={H * 0.8} color="#5a0f2c" folds={5} />
+    <Curtain a={W} b={W - 330} bottom={H * 0.8} color="#5a0f2c" folds={5} />
+    <line x1={800} y1={0} x2={800} y2={H * 0.22} stroke={c.edge} strokeWidth={8} strokeLinecap="round" />
+    <circle cx={800} cy={H * 0.24} r={150} fill={c.fill} opacity={0.08} />
+    <circle cx={800} cy={H * 0.24} r={58} fill={c.fill} opacity={0.85} />
+    <rect x={380} y={H * 0.62} width={840} height={H * 0.2} fill="#2a0716" />
+    <rect x={360} y={H * 0.6} width={880} height={22} fill={c.fill} opacity={0.9} />
+  </>
+);
+
+/** Des joueurs assis en cercle ; l’un d’eux, en rouge, n’est pas comme les autres. */
+const imposteurParmiNous: Scene = (c) => {
+  // Le cercle se place à droite et reste discret : le texte du titre et le classement restent au premier plan.
+  const cx = W * 0.8;
+  const cy = H * 0.52;
+  const radius = 210;
+  const seats = 9;
+  const odd = 4;
+  return (
+    <>
+      <Stars c={c} count={70} maxY={H * 0.42} />
+      <Ridge c={c} base={H * 0.78} amp={70} color="#1b0b30" />
+      <g opacity={0.5}>
+        <circle cx={cx} cy={cy} r={radius} fill="none" stroke={c.edge} strokeWidth={6} strokeDasharray="18 22" />
+        <circle cx={cx} cy={cy} r={44} fill={c.ink} />
+        {Array.from({ length: seats }, (_, i) => {
+          const angle = -Math.PI / 2 + (i * 2 * Math.PI) / seats;
+          const x = cx + radius * Math.cos(angle);
+          const y = cy + radius * Math.sin(angle);
+          return i === odd ? (
+            <circle key={i} cx={x} cy={y} r={36} fill={c.edge} />
+          ) : (
+            <circle key={i} cx={x} cy={y} r={32} fill={c.fill} />
+          );
+        })}
+      </g>
+    </>
+  );
+};
+
+/** Un cordon de téléphone entre deux combinés, avec une étoile au milieu. */
+const telephoneArabe: Scene = (c) => (
+  <>
+    <Stars c={c} count={50} maxY={H * 0.4} />
+    <Ridge c={c} base={H * 0.7} amp={80} color="#0b2a44" />
+    <path
+      d={`M${W * 0.22} ${H * 0.52} C${W * 0.36} ${H * 0.2} ${W * 0.46} ${H * 0.86} ${W * 0.5} ${H * 0.52} S${W * 0.66} ${H * 0.2} ${W * 0.78} ${H * 0.52}`}
+      fill="none"
+      stroke={c.fill}
+      strokeWidth={14}
+      strokeLinecap="round"
+      opacity={0.5}
+      strokeDasharray="2 26"
+    />
+    <rect x={W * 0.14} y={H * 0.36} width={150} height={260} rx={28} fill={c.fill} />
+    <rect x={W * 0.14 + 22} y={H * 0.36 + 40} width={106} height={150} rx={10} fill={c.ink} opacity={0.5} />
+    <rect x={W * 0.76} y={H * 0.36} width={150} height={260} rx={28} fill={c.fill} />
+    <rect x={W * 0.76 + 22} y={H * 0.36 + 40} width={106} height={150} rx={10} fill={c.ink} opacity={0.5} />
+    <path d={sparkle(W * 0.5, H * 0.3, 48)} fill={c.edge} />
+  </>
+);
+
 const FALLBACK: Scene[] = [plutotQui, tarot, association, promoteur];
 
 const SCENES: Record<string, Scene> = {
   'quiz-party': quizParty,
   'phrases-trous': phrasesTrous,
   'bombes-party': bombes,
+  'tennis-party': tennis,
   banquise,
-  imposteur,
   'aventure-ia': aventure,
   'loups-village': loups,
   'plus-ou-moins': plusOuMoins,
@@ -1093,6 +1259,7 @@ const SCENES: Record<string, Scene> = {
   'poker-texas': poker,
   funambule,
   'micro-defis': microDefis,
+  'plateau-fete': plateauFete,
   'gags-en-rafale': gagsEnRafale,
   'cartes-couleurs': cartesCouleurs,
   'cartes-coco': cartesCoco,
@@ -1101,7 +1268,11 @@ const SCENES: Record<string, Scene> = {
   taquin,
   'mots-croises': motsCroises,
   'imite-moi': imiteMoi,
+  karaoke,
   boum,
+  'tribunal-absurde': tribunal,
+  'imposteur-parmi-nous': imposteurParmiNous,
+  'telephone-arabe': telephoneArabe,
 };
 
 /** Vrai quand le jeu a son propre décor (et non l’un des décors génériques). */

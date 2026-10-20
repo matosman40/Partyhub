@@ -14,13 +14,13 @@ export const BLOW_LEVEL = 0.2;
 /** Tolérance autour du centre pour l’équilibre (de 0 à 1 sur chaque axe). */
 export const BALANCE_ZONE = 0.2;
 
-interface GameProps {
+export interface GameProps {
   target: number;
   onDone: (value: number) => void;
 }
 
 /** Message commun quand le téléphone ne transmet pas le mouvement. */
-function NoSensor({ text }: { text: string }) {
+export function NoSensor({ text }: { text: string }) {
   return (
     <p className="notice mdf-nosensor" role="alert">
       {text}
@@ -32,7 +32,7 @@ function NoSensor({ text }: { text: string }) {
 const NO_ANGLE_MS = 2000;
 
 /** Rafraîchit l’affichage dix fois par seconde, sans re-rendre à chaque mesure. */
-function useDisplayTick(run: boolean): number {
+export function useDisplayTick(run: boolean): number {
   const [tick, setTick] = useState(0);
   useEffect(() => {
     if (!run) return;

@@ -236,6 +236,29 @@ export function NpcCard({ npc }: { npc: NpcView }) {
   );
 }
 
+/**
+ * Personnage qui parle dans la scène, en grand sur l’écran principal : corps entier, son nom, son lien avec
+ * le groupe et sa réplique. Il est lisible de loin, à la différence de la carte compacte.
+ */
+export function StageFigure({ npc }: { npc: NpcView }) {
+  return (
+    <figure className="aventure-stage-figure">
+      <div className="aventure-stage-art">
+        <Character spec={defaultCharacterFor(npc.name)} framing="full" label={npc.name} />
+      </div>
+      <figcaption className="aventure-stage-caption">
+        <strong>
+          <span aria-hidden="true">{npc.emoji} </span>
+          {npc.name}
+        </strong>{' '}
+        <span className="muted">{npc.title}</span>
+        {npc.relation && <RelationTag relation={npc.relation} />}
+      </figcaption>
+      {npc.line && <blockquote className="aventure-stage-line">« {npc.line} »</blockquote>}
+    </figure>
+  );
+}
+
 /** Adversaire : ses points de vie restants, et ce qu’il faut pour le toucher. */
 export function FoeCard({ foe }: { foe: FoeView }) {
   return (

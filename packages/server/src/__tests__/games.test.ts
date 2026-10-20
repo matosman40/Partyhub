@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { association, imposteur, plusOuMoins, plutotQui, reflexe, type ImposteurState } from '@partyhub/games';
+import { association, plusOuMoins, plutotQui, reflexe } from '@partyhub/games';
 import type { GameContext, GameModule, PlayerRef } from '@partyhub/shared';
 
 /**
@@ -104,52 +104,6 @@ describe('Plutôt qui ?', () => {
     const { state: s0, ctx } = launch(plutotQui, [A, B, C]);
     const s = act(plutotQui, s0, A, 'vote', { target: 'b' }, ctx);
     expect(plutotQui.handleAction(s, A, 'vote', { target: 'c' }, ctx).ok).toBe(false);
-  });
-});
-
-describe("L'Imposteur", () => {
-  /** Avec le générateur fixe 0.42 sur trois joueurs, l'imposteur est Bob (index 1). */
-  it('désigne un imposteur et donne le mot uniquement aux membres de l’équipe', () => {
-    const { state, ctx } = launch(imposteur, [A, B, C]);
-    const s = state as ImposteurState;
-    expect(s.impostorId).toBe('b');
-    expect(imposteur.getPlayerState(s, 'b')).toMatchObject({ role: 'impostor', word: null });
-    const crew = imposteur.getPlayerState(s, 'a') as { role: string; word: string | null };
-    expect(crew.role).toBe('crew');
-    expect(crew.word).toEqual(expect.any(String));
-    expect(JSON.stringify(imposteur.getPublicState(s))).not.toContain(crew.word as string);
-    expect(ctx.now()).toBeGreaterThan(0);
-  });
-
-  it('rapporte 100 points à chaque membre de l’équipe qui a démasqué l’imposteur', () => {
-    const h = launch(imposteur, [A, B, C]);
-    let s = h.state as ImposteurState;
-    s = act(imposteur, s, A, 'clue', { text: 'Rond' }, h.ctx);
-    s = act(imposteur, s, B, 'clue', { text: 'Bon' }, h.ctx);
-    s = act(imposteur, s, C, 'clue', { text: 'Sucré' }, h.ctx);
-    expect(s.phase).toBe('vote');
-
-    s = act(imposteur, s, A, 'vote', { target: 'b' }, h.ctx);
-    s = act(imposteur, s, B, 'vote', { target: 'a' }, h.ctx);
-    s = act(imposteur, s, C, 'vote', { target: 'b' }, h.ctx);
-    // Démasqué et connecté : une tentative de deviner le mot est proposée.
-    expect(s.phase).toBe('guess');
-
-    s = act(imposteur, s, B, 'guess', { word: 'mot qui ne correspond pas' }, h.ctx);
-    expect(s.phase).toBe('reveal');
-    expect(s.gains).toEqual({ a: 100, c: 100 });
-  });
-
-  it('rapporte 300 points à l’imposteur s’il n’est pas démasqué', () => {
-    const h = launch(imposteur, [A, B, C]);
-    let s = h.state as ImposteurState;
-    for (const p of [A, B, C]) s = act(imposteur, s, p, 'clue', { text: 'Indice' }, h.ctx);
-    s = act(imposteur, s, A, 'vote', { target: 'c' }, h.ctx);
-    s = act(imposteur, s, B, 'vote', { target: 'c' }, h.ctx);
-    s = act(imposteur, s, C, 'vote', { target: 'a' }, h.ctx);
-    // Carl est désigné, mais ce n'est pas l'imposteur.
-    expect(s.phase).toBe('reveal');
-    expect(s.points.b).toBe(300);
   });
 });
 

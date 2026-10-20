@@ -66,6 +66,8 @@ export interface AppConfig {
   assetLimits?: { audio: number; video: number; image: number; font: number };
   /** IA générative (jeux racontés). Absent = IA désactivée : les jeux utilisent leur histoire de secours. */
   ai?: AiConfig;
+  /** Recherche de vidéos (karaoké) : clé de l’API YouTube (YOUTUBE_API_KEY). Absent = recherche désactivée. */
+  youtube?: { apiKey?: string };
   /** Sauvegardes automatiques de la base. Absent = pas de sauvegarde (tests). */
   backup?: {
     dir: string;
@@ -343,6 +345,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     storeRepo: storeRepoFromEnv(env.PARTYHUB_STORE_REPO),
     builtinGames: builtinGamesFromEnv(env.BUILTIN_GAMES),
     ai: aiFromEnv(env),
+    youtube: { apiKey: env.YOUTUBE_API_KEY?.trim() || undefined },
     images: imagesFromEnv(env),
     logLevel: env.LOG_LEVEL?.trim() || 'info',
     logFile: {

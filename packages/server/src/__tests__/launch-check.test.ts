@@ -18,7 +18,7 @@ describe('contrôle de lancement', () => {
     'phrases-trous',
     'association',
     'plutot-qui',
-    'imposteur',
+    'imposteur-parmi-nous',
     'aventure-ia',
     'plus-ou-moins',
     'reflexe',

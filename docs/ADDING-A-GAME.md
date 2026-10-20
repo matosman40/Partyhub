@@ -229,6 +229,21 @@ export const clientViews: Record<string, GameClientViews> = {
 
 L'identifiant (`vote-express`) doit être identique dans `manifest.id` et dans la clé de `clientViews`.
 
+3. Le journal des versions, dans `packages/games/src/release-notes.ts` : une entrée par jeu, la plus récente en
+   premier, avec `version`, `date` (AAAA-MM-JJ) et les `changes` lus par les joueurs sur la fiche du jeu. Le premier
+   numéro doit être celui du manifeste ; `release-notes.test.ts` échoue sinon, et aussi pour un jeu sans entrée.
+
+```ts
+export const RELEASE_NOTES = {
+  'vote-express': [
+    { version: '1.0.0', date: '2026-10-18', changes: ['Première version publique.'] },
+  ],
+};
+```
+
+Quand un jeu change, ajoutez une entrée en tête. Augmentez le `version` du manifeste si le changement le justifie :
+un jeu qui change sans nouveau numéro garde la même version, avec une nouvelle entrée datée.
+
 ## Étape 4 : compiler, tester, activer
 
 ```bash

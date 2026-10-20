@@ -20,19 +20,25 @@ interface MediaStageProps {
   /** Vrai pendant la phase de réponse : l’extrait joue. Faux à la révélation : il s’arrête. */
   active: boolean;
   kind: MediaKind;
+  /** Vrai : la vidéo YouTube joue sans son (le son vient d’ailleurs, par exemple un enregistrement). */
+  muted?: boolean;
+  /** Force l’affichage de l’image (sinon, il dépend du type de média). */
+  picture?: boolean;
 }
 
 /* ---------- API YouTube (une seule fois par page) ---------- */
 
-interface YouTubePlayer {
+export interface YouTubePlayer {
   seekTo(seconds: number, allowSeekAhead: boolean): void;
   playVideo(): void;
   pauseVideo(): void;
+  mute(): void;
+  unMute(): void;
   destroy(): void;
   getPlayerState(): number;
 }
 
-interface YouTubeNamespace {
+export interface YouTubeNamespace {
   Player: new (
     element: HTMLElement,
     options: {
@@ -54,7 +60,8 @@ declare global {
 
 let youtubeApi: Promise<YouTubeNamespace> | null = null;
 
-function loadYouTubeApi(): Promise<YouTubeNamespace> {
+/** Charge l’API du lecteur YouTube une seule fois, à la demande. */
+export function loadYouTubeApi(): Promise<YouTubeNamespace> {
   if (window.YT?.Player) return Promise.resolve(window.YT);
   if (!youtubeApi) {
     youtubeApi = new Promise((resolve, reject) => {
@@ -79,8 +86,11 @@ function loadYouTubeApi(): Promise<YouTubeNamespace> {
 /* ---------- Lecteur ---------- */
 
 const PLAYING = 1;
+const YT_UNSTARTED = -1;
+const YT_PAUSED = 2;
+const YT_CUED = 5;
 
-export function MediaStage({ media, active, kind }: MediaStageProps) {
+export function MediaStage({ media, active, kind, muted = false, picture }: MediaStageProps) {
   const [error, setError] = useState<string | null>(null);
   const [needsTap, setNeedsTap] = useState(false);
   const [replay, setReplay] = useState(0);
@@ -152,9 +162,17 @@ export function MediaStage({ media, active, kind }: MediaStageProps) {
           },
           events: {
             onReady: () => {
+              if (muted) yt.current?.mute();
+              else yt.current?.unMute();
               yt.current?.seekTo(media.startSec, true);
               yt.current?.playVideo();
               scheduleStop();
+              // Un navigateur peut refuser la lecture avec son sans geste : on propose alors le bouton de reprise.
+              window.setTimeout(() => {
+                if (cancelled || !yt.current) return;
+                const state = yt.current.getPlayerState();
+                if (state === YT_UNSTARTED || state === YT_PAUSED || state === YT_CUED) setNeedsTap(true);
+              }, 1500);
             },
             onStateChange: (e) => {
               if (e.data === PLAYING) setNeedsTap(false);
@@ -195,7 +213,8 @@ export function MediaStage({ media, active, kind }: MediaStageProps) {
   }
 
   // Image à l’écran pour un film ou une vidéo ; visuel sonore pour une chanson ou un fichier audio.
-  const showsPicture = media?.source.type === 'asset' ? media.source.mediaKind === 'video' : kind !== 'musique';
+  const showsPicture =
+    picture ?? (media?.source.type === 'asset' ? media.source.mediaKind === 'video' : kind !== 'musique');
   const visual = showsPicture ? 'video' : 'sound';
 
   return (

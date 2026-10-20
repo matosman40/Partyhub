@@ -1,3 +1,4 @@
+import { RELEASE_NOTES } from '@partyhub/games';
 import { allGames, sourceOf, type CustomSource } from './games-registry.js';
 import {
   codeViewUrl,
@@ -30,6 +31,7 @@ export function gameInfo(module: GameModule): GameInfo {
     ...(module.codeView
       ? { codeView: { url: codeViewUrl(m.id, module.codeView.sha256), sha256: module.codeView.sha256 } }
       : {}),
+    changelog: RELEASE_NOTES[m.id] ?? [],
   };
 }
 
