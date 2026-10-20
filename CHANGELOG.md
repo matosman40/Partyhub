@@ -13,6 +13,11 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 
 - Le magasin de jeux est rangé dans la rubrique *Jeux*, avec l'activation et la présentation des jeux.
 - Profils de l'appareil : chaque profil de la liste peut être choisi ou retiré, y compris ceux qui ne sont pas actifs. Le retrait demande confirmation et ne touche pas au compte.
+- Page de profil : une navigation par rubriques (statistiques, personnage, pseudo, micro et caméra, mot de passe, voix, BOUM !, suppression) évite de faire défiler une page longue.
+
+### Corrigé
+
+- Supprimer son profil : un échec ne retire plus le profil de l'appareil et n'affiche plus « Profil supprimé ». La confirmation indique que la suppression est irréversible.
 
 ## [0.15.0] - 2026-10-19
 

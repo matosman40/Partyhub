@@ -11469,3 +11469,18 @@ input[type='file']::file-selector-button {
     grid-template-columns: 1fr;
   }
 }
+
+/* Page de profil : navigation par rubriques, pour ne pas faire défiler une page trop longue. */
+.profile-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.profile-nav .chip {
+  text-decoration: none;
+}
+
+.profile-page section[id] {
+  scroll-margin-top: 1rem;
+}
