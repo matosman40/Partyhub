@@ -5,12 +5,14 @@ import { installProcessLogging } from './logs/process.js';
 import { RotatingFile } from './logs/rotating-file.js';
 import { PARTYHUB_ENGINE } from './packages/engine.js';
 import { createServer } from './server.js';
-import { readSavedOverrides, resolveBootEnv } from './server-settings.js';
+import { SecretBox } from './ai/secrets.js';
+import { SETTINGS_KEY_FILE, readSavedOverrides, resolveBootEnv } from './server-settings.js';
 
 async function main(): Promise<void> {
   // Réglages enregistrés depuis l’administration : ils remplacent le fichier .env (voir server-settings.ts).
   const dataDir = process.env.DATA_DIR?.trim() || path.resolve(process.cwd(), 'data');
-  const boot = resolveBootEnv(process.env, readSavedOverrides(path.join(dataDir, 'partyhub.db')));
+  const secrets = new SecretBox(path.join(dataDir, SETTINGS_KEY_FILE));
+  const boot = resolveBootEnv(process.env, readSavedOverrides(path.join(dataDir, 'partyhub.db'), secrets));
   const config = loadConfig(boot.env);
   const journal = config.logFile
     ? new RotatingFile({

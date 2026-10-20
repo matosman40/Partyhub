@@ -1,5 +1,6 @@
-import { describe, expect, it, afterEach } from 'vitest';
+import { afterAll, describe, expect, it, afterEach } from 'vitest';
 import { mkdtempSync, rmSync } from 'node:fs';
+import { SecretBox } from '../ai/secrets.js';
 import os from 'node:os';
 import path from 'node:path';
 import { Store } from '../db/store.js';
@@ -23,6 +24,10 @@ function memoryStore() {
 }
 
 const def = (env: string) => settingDef(env)!;
+
+const keyDir = mkdtempSync(path.join(os.tmpdir(), 'ph-reglages-cle-'));
+const box = new SecretBox(path.join(keyDir, 'settings-secret.key'));
+afterAll(() => rmSync(keyDir, { recursive: true, force: true }));
 
 describe('valeurs des réglages', () => {
   it('accepte les entiers dans leur plage, et refuse le reste', () => {
@@ -58,9 +63,9 @@ describe('valeurs des réglages', () => {
 describe('réglages enregistrés', () => {
   it('ne garde que les réglages connus et bien formés', () => {
     const raw = JSON.stringify({ LOG_FILES: '4', LOG_LEVEL: 'inconnu', INCONNU: '1', DB_BACKUP_KEEP: 9 });
-    expect(parseOverrides(raw)).toEqual({ LOG_FILES: '4' });
-    expect(parseOverrides('pas du json')).toEqual({});
-    expect(parseOverrides(undefined)).toEqual({});
+    expect(parseOverrides(raw, box)).toEqual({ LOG_FILES: '4' });
+    expect(parseOverrides('pas du json', box)).toEqual({});
+    expect(parseOverrides(undefined, box)).toEqual({});
   });
 
   it('lit les réglages gardés dans une base existante, sans la migrer', () => {
@@ -70,8 +75,8 @@ describe('réglages enregistrés', () => {
       const store = new Store(file);
       store.setKv(SERVER_SETTINGS_KEY, JSON.stringify({ LOG_FILES: '3' }));
       store.close();
-      expect(readSavedOverrides(file)).toEqual({ LOG_FILES: '3' });
-      expect(readSavedOverrides(path.join(dir, 'absente.db'))).toEqual({});
+      expect(readSavedOverrides(file, box)).toEqual({ LOG_FILES: '3' });
+      expect(readSavedOverrides(path.join(dir, 'absente.db'), box)).toEqual({});
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
@@ -97,7 +102,7 @@ describe('service des réglages', () => {
 
   function service(baseEnv: NodeJS.ProcessEnv = {}, booted: Record<string, string> = {}) {
     const store = memoryStore();
-    const svc = new ServerSettingsService(store, { baseEnv, booted });
+    const svc = new ServerSettingsService(store, { baseEnv, booted, box });
     services.push(svc);
     return { svc, store };
   }
@@ -124,6 +129,23 @@ describe('service des réglages', () => {
     expect(github).toMatchObject({ value: null, configured: true, source: 'fichier' });
   });
 
+  it('chiffre les secrets dans la base, et les relit correctement', () => {
+    const store = memoryStore();
+    const svc = new ServerSettingsService(store, { baseEnv: {}, booted: {}, box });
+    svc.set('GITHUB_TOKEN', 'ghp_valeur_secrete_0001');
+    expect(store.kv.get(SERVER_SETTINGS_KEY)).not.toContain('ghp_valeur_secrete_0001');
+    expect(new ServerSettingsService(store, { baseEnv: {}, booted: {}, box }).saved()).toEqual({
+      GITHUB_TOKEN: 'ghp_valeur_secrete_0001',
+    });
+  });
+
+  it('un secret chiffré avec une autre clé est ignoré, sans faire échouer', () => {
+    const other = new SecretBox(path.join(keyDir, 'autre.key'));
+    const store = memoryStore();
+    new ServerSettingsService(store, { baseEnv: {}, booted: {}, box: other }).set('GITHUB_TOKEN', 'ghp_autre_cle_0002');
+    expect(new ServerSettingsService(store, { baseEnv: {}, booted: {}, box }).saved()).toEqual({});
+  });
+
   it('refuse une valeur inconnue ou mal formée, sans rien enregistrer', () => {
     const { svc, store } = service();
     expect(svc.set('INCONNU', '1')).toMatchObject({ ok: false, status: 404 });
@@ -140,13 +162,13 @@ describe('service des réglages', () => {
 
   it('n’est en attente de redémarrage que tant que la valeur enregistrée diffère de celle du démarrage', () => {
     const store = memoryStore();
-    const before = new ServerSettingsService(store, { baseEnv: {}, booted: {} });
+    const before = new ServerSettingsService(store, { baseEnv: {}, booted: {}, box });
     expect(before.pendingRestart()).toBe(false);
     before.set('LOG_FILES', '4');
     expect(before.pendingRestart()).toBe(true);
 
     // Après redémarrage, le serveur démarre avec la valeur enregistrée : plus rien n’attend.
-    const after = new ServerSettingsService(store, { baseEnv: {}, booted: { LOG_FILES: '4' } });
+    const after = new ServerSettingsService(store, { baseEnv: {}, booted: { LOG_FILES: '4' }, box });
     expect(after.pendingRestart()).toBe(false);
   });
 });

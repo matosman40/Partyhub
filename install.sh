@@ -20,16 +20,25 @@ docker compose version >/dev/null 2>&1 || die "Docker Compose est requis (comman
 [ -f compose.yaml ] || die "Lancez ce script depuis le dossier de PartyHub (où se trouve compose.yaml)."
 
 detect_address() {
-  if command -v hostname >/dev/null 2>&1; then
-    hostname -I 2>/dev/null | awk '{print $1}'
+  # Adresse de l'interface qui sort sur le réseau : évite les adresses internes de Docker (172.17.x.x…).
+  if command -v ip >/dev/null 2>&1; then
+    ip -4 route get 1.1.1.1 2>/dev/null | sed -n 's/.* src \([0-9.]*\).*/\1/p' | head -n 1
   fi
-  if [ -z "${addr:-}" ] && command -v ipconfig >/dev/null 2>&1; then
+}
+
+detect_fallback() {
+  if command -v ipconfig >/dev/null 2>&1; then
     ipconfig getifaddr en0 2>/dev/null || true
   fi
 }
 
 addr="${1:-}"
-[ -n "$addr" ] || addr="$(detect_address | head -n 1 || true)"
+[ -n "$addr" ] || addr="$(detect_address || true)"
+[ -n "$addr" ] || addr="$(detect_fallback || true)"
+# Relance : l'adresse déjà présente dans .env est gardée.
+if [ -z "$addr" ] && [ -f .env ]; then
+  addr="$(sed -n 's/^PARTYHUB_HOST=//p' .env | tail -n 1 | tr -d '\r')"
+fi
 [ -n "$addr" ] || die "Adresse du serveur introuvable. Relancez avec elle : sh install.sh 192.168.1.156"
 case "$addr" in
   *[!0-9A-Za-z.-]*) die "Adresse invalide : $addr" ;;

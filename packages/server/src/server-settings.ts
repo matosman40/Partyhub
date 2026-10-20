@@ -1,6 +1,13 @@
 import fs from 'node:fs';
 import Database from 'better-sqlite3';
 import { loadConfig } from './config.js';
+import { SecretBox } from './ai/secrets.js';
+
+/**
+ * Fichier de la clé locale des secrets (distinct de celle des clés d’IA, pour qu’aucune des deux ne s’écrase).
+ * Les secrets enregistrés (mot de passe, jeton, clés) sont chiffrés avec elle : une copie de la base seule ne les révèle pas.
+ */
+export const SETTINGS_KEY_FILE = 'settings-secret.key';
 
 /**
  * Réglages du serveur modifiables depuis l’administration. Ils remplacent les variables correspondantes du fichier
@@ -273,8 +280,11 @@ export function checkWholeConfig(baseEnv: NodeJS.ProcessEnv, overrides: Record<s
   }
 }
 
-/** Lit les réglages enregistrés, en gardant seulement ceux qui sont connus et bien formés. */
-export function parseOverrides(raw: string | undefined): Record<string, string> {
+/**
+ * Lit les réglages enregistrés, en gardant seulement ceux qui sont connus et bien formés. Les secrets sont
+ * déchiffrés ; sans la clé locale (ou valeur abîmée), ils sont ignorés : il faudra les ressaisir.
+ */
+export function parseOverrides(raw: string | undefined, box: SecretBox): Record<string, string> {
   if (!raw) return {};
   let parsed: unknown;
   try {
@@ -287,7 +297,9 @@ export function parseOverrides(raw: string | undefined): Record<string, string> 
   for (const [env, value] of Object.entries(parsed as Record<string, unknown>)) {
     const def = settingDef(env);
     if (!def || typeof value !== 'string') continue;
-    const checked = checkShape(def, value);
+    const plain = def.kind === 'secret' ? box.open(value) : value;
+    if (plain === null) continue;
+    const checked = checkShape(def, plain);
     if (checked.ok && checked.value !== '') out[env] = checked.value;
   }
   return out;
@@ -297,14 +309,14 @@ export function parseOverrides(raw: string | undefined): Record<string, string> 
  * Réglages enregistrés, lus dans la base avant son ouverture complète (les migrations passent après la copie de
  * sécurité). Une base absente ou sans table donne aucun réglage.
  */
-export function readSavedOverrides(dbFile: string): Record<string, string> {
+export function readSavedOverrides(dbFile: string, box: SecretBox): Record<string, string> {
   if (!fs.existsSync(dbFile)) return {};
   try {
     const db = new Database(dbFile, { readonly: true, fileMustExist: true });
     try {
       const row = db.prepare('SELECT value FROM kv WHERE key = ?').get(SERVER_SETTINGS_KEY) as
         { value: string } | undefined;
-      return parseOverrides(row?.value);
+      return parseOverrides(row?.value, box);
     } finally {
       db.close();
     }
@@ -354,6 +366,8 @@ export interface ServerSettingsOptions {
   baseEnv: NodeJS.ProcessEnv;
   /** Réglages appliqués au démarrage : seuls ceux-là comptent pour « redémarrage nécessaire ». */
   booted: Record<string, string>;
+  /** Chiffrement des secrets enregistrés. */
+  box: SecretBox;
 }
 
 /** Réglages du serveur, lus et enregistrés par l’administration. */
@@ -364,7 +378,7 @@ export class ServerSettingsService {
   ) {}
 
   saved(): Record<string, string> {
-    return parseOverrides(this.store.getKv(SERVER_SETTINGS_KEY));
+    return parseOverrides(this.store.getKv(SERVER_SETTINGS_KEY), this.options.box);
   }
 
   /** Vrai si les réglages enregistrés diffèrent de ceux appliqués au démarrage. */
@@ -419,7 +433,14 @@ export class ServerSettingsService {
     const problem = checkWholeConfig(this.options.baseEnv, next);
     if (problem !== null) return { ok: false, error: problem, status: 400 };
 
-    this.store.setKv(SERVER_SETTINGS_KEY, JSON.stringify(next));
+    // Les secrets sont chiffrés avant d’être gardés : la base ne contient jamais leur valeur en clair.
+    const stored = Object.fromEntries(
+      Object.entries(next).map(([name, value]) => [
+        name,
+        settingDef(name)?.kind === 'secret' ? this.options.box.seal(value) : value,
+      ]),
+    );
+    this.store.setKv(SERVER_SETTINGS_KEY, JSON.stringify(stored));
     return { ok: true, action: checked.value === '' ? 'reset' : 'set' };
   }
 }

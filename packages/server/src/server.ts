@@ -26,7 +26,8 @@ import { gameDataFor } from './profiles/game-data.js';
 import { ProfileService } from './profiles/service.js';
 import type { AppConfig } from './config.js';
 import { createApp } from './http/app.js';
-import { ServerSettingsService } from './server-settings.js';
+import { SecretBox } from './ai/secrets.js';
+import { SETTINGS_KEY_FILE, ServerSettingsService } from './server-settings.js';
 import { Store } from './db/store.js';
 import type { Logger } from './logger.js';
 import type { RotatingFile } from './logs/rotating-file.js';
@@ -240,6 +241,7 @@ export async function createServer(opts: ServerOptions): Promise<PartyServer> {
   const serverSettings = new ServerSettingsService(store, {
     baseEnv: opts.bootEnv ?? process.env,
     booted: opts.bootOverrides ?? {},
+    box: new SecretBox(path.join(config.dataDir, SETTINGS_KEY_FILE)),
   });
   const app = createApp({
     config,
