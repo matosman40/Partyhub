@@ -323,6 +323,39 @@ describe('lecture du dépôt de jeux', () => {
     expect(state.calls.length).toBe(callsBefore);
   });
 
+  it('donne la taille du paquet, lue dans la release', async () => {
+    publish(state, 'frontieres', '1.0.0');
+    const { gameStore } = service();
+
+    const catalog = await gameStore.catalog(true);
+    expect(catalog.games[0]?.size).toBe(state.releases['frontieres-v1.0.0']!.archive.length);
+  });
+
+  it('ne relit pas les fiches quand la liste des tags n’a pas changé', async () => {
+    publish(state, 'frontieres', '1.0.0');
+    const { gameStore } = service();
+    const manifests = () => state.calls.filter((c) => c.path.includes('manifest.json')).length;
+
+    await gameStore.catalog(true);
+    expect(manifests()).toBe(1);
+
+    now += 25 * 60 * 60 * 1000; // une lecture automatique, dont la liste des tags répond « inchangé »
+    await gameStore.catalog();
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(state.calls.filter((c) => c.path.includes('/tags?')).length).toBe(2);
+    expect(manifests()).toBe(1);
+  });
+
+  it('garde la couverture sur disque : elle est servie après redémarrage, sans appel à GitHub', async () => {
+    publish(state, 'plateau-x', '1.0.0', { module: 'board', cover: 'assets/couverture.png' });
+    await service().gameStore.catalog(true);
+    const callsBefore = state.calls.length;
+
+    const image = await service().gameStore.cover('plateau-x');
+    expect(image?.contentType).toBe('image/png');
+    expect(state.calls.length).toBe(callsBefore);
+  });
+
   it('garde le catalogue un jour entier, puis le relit en arrière-plan', async () => {
     publish(state, 'frontieres', '1.0.0');
     const { gameStore } = service();

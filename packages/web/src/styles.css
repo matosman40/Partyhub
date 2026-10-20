@@ -11369,6 +11369,38 @@ input[type='file']::file-selector-button {
   background: var(--glass);
 }
 
+.store-entry {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  margin: 0.5rem 0 1rem;
+  padding: 0.8rem 1rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-md);
+  background: var(--glass);
+  color: inherit;
+  text-decoration: none;
+}
+
+.store-entry:hover {
+  filter: brightness(1.08);
+}
+
+.store-entry:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+.store-entry-icon {
+  font-size: 1.6rem;
+}
+
+.store-entry-text {
+  display: grid;
+  flex: 1;
+  gap: 0.1rem;
+}
+
 .store-hero {
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);

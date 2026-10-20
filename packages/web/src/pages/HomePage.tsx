@@ -140,6 +140,17 @@ export function HomePage() {
         </ul>
       </header>
 
+      <Link className="store-entry" to="/magasin">
+        <span className="store-entry-icon" aria-hidden="true">
+          🛍️
+        </span>
+        <span className="store-entry-text">
+          <strong>Magasin de jeux</strong>
+          <span className="muted small">Découvrez les jeux publiés, avec leur couverture et leur taille.</span>
+        </span>
+        <span aria-hidden="true">→</span>
+      </Link>
+
       {error && (
         <p className="error" role="alert">
           {error}
