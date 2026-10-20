@@ -1,16 +1,20 @@
 import { randomBytes } from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
 import type { GameImageKind } from '@partyhub/shared';
 import type { Store } from '../db/store.js';
+import { writeFileAtomic } from '../characters/packs.js';
 import type { ImageMime, GeneratedImage } from './providers.js';
 
 /**
  * Bibliothèque d’images générées : portraits de personnages et fonds de décor, rangés par catégorie et par thème.
- * Les images sont stockées en base (comme les voix de profil) : elles suivent les sauvegardes de la base.
- * Le plafond journalier se compte dans la table clé-valeur, pour survivre à un redémarrage.
+ * Stockage dans PERSONNAGES_DIR : `images/<id>.<ext>` (les octets) et `images/<id>.json` (la fiche, écrite après
+ * les octets). Rien n’est gardé dans la base, sauf le plafond journalier (table clé-valeur), pour survivre à un
+ * redémarrage.
  */
 
-/** Ce dont la bibliothèque a besoin de la base : les requêtes, et la table clé-valeur. */
-export type ImageStore = Pick<Store, 'db' | 'getKv' | 'setKv'>;
+/** Ce dont la bibliothèque a besoin de la base : le compteur journalier. */
+export type ImageStore = Pick<Store, 'getKv' | 'setKv'>;
 
 export interface StoredImage {
   id: string;
@@ -23,30 +27,21 @@ export interface StoredImage {
   createdAt: string;
 }
 
-interface ImageRow {
-  id: string;
-  kind: string;
-  tag: string;
-  mime: string;
-  provider: string;
-  prompt: string;
-  size: number;
-  created_at: string;
-}
+/** Extension de fichier par type d’image. */
+const EXTENSION: Record<string, string | undefined> = {
+  'image/png': 'png',
+  'image/jpeg': 'jpg',
+  'image/webp': 'webp',
+};
 
-const LIST_COLUMNS = 'id, kind, tag, mime, provider, prompt, size, created_at';
+/** Identifiant d’image : 24 caractères hexadécimaux. Il ne sert jamais de chemin sans cette vérification. */
+const IMAGE_ID = /^[0-9a-f]{24}$/;
 
-function toStored(row: ImageRow): StoredImage {
-  return {
-    id: row.id,
-    kind: row.kind as GameImageKind,
-    tag: row.tag,
-    mime: row.mime as ImageMime,
-    provider: row.provider,
-    prompt: row.prompt,
-    size: row.size,
-    createdAt: row.created_at,
-  };
+/** Écrit une image et sa fiche dans le dossier `images/` de PERSONNAGES_DIR. */
+export function writeImage(imagesDir: string, record: StoredImage, bytes: Uint8Array): void {
+  const ext = EXTENSION[record.mime] ?? 'bin';
+  writeFileAtomic(path.join(imagesDir, `${record.id}.${ext}`), bytes);
+  writeFileAtomic(path.join(imagesDir, `${record.id}.json`), JSON.stringify(record));
 }
 
 /** Jour UTC, pour le plafond journalier. */
@@ -55,10 +50,16 @@ export function dayKey(date: Date): string {
 }
 
 export class ImageLibrary {
+  private readonly imagesDir: string;
+
+  /** `root` : dossier des personnages (PERSONNAGES_DIR). Les images vont dans son sous-dossier `images/`. */
   constructor(
     private readonly store: ImageStore,
+    root: string,
     private readonly now: () => Date = () => new Date(),
-  ) {}
+  ) {
+    this.imagesDir = path.join(root, 'images');
+  }
 
   /** Garde une image générée et renvoie sa fiche. */
   add(input: {
@@ -68,55 +69,57 @@ export class ImageLibrary {
     provider: string;
     image: GeneratedImage;
   }): StoredImage {
-    const id = randomBytes(12).toString('hex');
-    const createdAt = this.now().toISOString();
-    this.store.db
-      .prepare(
-        'INSERT INTO ai_images (id, kind, tag, mime, provider, prompt, size, data, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      )
-      .run(
-        id,
-        input.kind,
-        input.tag,
-        input.image.mime,
-        input.provider,
-        input.prompt,
-        input.image.bytes.length,
-        input.image.bytes,
-        createdAt,
-      );
-    return {
-      id,
+    const record: StoredImage = {
+      id: randomBytes(12).toString('hex'),
       kind: input.kind,
       tag: input.tag,
       mime: input.image.mime,
       provider: input.provider,
       prompt: input.prompt,
       size: input.image.bytes.length,
-      createdAt,
+      createdAt: this.now().toISOString(),
     };
+    writeImage(this.imagesDir, record, input.image.bytes);
+    return record;
+  }
+
+  /** Toutes les fiches, les plus anciennes d’abord. Une fiche illisible est ignorée. */
+  private all(): StoredImage[] {
+    if (!fs.existsSync(this.imagesDir)) return [];
+    const records: StoredImage[] = [];
+    for (const name of fs.readdirSync(this.imagesDir)) {
+      if (!name.endsWith('.json')) continue;
+      try {
+        const record = JSON.parse(fs.readFileSync(path.join(this.imagesDir, name), 'utf8')) as StoredImage;
+        if (IMAGE_ID.test(record.id) && name === `${record.id}.json`) records.push(record);
+      } catch {
+        // Fiche illisible : on ne la compte pas.
+      }
+    }
+    return records.sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id));
   }
 
   /** Images d’une catégorie et d’un thème, les plus anciennes d’abord. */
   list(kind: GameImageKind, tag: string): StoredImage[] {
-    const rows = this.store.db
-      .prepare(`SELECT ${LIST_COLUMNS} FROM ai_images WHERE kind = ? AND tag = ? ORDER BY created_at, rowid`)
-      .all(kind, tag) as ImageRow[];
-    return rows.map(toStored);
+    return this.all().filter((record) => record.kind === kind && record.tag === tag);
   }
 
   count(kind: GameImageKind, tag: string): number {
-    const row = this.store.db
-      .prepare('SELECT COUNT(*) AS n FROM ai_images WHERE kind = ? AND tag = ?')
-      .get(kind, tag) as { n: number };
-    return row.n;
+    return this.list(kind, tag).length;
   }
 
   /** Octets et type d’une image, pour la servir. Null si elle n’existe pas. */
   data(id: string): { bytes: Buffer; mime: ImageMime } | null {
-    const row = this.store.db.prepare('SELECT mime, data FROM ai_images WHERE id = ?').get(id) as
-      { mime: string; data: Buffer } | undefined;
-    return row ? { bytes: row.data, mime: row.mime as ImageMime } : null;
+    if (!IMAGE_ID.test(id)) return null;
+    try {
+      const record = JSON.parse(fs.readFileSync(path.join(this.imagesDir, `${id}.json`), 'utf8')) as StoredImage;
+      const ext = EXTENSION[record.mime];
+      if (!ext) return null;
+      const bytes = fs.readFileSync(path.join(this.imagesDir, `${id}.${ext}`));
+      return { bytes, mime: record.mime };
+    } catch {
+      return null;
+    }
   }
 
   /** Nombre d’images générées aujourd’hui (jour UTC). */

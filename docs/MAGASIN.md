@@ -26,8 +26,17 @@ les supprimer depuis l'administration, dans la section **Magasin de jeux**.
   ensuite la validation : identifiant, version, contenu. Un échec n'installe rien et ne laisse pas de source.
 - **Mettre à jour** (ou **Vérifier**) interroge le dépôt tout de suite, et installe la version la plus haute si elle est
   plus récente.
-  Les jeux installés depuis le magasin se mettent aussi à jour une fois par jour.
+  Les jeux installés depuis le magasin se mettent aussi à jour une fois par jour, si la mise à jour automatique est
+  activée.
 - **Supprimer** retire le paquet, toutes ses versions, et sa source. Les parties en cours de ce jeu sont fermées.
+- **Plusieurs jeux à la fois** : cochez des jeux dans la liste, ou utilisez « Tout installer », « Tout mettre à jour » et
+  « Tout supprimer » dans la barre du haut. Une seule file tourne à la fois, en arrière-plan : elle traite les jeux un
+  par un et affiche sa progression. Elle est limitée à 200 jeux. Une erreur sur un jeu n'arrête pas les autres.
+- **Mise à jour automatique du dépôt** : un interrupteur, activé par défaut, pour tous les jeux du dépôt. Il s'applique
+  aux jeux déjà installés, et aux prochains. Si l'interrupteur est coupé, un jeu installé ensuite n'est pas mis à jour
+  tout seul.
+- Les paquets installés et les jeux de code sont rangés dans `JEUX_DIR` (par défaut, `DATA_DIR`). Sous Docker, c'est le
+  dossier `/contenu/jeux` du volume `partyhub-contenu`, distinct du volume `partyhub-data`.
 - Un jeu intégré au code de PartyHub est listé comme *Intégré à l'application*. Il ne se télécharge pas, et reste
   disponible hors ligne.
 
@@ -82,3 +91,7 @@ les supprimer depuis l'administration, dans la section **Magasin de jeux**.
 | POST | `/api/admin/store/games/:id/update` | Vérifier et mettre à jour un jeu installé |
 | DELETE | `/api/admin/store/games/:id` | Supprimer un jeu installé depuis le magasin |
 | GET | `/api/admin/store/games/:id/cover` | Couverture d'un jeu |
+| PUT | `/api/admin/store/auto-update` | Mise à jour automatique de tout le dépôt (corps : `{ "enabled": true }`) |
+| POST | `/api/admin/store/jobs` | File d'installation ou de mise à jour, en arrière-plan (corps : `{ "action": "install", "ids": [...] }`). Répond 202, ou 409 si une file tourne déjà |
+| GET | `/api/admin/store/jobs/current` | Progression de la file en cours, ou de la dernière terminée (`{ "job": null }` si aucune) |
+| POST | `/api/admin/store/remove` | Supprimer plusieurs jeux installés (corps : `{ "ids": [...] }`) |

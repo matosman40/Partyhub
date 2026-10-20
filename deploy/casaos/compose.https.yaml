@@ -8,8 +8,8 @@
 # Choisissez « Avancé », « Continuer », puis téléchargez le certificat sur la page /certificat (lien « Installer
 # le certificat HTTPS » dans le menu de l'accueil) et installez-le une fois sur chaque appareil.
 #
-# La page /certificat existe à partir de la version 0.9.3 de l'image. Les données sont dans le volume
-# partyhub-data, comme avec le compose de base : vous pouvez passer de l'un à l'autre sans les perdre.
+# La page /certificat existe à partir de la version 0.9.3 de l'image. Les données sont dans les volumes
+# partyhub-data et partyhub-contenu, comme avec le compose de base : vous pouvez passer de l'un à l'autre sans les perdre.
 
 name: partyhub
 
@@ -27,6 +27,8 @@ services:
       PORT: '8282'
       HOST: '0.0.0.0'
       DATA_DIR: /data
+      JEUX_DIR: /contenu/jeux
+      PERSONNAGES_DIR: /contenu/personnages
       ADMIN_PASSWORD: '${ADMIN_PASSWORD:-}'
       LOG_LEVEL: 'info'
       # Cookies de session envoyés seulement en HTTPS ; le proxy Caddy est sur le réseau Docker.
@@ -34,6 +36,7 @@ services:
       TRUST_PROXY: '172.16.0.0/12'
     volumes:
       - partyhub-data:/data
+      - partyhub-contenu:/contenu
     healthcheck:
       test:
         - CMD
@@ -93,6 +96,8 @@ services:
 volumes:
   partyhub-data:
     name: partyhub-data
+  partyhub-contenu:
+    name: partyhub-contenu
   partyhub-caddy-data:
     name: partyhub-caddy-data
   partyhub-caddy-config:

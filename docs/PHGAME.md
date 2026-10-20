@@ -250,7 +250,7 @@ ses cases, ses questions ou ses règles, cliquez sur **Créer une copie modifiab
 
 ## Où sont stockés les paquets
 
-Chaque archive vérifiée est conservée dans `DATA_DIR/games/<identifiant>/<version>/package.phgame`. Au démarrage, chaque archive
+Chaque archive vérifiée est conservée dans `JEUX_DIR/games/<identifiant>/<version>/package.phgame` (`JEUX_DIR` vaut `DATA_DIR` par défaut). Au démarrage, chaque archive
 est revalidée et son empreinte comparée à celle de la base. Une archive modifiée à la main passe en état **Erreur** et son
 jeu n'est pas proposé.
 

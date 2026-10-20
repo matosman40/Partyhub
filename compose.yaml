@@ -19,6 +19,8 @@ services:
       PORT: '8282'
       HOST: '0.0.0.0'
       DATA_DIR: /data
+      JEUX_DIR: /contenu/jeux
+      PERSONNAGES_DIR: /contenu/personnages
       ADMIN_PASSWORD: '${ADMIN_PASSWORD:-}'
       GITHUB_TOKEN: '${GITHUB_TOKEN:-}'
       PARTYHUB_STORE_REPO: '${PARTYHUB_STORE_REPO:-}'
@@ -69,6 +71,7 @@ services:
       BUILTIN_GAMES: '${BUILTIN_GAMES:-off}'
     volumes:
       - partyhub-data:/data
+      - partyhub-contenu:/contenu
     healthcheck:
       test:
         - CMD
@@ -107,3 +110,5 @@ services:
 volumes:
   partyhub-data:
     name: partyhub-data
+  partyhub-contenu:
+    name: partyhub-contenu

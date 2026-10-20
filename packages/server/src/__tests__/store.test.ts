@@ -684,3 +684,85 @@ describe('jeux de code dans le magasin', { timeout: 60_000 }, () => {
     expect(codes.list()).toEqual([expect.objectContaining({ id: CODE_ID, status: 'en_attente' })]);
   });
 });
+
+describe('dépôt entier : file, mise à jour automatique, suppression multiple', () => {
+  /** Attend la fin de la file en cours (elle tourne en arrière-plan). */
+  async function waitForJob(gameStore: StoreService) {
+    for (let i = 0; i < 400; i++) {
+      const job = gameStore.currentJob();
+      if (job && job.finishedAt !== null) return job;
+      await new Promise((resolve) => setTimeout(resolve, 5));
+    }
+    throw new Error('la file ne se termine pas');
+  }
+
+  it('installe les jeux du dépôt un par un, et suit leur progression', async () => {
+    publish(state, 'frontieres', '1.0.0');
+    publish(state, 'ponts', '1.0.0');
+    const { gameStore } = service();
+
+    const started = gameStore.startJob('install', ['frontieres', 'ponts']);
+    expect(started.ok).toBe(true);
+    const job = await waitForJob(gameStore);
+    expect(job.action).toBe('install');
+    expect(job.items.map((item) => [item.id, item.state])).toEqual([
+      ['frontieres', 'ok'],
+      ['ponts', 'ok'],
+    ]);
+    expect(job.items[0]?.message).toContain('1.0.0');
+    expect(
+      packages
+        .list()
+        .map((p) => p.id)
+        .sort(),
+    ).toEqual(['frontieres', 'ponts']);
+  });
+
+  it('une seule file à la fois, et des identifiants valides', async () => {
+    publish(state, 'frontieres', '1.0.0');
+    publish(state, 'ponts', '1.0.0');
+    const { gameStore } = service();
+
+    expect(gameStore.startJob('install', ['../secret']).ok).toBe(false);
+    expect(gameStore.startJob('install', [])).toMatchObject({ ok: false, error: 'Aucun jeu choisi.' });
+
+    expect(gameStore.startJob('install', ['frontieres']).ok).toBe(true);
+    expect(gameStore.startJob('install', ['ponts'])).toMatchObject({ ok: false, busy: true });
+    await waitForJob(gameStore);
+    expect(gameStore.startJob('install', ['ponts']).ok).toBe(true);
+    await waitForJob(gameStore);
+  });
+
+  it('coupe la mise à jour automatique pour tout le dépôt, et l’applique aux jeux installés', async () => {
+    publish(state, 'frontieres', '1.0.0');
+    publish(state, 'ponts', '1.0.0');
+    const { gameStore, sources } = service();
+    expect(gameStore.autoUpdate).toBe(true);
+    await gameStore.install('frontieres');
+
+    expect(gameStore.setAutoUpdate(false)).toBe(1);
+    expect(gameStore.autoUpdate).toBe(false);
+    expect(sources.list().every((row) => row.autoUpdate === false)).toBe(true);
+
+    // Un jeu installé pendant que c’est coupé ne se met pas à jour seul.
+    await gameStore.install('ponts');
+    expect(sources.list().find((row) => row.repo === `${REPO}/ponts`)?.autoUpdate).toBe(false);
+
+    expect(gameStore.setAutoUpdate(true)).toBe(2);
+    expect(sources.list().every((row) => row.autoUpdate === true)).toBe(true);
+  });
+
+  it('supprime plusieurs jeux, et signale ceux qui ne sont pas installés sans bloquer les autres', async () => {
+    publish(state, 'frontieres', '1.0.0');
+    const { gameStore } = service();
+    await gameStore.install('frontieres');
+
+    const result = gameStore.removeMany(['frontieres', 'zzz', 'frontieres'], () => 0);
+    expect(result).toEqual({
+      removed: ['frontieres'],
+      failed: [{ id: 'zzz', error: 'Ce jeu n’est pas installé depuis le magasin.' }],
+      closedRooms: 0,
+    });
+    expect(packages.list()).toEqual([]);
+  });
+});

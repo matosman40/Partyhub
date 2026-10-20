@@ -1,4 +1,6 @@
-import type Database from 'better-sqlite3';
+import fs from 'node:fs';
+import path from 'node:path';
+import { randomBytes } from 'node:crypto';
 import { z } from 'zod';
 import {
   CHARACTER_LOOK_ID,
@@ -21,6 +23,10 @@ import { readZip, ZipError, type ZipFileEntry } from '../packages/zip.js';
  *   json/marche.json  + atlas/marche.png    (facultatif : marche)
  * Les autres fichiers du zip (sources, aperçus, script, README) sont ignorés.
  * Voir docs/PERSONNAGES-PACK.md.
+ *
+ * Stockage : dans PERSONNAGES_DIR, un dossier par personnage, `packs/<id>/pack.json` (nom, looks, dimensions des
+ * planches) et `packs/<id>/<look>/<planche>.png`. Rien n’est gardé dans la base : une sauvegarde de la base ne
+ * contient pas les personnages, il faut sauvegarder le dossier (ou l’archive complète).
  */
 
 export const CHARACTER_PACK_LIMITS = {
@@ -251,60 +257,119 @@ export type InstallPackResult =
   | { ok: true; pack: CharacterPackInfo; look: CharacterPackLook; createdPack: boolean }
   | { ok: false; status: 400 | 404 | 409 | 413; error: string; issues?: string[] };
 
-interface PackRow {
+/* ---------- Stockage en fichiers ---------- */
+
+export const PACK_FILE = 'pack.json';
+
+/** Un personnage, tel qu’il est écrit dans `pack.json`. */
+export interface StoredPack {
   id: string;
   name: string;
-  created_at: string;
+  createdAt: string;
+  looks: StoredLook[];
 }
 
-interface LookRow {
-  pack_id: string;
+/** Un look : ses dimensions de planches, et ses PNG rangés dans son dossier. */
+export interface StoredLook {
   id: string;
   name: string;
-  meta: string;
+  createdAt: string;
+  atlases: CharacterPackLook['atlases'];
 }
 
-function lookOf(row: LookRow): CharacterPackLook {
-  const parsed = JSON.parse(row.meta) as { atlases: CharacterPackLook['atlases'] };
-  return { id: row.id, name: row.name, atlases: parsed.atlases };
+function isPackId(id: string): boolean {
+  return CHARACTER_PACK_ID.test(id);
 }
 
+function isLookId(id: string): boolean {
+  return CHARACTER_LOOK_ID.test(id);
+}
+
+/** Écrit un fichier d’un seul tenant : fichier temporaire, puis renommage. Crée les dossiers manquants. */
+export function writeFileAtomic(file: string, data: string | Uint8Array): void {
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  const tmp = `${file}.${randomBytes(6).toString('hex')}.tmp`;
+  fs.writeFileSync(tmp, data);
+  fs.renameSync(tmp, file);
+}
+
+/** Lit le `pack.json` d’un dossier de personnage. Null si absent ou illisible. */
+export function readStoredPack(dir: string): StoredPack | null {
+  try {
+    const raw = JSON.parse(fs.readFileSync(path.join(dir, PACK_FILE), 'utf8')) as Partial<StoredPack>;
+    if (typeof raw.id !== 'string' || typeof raw.name !== 'string' || !Array.isArray(raw.looks)) return null;
+    return { id: raw.id, name: raw.name, createdAt: raw.createdAt ?? '', looks: raw.looks as StoredLook[] };
+  } catch {
+    return null;
+  }
+}
+
+function sortLooks(looks: StoredLook[]): StoredLook[] {
+  return [...looks].sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id));
+}
+
+function infoOf(pack: StoredPack): CharacterPackInfo {
+  return {
+    id: pack.id,
+    name: pack.name,
+    createdAt: pack.createdAt,
+    looks: sortLooks(pack.looks).map((look) => ({ id: look.id, name: look.name, atlases: look.atlases })),
+  };
+}
+
+/** Dossier des personnages : `<racine>/packs/<id>/`, avec `pack.json` et un dossier par look. */
 export class CharacterPackService {
-  constructor(private readonly db: Database.Database) {}
+  private readonly packsDir: string;
+
+  /** `root` : dossier des personnages (PERSONNAGES_DIR). */
+  constructor(root: string) {
+    this.packsDir = path.join(root, 'packs');
+  }
+
+  private packDir(id: string): string {
+    return path.join(this.packsDir, id);
+  }
+
+  /** Personnage stocké, ou null (identifiant mal formé compris : il ne sert jamais de chemin). */
+  private read(id: string): StoredPack | null {
+    if (!isPackId(id)) return null;
+    return readStoredPack(this.packDir(id));
+  }
 
   list(): CharacterPackInfo[] {
-    const packs = this.db
-      .prepare('SELECT id, name, created_at FROM character_packs ORDER BY name COLLATE NOCASE')
-      .all() as PackRow[];
-    const looks = this.db
-      .prepare('SELECT pack_id, id, name, meta FROM character_looks ORDER BY created_at, id')
-      .all() as LookRow[];
-    return packs.map((pack) => ({
-      id: pack.id,
-      name: pack.name,
-      createdAt: pack.created_at,
-      looks: looks.filter((look) => look.pack_id === pack.id).map(lookOf),
-    }));
+    if (!fs.existsSync(this.packsDir)) return [];
+    const packs: CharacterPackInfo[] = [];
+    for (const entry of fs.readdirSync(this.packsDir, { withFileTypes: true })) {
+      if (!entry.isDirectory() || !isPackId(entry.name)) continue;
+      const pack = readStoredPack(this.packDir(entry.name));
+      if (pack && pack.id === entry.name) packs.push(infoOf(pack));
+    }
+    return packs.sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
   }
 
   get(id: string): CharacterPackInfo | null {
-    return this.list().find((pack) => pack.id === id) ?? null;
+    const pack = this.read(id);
+    return pack ? infoOf(pack) : null;
   }
 
   exists(id: string): boolean {
-    return !!this.db.prepare('SELECT 1 FROM character_packs WHERE id = ?').get(id);
+    return this.read(id) !== null;
   }
 
   lookExists(packId: string, lookId: string): boolean {
-    return !!this.db.prepare('SELECT 1 FROM character_looks WHERE pack_id = ? AND id = ?').get(packId, lookId);
+    const pack = this.read(packId);
+    return !!pack && pack.looks.some((look) => look.id === lookId);
   }
 
   /** Image PNG d’une planche d’un look, ou null. */
   atlasFile(packId: string, lookId: string, atlas: string): Buffer | null {
-    const row = this.db
-      .prepare('SELECT data FROM character_look_files WHERE pack_id = ? AND look_id = ? AND atlas = ?')
-      .get(packId, lookId, atlas) as { data: Buffer } | undefined;
-    return row ? row.data : null;
+    if (!isPackId(packId) || !isLookId(lookId)) return null;
+    if (!(CHARACTER_PACK_ATLASES as readonly string[]).includes(atlas)) return null;
+    try {
+      return fs.readFileSync(path.join(this.packDir(packId), lookId, `${atlas}.png`));
+    } catch {
+      return null;
+    }
   }
 
   install(bytes: Uint8Array, options: InstallOptions): InstallPackResult {
@@ -323,11 +388,12 @@ export class CharacterPackService {
       return { ok: false, status: 400, error: 'Ce nom de look ne donne pas d’identifiant utilisable.' };
     }
 
+    let existing: StoredPack | null = null;
     let packId: string;
     let packName: string;
     let createdPack: boolean;
     if (options.packId) {
-      const existing = this.get(options.packId);
+      existing = this.read(options.packId);
       if (!existing) return { ok: false, status: 404, error: 'Personnage inconnu.' };
       packId = existing.id;
       packName = existing.name;
@@ -365,48 +431,46 @@ export class CharacterPackService {
     }
 
     const createdAt = new Date().toISOString();
-    const look: CharacterPackLook = {
-      id: lookId,
-      name: lookName,
-      atlases: Object.fromEntries(Object.entries(validation.atlases).map(([a, v]) => [a, v?.meta])),
-    };
-    const insert = this.db.transaction(() => {
-      if (createdPack) {
-        this.db
-          .prepare('INSERT INTO character_packs (id, name, created_at) VALUES (?, ?, ?)')
-          .run(packId, packName, createdAt);
-      }
-      this.db
-        .prepare('INSERT INTO character_looks (pack_id, id, name, meta, created_at) VALUES (?, ?, ?, ?, ?)')
-        .run(packId, lookId, lookName, JSON.stringify({ atlases: look.atlases }), createdAt);
-      const files = this.db.prepare(
-        'INSERT INTO character_look_files (pack_id, look_id, atlas, data) VALUES (?, ?, ?, ?)',
-      );
+    const atlases: CharacterPackLook['atlases'] = Object.fromEntries(
+      Object.entries(validation.atlases).map(([a, v]) => [a, v?.meta]),
+    );
+    const look: StoredLook = { id: lookId, name: lookName, createdAt, atlases };
+    const dir = this.packDir(packId);
+    const lookDir = path.join(dir, lookId);
+    const stored: StoredPack = existing
+      ? { ...existing, looks: [...existing.looks, look] }
+      : { id: packId, name: packName, createdAt, looks: [look] };
+    try {
       for (const [atlas, value] of Object.entries(validation.atlases)) {
-        if (value) files.run(packId, lookId, atlas, Buffer.from(value.png));
+        if (value) writeFileAtomic(path.join(lookDir, `${atlas}.png`), value.png);
       }
-    });
-    insert();
-    const pack = this.get(packId);
-    if (!pack) return { ok: false, status: 400, error: 'Import impossible.' };
-    return { ok: true, pack, look, createdPack };
+      writeFileAtomic(path.join(dir, PACK_FILE), JSON.stringify(stored));
+    } catch {
+      // Rien à moitié écrit : on retire ce qui vient d’être créé.
+      fs.rmSync(lookDir, { recursive: true, force: true });
+      if (createdPack) fs.rmSync(dir, { recursive: true, force: true });
+      return { ok: false, status: 400, error: 'Import impossible.' };
+    }
+    return { ok: true, pack: infoOf(stored), look: { id: lookId, name: lookName, atlases }, createdPack };
   }
 
   /** Supprime un look. Le dernier look supprimé supprime aussi le personnage. */
   removeLook(packId: string, lookId: string): { ok: true; removedPack: boolean } | { ok: false } {
-    if (!this.lookExists(packId, lookId)) return { ok: false };
-    this.db.prepare('DELETE FROM character_looks WHERE pack_id = ? AND id = ?').run(packId, lookId);
-    const left = this.db.prepare('SELECT COUNT(*) AS n FROM character_looks WHERE pack_id = ?').get(packId) as {
-      n: number;
-    };
-    if (left.n === 0) {
+    const pack = this.read(packId);
+    if (!pack || !isLookId(lookId) || !pack.looks.some((look) => look.id === lookId)) return { ok: false };
+    fs.rmSync(path.join(this.packDir(packId), lookId), { recursive: true, force: true });
+    const looks = pack.looks.filter((look) => look.id !== lookId);
+    if (looks.length === 0) {
       this.remove(packId);
       return { ok: true, removedPack: true };
     }
+    writeFileAtomic(path.join(this.packDir(packId), PACK_FILE), JSON.stringify({ ...pack, looks }));
     return { ok: true, removedPack: false };
   }
 
   remove(id: string): boolean {
-    return this.db.prepare('DELETE FROM character_packs WHERE id = ?').run(id).changes > 0;
+    if (!this.read(id)) return false;
+    fs.rmSync(this.packDir(id), { recursive: true, force: true });
+    return true;
   }
 }

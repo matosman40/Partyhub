@@ -1,3 +1,6 @@
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { Store } from '../db/store.js';
 import { POOL_MAX, createGameImages, gameImageUrl } from '../images/game-images.js';
@@ -275,6 +278,17 @@ describe('configuration des fournisseurs d’images', () => {
   });
 });
 
+/** Dossiers de stockage neufs (PERSONNAGES_DIR), supprimés après chaque test. */
+const scratchDirs: string[] = [];
+afterEach(() => {
+  for (const dir of scratchDirs.splice(0)) rmSync(dir, { recursive: true, force: true });
+});
+function newDir(): string {
+  const dir = mkdtempSync(path.join(tmpdir(), 'partyhub-images-'));
+  scratchDirs.push(dir);
+  return dir;
+}
+
 describe('bibliothèque d’images', () => {
   const opened: Store[] = [];
   afterEach(() => {
@@ -284,7 +298,7 @@ describe('bibliothèque d’images', () => {
   function libraryAt(now: () => Date = () => new Date('2026-10-16T10:00:00Z')) {
     const store = new Store(':memory:');
     opened.push(store);
-    return { store, library: new ImageLibrary(store, now) };
+    return { store, library: new ImageLibrary(store, newDir(), now) };
   }
 
   const picture = (): GeneratedImage => ({ bytes: PNG, mime: 'image/png' });
@@ -329,7 +343,7 @@ describe('bibliothèque d’images', () => {
   it('le compteur du jour augmente à chaque génération, et repart à zéro le lendemain', () => {
     const { store } = libraryAt();
     let day = new Date('2026-10-16T23:59:00Z');
-    const library = new ImageLibrary(store, () => day);
+    const library = new ImageLibrary(store, newDir(), () => day);
     expect(library.usedToday()).toBe(0);
     library.recordUse();
     library.recordUse();
@@ -371,7 +385,7 @@ describe('ctx.images : demandes des jeux', () => {
   function imagesWith(providers: ImageProvider[], options: { maxPerDay?: number; poolMax?: typeof POOL_MAX } = {}) {
     const store = new Store(':memory:');
     opened.push(store);
-    const library = new ImageLibrary(store);
+    const library = new ImageLibrary(store, newDir());
     const images = createGameImages({
       providers,
       library,

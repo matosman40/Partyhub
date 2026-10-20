@@ -44,6 +44,16 @@ export interface AppConfig {
   images?: ImagesConfig;
   host: string;
   dataDir: string;
+  /**
+   * Dossier des jeux installés (JEUX_DIR) : il reçoit `games/` (paquets) et `code-games/` (jeux de code).
+   * Absent = dossier de données (`dataDir`), comme avant.
+   */
+  jeuxDir?: string;
+  /**
+   * Dossier des personnages (PERSONNAGES_DIR) : packs de sprites et images générées, en fichiers.
+   * Absent = `<dataDir>/personnages`.
+   */
+  personnagesDir?: string;
   dbFile: string;
   staticDir: string;
   adminPassword?: string;
@@ -338,6 +348,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     port,
     host: env.HOST?.trim() || '0.0.0.0',
     dataDir,
+    jeuxDir: env.JEUX_DIR?.trim() || dataDir,
+    personnagesDir: env.PERSONNAGES_DIR?.trim() || path.join(dataDir, 'personnages'),
     dbFile: path.join(dataDir, 'partyhub.db'),
     staticDir: env.STATIC_DIR?.trim() || path.resolve(here, '../../web/dist'),
     adminPassword,

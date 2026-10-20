@@ -97,7 +97,13 @@ seconde ligne **Look** apparaît pour choisir le look. Le choix est enregistré 
 ## Dans le code
 
 - Validation et stockage : `packages/server/src/characters/packs.ts` (zip lu par `packages/server/src/packages/zip.ts`).
-- Stockage SQLite : tables `character_packs`, `character_looks` et `character_look_files` (migration 10).
+- Stockage en fichiers, dans `PERSONNAGES_DIR` (par défaut `DATA_DIR/personnages`) : `packs/<id>/pack.json` (nom et
+  looks), puis un dossier par look, `packs/<id>/<look>/`, avec ses planches PNG. Les images de la bibliothèque sont dans
+  `images/`. Sous Docker, c'est `/contenu/personnages` du volume `partyhub-contenu`.
+- Au premier démarrage, les personnages et images qui étaient encore dans la base SQLite sont déplacés vers ces fichiers,
+  puis retirés de la base. Une ligne n'est retirée qu'une fois son fichier écrit, et un redémarrage ne refait rien.
+- La sauvegarde de la base seule (SQLite) ne contient ni les personnages ni les images. La sauvegarde complète (archive)
+  les inclut.
 - Routes : `GET /api/character-packs` (liste avec les looks),
   `GET /api/character-packs/:id/looks/:look/atlas/:planche.png` (image),
   `POST /api/admin/character-packs?nom=…&look=…&confirme=1` (nouveau personnage, zip brut),

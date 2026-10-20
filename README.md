@@ -59,7 +59,7 @@ sudo docker compose logs -f     # Ctrl+C pour quitter
 Ouvrir `http://<adresse-du-serveur>:8282` sur l'écran principal, puis `http://<adresse-du-serveur>:8282/join`
 sur les téléphones (ou scanner le QR code). Le détail pour CasaOS est dans [docs/CASAOS.md](docs/CASAOS.md).
 
-**Mise à jour** (les données du volume `partyhub-data` sont conservées) : depuis la rubrique *Système* de
+**Mise à jour** (les données des volumes `partyhub-data` et `partyhub-contenu` sont conservées) : depuis la rubrique *Système* de
 l'administration, après une installation unique du service de mise à jour, ou à la main. Le détail, les règles et le
 dépannage sont dans [docs/MISE-A-JOUR.md](docs/MISE-A-JOUR.md).
 
@@ -148,7 +148,9 @@ la bonne réponse n'apparaît qu'à la révélation, et les réponses privées r
 | `LOG_FILES`                          | `6`                            | Nombre d'anciens fichiers gardés en plus du courant                                                                                                                                                                                                                                                                |
 | `COOKIE_SECURE`                      | `false`                        | `true` uniquement derrière un proxy HTTPS                                                                                                                                                                                                                                                                          |
 | `TRUST_PROXY`                        | `loopback`                     | Proxys de confiance pour lire l'adresse réelle des joueurs dans `X-Forwarded-For`. Même syntaxe qu'Express : `loopback`, une adresse, ou un réseau comme `172.16.0.0/12` (voir [docs/REMOTE-ACCESS.md](docs/REMOTE-ACCESS.md))                                                                                     |
-| `DATA_DIR`                           | `./data` (`/data` dans Docker) | Dossier de la base SQLite                                                                                                                                                                                                                                                                                          |
+| `DATA_DIR`                           | `./data` (`/data` dans Docker) | Dossier de la base SQLite, des réglages et des sauvegardes                                                                    
+| `JEUX_DIR`                           | `DATA_DIR` (`/contenu/jeux` dans Docker) | Dossier des jeux installés (`games/`, `code-games/`). Au démarrage, ils sont déplacés depuis `DATA_DIR` s'ils y sont encore |
+| `PERSONNAGES_DIR`                    | `DATA_DIR/personnages` (`/contenu/personnages` dans Docker) | Personnages importés et images générées, en fichiers (plus dans la base) |                                                                                                                                                                                     |
 | `DB_BACKUP_EVERY_HOURS`              | `24`                           | Sauvegarde automatique de la base, en heures (`0` pour la désactiver)                                                                                                                                                                                                                                              |
 | `DB_BACKUP_KEEP`                     | `7`                            | Nombre de sauvegardes de la base conservées                                                                                                                                                                                                                                                                        |
 | `DB_BACKUP_DIR`                      | `<DATA_DIR>/backups`           | Dossier des sauvegardes de la base                                                                                                                                                                                                                                                                                 |
@@ -277,7 +279,8 @@ sudo docker compose start partyhub
 ```
 
 Remplacez `partyhub-AAAAMMJJ-HHMMSS.db` par le nom voulu (date en UTC, affichée dans l'administration). Les fichiers
-de la médiathèque (dossier `assets`) ne sont pas dans la sauvegarde : copiez-les à part.
+de la médiathèque (dossier `assets`), les jeux installés et les personnages (volume `partyhub-contenu`) ne
+sont pas dans cette sauvegarde : copiez-les à part, ou utilisez la sauvegarde complète ci-dessous.
 
 ## Sauvegarde complète des jeux et de la médiathèque
 
