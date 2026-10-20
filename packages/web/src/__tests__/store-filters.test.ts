@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { matchesFilter, matchesQuery, type StoreGame, type StoreStatus } from '../admin/store-filters.js';
+import {
+  featuredGame,
+  matchesFilter,
+  matchesQuery,
+  matchesType,
+  sortGames,
+  storeTypes,
+  type StoreGame,
+  type StoreStatus,
+} from '../admin/store-filters.js';
 
 function game(overrides: Partial<StoreGame> = {}): StoreGame {
   return {
@@ -69,5 +78,47 @@ describe('recherche du magasin', () => {
   it('tient compte des accents en majuscules', () => {
     expect(matchesQuery(game({ name: 'Éclair Party' }), 'éclair')).toBe(true);
     expect(matchesQuery(game({ name: 'Éclair Party' }), 'ÉCLAIR')).toBe(true);
+  });
+});
+
+describe('tri, types et jeu mis en avant', () => {
+  const games = [
+    game({ id: 'b', name: 'Bombes', status: 'a_jour', moduleLabel: 'Cartes' }),
+    game({ id: 'a', name: 'Animaux', status: 'mise_a_jour', moduleLabel: 'Questions' }),
+    game({ id: 'c', name: 'Cuisine', status: 'non_installe', moduleLabel: 'Recettes', hasCover: true }),
+    game({ id: 'i', name: 'Intégré', builtin: true, status: 'integre', moduleLabel: 'Cartes' }),
+  ];
+
+  it('trie par état : mises à jour d’abord, intégrés en dernier', () => {
+    expect(sortGames(games, 'statut').map((g) => g.id)).toEqual(['a', 'c', 'b', 'i']);
+  });
+
+  it('trie par nom sans tenir compte des accents ni des majuscules', () => {
+    expect(sortGames(games, 'nom').map((g) => g.name)).toEqual(['Animaux', 'Bombes', 'Cuisine', 'Intégré']);
+  });
+
+  it('ne modifie pas la liste d’origine', () => {
+    const before = games.map((g) => g.id);
+    sortGames(games, 'nom');
+    expect(games.map((g) => g.id)).toEqual(before);
+  });
+
+  it('liste les types distincts, triés, sans libellé vide', () => {
+    expect(storeTypes([...games, game({ id: 'v', moduleLabel: '  ' })])).toEqual(['Cartes', 'Questions', 'Recettes']);
+  });
+
+  it('filtre par type, ou garde tout si aucun type n’est choisi', () => {
+    expect(matchesType(games[0], null)).toBe(true);
+    expect(matchesType(games[0], 'Cartes')).toBe(true);
+    expect(matchesType(games[0], 'Recettes')).toBe(false);
+  });
+
+  it('met en avant le premier jeu téléchargeable avec une couverture', () => {
+    expect(featuredGame(games)?.id).toBe('c');
+  });
+
+  it('sans couverture, met en avant le premier jeu ; sans jeu, rien', () => {
+    expect(featuredGame([game({ id: 'x' })])?.id).toBe('x');
+    expect(featuredGame([])).toBeNull();
   });
 });
