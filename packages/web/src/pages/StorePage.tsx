@@ -1,6 +1,8 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { api } from '../api.js';
+import { Breadcrumb } from '../components/Breadcrumb.js';
+import { SearchButton } from '../nav/SearchButton.js';
 import {
   FILTER_LABEL,
   SORT_LABEL,
@@ -15,6 +17,9 @@ import {
   type StoreGame,
   type StoreSort,
   type StoreStatus,
+  parseStoreParams,
+  serializeStoreParams,
+  type StoreParams,
 } from '../admin/store-filters.js';
 
 /** Catalogue lu sur le serveur : public. Installer, mettre à jour ou supprimer demande la session administrateur. */
@@ -105,10 +110,13 @@ export function StorePage() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [query, setQuery] = useState('');
-  const [filter, setFilter] = useState<StoreFilter>('tous');
-  const [type, setType] = useState<string | null>(null);
-  const [sort, setSort] = useState<StoreSort>('statut');
+  // Recherche, filtre, type et tri vivent dans l’adresse : un lien partagé ouvre la même liste.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const params = parseStoreParams(searchParams);
+  const { q: query, f: filter, t: type, s: sort } = params;
+  function setParams(patch: Partial<StoreParams>) {
+    setSearchParams(serializeStoreParams({ ...params, ...patch }), { replace: true });
+  }
   const [openId, setOpenId] = useState<string | null>(null);
 
   async function load() {
@@ -254,9 +262,13 @@ export function StorePage() {
     return (
       <main className="page store-page fade-in">
         <div className="stack">
-          <button type="button" className="btn ghost small" onClick={() => setOpenId(null)}>
-            ← Retour au magasin
-          </button>
+          <Breadcrumb
+            items={[
+              { label: 'Accueil', to: '/' },
+              { label: 'Magasin de jeux', onClick: () => setOpenId(null) },
+              { label: openGame.name },
+            ]}
+          />
           {notices}
           <article className="store-detail">
             <div className="store-detail-head">
@@ -272,6 +284,16 @@ export function StorePage() {
                 {openGame.error && <p className="error small">{openGame.error}</p>}
                 {openGame.lastError && <p className="error small">Dernier échec : {openGame.lastError}</p>}
                 <div className="store-card-actions">{actions(openGame)}</div>
+                {admin && openGame.status === 'en_revue' && (
+                  <p className="small">
+                    <Link to="/admin?section=creation&sub=paquets">Voir la revue dans Paquets et sources</Link>
+                  </p>
+                )}
+                {admin && (openGame.status === 'a_jour' || openGame.status === 'mise_a_jour') && (
+                  <p className="small">
+                    <Link to="/admin?section=jeux&sub=presentation">Modifier la présentation de ce jeu</Link>
+                  </p>
+                )}
                 {adminHint}
               </div>
             </div>
@@ -317,10 +339,9 @@ export function StorePage() {
   return (
     <main className="page store-page fade-in">
       <div className="stack">
-        <div className="row">
-          <Link className="btn ghost small" to="/">
-            ← Accueil
-          </Link>
+        <div className="row store-top">
+          <Breadcrumb items={[{ label: 'Accueil', to: '/' }, { label: 'Magasin de jeux' }]} />
+          <SearchButton />
         </div>
         <header>
           <h1>Magasin de jeux</h1>
@@ -383,13 +404,13 @@ export function StorePage() {
               <input
                 type="search"
                 value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                onChange={(e) => setParams({ q: e.target.value })}
                 placeholder="Nom, auteur, type ou description"
               />
             </label>
             <label className="field">
               <span>Trier par</span>
-              <select value={sort} onChange={(e) => setSort(e.target.value as StoreSort)}>
+              <select value={sort} onChange={(e) => setParams({ s: e.target.value as StoreSort })}>
                 {(Object.keys(SORT_LABEL) as StoreSort[]).map((key) => (
                   <option key={key} value={key}>
                     {SORT_LABEL[key]}
@@ -404,7 +425,7 @@ export function StorePage() {
                   type="button"
                   className={`btn small ${filter === key ? 'primary' : 'ghost'}`}
                   aria-pressed={filter === key}
-                  onClick={() => setFilter(key)}
+                  onClick={() => setParams({ f: key })}
                 >
                   {FILTER_LABEL[key]}
                 </button>
@@ -416,7 +437,7 @@ export function StorePage() {
                   type="button"
                   className={`store-tag${type === null ? ' active' : ''}`}
                   aria-pressed={type === null}
-                  onClick={() => setType(null)}
+                  onClick={() => setParams({ t: null })}
                 >
                   Tous les types
                 </button>
@@ -426,7 +447,7 @@ export function StorePage() {
                     type="button"
                     className={`store-tag${type === label ? ' active' : ''}`}
                     aria-pressed={type === label}
-                    onClick={() => setType(label)}
+                    onClick={() => setParams({ t: label })}
                   >
                     {label}
                   </button>

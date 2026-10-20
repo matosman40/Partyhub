@@ -11,6 +11,12 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 
 - Magasin de jeux accessible à tous, depuis l'accueil (menu, « Magasin de jeux », adresse `/magasin`). Il n'est plus dans l'administration. Installer, mettre à jour et supprimer demandent la session administrateur.
 - Magasin : couvertures et taille de chaque paquet affichées, fiche enrichie.
+- Recherche unique (Ctrl/Cmd+K, ou le bouton « Rechercher » sur l'accueil, l'administration et le magasin) : une page, une sous-section de l'administration ou un jeu. Se pilote aux flèches et à Entrée, donc à la télécommande d'un téléviseur. Le clavier de l'écran ne s'ouvre que sur un appareil avec pavé.
+- Pages récentes : la recherche propose les dernières pages ouvertes, et l'administration propose « Reprendre là où vous étiez » (gardé sur l'appareil seulement).
+- Fil d'Ariane commun (Accueil › … › page) sur le magasin, le profil, le certificat, le test d'appareils, « Rejoindre une salle » et l'administration, au lieu des boutons « retour » dispersés.
+- Accueil : quatre actions visibles et grandes (Rejoindre une salle, Magasin de jeux, Rechercher, Administration), à la place de la carte « Magasin ».
+- Magasin : recherche, filtre, type et tri sont dans l'adresse (`?q=…&f=…&t=…&s=…`) : un lien partagé ouvre la même liste.
+- Liens croisés : fiche d'un jeu du magasin vers « Paquets et sources » (en revue) ou vers la présentation du jeu (installé) ; réglages du serveur vers les clés d'IA et le magasin.
 
 ### Modifié
 

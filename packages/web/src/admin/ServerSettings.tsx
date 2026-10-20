@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../api.js';
 
 /** Réglage du serveur, tel que renvoyé par l’API. Les secrets n’ont jamais de valeur (value = null). */
@@ -234,6 +235,11 @@ export function ServerSettings() {
           </section>
         );
       })}
+
+      <p className="muted small">
+        Clés d’IA : <Link to="/admin?section=systeme&sub=ia">Intelligence artificielle</Link>. Jeux à installer :{' '}
+        <Link to="/magasin">Magasin de jeux</Link>.
+      </p>
 
       <p className="muted small">
         Restent dans le fichier .env : l’adresse du serveur (<code>PARTYHUB_HOST</code>), les ports HTTPS et les

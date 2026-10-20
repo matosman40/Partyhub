@@ -7,6 +7,7 @@ import { ScreenBackdrop } from './components/ScreenBackdrop.js';
 import { MusicPlayer } from './components/MusicPlayer.js';
 import { Boundary } from './components/Boundary.js';
 import { BackButton } from './components/BackButton.js';
+import { SearchProvider } from './nav/SearchProvider.js';
 import { CrashScreen } from './components/CrashScreen.js';
 import { ProfileGate } from './profile/ProfileGate.js';
 
@@ -106,7 +107,9 @@ export function App() {
       <Boundary fallback={null}>
         <MusicPlayer />
       </Boundary>
-      <RoutedPages />
+      <SearchProvider>
+        <RoutedPages />
+      </SearchProvider>
     </BrowserRouter>
   );
 }

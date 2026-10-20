@@ -114,3 +114,40 @@ export function formatSize(bytes: number | null): string {
   if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} Ko`;
   return `${(bytes / (1024 * 1024)).toFixed(1).replace('.', ',')} Mo`;
 }
+
+/** État du magasin dans l’adresse : ?q=…&f=…&t=…&s=… (seules les valeurs non par défaut sont écrites). */
+export interface StoreParams {
+  q: string;
+  f: StoreFilter;
+  t: string | null;
+  s: StoreSort;
+}
+
+export const DEFAULT_STORE_PARAMS: StoreParams = { q: '', f: 'tous', t: null, s: 'statut' };
+
+const FILTERS = Object.keys(FILTER_LABEL) as StoreFilter[];
+const SORTS = Object.keys(SORT_LABEL) as StoreSort[];
+
+/** Lit l’adresse. Une valeur inconnue revient à la valeur par défaut, sans erreur. */
+export function parseStoreParams(search: URLSearchParams): StoreParams {
+  const f = search.get('f') as StoreFilter | null;
+  const s = search.get('s') as StoreSort | null;
+  const t = search.get('t');
+  return {
+    q: (search.get('q') ?? '').slice(0, 100),
+    f: f !== null && FILTERS.includes(f) ? f : DEFAULT_STORE_PARAMS.f,
+    t: t !== null && t.trim() !== '' ? t : null,
+    s: s !== null && SORTS.includes(s) ? s : DEFAULT_STORE_PARAMS.s,
+  };
+}
+
+/** Écrit l’adresse : les valeurs par défaut n’y figurent pas, pour qu’un lien reste court. */
+export function serializeStoreParams(params: StoreParams): URLSearchParams {
+  const search = new URLSearchParams();
+  // Pas de rognage : le champ de recherche est relié à l’adresse, une espace finale doit rester saisissable.
+  if (params.q.trim() !== '') search.set('q', params.q);
+  if (params.f !== DEFAULT_STORE_PARAMS.f) search.set('f', params.f);
+  if (params.t !== null) search.set('t', params.t);
+  if (params.s !== DEFAULT_STORE_PARAMS.s) search.set('s', params.s);
+  return search;
+}

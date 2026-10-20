@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { BackButton } from '../components/BackButton.js';
+import { Breadcrumb } from '../components/Breadcrumb.js';
 import { api } from '../api.js';
 import { isValidRoomCode, ROOM_CODE_MAX_LENGTH } from '@partyhub/shared';
 import { QrScanner, canScanQr } from '../components/QrScanner.js';
@@ -99,7 +99,7 @@ export function JoinPage() {
           {error}
         </p>
       )}
-      <BackButton to="/">Retour à l’accueil</BackButton>
+      <Breadcrumb items={[{ label: 'Accueil', to: '/' }, { label: 'Rejoindre une salle' }]} />
     </main>
   );
 }

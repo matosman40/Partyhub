@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { BackButton } from '../components/BackButton.js';
+import { Breadcrumb } from '../components/Breadcrumb.js';
 import { defaultCharacterFor, type ProfileView } from '@partyhub/shared';
 import { api } from '../api.js';
 import { PlayerAvatar } from '../components/PlayerAvatar.js';
@@ -100,7 +100,7 @@ export function ProfilePage() {
     return (
       <main className="page fade-in" style={{ maxWidth: 560 }}>
         <p className="page-nav">
-          <BackButton to="/">Retour à l’accueil</BackButton>
+          <Breadcrumb items={[{ label: 'Accueil', to: '/' }, { label: 'Mon profil' }]} />
         </p>
         <CreateProfileForm
           title="Créer mon profil"
@@ -148,7 +148,7 @@ export function ProfilePage() {
   return (
     <main className="page fade-in profile-page" style={{ maxWidth: 760 }}>
       <p className="page-nav">
-        <BackButton to="/">Retour à l’accueil</BackButton>
+        <Breadcrumb items={[{ label: 'Accueil', to: '/' }, { label: 'Mon profil' }]} />
         <Link to="/join">Rejoindre une salle</Link>
       </p>
 

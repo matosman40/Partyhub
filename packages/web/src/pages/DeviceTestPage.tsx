@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { BackButton } from '../components/BackButton.js';
+import { Breadcrumb } from '../components/Breadcrumb.js';
 import {
   motionAvailable,
   motionNeedsPermission,
@@ -430,7 +430,7 @@ export function DeviceTestPage() {
   return (
     <main className="page devtest fade-in">
       <header className="stack">
-        <BackButton to="/">Retour à l’accueil</BackButton>
+        <Breadcrumb items={[{ label: 'Accueil', to: '/' }, { label: 'Tester micro, caméra, image' }]} />
         <h1>Test des appareils</h1>
         <p className="muted">
           Vérifiez que le micro, la caméra et les images fonctionnent sur cet appareil. Au premier essai, le navigateur

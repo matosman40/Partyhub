@@ -22,6 +22,7 @@ import {
   type SortKey,
 } from '../catalog/filters.js';
 import { readRecent } from '../catalog/recentGames.js';
+import { SearchButton } from '../nav/SearchButton.js';
 
 const SORT_CHOICES = Object.keys(SORT_LABEL) as SortKey[];
 const MAX_RECENT_SHOWN = 6;
@@ -140,16 +141,27 @@ export function HomePage() {
         </ul>
       </header>
 
-      <Link className="store-entry" to="/magasin">
-        <span className="store-entry-icon" aria-hidden="true">
-          🛍️
-        </span>
-        <span className="store-entry-text">
-          <strong>Magasin de jeux</strong>
-          <span className="muted small">Découvrez les jeux publiés, avec leur couverture et leur taille.</span>
-        </span>
-        <span aria-hidden="true">→</span>
-      </Link>
+      <nav className="home-actions" aria-label="Actions principales">
+        <Link className="home-action" to="/join">
+          <span className="home-action-icon" aria-hidden="true">
+            📱
+          </span>
+          <span className="home-action-text">Rejoindre une salle</span>
+        </Link>
+        <Link className="home-action" to="/magasin">
+          <span className="home-action-icon" aria-hidden="true">
+            🛍️
+          </span>
+          <span className="home-action-text">Magasin de jeux</span>
+        </Link>
+        <SearchButton className="home-action" />
+        <Link className="home-action" to="/admin">
+          <span className="home-action-icon" aria-hidden="true">
+            ⚙️
+          </span>
+          <span className="home-action-text">Administration</span>
+        </Link>
+      </nav>
 
       {error && (
         <p className="error" role="alert">
