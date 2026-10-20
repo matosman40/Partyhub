@@ -11,10 +11,13 @@ interface Hit {
   channel: string;
 }
 
-/** Vidéo choisie : vérifiée par le serveur (durée connue), ou collée sans vérification si le serveur n’a pas de clé. */
+/** Vidéo prête à chanter : vérifiée par le serveur (durée connue), ou non vérifiée si le serveur n’a pas de clé. */
 interface Checked extends Hit {
   durationSec: number | null;
 }
+
+/** Réponse du serveur à la dernière recherche ou vérification de ce joueur. */
+type Answer = { kind: 'search'; hits: Hit[] } | { kind: 'check'; video: Checked } | { kind: 'error'; message: string };
 
 const STAR_LABELS = ['1 étoile', '2 étoiles', '3 étoiles', '4 étoiles', '5 étoiles'];
 
@@ -35,41 +38,13 @@ function micMessage(err: unknown): string {
   return 'Impossible d’utiliser le micro.';
 }
 
-async function searchVideos(query: string): Promise<{ hits: Hit[] } | { error: string }> {
-  try {
-    const response = await fetch(`/api/youtube/search?q=${encodeURIComponent(query)}`);
-    const body = (await response.json().catch(() => null)) as { results?: Hit[]; error?: string } | null;
-    if (!response.ok || !body?.results) return { error: body?.error ?? 'La recherche ne répond pas.' };
-    return { hits: body.results };
-  } catch {
-    return { error: 'La recherche ne répond pas. Vérifiez la connexion, ou collez un lien YouTube.' };
-  }
-}
-
-async function checkVideo(videoId: string): Promise<{ video: Checked } | { error: string; code?: string }> {
-  try {
-    const response = await fetch(`/api/youtube/video?id=${encodeURIComponent(videoId)}`);
-    const body = (await response.json().catch(() => null)) as { video?: Checked; error?: string; code?: string } | null;
-    if (!response.ok || !body?.video) {
-      return { error: body?.error ?? 'Cette vidéo ne peut pas être vérifiée.', code: body?.code };
-    }
-    return { video: body.video };
-  } catch {
-    return { error: 'La vérification ne répond pas. Vérifiez la connexion.' };
-  }
-}
-
 /** Téléphone : chercher ou coller une vidéo et chanter le passage, puis noter les autres. */
 export function KaraokePlayer({ publicState: pub, playerState: me, send, now }: PlayerViewProps) {
   const remaining = useRemaining(pub?.endsAt, now);
   const [prefs] = useMediaPrefs();
   const [query, setQuery] = useState('');
-  const [hits, setHits] = useState<Hit[] | null>(null);
   const [link, setLink] = useState('');
-  const [chosen, setChosen] = useState<Checked | null>(null);
   const [startText, setStartText] = useState('0:00');
-  const [searching, setSearching] = useState(false);
-  const [checking, setChecking] = useState(false);
   const [recording, setRecording] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -79,6 +54,15 @@ export function KaraokePlayer({ publicState: pub, playerState: me, send, now }: 
   if (!pub) return null;
 
   const seconds = Math.ceil(remaining / 1000);
+
+  // Recherche et vérification : le serveur répond par l’état du joueur (pending, puis answer).
+  const lookup = me?.lookup as { pending: 'search' | 'check' | null; answer: Answer | null } | undefined;
+  const answer = lookup?.answer ?? null;
+  const hits = answer?.kind === 'search' ? answer.hits : null;
+  const chosen = answer?.kind === 'check' ? answer.video : null;
+  const searching = lookup?.pending === 'search';
+  const checking = lookup?.pending === 'check';
+  const lookupError = answer?.kind === 'error' ? answer.message : null;
 
   async function run(type: string, payload: unknown, fallback: string) {
     setBusy(true);
@@ -102,37 +86,14 @@ export function KaraokePlayer({ publicState: pub, playerState: me, send, now }: 
       return;
     }
     setError(null);
-    setSearching(true);
-    const result = await searchVideos(text);
-    setSearching(false);
-    if ('error' in result) {
-      setError(result.error);
-      setHits(null);
-    } else {
-      setHits(result.hits);
-    }
+    await run('search', { query: text }, 'La recherche ne répond pas.');
   }
 
   /** Vérifie la vidéo choisie avant de la proposer : un lien ou un résultat peut ne plus être lisible. */
   async function choose(videoId: string, startFrom: number | null) {
     setError(null);
-    setChecking(true);
-    const result = await checkVideo(videoId);
-    setChecking(false);
-    if ('error' in result) {
-      // Pas de clé sur le serveur : la vérification est impossible, mais le lien collé reste utilisable (sans durée connue).
-      // Une recherche n’existe pas sans clé, donc ce cas ne concerne que les liens.
-      if (result.code === 'disabled') {
-        setChosen({ videoId, title: `Vidéo ${videoId}`, channel: '', durationSec: null });
-        if (startFrom !== null) setStartText(formatTime(startFrom));
-        return;
-      }
-      setChosen(null);
-      setError(result.error);
-      return;
-    }
-    setChosen(result.video);
     if (startFrom !== null) setStartText(formatTime(startFrom));
+    await run('check', { videoId }, 'La vérification ne répond pas.');
   }
 
   function chooseFromLink() {
@@ -310,9 +271,9 @@ export function KaraokePlayer({ publicState: pub, playerState: me, send, now }: 
           </div>
         )}
 
-        {error && (
+        {(error ?? lookupError) && (
           <p className="error" role="alert">
-            {error}
+            {error ?? lookupError}
           </p>
         )}
       </section>

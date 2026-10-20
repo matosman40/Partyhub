@@ -90,10 +90,29 @@ const YT_UNSTARTED = -1;
 const YT_PAUSED = 2;
 const YT_CUED = 5;
 
+/**
+ * Adresse d’un cadre YouTube sans script. Sert quand le script du lecteur ne peut pas se charger (vue de jeu, où
+ * la politique n’autorise que les cadres) : l’extrait joue alors dans le cadre, sans contrôle fin.
+ */
+function embedUrl(videoId: string, startSec: number, muted: boolean): string {
+  const params = new URLSearchParams({
+    start: String(Math.max(0, Math.floor(startSec))),
+    autoplay: '1',
+    mute: muted ? '1' : '0',
+    controls: '0',
+    rel: '0',
+    modestbranding: '1',
+    playsinline: '1',
+  });
+  return `https://www.youtube-nocookie.com/embed/${encodeURIComponent(videoId)}?${params.toString()}`;
+}
+
 export function MediaStage({ media, active, kind, muted = false, picture }: MediaStageProps) {
   const [error, setError] = useState<string | null>(null);
   const [needsTap, setNeedsTap] = useState(false);
   const [replay, setReplay] = useState(0);
+  /** Le script du lecteur n’a pas pu se charger : l’extrait passe dans un cadre YouTube simple. */
+  const [embed, setEmbed] = useState(false);
   const mediaEl = useRef<HTMLAudioElement | HTMLVideoElement | null>(null);
   const ytHost = useRef<HTMLDivElement | null>(null);
   const yt = useRef<YouTubePlayer | null>(null);
@@ -106,6 +125,7 @@ export function MediaStage({ media, active, kind, muted = false, picture }: Medi
   useEffect(() => {
     setError(null);
     setNeedsTap(false);
+    setEmbed(false);
     if (!media) return;
     let cancelled = false;
 
@@ -181,7 +201,10 @@ export function MediaStage({ media, active, kind, muted = false, picture }: Medi
           },
         });
       })
-      .catch(() => setError('Le lecteur YouTube ne répond pas. Vérifiez la connexion, ou passez à l’étape suivante.'));
+      .catch(() => {
+        // Script bloqué ou injoignable : on lit l’extrait dans un cadre YouTube simple.
+        if (!cancelled) setEmbed(true);
+      });
 
     return () => {
       cancelled = true;
@@ -259,6 +282,23 @@ export function MediaStage({ media, active, kind, muted = false, picture }: Medi
             ))}
           </span>
         </div>
+      )}
+      {isYouTube && embed && media.source.type === 'youtube' && (
+        <iframe
+          key={key}
+          className="mq-yt-embed"
+          title="Extrait YouTube"
+          src={embedUrl(media.source.videoId, media.startSec, muted)}
+          allow="autoplay; encrypted-media; picture-in-picture"
+          style={{
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            border: 0,
+            visibility: visual === 'video' ? 'visible' : 'hidden',
+          }}
+        />
       )}
       {visual === 'video' && isYouTube && <div className="mq-yt-cover" aria-hidden="true" />}
       {needsTap && (

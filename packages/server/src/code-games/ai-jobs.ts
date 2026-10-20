@@ -1,4 +1,4 @@
-import { PHRASES_JOB_KIND, runAventureJob, runPhrasesJob } from '@partyhub/games';
+import { PHRASES_JOB_KIND, runAventureJob, runKaraokeJob, runPhrasesJob } from '@partyhub/games';
 import type { GameContext, GameJob } from '@partyhub/shared';
 import type { CodeJobRunner } from '../packages/code-runtime.js';
 
@@ -20,6 +20,14 @@ const KNOWN_JOBS: Record<string, KnownJobs> = {
   'phrases-trous': { kinds: [PHRASES_JOB_KIND], run: runPhrasesJob },
 };
 
+/**
+ * Travaux YouTube d'un jeu de code (recherche et vérification du karaoké). Ils ne relèvent pas du réglage d'IA :
+ * la clé YouTube reste au serveur, et le jeu n'obtient que le résultat.
+ */
+const YOUTUBE_JOBS: Record<string, readonly string[]> = {
+  karaoke: ['youtube-search', 'youtube-check'],
+};
+
 /** Vrai si ce jeu a un travail d'IA connu du serveur. */
 export function hasKnownAiJobs(gameId: string): boolean {
   return gameId in KNOWN_JOBS;
@@ -31,6 +39,12 @@ export function hasKnownAiJobs(gameId: string): boolean {
  */
 export function codeJobRunner(gameId: string, enabled: () => boolean): CodeJobRunner {
   return async (job, ctx, signal) => {
+    if (YOUTUBE_JOBS[gameId]?.includes(job.kind)) {
+      if (Buffer.byteLength(JSON.stringify(job.input ?? null)) > CODE_JOB_MAX_BYTES) {
+        throw new Error('Travail trop volumineux.');
+      }
+      return runKaraokeJob(job);
+    }
     const known = KNOWN_JOBS[gameId];
     if (!known || !known.kinds.includes(job.kind)) throw new Error('Travail d’IA inconnu pour ce jeu.');
     if (!enabled()) throw new Error('L’IA n’est pas activée pour ce jeu.');

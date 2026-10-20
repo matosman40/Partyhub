@@ -20,7 +20,8 @@ import type { StoreService } from '../store/service.js';
 import type { CardGameService } from '../cards/service.js';
 import { embedCardAssets, restoreCardAssets } from '../cards/assets.js';
 import { PROPOSAL_MAX_PENDING, PROPOSAL_MAX_PER_DAY, type BoumBankService } from '../boum/service.js';
-import { IMPORT_MAX_BYTES, isBankType } from '@partyhub/games';
+import { IMPORT_MAX_BYTES, isBankType, setKaraokeYoutube } from '@partyhub/games';
+import { karaokeYoutube } from '../youtube/karaoke.js';
 import { z } from 'zod';
 import type { AssetService } from '../assets/service.js';
 import { PackageExportError, type PackageService } from '../packages/service.js';
@@ -336,7 +337,8 @@ export function createApp(deps: AppDeps): express.Express {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader(
       'Content-Security-Policy',
-      "default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; media-src data: blob:; connect-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'self'",
+      // Cadres YouTube seulement (extraits du karaoké) : le jeu n'a toujours ni réseau, ni script externe.
+      "default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; media-src data: blob:; connect-src 'none'; frame-src https://www.youtube-nocookie.com https://www.youtube.com; base-uri 'none'; form-action 'none'; frame-ancestors 'self'",
     );
     res
       .type('text/html; charset=utf-8')
@@ -399,6 +401,8 @@ export function createApp(deps: AppDeps): express.Express {
 
   // YouTube pour le karaoké : recherche et vérification d’une vidéo. La clé reste ici, le quota est limité par adresse.
   const youtube = createYoutube({ apiKey: config.youtube?.apiKey });
+  // Le karaoké, y compris en jeu de code, cherche et vérifie ses vidéos par le serveur (clé chez lui).
+  setKaraokeYoutube(karaokeYoutube(youtube));
   const youtubeLimiter = createSearchLimiter();
   const YOUTUBE_STATUS: Record<YoutubeErrorCode, number> = {
     invalid: 400,

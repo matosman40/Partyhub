@@ -8,6 +8,6 @@ describe('vue d’un jeu de code', () => {
       <CodeFrame role="host" url="/api/code-views/x/view.html" data={{}} />,
     );
     expect(html).toContain('sandbox="allow-scripts"');
-    expect(html).toContain('allow="accelerometer; gyroscope; camera; microphone"');
+    expect(html).toContain('allow="accelerometer; autoplay; encrypted-media; gyroscope; camera; microphone"');
   });
 });

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { GameContext, GameModule, PlayerRef } from '@partyhub/shared';
+import type { GameContext, GameJob, GameModule, JobOutcome, PlayerRef } from '@partyhub/shared';
 import { addPoints, directory, everyConnectedDone, fail, ok, rankEntries, shuffle } from '../common/engine.js';
 
 /**
@@ -27,6 +27,8 @@ const SING_GRACE_MS = 8000;
 const REPLAY_PAUSE_MS = 400;
 const REVEAL_MS = 8000;
 const POINTS_PER_STAR = 10;
+/** Recherches et vérifications YouTube par passage : plafond, pour ménager le quota de l’API. */
+const LOOKUPS_PER_TURN = 8;
 
 const PICK_TIMEOUT = 'pick-timeout';
 const SING_TIMEOUT = 'sing-timeout';
@@ -48,6 +50,10 @@ const recordingSchema = z.object({
 
 const ratingSchema = z.object({ stars: z.number().int().min(1).max(5) });
 
+/** Recherche de chanson : deux caractères au moins, 80 au plus (comme la zone de saisie). */
+const searchSchema = z.object({ query: z.string().trim().min(2).max(80) });
+const checkSchema = z.object({ videoId: z.string().regex(VIDEO_ID) });
+
 /** Le chanteur arrête son passage (micro perdu, vidéo qui ne se lance pas) : aucun contenu à lire. */
 const abandonSchema = z.object({}).strict();
 
@@ -59,6 +65,50 @@ export interface KaraokeSong {
   channel: string;
   startSec: number;
 }
+
+/** Résultat d’une recherche ou d’une vérification YouTube. Le serveur répond toujours, sans lever d’erreur. */
+export type KaraokeLookup<T> = { ok: true; value: T } | { ok: false; code: string; message: string };
+
+export interface KaraokeHit {
+  videoId: string;
+  title: string;
+  channel: string;
+}
+
+export interface KaraokeVideo extends KaraokeHit {
+  /** Durée en secondes ; null quand le serveur ne vérifie pas les vidéos (pas de clé). */
+  durationSec: number | null;
+}
+
+/** Accès à YouTube, branché par le serveur : la clé reste chez lui. */
+export interface KaraokeYoutube {
+  search(query: string): Promise<KaraokeLookup<KaraokeHit[]>>;
+  video(videoId: string): Promise<KaraokeLookup<KaraokeVideo>>;
+}
+
+let provider: KaraokeYoutube | null = null;
+
+/** Le serveur branche ici son accès YouTube. Sans fournisseur, les recherches répondent « désactivé ». */
+export function setKaraokeYoutube(next: KaraokeYoutube | null): void {
+  provider = next;
+}
+
+/** Recherche ou vérification en attente, pour le chanteur d’un passage. */
+interface KaraokeRequest {
+  id: string;
+  kind: 'youtube-search' | 'youtube-check';
+  playerId: string;
+  /** Passage où la demande a été faite : une réponse qui arrive après ce passage est ignorée. */
+  turn: number;
+  query: string | null;
+  videoId: string | null;
+}
+
+/** Dernière réponse à un joueur : résultats, vidéo vérifiée (ou non vérifiée), ou erreur à afficher. */
+export type KaraokeAnswer =
+  | { kind: 'search'; hits: KaraokeHit[] }
+  | { kind: 'check'; video: KaraokeVideo; unverified: boolean }
+  | { kind: 'error'; message: string };
 
 export interface KaraokeState {
   name: string;
@@ -83,6 +133,14 @@ export interface KaraokeState {
   average: number | null;
   /** Passage arrêté par le chanteur : aucun vote, aucun point. Remis à faux à chaque nouveau tour. */
   abandoned: boolean;
+  /** Recherches et vérifications en attente, dans l’ordre : le serveur les traite une à une. */
+  requests: KaraokeRequest[];
+  /** Dernière réponse à chaque joueur. */
+  answers: Record<string, KaraokeAnswer>;
+  /** Recherches et vérifications faites pendant le passage en cours. */
+  lookups: number;
+  /** Numéro de la prochaine demande : identifiant unique dans la salle. */
+  nextJob: number;
 }
 
 function clearTimers(ctx: GameContext): void {
@@ -120,6 +178,9 @@ function openPick(s: KaraokeState, ctx: GameContext): KaraokeState {
     gains: {},
     average: null,
     abandoned: false,
+    requests: [],
+    answers: {},
+    lookups: 0,
     endsAt: ctx.now() + ms,
   };
 }
@@ -165,6 +226,66 @@ function reveal(s: KaraokeState, ctx: GameContext): KaraokeState {
   const points = singer !== undefined && gained > 0 ? addPoints(s.points, singer, gained) : s.points;
   ctx.schedule(REVEAL_NEXT, REVEAL_MS);
   return { ...s, phase: 'reveal', points, gains, average, endsAt: ctx.now() + REVEAL_MS };
+}
+
+/** Ajoute une demande à la file, et retire la réponse précédente de ce joueur. */
+function queueLookup(s: KaraokeState, request: Omit<KaraokeRequest, 'id' | 'turn'>): KaraokeState {
+  const answers = { ...s.answers };
+  delete answers[request.playerId];
+  return {
+    ...s,
+    nextJob: s.nextJob + 1,
+    lookups: s.lookups + 1,
+    requests: [...s.requests, { ...request, id: `yt-${s.nextJob}`, turn: s.index }],
+    answers,
+  };
+}
+
+/** Recherche ou vérification en cours pour ce joueur, s’il en a une. */
+function pendingLookupOf(s: KaraokeState, playerId: string): 'search' | 'check' | null {
+  const request = s.requests.find((r) => r.playerId === playerId);
+  if (!request) return null;
+  return request.kind === 'youtube-search' ? 'search' : 'check';
+}
+
+/** Transforme le résultat du serveur en réponse pour le joueur. Un résultat illisible devient une erreur. */
+function answerOf(request: KaraokeRequest, outcome: JobOutcome): KaraokeAnswer {
+  const unreachable: KaraokeAnswer = {
+    kind: 'error',
+    message: 'YouTube ne répond pas pour le moment. Réessayez dans un instant.',
+  };
+  if (!outcome.ok) return unreachable;
+  const result = outcome.value as { ok?: unknown; value?: unknown; code?: unknown; message?: unknown } | null;
+  if (!result || typeof result !== 'object' || typeof result.ok !== 'boolean') return unreachable;
+  if (!result.ok) {
+    // Pas de clé sur le serveur : un lien collé reste utilisable, sans durée connue (comme avant).
+    if (request.kind === 'youtube-check' && request.videoId !== null && result.code === 'disabled') {
+      const video: KaraokeVideo = {
+        videoId: request.videoId,
+        title: `Vidéo ${request.videoId}`,
+        channel: '',
+        durationSec: null,
+      };
+      return { kind: 'check', video, unverified: true };
+    }
+    return { kind: 'error', message: typeof result.message === 'string' ? result.message : 'La recherche a échoué.' };
+  }
+  if (request.kind === 'youtube-search') {
+    return { kind: 'search', hits: Array.isArray(result.value) ? (result.value as KaraokeHit[]) : [] };
+  }
+  if (!result.value || typeof result.value !== 'object') return unreachable;
+  return { kind: 'check', video: result.value as KaraokeVideo, unverified: false };
+}
+
+/** Travail YouTube de la salle : la recherche ou la vérification, faites par le serveur (clé incluse). */
+export async function runKaraokeJob(job: GameJob): Promise<KaraokeLookup<unknown>> {
+  if (!provider) {
+    return { ok: false, code: 'disabled', message: 'YouTube n’est pas activé sur ce serveur. Demandez à l’administrateur.' };
+  }
+  const input = (job.input ?? {}) as { query?: unknown; videoId?: unknown };
+  if (job.kind === 'youtube-search') return provider.search(String(input.query ?? ''));
+  if (job.kind === 'youtube-check') return provider.video(String(input.videoId ?? ''));
+  return { ok: false, code: 'unknown', message: 'Travail inconnu.' };
 }
 
 function noticeFor() {
@@ -280,6 +401,8 @@ export const karaoke: GameModule<KaraokeState, KaraokeSettings> = {
     recording: recordingSchema,
     abandon: abandonSchema,
     rate: ratingSchema,
+    search: searchSchema,
+    check: checkSchema,
   },
 
   initialize(settings, players) {
@@ -299,6 +422,10 @@ export const karaoke: GameModule<KaraokeState, KaraokeSettings> = {
       gains: {},
       average: null,
       abandoned: false,
+      requests: [],
+      answers: {},
+      lookups: 0,
+      nextJob: 1,
     };
   },
 
@@ -365,6 +492,24 @@ export const karaoke: GameModule<KaraokeState, KaraokeSettings> = {
       return ok(done ? reveal(next, ctx) : next);
     }
 
+    // Recherche et vérification YouTube : le chanteur seul, pendant le choix, une demande à la fois.
+    if (type === 'search' || type === 'check') {
+      if (s.phase !== 'pick') return fail('La recherche se fait pendant le choix de la chanson');
+      if (p.id !== singer) return fail('Seul le chanteur cherche une chanson');
+      if (s.requests.some((r) => r.playerId === p.id)) return fail('Une recherche est déjà en cours');
+      if (s.lookups >= LOOKUPS_PER_TURN) {
+        return fail('Trop de recherches pour ce passage. Choisissez parmi les résultats.');
+      }
+      if (type === 'search') {
+        const parsed = searchSchema.safeParse(payload);
+        if (!parsed.success) return fail('Tapez au moins deux caractères.');
+        return ok(queueLookup(s, { kind: 'youtube-search', playerId: p.id, query: parsed.data.query, videoId: null }));
+      }
+      const parsed = checkSchema.safeParse(payload);
+      if (!parsed.success) return fail('Ce lien ne correspond à aucune vidéo YouTube.');
+      return ok(queueLookup(s, { kind: 'youtube-check', playerId: p.id, query: null, videoId: parsed.data.videoId }));
+    }
+
     return fail('Action inconnue');
   },
 
@@ -385,6 +530,27 @@ export const karaoke: GameModule<KaraokeState, KaraokeSettings> = {
       return { key: 'rate', type: 'rate', payload: { stars: 1 + Math.floor(random() * 5) } };
     }
     return null;
+  },
+
+  pendingJob(s) {
+    const request = s.requests[0];
+    if (!request) return null;
+    return {
+      id: request.id,
+      kind: request.kind,
+      input: request.kind === 'youtube-search' ? { query: request.query } : { videoId: request.videoId },
+    };
+  },
+
+  runJob: runKaraokeJob,
+
+  completeJob(s, jobId: string, outcome: JobOutcome) {
+    const request = s.requests.find((r) => r.id === jobId);
+    if (!request) return s;
+    const next: KaraokeState = { ...s, requests: s.requests.filter((r) => r.id !== jobId) };
+    // Réponse tardive : le passage a changé, ou le choix est terminé.
+    if (request.turn !== s.index || s.phase !== 'pick') return next;
+    return { ...next, answers: { ...next.answers, [request.playerId]: answerOf(request, outcome) } };
   },
 
   onTimer(s, key, ctx) {
@@ -425,6 +591,8 @@ export const karaoke: GameModule<KaraokeState, KaraokeSettings> = {
       isSinger: singerOf(s) === playerId,
       myRating: s.ratings[playerId] ?? null,
       gained: s.phase === 'reveal' ? (s.gains[playerId] ?? 0) : null,
+      // Recherche ou vérification du chanteur : son téléphone attend la réponse, puis l’affiche.
+      lookup: { pending: pendingLookupOf(s, playerId), answer: s.answers[playerId] ?? null },
     };
   },
 

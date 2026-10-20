@@ -86,6 +86,9 @@ export { aventureIa } from './aventure/module.js';
 // Travaux d'IA exécutés côté serveur pour les jeux de code (voir code-games/ai-jobs.ts).
 export { runAventureJob } from './aventure/ai.js';
 export { runPhrasesJob, PHRASES_JOB_KIND } from './phrases-trous/ai.js';
+// Karaoké : le serveur branche l'accès YouTube (clé chez lui) et exécute ses recherches comme des travaux du jeu.
+export { karaoke, runKaraokeJob, setKaraokeYoutube } from './karaoke/module.js';
+export type { KaraokeAnswer, KaraokeHit, KaraokeLookup, KaraokeVideo, KaraokeYoutube } from './karaoke/module.js';
 export { tennisParty } from './tennis/module.js';
 export type { TennisSettings, TennisState } from './tennis/module.js';
 export { plateauFete } from './plateau-fete/module.js';
