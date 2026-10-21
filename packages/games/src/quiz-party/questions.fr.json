@@ -104,8 +104,158 @@
   {
     "id": "ast-001",
     "category": "Astronomie",
-    "question": "Quelle est l'étoile la plus proche de la Terre ?",
+    "question": "Hors le Soleil, quelle est l'étoile la plus proche de la Terre ?",
     "choices": ["Sirius", "Proxima du Centaure", "Le Soleil", "Véga"],
+    "answer": 1,
+    "explanation": "Proxima du Centaure se trouve à environ 4,2 années-lumière, contre 8,6 pour Sirius."
+  },
+  {
+    "id": "vin-001",
+    "category": "Vin et gastronomie",
+    "question": "Quel cépage noir entre dans l'assemblage du champagne avec le pinot noir et le chardonnay ?",
+    "choices": ["Le merlot", "Le pinot meunier", "Le gamay", "Le sauvignon"],
+    "answer": 1,
+    "explanation": "Le pinot meunier complète le pinot noir et le chardonnay dans les grandes cuvées."
+  },
+  {
+    "id": "vin-002",
+    "category": "Vin et gastronomie",
+    "question": "Combien de bouteilles de 75 cl contient un réhoboam, le grand format de 4,5 litres ?",
+    "choices": ["2", "4", "6", "12"],
+    "answer": 2,
+    "explanation": "4,5 litres équivalent à six bouteilles de 75 cl."
+  },
+  {
+    "id": "gas-001",
+    "category": "Vin et gastronomie",
+    "question": "Le roquefort est un fromage fabriqué avec le lait de quel animal ?",
+    "choices": ["La vache", "La chèvre", "La brebis", "La bufflonne"],
+    "answer": 2,
+    "explanation": "Le roquefort est un fromage de brebis, affiné dans les caves de Roquefort-sur-Soulzon."
+  },
+  {
+    "id": "his-003",
+    "category": "Histoire",
+    "question": "En quelle année le traité de Versailles a-t-il été signé, mettant fin à la Première Guerre mondiale ?",
+    "choices": ["1916", "1918", "1919", "1921"],
+    "answer": 2,
+    "explanation": "Il a été signé le 28 juin 1919, dans la galerie des Glaces."
+  },
+  {
+    "id": "his-004",
+    "category": "Histoire",
+    "question": "Quelle bataille a mis fin à l'Empire de Napoléon Ier en 1815 ?",
+    "choices": ["Austerlitz", "Waterloo", "Iéna", "Marengo"],
+    "answer": 1,
+    "explanation": "Napoléon a été vaincu à Waterloo, en Belgique, le 18 juin 1815."
+  },
+  {
+    "id": "sci-003",
+    "category": "Sciences",
+    "question": "Quel gaz représente la plus grande part de l'atmosphère terrestre ?",
+    "choices": ["L'oxygène", "Le dioxyde de carbone", "L'azote", "L'argon"],
+    "answer": 2,
+    "explanation": "L'azote représente environ 78 % de l'air sec."
+  },
+  {
+    "id": "sci-004",
+    "category": "Sciences",
+    "question": "À quelle vitesse la lumière voyage-t-elle dans le vide, environ ?",
+    "choices": ["300 000 km/s", "30 000 km/s", "3 000 km/s", "3 000 000 km/s"],
+    "answer": 0,
+    "explanation": "La lumière parcourt environ 300 000 kilomètres par seconde dans le vide."
+  },
+  {
+    "id": "lit-002",
+    "category": "Littérature",
+    "question": "Qui a écrit « L'Étranger », publié en 1942 ?",
+    "choices": ["Jean-Paul Sartre", "Albert Camus", "Marcel Proust", "Samuel Beckett"],
+    "answer": 1
+  },
+  {
+    "id": "lit-003",
+    "category": "Littérature",
+    "question": "Quelle pièce de Molière met en scène un homme persuadé d'être malade ?",
+    "choices": ["Le Misanthrope", "Le Malade imaginaire", "Tartuffe", "L'Avare"],
+    "answer": 1
+  },
+  {
+    "id": "mus-002",
+    "category": "Musique",
+    "question": "Quel groupe britannique a sorti l'album « The Dark Side of the Moon » en 1973 ?",
+    "choices": ["Led Zeppelin", "The Who", "Pink Floyd", "Queen"],
     "answer": 2
+  },
+  {
+    "id": "cin-002",
+    "category": "Cinéma",
+    "question": "Quel film de Stanley Kubrick, sorti en 1980, se déroule dans un hôtel hanté ?",
+    "choices": ["Shining", "Orange mécanique", "Full Metal Jacket", "Barry Lyndon"],
+    "answer": 0
+  },
+  {
+    "id": "cin-003",
+    "category": "Cinéma",
+    "question": "Qui incarne Vito Corleone dans « Le Parrain » (1972) ?",
+    "choices": ["Al Pacino", "Robert De Niro", "Marlon Brando", "James Caan"],
+    "answer": 2
+  },
+  {
+    "id": "inf-002",
+    "category": "Informatique",
+    "question": "Quel langage de programmation a été créé par Guido van Rossum ?",
+    "choices": ["Java", "Python", "PHP", "Ruby"],
+    "answer": 1
+  },
+  {
+    "id": "eco-001",
+    "category": "Économie",
+    "question": "Qu'est-ce que l'inflation ?",
+    "choices": ["La baisse générale des prix", "La hausse générale des prix", "La hausse des taux d'intérêt", "La baisse du chômage"],
+    "answer": 1
+  },
+  {
+    "id": "geo-004",
+    "category": "Géographie",
+    "question": "Quel pays est le plus peuplé du monde depuis 2023 ?",
+    "choices": ["La Chine", "L'Inde", "Les États-Unis", "L'Indonésie"],
+    "answer": 1,
+    "explanation": "Selon l'ONU, l'Inde a dépassé la Chine en 2023."
+  },
+  {
+    "id": "adu-001",
+    "category": "Vie d'adulte",
+    "question": "Que signifie « avoir la gueule de bois » ?",
+    "choices": ["Avoir mal aux dents", "Souffrir des effets d'un excès d'alcool", "Être enroué", "Avoir le teint pâle"],
+    "answer": 1
+  },
+  {
+    "id": "adu-002",
+    "category": "Vie d'adulte",
+    "question": "Quel est le taux d'alcool légal au volant pour un conducteur ordinaire en France, en g/L ?",
+    "choices": ["0,2", "0,5", "0,8", "1,0"],
+    "answer": 1,
+    "explanation": "Le taux légal est de 0,5 g/L, et de 0,2 g/L pour les conducteurs en permis probatoire."
+  },
+  {
+    "id": "adu-003",
+    "category": "Vie d'adulte",
+    "question": "Quel nom donne-t-on à des noces après 25 ans de vie commune ?",
+    "choices": ["Noces d'argent", "Noces de perle", "Noces de rubis", "Noces d'or"],
+    "answer": 0
+  },
+  {
+    "id": "adu-004",
+    "category": "Vie d'adulte",
+    "question": "Depuis 2019, comment l'impôt sur le revenu est-il payé en France ?",
+    "choices": ["Prélevé à la source", "Payé en une fois en décembre", "Payé par chèque au centre des impôts", "Payé par carte à la mairie"],
+    "answer": 0
+  },
+  {
+    "id": "adu-005",
+    "category": "Vie d'adulte",
+    "question": "Quel cocktail se prépare avec du rhum, de la menthe fraîche, du citron vert, du sucre et de l'eau gazeuse ?",
+    "choices": ["Le mojito", "Le daiquiri", "La caïpirinha", "Le cuba libre"],
+    "answer": 0
   }
 ]
