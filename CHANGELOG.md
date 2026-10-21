@@ -4,6 +4,17 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 
 ## [Non publié]
 
+## [0.17.1] - 2026-10-21
+
+### Ajouté
+
+- Phrases à trous : 43 nouvelles phrases originales et 12 nouveaux leurres (55 phrases, 28 leurres).
+- Quiz Party : 20 nouvelles questions (vin et gastronomie, histoire, sciences, cinéma, littérature, musique, informatique, économie, géographie, et une catégorie « Vie d'adulte »).
+
+### Corrigé
+
+- Quiz Party : la question d'astronomie ast-001 est reformulée (« Hors le Soleil… »), et la bonne réponse est Proxima du Centaure.
+
 ## [0.17.0] - 2026-10-20
 
 ### Ajouté
