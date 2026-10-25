@@ -162,9 +162,7 @@ class BotRun {
 
   /** Déclenche les minuteurs dont l'échéance est atteinte, dans l'ordre des échéances. */
   private fireDue(): boolean {
-    const due = [...this.timers.entries()]
-      .filter(([, at]) => at <= this.clock.t)
-      .sort((a, b) => a[1] - b[1]);
+    const due = [...this.timers.entries()].filter(([, at]) => at <= this.clock.t).sort((a, b) => a[1] - b[1]);
     for (const [key] of due) {
       this.timers.delete(key);
       this.state = this.mod.onTimer(this.state, key, this.ctx);
