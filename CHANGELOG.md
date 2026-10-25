@@ -4,6 +4,20 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 
 ## [Non publié]
 
+## [0.17.2] - 2026-10-25
+
+### Corrigé
+
+- Karaoké : la vidéo s'affiche (le lecteur YouTube est autorisé dans la vue du jeu, lecture automatique comprise).
+- Karaoké : le micro du téléphone enregistre le chant, puis la voix est rejouée sur l'écran. La page ouvre le micro, car la vue du jeu ne peut pas le faire.
+- Contrôle de lancement : les jeux en temps réel (Bombes party) sont contrôlés en temps simulé et se terminent ; le message de blocage indique la phase.
+- Jeux de code : `structuredClone` (absent de la sandbox des jeux) est remplacé par une copie JSON dans Plateau fête, Poker texas, Président, Rami 51 et Tarot.
+- Téléphone arabe illustré : la feuille de dessin est visible et répond au doigt (traits, défilement bloqué pendant le tracé).
+
+### Modifié
+
+- Phrases à trous (paquet) : la vue de code ne relaie pas les requêtes d'IA, la partie démarre avec les phrases intégrées.
+
 ## [0.17.1] - 2026-10-21
 
 ### Ajouté

@@ -50,8 +50,8 @@ function issuesOf(bytes: Uint8Array): string[] {
 }
 
 describe('format 3 : recettes', () => {
-  it('le moteur annonce la version 0.17.1 et le module recette', () => {
-    expect(PARTYHUB_ENGINE.version).toBe('0.17.1');
+  it('le moteur annonce la version 0.17.2 et le module recette', () => {
+    expect(PARTYHUB_ENGINE.version).toBe('0.17.2');
     expect(PARTYHUB_ENGINE.modules).toContain('recipe');
     expect(PHGAME_FORMAT_VERSION).toBe(4);
   });
