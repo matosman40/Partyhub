@@ -12,7 +12,7 @@ import views from './client';
 
 const MSG = ${JSON.stringify(CODE_VIEW_MESSAGE)};
 
-type Result = { ok: boolean; error?: string };
+type Result = { ok: boolean; error?: string; data?: string };
 const pending = new Map<number, (result: Result) => void>();
 let nextId = 1;
 
@@ -60,6 +60,10 @@ function render(role: string, props: Record<string, unknown>, flags: { onAction?
     if (flags.onAction) extra.onAction = (type: string, payload?: unknown) => call('onAction', [type, payload]);
   } else {
     extra.send = (type: string, payload?: unknown) => call('send', [type, payload]);
+    // Micro (vue joueur) : la page ouvre le micro et renvoie la voix, la vue n'y touche pas.
+    extra.micCheck = () => call('micCheck', []);
+    extra.voice = (ms: number) => call('voice', [ms]);
+    extra.voiceStop = () => call('voiceStop', []);
   }
   root.render(React.createElement(Boundary, null, React.createElement(component, { ...props, ...extra })));
 }

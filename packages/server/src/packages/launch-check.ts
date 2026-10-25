@@ -22,6 +22,12 @@ function seeded(seed: number): () => number {
 type Step = { kind: 'continue' } | { kind: 'done' } | { kind: 'fail'; error: string };
 const CONTINUE: Step = { kind: 'continue' };
 
+/**
+ * Temps simulé écoulé pendant une action des robots (en ms). Sans cela, un jeu en temps réel dont les robots
+ * jouent sans relâche ne verrait jamais sa limite de manche : ses minuteurs n'arriveraient jamais à échéance.
+ */
+const STEP_MS = 250;
+
 /** Empreinte de tout ce que le jeu montre : vue publique, vue de l'hôte et vue de chaque joueur. */
 function fingerprintOf(mod: GameModule, state: unknown, players: PlayerRef[]): string {
   const view = [
@@ -44,6 +50,7 @@ class BotRun {
   private steps = 0;
   private idle = 0;
   private readonly random: () => number;
+  /** Minuteurs en attente : clé -> échéance (horloge simulée). */
   private readonly timers = new Map<string, number>();
   private readonly clock = { t: 1_000_000 };
   private readonly players: PlayerRef[];
@@ -60,7 +67,7 @@ class BotRun {
     this.players = ids.map((id, i) => ({ id, name: `Robot ${i + 1}` }));
     this.ctx = {
       now: () => this.clock.t,
-      schedule: (key, ms) => void this.timers.set(key, ms),
+      schedule: (key, ms) => void this.timers.set(key, this.clock.t + ms),
       cancel: (key) => void this.timers.delete(key),
       random: this.random,
       connectedPlayerIds: () => ids,
@@ -93,6 +100,9 @@ class BotRun {
         return this.moved();
       }
 
+      // Les minuteurs échus se déclenchent avant les robots, comme dans une vraie partie.
+      if (this.fireDue()) return this.moved();
+
       for (const player of this.players) {
         const suggestion = this.mod.suggest?.(this.state, player.id, this.random, this.clock.t) ?? null;
         if (!suggestion) continue;
@@ -100,20 +110,26 @@ class BotRun {
         if (!result.ok) return { kind: 'fail', error: `action « ${suggestion.type} » refusée : ${result.error}` };
         this.state = result.state;
         this.actions++;
+        this.clock.t += STEP_MS;
         return this.moved();
       }
 
+      // Aucun robot ne joue : l'horloge saute au prochain minuteur.
       if (this.timers.size > 0) {
-        for (const key of [...this.timers.keys()]) {
-          this.timers.delete(key);
-          this.state = this.mod.onTimer(this.state, key, this.ctx);
-        }
+        this.clock.t = Math.max(this.clock.t, Math.min(...this.timers.values()));
+        this.fireDue();
         return this.moved();
       }
 
       // Aucun robot ne joue et aucun minuteur n’attend : on tente la manche suivante.
       if (++this.idle > 3) {
-        return { kind: 'fail', error: 'bloquée : aucun robot ne peut jouer et aucun minuteur n’est en attente' };
+        // La phase bloquée aide l'auteur à trouver l'étape qui ne mène nulle part (si le jeu la publie).
+        const phase = (this.mod.getPublicState(this.state) as { phase?: unknown } | null)?.phase;
+        const where = typeof phase === 'string' ? ` (phase « ${phase} »)` : '';
+        return {
+          kind: 'fail',
+          error: `bloquée${where} : aucun robot ne peut jouer et aucun minuteur n’est en attente`,
+        };
       }
       this.state = this.mod.nextRound(this.state, this.ctx);
       this.record();
@@ -142,6 +158,18 @@ class BotRun {
     this.idle = 0;
     this.record();
     return CONTINUE;
+  }
+
+  /** Déclenche les minuteurs dont l'échéance est atteinte, dans l'ordre des échéances. */
+  private fireDue(): boolean {
+    const due = [...this.timers.entries()]
+      .filter(([, at]) => at <= this.clock.t)
+      .sort((a, b) => a[1] - b[1]);
+    for (const [key] of due) {
+      this.timers.delete(key);
+      this.state = this.mod.onTimer(this.state, key, this.ctx);
+    }
+    return due.length > 0;
   }
 
   private record(): void {
