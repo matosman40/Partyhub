@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { CODE_VIEW_MESSAGE, type CodeViewMethod, type CodeViewRole } from '@partyhub/shared';
+import { checkMicrophone, startVoiceCapture, type VoiceCapture } from './voice-capture';
 
 /**
  * Vue d'un jeu de code : elle tourne dans un iframe sandboxé (`allow-scripts` seulement : ni même origine,
@@ -9,7 +10,7 @@ import { CODE_VIEW_MESSAGE, type CodeViewMethod, type CodeViewRole } from '@part
  * les transmet au serveur.
  */
 
-type Result = { ok: boolean; error?: string };
+type Result = { ok: boolean; error?: string; data?: string };
 type Action = (type: string, payload?: unknown) => Promise<Result>;
 
 interface CodeFrameProps {
@@ -35,12 +36,16 @@ export function CodeFrame({ role, url, data, send, onAction, onChange }: CodeFra
   const latest = useRef({ data, send, onAction, onChange, role });
   latest.current = { data, send, onAction, onChange, role };
   const readyRef = useRef(false);
+  /** Enregistrement micro en cours pour cette vue (un seul à la fois). */
+  const voiceRef = useRef<VoiceCapture | null>(null);
 
   useEffect(() => {
     if (ready) return;
     const timer = window.setTimeout(() => setSlow(true), READY_TIMEOUT_MS);
     return () => window.clearTimeout(timer);
   }, [ready]);
+
+  useEffect(() => () => voiceRef.current?.stop(), []);
 
   useEffect(() => {
     const post = (message: Record<string, unknown>) => frameRef.current?.contentWindow?.postMessage(message, '*');
@@ -77,6 +82,32 @@ export function CodeFrame({ role, url, data, send, onAction, onChange }: CodeFra
         case CODE_VIEW_MESSAGE.call: {
           const id = typeof message.id === 'number' ? message.id : 0;
           const current = latest.current;
+          if (message.method === 'micCheck' || message.method === 'voice' || message.method === 'voiceStop') {
+            // Micro : réservé à la vue joueur, et ouvert par la page (voir voice-capture.ts).
+            if (current.role !== 'player') {
+              reply(id, { ok: false, error: 'Micro indisponible ici.' });
+              return;
+            }
+            const args = Array.isArray(message.args) ? message.args : [];
+            if (message.method === 'voiceStop') {
+              voiceRef.current?.stop();
+              reply(id, { ok: true });
+              return;
+            }
+            if (message.method === 'micCheck') {
+              void checkMicrophone().then((result) => reply(id, result));
+              return;
+            }
+            voiceRef.current?.stop();
+            void startVoiceCapture(Number(args[0])).then((capture) => {
+              voiceRef.current = capture;
+              void capture.done.then((result) => {
+                if (voiceRef.current === capture) voiceRef.current = null;
+                reply(id, result);
+              });
+            });
+            return;
+          }
           const handler =
             message.method === 'onAction' ? current.onAction : message.method === 'send' ? current.send : undefined;
           const args = Array.isArray(message.args) ? message.args : [];
@@ -134,6 +165,7 @@ export function CodeFrame({ role, url, data, send, onAction, onChange }: CodeFra
         ref={frameRef}
         title={role === 'host' ? 'Écran du jeu' : role === 'player' ? 'Écran du téléphone' : 'Réglages du jeu'}
         sandbox="allow-scripts"
+        allow="autoplay"
         src={url}
         style={{ width: '100%', height: '100%', minHeight: '60vh', border: 0, display: 'block' }}
       />

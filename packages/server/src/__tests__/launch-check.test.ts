@@ -73,3 +73,13 @@ describe('contrôle de lancement', () => {
     if (!result.ok) expect(result.error).toContain('ctx.now()');
   });
 });
+
+describe('contrôle de lancement : temps réel', () => {
+  // Bombes party est un jeu en temps réel : sa fin de manche passe par un minuteur. Les robots jouent sans
+  // relâche, donc sans horloge simulée la manche ne finirait jamais (voir STEP_MS dans launch-check.ts).
+  it('mène à leur fin les parties de Bombes party, dont la manche se termine par minuteur', () => {
+    const bombes = gameRegistry.find((g) => g.manifest.id === 'bombes-party') as GameModule | undefined;
+    expect(bombes).toBeDefined();
+    expect(launchCheck(bombes!)).toMatchObject({ ok: true });
+  }, 120_000);
+});

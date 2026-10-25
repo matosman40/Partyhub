@@ -203,6 +203,9 @@ describe('jeux de code : installation, revue, approbation', () => {
     expect(csp).toContain("script-src 'self'");
     expect(csp).toContain("connect-src 'none'");
     expect(csp).toContain("frame-ancestors 'self'");
+    // Seul le lecteur YouTube peut être intégré (vidéo du karaoké), et seulement lui.
+    expect(csp).toContain('frame-src https://www.youtube-nocookie.com https://www.youtube.com');
+    expect(viewDoc.headers.get('permissions-policy')).toBe('autoplay=*');
     expect(await viewDoc.text()).toContain(`/api/code-games/${ID}/${sha}/views.js`);
 
     // Le script de vues est servi à part, à la même empreinte.

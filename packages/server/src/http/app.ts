@@ -334,8 +334,14 @@ export function createApp(deps: AppDeps): express.Express {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader(
       'Content-Security-Policy',
-      "default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; media-src data: blob:; connect-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'self'",
+      // frame-src : seul le lecteur YouTube (sans script) peut être intégré, pour les jeux qui montrent une vidéo.
+      "default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; media-src data: blob:; connect-src 'none'; frame-src https://www.youtube-nocookie.com https://www.youtube.com; base-uri 'none'; form-action 'none'; frame-ancestors 'self'",
     );
+    // Lecture automatique autorisée pour les cadres de cette vue (lecteur YouTube). Le micro n'est pas accordé ici :
+    // la page l'ouvre pour la vue.
+    res.setHeader('Permissions-Policy', 'autoplay=*');
+    // YouTube refuse les lecteurs intégrés sans référent : on envoie l'adresse complète vers un site https.
+    res.setHeader('Referrer-Policy', 'no-referrer-when-downgrade');
     res
       .type('text/html; charset=utf-8')
       .send(
