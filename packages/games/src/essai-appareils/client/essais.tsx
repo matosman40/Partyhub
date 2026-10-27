@@ -8,6 +8,7 @@ import {
   type MotionFrame,
 } from '../../client/sensors.js';
 import { HoldTimer } from '../../client/sensors-core.js';
+import { Dessin } from '../../client/dessin/Dessin.js';
 
 /**
  * Les quatre essais, côté téléphone. Chacun appelle `onDone(reussi)` une seule fois, quand l’essai réussit
@@ -438,79 +439,21 @@ export function MouvementEssai({ onDone, reglages }: EssaiProps) {
   );
 }
 
-/** Dessin : tracer un trait sur l’écran, sur la longueur réglée par l’hôte, puis valider. */
+/**
+ * Dessin : tracer un trait sur la longueur réglée par l’hôte, puis valider. L’outil de dessin est partagé avec
+ * les autres jeux (pinceaux, couleurs, tampons, gomme, zoom) ; la longueur comptée est celle du dessin, zoom compris.
+ */
 export function DessinEssai({ onDone, reglages }: EssaiProps) {
-  const canvas = useRef<HTMLCanvasElement>(null);
-  const dessine = useRef(false);
-  const dernier = useRef<{ x: number; y: number } | null>(null);
-  const longueur = useRef(0);
   const [progres, setProgres] = useState(0);
-
-  function point(e: ReactPointerEvent<HTMLCanvasElement>) {
-    const c = e.currentTarget;
-    const r = c.getBoundingClientRect();
-    return {
-      x: ((e.clientX - r.left) * c.width) / r.width,
-      y: ((e.clientY - r.top) * c.height) / r.height,
-    };
-  }
-
-  function debut(e: ReactPointerEvent<HTMLCanvasElement>) {
-    e.currentTarget.setPointerCapture(e.pointerId);
-    dessine.current = true;
-    dernier.current = point(e);
-  }
-
-  function deplace(e: ReactPointerEvent<HTMLCanvasElement>) {
-    const c = canvas.current;
-    const avant = dernier.current;
-    if (!dessine.current || !avant || !c) return;
-    const ctx = c.getContext('2d');
-    if (!ctx) return;
-    const p = point(e);
-    ctx.strokeStyle = '#3ff5e0';
-    ctx.shadowColor = 'rgba(63, 245, 224, 0.7)';
-    ctx.shadowBlur = 10;
-    ctx.lineWidth = 6;
-    ctx.lineCap = 'round';
-    ctx.beginPath();
-    ctx.moveTo(avant.x, avant.y);
-    ctx.lineTo(p.x, p.y);
-    ctx.stroke();
-    longueur.current += Math.hypot(p.x - avant.x, p.y - avant.y);
-    dernier.current = p;
-    setProgres(Math.min(1, longueur.current / reglages.longueurTrait));
-  }
-
-  function fin() {
-    dessine.current = false;
-    dernier.current = null;
-  }
-
-  function effacer() {
-    const c = canvas.current;
-    c?.getContext('2d')?.clearRect(0, 0, c.width, c.height);
-    longueur.current = 0;
-    setProgres(0);
-  }
-
   const pret = progres >= 1;
   return (
     <div className="essai-bloc">
-      <div className="essai-pad">
-        <canvas
-          ref={canvas}
-          width={LARGEUR_DESSIN}
-          height={HAUTEUR_DESSIN}
-          aria-label="Zone de dessin"
-          onPointerDown={debut}
-          onPointerMove={deplace}
-          onPointerUp={fin}
-          onPointerCancel={fin}
-          onPointerLeave={fin}
-        />
-        {progres === 0 && <span className="essai-pad-indice">Glissez le doigt ici</span>}
-      </div>
+      <Dessin
+        largeur={LARGEUR_DESSIN}
+        hauteur={HAUTEUR_DESSIN}
+        label="Zone de dessin"
+        onChange={({ longueur }) => setProgres(Math.min(1, longueur / reglages.longueurTrait))}
+      />
       <div
         className="essai-progress"
         role="progressbar"
@@ -524,9 +467,6 @@ export function DessinEssai({ onDone, reglages }: EssaiProps) {
       <div className="essai-actions">
         <button type="button" className="btn primary big" disabled={!pret} onClick={() => onDone(true)}>
           Le dessin marche
-        </button>
-        <button type="button" className="btn ghost" onClick={effacer}>
-          Effacer
         </button>
       </div>
       <button type="button" className="btn ghost small" onClick={() => onDone(false)}>

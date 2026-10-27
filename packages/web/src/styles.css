@@ -12292,3 +12292,256 @@ input[type='file']::file-selector-button {
   font-weight: 600;
   text-align: center;
 }
+
+/* Outil de dessin partagé (packages/games/src/client/dessin) : barre, réglages, zone, curseur. */
+.dessin {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.6rem;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+.dessin > * {
+  min-width: 0;
+  max-width: 100%;
+}
+.dessin-barre {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.3rem;
+  padding: 0.4rem;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--glass);
+}
+.dessin-ligne {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+}
+.dessin-groupe {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+.dessin-separateur {
+  width: 1px;
+  align-self: stretch;
+  margin: 0.3rem 0.35rem;
+  background: var(--line);
+}
+.dessin-bouton {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--r-md);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.1s ease;
+}
+.dessin-bouton:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+}
+.dessin-bouton:active:not(:disabled) {
+  transform: scale(0.94);
+}
+.dessin-bouton:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.dessin-bouton.is-actif {
+  border-color: var(--cyan);
+  background: rgba(63, 245, 224, 0.12);
+  box-shadow: 0 0 14px -2px rgba(63, 245, 224, 0.7);
+  color: var(--cyan);
+}
+.dessin-bouton:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
+.dessin-bouton-effacer {
+  width: auto;
+  min-width: 2.5rem;
+  padding: 0 0.5rem;
+  gap: 0.3rem;
+}
+.dessin-bouton-effacer.is-confirme {
+  border-color: var(--danger);
+  background: rgba(255, 93, 115, 0.16);
+  color: var(--danger);
+}
+.dessin-confirme {
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.dessin-pourcentage {
+  min-width: 3.2rem;
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.dessin-reglages {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  /* Hauteur fixe : changer d’outil ne fait jamais descendre la toile sous le doigt. */
+  height: 3rem;
+  padding: 0 0.2rem;
+}
+.dessin-couleurs,
+.dessin-tampons {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.35rem;
+  overflow-x: auto;
+  padding: 0.2rem;
+  scrollbar-width: none;
+}
+.dessin-couleur {
+  flex: 0 0 auto;
+  width: 1.7rem;
+  height: 1.7rem;
+  padding: 0;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: inset 0 -2px 4px rgba(0, 0, 0, 0.25);
+  transition: transform 0.12s ease;
+}
+.dessin-couleur:hover {
+  transform: scale(1.12);
+}
+.dessin-couleur.is-actif {
+  border-color: #fff;
+  box-shadow:
+    0 0 0 2px var(--line-strong),
+    0 0 12px rgba(255, 255, 255, 0.5);
+}
+.dessin-couleur-libre {
+  position: relative;
+  flex: 0 0 auto;
+  display: inline-grid;
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 50%;
+  overflow: hidden;
+  background: conic-gradient(#ff5d73, #ffd166, #b6ff5c, #3ff5e0, #4aa3ff, #9b7bff, #ff5d73);
+  cursor: pointer;
+}
+.dessin-couleur-libre input {
+  position: absolute;
+  inset: -6px;
+  width: calc(100% + 12px);
+  height: calc(100% + 12px);
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.dessin-tampon {
+  width: 2.3rem;
+  height: 2.3rem;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--r-md);
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: transform 0.12s ease;
+}
+.dessin-tampon:hover {
+  transform: scale(1.1);
+}
+.dessin-tampon.is-actif {
+  border-color: var(--sun);
+  background: rgba(255, 209, 102, 0.14);
+}
+.dessin-taille {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0.4rem;
+  width: 9.5rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+.dessin-taille input[type='range'] {
+  flex: 1;
+  accent-color: var(--cyan);
+}
+.dessin-taille output {
+  min-width: 1.8rem;
+  text-align: right;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.dessin-zone {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--line-strong);
+  background-color: #0b0820;
+  box-shadow:
+    inset 0 0 40px rgba(0, 0, 0, 0.35),
+    0 0 30px -12px rgba(63, 245, 224, 0.4);
+}
+.dessin-zone.is-grille {
+  background-image:
+    linear-gradient(rgba(159, 233, 255, 0.09) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(159, 233, 255, 0.09) 1px, transparent 1px);
+  background-repeat: repeat;
+}
+.dessin-toile {
+  display: block;
+  width: 100%;
+  height: auto;
+  cursor: crosshair;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.dessin-curseur {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  border: 1.5px solid rgba(255, 255, 255, 0.85);
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+  opacity: 0;
+  line-height: 1;
+  transition: opacity 0.12s ease;
+}
+.dessin-curseur[data-actif='1'] {
+  opacity: 1;
+}
+.dessin-curseur.is-tampon {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
