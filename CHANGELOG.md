@@ -4,6 +4,21 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 
 ## [Non publié]
 
+## [0.17.4] - 2026-10-27
+
+### Ajouté
+
+- Mode sans écran : « Créer sans écran » sur la fiche d'un jeu. Le téléphone organise la salle et joue, sans écran TV.
+- Accueil : « Parties en cours » liste les salles de cet appareil (créées ou rejointes) pour y revenir d'un clic.
+- Reconnexion : un joueur déconnecté retrouve sa place en rechargeant la page.
+- Musique du salon sur les téléphones quand aucun écran n'est connecté.
+- Publication automatique : une version (package.json sur main) et les jeux (manifeste sur main) reçoivent leur tag et leur publication sans action manuelle.
+- Sauvegarde quotidienne des données et du certificat HTTPS (deploy/sauvegarde, voir docs/SAUVEGARDE.md).
+
+### Vérifié
+
+- Test navigateur du mode sans écran (deux téléphones, reconnexion, parties en cours), ajouté à la CI.
+
 ## [0.17.3] - 2026-10-27
 
 ### Ajouté

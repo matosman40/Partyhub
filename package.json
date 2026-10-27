@@ -1,6 +1,6 @@
 {
   "name": "partyhub",
-  "version": "0.17.3",
+  "version": "0.17.4",
   "private": true,
   "description": "Plateforme de jeux multijoueurs sur navigateur (TV + smartphones)",
   "type": "module",
