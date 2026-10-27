@@ -164,6 +164,14 @@ export const clientViews: Record<string, GameClientViews> = {
       Player: ImposteurPlayer,
     };
   }),
+  'essai-appareils': lazyViews(async () => {
+    const [{ EssaiHost }, { EssaiPlayer }] = await Promise.all([
+      import('../essai-appareils/client/HostScreen.js'),
+      import('../essai-appareils/client/PlayerScreen.js'),
+    ]);
+    // Aucun réglage : ce jeu se lance tel quel.
+    return { Settings: () => null, Host: EssaiHost, Player: EssaiPlayer };
+  }),
   'micro-defis': lazyViews(async () => {
     const [{ MicroDefisHost }, { MicroDefisPlayer }] = await Promise.all([
       import('../micro-defis/client/HostScreen.js'),

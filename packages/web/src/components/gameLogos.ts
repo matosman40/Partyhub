@@ -63,6 +63,15 @@ export const GAME_LOGOS: Record<string, LogoSpec> = {
     mark: 'star',
     tilt: -4,
   },
+  'essai-appareils': {
+    lines: ['Essai', 'Appareils'],
+    fill: '#9fe9ff',
+    edge: '#ffd166',
+    ink: '#041821',
+    sky: ['#0b2a3d', '#04111a'],
+    mark: 'lens',
+    tilt: 3,
+  },
   'micro-defis': {
     lines: ['Micro', 'Défis'],
     fill: '#ff5fd2',

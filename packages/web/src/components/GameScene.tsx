@@ -715,6 +715,22 @@ const funambule: Scene = (c) => {
   );
 };
 
+/** Essai des appareils : un banc de mesure, cercles concentriques autour d’un objectif, et un horizon de collines. */
+const essaiAppareils: Scene = (c) => {
+  const cx = W / 2;
+  const cy = H * 0.45;
+  return (
+    <>
+      <Stars c={c} count={50} maxY={H * 0.5} />
+      {[120, 220, 320, 420].map((r) => (
+        <circle key={r} cx={cx} cy={cy} r={r} fill="none" stroke={c.fill} strokeOpacity={0.2} strokeWidth={3} />
+      ))}
+      <circle cx={cx} cy={cy} r={60} fill={c.fill} opacity={0.16} />
+      <Ridge c={c} base={H * 0.7} amp={70} color="#06202e" />
+    </>
+  );
+};
+
 /** Micro-Défis : une borne d’arcade au coucher du soleil, grille en perspective et soleil en halos. */
 const microDefis: Scene = (c) => {
   const horizon = H * 0.6;
@@ -1093,6 +1109,7 @@ const SCENES: Record<string, Scene> = {
   'poker-texas': poker,
   funambule,
   'micro-defis': microDefis,
+  'essai-appareils': essaiAppareils,
   'gags-en-rafale': gagsEnRafale,
   'cartes-couleurs': cartesCouleurs,
   'cartes-coco': cartesCoco,

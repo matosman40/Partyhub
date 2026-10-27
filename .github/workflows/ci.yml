@@ -111,6 +111,10 @@ jobs:
         env:
           BASE_URL: http://127.0.0.1:8282
         run: python scripts/sans-ecran-browser.py
+      - name: Essai des appareils (une partie complète à deux téléphones)
+        env:
+          BASE_URL: http://127.0.0.1:8282
+        run: python scripts/essai-appareils-browser.py
       - name: Appareils, affichage adapté et spectateurs
         env:
           BASE_URL: http://127.0.0.1:8282

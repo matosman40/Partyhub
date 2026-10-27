@@ -7,6 +7,7 @@ import { imposteur } from './imposteur/module.js';
 import { plusOuMoins } from './plus-ou-moins/module.js';
 import { reflexe } from './reflexe/module.js';
 import { microDefis } from './micro-defis/module.js';
+import { essaiAppareils } from './essai-appareils/module.js';
 import { gagsEnRafale } from './gags-en-rafale/module.js';
 import { funambule } from './funambule/module.js';
 import { bombesParty } from './bombes-party/module.js';
@@ -40,6 +41,7 @@ export const gameRegistry: GameModule[] = [
   plusOuMoins,
   reflexe,
   microDefis,
+  essaiAppareils,
   gagsEnRafale,
   funambule,
   bombesParty,
