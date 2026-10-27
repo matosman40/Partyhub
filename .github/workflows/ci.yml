@@ -90,6 +90,9 @@ jobs:
           # Sur une installation neuve, les jeux intégrés sont désactivés par défaut : les tests
           # de navigation en ont besoin pour vérifier le catalogue et les jeux de cartes.
           BUILTIN_GAMES: "on"
+          # Les scripts du navigateur créent beaucoup de profils depuis la même adresse : la limite par défaut (40 par
+          # quart d’heure) serait atteinte avant la fin de la série. La limite de la production ne change pas.
+          PROFILE_CREATIONS_PER_IP: "400"
         run: |
           mkdir -p "$DATA_DIR"
           node packages/server/dist/index.js > "$RUNNER_TEMP/server.log" 2>&1 &

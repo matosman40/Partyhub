@@ -173,7 +173,7 @@ export function createApp(deps: AppDeps): express.Express {
   // Sessions d’administration stockées en base : elles survivent à un redémarrage.
   const sessions = new AdminSessions(store.db);
   const limiter = new LoginLimiter();
-  const registerLimiter = new LoginLimiter(40);
+  const registerLimiter = new LoginLimiter(config.profileCreationsPerIp ?? 40);
   const profileLimiter = new LoginLimiter(10);
 
   app.disable('x-powered-by');

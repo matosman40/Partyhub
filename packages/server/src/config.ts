@@ -38,6 +38,11 @@ export interface AiConfig {
 export interface AppConfig {
   port: number;
   /**
+   * Créations de profil autorisées par adresse et par quart d’heure (défaut 40). Un réseau de salle partage
+   * une adresse : les tests navigateur de la CI créent beaucoup de profils, et leur serveur le relève.
+   */
+  profileCreationsPerIp?: number;
+  /**
    * Fournisseurs d’images (Cloudflare, ModelScope) : clés de l’environnement, plafonds. `loadConfig` le renseigne
    * toujours ; sans lui (serveur créé par programme), il n’y a simplement aucun fournisseur.
    */
@@ -325,6 +330,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   const keep = intFromEnv('DB_BACKUP_KEEP', env.DB_BACKUP_KEEP, 7, 1, 365);
   const logMb = intFromEnv('LOG_MAX_MB', env.LOG_MAX_MB, 5, 1, 100);
   const logFiles = intFromEnv('LOG_FILES', env.LOG_FILES, 6, 1, 50);
+  const profileCreationsPerIp = intFromEnv('PROFILE_CREATIONS_PER_IP', env.PROFILE_CREATIONS_PER_IP, 40, 1, 100000);
   const trustProxy = env.TRUST_PROXY?.trim() || 'loopback';
   try {
     compileTrustProxy(trustProxy);
@@ -334,6 +340,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
 
   return {
     port,
+    profileCreationsPerIp,
     host: env.HOST?.trim() || '0.0.0.0',
     dataDir,
     dbFile: path.join(dataDir, 'partyhub.db'),
