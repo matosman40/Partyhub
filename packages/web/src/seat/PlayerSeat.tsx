@@ -20,6 +20,7 @@ import { CameraBubble } from './CameraBubble.js';
 import { ExpressionRow } from './ExpressionRow.js';
 import { CreateProfileForm } from '../profile/CreateProfileForm.js';
 import { ConnectingNotice } from '../components/ConnectingNotice.js';
+import { PendingNotice } from '../components/PendingNotice.js';
 import { ACK_TIMEOUT_MS, canSend, NO_ANSWER_ERROR, OFFLINE_ACTION_ERROR, useConnection } from '../connection.js';
 import { LobbyHeads, LobbyMoodBar, LobbyPlateau } from '../components/LobbyPlateau.js';
 import { TestModeBadge } from '../components/TestModeBadge.js';
@@ -667,6 +668,7 @@ export function PlayerSeat({
                   </SensorSenderContext.Provider>
                 </Suspense>
               </GameViewBoundary>
+              <PendingNotice gameId={lobby.game.id} publicState={game.public} />
               <EmoteBar onPick={sendReaction} />
               {!compact && you.profile && <VoiceBar socket={socket} token={profileToken} />}
             </section>
