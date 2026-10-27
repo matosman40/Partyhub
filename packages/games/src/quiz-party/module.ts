@@ -198,6 +198,18 @@ function topicsView(s: QuizState) {
   };
 }
 
+/** Joueurs que la salle attend : le tireur de sujets, ou ceux qui n’ont pas encore répondu. */
+function pendingOf(s: QuizState): string[] {
+  if (s.phase === 'topics' && s.topics) {
+    const id = turnPlayer(s.topics);
+    return id ? [s.players[id] ?? '?'] : [];
+  }
+  if (s.phase !== 'question') return [];
+  return Object.keys(s.players)
+    .filter((id) => !s.answers[id])
+    .map((id) => s.players[id] ?? '?');
+}
+
 function publicView(s: QuizState) {
   const base = {
     phase: s.phase,
@@ -207,6 +219,7 @@ function publicView(s: QuizState) {
     ranking: rankPlayers(s),
     notice: s.notice,
     topics: topicsView(s),
+    pending: pendingOf(s),
   };
 
   if (s.phase === 'topics') return { ...base, question: null, endsAt: s.topics?.endsAt ?? 0 };
@@ -228,9 +241,6 @@ function publicView(s: QuizState) {
       endsAt: s.answerEndsAt,
       answerMs: s.settings.answerSeconds * 1000,
       answeredCount: Object.keys(s.answers).length,
-      pending: Object.keys(s.players)
-        .filter((id) => !s.answers[id])
-        .map((id) => s.players[id] ?? '?'),
     };
   }
 
@@ -448,17 +458,8 @@ export const quizParty: GameModule<QuizState, QuizSettings> = {
 
   getHostState(s: QuizState) {
     const q = currentQuestion(s);
-    if (s.phase === 'topics' && s.topics) {
-      const id = turnPlayer(s.topics);
-      return { pending: id ? [s.players[id] ?? '?'] : [], explanation: null };
-    }
     return {
-      pending:
-        s.phase === 'question'
-          ? Object.keys(s.players)
-              .filter((id) => !s.answers[id])
-              .map((id) => s.players[id])
-          : [],
+      pending: pendingOf(s),
       explanation: s.phase === 'reveal' ? (q?.explanation ?? null) : null,
     };
   },
