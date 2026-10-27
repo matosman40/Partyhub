@@ -25,6 +25,9 @@ function unit(x: number, y: number, extra: Partial<Unit> = {}): Unit {
     lastMoveAt: 0,
     carrying: null,
     lastRideAt: -1e9,
+    emote: null,
+    emoteUntil: 0,
+    lastEmoteAt: -1e9,
     ...extra,
   };
 }

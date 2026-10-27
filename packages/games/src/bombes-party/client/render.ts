@@ -30,6 +30,8 @@ export interface BoardUnitView {
   maxBombs?: number;
   /** Bombes que le joueur a posées et qui n’ont pas encore explosé. */
   placed?: number;
+  /** Expression en cours : danse ou sourire. */
+  emote?: 'dance' | 'smile' | null;
 }
 
 /** Vue publique du plateau, telle que la reçoit le navigateur. */
@@ -77,6 +79,10 @@ export const INK = '#0c0a24';
 const FACE = '#fdf0dc';
 const BOOTS = '#2a2770';
 const MOUNT_ICON: Record<Mount, string> = { kangaroo: '🦘', dino: '🦖' };
+/** Bulle au-dessus de la tête pendant une expression. */
+const EMOTE_ICON: Record<'dance' | 'smile', string> = { dance: '🎶', smile: '😄' };
+/** Un temps de danse : deux pas alternés et un petit saut à chaque temps. */
+const DANCE_BEAT_MS = 170;
 const POWER_BG: Record<PowerKind, string> = {
   bomb: '#ff4f8b',
   flame: '#ffd23f',
@@ -476,10 +482,12 @@ export function unitImage(
   pose: 'front' | 'back',
   step: number,
   facing: Dir | undefined,
+  face: 'idle' | 'smile' = 'idle',
 ): HTMLCanvasElement {
-  return image(`unit:${colorIndex}:${pose}:${step}:${facing ?? '-'}`, SPRITE_W, SPRITE_H, (g) => {
+  const key = face === 'smile' && pose === 'front' ? 'smile' : 'idle';
+  return image(`unit:${colorIndex}:${pose}:${step}:${facing ?? '-'}:${key}`, SPRITE_W, SPRITE_H, (g) => {
     const color = PLAYER_COLORS[colorIndex % PLAYER_COLORS.length] ?? '#ff4f8b';
-    const frames = pose === 'back' ? FRAMES.back : FRAMES.front;
+    const frames = pose === 'back' ? FRAMES.back : key === 'smile' ? FRAMES.smile : FRAMES.front;
     const rows = withFacing(frames[step] ?? frames[0], facing);
     paintSprite(g, rows, color);
   });
@@ -637,19 +645,23 @@ function drawUnit(
   if (u.alive) tr.deadAt = undefined;
   else tr.deadAt ??= now;
   const walking = v.t < 1;
-  const step = walking ? Math.floor(now / (dur / 2)) % 2 : 0;
+  // La danse alterne les deux pas de la marche, sur place, au rythme d’un tempo.
+  const dancing = u.alive && u.emote === 'dance' && !walking;
+  const step = walking ? Math.floor(now / (dur / 2)) % 2 : dancing ? Math.floor(now / DANCE_BEAT_MS + index) % 2 : 0;
   // Respiration d’un pixel quand il ne bouge pas, décalée d’un personnage à l’autre.
   const breath = walking || !u.alive ? 0 : Math.floor(now / 450 + index) % 2;
 
   const o = cellOrigin(L, v.x, v.y);
   const pose = u.facing === 'up' ? 'back' : 'front';
-  const sprite = unitImage(u.color, pose, step, u.facing);
+  const sprite = unitImage(u.color, pose, step, u.facing, u.alive && u.emote === 'smile' ? 'smile' : 'idle');
   const w = SPRITE_W * S;
   const h = SPRITE_H * S;
   // Le kangourou monté porte le personnage : celui-ci est posé sur son dos, et il saute quand il gagne.
   const riding = u.alive && u.mount === 'kangaroo';
   const rideLift = riding ? 4 * S : 0;
-  const bounce = victory && u.alive ? Math.abs(Math.sin(now / 150 + index)) * 3 * S : 0;
+  const bounce =
+    (victory && u.alive ? Math.abs(Math.sin(now / 150 + index)) * 3 * S : 0) +
+    (dancing ? Math.abs(Math.sin(now / DANCE_BEAT_MS + index)) * 3 * S : 0);
   // Centré dans la case, pieds sur le bord bas.
   const x0 = Math.round(o.x + ((TILE_PX - SPRITE_W) / 2) * S);
   const y0 = Math.round(o.y + (TILE_PX - SPRITE_H - 1) * S - breath * S - rideLift - bounce + (u.alive ? 0 : 2 * S));
@@ -693,6 +705,24 @@ function drawUnit(
       headTop = bottom - skinH;
     } else {
       ctx.drawImage(sprite, x0, y0, w, h);
+    }
+    if (u.alive && u.emote) {
+      // Bulle d’expression au-dessus de la tête, visible aussi sur l’écran principal. Opaque, et l’opacité
+      // du personnage (debout sur une bombe) est rétablie après.
+      const alphaAvant = ctx.globalAlpha;
+      const cx = o.x + L.T / 2;
+      const cy = headTop - 6 * S;
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+      ctx.beginPath();
+      ctx.arc(cx, cy, 6 * S, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.font = `${8 * S}px system-ui, "Apple Color Emoji", "Segoe UI Emoji", sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(EMOTE_ICON[u.emote], cx, cy + S * 0.4);
+      ctx.globalAlpha = alphaAvant;
     }
   }
 

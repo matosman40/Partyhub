@@ -4,7 +4,7 @@ import { unlockAudio } from '../../client/audio.js';
 import { SoundToggle } from '../../client/SoundToggle.js';
 import { FinalScreen, WaitingScreen } from '../../client/ui.js';
 import { BoardCanvas } from './BoardCanvas.js';
-import { Gamepad, type RideAction, type RideOptions } from './Gamepad.js';
+import { Gamepad, type EmoteKind, type RideAction, type RideOptions } from './Gamepad.js';
 import type { BoardView, Dir } from './render.js';
 
 const KEY_DIR: Record<string, Dir> = {
@@ -53,6 +53,15 @@ export function BombesPartyPlayer({ publicState: pub, playerState: me, send }: P
     setError(null);
     void send('bomb').then((res) => {
       if (!res.ok) setError(res.error ?? 'Bombe refusée');
+    });
+  };
+
+  // Expression sur place : refusée hors partie ou pour un personnage éliminé, comme les autres gestes.
+  const emote = (kind: EmoteKind) => {
+    if (!canAct) return;
+    setError(null);
+    void send(kind).then((res) => {
+      if (!res.ok) setError(res.error ?? 'Expression refusée');
     });
   };
 
@@ -106,7 +115,11 @@ export function BombesPartyPlayer({ publicState: pub, playerState: me, send }: P
 
   const view = pub as BoardView;
   const board = (
-    <div className="arena arena-player" data-pos={me ? `${me.x},${me.y}` : undefined}>
+    <div
+      className="arena arena-player"
+      data-pos={me ? `${me.x},${me.y}` : undefined}
+      data-emote={me?.emote ?? undefined}
+    >
       <BoardCanvas view={view} label="Votre plateau" celebrate={celebrate} />
     </div>
   );
@@ -120,7 +133,7 @@ export function BombesPartyPlayer({ publicState: pub, playerState: me, send }: P
   // Commandes fixes en bas : visibles en permanence pendant la manche.
   const dock = (
     <div className="control-dock">
-      <Gamepad onMove={move} onBomb={bomb} onRide={rideWith} ride={ride} disabled={!canAct} />
+      <Gamepad onMove={move} onBomb={bomb} onRide={rideWith} ride={ride} onEmote={emote} disabled={!canAct} />
     </div>
   );
 

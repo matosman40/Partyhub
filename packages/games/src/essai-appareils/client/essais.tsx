@@ -451,6 +451,7 @@ export function DessinEssai({ onDone, reglages }: EssaiProps) {
       <Dessin
         largeur={LARGEUR_DESSIN}
         hauteur={HAUTEUR_DESSIN}
+        remplir
         label="Zone de dessin"
         onChange={({ longueur }) => setProgres(Math.min(1, longueur / reglages.longueurTrait))}
       />

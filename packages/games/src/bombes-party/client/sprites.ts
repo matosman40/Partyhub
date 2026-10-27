@@ -33,6 +33,10 @@ const FRONT_IDLE: Grid = [
 /** Même personnage, jambe avant décalée : deuxième image de la marche. */
 const FRONT_STEP: Grid = [...FRONT_IDLE.slice(0, 11), '..obo.bo...', '..ob...bo..', '..oo...oo..'];
 
+/** Même visage, bouche ouverte en sourire : pour l’expression « sourire ». */
+const SMILE_IDLE: Grid = [...FRONT_IDLE.slice(0, 5), '..ofeeefo..', ...FRONT_IDLE.slice(6)];
+const SMILE_STEP: Grid = [...SMILE_IDLE.slice(0, 11), '..obo.bo...', '..ob...bo..', '..oo...oo..'];
+
 /** Dos : casque plein, pas de visage. */
 const BACK_IDLE: Grid = [
   '...ooooo...',
@@ -53,6 +57,7 @@ function normalize(g: Grid): string[] {
 export const FRAMES = {
   front: [normalize(FRONT_IDLE), normalize(FRONT_STEP)] as const,
   back: [normalize(BACK_IDLE), normalize(BACK_STEP)] as const,
+  smile: [normalize(SMILE_IDLE), normalize(SMILE_STEP)] as const,
 };
 
 /**

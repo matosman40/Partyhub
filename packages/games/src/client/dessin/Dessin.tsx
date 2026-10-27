@@ -59,6 +59,8 @@ export interface DessinProps {
   /** Dimensions logiques du dessin : toutes les mesures se font dans ce repère. */
   largeur?: number;
   hauteur?: number;
+  /** La zone remplit l’espace que lui donne la mise en page : la hauteur du dessin suit cet espace. */
+  remplir?: boolean;
   options?: DessinOptions;
   onChange?: (change: DessinChange) => void;
   /** Nom accessible de la zone de dessin. */
@@ -149,7 +151,18 @@ function dessinerTrait(ctx: CanvasRenderingContext2D, trait: TraitLibre) {
   ctx.restore();
 }
 
-export function Dessin({ largeur = 640, hauteur = 400, options, onChange, label = 'Zone de dessin' }: DessinProps) {
+/** Hauteur logique minimale et maximale d’un dessin « qui remplit » : garde des proportions utilisables. */
+const HAUTEUR_MIN = 240;
+const HAUTEUR_MAX = 1200;
+
+export function Dessin({
+  largeur = 640,
+  hauteur: hauteurDemandee = 400,
+  remplir = false,
+  options,
+  onChange,
+  label = 'Zone de dessin',
+}: DessinProps) {
   const pinceaux = options?.pinceaux ?? (Object.keys(PINCEAUX) as Pinceau[]);
   const couleurs = options?.couleurs ?? COULEURS;
   const tampons = options?.tampons ?? TAMPONS;
@@ -168,6 +181,9 @@ export function Dessin({ largeur = 640, hauteur = 400, options, onChange, label 
   const [grille, setGrille] = useState(true);
   const [effacerConfirme, setEffacerConfirme] = useState(false);
   const [echelleAffichage, setEchelleAffichage] = useState(1);
+  // Hauteur logique mesurée sur la zone quand elle remplit l’espace : même largeur, proportions de l’écran.
+  const [hauteurMesuree, setHauteurMesuree] = useState(hauteurDemandee);
+  const hauteur = remplir ? hauteurMesuree : hauteurDemandee;
 
   // Miroirs lus par le dessin : le dessin tourne dans une requête d’image, pas dans le rendu React.
   const historiqueRef = useRef(historique);
@@ -234,13 +250,20 @@ export function Dessin({ largeur = 640, hauteur = 400, options, onChange, label 
   useEffect(() => {
     const zone = zoneRef.current;
     if (!zone) return;
-    const mesurer = () => setEchelleAffichage(zone.clientWidth / largeur);
+    const mesurer = () => {
+      if (zone.clientWidth === 0) return;
+      setEchelleAffichage(zone.clientWidth / largeur);
+      if (remplir) {
+        const h = (largeur * zone.clientHeight) / zone.clientWidth;
+        setHauteurMesuree(Math.round(Math.min(HAUTEUR_MAX, Math.max(HAUTEUR_MIN, h))));
+      }
+    };
     mesurer();
     if (typeof ResizeObserver === 'undefined') return;
     const observateur = new ResizeObserver(mesurer);
     observateur.observe(zone);
     return () => observateur.disconnect();
-  }, [largeur]);
+  }, [largeur, remplir]);
 
   // Molette : zoom centré sur le pointeur (ordinateur, TV avec souris).
   useEffect(() => {
@@ -595,13 +618,17 @@ export function Dessin({ largeur = 640, hauteur = 400, options, onChange, label 
         </label>
       </div>
 
-      <div ref={zoneRef} className={`dessin-zone${grille ? ' is-grille' : ''}`} style={styleGrille}>
+      <div
+        ref={zoneRef}
+        className={`dessin-zone${grille ? ' is-grille' : ''}${remplir ? ' is-remplir' : ''}`}
+        style={styleGrille}
+      >
         <canvas
           ref={toileRef}
           className="dessin-toile"
           role="img"
           aria-label={label}
-          style={{ aspectRatio: `${largeur} / ${hauteur}`, touchAction: 'none' }}
+          style={remplir ? { touchAction: 'none' } : { aspectRatio: `${largeur} / ${hauteur}`, touchAction: 'none' }}
           onPointerDown={surBas}
           onPointerMove={surDeplacement}
           onPointerUp={surFin}

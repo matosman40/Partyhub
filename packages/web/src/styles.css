@@ -2509,6 +2509,44 @@ button.bet:active:not(:disabled) {
   gap: 10px;
 }
 
+/* Expressions du téléphone (danser, sourire) : une rangée compacte au-dessus des gestes. */
+.emote-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  max-width: 460px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.emote-btn {
+  min-height: 38px;
+  padding: 0.3rem 0.5rem;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: linear-gradient(180deg, #a890ff, #6a4fd8);
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.9rem;
+  box-shadow: 0 4px 0 #3c2a8a;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.emote-btn:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 #3c2a8a;
+}
+
+.emote-btn:disabled {
+  background: var(--glass-2);
+  color: var(--text);
+  box-shadow: none;
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .ride-row {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -12513,6 +12551,16 @@ input[type='file']::file-selector-button {
     linear-gradient(rgba(159, 233, 255, 0.09) 1px, transparent 1px),
     linear-gradient(90deg, rgba(159, 233, 255, 0.09) 1px, transparent 1px);
   background-repeat: repeat;
+}
+.dessin-zone.is-remplir {
+  height: clamp(340px, 70vh, 900px);
+  height: clamp(340px, 70dvh, 900px);
+}
+.dessin-zone.is-remplir .dessin-toile {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
 }
 .dessin-toile {
   display: block;

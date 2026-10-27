@@ -35,11 +35,19 @@ const RIDE_BUTTONS: Array<{ action: RideAction; label: string; hint: string }> =
   { action: 'kick', label: 'Frapper', hint: 'Donner un coup à la bombe devant vous' },
 ];
 
+/** Expressions : danser ou sourire sur place. */
+export type EmoteKind = 'dance' | 'smile';
+const EMOTES: Array<{ kind: EmoteKind; label: string; icon: string }> = [
+  { kind: 'dance', label: 'Danser', icon: '💃' },
+  { kind: 'smile', label: 'Sourire', icon: '😄' },
+];
+
 export function Gamepad({
   onMove,
   onBomb,
   onRide,
   ride = null,
+  onEmote,
   disabled = false,
 }: {
   onMove: (dir: Dir) => void;
@@ -48,6 +56,8 @@ export function Gamepad({
   onRide?: (action: RideAction) => void;
   /** Gestes possibles maintenant ; null hors kangourou monté. */
   ride?: RideOptions | null;
+  /** Expressions (danser, sourire). Absent : pas de rangée d’expressions. */
+  onEmote?: (kind: EmoteKind) => void;
   disabled?: boolean;
 }) {
   const [held, setHeld] = useState<Dir | null>(null);
@@ -100,6 +110,29 @@ export function Gamepad({
 
   return (
     <div className="gamepad-stack">
+      {onEmote && (
+        <div className="emote-row" role="group" aria-label="Expressions">
+          {EMOTES.map(({ kind, label, icon }) => (
+            <button
+              key={kind}
+              type="button"
+              className="emote-btn"
+              disabled={disabled}
+              aria-label={`${label} sur place`}
+              title={`${label} sur place`}
+              onPointerDown={(e) => {
+                e.preventDefault();
+                if (disabled) return;
+                buzz(8);
+                onEmote(kind);
+              }}
+              onContextMenu={(e) => e.preventDefault()}
+            >
+              <span aria-hidden="true">{icon}</span> {label}
+            </button>
+          ))}
+        </div>
+      )}
       {onRide && (
         <div className="ride-row" role="group" aria-label="Gestes du kangourou">
           {RIDE_BUTTONS.map(({ action, label, hint }) => {

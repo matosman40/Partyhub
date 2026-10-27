@@ -52,6 +52,11 @@ const THROW_RANGE = 3;
 const KICK_RANGE = 4;
 /** Délai minimal entre deux gestes du kangourou (soulever, lancer, frapper). */
 const RIDE_COOLDOWN_MS = 300;
+/** Expressions : danser ou sourire sur place, pendant un court instant. Un pas les interrompt. */
+export type Emote = 'dance' | 'smile';
+const EMOTE_MS: Record<Emote, number> = { dance: 2400, smile: 1600 };
+/** Délai minimal entre deux expressions d’un même joueur. */
+const EMOTE_COOLDOWN_MS = 600;
 /** Kangourous sauvages posés au début de chaque manche : on les monte pour gagner une vie. */
 const WILD_KANGAROOS = 2;
 /** Répartition des bonus tirés d’une caisse détruite. */
@@ -114,6 +119,12 @@ export interface Unit {
   carrying: string | null;
   /** Dernier geste du kangourou (soulever, lancer, frapper). */
   lastRideAt: number;
+  /** Expression en cours (danse ou sourire), ou null. Elle s’arrête d’elle-même, ou au premier pas. */
+  emote: Emote | null;
+  /** Heure (ctx.now) à laquelle l’expression s’arrête. */
+  emoteUntil: number;
+  /** Dernière expression, pour le délai minimal entre deux. */
+  lastEmoteAt: number;
 }
 
 export interface Bomb {
@@ -332,6 +343,9 @@ function startRound(s: BombesPartyState, ctx: GameContext, round: number): Bombe
       lastMoveAt: 0,
       carrying: null,
       lastRideAt: -1e9,
+      emote: null,
+      emoteUntil: 0,
+      lastEmoteAt: -1e9,
     };
   });
   const grid = buildGrid(ctx.random);
@@ -449,6 +463,32 @@ function pruneFlames(s: BombesPartyState, ctx: GameContext): BombesPartyState {
   return { ...s, flames };
 }
 
+const EMOTE_PREFIX = 'emote:';
+
+/** Danse ou sourire : un instant sur place, sans bouger. Le serveur arrête l’expression au bout de sa durée. */
+function emote(s: BombesPartyState, playerId: string, kind: Emote, ctx: GameContext): GameResult<BombesPartyState> {
+  const now = ctx.now();
+  const unit = s.units[playerId];
+  if (!unit) return fail('Joueur inconnu dans cette partie');
+  // Trop rapide : ignoré sans erreur, comme un pas trop rapide.
+  if (now - unit.lastEmoteAt < EMOTE_COOLDOWN_MS) return ok({ ...s, seq: s.seq + 1 });
+  ctx.schedule(EMOTE_PREFIX + playerId, EMOTE_MS[kind]);
+  const next = { ...unit, emote: kind, emoteUntil: now + EMOTE_MS[kind], lastEmoteAt: now };
+  return ok(withUnit(s, playerId, next, s.seq + 1));
+}
+
+/** Fin d’expression : si une expression plus récente court encore, on attend sa fin. */
+function endEmote(s: BombesPartyState, playerId: string, ctx: GameContext): BombesPartyState {
+  const unit = s.units[playerId];
+  if (!unit || unit.emote === null) return s;
+  const reste = unit.emoteUntil - ctx.now();
+  if (reste > 0) {
+    ctx.schedule(EMOTE_PREFIX + playerId, reste);
+    return s;
+  }
+  return withUnit(s, playerId, { ...unit, emote: null }, s.seq + 1);
+}
+
 function withUnit(s: BombesPartyState, id: string, u: Unit, seq: number): BombesPartyState {
   return { ...s, units: { ...s.units, [id]: u }, seq };
 }
@@ -473,7 +513,7 @@ function move(s: BombesPartyState, playerId: string, dir: Dir, ctx: GameContext)
   // La bombe soulevée suit son porteur.
   const bombs = unit.carrying ? moveBomb(s.bombs, unit.carrying, { x: tx, y: ty }) : s.bombs;
 
-  let next: Unit = { ...unit, x: tx, y: ty, lastMoveAt: now, facing: dir };
+  let next: Unit = { ...unit, x: tx, y: ty, lastMoveAt: now, facing: dir, emote: null };
   const pick = s.powerups.find((p) => p.x === tx && p.y === ty);
   let powerups = s.powerups;
   if (pick) {
@@ -672,6 +712,8 @@ export const bombesParty: GameModule<BombesPartyState, BombesPartySettings> = {
     lift: z.unknown(),
     throw: z.unknown(),
     kick: z.unknown(),
+    dance: z.unknown(),
+    smile: z.unknown(),
   },
 
   initialize(settings, players) {
@@ -738,11 +780,13 @@ export const bombesParty: GameModule<BombesPartyState, BombesPartySettings> = {
     }
     if (type === 'bomb') return placeBomb(s, p.id, ctx);
     if (type === 'lift' || type === 'throw' || type === 'kick') return rideAction(s, p.id, type, ctx);
+    if (type === 'dance' || type === 'smile') return emote(s, p.id, type, ctx);
     return fail('Action inconnue');
   },
 
   onTimer(s, key, ctx) {
     if (key.startsWith('bomb:') && s.phase === 'play') return explode(s, key.slice('bomb:'.length), ctx);
+    if (key.startsWith(EMOTE_PREFIX)) return endEmote(s, key.slice(EMOTE_PREFIX.length), ctx);
     if (key === FIRE_KEY) return pruneFlames(s, ctx);
     if (key === ROUND_LIMIT && s.phase === 'play') return endRound(s, ctx, null);
     if (key === NEXT_ROUND && s.phase === 'round-over') return advance(s, ctx);
@@ -788,6 +832,7 @@ export const bombesParty: GameModule<BombesPartyState, BombesPartySettings> = {
           speed: u.speed,
           facing: u.facing,
           carrying: u.carrying !== null,
+          emote: u.emote,
           range: u.range,
           maxBombs: u.maxBombs,
           placed: s.bombs.filter((b) => b.owner === id).length,
@@ -818,6 +863,7 @@ export const bombesParty: GameModule<BombesPartyState, BombesPartySettings> = {
       speed: u?.speed ?? 0,
       mount: u?.mount ?? null,
       carrying: (u?.carrying ?? null) !== null,
+      emote: u?.emote ?? null,
       ride: rideOptions(s, playerId),
       placed: s.bombs.filter((b) => b.owner === playerId).length,
       gained: s.phase === 'round-over' ? (s.winnerId === playerId ? WIN_POINTS : 0) : null,
