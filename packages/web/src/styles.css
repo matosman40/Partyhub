@@ -11942,9 +11942,10 @@ input[type='file']::file-selector-button {
 /* Parcours des essais : une pastille par essai. */
 .essai-parcours {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
+  flex-wrap: nowrap;
+  gap: 0.35rem;
   justify-content: center;
+  width: 100%;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -11953,8 +11954,9 @@ input[type='file']::file-selector-button {
   display: grid;
   justify-items: center;
   gap: 0.1rem;
-  min-width: 66px;
-  padding: 0.5rem 0.6rem;
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 0.45rem 0.2rem;
   border: 1px solid var(--line);
   border-radius: var(--r-md);
   background: var(--glass);
@@ -11963,9 +11965,10 @@ input[type='file']::file-selector-button {
 }
 .essai-parcours li small {
   color: var(--muted);
-  font-size: 0.7rem;
+  font-size: 0.66rem;
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0;
+  white-space: nowrap;
 }
 .essai-parcours li.is-courant {
   border-color: var(--sun);
@@ -12115,6 +12118,10 @@ input[type='file']::file-selector-button {
   padding: 0;
   list-style: none;
 }
+/* Un essai seul sur sa ligne prend toute la largeur, pour ne pas laisser une case vide. */
+.essai-options li:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
 .essai-option {
   position: relative;
   display: flex;
@@ -12170,4 +12177,50 @@ input[type='file']::file-selector-button {
 }
 .essai-reprise {
   justify-content: flex-start;
+}
+
+/* Essai des appareils : enregistrement vidéo de test et zone de touches. */
+.essai-clip {
+  display: grid;
+  justify-items: center;
+  gap: 0.6rem;
+  width: 100%;
+}
+.essai-clip-video {
+  width: min(100%, 340px);
+  border-radius: var(--r-lg);
+  background: #05030f;
+  box-shadow: 0 0 0 2px var(--lime);
+}
+.essai-zone-touche {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--r-lg);
+  background: radial-gradient(circle at 50% 50%, rgba(63, 245, 224, 0.08), transparent 70%), var(--glass);
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+.essai-cible {
+  position: absolute;
+  width: 4.5rem;
+  height: 4.5rem;
+  transform: translate(-50%, -50%);
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  font-size: 2rem;
+  cursor: pointer;
+  touch-action: none;
+  user-select: none;
+  background: radial-gradient(circle at 35% 30%, #fff3b0, var(--sun) 60%, #d98a1a);
+  box-shadow:
+    0 0 0 6px rgba(255, 209, 102, 0.22),
+    0 0 36px -4px rgba(255, 209, 102, 0.8);
+}
+.essai-cible:focus-visible {
+  outline: 3px solid var(--cyan);
+  outline-offset: 4px;
 }

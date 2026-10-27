@@ -2,16 +2,18 @@ import { z } from 'zod';
 import type { GameModule } from '@partyhub/shared';
 
 /**
- * Essai des appareils : un jeu pour vérifier, téléphone par téléphone, le micro, la caméra, le mouvement
- * et le dessin. Pas de score : chaque téléphone fait chaque essai, puis déclare s'il a réussi.
+ * Essai des appareils : un jeu pour vérifier, téléphone par téléphone, le micro, la caméra (image, fluidité,
+ * enregistrement), le mouvement, le dessin et la réactivité des touches.
+ *
+ * Pas de score : chaque téléphone fait chaque essai, puis déclare s'il a réussi.
  *
  * Le serveur ne voit ni le son, ni l'image, ni le geste : il enregistre seulement le résultat déclaré.
  * C'est un outil de contrôle, pas un défi à gagner. Les seuils (durée du son, longueur du trait, angle
  * d'inclinaison) sont réglés par l'hôte et donnés à tous les téléphones, pour que la règle soit la même partout.
  */
 
-/** Les quatre essais possibles, dans l’ordre par défaut. */
-export const ESSAIS = ['micro', 'camera', 'mouvement', 'dessin'] as const;
+/** Les cinq essais possibles, dans l’ordre par défaut. */
+export const ESSAIS = ['micro', 'camera', 'mouvement', 'dessin', 'touche'] as const;
 export type Essai = (typeof ESSAIS)[number];
 
 export const LIBELLE_ESSAI: Record<Essai, string> = {
@@ -19,6 +21,7 @@ export const LIBELLE_ESSAI: Record<Essai, string> = {
   camera: 'Caméra',
   mouvement: 'Mouvement',
   dessin: 'Dessin',
+  touche: 'Touches',
 };
 
 export const ICONE_ESSAI: Record<Essai, string> = {
@@ -26,6 +29,7 @@ export const ICONE_ESSAI: Record<Essai, string> = {
   camera: '📷',
   mouvement: '🧭',
   dessin: '✏️',
+  touche: '👆',
 };
 
 const settingsSchema = z.object({
@@ -33,12 +37,19 @@ const settingsSchema = z.object({
   camera: z.boolean().default(true),
   mouvement: z.boolean().default(true),
   dessin: z.boolean().default(true),
+  touche: z.boolean().default(true),
   /** Durée pendant laquelle le son doit être entendu, en millisecondes. */
   dureeSon: z.number().int().min(500).max(3000).default(1000),
   /** Longueur de trait à tracer, en pixels du dessin (640 px de large). */
   longueurTrait: z.number().int().min(50).max(400).default(150),
   /** Angle d’inclinaison à atteindre de chaque côté, en pourcentage de l’inclinaison maximale. */
   inclinaison: z.number().int().min(30).max(90).default(50),
+  /** Caméra : enregistrer deux secondes de vidéo, puis la relire sur le téléphone (rien n’est envoyé). */
+  enregistrement: z.boolean().default(true),
+  /** Caméra : nombre d’images par seconde minimum pour que la vidéo soit jugée fluide. */
+  imagesMin: z.number().int().min(5).max(30).default(12),
+  /** Touches : délai maximal entre le toucher et le retour affiché, en millisecondes (médiane des essais). */
+  seuilTouche: z.number().int().min(50).max(400).default(150),
   /** Autorise un téléphone à refaire un essai et à corriger son résultat. */
   reprise: z.boolean().default(true),
 });
@@ -69,17 +80,18 @@ export const essaiAppareils: GameModule<EssaiState, EssaiSettings> = {
     name: 'Essai des appareils',
     description: 'Vérifiez le micro, la caméra, le mouvement et le dessin de chaque téléphone.',
     icon: '🧪',
-    version: '1.1.0',
+    version: '1.2.0',
     apiVersion: 1,
     minPlayers: 1,
     maxPlayers: 12,
-    durationMin: 4,
+    durationMin: 5,
     notice: {
       goal: 'Vérifier que chaque téléphone sait faire ce dont les jeux ont besoin.',
       steps: [
         'L’écran principal lance chaque essai, et tout le monde le fait sur son téléphone.',
-        'Micro : maintenez un son. Caméra : démarrez-la et vérifiez votre image.',
+        'Micro : maintenez un son. Caméra : vérifiez votre image, la fluidité, puis l’enregistrement de deux secondes relu sur le téléphone.',
         'Mouvement : penchez le téléphone d’un côté, puis de l’autre. Dessin : tracez un trait et validez.',
+        'Touches : touchez la cible à chaque fois qu’elle change de place. Le délai de retour est mesuré.',
         'Chaque téléphone déclare ensuite son résultat. Le tableau de la salle reprend tous les résultats.',
       ],
       tips: [
@@ -164,6 +176,9 @@ export const essaiAppareils: GameModule<EssaiState, EssaiSettings> = {
         dureeSon: s.settings.dureeSon,
         longueurTrait: s.settings.longueurTrait,
         inclinaison: s.settings.inclinaison,
+        enregistrement: s.settings.enregistrement,
+        imagesMin: s.settings.imagesMin,
+        seuilTouche: s.settings.seuilTouche,
         reprise: s.settings.reprise,
       },
       joueurs: ids.map((id) => ({

@@ -106,8 +106,13 @@ def main() -> int:
         expect(a.get_by_role("button", name="Démarrer la caméra")).to_be_visible(timeout=15000)
         a.get_by_role("button", name="Démarrer la caméra").click()
         b.get_by_role("button", name="Démarrer la caméra").click()
-        expect(a.get_by_role("button", name="Je me vois")).to_be_enabled(timeout=20000)
+        expect(a.get_by_text(re.compile("Vidéo fluide|Vidéo saccadée"))).to_be_visible(timeout=20000)
+        check(a.get_by_text(re.compile("Vidéo fluide")).count() == 1, "A : la vidéo est fluide (images mesurées)")
         check(True, "A : l’image de la caméra arrive")
+        a.get_by_role("button", name="Enregistrer 2 s pour vérifier la vidéo").click()
+        expect(a.get_by_text("Votre enregistrement se relit")).to_be_visible(timeout=20000)
+        expect(a.get_by_role("button", name="Je me vois")).to_be_enabled(timeout=5000)
+        check(True, "A : l’enregistrement de 2 s se relit")
         a.get_by_role("button", name="Je me vois").click()
         b.get_by_role("button", name="Je ne me vois pas").click()
         expect(a.get_by_role("button", name="Étape suivante")).to_be_visible(timeout=15000)
@@ -143,6 +148,16 @@ def main() -> int:
         check(True, "A : le trait est tracé, l’essai peut être validé")
         a.get_by_role("button", name="Le dessin marche").click()
         b.get_by_role("button", name="Je n’arrive pas à dessiner").click()
+
+        # 5. Touches : chaque téléphone touche la cible cinq fois ; le retour est mesuré sur place.
+        expect(a.get_by_role("button", name="Étape suivante")).to_be_visible(timeout=15000)
+        a.get_by_role("button", name="Étape suivante").click()
+        for page in (a, b):
+            expect(page.get_by_text(re.compile("Touche 1 sur 5"))).to_be_visible(timeout=15000)
+            for _ in range(5):
+                page.locator(".essai-cible").click()
+            expect(page.get_by_text("Mesure terminée.")).to_be_visible(timeout=15000)
+        check(True, "touches : les cinq touches de chaque téléphone sont mesurées")
 
         # Bilan : l'hôte voit le tableau avec les résultats déclarés.
         expect(a.get_by_role("button", name="Étape suivante")).to_be_visible(timeout=15000)

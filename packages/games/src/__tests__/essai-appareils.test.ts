@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { essaiAppareils, ESSAIS, type EssaiState } from '../essai-appareils/module.js';
+import { mediane } from '../essai-appareils/client/essais.js';
 
 const alice = { id: 'a', name: 'Alice' };
 const bob = { id: 'b', name: 'Bob' };
@@ -23,10 +24,10 @@ function rapport(s: EssaiState, p: { id: string; name: string }, reussi: boolean
 }
 
 describe('Essai des appareils : déroulé', () => {
-  it('démarre sur le micro, puis enchaîne les quatre essais dans l’ordre', () => {
+  it('démarre sur le micro, puis enchaîne les cinq essais dans l’ordre', () => {
     let s = lancer();
     expect(essaiAppareils.getPublicState(s).etape).toBe('micro');
-    const attendu = ['micro', 'camera', 'mouvement', 'dessin'];
+    const attendu = ['micro', 'camera', 'mouvement', 'dessin', 'touche'];
     for (const etape of attendu) {
       expect(essaiAppareils.getPublicState(s).etape).toBe(etape);
       s = essaiAppareils.nextRound(s);
@@ -126,7 +127,7 @@ describe('Essai des appareils : vues', () => {
     for (let i = 0; i < ESSAIS.length; i++) s = essaiAppareils.nextRound(s);
     const pub = essaiAppareils.getPublicState(s);
     expect(pub.phase).toBe('final');
-    expect(pub.joueurs[0].resultats).toEqual([true, null, null, null]);
+    expect(pub.joueurs[0].resultats).toEqual([true, null, null, null, null]);
   });
 });
 
@@ -150,12 +151,16 @@ describe('Essai des appareils : réglages', () => {
 
   it('n’enchaîne que les essais activés, dans l’ordre', () => {
     const s = avec({ micro: false, dessin: false });
-    expect(s.essais).toEqual(['camera', 'mouvement']);
-    expect(essaiAppareils.getPublicState(s).etapes.map((e: { id: string }) => e.id)).toEqual(['camera', 'mouvement']);
+    expect(s.essais).toEqual(['camera', 'mouvement', 'touche']);
+    expect(essaiAppareils.getPublicState(s).etapes.map((e: { id: string }) => e.id)).toEqual([
+      'camera',
+      'mouvement',
+      'touche',
+    ]);
   });
 
   it('si tous les essais sont désactivés, la partie les fait tous', () => {
-    const s = avec({ micro: false, camera: false, mouvement: false, dessin: false });
+    const s = avec({ micro: false, camera: false, mouvement: false, dessin: false, touche: false });
     expect(s.essais).toEqual([...ESSAIS]);
   });
 
@@ -166,12 +171,26 @@ describe('Essai des appareils : réglages', () => {
   });
 
   it('la vue publique donne les seuils à tous les téléphones', () => {
-    const s = avec({ dureeSon: 1500, longueurTrait: 200, inclinaison: 70 });
+    const s = avec({ dureeSon: 1500, longueurTrait: 200, inclinaison: 70, seuilTouche: 90, imagesMin: 20 });
     expect(essaiAppareils.getPublicState(s).reglages).toMatchObject({
       dureeSon: 1500,
       longueurTrait: 200,
       inclinaison: 70,
+      seuilTouche: 90,
+      imagesMin: 20,
     });
+  });
+
+  it('refuse un délai de touche ou une image par seconde hors limites', () => {
+    expect(() => essaiAppareils.initialize({ seuilTouche: 20 }, [alice])).toThrow();
+    expect(() => essaiAppareils.initialize({ seuilTouche: 500 }, [alice])).toThrow();
+    expect(() => essaiAppareils.initialize({ imagesMin: 1 }, [alice])).toThrow();
+    expect(() => essaiAppareils.initialize({ imagesMin: 60 }, [alice])).toThrow();
+  });
+
+  it('les réglages vidéo et touches ont leurs valeurs par défaut', () => {
+    const s = essaiAppareils.initialize({}, [alice]) as EssaiState;
+    expect(s.settings).toMatchObject({ touche: true, enregistrement: true, imagesMin: 12, seuilTouche: 150 });
   });
 
   it('sans reprise, un téléphone ne corrige pas son résultat', () => {
@@ -201,5 +220,19 @@ describe('Essai des appareils : réglages', () => {
       inclinaison: 50,
       reprise: true,
     });
+  });
+});
+
+describe('Essai des appareils : médiane des touches', () => {
+  it('prend la valeur du milieu pour un nombre impair de mesures', () => {
+    expect(mediane([300, 100, 200, 500, 400])).toBe(300);
+  });
+
+  it('fait la moyenne des deux milieux pour un nombre pair de mesures', () => {
+    expect(mediane([10, 40, 20, 30])).toBe(25);
+  });
+
+  it('une seule mesure est sa propre médiane', () => {
+    expect(mediane([42])).toBe(42);
   });
 });

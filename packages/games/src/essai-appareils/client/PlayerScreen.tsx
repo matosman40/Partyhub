@@ -1,6 +1,14 @@
 import type { ComponentType } from 'react';
 import type { PlayerViewProps } from '../../client/types.js';
-import { CameraEssai, DessinEssai, MicroEssai, MouvementEssai, type EssaiProps, type Reglages } from './essais.js';
+import {
+  CameraEssai,
+  DessinEssai,
+  MicroEssai,
+  MouvementEssai,
+  ToucheEssai,
+  type EssaiProps,
+  type Reglages,
+} from './essais.js';
 import { EssaiTableau, type EtapeAffichee, type JoueurAffiche } from './HostScreen.js';
 
 const ESSAI_PAR_ID: Record<string, ComponentType<EssaiProps>> = {
@@ -8,6 +16,7 @@ const ESSAI_PAR_ID: Record<string, ComponentType<EssaiProps>> = {
   camera: CameraEssai,
   mouvement: MouvementEssai,
   dessin: DessinEssai,
+  touche: ToucheEssai,
 };
 
 /** Rangée de pastilles : un essai fait, en cours, ou à venir. */

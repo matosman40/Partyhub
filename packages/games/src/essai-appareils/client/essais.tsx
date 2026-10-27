@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { requestCamera, readMediaPrefs } from '../../client/media.js';
 import {
   requestMotionAccess,
@@ -21,6 +21,12 @@ export interface Reglages {
   longueurTrait: number;
   /** Inclinaison à atteindre de chaque côté, en pourcentage de l’inclinaison maximale. */
   inclinaison: number;
+  /** Caméra : enregistrer deux secondes de vidéo et la relire. */
+  enregistrement: boolean;
+  /** Caméra : images par seconde minimum. */
+  imagesMin: number;
+  /** Touches : délai maximal (médiane) entre le toucher et le retour, en millisecondes. */
+  seuilTouche: number;
   reprise: boolean;
 }
 
@@ -135,24 +141,47 @@ export function MicroEssai({ onDone, reglages }: EssaiProps) {
   );
 }
 
-/** Caméra : démarrer l’image, puis confirmer qu’on se voit. */
-export function CameraEssai({ onDone }: EssaiProps) {
+/** Durée de l’enregistrement de test, en millisecondes. */
+const DUREE_ENREGISTREMENT = 2000;
+/** Durée de la mesure de fluidité, en millisecondes. */
+const DUREE_FLUIDITE = 1500;
+
+/** Types de vidéo essayés, du plus courant au plus large. Le premier pris en charge par le téléphone est utilisé. */
+const TYPES_VIDEO = ['video/webm;codecs=vp8', 'video/webm', 'video/mp4'];
+
+type VideoAvecFrames = HTMLVideoElement & {
+  requestVideoFrameCallback?: (cb: (now: number) => void) => number;
+  cancelVideoFrameCallback?: (id: number) => void;
+};
+
+/**
+ * Caméra : l’image doit arriver, la vidéo doit être fluide (images par seconde mesurées sur le téléphone), et
+ * l’enregistrement de deux secondes doit se relire. Rien ne quitte le téléphone : c’est un test local.
+ */
+export function CameraEssai({ onDone, reglages }: EssaiProps) {
   const [actif, setActif] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
   const [image, setImage] = useState(false);
-  const video = useRef<HTMLVideoElement>(null);
+  const [mesure, setMesure] = useState<'attente' | 'en-cours' | 'finie' | 'inconnue'>('attente');
+  const [fps, setFps] = useState<number | null>(null);
+  const [enregistrement, setEnregistrement] = useState<'aucun' | 'en-cours' | 'relisible' | 'illisible'>('aucun');
+  const [clip, setClip] = useState<string | null>(null);
+  const video = useRef<VideoAvecFrames>(null);
+  const flux = useRef<MediaStream | null>(null);
+  const enregistreur = useRef<MediaRecorder | null>(null);
+  const urlClip = useRef<string | null>(null);
 
+  // Démarrage et arrêt propre : les pistes et l’enregistrement cessent à la fermeture de l’essai.
   useEffect(() => {
     if (!actif) return;
     let annule = false;
-    let flux: MediaStream | null = null;
     requestCamera(readMediaPrefs(), 'user')
       .then((stream) => {
         if (annule) {
           stream.getTracks().forEach((t) => t.stop());
           return;
         }
-        flux = stream;
+        flux.current = stream;
         if (video.current) {
           video.current.srcObject = stream;
           void video.current.play().catch(() => undefined);
@@ -163,9 +192,82 @@ export function CameraEssai({ onDone }: EssaiProps) {
       });
     return () => {
       annule = true;
-      flux?.getTracks().forEach((t) => t.stop());
+      flux.current?.getTracks().forEach((t) => t.stop());
+      flux.current = null;
+      if (enregistreur.current?.state === 'recording') enregistreur.current.stop();
     };
   }, [actif]);
+
+  // Libère l’adresse de l’enregistrement quand l’essai se ferme.
+  useEffect(() => {
+    return () => {
+      if (urlClip.current) URL.revokeObjectURL(urlClip.current);
+    };
+  }, []);
+
+  // Fluidité : on compte les images réellement affichées pendant une courte mesure, une seule fois.
+  useEffect(() => {
+    const v = video.current;
+    if (!image || !v) return;
+    if (typeof v.requestVideoFrameCallback !== 'function') {
+      setMesure('inconnue');
+      return;
+    }
+    setMesure('en-cours');
+    let images = 0;
+    let debut: number | null = null;
+    let id = 0;
+    let stop = false;
+    const tick = (now: number) => {
+      if (stop) return;
+      if (debut === null) debut = now;
+      images += 1;
+      if (now - debut >= DUREE_FLUIDITE) {
+        setFps(Math.round((images * 1000) / (now - debut)));
+        setMesure('finie');
+        return;
+      }
+      id = v.requestVideoFrameCallback?.(tick) ?? 0;
+    };
+    id = v.requestVideoFrameCallback(tick);
+    return () => {
+      stop = true;
+      v.cancelVideoFrameCallback?.(id);
+    };
+  }, [image]);
+
+  function enregistrer() {
+    const stream = flux.current;
+    if (!stream || typeof MediaRecorder === 'undefined') {
+      setEnregistrement('illisible');
+      return;
+    }
+    const type = TYPES_VIDEO.find((t) => MediaRecorder.isTypeSupported?.(t));
+    let rec: MediaRecorder;
+    try {
+      rec = new MediaRecorder(stream, type ? { mimeType: type } : undefined);
+    } catch {
+      setEnregistrement('illisible');
+      return;
+    }
+    const morceaux: Blob[] = [];
+    rec.ondataavailable = (e) => {
+      if (e.data.size > 0) morceaux.push(e.data);
+    };
+    rec.onstop = () => {
+      if (urlClip.current) URL.revokeObjectURL(urlClip.current);
+      const url = URL.createObjectURL(new Blob(morceaux, { type: rec.mimeType || 'video/webm' }));
+      urlClip.current = url;
+      setClip(url);
+      setEnregistrement('relisible');
+    };
+    enregistreur.current = rec;
+    setEnregistrement('en-cours');
+    rec.start();
+    window.setTimeout(() => {
+      if (rec.state === 'recording') rec.stop();
+    }, DUREE_ENREGISTREMENT);
+  }
 
   if (erreur) return <Impossible texte={erreur} onPasser={() => onDone(false)} />;
   if (!actif) {
@@ -179,6 +281,18 @@ export function CameraEssai({ onDone }: EssaiProps) {
       </div>
     );
   }
+
+  const mesureFaite = mesure === 'finie' || mesure === 'inconnue';
+  const fluide = mesure === 'inconnue' || (mesure === 'finie' && (fps ?? 0) >= reglages.imagesMin);
+  const relu = !reglages.enregistrement || enregistrement === 'relisible';
+  const pret = image && mesureFaite && fluide && relu;
+  let consigne = 'Démarrage de la caméra…';
+  if (image && mesure === 'en-cours') consigne = 'Image reçue. Mesure de la fluidité…';
+  if (image && mesure === 'inconnue') consigne = 'Image reçue : vous vous voyez ?';
+  if (image && mesure === 'finie') {
+    consigne = fluide ? `Vidéo fluide : ${fps} images/s. Vous vous voyez ?` : `Vidéo saccadée : ${fps} images/s.`;
+  }
+
   return (
     <div className="essai-bloc">
       <div className="essai-cam">
@@ -193,10 +307,39 @@ export function CameraEssai({ onDone }: EssaiProps) {
         <span className="essai-cam-guide" aria-hidden="true" />
       </div>
       <p className="essai-texte" aria-live="polite">
-        {image ? 'Image reçue : vous vous voyez ?' : 'Démarrage de la caméra…'}
+        {consigne}
       </p>
+
+      {reglages.enregistrement && image && (
+        <div className="essai-clip">
+          {enregistrement === 'aucun' && (
+            <button type="button" className="btn ghost small" onClick={enregistrer}>
+              Enregistrer 2 s pour vérifier la vidéo
+            </button>
+          )}
+          {enregistrement === 'en-cours' && <p className="essai-texte">Enregistrement en cours…</p>}
+          {enregistrement === 'relisible' && clip && (
+            <>
+              <video className="essai-clip-video" src={clip} controls playsInline aria-label="Enregistrement de test" />
+              <p className="essai-texte">Votre enregistrement se relit : la vidéo est bien enregistrée.</p>
+            </>
+          )}
+          {enregistrement === 'illisible' && (
+            <p className="essai-note" role="alert">
+              Ce téléphone n’enregistre pas la vidéo dans le navigateur.
+            </p>
+          )}
+        </div>
+      )}
+
+      {mesureFaite && !fluide && (
+        <p className="essai-note" role="alert">
+          Moins de {reglages.imagesMin} images par seconde : rapprochez-vous de la lumière ou fermez les autres applis.
+        </p>
+      )}
+
       <div className="essai-actions">
-        <button type="button" className="btn primary big" disabled={!image} onClick={() => onDone(true)}>
+        <button type="button" className="btn primary big" disabled={!pret} onClick={() => onDone(true)}>
           Je me vois
         </button>
         <button type="button" className="btn ghost" onClick={() => onDone(false)}>
@@ -386,6 +529,100 @@ export function DessinEssai({ onDone, reglages }: EssaiProps) {
       </div>
       <button type="button" className="btn ghost small" onClick={() => onDone(false)}>
         Je n’arrive pas à dessiner
+      </button>
+    </div>
+  );
+}
+
+/** Nombre de touches de la mesure. */
+const TOUCHES_MESURE = 5;
+/** Positions possibles de la cible, en pourcentage de la zone : une grille de 3 × 3. */
+const POSITIONS = [15, 50, 85];
+
+function nouvellePosition(actuelle: { x: number; y: number }): { x: number; y: number } {
+  const choix: { x: number; y: number }[] = [];
+  for (const x of POSITIONS) {
+    for (const y of POSITIONS) {
+      if (x !== actuelle.x || y !== actuelle.y) choix.push({ x, y });
+    }
+  }
+  return choix[Math.floor(Math.random() * choix.length)];
+}
+
+/** Médiane d’une liste de mesures, en millisecondes. */
+export function mediane(valeurs: number[]): number {
+  const triees = [...valeurs].sort((a, b) => a - b);
+  const milieu = Math.floor(triees.length / 2);
+  return triees.length % 2 ? triees[milieu] : (triees[milieu - 1] + triees[milieu]) / 2;
+}
+
+/**
+ * Touches : la cible change de place à chaque toucher. Le délai mesuré va du toucher (horodatage de l’événement)
+ * à l’image suivante affichée : c’est le temps de réponse du téléphone et du navigateur. Le verdict porte sur la
+ * médiane des cinq mesures, comparée au seuil réglé par l’hôte.
+ */
+export function ToucheEssai({ onDone, reglages }: EssaiProps) {
+  const [cible, setCible] = useState({ x: 50, y: 50 });
+  const [mesures, setMesures] = useState<number[]>([]);
+  const debut = useRef<number | null>(null);
+  const fini = useRef(false);
+  const onDoneRef = useRef(onDone);
+
+  useEffect(() => {
+    onDoneRef.current = onDone;
+  });
+
+  // Après chaque toucher, la mesure se termine à la première image qui suit le changement de place.
+  useLayoutEffect(() => {
+    const t0 = debut.current;
+    if (t0 === null) return;
+    debut.current = null;
+    requestAnimationFrame(() => {
+      const ms = performance.now() - t0;
+      setMesures((prev) => [...prev, ms]);
+    });
+  }, [cible]);
+
+  useEffect(() => {
+    if (fini.current || mesures.length < TOUCHES_MESURE) return;
+    fini.current = true;
+    onDoneRef.current(mediane(mesures) <= reglages.seuilTouche);
+  }, [mesures, reglages.seuilTouche]);
+
+  function toucher(e: ReactPointerEvent<HTMLButtonElement>) {
+    if (fini.current || debut.current !== null) return;
+    debut.current = e.timeStamp;
+    setCible((actuelle) => nouvellePosition(actuelle));
+  }
+
+  const faites = mesures.length;
+  const derniere = faites > 0 ? Math.round(mesures[faites - 1]) : null;
+  const median = faites > 0 ? Math.round(mediane(mesures)) : null;
+  return (
+    <div className="essai-bloc">
+      <div className="essai-zone-touche">
+        <button
+          type="button"
+          className="essai-cible"
+          style={{ left: `${cible.x}%`, top: `${cible.y}%` }}
+          onPointerDown={toucher}
+          aria-label="Touchez la cible"
+        >
+          <span aria-hidden="true">👆</span>
+        </button>
+      </div>
+      <p className="essai-texte" aria-live="polite">
+        {faites < TOUCHES_MESURE
+          ? `Touche ${faites + 1} sur ${TOUCHES_MESURE} : touchez la cible dès qu’elle bouge.`
+          : 'Mesure terminée.'}
+      </p>
+      <p className="essai-texte">
+        {derniere === null
+          ? `Seuil : ${reglages.seuilTouche} ms de retour au plus.`
+          : `Dernier retour : ${derniere} ms · médiane : ${median} ms (seuil ${reglages.seuilTouche} ms)`}
+      </p>
+      <button type="button" className="btn ghost small" onClick={() => onDone(false)}>
+        Je n’y arrive pas
       </button>
     </div>
   );

@@ -6,9 +6,13 @@ const DEFAUTS = {
   camera: true,
   mouvement: true,
   dessin: true,
+  touche: true,
   dureeSon: 1000,
   longueurTrait: 150,
   inclinaison: 50,
+  enregistrement: true,
+  imagesMin: 12,
+  seuilTouche: 150,
   reprise: true,
 };
 
@@ -17,6 +21,7 @@ const ESSAIS_OPTIONS = [
   { id: 'camera', icone: '📷', titre: 'Caméra', aide: 'Démarrer l’image et confirmer qu’on se voit' },
   { id: 'mouvement', icone: '🧭', titre: 'Mouvement', aide: 'Pencher le téléphone d’un côté, puis de l’autre' },
   { id: 'dessin', icone: '✏️', titre: 'Dessin', aide: 'Tracer un trait sur l’écran' },
+  { id: 'touche', icone: '👆', titre: 'Touches', aide: 'Toucher une cible qui bouge, le retour est mesuré' },
 ] as const;
 
 /**
@@ -51,6 +56,21 @@ export function EssaiSettings({ settings, disabled, onChange }: SettingsProps) {
         ))}
       </ul>
 
+      <legend className="essai-reglages-titre">Caméra et vidéo</legend>
+      <label className="check essai-reprise">
+        <input type="checkbox" checked={v.enregistrement} onChange={(e) => set({ enregistrement: e.target.checked })} />
+        <span>Enregistrer 2 secondes de vidéo et la relire sur le téléphone</span>
+      </label>
+      <Curseur
+        label="Images par seconde minimum"
+        valeur={v.imagesMin}
+        min={5}
+        max={30}
+        pas={1}
+        affiche={`${v.imagesMin} img/s`}
+        onChange={(n) => set({ imagesMin: n })}
+      />
+
       <legend className="essai-reglages-titre">Seuils</legend>
       <Curseur
         label="Durée du son"
@@ -78,6 +98,15 @@ export function EssaiSettings({ settings, disabled, onChange }: SettingsProps) {
         pas={5}
         affiche={`${v.inclinaison} %`}
         onChange={(n) => set({ inclinaison: n })}
+      />
+      <Curseur
+        label="Délai maximal du toucher"
+        valeur={v.seuilTouche}
+        min={50}
+        max={400}
+        pas={10}
+        affiche={`${v.seuilTouche} ms`}
+        onChange={(n) => set({ seuilTouche: n })}
       />
 
       <label className="check essai-reprise">
