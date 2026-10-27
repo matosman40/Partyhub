@@ -4,6 +4,23 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 
 ## [Non publié]
 
+## [0.17.5] - 2026-10-27
+
+### Ajouté
+
+- Jeu « Essai des appareils » : vérifie, téléphone par téléphone, le micro (son maintenu), la caméra (image, fluidité, enregistrement de deux secondes relu sur le téléphone), le mouvement (inclinaison), le dessin, la réactivité des touches, et la lecture d'une vidéo YouTube dans un cadre (lien donné par l'hôte, jamais sur les téléphones sous forme de lien).
+- Outil de dessin partagé, réutilisable par d'autres jeux : pinceaux (stylo, pinceau, marqueur, néon), couleurs, tampons, gomme, zoom jusqu'à 5 fois (boutons, pincer, molette), annuler et refaire, grille, « Tout effacer » avec confirmation.
+- Bombes party : danser et sourire sur place, depuis le téléphone (boutons « Danser » et « Sourire »). Une bulle (🎶 ou 😄) s'affiche au-dessus du personnage, sur le téléphone comme sur l'écran principal. Un pas interrompt l'expression.
+
+### Modifié
+
+- La zone de dessin de l'essai occupe environ 70 % de la hauteur de l'écran. Le reste de la page défile.
+
+### Vérifié
+
+- `npm test` : shared 111, games 552, serveur 1002, web 341 ; typecheck et format OK ; lint 0 erreur.
+- Tests navigateur : `scripts/essai-appareils-browser.py` (18 contrôles) et `scripts/bombes-browser.py` (12 contrôles, un téléphone se déplace sur le plateau et s'exprime).
+
 ## [0.17.4] - 2026-10-27
 
 ### Ajouté
