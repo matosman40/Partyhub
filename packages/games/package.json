@@ -1,6 +1,6 @@
 {
   "name": "@partyhub/games",
-  "version": "0.17.2",
+  "version": "0.17.3",
   "private": true,
   "type": "module",
   "exports": {
@@ -22,7 +22,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@partyhub/shared": "0.17.2",
+    "@partyhub/shared": "0.17.3",
     "react": "19.3.0",
     "zod": "^4.6.5"
   },

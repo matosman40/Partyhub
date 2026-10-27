@@ -4,6 +4,16 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 
 ## [Non publié]
 
+## [0.17.3] - 2026-10-27
+
+### Ajouté
+
+- Liste « En attente » publique : les jeux qui attendent des réponses (quiz-party, phrases-trous, association, plutôt-qui, imposteur, plus-ou-moins, micro-défis, gags-en-rafale, funambule, imite-moi, aventure-ia) publient la liste des joueurs attendus. Elle s'affiche sur les téléphones sous la vue du jeu.
+
+### Vérifié
+
+- Parties complètes jouées par des robots : égalité entre la vue publique et la vue de l'écran principal à chaque pas, réglages aux bornes, départs, retours et déconnexions en cours de partie, travail IA en échec.
+
 ## [0.17.2] - 2026-10-25
 
 ### Corrigé
