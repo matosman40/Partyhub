@@ -68,6 +68,7 @@ export function GameSheet({
   trying,
   error,
   onCreate,
+  onCreateNoScreen,
   onTry,
 }: {
   game: CatalogGame;
@@ -81,6 +82,8 @@ export function GameSheet({
   trying: boolean;
   error: string | null;
   onCreate: () => void;
+  /** Crée la salle sur ce téléphone, sans écran principal : ce téléphone organise et joue. */
+  onCreateNoScreen: () => void;
   onTry: () => void;
 }) {
   const busy = creating || trying;
@@ -104,6 +107,9 @@ export function GameSheet({
           <div className="sheet-actions">
             <button type="button" className="btn primary big" disabled={busy} onClick={onCreate}>
               {creating ? 'Création…' : 'Créer la salle'}
+            </button>
+            <button type="button" className="btn big" disabled={busy} onClick={onCreateNoScreen}>
+              Créer sans écran
             </button>
             <button type="button" className="btn big" disabled={busy} onClick={onTry}>
               {trying ? 'Préparation…' : 'Essayer seul'}

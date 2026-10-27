@@ -162,6 +162,8 @@ export interface LobbyView {
   status: RoomStatus;
   /** Vrai pendant une pause de l’écran principal : l’horloge de la partie est figée. */
   paused: boolean;
+  /** Vrai quand un écran principal (TV ou ordinateur) est relié à la salle. Faux : les téléphones jouent seuls. */
+  screenConnected: boolean;
   game: GameInfo;
   gameSettings: Record<string, unknown>;
   practice: boolean;

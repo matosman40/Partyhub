@@ -54,13 +54,14 @@ export function GamePage() {
     else navigate('/');
   }
 
-  async function launch(practice: boolean) {
+  async function launch(practice: boolean, withScreen = true) {
     if (!game) return;
     setBusy(practice ? 'try' : 'create');
     setError(null);
     try {
       const code = await launchGame(game.id, practice);
-      navigate(`/tv/${code}`);
+      // Sans écran, ce téléphone organise la salle et y joue : la page de la place prend le relais.
+      navigate(withScreen ? `/tv/${code}` : `/j/${code}`);
     } catch (e) {
       setError((e as Error).message);
       setBusy(null);
@@ -110,6 +111,7 @@ export function GamePage() {
         trying={busy === 'try'}
         error={error}
         onCreate={() => launch(false)}
+        onCreateNoScreen={() => launch(false, false)}
         onTry={() => launch(true)}
       />
     </main>

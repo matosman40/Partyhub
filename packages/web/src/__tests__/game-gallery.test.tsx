@@ -43,6 +43,7 @@ function sheet(photos: string[] | undefined) {
         trying={false}
         error={null}
         onCreate={() => undefined}
+        onCreateNoScreen={() => undefined}
         onTry={() => undefined}
       />
     </MemoryRouter>,

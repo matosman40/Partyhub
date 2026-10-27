@@ -27,6 +27,7 @@ const sibling = { ...quiz, id: 'quiz-duo', name: 'Quiz Duo', description: 'À de
 
 const handlers = {
   onCreate: () => undefined,
+  onCreateNoScreen: () => undefined,
   onTry: () => undefined,
 };
 
@@ -103,10 +104,10 @@ describe('GameSheet', () => {
     expect(sheet({ sameCategory: [] })).not.toContain('Dans la même catégorie');
   });
 
-  it('pendant une création, désactive les deux actions', () => {
+  it('pendant une création, désactive toutes les actions', () => {
     const html = sheet({ creating: true });
     expect(html).toContain('Création…');
-    expect(html.match(/disabled=""/g)?.length).toBe(2);
+    expect(html.match(/disabled=""/g)?.length).toBe(3);
   });
 
   it('affiche une erreur lisible', () => {
@@ -123,5 +124,13 @@ describe('playersText', () => {
     expect(playersText({ minPlayers: 1, maxPlayers: 1 })).toBe('1 joueur');
     expect(playersText({ minPlayers: 4, maxPlayers: 4 })).toBe('4 joueurs');
     expect(playersText({ minPlayers: 2, maxPlayers: 8 })).toBe('2 à 8 joueurs');
+  });
+});
+
+describe('Créer sans écran', () => {
+  it('propose « Créer sans écran » à côté de « Créer la salle »', () => {
+    const html = sheet();
+    expect(html).toContain('Créer la salle');
+    expect(html).toContain('Créer sans écran');
   });
 });

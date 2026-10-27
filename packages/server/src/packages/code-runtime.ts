@@ -1,5 +1,14 @@
 import ivm from 'isolated-vm';
-import type { BotSuggestion, GameContext, GameManifest, GameModule, GameResult, PlayerRef } from '@partyhub/shared';
+import type {
+  BotSuggestion,
+  GameContext,
+  GameJob,
+  GameManifest,
+  GameModule,
+  GameResult,
+  JobOutcome,
+  PlayerRef,
+} from '@partyhub/shared';
 
 /**
  * Runtime d'un jeu de code : le bundle serveur tourne dans un isolat V8 séparé.
@@ -64,6 +73,7 @@ const SHIM = `
           hostActions: hostActionNames,
           hasHostActions: typeof mod.handleHostAction === 'function',
           hasSuggest: typeof mod.suggest === 'function',
+          hasJob: typeof mod.pendingJob === 'function' && typeof mod.completeJob === 'function',
           missing: REQUIRED.filter(function (n) { return typeof mod[n] !== 'function'; })
         });
       case 'settingsParse': return ok(plain(mod.settingsSchema.safeParse(a.value)));
@@ -83,6 +93,8 @@ const SHIM = `
       case 'playerState': return ok(mod.getPlayerState(a.state, a.playerId));
       case 'hostState': return ok(mod.getHostState(a.state));
       case 'isFinished': return ok(mod.isFinished(a.state));
+      case 'pendingJob': return ok(mod.pendingJob ? mod.pendingJob(a.state) : null);
+      case 'completeJob': return ok(mod.completeJob(a.state, a.jobId, a.outcome, ctx));
       case 'suggest':
         return ok(mod.suggest ? mod.suggest(a.state, a.playerId, function () { return host('random', null, null); }, a.now) : null);
       default: throw new Error('Méthode inconnue : ' + method);
@@ -111,6 +123,8 @@ export interface CodeMeta {
   hostActions: string[];
   hasHostActions: boolean;
   hasSuggest: boolean;
+  /** Vrai quand le jeu demande un travail hors moteur (ex. génération par IA). */
+  hasJob?: boolean;
   missing: string[];
 }
 
@@ -304,6 +318,16 @@ export function createCodeModule(runtime: CodeGameRuntime, codeView?: { script: 
     isFinished: (state: unknown) => runtime.call<boolean>('isFinished', { state }),
   };
 
+  if (meta.hasJob) {
+    // Le travail (IA, réseau) ne tourne pas dans le bac à sable : il échoue proprement, et le jeu
+    // reprend son contenu intégré (repli), comme quand aucune IA n'est configurée.
+    module.pendingJob = (state: unknown) => runtime.call<GameJob | null>('pendingJob', { state });
+    module.runJob = async () => {
+      throw new Error('Travail IA indisponible dans un jeu de code : repli sur le contenu intégré.');
+    };
+    module.completeJob = (state: unknown, jobId: string, outcome: JobOutcome, ctx: GameContext) =>
+      stateCall('completeJob', { state, jobId, outcome }, ctx);
+  }
   if (meta.hasSuggest) {
     module.suggest = (state: unknown, playerId: string, random: () => number, now: number): BotSuggestion | null =>
       runtime.call<BotSuggestion | null>('suggest', { state, playerId, now }, { ctx: null, random });

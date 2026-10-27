@@ -154,3 +154,30 @@ describe('partie sans écran principal', () => {
     expect(view.lobby).toBeDefined();
   });
 });
+
+describe('écran relié ou non', () => {
+  it('la vue du joueur indique l’absence d’écran, puis sa présence quand un écran se connecte', async () => {
+    const res = await fetch(`${base}/api/rooms`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ gameId: 'plutot-qui' }),
+    });
+    const { code, hostToken } = (await res.json()) as { code: string; hostToken: string };
+
+    const phone = await connect();
+    expect((await call(phone, 'host:connect', { code, hostToken })).ok).toBe(true);
+
+    // Un joueur arrive : sa vue annonce qu'aucun écran n'est relié.
+    const player = await connect();
+    const arrival = nextView<PlayerRoomView>(player, 'room:player', () => true);
+    const joined = await call(player, 'player:join', { code, name: 'Ana' });
+    expect(joined.ok).toBe(true);
+    expect((await arrival).lobby.screenConnected).toBe(false);
+
+    // Un écran se connecte : la vue suivante l'annonce.
+    const screen = await connect();
+    const seen = nextView<PlayerRoomView>(player, 'room:player', (v) => v.lobby.screenConnected === true);
+    expect((await call(screen, 'host:connect', { code, hostToken, screen: true })).ok).toBe(true);
+    expect((await seen).lobby.screenConnected).toBe(true);
+  });
+});

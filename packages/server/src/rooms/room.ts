@@ -312,6 +312,7 @@ export class Room {
       code: this.code,
       status: this.status,
       paused: this.paused,
+      screenConnected: this.screens.size > 0,
       game,
       gameSettings: this.settings,
       practice: this.practice,
