@@ -1,0 +1,11 @@
+[Unit]
+Description=Sauvegarde de PartyHub (données et certificat HTTPS)
+Documentation=file://@INSTALL_DIR@/docs/SAUVEGARDE.md
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+EnvironmentFile=-/etc/partyhub-sauvegarde.env
+ExecStart=@INSTALL_DIR@/deploy/sauvegarde/partyhub-sauvegarde.sh
+TimeoutStartSec=30min
