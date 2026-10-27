@@ -4,6 +4,13 @@ import { essaiAppareils, ESSAIS, type EssaiState } from '../essai-appareils/modu
 const alice = { id: 'a', name: 'Alice' };
 const bob = { id: 'b', name: 'Bob' };
 
+function lancerAvec(settings: Record<string, unknown>): EssaiState {
+  const s0 = essaiAppareils.initialize(settings, [alice, bob]) as EssaiState;
+  const r = essaiAppareils.start(s0);
+  if (!r.ok) throw new Error(r.error);
+  return r.state;
+}
+
 function lancer(): EssaiState {
   const s0 = essaiAppareils.initialize({}, [alice, bob]) as EssaiState;
   const r = essaiAppareils.start(s0);
@@ -57,7 +64,7 @@ describe('Essai des appareils : résultats déclarés', () => {
   });
 
   it('refuse un second résultat pour le même essai, mais accepte le suivant', () => {
-    let s = lancer();
+    let s = lancerAvec({ reprise: false });
     const premier = rapport(s, alice, false);
     if (!premier.ok) throw new Error('premier résultat refusé');
     s = premier.state;
@@ -130,5 +137,69 @@ describe('Essai des appareils : départs et retours', () => {
     expect(essaiAppareils.getHostState(s).attente).toEqual(['Alice', 'Bob', 'Chloé']);
     s = essaiAppareils.onPlayerLeave(s, { id: 'b', name: 'Bob' });
     expect(essaiAppareils.getHostState(s).attente).toEqual(['Alice', 'Chloé']);
+  });
+});
+
+describe('Essai des appareils : réglages', () => {
+  function avec(settings: Record<string, unknown>): EssaiState {
+    const s0 = essaiAppareils.initialize(settings, [alice, bob]) as EssaiState;
+    const r = essaiAppareils.start(s0);
+    if (!r.ok) throw new Error(r.error);
+    return r.state;
+  }
+
+  it('n’enchaîne que les essais activés, dans l’ordre', () => {
+    const s = avec({ micro: false, dessin: false });
+    expect(s.essais).toEqual(['camera', 'mouvement']);
+    expect(essaiAppareils.getPublicState(s).etapes.map((e: { id: string }) => e.id)).toEqual(['camera', 'mouvement']);
+  });
+
+  it('si tous les essais sont désactivés, la partie les fait tous', () => {
+    const s = avec({ micro: false, camera: false, mouvement: false, dessin: false });
+    expect(s.essais).toEqual([...ESSAIS]);
+  });
+
+  it('le serveur borne les seuils : une valeur hors limite est refusée à la configuration', () => {
+    expect(() => essaiAppareils.initialize({ dureeSon: 50 }, [alice])).toThrow();
+    expect(() => essaiAppareils.initialize({ longueurTrait: 9999 }, [alice])).toThrow();
+    expect(() => essaiAppareils.initialize({ inclinaison: 10 }, [alice])).toThrow();
+  });
+
+  it('la vue publique donne les seuils à tous les téléphones', () => {
+    const s = avec({ dureeSon: 1500, longueurTrait: 200, inclinaison: 70 });
+    expect(essaiAppareils.getPublicState(s).reglages).toMatchObject({
+      dureeSon: 1500,
+      longueurTrait: 200,
+      inclinaison: 70,
+    });
+  });
+
+  it('sans reprise, un téléphone ne corrige pas son résultat', () => {
+    let s = avec({ reprise: false });
+    const premier = rapport(s, alice, false);
+    if (!premier.ok) throw new Error('refusé');
+    s = premier.state;
+    expect(rapport(s, alice, true).ok).toBe(false);
+  });
+
+  it('avec reprise, un téléphone peut corriger son résultat pendant l’essai', () => {
+    const s = avec({ reprise: true });
+    const premier = rapport(s, alice, false);
+    if (!premier.ok) throw new Error('refusé');
+    const corrige = rapport(premier.state, alice, true);
+    expect(corrige.ok).toBe(true);
+    if (!corrige.ok) return;
+    expect(corrige.state.resultats.a).toEqual({ micro: true });
+  });
+
+  it('une configuration vide ou partielle garde les valeurs par défaut', () => {
+    const s = essaiAppareils.initialize({}, [alice]) as EssaiState;
+    expect(s.settings).toMatchObject({
+      micro: true,
+      dureeSon: 1000,
+      longueurTrait: 150,
+      inclinaison: 50,
+      reprise: true,
+    });
   });
 });

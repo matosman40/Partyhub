@@ -24,7 +24,13 @@ import { read3DPreference, supportsWebGL, write3DPreference } from '../three/pre
 import { AvatarsContext, MoodsContext, PauseContext, useWakeLock, type PromoteurPub } from '@partyhub/games/client';
 import { TvLobby, type HandoffCode } from './tv/TvLobby.js';
 import { CornerMenu, DrawerSection } from '../components/CornerMenu.js';
-import { ChampionshipSettingsForm, GameEndPanel, championshipPill, replayLabel } from '../components/Championship.js';
+import {
+  ChampionshipSettingsForm,
+  GameEndPanel,
+  championshipPill,
+  hasEndResults,
+  replayLabel,
+} from '../components/Championship.js';
 import { useActiveProfile } from '../profile/useProfile.js';
 import { useActivity } from './tv/useActivity.js';
 import { useGamePhotoCapture } from '../tv/useGamePhotoCapture.js';
@@ -456,7 +462,7 @@ export function TvPage() {
       <MoodsContext.Provider value={arrivals}>
         <PauseContext.Provider value={lobby.paused}>
           <main
-            className={`stage ${inLobby ? 'is-lobby' : 'is-game'}${lobby.status === 'ended' ? ' has-results' : ''}`}
+            className={`stage ${inLobby ? 'is-lobby' : 'is-game'}${lobby.status === 'ended' && hasEndResults(lobby) ? ' has-results' : ''}`}
             style={skyStyle}
           >
             <GameScene

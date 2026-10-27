@@ -11709,3 +11709,465 @@ input[type='file']::file-selector-button {
     border-radius: 0;
   }
 }
+
+/* ==========================================================================
+   Essai des appareils : téléphone, écran principal, réglages du salon.
+   Tout se règle par les variables du thème, clair comme sombre.
+   ========================================================================== */
+.essai-ecran,
+.essai-ecran-hote {
+  display: grid;
+  gap: clamp(0.8rem, 2vh, 1.2rem);
+  justify-items: center;
+  margin-inline: auto;
+  width: min(100%, 720px);
+  text-align: center;
+}
+
+.essai-titre,
+.essai-titre-grand {
+  margin: 0;
+  font-family: var(--display);
+  color: var(--sun);
+  line-height: 1.05;
+}
+.essai-titre {
+  font-size: clamp(1.8rem, 6vw, 2.6rem);
+}
+.essai-titre-grand {
+  font-size: clamp(2.2rem, 5vw, 3.8rem);
+}
+
+.essai-texte {
+  margin: 0;
+  color: var(--muted);
+  font-size: 1.05rem;
+}
+
+.essai-compteur {
+  margin: 0;
+  color: var(--faint);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.essai-note {
+  margin: 0;
+  max-width: 60ch;
+  padding: 0.8rem 1rem;
+  border-radius: var(--r-md);
+  border: 1px solid rgba(255, 93, 115, 0.35);
+  background: rgba(255, 93, 115, 0.1);
+  color: var(--text);
+  font-size: 0.95rem;
+}
+
+.essai-bloc {
+  display: grid;
+  gap: 1rem;
+  justify-items: center;
+  width: 100%;
+}
+
+.essai-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  justify-content: center;
+}
+
+/* Pastille : une icône dans un anneau de progression. */
+.essai-orbe {
+  --p: 0deg;
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: clamp(120px, 34vw, 160px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 35%, rgba(255, 255, 255, 0.14), transparent 60%), rgba(18, 13, 49, 0.9);
+  box-shadow:
+    inset 0 0 0 1px var(--line-strong),
+    0 0 40px -10px var(--btn-glow);
+}
+.essai-orbe::before {
+  content: '';
+  position: absolute;
+  inset: -9px;
+  border-radius: 50%;
+  background: conic-gradient(var(--cyan) var(--p), rgba(255, 255, 255, 0.1) 0);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 8px), #000 calc(100% - 7px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 8px), #000 calc(100% - 7px));
+}
+.essai-orbe.is-ok::before {
+  background: var(--lime);
+}
+.essai-orbe span {
+  font-size: clamp(3rem, 12vw, 4.4rem);
+  line-height: 1;
+}
+
+/* Micro : barres de niveau qui s’allument avec le son. */
+.essai-barres {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 92px;
+}
+.essai-barres span {
+  width: 12px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.12);
+  transition:
+    background 0.1s,
+    box-shadow 0.1s;
+}
+.essai-barres span.is-on {
+  background: linear-gradient(180deg, var(--cyan), var(--violet));
+  box-shadow: 0 0 14px -2px var(--cyan);
+}
+
+/* Caméra : cadre néon, guide de visage en pointillés. */
+.essai-cam {
+  position: relative;
+  width: min(100%, 340px);
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  border-radius: var(--r-lg);
+  background: #05030f;
+  box-shadow:
+    0 0 0 2px var(--cyan),
+    0 0 40px -8px rgba(63, 245, 224, 0.55);
+}
+.essai-cam video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1);
+}
+.essai-cam-guide {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 56%;
+  aspect-ratio: 3 / 4;
+  transform: translate(-50%, -50%);
+  border: 2px dashed rgba(255, 255, 255, 0.7);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* Mouvement : la boussole suit l’inclinaison en direct. */
+.essai-boussole {
+  font-size: clamp(4.5rem, 16vw, 6rem);
+  line-height: 1;
+  filter: drop-shadow(0 0 18px var(--sun));
+  transition: transform 0.08s linear;
+}
+.essai-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.essai-chips li {
+  padding: 0.4rem 0.8rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+.essai-chips li.is-ok {
+  border-color: var(--lime);
+  background: rgba(182, 255, 92, 0.1);
+  color: var(--lime);
+}
+
+/* Dessin : fond quadrillé sombre, trait néon. */
+.essai-pad {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 640 / 400;
+  overflow: hidden;
+  border-radius: var(--r-lg);
+  background-color: #0b0820;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 32px 32px;
+  box-shadow:
+    inset 0 0 0 1px var(--line-strong),
+    0 0 40px -12px var(--btn-glow);
+}
+.essai-pad canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  cursor: crosshair;
+}
+.essai-pad-indice {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--faint);
+  font-weight: 700;
+  pointer-events: none;
+}
+
+/* Barre de progression (trait du dessin, réponses sur l’écran principal). */
+.essai-progress {
+  width: 100%;
+  height: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+}
+.essai-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--cyan), var(--lime));
+  transition: width 0.15s;
+}
+
+/* Parcours des essais : une pastille par essai. */
+.essai-parcours {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.essai-parcours li {
+  display: grid;
+  justify-items: center;
+  gap: 0.1rem;
+  min-width: 66px;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--glass);
+  font-size: 1.4rem;
+  opacity: 0.55;
+}
+.essai-parcours li small {
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.essai-parcours li.is-courant {
+  border-color: var(--sun);
+  box-shadow: 0 0 22px -6px var(--sun);
+  opacity: 1;
+}
+.essai-parcours li.is-ok {
+  border-color: var(--lime);
+  opacity: 1;
+}
+.essai-parcours li.is-ko {
+  border-color: var(--danger);
+  opacity: 1;
+}
+
+/* Tableau des résultats, sur l’écran principal et sur le bilan du téléphone. */
+.essai-tableau-cadre {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--glass);
+}
+.essai-tableau {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.95rem;
+}
+.essai-tableau th,
+.essai-tableau td {
+  padding: 0.7rem 0.6rem;
+  border-bottom: 1px solid var(--line);
+  text-align: center;
+}
+.essai-tableau thead th {
+  background: rgba(0, 0, 0, 0.18);
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.essai-tableau thead th.is-courant {
+  color: var(--sun);
+}
+.essai-tableau tbody th {
+  text-align: left;
+  font-weight: 700;
+}
+.essai-tableau tbody th small {
+  color: var(--faint);
+  font-weight: 600;
+}
+.essai-tableau tr.is-moi th {
+  color: var(--cyan);
+}
+.essai-tableau.is-compact th,
+.essai-tableau.is-compact td {
+  padding: 0.6rem 0.2rem;
+}
+.essai-tableau.is-compact thead th {
+  font-size: 1.15rem;
+  letter-spacing: 0;
+}
+.essai-tableau.is-compact tbody th {
+  max-width: 6.5rem;
+}
+.essai-tableau .essai-nom {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.essai-tableau.is-compact .essai-chip {
+  display: inline-grid;
+  place-items: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  padding: 0;
+  font-size: 0.9rem;
+}
+.essai-chip {
+  display: inline-block;
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.essai-chip.is-ok {
+  background: rgba(182, 255, 92, 0.14);
+  color: var(--lime);
+}
+.essai-chip.is-ko {
+  background: rgba(255, 93, 115, 0.14);
+  color: var(--danger);
+}
+.essai-chip.is-attente {
+  border: 1px dashed var(--line-strong);
+  color: var(--faint);
+}
+
+/* Écran principal : en-tête de l’essai et avancement. */
+.essai-entete {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+}
+.essai-entete-icone {
+  font-size: clamp(3rem, 8vw, 5rem);
+  filter: drop-shadow(0 0 16px var(--sun));
+}
+.essai-avancement {
+  display: grid;
+  justify-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  max-width: 640px;
+}
+
+/* Réglages du salon. */
+.essai-reglages {
+  display: grid;
+  gap: 0.9rem;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.essai-reglages:disabled {
+  opacity: 0.6;
+}
+.essai-reglages-titre {
+  padding: 0;
+  margin-top: 0.4rem;
+  color: var(--sun);
+  font-family: var(--display);
+  font-size: 1.1rem;
+}
+.essai-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.essai-option {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--glass);
+  cursor: pointer;
+}
+.essai-option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.essai-option:focus-within {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.essai-option.is-on {
+  border-color: var(--sun);
+  background: rgba(255, 200, 61, 0.08);
+  box-shadow: inset 0 0 0 1px var(--sun);
+}
+.essai-option-icone {
+  font-size: 1.6rem;
+}
+.essai-option-texte {
+  display: grid;
+  gap: 0.1rem;
+}
+.essai-option-texte small {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+.essai-curseur {
+  display: grid;
+  gap: 0.35rem;
+}
+.essai-curseur-entete {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 700;
+}
+.essai-curseur-entete output {
+  color: var(--sun);
+  font-family: var(--display);
+}
+.essai-curseur input[type='range'] {
+  width: 100%;
+  accent-color: var(--sun);
+}
+.essai-reprise {
+  justify-content: flex-start;
+}

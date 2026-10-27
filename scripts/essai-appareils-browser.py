@@ -93,11 +93,11 @@ def main() -> int:
 
         # 1. Micro : A démarre le micro (le niveau s'affiche), B n'entend rien.
         a.get_by_role("button", name="Démarrer le micro").click()
-        expect(a.get_by_text(re.compile("Dites « ah »"))).to_be_visible(timeout=15000)
+        expect(a.get_by_text(re.compile("Maintenez le son"))).to_be_visible(timeout=15000)
         check(True, "A : le micro démarre et le niveau s’affiche")
         a.get_by_role("button", name="Je n’entends rien").click()
         b.get_by_role("button", name="Démarrer le micro").click()
-        expect(b.get_by_text(re.compile("Dites « ah »"))).to_be_visible(timeout=15000)
+        expect(b.get_by_text(re.compile("Maintenez le son"))).to_be_visible(timeout=15000)
         b.get_by_role("button", name="Je n’entends rien").click()
         expect(a.get_by_role("button", name="Étape suivante")).to_be_visible(timeout=15000)
         a.get_by_role("button", name="Étape suivante").click()
@@ -148,12 +148,16 @@ def main() -> int:
         expect(a.get_by_role("button", name="Étape suivante")).to_be_visible(timeout=15000)
         a.get_by_role("button", name="Étape suivante").click()
         expect(a.get_by_text("Bilan des essais")).to_be_visible(timeout=15000)
-        table = a.locator("table.essai-table")
+        table = a.locator("table.essai-tableau")
         check(table.count() == 1, "A : le tableau des résultats est affiché")
-        check(table.get_by_text("✔ réussi").count() >= 2, "A : les essais réussis sont marqués ✔")
-        check(table.get_by_text("✘ échec").count() >= 1, "A : les essais en échec sont marqués ✘")
-        b.locator("table.essai-table").wait_for(timeout=15000)
-        check(b.get_by_text("✔ réussi").count() >= 1, "B : le bilan (tableau de la salle) est visible sur son téléphone")
+        # Sur téléphone, le tableau est compact : seules les pastilles ✔ / ✘ restent, avec leur libellé accessible.
+        check(table.locator(".essai-chip.is-ok").count() >= 2, "A : les essais réussis sont marqués ✔")
+        check(table.locator(".essai-chip.is-ko").count() >= 1, "A : les essais en échec sont marqués ✘")
+        b.locator("table.essai-tableau").wait_for(timeout=15000)
+        check(
+            b.locator("table.essai-tableau .essai-chip.is-ok").count() >= 1,
+            "B : le bilan (tableau de la salle) est visible sur son téléphone",
+        )
 
         for name, page, errors in (("A", a, errors_a), ("B", b, errors_b)):
             check(not errors, f"{name} : aucune erreur JavaScript ni console" + (f" ({errors[:2]})" if errors else ""))

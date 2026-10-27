@@ -179,11 +179,23 @@ export function ChampionshipPanel({ series }: { series: SeriesView }) {
   );
 }
 
-/** Colonne de droite de l’écran principal, à la fin d’une partie : podium puis championnat. */
+/** Vrai s’il y a quelque chose à montrer en fin de partie : un podium ou le championnat. */
+export function hasEndResults(lobby: LobbyView): boolean {
+  const podium = Boolean(lobby.lastResult && lobby.lastResult.ranking.length > 0);
+  return podium || Boolean(lobby.series && hasChampionship(lobby.championship));
+}
+
+/**
+ * Colonne de droite de l’écran principal, à la fin d’une partie : podium puis championnat.
+ * Un jeu sans score (contrôle, bilan) n’a ni podium ni classement : pas de colonne vide.
+ */
 export function GameEndPanel({ lobby }: { lobby: LobbyView }) {
+  if (!hasEndResults(lobby)) return null;
   return (
     <aside className="results-panel" aria-label="Résultats de la partie">
-      {lobby.lastResult && <GamePodium result={lobby.lastResult} players={lobby.players} />}
+      {lobby.lastResult && lobby.lastResult.ranking.length > 0 && (
+        <GamePodium result={lobby.lastResult} players={lobby.players} />
+      )}
       {lobby.series && hasChampionship(lobby.championship) && <ChampionshipPanel series={lobby.series} />}
     </aside>
   );
@@ -245,6 +257,8 @@ export function MyResult({ lobby, playerId }: { lobby: LobbyView; playerId: stri
   const standing = series?.standings.find((r) => r.playerId === playerId);
   const teamIndex = lobby.players.find((p) => p.id === playerId)?.team ?? null;
   const team = teamIndex !== null ? series?.teams?.[teamIndex] : undefined;
+  // Un jeu sans score (contrôle, bilan) n’a rien à dire ici : pas de cadre vide.
+  if (!result && !standing && !team && !series?.champion) return null;
   return (
     <section className="my-result" aria-label="Votre résultat">
       {result && (
