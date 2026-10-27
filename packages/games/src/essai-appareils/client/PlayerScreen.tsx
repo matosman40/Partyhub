@@ -3,6 +3,7 @@ import type { PlayerViewProps } from '../../client/types.js';
 import {
   CameraEssai,
   DessinEssai,
+  LectureEssai,
   MicroEssai,
   MouvementEssai,
   ToucheEssai,
@@ -17,6 +18,7 @@ const ESSAI_PAR_ID: Record<string, ComponentType<EssaiProps>> = {
   mouvement: MouvementEssai,
   dessin: DessinEssai,
   touche: ToucheEssai,
+  lecture: LectureEssai,
 };
 
 /** Rangée de pastilles : un essai fait, en cours, ou à venir. */

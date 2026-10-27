@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { essaiAppareils, ESSAIS, type EssaiState } from '../essai-appareils/module.js';
+import { essaiAppareils, ESSAIS, identifiantVideo, type EssaiState } from '../essai-appareils/module.js';
 import { mediane } from '../essai-appareils/client/essais.js';
 
 const alice = { id: 'a', name: 'Alice' };
@@ -161,7 +161,8 @@ describe('Essai des appareils : réglages', () => {
 
   it('si tous les essais sont désactivés, la partie les fait tous', () => {
     const s = avec({ micro: false, camera: false, mouvement: false, dessin: false, touche: false });
-    expect(s.essais).toEqual([...ESSAIS]);
+    // Sans lien, l’essai Vidéo ne peut pas tourner : on lance les autres.
+    expect(s.essais).toEqual(ESSAIS.filter((e) => e !== 'lecture'));
   });
 
   it('le serveur borne les seuils : une valeur hors limite est refusée à la configuration', () => {
@@ -234,5 +235,55 @@ describe('Essai des appareils : médiane des touches', () => {
 
   it('une seule mesure est sa propre médiane', () => {
     expect(mediane([42])).toBe(42);
+  });
+});
+
+describe('Essai des appareils : vidéo à lire dans un cadre', () => {
+  const lien = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
+
+  it('sans lien, l’essai Vidéo n’est jamais proposé', () => {
+    const s = lancer();
+    expect(s.essais).not.toContain('lecture');
+    expect(essaiAppareils.getPublicState(s).reglages.videoId).toBe(null);
+  });
+
+  it('avec un lien YouTube valide, l’essai Vidéo arrive en dernier', () => {
+    const s = lancerAvec({ lienVideo: lien });
+    expect(s.essais).toEqual(['micro', 'camera', 'mouvement', 'dessin', 'touche', 'lecture']);
+    expect(essaiAppareils.getPublicState(s).etapes.at(-1)).toMatchObject({ id: 'lecture', libelle: 'Vidéo' });
+  });
+
+  it('un lien non reconnu est ignoré : pas d’essai Vidéo, aucune erreur', () => {
+    const s = lancerAvec({ lienVideo: 'https://example.com/film.mp4' });
+    expect(s.essais).not.toContain('lecture');
+    expect(identifiantVideo({ lienVideo: 'https://example.com/film.mp4' })).toBe(null);
+  });
+
+  it('les téléphones reçoivent seulement l’identifiant de la vidéo, jamais le lien', () => {
+    const s = lancerAvec({ lienVideo: lien });
+    const pub = essaiAppareils.getPublicState(s);
+    expect(pub.reglages.videoId).toBe('dQw4w9WgXcQ');
+    expect(JSON.stringify(pub)).not.toContain('youtube.com');
+  });
+
+  it('si l’essai Vidéo est désactivé, le lien est gardé mais l’essai ne tourne pas', () => {
+    const s = lancerAvec({ lienVideo: lien, lecture: false });
+    expect(s.essais).not.toContain('lecture');
+  });
+
+  it('avec le lien seul, les autres essais désactivés laissent la vidéo tourner', () => {
+    const s = lancerAvec({
+      lienVideo: lien,
+      micro: false,
+      camera: false,
+      mouvement: false,
+      dessin: false,
+      touche: false,
+    });
+    expect(s.essais).toEqual(['lecture']);
+  });
+
+  it('refuse un lien trop long', () => {
+    expect(() => essaiAppareils.initialize({ lienVideo: 'a'.repeat(301) }, [alice])).toThrow();
   });
 });

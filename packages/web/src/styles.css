@@ -12224,3 +12224,71 @@ input[type='file']::file-selector-button {
   outline: 3px solid var(--cyan);
   outline-offset: 4px;
 }
+
+/* Essai des appareils : cadre vidéo et lien à lire. */
+.essai-cadre-video {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: var(--r-lg);
+  background: #000;
+  box-shadow: 0 0 0 2px var(--lime);
+}
+.essai-cadre-attente {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 3rem;
+}
+.essai-cadre-video iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #000;
+  color-scheme: dark;
+}
+.essai-lien {
+  display: grid;
+  gap: 0.35rem;
+}
+.essai-lien label {
+  display: grid;
+  gap: 0.35rem;
+}
+.essai-lien-titre {
+  font-weight: 700;
+}
+.essai-lien input {
+  width: 100%;
+  padding: 0.6rem 0.8rem;
+  border-radius: var(--r-md);
+  border: 1px solid var(--line-strong);
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--text);
+  font: inherit;
+}
+.essai-lien-statut {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.essai-lien-statut.is-erreur {
+  color: var(--danger);
+}
+.essai-cadre-echec {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  padding: 1.2rem;
+  background: #05030f;
+  color: var(--text);
+  font-weight: 600;
+  text-align: center;
+}

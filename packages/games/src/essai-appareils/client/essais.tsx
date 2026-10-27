@@ -27,6 +27,8 @@ export interface Reglages {
   imagesMin: number;
   /** Touches : délai maximal (médiane) entre le toucher et le retour, en millisecondes. */
   seuilTouche: number;
+  /** Vidéo : identifiant YouTube à lire dans un cadre, ou null. */
+  videoId: string | null;
   reprise: boolean;
 }
 
@@ -624,6 +626,77 @@ export function ToucheEssai({ onDone, reglages }: EssaiProps) {
       <button type="button" className="btn ghost small" onClick={() => onDone(false)}>
         Je n’y arrive pas
       </button>
+    </div>
+  );
+}
+
+/** Origine du lecteur YouTube sans cookies : seuls ses messages comptent comme « la vidéo tourne ». */
+const ORIGINE_LECTEUR = 'https://www.youtube-nocookie.com';
+/** Délai sans signe du lecteur avant d’afficher un message au lieu d’un cadre vide. */
+const DELAI_LECTEUR = 8000;
+
+/**
+ * Vidéo : le lien de l’hôte se lit dans un cadre sur le téléphone. Seul l’identifiant YouTube arrive ici, et il est
+ * vérifié côté serveur : l’adresse du cadre est donc toujours celle du lecteur YouTube sans cookies.
+ * Si le lecteur ne répond pas (réseau coupé, vidéo retirée), un panneau sombre le dit à la place d’un cadre blanc.
+ */
+export function LectureEssai({ onDone, reglages }: EssaiProps) {
+  const id = reglages.videoId;
+  const cadre = useRef<HTMLIFrameElement>(null);
+  const [signal, setSignal] = useState<'attente' | 'recu' | 'echec'>('attente');
+
+  useEffect(() => {
+    if (!id) return;
+    const surMessage = (e: MessageEvent) => {
+      if (e.origin !== ORIGINE_LECTEUR || e.source !== cadre.current?.contentWindow) return;
+      setSignal('recu');
+    };
+    window.addEventListener('message', surMessage);
+    const minuteur = window.setTimeout(() => setSignal((s) => (s === 'recu' ? s : 'echec')), DELAI_LECTEUR);
+    return () => {
+      window.removeEventListener('message', surMessage);
+      window.clearTimeout(minuteur);
+    };
+  }, [id]);
+
+  if (!id) {
+    return <Impossible texte="Aucune vidéo valide n’a été donnée par l’hôte." onPasser={() => onDone(false)} />;
+  }
+
+  // Le lecteur YouTube n’envoie ses messages qu’après une demande « listening » de la page parente.
+  const cadrePrêt = () => {
+    cadre.current?.contentWindow?.postMessage(JSON.stringify({ event: 'listening' }), ORIGINE_LECTEUR);
+  };
+
+  return (
+    <div className="essai-bloc">
+      <div className="essai-cadre-video">
+        <span className="essai-cadre-attente" aria-hidden="true">
+          ▶
+        </span>
+        <iframe
+          ref={cadre}
+          src={`${ORIGINE_LECTEUR}/embed/${id}?enablejsapi=1&playsinline=1&rel=0&modestbranding=1`}
+          title="Vidéo de test"
+          allow="autoplay; encrypted-media; picture-in-picture"
+          allowFullScreen
+          onLoad={cadrePrêt}
+        />
+        {signal === 'echec' && (
+          <div className="essai-cadre-echec" role="alert">
+            La vidéo ne s’affiche pas sur ce téléphone : vérifiez la connexion, ou répondez « Ça ne marche pas ».
+          </div>
+        )}
+      </div>
+      <p className="essai-texte">Lancez la vidéo dans le cadre : vérifiez l’image et le son.</p>
+      <div className="essai-actions">
+        <button type="button" className="btn primary big" onClick={() => onDone(true)}>
+          Je vois et j’entends
+        </button>
+        <button type="button" className="btn ghost" onClick={() => onDone(false)}>
+          Ça ne marche pas
+        </button>
+      </div>
     </div>
   );
 }

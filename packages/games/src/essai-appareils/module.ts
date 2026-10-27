@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { GameModule } from '@partyhub/shared';
+import { parseYoutubeId, type GameModule } from '@partyhub/shared';
 
 /**
  * Essai des appareils : un jeu pour vérifier, téléphone par téléphone, le micro, la caméra (image, fluidité,
@@ -12,8 +12,11 @@ import type { GameModule } from '@partyhub/shared';
  * d'inclinaison) sont réglés par l'hôte et donnés à tous les téléphones, pour que la règle soit la même partout.
  */
 
-/** Les cinq essais possibles, dans l’ordre par défaut. */
-export const ESSAIS = ['micro', 'camera', 'mouvement', 'dessin', 'touche'] as const;
+/**
+ * Les six essais possibles, dans l’ordre par défaut. L’essai « lecture » n’existe que si l’hôte a donné un lien
+ * YouTube valide ; sans lien, il n’est jamais proposé.
+ */
+export const ESSAIS = ['micro', 'camera', 'mouvement', 'dessin', 'touche', 'lecture'] as const;
 export type Essai = (typeof ESSAIS)[number];
 
 export const LIBELLE_ESSAI: Record<Essai, string> = {
@@ -22,6 +25,7 @@ export const LIBELLE_ESSAI: Record<Essai, string> = {
   mouvement: 'Mouvement',
   dessin: 'Dessin',
   touche: 'Touches',
+  lecture: 'Vidéo',
 };
 
 export const ICONE_ESSAI: Record<Essai, string> = {
@@ -30,6 +34,7 @@ export const ICONE_ESSAI: Record<Essai, string> = {
   mouvement: '🧭',
   dessin: '✏️',
   touche: '👆',
+  lecture: '🎬',
 };
 
 const settingsSchema = z.object({
@@ -38,6 +43,12 @@ const settingsSchema = z.object({
   mouvement: z.boolean().default(true),
   dessin: z.boolean().default(true),
   touche: z.boolean().default(true),
+  lecture: z.boolean().default(true),
+  /**
+   * Lien YouTube à lire dans un cadre sur chaque téléphone. Seul l’identifiant de la vidéo est donné aux téléphones,
+   * jamais le lien : un lien qui ne se lit pas est simplement ignoré.
+   */
+  lienVideo: z.string().max(300).default(''),
   /** Durée pendant laquelle le son doit être entendu, en millisecondes. */
   dureeSon: z.number().int().min(500).max(3000).default(1000),
   /** Longueur de trait à tracer, en pixels du dessin (640 px de large). */
@@ -67,10 +78,19 @@ export interface EssaiState {
   resultats: Record<string, Partial<Record<Essai, boolean>>>;
 }
 
-/** Essais retenus : ceux qui sont activés, ou tous si l’hôte les a tous désactivés. */
+/** Identifiant YouTube du lien donné par l’hôte, ou null si le lien est absent ou non reconnu. */
+export function identifiantVideo(settings: Pick<EssaiSettings, 'lienVideo'>): string | null {
+  return settings.lienVideo.trim() === '' ? null : parseYoutubeId(settings.lienVideo);
+}
+
+/**
+ * Essais retenus : ceux qui sont activés, ou tous ceux qui peuvent tourner si l’hôte les a tous désactivés.
+ * L’essai « lecture » ne peut tourner qu’avec un lien valide.
+ */
 function essaisRetenus(settings: EssaiSettings): Essai[] {
-  const retenus = ESSAIS.filter((e) => settings[e]);
-  return retenus.length > 0 ? [...retenus] : [...ESSAIS];
+  const possibles = ESSAIS.filter((e) => e !== 'lecture' || identifiantVideo(settings) !== null);
+  const retenus = possibles.filter((e) => settings[e]);
+  return retenus.length > 0 ? [...retenus] : [...possibles];
 }
 
 export const essaiAppareils: GameModule<EssaiState, EssaiSettings> = {
@@ -80,7 +100,7 @@ export const essaiAppareils: GameModule<EssaiState, EssaiSettings> = {
     name: 'Essai des appareils',
     description: 'Vérifiez le micro, la caméra, le mouvement et le dessin de chaque téléphone.',
     icon: '🧪',
-    version: '1.2.0',
+    version: '1.3.0',
     apiVersion: 1,
     minPlayers: 1,
     maxPlayers: 12,
@@ -92,6 +112,7 @@ export const essaiAppareils: GameModule<EssaiState, EssaiSettings> = {
         'Micro : maintenez un son. Caméra : vérifiez votre image, la fluidité, puis l’enregistrement de deux secondes relu sur le téléphone.',
         'Mouvement : penchez le téléphone d’un côté, puis de l’autre. Dessin : tracez un trait et validez.',
         'Touches : touchez la cible à chaque fois qu’elle change de place. Le délai de retour est mesuré.',
+        'Vidéo : si l’hôte a donné un lien YouTube, la vidéo se lit dans un cadre sur chaque téléphone.',
         'Chaque téléphone déclare ensuite son résultat. Le tableau de la salle reprend tous les résultats.',
       ],
       tips: [
@@ -179,6 +200,7 @@ export const essaiAppareils: GameModule<EssaiState, EssaiSettings> = {
         enregistrement: s.settings.enregistrement,
         imagesMin: s.settings.imagesMin,
         seuilTouche: s.settings.seuilTouche,
+        videoId: identifiantVideo(s.settings),
         reprise: s.settings.reprise,
       },
       joueurs: ids.map((id) => ({
