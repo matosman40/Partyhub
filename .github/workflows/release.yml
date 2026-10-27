@@ -1,11 +1,13 @@
-# Publication d'une version : uniquement lorsqu'un tag vX.Y.Z est poussé.
-# Vérifie le tag, reteste le code, publie l'image sur GHCR (amd64 et arm64),
+# Publication d'une version : lorsqu'un tag vX.Y.Z est poussé, ou lorsque le workflow
+# « Étiqueter une version » l'appelle (un tag créé par GITHUB_TOKEN ne déclenche pas d'autre workflow).
+# Vérifie la version, reteste le code, publie l'image sur GHCR (amd64 et arm64),
 # vérifie l'image téléchargée sans authentification, puis crée la release GitHub.
 name: Publication d'une version
 
 on:
   push:
     tags: ["v*"]
+  workflow_call:
 
 permissions:
   contents: read
@@ -25,14 +27,14 @@ jobs:
       - name: Vérifier le tag et la version du paquet
         id: version
         run: |
-          TAG="${GITHUB_REF_NAME}"
-          if ! [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Tag invalide : $TAG (attendu vX.Y.Z)"; exit 1
+          # La version vient de package.json : c'est la même chose que le tag, qu'il soit poussé
+          # à la main ou créé par le workflow « Étiqueter une version ».
+          VERSION="$(node -p "require('./package.json').version")"
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Version invalide dans package.json : $VERSION (attendu X.Y.Z)"; exit 1
           fi
-          VERSION="${TAG#v}"
-          PKG="$(node -p "require('./package.json').version")"
-          if [ "$PKG" != "$VERSION" ]; then
-            echo "package.json indique $PKG, le tag indique $VERSION"; exit 1
+          if [ "$GITHUB_REF_TYPE" = "tag" ] && [ "$GITHUB_REF_NAME" != "v$VERSION" ]; then
+            echo "Le tag $GITHUB_REF_NAME ne correspond pas à package.json ($VERSION)"; exit 1
           fi
           if ! grep -q "^## \[$VERSION\]" CHANGELOG.md; then
             echo "CHANGELOG.md ne contient pas de section [$VERSION]"; exit 1
@@ -128,5 +130,5 @@ jobs:
             on && /^## \[/ {exit}
             on {print}
           ' CHANGELOG.md > "$RUNNER_TEMP/notes.md"
-          gh release create "$GITHUB_REF_NAME" --title "PartyHub $VERSION" \
+          gh release create "v$VERSION" --title "PartyHub $VERSION" \
             --notes-file "$RUNNER_TEMP/notes.md" --verify-tag
