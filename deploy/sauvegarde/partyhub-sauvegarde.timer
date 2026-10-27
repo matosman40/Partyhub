@@ -1,0 +1,10 @@
+[Unit]
+Description=Sauvegarde quotidienne de PartyHub
+
+[Timer]
+# Chaque nuit à 3 h 17 (heure locale). Persistent : une nuit manquée (machine éteinte) est rattrapée au démarrage.
+OnCalendar=*-*-* 03:17:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

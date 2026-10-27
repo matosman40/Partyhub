@@ -1,0 +1,62 @@
+# Étiquetage automatique : quand package.json change sur main, le tag vX.Y.Z est créé s'il n'existe pas,
+# puis la publication (release.yml) est appelée directement. Un tag créé avec GITHUB_TOKEN ne déclenche
+# pas les autres workflows : c'est pourquoi la publication est appelée et non déclenchée par le tag.
+# Un tag déjà existant n'est jamais déplacé. Pour rejouer une publication échouée, supprimer le tag
+# (git push origin --delete vX.Y.Z) puis pousser à nouveau un commit qui touche package.json, ou relancer ce workflow.
+name: Étiqueter une version
+
+on:
+  push:
+    branches: [main]
+    paths: [package.json]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  detecter:
+    runs-on: ubuntu-24.04
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+      a_creer: ${{ steps.version.outputs.a_creer }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Lire la version et vérifier si son tag existe
+        id: version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+          TAG="v$VERSION"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" >/dev/null 2>&1; then
+            echo "Le tag $TAG existe déjà : rien à faire."
+            echo "a_creer=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Le tag $TAG sera créé sur $GITHUB_SHA."
+            echo "a_creer=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  etiqueter:
+    needs: detecter
+    if: needs.detecter.outputs.a_creer == 'true'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Créer le tag sur le commit de main
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.detecter.outputs.tag }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$TAG" -f sha="$GITHUB_SHA"
+
+  publier:
+    needs: [detecter, etiqueter]
+    if: needs.detecter.outputs.a_creer == 'true'
+    uses: ./.github/workflows/release.yml
+    permissions:
+      contents: write
+      packages: write
