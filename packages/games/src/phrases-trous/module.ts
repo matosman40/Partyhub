@@ -233,6 +233,7 @@ function publicView(s: PhrasesState) {
     ranking: rankPlayers(s),
     notice: s.notice,
     topics: topicsView(s),
+    pending: pendingOf(s),
   };
 
   if (s.phase === 'topics') return { ...base, endsAt: s.topics?.endsAt ?? 0 };
@@ -293,6 +294,23 @@ function publicView(s: PhrasesState) {
 }
 
 /* ---------------------------------------------------------------- module */
+
+/** Joueurs que la salle attend encore (sujet, complétion ou vote). */
+function pendingOf(s: PhrasesState): string[] {
+  if (s.phase === 'topics' && s.topics) {
+    const id = turnPlayer(s.topics);
+    return id ? [nameOf(s, id)] : [];
+  }
+  if (s.phase === 'fill')
+    return Object.keys(s.players)
+      .filter((id) => !(id in s.fills))
+      .map((id) => nameOf(s, id));
+  if (s.phase === 'vote')
+    return Object.keys(s.players)
+      .filter((id) => !(id in s.votes))
+      .map((id) => nameOf(s, id));
+  return [];
+}
 
 export const phrasesTrous: GameModule<PhrasesState, PhrasesSettings> = {
   manifest: {
@@ -469,25 +487,7 @@ export const phrasesTrous: GameModule<PhrasesState, PhrasesSettings> = {
   },
 
   getHostState(s: PhrasesState) {
-    if (s.phase === 'topics' && s.topics) {
-      const id = turnPlayer(s.topics);
-      return { pending: id ? [nameOf(s, id)] : [] };
-    }
-    if (s.phase === 'fill') {
-      return {
-        pending: Object.keys(s.players)
-          .filter((id) => !(id in s.fills))
-          .map((id) => nameOf(s, id)),
-      };
-    }
-    if (s.phase === 'vote') {
-      return {
-        pending: Object.keys(s.players)
-          .filter((id) => !(id in s.votes))
-          .map((id) => nameOf(s, id)),
-      };
-    }
-    return { pending: [] };
+    return { pending: pendingOf(s) };
   },
 
   isFinished(s: PhrasesState) {

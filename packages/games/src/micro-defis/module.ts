@@ -153,6 +153,13 @@ function resultsOf(s: MicroDefisState): { playerId: string; name: string; succes
   }));
 }
 
+/** Joueurs qui n’ont pas encore envoyé leur réponse à ce tour. */
+function pendingOf(s: MicroDefisState): string[] {
+  return Object.keys(s.players)
+    .filter((id) => !(id in s.submissions))
+    .map((id) => s.players[id] ?? '?');
+}
+
 export const microDefis: GameModule<MicroDefisState, MicroDefisSettings> = {
   manifest: {
     id: 'micro-defis',
@@ -283,6 +290,7 @@ export const microDefis: GameModule<MicroDefisState, MicroDefisSettings> = {
       endsAt: s.endsAt,
       revealEndsAt: s.revealEndsAt,
       players: Object.entries(s.players).map(([id, name]) => ({ id, name })),
+      pending: pendingOf(s),
       // Qui a déjà joué ce défi (sans le résultat, qui ne s’affiche qu’au bilan).
       submitted: Object.keys(s.submissions),
       results: s.phase === 'reveal' ? resultsOf(s) : null,
@@ -300,11 +308,7 @@ export const microDefis: GameModule<MicroDefisState, MicroDefisSettings> = {
   },
 
   getHostState(s) {
-    return {
-      pending: Object.keys(s.players)
-        .filter((id) => !(id in s.submissions))
-        .map((id) => s.players[id] ?? '?'),
-    };
+    return { pending: pendingOf(s) };
   },
 
   isFinished(s) {

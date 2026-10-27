@@ -887,6 +887,20 @@ function checkedDraft(kind: JobInput['kind'], value: unknown): unknown {
   return parsed.success ? parsed.data : null;
 }
 
+/** Joueurs que la partie attend encore (personnage, vote ou action de combat). */
+function pendingOf(s: AventureState): string[] {
+  const combat = s.combat;
+  const waiting =
+    s.phase === 'choose'
+      ? s.order.filter((id) => characterOf(s, id) === undefined)
+      : s.phase === 'vote'
+        ? activeOwnerIds(s).filter((id) => !(id in s.votes))
+        : s.phase === 'combat' && combat?.step === 'act'
+          ? activeOwnerIds(s).filter((id) => !(id in combat.actions))
+          : [];
+  return waiting.map((id) => s.players[id] ?? '?');
+}
+
 export const aventureIa: GameModule<AventureState, AventureSettings> = {
   manifest: {
     id: 'aventure-ia',
@@ -1166,6 +1180,7 @@ export const aventureIa: GameModule<AventureState, AventureSettings> = {
         : null,
       voteCount: Object.keys(s.votes).length,
       voterCount: activeOwnerIds(s).length,
+      pending: pendingOf(s),
       resolution: s.resolution,
       combat: s.combat
         ? {
@@ -1229,18 +1244,9 @@ export const aventureIa: GameModule<AventureState, AventureSettings> = {
   },
 
   getHostState(s) {
-    const combat = s.combat;
-    const waiting =
-      s.phase === 'choose'
-        ? s.order.filter((id) => characterOf(s, id) === undefined)
-        : s.phase === 'vote'
-          ? activeOwnerIds(s).filter((id) => !(id in s.votes))
-          : s.phase === 'combat' && combat?.step === 'act'
-            ? activeOwnerIds(s).filter((id) => !(id in combat.actions))
-            : [];
     return {
       canRegenerate: s.phase === 'choose' && s.characters.every((c) => c.ownerId === null),
-      pending: waiting.map((id) => s.players[id] ?? '?'),
+      pending: pendingOf(s),
     };
   },
 

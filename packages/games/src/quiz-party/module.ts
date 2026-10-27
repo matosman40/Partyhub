@@ -228,6 +228,9 @@ function publicView(s: QuizState) {
       endsAt: s.answerEndsAt,
       answerMs: s.settings.answerSeconds * 1000,
       answeredCount: Object.keys(s.answers).length,
+      pending: Object.keys(s.players)
+        .filter((id) => !s.answers[id])
+        .map((id) => s.players[id] ?? '?'),
     };
   }
 

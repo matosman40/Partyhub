@@ -128,6 +128,13 @@ function resultsOf(
   }));
 }
 
+/** Joueurs qui n’ont pas encore envoyé leur réponse à ce tour. */
+function pendingOf(s: FunambuleState): string[] {
+  return Object.keys(s.players)
+    .filter((id) => !(id in s.submissions))
+    .map((id) => s.players[id] ?? '?');
+}
+
 export const funambule: GameModule<FunambuleState, FunambuleSettings> = {
   manifest: {
     id: 'funambule',
@@ -258,6 +265,7 @@ export const funambule: GameModule<FunambuleState, FunambuleSettings> = {
       endsAt: s.endsAt,
       revealEndsAt: s.revealEndsAt,
       players: Object.entries(s.players).map(([id, name]) => ({ id, name })),
+      pending: pendingOf(s),
       // Qui a fini la traversée : tombé ou arrivé. Le temps tenu ne s’affiche qu’au bilan.
       submitted: ids,
       fallen: ids.filter((id) => !s.submissions[id]?.success),
@@ -277,11 +285,7 @@ export const funambule: GameModule<FunambuleState, FunambuleSettings> = {
   },
 
   getHostState(s) {
-    return {
-      pending: Object.keys(s.players)
-        .filter((id) => !(id in s.submissions))
-        .map((id) => s.players[id] ?? '?'),
-    };
+    return { pending: pendingOf(s) };
   },
 
   isFinished(s) {

@@ -183,6 +183,7 @@ function publicView(s: ImiteState) {
     total: s.plan.length,
     playerCount: Object.keys(s.players).length,
     ranking: rankEntries(s.players, s.points),
+    pending: pendingOf(s),
   };
   if (!round || s.phase === 'ready' || s.phase === 'final') return base;
 
@@ -244,6 +245,17 @@ function noticeFor() {
       'Vous ne pouvez pas voter pour votre propre envoi.',
     ],
   };
+}
+
+/** Joueurs qui n’ont pas encore envoyé leur dessin ou leur vote. */
+function pendingOf(s: ImiteState): string[] {
+  const waiting =
+    s.phase === 'submit'
+      ? Object.keys(s.players).filter((id) => !(id in s.entries))
+      : s.phase === 'vote'
+        ? Object.keys(s.players).filter((id) => !(id in s.votes))
+        : [];
+  return waiting.map((id) => s.players[id]!);
 }
 
 export const imiteMoi: GameModule<ImiteState, ImiteSettings> = {
@@ -391,13 +403,7 @@ export const imiteMoi: GameModule<ImiteState, ImiteSettings> = {
   },
 
   getHostState(s) {
-    const waiting =
-      s.phase === 'submit'
-        ? Object.keys(s.players).filter((id) => !(id in s.entries))
-        : s.phase === 'vote'
-          ? Object.keys(s.players).filter((id) => !(id in s.votes))
-          : [];
-    return { pending: waiting.map((id) => s.players[id]!) };
+    return { pending: pendingOf(s) };
   },
 
   isFinished(s) {

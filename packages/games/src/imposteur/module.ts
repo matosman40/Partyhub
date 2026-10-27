@@ -37,6 +37,19 @@ const SECRETS: Secret[] = contentSchema
   .parse(rawContent)
   .flatMap((c) => c.words.map((word) => ({ category: c.category, word })));
 
+/** Joueurs qui n’ont pas encore écrit d’indice ou voté (phases « indices » et « vote »). */
+function publicPending(s: ImposteurState): string[] {
+  if (s.phase === 'clues')
+    return Object.keys(s.players)
+      .filter((id) => !(id in s.clues))
+      .map((id) => s.players[id] ?? '?');
+  if (s.phase === 'vote')
+    return Object.keys(s.players)
+      .filter((id) => !(id in s.votes))
+      .map((id) => s.players[id] ?? '?');
+  return [];
+}
+
 export const imposteurSettingsSchema = z.object({
   rounds: z.number().int().min(1).max(8).default(3),
 });
@@ -332,6 +345,7 @@ export const imposteur: GameModule<ImposteurState, ImposteurSettings> = {
       total: s.secrets.length,
       ranking: rankEntries(s.players, s.points),
       candidates: Object.entries(s.players).map(([id, name]) => ({ id, name })),
+      pending: publicPending(s),
     };
 
     if (s.phase === 'ready' || s.phase === 'final') {
@@ -436,14 +450,8 @@ export const imposteur: GameModule<ImposteurState, ImposteurSettings> = {
   },
 
   getHostState(s) {
-    const pending =
-      s.phase === 'clues'
-        ? Object.keys(s.players).filter((id) => !(id in s.clues))
-        : s.phase === 'vote'
-          ? Object.keys(s.players).filter((id) => !(id in s.votes))
-          : [];
     return {
-      pending: pending.map((id) => s.players[id] ?? '?'),
+      pending: publicPending(s),
       guessing: s.phase === 'guess' && s.impostorId ? (s.players[s.impostorId] ?? '?') : null,
     };
   },
