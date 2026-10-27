@@ -23,6 +23,7 @@ import {
 } from '../catalog/filters.js';
 import { readRecent } from '../catalog/recentGames.js';
 import { SearchButton } from '../nav/SearchButton.js';
+import { MyRooms } from '../components/MyRooms.js';
 
 const SORT_CHOICES = Object.keys(SORT_LABEL) as SortKey[];
 const MAX_RECENT_SHOWN = 6;
@@ -236,6 +237,8 @@ export function HomePage() {
               onChange={update}
               onReset={clearFilters}
             />
+
+            <MyRooms />
 
             <div className="catalog-results">
               {activeCount === 0 && recentGames.length > 0 && (

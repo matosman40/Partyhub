@@ -21,6 +21,7 @@ import { ExpressionRow } from './ExpressionRow.js';
 import { CreateProfileForm } from '../profile/CreateProfileForm.js';
 import { ConnectingNotice } from '../components/ConnectingNotice.js';
 import { PendingNotice } from '../components/PendingNotice.js';
+import { rememberMyRoom } from './my-rooms.js';
 import { ACK_TIMEOUT_MS, canSend, NO_ANSWER_ERROR, OFFLINE_ACTION_ERROR, useConnection } from '../connection.js';
 import { LobbyHeads, LobbyMoodBar, LobbyPlateau } from '../components/LobbyPlateau.js';
 import { TestModeBadge } from '../components/TestModeBadge.js';
@@ -64,6 +65,7 @@ export function readSeat(code: string, seatId: string): Stored | null {
 
 /** Enregistre la place (jeton et pseudo) sur cet appareil. */
 export function writeSeat(code: string, seatId: string, value: Stored): void {
+  rememberMyRoom(code);
   try {
     localStorage.setItem(seatStorageKey(code, seatId), JSON.stringify(value));
   } catch {
