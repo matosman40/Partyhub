@@ -107,6 +107,10 @@ jobs:
         env:
           BASE_URL: http://127.0.0.1:8282
         run: python scripts/lobby-browser.py
+      - name: Mode sans écran (deux téléphones, reconnexion, parties en cours)
+        env:
+          BASE_URL: http://127.0.0.1:8282
+        run: python scripts/sans-ecran-browser.py
       - name: Appareils, affichage adapté et spectateurs
         env:
           BASE_URL: http://127.0.0.1:8282

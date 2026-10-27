@@ -1,5 +1,6 @@
 import { api } from '../api.js';
 import { rememberRecent } from './recentGames.js';
+import { rememberMyRoom } from '../seat/my-rooms.js';
 
 /**
  * Crée une salle pour ce jeu (ou une partie d’essai seul), note le jeu comme joué récemment
@@ -13,5 +14,7 @@ export async function launchGame(gameId: string, practice: boolean): Promise<str
   // Le jeton d’hôte reste dans cet onglet : il n’est jamais transmis aux joueurs.
   sessionStorage.setItem(`ph:host:${room.code}`, room.hostToken);
   rememberRecent(gameId);
+  // Une salle créée pour de vrai reste accessible depuis l’accueil, même sans place prise (hôte sans écran).
+  if (!practice) rememberMyRoom(room.code);
   return room.code;
 }
