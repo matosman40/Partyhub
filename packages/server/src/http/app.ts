@@ -242,7 +242,7 @@ export function createApp(deps: AppDeps): express.Express {
     }
     const module = withOverrides(original, store);
     const practice = parsed.data.practice === true;
-    const room = manager.create(module, { practice });
+    const room = manager.create(module, { practice, theme: parsed.data.theme });
     if (!room) {
       res.status(503).json({ error: 'Trop de salles ouvertes. Réessayez dans quelques minutes.' });
       return;

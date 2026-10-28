@@ -78,11 +78,11 @@ async function until<T>(list: T[], predicate: (v: T) => boolean, ms = 3000): Pro
   throw new Error('Condition non atteinte à temps');
 }
 
-async function createPlateau() {
+async function createPlateau(extra: Record<string, unknown> = {}) {
   const res = await fetch(`${base}/api/rooms`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ gameId: 'plateau-test', practice: false }),
+    body: JSON.stringify({ gameId: 'plateau-test', practice: false, ...extra }),
   });
   expect(res.ok).toBe(true);
   return (await res.json()) as { code: string; hostToken: string };
@@ -181,5 +181,34 @@ describe('Plateau de test', () => {
 
     host.disconnect();
     player.disconnect();
+  });
+});
+
+describe('Décor du plateau', () => {
+  it('la salle prend le décor demandé, et le décor par défaut sinon', async () => {
+    const choisi = await createPlateau({ theme: 'arene' });
+    const defaut = await createPlateau();
+    const hostChoisi = await connect();
+    const hostDefaut = await connect();
+    clients.push(hostChoisi, hostDefaut);
+    const viewsChoisi = track<HostRoomView>(hostChoisi, 'room:host');
+    const viewsDefaut = track<HostRoomView>(hostDefaut, 'room:host');
+    expect((await call(hostChoisi, 'host:connect', { code: choisi.code, hostToken: choisi.hostToken })).ok).toBe(true);
+    expect((await call(hostDefaut, 'host:connect', { code: defaut.code, hostToken: defaut.hostToken })).ok).toBe(true);
+    const vChoisi = await until(viewsChoisi, (v) => v.lobby.grille !== null);
+    const vDefaut = await until(viewsDefaut, (v) => v.lobby.grille !== null);
+    expect(vChoisi.lobby.grille!.theme).toBe('arene');
+    expect(vDefaut.lobby.grille!.theme).toBe('fete');
+    hostChoisi.disconnect();
+    hostDefaut.disconnect();
+  });
+
+  it('un décor inconnu est refusé à la création', async () => {
+    const res = await fetch(`${base}/api/rooms`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ gameId: 'plateau-test', practice: false, theme: 'volcan' }),
+    });
+    expect(res.status).toBe(400);
   });
 });

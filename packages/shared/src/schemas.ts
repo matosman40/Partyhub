@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { ROOM_CODE_PATTERN } from './room-codes.js';
 import { AVATAR_EMOJIS } from './avatars.js';
 import { characterSchema } from './characters.js';
+import { themeIdSchema } from './grille-themes.js';
 
 export const PLAYER_NAME_MAX = 16;
 
@@ -24,6 +25,8 @@ export const createRoomSchema = z.object({
     .max(64)
     .regex(/^[a-z0-9-]+$/),
   practice: z.boolean().optional(),
+  /** Décor du plateau, pour les jeux qui en ont un (salon de test). */
+  theme: themeIdSchema.optional(),
 });
 
 export const handoffClaimSchema = z.object({

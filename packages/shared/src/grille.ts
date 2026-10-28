@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { THEME_PAR_DEFAUT, type ThemeId } from './grille-themes.js';
 
 /**
  * Plateau en grille, façon Bomberman, partagé par tous les appareils. Le serveur tient l’état ;
@@ -59,6 +60,8 @@ export interface EtatGrille {
   dernier: { joueur: string; geste: Attitude } | null;
   /** Compteur des gestes acceptés : chaque geste change la valeur, même s’il répète le précédent. */
   seq: number;
+  /** Décor du plateau (couleurs et motifs), choisi par le jeu à la création. */
+  theme: ThemeId;
 }
 
 export type ActionGrille =
@@ -128,7 +131,9 @@ function protege(x: number, y: number, largeur: number, hauteur: number): boolea
  * Plateau de départ, sans personnage. Des caisses au hasard (graine fixe), quelques boîtes et ballons.
  * Les coins de départ restent libres.
  */
-export function creerGrille(options: { graine?: number; largeur?: number; hauteur?: number } = {}): EtatGrille {
+export function creerGrille(
+  options: { graine?: number; largeur?: number; hauteur?: number; theme?: ThemeId } = {},
+): EtatGrille {
   const largeur = options.largeur ?? GRILLE_LARGEUR;
   const hauteur = options.hauteur ?? GRILLE_HAUTEUR;
   const decor = creerDecor(largeur, hauteur);
@@ -151,7 +156,16 @@ export function creerGrille(options: { graine?: number; largeur?: number; hauteu
   }
   reste.slice(0, 3).forEach((c) => ajouter('boite', c));
   reste.slice(3, 5).forEach((c) => ajouter('ballon', c));
-  return { largeur, hauteur, decor, objets, personnages: {}, dernier: null, seq: 0 };
+  return {
+    largeur,
+    hauteur,
+    decor,
+    objets,
+    personnages: {},
+    dernier: null,
+    seq: 0,
+    theme: options.theme ?? THEME_PAR_DEFAUT,
+  };
 }
 
 /** Case devant un point, à `pas` cases dans la direction donnée. */

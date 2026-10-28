@@ -24,6 +24,7 @@ from playwright.sync_api import sync_playwright
 BASE_URL = os.environ.get("BASE_URL", "http://127.0.0.1:8282").rstrip("/")
 CHROMIUM_PATH = os.environ.get("CHROMIUM_PATH") or None
 SHOTS = os.environ.get("SHOTS", "shots")
+THEME = os.environ.get("THEME", "fete")
 
 failures: list[str] = []
 
@@ -64,7 +65,7 @@ def own_cell(page) -> tuple[int, int, str] | None:
 
 def main() -> int:
     os.makedirs(SHOTS, exist_ok=True)
-    room = post_json("/api/rooms", {"gameId": "plateau-test", "practice": False})
+    room = post_json("/api/rooms", {"gameId": "plateau-test", "practice": False, "theme": THEME})
     code, token = room["code"], room["hostToken"]
     with sync_playwright() as p:
         browser = p.chromium.launch(executable_path=CHROMIUM_PATH, args=["--no-sandbox"])
@@ -149,8 +150,38 @@ def main() -> int:
             alerte.wait_for(timeout=5000)
             check("Action sans rien devant : la bande le dit", "Rien à faire ici" in alerte.inner_text(), alerte.inner_text())
             tv.wait_for_timeout(300)
-            tv.screenshot(path=os.path.join(SHOTS, "grille-tv.png"))
-            phone.screenshot(path=os.path.join(SHOTS, "grille-telephone.png"))
+            tv.screenshot(path=os.path.join(SHOTS, f"grille-tv-{THEME}.png"))
+            phone.screenshot(path=os.path.join(SHOTS, f"grille-telephone-{THEME}.png"))
+
+            # Paysage : le téléphone tourné ; toute la manette tient dans l'écran, et le tiroir s'ouvre.
+            phone.set_viewport_size({"width": 844, "height": 390})
+            phone.wait_for_timeout(400)
+            commandes = phone.locator(".grille-croix-up, .grille-croix-down, .grille-croix-left, .grille-croix-right, .grille-b-action, .grille-b-sauter, .grille-b-saluer").all()
+            hors_ecran = []
+            for c in commandes:
+                bb = c.bounding_box()
+                if not bb or bb["x"] < 0 or bb["y"] < 0 or bb["x"] + bb["width"] > 844 or bb["y"] + bb["height"] > 390:
+                    hors_ecran.append(bb)
+            check(
+                "paysage : toutes les commandes tiennent dans l'écran",
+                len(commandes) == 7 and not hors_ecran,
+                f"{len(commandes)} commandes ; hors écran : {hors_ecran}",
+            )
+            phone.screenshot(path=os.path.join(SHOTS, f"grille-telephone-paysage-{THEME}.png"))
+
+            poignee = phone.locator(".grille-tiroir-poignee").first
+            check("paysage : le tiroir est fermé au départ", poignee.get_attribute("aria-expanded") == "false")
+            poignee.click()
+            phone.wait_for_timeout(500)
+            check(
+                "paysage : le tiroir s'ouvre et montre les réactions",
+                poignee.get_attribute("aria-expanded") == "true"
+                and phone.locator(".grille-console.is-ouvert").count() == 1
+                and phone.locator(".grille-tiroir .emote-bar").first.is_visible(),
+            )
+            phone.screenshot(path=os.path.join(SHOTS, f"grille-telephone-tiroir-{THEME}.png"))
+            poignee.click()
+            phone.wait_for_timeout(300)
 
             over_tv, over_phone = overflow(tv), overflow(phone)
             check("pas de défilement horizontal (écran principal)", over_tv <= 1, f"{over_tv} px")

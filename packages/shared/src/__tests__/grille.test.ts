@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { THEMES_PLATEAU, THEME_PAR_DEFAUT, themeDePlateau, type ThemeId } from '../grille-themes.js';
 import {
   actionContextuelle,
   ajouterPersonnage,
@@ -30,6 +31,7 @@ function plateau(objets: ObjetGrille[] = [], personnages: Record<string, [number
     objets,
     personnages: {},
     dernier: null,
+    theme: THEME_PAR_DEFAUT,
     seq: 0,
   };
   let e = base;
@@ -265,5 +267,16 @@ describe('bouton d’action', () => {
     expect(actionContextuelle(portee, 'a')).toEqual({ type: 'porter', dir: 'down' });
     const vide = plateau([], { a: [2, 2] });
     expect(actionContextuelle(vide, 'a')).toBeNull();
+  });
+});
+
+describe('thèmes du plateau', () => {
+  it('propose des thèmes distincts, et retombe sur le thème par défaut si l’identifiant est inconnu', () => {
+    const ids = Object.keys(THEMES_PLATEAU);
+    expect(ids.length).toBeGreaterThanOrEqual(3);
+    expect(new Set(ids.map((id) => THEMES_PLATEAU[id as ThemeId].sol)).size).toBe(ids.length);
+    expect(themeDePlateau('arene').id).toBe('arene');
+    expect(themeDePlateau('inconnu').id).toBe(THEME_PAR_DEFAUT);
+    expect(themeDePlateau(null).id).toBe(THEME_PAR_DEFAUT);
   });
 });

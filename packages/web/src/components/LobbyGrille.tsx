@@ -1,4 +1,4 @@
-import type { EtatGrille, PublicPlayer } from '@partyhub/shared';
+import type { EtatGrille, PublicPlayer, ThemeId } from '@partyhub/shared';
 import { GrilleView, type GrilleApparence } from '@partyhub/games/client';
 import { PlayerAvatar } from './PlayerAvatar.js';
 
@@ -30,13 +30,23 @@ export function LobbyGrille({
   players,
   me,
   label,
+  theme,
   className,
 }: {
   etat: EtatGrille;
   players: PublicPlayer[];
   me?: string;
   label: string;
+  theme?: ThemeId;
   className?: string;
 }) {
-  return <GrilleView etat={etat} apparences={apparencesGrille(players, me)} label={label} className={className} />;
+  return (
+    <GrilleView
+      etat={etat}
+      apparences={apparencesGrille(players, me)}
+      label={label}
+      theme={theme}
+      className={className}
+    />
+  );
 }

@@ -1,6 +1,8 @@
 import type { CSSProperties, ReactNode } from 'react';
 import {
   ATTITUDE_POSE,
+  themeDePlateau,
+  type ThemeId,
   type CharacterSpec,
   type EtatGrille,
   type ObjetGrille,
@@ -34,6 +36,8 @@ export interface GrilleViewProps {
   /** Nom du plateau pour les lecteurs d’écran. */
   label: string;
   className?: string;
+  /** Décor du plateau (couleurs du sol, des murs, des caisses). */
+  theme?: ThemeId;
 }
 
 const pct = (n: number, total: number) => `${(n / total) * 100}%`;
@@ -44,7 +48,12 @@ function Decor({ etat }: { etat: EtatGrille }) {
   for (let y = 0; y < etat.hauteur; y++) {
     for (let x = 0; x < etat.largeur; x++) {
       const mur = etat.decor[y]?.[x] === '#';
-      cases.push(<span key={`${x}-${y}`} className={mur ? 'grille-case is-mur' : 'grille-case is-sol'} />);
+      const classe = mur
+        ? 'grille-case is-mur'
+        : (x + y) % 2 === 0
+          ? 'grille-case is-sol'
+          : 'grille-case is-sol is-sol-b';
+      cases.push(<span key={`${x}-${y}`} className={classe} />);
     }
   }
   return (
@@ -142,14 +151,28 @@ function PersonnageView({ perso, etat, apparence, actif, seq }: PersonnageProps)
  * Le plateau et ses personnages. Chaque personnage a une case ; un pas ou un geste est joué sur
  * l’état reçu. Les personnages sans apparence fournie sont tout de même placés, avec leur identifiant.
  */
-export function GrilleView({ etat, apparences, label, className }: GrilleViewProps) {
+export function GrilleView({ etat, apparences, label, className, theme }: GrilleViewProps) {
   const personnages = Object.values(etat.personnages);
+  const t = themeDePlateau(theme);
   return (
     <div
       className={`grille${className ? ` ${className}` : ''}`}
       role="group"
       aria-label={label}
-      style={{ '--cols': etat.largeur, '--rows': etat.hauteur } as CSSProperties}
+      style={
+        {
+          '--cols': etat.largeur,
+          '--rows': etat.hauteur,
+          '--sol-a': t.dalles[0],
+          '--sol-b': t.dalles[1],
+          '--mur': t.mur.couleur,
+          '--mur-joint': t.mur.joint,
+          '--caisse': t.caisse.couleur,
+          '--caisse-trait': t.caisse.trait,
+          '--boite': t.boite,
+          '--ballon': t.ballon,
+        } as CSSProperties
+      }
     >
       <Decor etat={etat} />
       {/* Objets et personnages dans une même liste : l’ordre d’affichage suit la ligne de chaque case. */}

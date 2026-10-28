@@ -1,11 +1,13 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 import {
   actionContextuelle,
   devantLePersonnage,
+  themeDePlateau,
   type ActionGrille,
   type Devant,
   type Direction,
   type EtatGrille,
+  type ThemeId,
 } from '@partyhub/shared';
 
 /**
@@ -56,6 +58,13 @@ export interface GrilleControleurProps {
   clavier?: boolean;
   /** Le plateau lui-même, dessiné sous les commandes. */
   children: ReactNode;
+  /** Décor du plateau : il colore aussi la manette. */
+  theme?: ThemeId;
+  /**
+   * Actions secondaires (émotions, gestes de jeu…), cachées dans un tiroir qui monte depuis le bas.
+   * Absent : pas de tiroir.
+   */
+  tiroir?: ReactNode;
 }
 
 export function GrilleControleur({
@@ -65,8 +74,12 @@ export function GrilleControleur({
   disabled = false,
   clavier = true,
   children,
+  theme,
+  tiroir,
 }: GrilleControleurProps) {
   const [message, setMessage] = useState<string | null>(null);
+  const [ouvert, setOuvert] = useState(false);
+  const t = themeDePlateau(theme);
   const perso = etat.personnages[moi];
   const portant = etat.objets.some((o) => o.porte === moi);
   const devant = devantLePersonnage(etat, moi);
@@ -117,7 +130,11 @@ export function GrilleControleur({
   }, [clavier, disabled, etat, onAction]);
 
   return (
-    <section className="grille-console" aria-label="Manette du personnage">
+    <section
+      className={`grille-console${ouvert ? ' is-ouvert' : ''}`}
+      aria-label="Manette du personnage"
+      style={{ '--fond': t.fond, '--ciel': t.ciel } as CSSProperties}
+    >
       <div className="grille-plateau">{children}</div>
 
       <div className="grille-bande" aria-live="polite">
@@ -165,6 +182,23 @@ export function GrilleControleur({
           </button>
         </div>
       </div>
+
+      {tiroir && (
+        <>
+          <button
+            type="button"
+            className="grille-tiroir-poignee"
+            aria-expanded={ouvert}
+            aria-controls="grille-tiroir"
+            onClick={() => setOuvert((o) => !o)}
+          >
+            <span aria-hidden="true">{ouvert ? '⌄' : '⌃'}</span> {ouvert ? 'Fermer' : 'Plus d’actions'}
+          </button>
+          <div id="grille-tiroir" className="grille-tiroir" aria-hidden={!ouvert} inert={!ouvert}>
+            {tiroir}
+          </div>
+        </>
+      )}
     </section>
   );
 }

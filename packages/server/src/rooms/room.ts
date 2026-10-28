@@ -10,7 +10,13 @@ import {
   type LobbyPosition,
 } from '@partyhub/shared';
 import { randomBytes, randomInt, randomUUID } from 'node:crypto';
-import { settingsIssueMessage, type DeviceKind, type ObserverRoomView, type ObserverSummary } from '@partyhub/shared';
+import {
+  settingsIssueMessage,
+  type DeviceKind,
+  type ThemeId,
+  type ObserverRoomView,
+  type ObserverSummary,
+} from '@partyhub/shared';
 import type {
   AvatarInfo,
   AiClient,
@@ -91,6 +97,8 @@ export interface JoinProfile {
 
 export interface RoomOptions {
   practice: boolean;
+  /** Décor du plateau, pour les salons qui en ont un. */
+  theme?: ThemeId;
 }
 
 const MAX_SEEN_COMMANDS = 200;
@@ -172,7 +180,7 @@ export class Room {
     this.createdAt = env.now();
     this.lastActivity = this.createdAt;
     this.settings = { ...(module.defaultSettings as Record<string, unknown>) };
-    this.grille = module.manifest.id === PLATEAU_TEST_ID ? creerGrille() : null;
+    this.grille = module.manifest.id === PLATEAU_TEST_ID ? creerGrille({ theme: options.theme }) : null;
 
     this.ctx = {
       now: () => this.clock(),

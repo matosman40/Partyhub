@@ -593,12 +593,25 @@ export function PlayerSeat({
             {lobby.game.id === PLATEAU_TEST_ID ? (
               !compact &&
               lobby.grille && (
-                <GrilleControleur etat={lobby.grille} moi={you.id} onAction={sendGrille} disabled={!connected}>
+                <GrilleControleur
+                  etat={lobby.grille}
+                  moi={you.id}
+                  onAction={sendGrille}
+                  disabled={!connected}
+                  theme={lobby.grille.theme}
+                  tiroir={
+                    <>
+                      <LobbyMoodBar onPick={sendLobbyMood} />
+                      <EmoteBar onPick={sendReaction} />
+                    </>
+                  }
+                >
                   <LobbyGrille
                     etat={lobby.grille}
                     players={lobby.players}
                     me={you.id}
                     label="Plateau de test"
+                    theme={lobby.grille.theme}
                     className="grille-plein"
                   />
                 </GrilleControleur>
@@ -618,8 +631,8 @@ export function PlayerSeat({
             {!compact && you.profile && you.avatar.character && profileToken && (
               <ExpressionRow character={you.avatar.character} token={profileToken} />
             )}
-            {!compact && <LobbyMoodBar onPick={sendLobbyMood} />}
-            <EmoteBar onPick={sendReaction} />
+            {!compact && lobby.game.id !== PLATEAU_TEST_ID && <LobbyMoodBar onPick={sendLobbyMood} />}
+            {(compact || lobby.game.id !== PLATEAU_TEST_ID) && <EmoteBar onPick={sendReaction} />}
             {!compact && you.profile && <VoiceBar socket={socket} token={profileToken} />}
             {!compact && you.profile && <CameraBubble token={profileToken} />}
             {!compact && you.profile && (

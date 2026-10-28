@@ -46,7 +46,12 @@ export function TvLobby({
     return (
       <section className="tv-monde" aria-label="Plateau de test">
         <Suspense fallback={<p className="muted tv-monde-chargement">Chargement du plateau…</p>}>
-          <GrilleBoard3D etat={lobby.grille} apparences={apparencesGrille(lobby.players)} label="Plateau de test" />
+          <GrilleBoard3D
+            etat={lobby.grille}
+            apparences={apparencesGrille(lobby.players)}
+            label="Plateau de test"
+            theme={lobby.grille.theme}
+          />
         </Suspense>
         <div className="tv-monde-info">
           <Qr value={joinUrl} size={132} />

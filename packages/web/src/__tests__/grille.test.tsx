@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { ajouterPersonnage, appliquerAction, creerGrille, type EtatGrille, type PublicPlayer } from '@partyhub/shared';
+import {
+  ajouterPersonnage,
+  appliquerAction,
+  creerGrille,
+  themeDePlateau,
+  THEMES_PLATEAU,
+  type EtatGrille,
+  type PublicPlayer,
+} from '@partyhub/shared';
 import { GrilleControleur, GrilleView, libelleDevant } from '@partyhub/games/client';
 import { apparencesGrille } from '../components/LobbyGrille.js';
 
@@ -118,5 +126,51 @@ describe('apparencesGrille', () => {
     expect(apparences.a?.tags).toEqual(['vous', 'prêt']);
     expect(apparences.b?.mine).toBe(false);
     expect(apparences.b?.away).toBe(true);
+  });
+});
+
+describe('Décor et tiroir', () => {
+  const noop = async () => null;
+
+  it('le plateau et la manette prennent les couleurs du décor choisi', () => {
+    const e = creerGrille({ graine: 7, theme: 'arene' });
+    const plateau = renderToStaticMarkup(<GrilleView etat={e} apparences={{}} label="Test" theme="arene" />);
+    expect(plateau).toContain(THEMES_PLATEAU.arene.dalles[0]);
+    const manette = renderToStaticMarkup(
+      <GrilleControleur etat={e} moi="a" onAction={noop} theme="banquise">
+        <GrilleView etat={e} apparences={{}} label="Test" theme="banquise" />
+      </GrilleControleur>,
+    );
+    expect(manette).toContain(`--fond:${THEMES_PLATEAU.banquise.fond}`);
+  });
+
+  it('un décor absent ou inconnu retombe sur le décor par défaut', () => {
+    expect(themeDePlateau(undefined).id).toBe('fete');
+    expect(themeDePlateau('volcan').id).toBe('fete');
+    expect(themeDePlateau('arene').id).toBe('arene');
+  });
+
+  it('les actions secondaires sont dans un tiroir fermé, ouvert par une poignée', () => {
+    const e = plateauAvecDeux();
+    const html = renderToStaticMarkup(
+      <GrilleControleur etat={e} moi="a" onAction={noop} tiroir={<p>Réactions de test</p>}>
+        <GrilleView etat={e} apparences={{}} label="Test" />
+      </GrilleControleur>,
+    );
+    expect(html).toContain('grille-tiroir-poignee');
+    expect(html).toContain('aria-expanded="false"');
+    expect(html).toContain('Réactions de test');
+    expect(html).toContain('aria-hidden="true"');
+    expect(html).toMatch(/inert=""/);
+  });
+
+  it('sans tiroir, il n’y a pas de poignée', () => {
+    const e = plateauAvecDeux();
+    const html = renderToStaticMarkup(
+      <GrilleControleur etat={e} moi="a" onAction={noop}>
+        <GrilleView etat={e} apparences={{}} label="Test" />
+      </GrilleControleur>,
+    );
+    expect(html).not.toContain('grille-tiroir-poignee');
   });
 });
