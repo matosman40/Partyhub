@@ -25,6 +25,7 @@ const SURFACE_MER = -0.62;
 export function socleDe(ambiance: ThemePlateau['ambiance']) {
   if (ambiance === 'mer') return { epaisseur: 0.5, flanc: '#2f77a8', rebord: '#eaf9ff' };
   if (ambiance === 'plateforme') return { epaisseur: 1.5, flanc: '#2a3442', rebord: '#f0a04b' };
+  if (ambiance === 'gymnase') return { epaisseur: 0.6, flanc: '#1e2a3d', rebord: '#2b7de0' };
   return { epaisseur: 0.32, flanc: '#7a4f2e', rebord: '#5fae45' };
 }
 
@@ -32,6 +33,7 @@ export function socleDe(ambiance: ThemePlateau['ambiance']) {
 export function cieDe(ambiance: ThemePlateau['ambiance']) {
   if (ambiance === 'mer') return { haut: '#1f7fcf', bas: '#b9e8ff' };
   if (ambiance === 'plateforme') return { haut: '#1f8a9c', bas: '#9be3e6' };
+  if (ambiance === 'gymnase') return { haut: '#141b2b', bas: '#2a3550' };
   return { haut: '#4fb3f2', bas: '#dff6ff' };
 }
 
@@ -64,7 +66,8 @@ export function Environnement({ theme, taille, reduced }: { theme: ThemePlateau;
       {theme.ambiance === 'mer' && <Mer theme={theme} taille={taille} reduced={reduced} />}
       {theme.ambiance === 'plateforme' && <Plateforme taille={taille} reduced={reduced} />}
       {theme.ambiance === 'pelouse' && <Pelouse theme={theme} taille={taille} />}
-      {theme.ambiance !== 'plateforme' && <Nuages />}
+      {theme.ambiance === 'gymnase' && <Gymnase />}
+      {(theme.ambiance === 'pelouse' || theme.ambiance === 'mer') && <Nuages />}
     </>
   );
 }
@@ -461,6 +464,17 @@ function Bulles({ taille, reduced }: { taille: Taille; reduced: boolean }) {
         </group>
       ))}
     </group>
+  );
+}
+
+/** Une salle d’escalade : un sol sombre sous le tapis, loin sous le plateau. */
+function Gymnase() {
+  const sol = useMemo(() => new THREE.MeshStandardMaterial({ color: '#1a2336', roughness: 1 }), []);
+  useEffect(() => () => sol.dispose(), [sol]);
+  return (
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -3, 0]} material={sol}>
+      <planeGeometry args={[140, 140]} />
+    </mesh>
   );
 }
 

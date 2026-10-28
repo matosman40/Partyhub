@@ -14,7 +14,7 @@ import { Character, usePrefersReducedMotion, type GrilleApparence } from '@party
 import { canvasTexture } from './canvas-texture';
 import { Environnement, Murs, cieDe, hasard, socleDe } from './Ambiance3D';
 import { Forme, GEO } from './Forme';
-import { texBois, texFeuillage, texGlace, texPierre, touffesHerbe } from './materiaux';
+import { texBois, texFeuillage, texGlace, texPierre, texPrises, touffesHerbe } from './materiaux';
 
 /**
  * Plateau en grille en 3D, plein écran sur la TV, dans le style d’un jeu de plateau de fête : matières
@@ -141,7 +141,8 @@ function textures(cases: { largeur: number; hauteur: number }, theme: ThemePlate
     const ch = h / cases.hauteur;
     for (let y = 0; y < cases.hauteur; y++) {
       for (let x = 0; x < cases.largeur; x++) {
-        ctx.fillStyle = (x + y) % 2 === 0 ? couleurA : couleurB;
+        // Un court est d’une seule couleur : le damier ne sert qu’aux dalles.
+        ctx.fillStyle = theme.motifSol === 'court' || (x + y) % 2 === 0 ? couleurA : couleurB;
         ctx.fillRect(x * cw, y * ch, cw, ch);
         if (theme.motifSol === 'dalles') {
           // Des dalles de pierre : un liseré sombre autour de chaque case.
@@ -150,7 +151,12 @@ function textures(cases: { largeur: number; hauteur: number }, theme: ThemePlate
           ctx.strokeRect(x * cw + 1.5, y * ch + 1.5, cw - 3, ch - 3);
           // Des rivets aux quatre coins : des plaques de métal.
           ctx.fillStyle = 'rgba(255,255,255,0.4)';
-          for (const [fx, fy] of [[0.14, 0.14], [0.86, 0.14], [0.14, 0.86], [0.86, 0.86]] as const) {
+          for (const [fx, fy] of [
+            [0.14, 0.14],
+            [0.86, 0.14],
+            [0.14, 0.86],
+            [0.86, 0.86],
+          ] as const) {
             ctx.beginPath();
             ctx.arc(x * cw + cw * fx, y * ch + ch * fy, 2.5, 0, Math.PI * 2);
             ctx.fill();
@@ -167,6 +173,21 @@ function textures(cases: { largeur: number; hauteur: number }, theme: ThemePlate
       }
     }
     if (theme.motifSol === 'herbe') touffesHerbe(ctx, w, h, couleurA, 11, 0.02);
+    if (theme.motifSol === 'court') {
+      // Les lignes blanches d’un court : contour, ligne de service et ligne médiane (sous le filet).
+      const m = (w / cases.largeur) * 0.5;
+      ctx.strokeStyle = 'rgba(255,255,255,0.92)';
+      ctx.lineWidth = 5;
+      ctx.strokeRect(m, m, w - 2 * m, h - 2 * m);
+      ctx.beginPath();
+      ctx.moveTo(w * 0.25, m);
+      ctx.lineTo(w * 0.25, h - m);
+      ctx.moveTo(w * 0.75, m);
+      ctx.lineTo(w * 0.75, h - m);
+      ctx.moveTo(w / 2, 0);
+      ctx.lineTo(w / 2, h);
+      ctx.stroke();
+    }
     if (theme.motifSol === 'glace') {
       // Des fissures blanches qui traversent la banquise.
       const r = hasard(21);
@@ -189,11 +210,50 @@ function textures(cases: { largeur: number; hauteur: number }, theme: ThemePlate
   const mur =
     theme.mur.motif === 'feuillage'
       ? texFeuillage(theme.mur.couleur, 9)
-      : theme.mur.motif === 'glace'
-        ? texGlace(theme.mur.couleur, 4)
-        : texPierre(theme.mur.couleur, theme.mur.joint, 6);
+      : theme.mur.motif === 'prise'
+        ? texPrises(theme.mur.couleur, 5)
+        : theme.mur.motif === 'glace'
+          ? texGlace(theme.mur.couleur, 4)
+          : texPierre(theme.mur.couleur, theme.mur.joint, 6);
   const caisse = texBois(theme.caisse.couleur, theme.caisse.trait, 2);
   return { sol, mur, caisse };
+}
+
+/** Le filet d’un court, au milieu du plateau : une toile et deux poteaux. Il ne bloque pas les personnages. */
+function Filet({ etat }: { etat: EtatGrille }) {
+  const x = monX(Math.floor(etat.largeur / 2), etat);
+  const z0 = monZ(0, etat) - 0.5;
+  const z1 = monZ(etat.hauteur - 1, etat) + 0.5;
+  const longueur = z1 - z0;
+  const milieu = (z0 + z1) / 2;
+  const toile = useMemo(
+    () =>
+      new THREE.MeshStandardMaterial({
+        color: '#ffffff',
+        transparent: true,
+        opacity: 0.85,
+        roughness: 0.6,
+        depthWrite: false,
+      }),
+    [],
+  );
+  const blanc = useMemo(() => new THREE.MeshStandardMaterial({ color: '#f4f4f4', roughness: 0.5 }), []);
+  useEffect(
+    () => () => {
+      toile.dispose();
+      blanc.dispose();
+    },
+    [toile, blanc],
+  );
+  return (
+    <group>
+      <mesh geometry={GEO.cube} material={toile} position={[x, 0.3, milieu]} scale={[0.07, 0.5, longueur]} />
+      <mesh geometry={GEO.cube} material={blanc} position={[x, 0.5, milieu]} scale={[0.07, 0.05, longueur]} />
+      {[z0, z1].map((z) => (
+        <mesh key={z} geometry={GEO.cylindre} material={blanc} position={[x, 0.36, z]} scale={[0.05, 0.72, 0.05]} />
+      ))}
+    </group>
+  );
 }
 
 function Decor({
@@ -255,6 +315,7 @@ function Decor({
         castShadow
       />
       <Murs theme={theme} positions={positionsMurs} materiau={murMat} />
+      {theme.filet && <Filet etat={etat} />}
     </group>
   );
 }

@@ -229,3 +229,36 @@ export function texGlace(couleur: string, graine: number): THREE.CanvasTexture {
     }),
   );
 }
+
+/** Un mur d’escalade : de la roche grise, avec des prises colorées bordées d’ombre. */
+export function texPrises(couleur: string, graine: number): THREE.CanvasTexture {
+  return repete(
+    canvasTexture(256, 256, (ctx, w, h) => {
+      const r = hasard(graine);
+      ctx.fillStyle = couleur;
+      ctx.fillRect(0, 0, w, h);
+      for (let i = 0; i < 220; i++) {
+        ctx.fillStyle = r() < 0.5 ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.1)';
+        ctx.fillRect(r() * w, r() * h, 2 + r() * 4, 2 + r() * 4);
+      }
+      const couleurs = ['#ef4444', '#facc15', '#22c55e', '#3b82f6', '#a855f7', '#f97316'];
+      for (let i = 0; i < 24; i++) {
+        const x = r() * w;
+        const y = r() * h;
+        const rayon = 7 + r() * 6;
+        ctx.fillStyle = 'rgba(0,0,0,0.45)';
+        ctx.beginPath();
+        ctx.arc(x + 2, y + 3, rayon, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = couleurs[Math.floor(r() * couleurs.length)] ?? '#ef4444';
+        ctx.beginPath();
+        ctx.arc(x, y, rayon, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = 'rgba(255,255,255,0.35)';
+        ctx.beginPath();
+        ctx.arc(x - rayon * 0.3, y - rayon * 0.35, rayon * 0.3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }),
+  );
+}

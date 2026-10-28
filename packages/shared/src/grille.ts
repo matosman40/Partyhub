@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { THEME_PAR_DEFAUT, themeDePlateau, type ThemeId } from './grille-themes.js';
+import { THEME_PAR_DEFAUT, themeDePlateau, type Decor, type Forme, type ThemeId } from './grille-themes.js';
 
 /**
  * Plateau en grille, façon Bomberman, partagé par tous les appareils. Le serveur tient l’état ;
@@ -82,7 +82,18 @@ export const actionGrilleSchema = z.discriminatedUnion('type', [
 ]);
 
 /** Cases de départ, dans l’ordre : les coins d’abord, puis le centre-bas. */
-function departs(largeur: number, hauteur: number): Array<[number, number]> {
+function departs(largeur: number, hauteur: number, forme: Forme = 'carree'): Array<[number, number]> {
+  if (forme === 'ronde') {
+    // Dans l’arène ronde, les départs sont à l’intérieur du disque, jamais dans les coins.
+    return [
+      [3, 2],
+      [largeur - 4, hauteur - 3],
+      [largeur - 4, 2],
+      [3, hauteur - 3],
+      [Math.floor(largeur / 2), hauteur - 3],
+      [Math.floor(largeur / 2), 2],
+    ];
+  }
   return [
     [1, 1],
     [largeur - 2, hauteur - 2],
@@ -105,14 +116,28 @@ function generateur(graine: number): () => number {
   };
 }
 
-/** Décor façon Bomberman : murs extérieurs, et des piliers fixes une case sur deux. */
-export function creerDecor(largeur: number, hauteur: number): string[] {
+/**
+ * Décor du plateau. Par défaut façon Bomberman : murs extérieurs, et des piliers fixes une case sur deux.
+ * Le décor « bord » ne garde que le contour. La forme « ronde » met en mur les cases hors d’un disque.
+ */
+export function creerDecor(largeur: number, hauteur: number, options: { forme?: Forme; decor?: Decor } = {}): string[] {
+  const forme = options.forme ?? 'carree';
+  const decor = options.decor ?? 'piliers';
+  const cx = (largeur - 1) / 2;
+  const cy = (hauteur - 1) / 2;
+  const rx = largeur / 2 - 1;
+  const ry = hauteur / 2 - 1;
   const lignes: string[] = [];
   for (let y = 0; y < hauteur; y++) {
     let ligne = '';
     for (let x = 0; x < largeur; x++) {
       const bord = x === 0 || y === 0 || x === largeur - 1 || y === hauteur - 1;
-      const pilier = x % 2 === 0 && y % 2 === 0;
+      if (forme === 'ronde') {
+        const dehors = ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 > 1;
+        ligne += bord || dehors ? '#' : '.';
+        continue;
+      }
+      const pilier = decor === 'piliers' && x % 2 === 0 && y % 2 === 0;
       ligne += bord || pilier ? '#' : '.';
     }
     lignes.push(ligne);
@@ -121,8 +146,8 @@ export function creerDecor(largeur: number, hauteur: number): string[] {
 }
 
 /** Vrai près d’un coin de départ : on n’y pose pas de caisse, pour que chacun puisse bouger. */
-function protege(x: number, y: number, largeur: number, hauteur: number): boolean {
-  return departs(largeur, hauteur)
+function protege(x: number, y: number, largeur: number, hauteur: number, forme: Forme): boolean {
+  return departs(largeur, hauteur, forme)
     .slice(0, 4)
     .some(([dx, dy]) => Math.abs(dx - x) + Math.abs(dy - y) <= 2);
 }
@@ -136,12 +161,13 @@ export function creerGrille(
 ): EtatGrille {
   const largeur = options.largeur ?? GRILLE_LARGEUR;
   const hauteur = options.hauteur ?? GRILLE_HAUTEUR;
-  const decor = creerDecor(largeur, hauteur);
+  const theme = themeDePlateau(options.theme);
+  const decor = creerDecor(largeur, hauteur, { forme: theme.forme, decor: theme.decor });
   const hasard = generateur(options.graine ?? 7);
   const libres: Array<[number, number]> = [];
   for (let y = 1; y < hauteur - 1; y++) {
     for (let x = 1; x < largeur - 1; x++) {
-      if (decor[y]?.[x] === '.' && !protege(x, y, largeur, hauteur)) libres.push([x, y]);
+      if (decor[y]?.[x] === '.' && !protege(x, y, largeur, hauteur, theme.forme)) libres.push([x, y]);
     }
   }
   const objets: ObjetGrille[] = [];
@@ -149,7 +175,7 @@ export function creerGrille(
     objets.push({ id: `o${objets.length + 1}`, nature, x, y, porte: null });
   };
   // Le thème règle la part de caisses (un plateau dégagé ou plus encombré) ; le reste sert aux boîtes et aux ballons.
-  const densite = themeDePlateau(options.theme).densiteCaisses;
+  const densite = theme.densiteCaisses;
   const reste: Array<[number, number]> = [];
   for (const c of libres) {
     if (hasard() < densite) ajouter('caisse', c);
@@ -279,7 +305,7 @@ export function appliquerAction(e: EtatGrille, joueurId: string, action: ActionG
 /** Place un personnage sur la première case de départ libre, ou sur une case libre quelconque. */
 export function ajouterPersonnage(e: EtatGrille, joueurId: string): EtatGrille {
   if (e.personnages[joueurId]) return e;
-  const depart = departs(e.largeur, e.hauteur).find(([x, y]) => solLibre(e, x, y));
+  const depart = departs(e.largeur, e.hauteur, themeDePlateau(e.theme).forme).find(([x, y]) => solLibre(e, x, y));
   let place = depart;
   if (!place) {
     for (let y = 1; y < e.hauteur - 1 && !place; y++) {
