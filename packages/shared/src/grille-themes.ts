@@ -8,12 +8,12 @@
 
 import { z } from 'zod';
 
-export const THEME_IDS = ['fete', 'arene', 'banquise', 'arene-ronde', 'tennis', 'escalade'] as const;
+export const THEME_IDS = ['fete', 'arene', 'banquise', 'arene-ronde', 'tennis', 'escalade', 'ile'] as const;
 export type ThemeId = (typeof THEME_IDS)[number];
 export const themeIdSchema = z.enum(THEME_IDS);
 
 /** Le lieu : ce qui entoure le plateau, et la forme de ses bords et de ses murs. */
-export type Ambiance = 'pelouse' | 'mer' | 'plateforme' | 'gymnase';
+export type Ambiance = 'pelouse' | 'mer' | 'plateforme' | 'gymnase' | 'ile';
 
 /** La forme du plateau : un rectangle, ou un disque (les cases hors du disque sont des murs). */
 export type Forme = 'carree' | 'ronde';
@@ -175,6 +175,26 @@ export const THEMES_PLATEAU: Record<ThemeId, ThemePlateau> = {
     caisse: { couleur: '#e8733a', trait: '#7a2f14' },
     boite: '#d8dbe6',
     ballon: '#ff4d6d',
+    densiteCaisses: 0.08,
+    forme: 'carree',
+    decor: 'epars',
+  },
+  ile: {
+    id: 'ile',
+    nom: 'Île tropicale',
+    description: 'Une île couverte de jungle au milieu de la mer, avec palmiers, fougères, fleurs et papillons.',
+    ambiance: 'ile',
+    fond: '#0d3b4a',
+    ciel: '#c9f4ff',
+    sol: '#2f7a3a',
+    eau: '#1f8fb8',
+    lumiere: { ambiante: 0.95, soleil: 1.25, couleurSoleil: '#fff1cf' },
+    dalles: ['#7cc65a', '#6fbb50'],
+    motifSol: 'herbe',
+    mur: { couleur: '#2e8b3e', joint: '#1b5a2a', motif: 'feuillage' },
+    caisse: { couleur: '#b07a3f', trait: '#5a3a1c' },
+    boite: '#f3d58a',
+    ballon: '#ff7a00',
     densiteCaisses: 0.08,
     forme: 'carree',
     decor: 'epars',

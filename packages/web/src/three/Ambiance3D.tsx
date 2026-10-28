@@ -26,6 +26,7 @@ export function socleDe(ambiance: ThemePlateau['ambiance']) {
   if (ambiance === 'mer') return { epaisseur: 0.5, flanc: '#2f77a8', rebord: '#eaf9ff' };
   if (ambiance === 'plateforme') return { epaisseur: 1.5, flanc: '#2a3442', rebord: '#f0a04b' };
   if (ambiance === 'gymnase') return { epaisseur: 0.6, flanc: '#1e2a3d', rebord: '#2b7de0' };
+  if (ambiance === 'ile') return { epaisseur: 0.32, flanc: '#6b4a2b', rebord: '#e9d28a' };
   return { epaisseur: 0.32, flanc: '#7a4f2e', rebord: '#5fae45' };
 }
 
@@ -34,6 +35,7 @@ export function cieDe(ambiance: ThemePlateau['ambiance']) {
   if (ambiance === 'mer') return { haut: '#1f7fcf', bas: '#b9e8ff' };
   if (ambiance === 'plateforme') return { haut: '#1f8a9c', bas: '#9be3e6' };
   if (ambiance === 'gymnase') return { haut: '#141b2b', bas: '#2a3550' };
+  if (ambiance === 'ile') return { haut: '#2a9fd8', bas: '#c8f2ff' };
   return { haut: '#4fb3f2', bas: '#dff6ff' };
 }
 
@@ -67,7 +69,8 @@ export function Environnement({ theme, taille, reduced }: { theme: ThemePlateau;
       {theme.ambiance === 'plateforme' && <Plateforme taille={taille} reduced={reduced} />}
       {theme.ambiance === 'pelouse' && <Pelouse theme={theme} taille={taille} />}
       {theme.ambiance === 'gymnase' && <Gymnase />}
-      {(theme.ambiance === 'pelouse' || theme.ambiance === 'mer') && <Nuages />}
+      {theme.ambiance === 'ile' && <Ile theme={theme} taille={taille} reduced={reduced} />}
+      {(theme.ambiance === 'pelouse' || theme.ambiance === 'mer' || theme.ambiance === 'ile') && <Nuages />}
     </>
   );
 }
@@ -134,6 +137,9 @@ function Nuages() {
 }
 
 const COULEURS_FLEURS = ['#ff5d8f', '#ffd23f', '#ffffff', '#b67aff', '#ff9f1c'];
+const COULEURS_PAPILLONS = ['#ff6fb1', '#ffd23f', '#6ee7ff', '#b67aff'];
+/** Hauteur du sol de la jungle, sous le plateau. */
+const SOL_ILE = -0.4;
 
 function Pelouse({ theme, taille }: { theme: ThemePlateau; taille: Taille }) {
   const grand = Math.max(taille.largeur, taille.hauteur);
@@ -467,6 +473,235 @@ function Bulles({ taille, reduced }: { taille: Taille; reduced: boolean }) {
   );
 }
 
+/** Une palme de palmier au sommet d’un tronc incliné, avec quelques noix de coco. */
+function PalmierJungle({ x, z, inclinaison }: { x: number; z: number; inclinaison: number }) {
+  const bois = useMemo(() => new THREE.MeshToonMaterial({ color: '#9a6b3c' }), []);
+  const feuille = useMemo(() => new THREE.MeshToonMaterial({ color: '#2f9e44' }), []);
+  const coco = useMemo(() => new THREE.MeshToonMaterial({ color: '#6b4226' }), []);
+  return (
+    <group position={[x, SOL_ILE, z]} rotation={[inclinaison, 0, inclinaison * 0.6]}>
+      <Forme geometrie={GEO.cylindre} materiau={bois} contour={0.04} position={[0, 1.6, 0]} scale={[0.14, 3.2, 0.14]} />
+      {[0, 0.9, 1.8, 2.7, 3.6, 4.5, 5.4].map((a) => (
+        <Forme
+          key={a}
+          geometrie={GEO.sphere}
+          materiau={feuille}
+          contour={0.05}
+          position={[Math.cos(a) * 0.75, 3.3, Math.sin(a) * 0.75]}
+          rotation={[0.35, -a, 0]}
+          scale={[1.3, 0.1, 0.32]}
+        />
+      ))}
+      {[0, 1.6, 3.2].map((a) => (
+        <Forme
+          key={a}
+          geometrie={GEO.sphere}
+          materiau={coco}
+          contour={0.04}
+          position={[Math.cos(a) * 0.14, 3.05, Math.sin(a) * 0.14]}
+          scale={0.14}
+        />
+      ))}
+    </group>
+  );
+}
+
+/** Une fougère : des frondes fines qui s’écartent du pied. */
+function Fougere({ x, z, couleur }: { x: number; z: number; couleur: string }) {
+  const vert = useMemo(() => new THREE.MeshToonMaterial({ color: couleur }), [couleur]);
+  return (
+    <group position={[x, SOL_ILE, z]}>
+      {[0, 1, 2, 3, 4, 5].map((i) => {
+        const a = (i / 6) * Math.PI * 2;
+        return (
+          <Forme
+            key={i}
+            geometrie={GEO.cone}
+            materiau={vert}
+            contour={0.05}
+            position={[Math.cos(a) * 0.18, 0.4, Math.sin(a) * 0.18]}
+            rotation={[Math.sin(a) * 0.9, 0, -Math.cos(a) * 0.9]}
+            scale={[0.12, 0.8, 0.12]}
+          />
+        );
+      })}
+    </group>
+  );
+}
+
+/** Un papillon qui virevolte autour de son point de départ : les ailes battent, le corps tourne. */
+function Papillon({
+  x,
+  z,
+  couleur,
+  phase,
+  reduced,
+}: {
+  x: number;
+  z: number;
+  couleur: string;
+  phase: number;
+  reduced: boolean;
+}) {
+  const ref = useRef<THREE.Group>(null);
+  const aile = useMemo(() => new THREE.MeshToonMaterial({ color: couleur }), [couleur]);
+  useFrame((state) => {
+    if (reduced || !ref.current) return;
+    const t = state.clock.elapsedTime + phase;
+    ref.current.position.set(x + Math.cos(t * 0.6) * 0.7, 1.1 + Math.sin(t * 1.4) * 0.2, z + Math.sin(t * 0.6) * 0.7);
+    ref.current.rotation.y = -t * 0.6;
+  });
+  return (
+    <group ref={ref} position={[x, 1.1, z]}>
+      <mesh geometry={GEO.sphere} scale={[0.04, 0.04, 0.12]}>
+        <meshToonMaterial color="#222222" />
+      </mesh>
+      <mesh geometry={GEO.sphere} material={aile} position={[0.1, 0, 0]} scale={[0.1, 0.01, 0.12]} />
+      <mesh geometry={GEO.sphere} material={aile} position={[-0.1, 0, 0]} scale={[0.1, 0.01, 0.12]} />
+    </group>
+  );
+}
+
+/** Une île tropicale : une mer qui ondule, une plage, une jungle sous le plateau, et des palmiers, arbres, fougères, fleurs, rochers et papillons. */
+function Ile({ theme, taille, reduced }: { theme: ThemePlateau; taille: Taille; reduced: boolean }) {
+  const eau = useRef<THREE.Mesh>(null);
+  // Les éléments sont tirés au hasard, puis gardés à l’intérieur de l’île (une ellipse).
+  const dansIle = (p: { x: number; z: number }) => (p.x / 12.5) ** 2 + (p.z / 10.5) ** 2 <= 1;
+  const palmiers = useMemo(
+    () => autour(12, taille.largeur, taille.hauteur, 2, 13.5, 131).filter(dansIle),
+    [taille.largeur, taille.hauteur],
+  );
+  const arbres = useMemo(
+    () => autour(18, taille.largeur, taille.hauteur, 2, 13.5, 137).filter(dansIle),
+    [taille.largeur, taille.hauteur],
+  );
+  const fougeres = useMemo(
+    () => autour(30, taille.largeur, taille.hauteur, 1.5, 13.5, 139).filter(dansIle),
+    [taille.largeur, taille.hauteur],
+  );
+  const fleurs = useMemo(
+    () => autour(40, taille.largeur, taille.hauteur, 1, 13.5, 149).filter(dansIle),
+    [taille.largeur, taille.hauteur],
+  );
+  const rochers = useMemo(
+    () => autour(4, taille.largeur, taille.hauteur, 3, 13.5, 151).filter(dansIle),
+    [taille.largeur, taille.hauteur],
+  );
+  const papillons = useMemo(
+    () => autour(8, taille.largeur, taille.hauteur, 2.5, 12, 157).filter(dansIle),
+    [taille.largeur, taille.hauteur],
+  );
+  const geometrieEau = useMemo(() => {
+    const g = new THREE.PlaneGeometry(150, 150, 48, 48);
+    g.rotateX(-Math.PI / 2);
+    return g;
+  }, []);
+  const base = useMemo(
+    () => Float32Array.from(geometrieEau.attributes.position.array as ArrayLike<number>),
+    [geometrieEau],
+  );
+  const materiauEau = useMemo(
+    () => new THREE.MeshStandardMaterial({ color: theme.eau, roughness: 0.2, metalness: 0.1 }),
+    [theme.eau],
+  );
+  const herbe = useMemo(() => {
+    const t = texHerbe(theme.sol, 61);
+    t.repeat.set(3, 3);
+    return new THREE.MeshStandardMaterial({ map: t, roughness: 1 });
+  }, [theme.sol]);
+  const sable = useMemo(() => new THREE.MeshStandardMaterial({ color: '#e9d28a', roughness: 1 }), []);
+  const terre = useMemo(() => new THREE.MeshStandardMaterial({ color: '#6b4a2b', roughness: 1 }), []);
+  const feuillage = useMemo(
+    () => new THREE.MeshStandardMaterial({ map: texFeuillage(theme.mur.couleur, 41), roughness: 0.9 }),
+    [theme.mur.couleur],
+  );
+  const roche = useMemo(() => new THREE.MeshStandardMaterial({ color: '#6b7078', roughness: 1 }), []);
+  useEffect(
+    () => () => {
+      geometrieEau.dispose();
+      materiauEau.dispose();
+      herbe.map?.dispose();
+      herbe.dispose();
+      sable.dispose();
+      terre.dispose();
+      feuillage.map?.dispose();
+      feuillage.dispose();
+      roche.dispose();
+    },
+    [geometrieEau, materiauEau, herbe, sable, terre, feuillage, roche],
+  );
+  useFrame((state) => {
+    if (reduced || !eau.current) return;
+    const t = state.clock.elapsedTime;
+    const pos = eau.current.geometry.attributes.position;
+    for (let i = 0; i < pos.count; i++) {
+      const x = base[i * 3] ?? 0;
+      const z = base[i * 3 + 2] ?? 0;
+      pos.setY(i, Math.sin(x * 0.5 + t * 1.2) * 0.05 + Math.cos(z * 0.4 + t) * 0.04);
+    }
+    pos.needsUpdate = true;
+  });
+  const couleursFougere = ['#2f9e44', '#3fae52', '#237a35'];
+  return (
+    <group>
+      {/* La mer, puis la plage, puis la jungle qui forme l’île. */}
+      <mesh ref={eau} geometry={geometrieEau} material={materiauEau} position={[0, -0.95, 0]} receiveShadow />
+      <mesh
+        geometry={GEO.disque}
+        material={[terre, sable, terre]}
+        position={[0, -1.1, 0]}
+        scale={[16.5, 0.6, 14.5]}
+        receiveShadow
+      />
+      <mesh
+        geometry={GEO.disque}
+        material={[terre, herbe, terre]}
+        position={[0, -0.85, 0]}
+        scale={[13.5, 0.9, 11.5]}
+        receiveShadow
+      />
+      {palmiers.map((p, i) => (
+        <PalmierJungle key={`p${i}`} x={p.x} z={p.z} inclinaison={(p.aleat - 0.5) * 0.2} />
+      ))}
+      {arbres.map((p, i) => (
+        <Arbre key={`a${i}`} x={p.x} z={p.z} taille={1 + p.aleat * 0.5} feuillage={feuillage} />
+      ))}
+      {fougeres.map((p, i) => (
+        <Fougere key={`f${i}`} x={p.x} z={p.z} couleur={couleursFougere[Math.floor(p.aleat * 3)] ?? '#2f9e44'} />
+      ))}
+      {fleurs.map((p, i) => (
+        <Fleur
+          key={`l${i}`}
+          x={p.x}
+          z={p.z}
+          couleur={COULEURS_FLEURS[Math.floor(p.aleat * COULEURS_FLEURS.length)] ?? '#ffffff'}
+        />
+      ))}
+      {rochers.map((p, i) => (
+        <Forme
+          key={`r${i}`}
+          geometrie={GEO.rocher}
+          materiau={roche}
+          contour={0.03}
+          position={[p.x, SOL_ILE + 0.3, p.z]}
+          rotation={[p.aleat, p.aleat * 2, 0]}
+          scale={0.9 + p.aleat * 0.8}
+        />
+      ))}
+      {papillons.map((p, i) => (
+        <Papillon
+          key={`b${i}`}
+          x={p.x}
+          z={p.z}
+          couleur={COULEURS_PAPILLONS[Math.floor(p.aleat * COULEURS_PAPILLONS.length)] ?? '#ff6fb1'}
+          phase={i * 1.7}
+          reduced={reduced}
+        />
+      ))}
+    </group>
+  );
+}
+
 /** Une salle d’escalade : un sol sombre sous le tapis, loin sous le plateau. */
 function Gymnase() {
   const sol = useMemo(() => new THREE.MeshStandardMaterial({ color: '#1a2336', roughness: 1 }), []);
@@ -564,6 +799,20 @@ function formesDesMurs(theme: ThemePlateau): Array<{
   contour: number;
   decalages: Array<{ x: number; y: number; z: number; sx: number; sy: number; sz: number }>;
 }> {
+  if (theme.ambiance === 'ile') {
+    // La jungle : des buissons en grappes, sans bloc.
+    return [
+      {
+        geometrie: GEO.sphere,
+        copies: 2,
+        contour: 0.045,
+        decalages: [
+          { x: 0, y: 0.5, z: 0, sx: 0.5, sy: 0.5, sz: 0.5 },
+          { x: 0.2, y: 0.36, z: 0.15, sx: 0.3, sy: 0.3, sz: 0.3 },
+        ],
+      },
+    ];
+  }
   if (theme.murs === 'grillage') {
     // Des poteaux blancs tous les cases du contour ; la toile est posée par-dessus (voir Grillage).
     return [
