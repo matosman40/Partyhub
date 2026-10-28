@@ -81,10 +81,48 @@ export const actionGrilleSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('saluer') }).strict(),
 ]);
 
+/**
+ * Le contour organique : le rayon du bord dans une direction donnée (1 = le bord de l’ellipse du plateau).
+ * Quelques ondulations, pour que la forme ne soit ni un carré ni un cercle parfait.
+ */
+export function rayonOrganique(theta: number): number {
+  return 1 + 0.04 * Math.sin(3 * theta + 0.6) + 0.03 * Math.sin(5 * theta + 2.1);
+}
+
+/** Vrai si la case (x, y) est dans la forme du plateau. Le carré garde tout ; le disque et le contour organique coupent les coins. */
+export function formeContient(forme: Forme, largeur: number, hauteur: number, x: number, y: number): boolean {
+  if (forme === 'carree') return true;
+  const dx = (x - (largeur - 1) / 2) / (largeur / 2 - 1);
+  const dy = (y - (hauteur - 1) / 2) / (hauteur / 2 - 1);
+  const d = Math.hypot(dx, dy);
+  if (forme === 'ronde') return d <= 1;
+  return d <= rayonOrganique(Math.atan2(dy, dx));
+}
+
+/**
+ * Les points du contour de la forme, en coordonnées du monde (x, z), à une marge au-delà des cases libres.
+ * Sert à dessiner le sol et les blocs qui le bordent, pour qu’ils suivent exactement la règle.
+ */
+export function contourDeLaForme(
+  forme: Forme,
+  largeur: number,
+  hauteur: number,
+  n: number,
+  marge = 0.5,
+): Array<[number, number]> {
+  const rx = largeur / 2 - 1 + marge;
+  const ry = hauteur / 2 - 1 + marge;
+  return Array.from({ length: n }, (_, i) => {
+    const theta = (i / n) * Math.PI * 2;
+    const r = forme === 'organique' ? rayonOrganique(theta) : 1;
+    return [r * Math.cos(theta) * rx, r * Math.sin(theta) * ry];
+  });
+}
+
 /** Cases de départ, dans l’ordre : les coins d’abord, puis le centre-bas. */
 function departs(largeur: number, hauteur: number, forme: Forme = 'carree'): Array<[number, number]> {
-  if (forme === 'ronde') {
-    // Dans l’arène ronde, les départs sont à l’intérieur du disque, jamais dans les coins.
+  if (forme !== 'carree') {
+    // Dans une forme courbe, les départs sont à l’intérieur, jamais dans les coins.
     return [
       [3, 2],
       [largeur - 4, hauteur - 3],
@@ -118,23 +156,18 @@ function generateur(graine: number): () => number {
 
 /**
  * Décor du plateau. Par défaut façon Bomberman : murs extérieurs, et des piliers fixes une case sur deux.
- * Le décor « bord » ne garde que le contour. La forme « ronde » met en mur les cases hors d’un disque.
+ * Le décor « bord » ne garde que le contour. Les formes « ronde » et « organique » mettent en mur les cases hors de la forme.
  */
 export function creerDecor(largeur: number, hauteur: number, options: { forme?: Forme; decor?: Decor } = {}): string[] {
   const forme = options.forme ?? 'carree';
   const decor = options.decor ?? 'piliers';
-  const cx = (largeur - 1) / 2;
-  const cy = (hauteur - 1) / 2;
-  const rx = largeur / 2 - 1;
-  const ry = hauteur / 2 - 1;
   const lignes: string[] = [];
   for (let y = 0; y < hauteur; y++) {
     let ligne = '';
     for (let x = 0; x < largeur; x++) {
       const bord = x === 0 || y === 0 || x === largeur - 1 || y === hauteur - 1;
-      if (forme === 'ronde') {
-        const dehors = ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 > 1;
-        ligne += bord || dehors ? '#' : '.';
+      if (forme !== 'carree') {
+        ligne += bord || !formeContient(forme, largeur, hauteur, x, y) ? '#' : '.';
         continue;
       }
       // Piliers une case sur deux (Bomberman), ou un pilier sur seize pour le décor épars.

@@ -13,6 +13,7 @@ import {
   actionGrilleSchema,
   type EtatGrille,
   type ObjetGrille,
+  formeContient,
 } from '../grille.js';
 
 /** Plateau vide entouré de murs, avec des personnages et des objets placés à la main. */
@@ -211,12 +212,23 @@ describe('saluer et gestes partagés', () => {
 
 describe('arrivée et départ des personnages', () => {
   it('place chaque nouveau personnage sur une case de départ libre', () => {
-    let e = creerGrille({ graine: 7 });
+    // Le plateau carré a ses départs dans les coins.
+    let e = creerGrille({ graine: 7, theme: 'arene' });
     e = ajouterPersonnage(e, 'a');
     e = ajouterPersonnage(e, 'b');
     expect(e.personnages.a).toMatchObject({ x: 1, y: 1 });
     expect(e.personnages.b).toMatchObject({ x: GRILLE_LARGEUR - 2, y: GRILLE_HAUTEUR - 2 });
     expect(ajouterPersonnage(e, 'a')).toBe(e);
+  });
+
+  it('dans une forme organique, les personnages partent à l’intérieur du contour', () => {
+    const e = creerGrille({ graine: 7, theme: 'fete' });
+    let f = ajouterPersonnage(e, 'a');
+    f = ajouterPersonnage(f, 'b');
+    for (const p of Object.values(f.personnages)) {
+      expect(formeContient(themeDePlateau('fete').forme, e.largeur, e.hauteur, p.x, p.y)).toBe(true);
+      expect(e.decor[p.y]?.[p.x]).toBe('.');
+    }
   });
 
   it('quand un personnage part, la boîte qu’il portait reste posée sur place', () => {

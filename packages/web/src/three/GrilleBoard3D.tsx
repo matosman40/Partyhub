@@ -3,6 +3,7 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import {
   ATTITUDE_POSE,
+  contourDeLaForme,
   themeDePlateau,
   type EtatGrille,
   type ObjetGrille,
@@ -291,14 +292,27 @@ function Filet({ etat }: { etat: EtatGrille }) {
   );
 }
 
-/** Les centres des blocs qui bordent l’arène ronde : un anneau elliptique, juste au-delà des cases libres. */
-function anneauRond(largeur: number, hauteur: number, n: number): Array<[number, number]> {
-  const rx = largeur / 2 - 0.5;
-  const rz = hauteur / 2 - 0.5;
-  return Array.from({ length: n }, (_, i) => {
-    const a = (i / n) * Math.PI * 2;
-    return [rx * Math.cos(a), rz * Math.sin(a)];
-  });
+/**
+ * Le sol d’une forme courbe : le contour (en coordonnées du monde) extrudé, de l’épaisseur du socle.
+ * Les UV suivent la grille, pour que le motif du sol tombe juste sur les cases.
+ */
+function contourEnGeometrie(
+  points: Array<[number, number]>,
+  largeur: number,
+  hauteur: number,
+  epaisseur: number,
+): THREE.BufferGeometry {
+  const forme = new THREE.Shape(points.map(([x, z]) => new THREE.Vector2(x, -z)));
+  const g = new THREE.ExtrudeGeometry(forme, { depth: epaisseur, bevelEnabled: false, curveSegments: 1 });
+  g.rotateX(-Math.PI / 2);
+  g.translate(0, -epaisseur, 0);
+  const pos = g.attributes.position;
+  const uv = g.attributes.uv;
+  for (let i = 0; i < pos.count; i++) {
+    uv.setXY(i, pos.getX(i) / largeur + 0.5, pos.getZ(i) / hauteur + 0.5);
+  }
+  uv.needsUpdate = true;
+  return g;
 }
 
 /** Le grillage d’un court : des panneaux de toile tout autour, fixés sur les poteaux. */
@@ -399,10 +413,12 @@ function Decor({
       if (etat.decor[y]?.[x] === '#') murs.push([x, y]);
     }
   }
-  const ronde = theme.forme === 'ronde';
+  const courbe = theme.forme !== 'carree';
   const positionsMurs = useMemo(
     () =>
-      ronde ? anneauRond(largeur, hauteur, 40) : murs.map(([x, y]): [number, number] => [monX(x, etat), monZ(y, etat)]),
+      courbe
+        ? contourDeLaForme(theme.forme, largeur, hauteur, 44, 0.5)
+        : murs.map(([x, y]): [number, number] => [monX(x, etat), monZ(y, etat)]),
     // Les murs ne bougent pas : on ne refait leur liste que si le plateau change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [etat.decor, largeur, hauteur],
@@ -412,37 +428,44 @@ function Decor({
   const flancs = useMemo(() => new THREE.MeshStandardMaterial({ color: socle.flanc, roughness: 0.85 }), [socle.flanc]);
   const rebord = useMemo(() => new THREE.MeshStandardMaterial({ color: socle.rebord, roughness: 0.7 }), [socle.rebord]);
   const murMat = useMemo(() => new THREE.MeshStandardMaterial({ map: tex.mur, roughness: 0.85 }), [tex]);
+  const contourSol = useMemo(
+    () =>
+      courbe
+        ? contourEnGeometrie(contourDeLaForme(theme.forme, largeur, hauteur, 72, 1), largeur, hauteur, socle.epaisseur)
+        : null,
+    [courbe, theme.forme, largeur, hauteur, socle.epaisseur],
+  );
+  const contourBord = useMemo(
+    () =>
+      courbe
+        ? contourEnGeometrie(
+            contourDeLaForme(theme.forme, largeur, hauteur, 72, 1.6),
+            largeur,
+            hauteur,
+            socle.epaisseur,
+          )
+        : null,
+    [courbe, theme.forme, largeur, hauteur, socle.epaisseur],
+  );
   useEffect(
     () => () => {
       dessus.dispose();
       flancs.dispose();
       rebord.dispose();
       murMat.dispose();
+      contourSol?.dispose();
+      contourBord?.dispose();
     },
-    [dessus, flancs, rebord, murMat],
+    [dessus, flancs, rebord, murMat, contourSol, contourBord],
   );
   return (
     <group>
       <Environnement theme={theme} taille={{ largeur, hauteur }} reduced={reduced} />
       {/* Le plateau est un bloc : dessus peint, flancs de la couleur du lieu, bord clair autour. */}
-      {ronde ? (
+      {courbe && contourSol && contourBord ? (
         <>
-          <mesh
-            geometry={GEO.disque}
-            material={rebord}
-            position={[0, -socle.epaisseur / 2 - 0.06, 0]}
-            scale={[largeur / 2 + 0.6, socle.epaisseur, hauteur / 2 + 0.6]}
-            receiveShadow
-            castShadow
-          />
-          <mesh
-            geometry={GEO.disque}
-            material={[flancs, dessus, flancs]}
-            position={[0, -socle.epaisseur / 2, 0]}
-            scale={[largeur / 2, socle.epaisseur, hauteur / 2]}
-            receiveShadow
-            castShadow
-          />
+          <mesh geometry={contourBord} material={rebord} position={[0, -0.06, 0]} receiveShadow castShadow />
+          <mesh geometry={contourSol} material={[dessus, flancs]} receiveShadow castShadow />
         </>
       ) : (
         <>

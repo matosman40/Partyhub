@@ -16,7 +16,7 @@ export const themeIdSchema = z.enum(THEME_IDS);
 export type Ambiance = 'pelouse' | 'mer' | 'plateforme' | 'gymnase' | 'ile';
 
 /** La forme du plateau : un rectangle, ou un disque (les cases hors du disque sont des murs). */
-export type Forme = 'carree' | 'ronde';
+export type Forme = 'carree' | 'ronde' | 'organique';
 /** Le décor intérieur : des piliers façon Bomberman, quelques piliers épars, ou seulement le bord. */
 export type Decor = 'piliers' | 'epars' | 'bord';
 
@@ -72,7 +72,7 @@ export const THEMES_PLATEAU: Record<ThemeId, ThemePlateau> = {
     boite: '#e0b57a',
     ballon: '#ef4444',
     densiteCaisses: 0.1,
-    forme: 'carree',
+    forme: 'organique',
     decor: 'epars',
   },
   arene: {
@@ -113,7 +113,7 @@ export const THEMES_PLATEAU: Record<ThemeId, ThemePlateau> = {
     boite: '#f0f8ff',
     ballon: '#ff7a59',
     densiteCaisses: 0.1,
-    forme: 'carree',
+    forme: 'organique',
     decor: 'epars',
   },
   'arene-ronde': {
@@ -196,7 +196,7 @@ export const THEMES_PLATEAU: Record<ThemeId, ThemePlateau> = {
     boite: '#f3d58a',
     ballon: '#ff7a00',
     densiteCaisses: 0.08,
-    forme: 'carree',
+    forme: 'organique',
     decor: 'epars',
   },
 };
