@@ -11,7 +11,7 @@ import {
 import { createSocket, type AppSocket } from '../realtime.js';
 import { newId } from '../api.js';
 import { viewsFor } from '../games.js';
-import { AvatarsContext, GrilleCommandes, PauseContext, SensorSenderContext } from '@partyhub/games/client';
+import { AvatarsContext, GrilleControleur, PauseContext, SensorSenderContext } from '@partyhub/games/client';
 import { PlayerAvatar } from '../components/PlayerAvatar.js';
 import { ChatPanel, EmoteBar } from '../components/Social.js';
 import { Link } from 'react-router-dom';
@@ -591,18 +591,17 @@ export function PlayerSeat({
                 </button>
               ))}
             {lobby.game.id === PLATEAU_TEST_ID ? (
-              !compact && (
-                <>
-                  {lobby.grille && (
-                    <LobbyGrille
-                      etat={lobby.grille}
-                      players={lobby.players}
-                      me={you.id}
-                      label="Plateau de test : vos gestes"
-                    />
-                  )}
-                  <GrilleCommandes onAction={sendGrille} disabled={!connected} />
-                </>
+              !compact &&
+              lobby.grille && (
+                <GrilleControleur etat={lobby.grille} moi={you.id} onAction={sendGrille} disabled={!connected}>
+                  <LobbyGrille
+                    etat={lobby.grille}
+                    players={lobby.players}
+                    me={you.id}
+                    label="Plateau de test"
+                    className="grille-plein"
+                  />
+                </GrilleControleur>
               )
             ) : (
               <>

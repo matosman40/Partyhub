@@ -6,7 +6,7 @@ Dans de vrais navigateurs (écran principal 1920 × 1080, téléphone 390 × 844
 - le plateau en grille s'affiche sur les deux écrans, avec le personnage du téléphone ;
 - les flèches du clavier (ou les boutons du téléphone) déplacent le personnage, qui reste dans la grille ;
 - « Saluer » : le geste est confirmé par le serveur et l'écran principal le voit (attitude « salut ») ;
-- un geste refusé (pousser sans rien devant) affiche le message du plateau ;
+- « Action » sans rien devant : la bande de la manette le dit ;
 - aucune erreur JavaScript ni console, aucun défilement horizontal ;
 - des captures sont écrites dans SHOTS.
 
@@ -85,15 +85,21 @@ def main() -> int:
             phone.get_by_role("button", name=re.compile("continuer", re.I)).first.click()
             phone.get_by_role("button", name=re.compile("entrer dans la salle", re.I)).first.click()
 
-            grille_tv = tv.locator(".grille").first
-            grille_tv.wait_for(timeout=15000)
-            check("l'écran principal affiche le plateau en grille", grille_tv.is_visible())
+            # L'écran principal : un plateau 3D (canevas WebGL) et les personnages posés dessus.
+            canevas = tv.locator(".grille3d canvas").first
+            canevas.wait_for(timeout=20000)
+            check("l'écran principal affiche le plateau en 3D", canevas.is_visible())
+            tv.locator(".grille3d-figure").first.wait_for(state="attached", timeout=10000)
 
-            grille_phone = phone.locator(".grille").first
-            grille_phone.wait_for(timeout=15000)
-            check("le téléphone affiche le plateau en grille", grille_phone.is_visible())
-
-            tv.locator(".grille-personnage").first.wait_for(timeout=10000)
+            # Le téléphone : le plateau et la manette, par-dessus.
+            manette = phone.locator(".grille-console").first
+            manette.wait_for(timeout=15000)
+            check("le téléphone affiche le plateau et la manette", manette.is_visible())
+            check(
+                "le téléphone a la croix de direction et les trois boutons",
+                phone.get_by_role("button", name=re.compile("Aller vers haut")).count() == 1
+                and phone.get_by_role("button", name=re.compile("^Action$")).count() == 1,
+            )
             check(
                 "le personnage du téléphone est posé sur la grille",
                 own_cell(phone) is not None,
@@ -119,32 +125,29 @@ def main() -> int:
 
             # Le plateau de l'écran principal suit les mêmes positions.
             tv.wait_for_timeout(400)
-            tv_own = tv.locator(".grille-personnage").filter(has_text="Testeur").first
+            tv_own = tv.locator(".grille3d-figure").filter(has_text="Testeur").first
             check(
                 "l'écran principal voit le personnage à sa nouvelle case",
                 tv_own.count() > 0 and tv_own.get_attribute("data-x") is not None,
             )
 
             # Salut : le serveur confirme, et l'écran principal voit l'attitude « salut ».
-            phone.get_by_role("button", name=re.compile("Saluer")).first.click()
-            tv.wait_for_timeout(600)
-            check(
-                "saluer : l'écran principal voit l'attitude « salut »",
-                tv.locator('.grille-personnage[data-attitude="salut"]').count() > 0,
-            )
+            # Le bouton de la manette (et non l’émotion « Saluer » du salon, qui a le même nom).
+            phone.locator(".grille-b-saluer").click()
+            # On attend l'attitude sur l'écran principal, sans compter sur une durée fixe.
+            salut_vu = True
+            try:
+                # Le rendu 3D s'exécute en logiciel dans un navigateur de test : on laisse le temps.
+                tv.locator('.grille3d-figure[data-attitude="salut"]').first.wait_for(state="attached", timeout=10000)
+            except Exception:  # noqa: BLE001 - l'échec est signalé par le contrôle juste après
+                salut_vu = False
+            check("saluer : l'écran principal voit l'attitude « salut »", salut_vu)
 
-            # Pousser sans rien devant : le plateau refuse et le dit.
-            phone.get_by_role("button", name=re.compile("^Pousser$")).first.click()
-            phone.get_by_role("button", name=re.compile("Pousser vers haut")).first.click()
-            alerte = phone.locator(".grille-erreur").first
+            # Action sans rien devant : la manette le dit, sans rien envoyer au plateau.
+            phone.get_by_role("button", name=re.compile("^Action$")).first.click()
+            alerte = phone.locator(".grille-bande-message").first
             alerte.wait_for(timeout=5000)
-            check(
-                "un geste refusé affiche le message du plateau",
-                "Rien à pousser" in alerte.inner_text(),
-                alerte.inner_text(),
-            )
-
-            phone.get_by_role("button", name=re.compile("^Marcher$")).first.click()
+            check("Action sans rien devant : la bande le dit", "Rien à faire ici" in alerte.inner_text(), alerte.inner_text())
             tv.wait_for_timeout(300)
             tv.screenshot(path=os.path.join(SHOTS, "grille-tv.png"))
             phone.screenshot(path=os.path.join(SHOTS, "grille-telephone.png"))

@@ -12822,101 +12822,284 @@ input[type='file']::file-selector-button {
   }
 }
 
-.grille-commandes {
-  display: grid;
-  justify-items: center;
-  gap: 0.6rem;
-  margin-top: 0.8rem;
-}
-
-.grille-modes {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 0.4rem;
-}
-
-.grille-mode {
-  min-height: 44px;
-  padding: 0.4rem 0.9rem;
-  border: 2px solid #7a4f2a;
-  border-radius: 999px;
-  background: #fff8ec;
-  color: #2b1a0c;
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.grille-mode.is-active {
-  background: #7a4f2a;
+/* Manette de console : le plateau reste visible, les commandes sont transparentes par-dessus. */
+.grille-console {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  overflow: hidden;
+  background: radial-gradient(120% 70% at 50% 0%, #3d2a6b 0%, #1b1233 70%);
   color: #fff;
+  touch-action: manipulation;
+  user-select: none;
 }
 
-.grille-aide {
-  max-width: 36ch;
-  margin: 0;
-  text-align: center;
+/* Le plateau est centré entre la bande du haut et la manette du bas. */
+.grille-plateau {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3.6rem 10px 13.5rem;
 }
 
-.grille-pad {
+.grille-plein {
+  width: 100%;
+  max-width: none;
+}
+
+.grille-console .grille.grille-plein {
+  width: 100%;
+  aspect-ratio: var(--cols) / var(--rows);
+  border-radius: 12px;
+}
+
+.grille-bande {
+  position: absolute;
+  top: 0.6rem;
+  left: 0.6rem;
+  right: 0.6rem;
+  z-index: 2;
   display: grid;
-  grid-template-columns: repeat(3, 64px);
-  grid-template-rows: repeat(3, 64px);
-  gap: 6px;
+  gap: 0.15rem;
+  padding: 0.5rem 0.8rem;
+  border-radius: 14px;
+  background: rgba(10, 6, 26, 0.45);
+  backdrop-filter: blur(3px);
+  text-align: center;
+  pointer-events: none;
 }
 
-.grille-dir,
-.grille-saluer {
+.grille-bande-devant {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.grille-bande-message {
+  color: #ffd27a;
+  font-size: 0.85rem;
+}
+
+.grille-manette {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: max(1rem, env(safe-area-inset-bottom));
+  z-index: 2;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding: 0 0.9rem;
+  pointer-events: none;
+}
+
+.grille-croix,
+.grille-boutons {
+  display: grid;
+  pointer-events: auto;
+}
+
+.grille-croix {
+  grid-template-columns: repeat(3, 52px);
+  grid-template-rows: repeat(3, 52px);
+  gap: 4px;
+}
+
+.grille-boutons {
+  grid-template-columns: repeat(3, 58px);
+  grid-template-rows: repeat(3, 58px);
+  gap: 4px;
+}
+
+.grille-bouton {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 0.1rem;
+  min-width: 44px;
   min-height: 44px;
-  border: 2px solid #7a4f2a;
-  border-radius: 16px;
-  background: #fff8ec;
-  color: #2b1a0c;
+  padding: 0;
+  border: 2px solid rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(2px);
+  color: #fff;
   font: inherit;
   cursor: pointer;
+  touch-action: manipulation;
 }
 
-.grille-dir {
-  font-size: 1.6rem;
+.grille-bouton:active {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.grille-bouton:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.grille-croix .grille-bouton {
+  border-radius: 14px;
+  font-size: 1.5rem;
   line-height: 1;
 }
 
-.grille-dir-up {
+.grille-bouton-nom {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.grille-croix-up {
   grid-column: 2;
   grid-row: 1;
 }
 
-.grille-dir-left {
+.grille-croix-left {
   grid-column: 1;
   grid-row: 2;
 }
 
-.grille-dir-right {
+.grille-croix-right {
   grid-column: 3;
   grid-row: 2;
 }
 
-.grille-dir-down {
+.grille-croix-down {
   grid-column: 2;
   grid-row: 3;
 }
 
-.grille-saluer {
+.grille-boutons .grille-bouton {
+  border-radius: 50%;
+  font-size: 1.1rem;
+}
+
+.grille-b-saluer {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.grille-b-action {
   grid-column: 3;
+  grid-row: 2;
+  background: rgba(255, 210, 122, 0.3);
+  border-color: rgba(255, 230, 170, 0.9);
+}
+
+.grille-b-sauter {
+  grid-column: 2;
   grid-row: 3;
-  font-size: 0.85rem;
-  font-weight: 600;
 }
 
-.grille-dir:disabled,
-.grille-saluer:disabled {
-  opacity: 0.5;
-  cursor: default;
+@media (prefers-reduced-motion: reduce) {
+  .grille-bouton {
+    transition: none;
+  }
 }
 
-.grille-erreur {
+/* Plateau de test en 3D : plein écran sur la TV, le code dans un coin. */
+.tv-monde {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  background: #1b1233;
+}
+
+.tv-monde-info {
+  position: absolute;
+  left: 1.2rem;
+  bottom: 1.2rem;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.8rem 1rem;
+  border-radius: 18px;
+  background: rgba(10, 6, 26, 0.55);
+  backdrop-filter: blur(4px);
+  color: #fff;
+}
+
+.tv-monde-info .stage-label {
   margin: 0;
-  color: #b42318;
-  text-align: center;
+}
+
+.tv-monde-code {
+  margin: 0.1rem 0;
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.tv-monde-chargement {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+
+.grille3d {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.grille3d canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Personnages 2D posés sur le plateau 3D : superposés au canevas, sans bloquer la souris. */
+.grille3d-figures {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.grille3d-figure {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  will-change: transform;
+}
+
+.grille3d-corps {
+  position: absolute;
+  left: -60px;
+  top: -160px;
+  width: 120px;
+  height: 160px;
+}
+
+.grille3d-face {
+  position: absolute;
+  inset: 0;
+  transform-origin: 50% 100%;
+}
+
+.grille3d-ombre {
+  position: absolute;
+  left: -40px;
+  top: -10px;
+  width: 80px;
+  height: 22px;
+  border-radius: 50%;
+  background: radial-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0) 70%);
+}
+
+.grille3d-figure.is-away {
+  opacity: 0.45;
+}
+
+.grille3d-figure.is-own .grille-nom {
+  background: #1f6feb;
+}
+
+.grille3d-figure .grille-nom {
+  top: -1.2rem;
 }

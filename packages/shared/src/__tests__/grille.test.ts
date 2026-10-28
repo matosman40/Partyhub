@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
+  actionContextuelle,
   ajouterPersonnage,
   appliquerAction,
+  devantLePersonnage,
   creerGrille,
   creerDecor,
   GRILLE_HAUTEUR,
@@ -230,5 +232,38 @@ describe('format des actions reçues', () => {
     expect(actionGrilleSchema.safeParse({ type: 'pousser', dir: 'left' }).success).toBe(true);
     expect(actionGrilleSchema.safeParse({ type: 'pousser', dir: 'diagonale' }).success).toBe(false);
     expect(actionGrilleSchema.safeParse({ type: 'danser' }).success).toBe(false);
+  });
+});
+
+describe('bouton d’action', () => {
+  it('dit ce qui est devant le personnage, dans la direction où il regarde', () => {
+    // Dans le coin (1, 1) : le mur est à gauche et au-dessus, la caisse à droite, le sol en bas.
+    const e = plateau([{ id: 'c', nature: 'caisse', x: 2, y: 1, porte: null }], { a: [1, 1] });
+    const regarde = (dir: 'up' | 'down' | 'left' | 'right') => ({
+      ...e,
+      personnages: { a: { ...e.personnages.a!, dir } },
+    });
+    expect(devantLePersonnage(regarde('right'), 'a')).toBe('caisse');
+    expect(devantLePersonnage(regarde('left'), 'a')).toBe('mur');
+    expect(devantLePersonnage(regarde('up'), 'a')).toBe('mur');
+    expect(devantLePersonnage(regarde('down'), 'a')).toBe('rien');
+    expect(devantLePersonnage(e, 'inconnu')).toBeNull();
+  });
+
+  it('pousse une caisse devant soi, et porte une boîte devant soi', () => {
+    const avecCaisse = plateau([{ id: 'c', nature: 'caisse', x: 3, y: 2, porte: null }], { a: [2, 2] });
+    const caisse = { ...avecCaisse, personnages: { a: { ...avecCaisse.personnages.a!, dir: 'right' as const } } };
+    expect(actionContextuelle(caisse, 'a')).toEqual({ type: 'pousser', dir: 'right' });
+
+    const avecBoite = plateau([{ id: 'b', nature: 'boite', x: 3, y: 2, porte: null }], { a: [2, 2] });
+    const boite = { ...avecBoite, personnages: { a: { ...avecBoite.personnages.a!, dir: 'right' as const } } };
+    expect(actionContextuelle(boite, 'a')).toEqual({ type: 'porter', dir: 'right' });
+  });
+
+  it('pose la boîte portée, et ne fait rien s’il n’y a rien devant', () => {
+    const portee = plateau([{ id: 'b', nature: 'boite', x: 2, y: 2, porte: 'a' }], { a: [2, 2] });
+    expect(actionContextuelle(portee, 'a')).toEqual({ type: 'porter', dir: 'down' });
+    const vide = plateau([], { a: [2, 2] });
+    expect(actionContextuelle(vide, 'a')).toBeNull();
   });
 });

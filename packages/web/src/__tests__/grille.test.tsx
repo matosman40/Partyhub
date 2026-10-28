@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { ajouterPersonnage, appliquerAction, creerGrille, type EtatGrille, type PublicPlayer } from '@partyhub/shared';
-import { GrilleCommandes, GrilleView } from '@partyhub/games/client';
+import { GrilleControleur, GrilleView, libelleDevant } from '@partyhub/games/client';
 import { apparencesGrille } from '../components/LobbyGrille.js';
 
 /**
@@ -73,18 +73,37 @@ describe('GrilleView', () => {
   });
 });
 
-describe('GrilleCommandes', () => {
-  it('propose les quatre actions de direction et le salut', () => {
-    const html = renderToStaticMarkup(<GrilleCommandes onAction={async () => null} />);
-    for (const label of ['Marcher', 'Pousser', 'Sauter', 'Porter', 'Saluer']) expect(html).toContain(label);
-    for (const dir of ['haut', 'bas', 'gauche', 'droite']) expect(html).toContain(`Marcher vers ${dir}`);
-    // Marcher est l’action par défaut.
-    expect(html).toContain('aria-pressed="true"');
+describe('GrilleControleur', () => {
+  const noop = async () => null;
+
+  it('propose la croix de direction et les trois boutons : Saluer, Action, Sauter', () => {
+    const e = plateauAvecDeux();
+    const html = renderToStaticMarkup(
+      <GrilleControleur etat={e} moi="a" onAction={noop}>
+        <GrilleView etat={e} apparences={{}} label="Test" />
+      </GrilleControleur>,
+    );
+    for (const dir of ['haut', 'bas', 'gauche', 'droite']) expect(html).toContain(`Aller vers ${dir}`);
+    for (const nom of ['Saluer', 'Action', 'Sauter']) expect(html).toContain(nom);
+    // Le plateau est dessiné sous la manette.
+    expect(html).toContain('grille-plateau');
   });
 
-  it('désactive les directions et le salut quand le plateau ne répond pas', () => {
-    const html = renderToStaticMarkup(<GrilleCommandes onAction={async () => null} disabled />);
-    expect((html.match(/disabled=""/g) ?? []).length).toBe(5);
+  it('désactive la croix et les boutons quand le plateau ne répond pas', () => {
+    const e = plateauAvecDeux();
+    const html = renderToStaticMarkup(
+      <GrilleControleur etat={e} moi="a" onAction={noop} disabled>
+        <GrilleView etat={e} apparences={{}} label="Test" />
+      </GrilleControleur>,
+    );
+    expect((html.match(/disabled=""/g) ?? []).length).toBe(7);
+  });
+
+  it('dit ce qui est devant le personnage', () => {
+    expect(libelleDevant('caisse', false)).toContain('Action la pousse');
+    expect(libelleDevant('boite', false)).toContain('Action la prend');
+    expect(libelleDevant('rien', false)).toBe('Rien devant vous');
+    expect(libelleDevant('rien', true)).toContain('Vous portez une boîte');
   });
 });
 

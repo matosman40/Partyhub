@@ -301,3 +301,30 @@ export const ATTITUDE_POSE: Record<Attitude, 'idle' | 'wave' | 'joy'> = {
   salut: 'wave',
   saut: 'joy',
 };
+
+/** Ce qui se trouve devant un personnage : le mur du plateau, un autre personnage, ou l’objet posé. */
+export type Devant = 'rien' | 'mur' | 'personnage' | NatureObjet;
+
+/** Ce qui est devant le personnage, dans la direction où il regarde. Null si le personnage est inconnu. */
+export function devantLePersonnage(e: EtatGrille, joueurId: string): Devant | null {
+  const perso = e.personnages[joueurId];
+  if (!perso) return null;
+  const d = avance(perso.x, perso.y, perso.dir);
+  if (!dansLaGrille(e, d.x, d.y) || e.decor[d.y]?.[d.x] !== '.') return 'mur';
+  if (Object.values(e.personnages).some((p) => p.id !== joueurId && p.x === d.x && p.y === d.y)) return 'personnage';
+  return objetA(e, d.x, d.y)?.nature ?? 'rien';
+}
+
+/**
+ * Le bouton d’action fait ce qu’il faut selon ce qui est devant : porter ou poser une boîte, pousser une
+ * caisse ou un ballon. Rien à faire : null. Le navigateur s’en sert pour un seul bouton « Action ».
+ */
+export function actionContextuelle(e: EtatGrille, joueurId: string): ActionGrille | null {
+  const perso = e.personnages[joueurId];
+  if (!perso) return null;
+  if (objetPorte(e, joueurId)) return { type: 'porter', dir: perso.dir };
+  const devant = devantLePersonnage(e, joueurId);
+  if (devant === 'boite') return { type: 'porter', dir: perso.dir };
+  if (devant === 'caisse' || devant === 'ballon') return { type: 'pousser', dir: perso.dir };
+  return null;
+}
