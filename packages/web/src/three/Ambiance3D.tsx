@@ -73,6 +73,21 @@ export function Environnement({ theme, taille, reduced }: { theme: ThemePlateau;
       {theme.ambiance === 'gymnase' && <Gymnase taille={taille} />}
       {theme.ambiance === 'ile' && <Ile theme={theme} taille={taille} reduced={reduced} />}
       {(theme.ambiance === 'pelouse' || theme.ambiance === 'mer' || theme.ambiance === 'ile') && <Nuages />}
+      {/* Les fonds : ce qui ferme le paysage à l’horizon. */}
+      {theme.ambiance === 'pelouse' && <CollinesLointaines couleur={nuancerVert(theme.sol)} />}
+      {theme.ambiance === 'mer' && <IlesLointaines y={SURFACE_MER} palmiers />}
+      {theme.ambiance === 'ile' && <IlesLointaines y={-0.95} palmiers={false} />}
+      {theme.ambiance === 'plateforme' && <TourLointaines />}
+      {theme.ambiance === 'gymnase' && <Gradins taille={taille} />}
+      {(theme.ambiance === 'plateforme' || theme.ambiance === 'gymnase') && <Etoiles />}
+      {/* La vie : des bêtes et des lumières qui bougent autour du plateau. */}
+      {(theme.ambiance === 'pelouse' || theme.ambiance === 'mer' || theme.ambiance === 'ile') && (
+        <Oiseaux reduced={reduced} />
+      )}
+      {theme.ambiance === 'mer' && <Poissons taille={taille} reduced={reduced} />}
+      {(theme.ambiance === 'plateforme' || theme.ambiance === 'gymnase') && (
+        <Lucioles taille={taille} reduced={reduced} />
+      )}
     </>
   );
 }
@@ -891,6 +906,335 @@ function IlotsFlottants({ taille }: { taille: Taille }) {
           </group>
         );
       })}
+    </group>
+  );
+}
+
+/** Des points répartis sur un anneau lointain, autour du plateau. */
+function anneau(n: number, rmin: number, rmax: number, graine: number) {
+  const r = hasard(graine);
+  return Array.from({ length: n }, (_, i) => {
+    const angle = (i / n) * Math.PI * 2 + (r() - 0.5) * 0.4;
+    const rayon = rmin + r() * (rmax - rmin);
+    return { x: Math.cos(angle) * rayon, z: Math.sin(angle) * rayon, aleat: r(), angle };
+  });
+}
+
+/** Des collines lointaines, à l’horizon de la pelouse. */
+function CollinesLointaines({ couleur }: { couleur: string }) {
+  const mat = useMemo(() => new THREE.MeshToonMaterial({ color: couleur }), [couleur]);
+  useEffect(() => () => mat.dispose(), [mat]);
+  const pts = useMemo(() => anneau(14, 21, 27, 201), []);
+  return (
+    <group>
+      {pts.map((p, i) => (
+        <mesh
+          key={i}
+          geometry={GEO.sphere}
+          material={mat}
+          position={[p.x, SOL_PELOUSE - 1, p.z]}
+          scale={[5 + p.aleat * 4, 4 + p.aleat * 4, 5 + p.aleat * 4]}
+        />
+      ))}
+    </group>
+  );
+}
+
+/** Des îles lointaines, avec du sable et de l’herbe, et des palmiers si le lieu en a. */
+function IlesLointaines({ y, palmiers }: { y: number; palmiers: boolean }) {
+  const sable = useMemo(() => new THREE.MeshToonMaterial({ color: '#e9d28a' }), []);
+  const herbe = useMemo(() => new THREE.MeshToonMaterial({ color: '#4f9a3a' }), []);
+  useEffect(
+    () => () => {
+      sable.dispose();
+      herbe.dispose();
+    },
+    [sable, herbe],
+  );
+  const pts = useMemo(() => anneau(9, 20, 26, 207), []);
+  return (
+    <group>
+      {pts.map((p, i) => {
+        const t = 1.6 + p.aleat * 1.6;
+        return (
+          <group key={i}>
+            <mesh geometry={GEO.rocher} material={sable} position={[p.x, y - 0.2, p.z]} scale={[t, 0.9, t]} />
+            <mesh geometry={GEO.dome} material={herbe} position={[p.x, y + 0.3, p.z]} scale={[t * 0.8, 1.2, t * 0.8]} />
+            {palmiers && <Palmier x={p.x + t * 0.3} z={p.z + t * 0.2} />}
+          </group>
+        );
+      })}
+    </group>
+  );
+}
+
+/** Des tours de pierre très hautes, au loin, dans le vide : elles montent du fond jusqu’au ciel. */
+function TourLointaines() {
+  const roche = useMemo(() => new THREE.MeshToonMaterial({ color: '#34506a' }), []);
+  useEffect(() => () => roche.dispose(), [roche]);
+  const pts = useMemo(() => anneau(9, 21, 27, 211), []);
+  return (
+    <group>
+      {pts.map((p, i) => {
+        const h = 8 + p.aleat * 14;
+        return (
+          <mesh
+            key={i}
+            geometry={GEO.rocher}
+            material={roche}
+            position={[p.x, h - 10, p.z]}
+            scale={[1.5 + p.aleat * 1.5, h, 1.5 + p.aleat * 1.5]}
+          />
+        );
+      })}
+    </group>
+  );
+}
+
+/** Quelques étoiles dans le haut du ciel. */
+function Etoiles() {
+  const mat = useMemo(() => new THREE.MeshBasicMaterial({ color: '#ffffff' }), []);
+  useEffect(() => () => mat.dispose(), [mat]);
+  const pts = useMemo(() => {
+    const r = hasard(301);
+    return Array.from({ length: 40 }, () => {
+      const theta = r() * Math.PI * 2;
+      const phi = 0.15 + r() * 0.9;
+      const R = 60;
+      return {
+        x: Math.sin(phi) * Math.cos(theta) * R,
+        y: Math.cos(phi) * R,
+        z: Math.sin(phi) * Math.sin(theta) * R,
+        s: 0.12 + r() * 0.18,
+      };
+    });
+  }, []);
+  return (
+    <group>
+      {pts.map((p, i) => (
+        <mesh key={i} geometry={GEO.sphere} material={mat} position={[p.x, p.y, p.z]} scale={p.s} />
+      ))}
+    </group>
+  );
+}
+
+/** Des gradins au fond du gymnase, garnis de spectateurs colorés. */
+function Gradins({ taille }: { taille: Taille }) {
+  const marches = useMemo(
+    () => [new THREE.MeshToonMaterial({ color: '#2d3a5c' }), new THREE.MeshToonMaterial({ color: '#3a4a74' })],
+    [],
+  );
+  const public_ = useMemo(
+    () => ['#ff5d8f', '#ffd23f', '#6ee7ff', '#b67aff', '#ff9f1c'].map((c) => new THREE.MeshToonMaterial({ color: c })),
+    [],
+  );
+  useEffect(
+    () => () => {
+      marches.forEach((m) => m.dispose());
+      public_.forEach((m) => m.dispose());
+    },
+    [marches, public_],
+  );
+  const largeur = Math.max(36, taille.largeur * 1.8);
+  const rangees = [0, 1, 2, 3];
+  return (
+    <group>
+      {rangees.map((k) => {
+        const z = -15 - k * 1.8;
+        const y = -3 + 0.6 + k * 1.2;
+        return (
+          <group key={k}>
+            <mesh
+              geometry={GEO.cube}
+              material={marches[k % 2] ?? marches[0]}
+              position={[0, y, z]}
+              scale={[largeur, 1.2, 2.2]}
+            />
+            {Array.from({ length: 30 }, (_, i) => {
+              const x = -largeur / 2 + 1.5 + i * ((largeur - 3) / 29);
+              return (
+                <mesh
+                  key={i}
+                  geometry={GEO.sphere}
+                  material={public_[(i + k) % public_.length] ?? public_[0]}
+                  position={[x, y + 0.75, z]}
+                  scale={0.42}
+                />
+              );
+            })}
+          </group>
+        );
+      })}
+    </group>
+  );
+}
+
+/** Un oiseau qui tourne en cercle au-dessus du plateau, les ailes qui battent. */
+function Oiseau({
+  angle0,
+  rayon,
+  vitesse,
+  hauteur,
+  phase,
+  reduced,
+}: {
+  angle0: number;
+  rayon: number;
+  vitesse: number;
+  hauteur: number;
+  phase: number;
+  reduced: boolean;
+}) {
+  const corps = useRef<THREE.Group>(null);
+  const aileG = useRef<THREE.Group>(null);
+  const aileD = useRef<THREE.Group>(null);
+  const plume = useMemo(() => new THREE.MeshToonMaterial({ color: '#2d3142' }), []);
+  useEffect(() => () => plume.dispose(), [plume]);
+  useFrame((state) => {
+    const g = corps.current;
+    if (!g) return;
+    const t = state.clock.elapsedTime;
+    const a = reduced ? angle0 : angle0 + t * vitesse;
+    g.position.set(Math.cos(a) * rayon, hauteur + (reduced ? 0 : Math.sin(t * 1.3 + phase) * 0.3), Math.sin(a) * rayon);
+    // Le bec suit la tangente du cercle.
+    g.rotation.y = Math.atan2(-Math.cos(a), -Math.sin(a));
+    const battement = reduced ? 0 : Math.sin(t * 10 + phase) * 0.6;
+    if (aileG.current) aileG.current.rotation.x = battement;
+    if (aileD.current) aileD.current.rotation.x = -battement;
+  });
+  return (
+    <group ref={corps}>
+      <mesh geometry={GEO.sphere} material={plume} scale={[0.5, 0.13, 0.13]} />
+      <group ref={aileG} position={[0, 0, 0.04]}>
+        <mesh geometry={GEO.sphere} material={plume} position={[0, 0, 0.2]} scale={[0.15, 0.02, 0.32]} />
+      </group>
+      <group ref={aileD} position={[0, 0, -0.04]}>
+        <mesh geometry={GEO.sphere} material={plume} position={[0, 0, -0.2]} scale={[0.15, 0.02, 0.32]} />
+      </group>
+    </group>
+  );
+}
+
+/** Quelques oiseaux qui tournent au-dessus du lieu. */
+function Oiseaux({ reduced }: { reduced: boolean }) {
+  const oiseaux = useMemo(() => {
+    const r = hasard(601);
+    return Array.from({ length: 7 }, (_, i) => ({
+      angle0: (i / 7) * Math.PI * 2,
+      rayon: 14 + r() * 8,
+      vitesse: 0.12 + r() * 0.1,
+      hauteur: 7 + r() * 4,
+      phase: r() * 6,
+    }));
+  }, []);
+  return (
+    <group>
+      {oiseaux.map((o, i) => (
+        <Oiseau key={i} {...o} reduced={reduced} />
+      ))}
+    </group>
+  );
+}
+
+/** Un poisson qui saute hors de la mer, en arc, puis replonge. */
+function Poisson({
+  x,
+  z,
+  dir,
+  phase,
+  couleur,
+  reduced,
+}: {
+  x: number;
+  z: number;
+  dir: number;
+  phase: number;
+  couleur: string;
+  reduced: boolean;
+}) {
+  const ref = useRef<THREE.Group>(null);
+  const corps = useMemo(() => new THREE.MeshToonMaterial({ color: couleur }), [couleur]);
+  useEffect(() => () => corps.dispose(), [corps]);
+  useFrame((state) => {
+    const g = ref.current;
+    if (!g) return;
+    const cycle = 4.2;
+    const duree = 1.1;
+    const t = (state.clock.elapsedTime + phase) % cycle;
+    const saute = !reduced && t < duree;
+    g.visible = saute;
+    if (saute) g.position.y = SURFACE_MER + Math.sin(Math.PI * (t / duree)) * 1.1;
+  });
+  return (
+    <group ref={ref} position={[x, SURFACE_MER, z]} rotation={[0, dir, 0]} visible={false}>
+      <mesh geometry={GEO.sphere} material={corps} scale={[0.45, 0.16, 0.16]} />
+      <mesh
+        geometry={GEO.cone}
+        material={corps}
+        position={[-0.42, 0, 0]}
+        rotation={[0, 0, Math.PI / 2]}
+        scale={[0.14, 0.22, 0.14]}
+      />
+    </group>
+  );
+}
+
+/** Des poissons qui sautent tout autour du plateau, chacun à son rythme. */
+function Poissons({ taille, reduced }: { taille: Taille; reduced: boolean }) {
+  const pts = useMemo(() => autour(5, taille.largeur, taille.hauteur, 2.4, 19, 701), [taille.largeur, taille.hauteur]);
+  const couleurs = ['#ff8c42', '#f4a261', '#3a86ff', '#ffd23f', '#e76f51'];
+  return (
+    <group>
+      {pts.map((p, i) => (
+        <Poisson
+          key={i}
+          x={p.x}
+          z={p.z}
+          dir={p.aleat * Math.PI * 2}
+          phase={i * 0.9}
+          couleur={couleurs[i % couleurs.length] ?? '#ff8c42'}
+          reduced={reduced}
+        />
+      ))}
+    </group>
+  );
+}
+
+/** Des lucioles qui dérivent doucement autour du plateau. */
+function Lucioles({ taille, reduced }: { taille: Taille; reduced: boolean }) {
+  const points = useMemo(
+    () => autour(20, taille.largeur, taille.hauteur, 1.5, 16, 401),
+    [taille.largeur, taille.hauteur],
+  );
+  const groupes = useRef<Array<THREE.Group | null>>([]);
+  const mat = useMemo(() => new THREE.MeshBasicMaterial({ color: '#fff3a0' }), []);
+  useEffect(() => () => mat.dispose(), [mat]);
+  useFrame((state) => {
+    if (reduced) return;
+    const t = state.clock.elapsedTime;
+    points.forEach((p, i) => {
+      const g = groupes.current[i];
+      if (!g) return;
+      g.position.set(
+        p.x + Math.sin(t * 0.5 + i) * 0.6,
+        1.5 + p.aleat * 4 + Math.sin(t * 0.9 + i * 1.7) * 0.5,
+        p.z + Math.cos(t * 0.4 + i) * 0.6,
+      );
+    });
+  });
+  return (
+    <group>
+      {points.map((p, i) => (
+        <group
+          key={i}
+          ref={(g) => {
+            groupes.current[i] = g;
+          }}
+          position={[p.x, 1.5 + p.aleat * 4, p.z]}
+        >
+          <mesh geometry={GEO.sphere} material={mat} scale={0.07} />
+        </group>
+      ))}
     </group>
   );
 }
