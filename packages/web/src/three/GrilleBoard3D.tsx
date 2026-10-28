@@ -12,6 +12,7 @@ import {
 } from '@partyhub/shared';
 import { Character, usePrefersReducedMotion, type GrilleApparence } from '@partyhub/games/client';
 import { canvasTexture } from './canvas-texture';
+import { Environnement, MurDecor, hasard } from './Ambiance3D';
 
 /**
  * Plateau en grille en 3D, plein écran sur la TV. Le décor (sol, murs, caisses, ballons, boîtes) est en
@@ -22,7 +23,6 @@ import { canvasTexture } from './canvas-texture';
  * Réutilisable par tout jeu qui a un plateau en grille (voir `shared/grille.ts`).
  */
 
-const HAUT_MUR = 0.95;
 const TAILLE_CAISSE = 0.78;
 const RAYON_BALLON = 0.3;
 const TAILLE_BOITE = 0.55;
@@ -150,30 +150,47 @@ function textures(cases: { largeur: number; hauteur: number }, theme: ThemePlate
         }
       }
     }
+    if (theme.motifSol === 'herbe') {
+      // Une pelouse : des touffes d’herbe claires et sombres, posées au hasard (graine fixe).
+      const r = hasard(11);
+      for (let i = 0; i < cases.largeur * cases.hauteur * 14; i++) {
+        const px = r() * w;
+        const py = r() * h;
+        ctx.strokeStyle = r() < 0.5 ? 'rgba(255,255,255,0.14)' : 'rgba(0,40,0,0.2)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(px, py);
+        ctx.lineTo(px + (r() - 0.5) * 6, py - 4 - r() * 5);
+        ctx.stroke();
+      }
+    }
   });
   const mur = canvasTexture(128, 128, (ctx, w, h) => {
     ctx.fillStyle = theme.mur.couleur;
     ctx.fillRect(0, 0, w, h);
-    ctx.strokeStyle = theme.mur.joint;
-    ctx.lineWidth = 4;
-    if (theme.mur.motif === 'briques') {
-      for (let r = 0; r <= 4; r++) {
-        const y = (r * h) / 4;
+    if (theme.mur.motif === 'feuillage') {
+      // Un buisson : des feuilles claires et sombres, éparpillées.
+      const r = hasard(5);
+      for (let i = 0; i < 70; i++) {
+        ctx.fillStyle = r() < 0.5 ? 'rgba(255,255,255,0.14)' : 'rgba(0,0,0,0.22)';
         ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(w, y);
-        ctx.stroke();
-        const decal = r % 2 === 0 ? 0 : w / 4;
-        for (let c = 0; c <= 2; c++) {
-          const x = decal + (c * w) / 2;
-          ctx.beginPath();
-          ctx.moveTo(x, y);
-          ctx.lineTo(x, y + h / 4);
-          ctx.stroke();
-        }
+        ctx.arc(r() * w, r() * h, 5 + r() * 9, 0, Math.PI * 2);
+        ctx.fill();
       }
+    } else if (theme.mur.motif === 'glace') {
+      // De la glace : deux reflets blancs.
+      ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+      ctx.lineWidth = 8;
+      ctx.beginPath();
+      ctx.moveTo(w * 0.1, h * 0.9);
+      ctx.lineTo(w * 0.5, h * 0.1);
+      ctx.moveTo(w * 0.6, h);
+      ctx.lineTo(w * 0.95, h * 0.4);
+      ctx.stroke();
     } else {
       // Pierre de taille : des blocs décalés d’une rangée à l’autre.
+      ctx.strokeStyle = theme.mur.joint;
+      ctx.lineWidth = 4;
       for (let r = 0; r < 4; r++) {
         const y = (r * h) / 4;
         const decal = r % 2 === 0 ? 0 : w / 4;
@@ -207,7 +224,7 @@ function textures(cases: { largeur: number; hauteur: number }, theme: ThemePlate
   return { sol, mur, caisse };
 }
 
-function Decor({ etat, theme }: { etat: EtatGrille; theme: ThemePlateau }) {
+function Decor({ etat, theme, reduced }: { etat: EtatGrille; theme: ThemePlateau; reduced: boolean }) {
   // Les textures ne dépendent que de la taille du plateau et du thème.
   const { largeur, hauteur } = etat;
   const tex = useMemo(() => textures({ largeur, hauteur }, theme), [largeur, hauteur, theme]);
@@ -225,11 +242,18 @@ function Decor({ etat, theme }: { etat: EtatGrille; theme: ThemePlateau }) {
       if (etat.decor[y]?.[x] === '#') murs.push([x, y]);
     }
   }
+  // Le socle : un bord de pelouse, une berge de glace au-dessus de l’eau, ou un plateau épais au-dessus du vide.
+  const socle =
+    theme.ambiance === 'mer'
+      ? { y: -0.14, h: 0.36 }
+      : theme.ambiance === 'plateforme'
+        ? { y: -0.75, h: 1.5 }
+        : { y: -0.12, h: 0.2 };
   return (
     <group>
-      {/* Socle sous la grille, plus large que le sol : on voit le bord du plateau. */}
-      <mesh position={[0, -0.12, 0]} receiveShadow>
-        <boxGeometry args={[etat.largeur + 1.2, 0.2, etat.hauteur + 1.2]} />
+      <Environnement theme={theme} taille={{ largeur: etat.largeur, hauteur: etat.hauteur }} reduced={reduced} />
+      <mesh position={[0, socle.y, 0]} receiveShadow castShadow>
+        <boxGeometry args={[etat.largeur + 1.2, socle.h, etat.hauteur + 1.2]} />
         <meshStandardMaterial color={theme.mur.joint} roughness={0.9} />
       </mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
@@ -237,10 +261,7 @@ function Decor({ etat, theme }: { etat: EtatGrille; theme: ThemePlateau }) {
         <meshStandardMaterial map={tex.sol} roughness={0.95} />
       </mesh>
       {murs.map(([x, y]) => (
-        <mesh key={`m${x}-${y}`} position={[monX(x, etat), HAUT_MUR / 2, monZ(y, etat)]} castShadow receiveShadow>
-          <boxGeometry args={[1, HAUT_MUR, 1]} />
-          <meshStandardMaterial map={tex.mur} roughness={0.9} />
-        </mesh>
+        <MurDecor key={`m${x}-${y}`} theme={theme} x={monX(x, etat)} z={monZ(y, etat)} texture={tex.mur} />
       ))}
     </group>
   );
@@ -344,7 +365,7 @@ function Monde({ etat, mon, reduced, theme }: { etat: EtatGrille; mon: Mon; redu
       <ambientLight intensity={lumiere.ambiante} />
       <directionalLight position={[4, 9, 6]} intensity={lumiere.soleil} color={lumiere.couleurSoleil} castShadow />
       <hemisphereLight args={[theme.ciel, theme.sol, 0.45]} />
-      <Decor etat={etat} theme={theme} />
+      <Decor etat={etat} theme={theme} reduced={reduced} />
       {etat.objets.map((o) => (
         <ObjetMesh key={o.id} objet={o} mon={mon} theme={theme} />
       ))}

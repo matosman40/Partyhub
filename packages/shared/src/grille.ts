@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { THEME_PAR_DEFAUT, type ThemeId } from './grille-themes.js';
+import { THEME_PAR_DEFAUT, themeDePlateau, type ThemeId } from './grille-themes.js';
 
 /**
  * Plateau en grille, façon Bomberman, partagé par tous les appareils. Le serveur tient l’état ;
@@ -148,10 +148,11 @@ export function creerGrille(
   const ajouter = (nature: NatureObjet, [x, y]: [number, number]) => {
     objets.push({ id: `o${objets.length + 1}`, nature, x, y, porte: null });
   };
-  // Une case sur deux environ devient caisse ; le reste sert aux boîtes et aux ballons.
+  // Le thème règle la part de caisses (un plateau dégagé ou plus encombré) ; le reste sert aux boîtes et aux ballons.
+  const densite = themeDePlateau(options.theme).densiteCaisses;
   const reste: Array<[number, number]> = [];
   for (const c of libres) {
-    if (hasard() < 0.4) ajouter('caisse', c);
+    if (hasard() < densite) ajouter('caisse', c);
     else reste.push(c);
   }
   reste.slice(0, 3).forEach((c) => ajouter('boite', c));
