@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import {
@@ -17,7 +17,16 @@ import { Character, usePrefersReducedMotion, type GrilleApparence } from '@party
 import { canvasTexture } from './canvas-texture';
 import { Environnement, Murs, cieDe, hasard, socleDe } from './Ambiance3D';
 import { Forme, GEO } from './Forme';
-import { texBois, texFeuillage, texFiletMaille, texGlace, texPierre, texPrises, touffesHerbe } from './materiaux';
+import {
+  texBois,
+  texFeuillage,
+  texFiletMaille,
+  texGlace,
+  texHerbe,
+  texPierre,
+  texPrises,
+  touffesHerbe,
+} from './materiaux';
 
 /**
  * Plateau en grille en 3D, plein écran sur la TV, dans le style d’un jeu de plateau de fête : matières
@@ -501,6 +510,7 @@ function Decor({
       )}
       <Murs theme={theme} positions={positionsMurs} materiau={murMat} />
       <Plateformes etat={etat} theme={theme} />
+      <DetailsSol etat={etat} theme={theme} />
       {theme.filet && <Filet etat={etat} />}
       {theme.murs === 'grillage' && <Grillage etat={etat} />}
       {theme.murs === 'grillage' && <Accessoires etat={etat} />}
@@ -508,7 +518,7 @@ function Decor({
   );
 }
 
-/** Plateformes : des blocs surélevés, à la couleur du mur, avec un dessus de la couleur du sol. */
+/** Plateformes : des blocs surélevés, en pierre, avec un dessus de la matière du sol. */
 function Plateformes({ etat, theme }: { etat: EtatGrille; theme: ThemePlateau }) {
   const cases = useMemo(() => {
     const liste: Array<[number, number]> = [];
@@ -519,14 +529,25 @@ function Plateformes({ etat, theme }: { etat: EtatGrille; theme: ThemePlateau })
     );
     return liste;
   }, [etat.decor]);
-  const corps = useMemo(() => new THREE.MeshStandardMaterial({ color: theme.mur.couleur, roughness: 0.8 }), [theme]);
-  const dessus = useMemo(() => new THREE.MeshStandardMaterial({ color: theme.dalles[0], roughness: 0.9 }), [theme]);
+  const materiaux = useMemo(() => {
+    const herbeux = theme.motifSol === 'herbe' || theme.motifSol === 'mousse';
+    const dessusTex = herbeux
+      ? texHerbe(theme.dalles[0] ?? theme.sol, 21)
+      : texPierre(theme.dalles[0] ?? theme.sol, theme.mur.joint, 21);
+    const corpsTex = texPierre(theme.mur.couleur, theme.mur.joint, 22);
+    return {
+      corps: new THREE.MeshStandardMaterial({ map: corpsTex, roughness: 0.85 }),
+      dessus: new THREE.MeshStandardMaterial({ map: dessusTex, roughness: 0.9 }),
+      textures: [dessusTex, corpsTex],
+    };
+  }, [theme]);
   useEffect(
     () => () => {
-      corps.dispose();
-      dessus.dispose();
+      materiaux.corps.dispose();
+      materiaux.dessus.dispose();
+      materiaux.textures.forEach((t) => t.dispose());
     },
-    [corps, dessus],
+    [materiaux],
   );
   return (
     <group>
@@ -534,7 +555,7 @@ function Plateformes({ etat, theme }: { etat: EtatGrille; theme: ThemePlateau })
         <group key={`${x}-${y}`} position={[monX(x, etat), 0, monZ(y, etat)]}>
           <mesh
             geometry={GEO.bloc}
-            material={corps}
+            material={materiaux.corps}
             position={[0, HAUTEUR_PLATEFORME / 2, 0]}
             scale={[0.96, HAUTEUR_PLATEFORME, 0.96]}
             castShadow
@@ -542,12 +563,130 @@ function Plateformes({ etat, theme }: { etat: EtatGrille; theme: ThemePlateau })
           />
           <mesh
             geometry={GEO.bloc}
-            material={dessus}
+            material={materiaux.dessus}
             position={[0, HAUTEUR_PLATEFORME + 0.02, 0]}
             scale={[0.98, 0.06, 0.98]}
             receiveShadow
           />
         </group>
+      ))}
+    </group>
+  );
+}
+
+/** Un détail posé sur le sol : sans règle, il ne bloque rien et ne change pas le jeu. */
+interface Eparpille {
+  x: number;
+  y: number;
+  z: number;
+  /** Taille en largeur. */
+  s: number;
+  /** Taille en hauteur. */
+  h: number;
+  couleur: string;
+}
+
+/** Des milliers de petits objets identiques en un seul appel de dessin : touffes, glaçons, cailloux, craie. */
+function Eparpiller({ items, geometrie }: { items: Eparpille[]; geometrie: THREE.BufferGeometry }) {
+  const ref = useRef<THREE.InstancedMesh>(null);
+  const materiau = useMemo(() => new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.9 }), []);
+  useEffect(() => () => materiau.dispose(), [materiau]);
+  useLayoutEffect(() => {
+    const m = ref.current;
+    if (!m) return;
+    const matrice = new THREE.Matrix4();
+    const position = new THREE.Vector3();
+    const echelle = new THREE.Vector3();
+    const quaternion = new THREE.Quaternion();
+    const couleur = new THREE.Color();
+    items.forEach((it, i) => {
+      position.set(it.x, it.y, it.z);
+      echelle.set(it.s, it.h, it.s);
+      matrice.compose(position, quaternion, echelle);
+      m.setMatrixAt(i, matrice);
+      m.setColorAt(i, couleur.set(it.couleur));
+    });
+    m.instanceMatrix.needsUpdate = true;
+    if (m.instanceColor) m.instanceColor.needsUpdate = true;
+  }, [items]);
+  if (items.length === 0) return null;
+  return <instancedMesh ref={ref} args={[geometrie, materiau, items.length]} receiveShadow />;
+}
+
+type FormeDetail = 'touffe' | 'glacon' | 'caillou' | 'craie';
+
+/** Ce qui traîne sur le sol, selon le lieu, et la part des cases qui en reçoivent. */
+const DETAILS_PAR_LIEU: Record<ThemePlateau['ambiance'], Array<{ forme: FormeDetail; p: number }>> = {
+  pelouse: [{ forme: 'touffe', p: 0.3 }],
+  ile: [{ forme: 'touffe', p: 0.3 }],
+  mer: [{ forme: 'glacon', p: 0.14 }],
+  plateforme: [{ forme: 'caillou', p: 0.12 }],
+  gymnase: [{ forme: 'craie', p: 0.08 }],
+};
+
+const GEOMETRIE_DETAIL: Record<FormeDetail, THREE.BufferGeometry> = {
+  touffe: GEO.cone,
+  glacon: GEO.rocher,
+  caillou: GEO.rocher,
+  craie: GEO.sphere,
+};
+
+const COULEURS_DETAIL: Record<FormeDetail, string[]> = {
+  touffe: ['#4f9a3a', '#5fae45', '#3f8a32', '#6cc063'],
+  glacon: ['#f2fdff', '#cdf2ff', '#ffffff'],
+  caillou: ['#7d8190', '#6a6f7d', '#8c91a0'],
+  craie: ['#ffffff', '#f4f4f4'],
+};
+
+/** Une graine stable par lieu : le même plateau montre toujours les mêmes détails. */
+function graineDeLieu(id: string): number {
+  let graine = 0;
+  for (const c of id) graine = (graine * 31 + c.charCodeAt(0)) >>> 0;
+  return graine;
+}
+
+/** Petits détails répartis sur les cases libres du sol. */
+function DetailsSol({ etat, theme }: { etat: EtatGrille; theme: ThemePlateau }) {
+  const parForme = useMemo(() => {
+    const r = hasard(graineDeLieu(theme.id));
+    const groupes = new Map<FormeDetail, Eparpille[]>();
+    for (let y = 0; y < etat.hauteur; y++) {
+      for (let x = 0; x < etat.largeur; x++) {
+        if (etat.decor[y]?.[x] !== '.') continue;
+        for (const { forme, p } of DETAILS_PAR_LIEU[theme.ambiance]) {
+          if (r() >= p) continue;
+          const s =
+            forme === 'touffe'
+              ? 0.12 + r() * 0.12
+              : forme === 'craie'
+                ? 0.045
+                : forme === 'glacon'
+                  ? 0.1 + r() * 0.12
+                  : 0.1 + r() * 0.1;
+          const couleurs = COULEURS_DETAIL[forme];
+          const liste = groupes.get(forme) ?? [];
+          // Une touffe est plus haute que large ; elle repose sur le sol. Un caillou est à demi enfoui, la craie est au ras du sol.
+          const h = forme === 'touffe' ? s * 1.9 : s;
+          liste.push({
+            x: monX(x, etat) + (r() - 0.5) * 0.7,
+            y: forme === 'touffe' ? h / 2 : forme === 'craie' ? 0.02 : s * 0.3,
+            z: monZ(y, etat) + (r() - 0.5) * 0.7,
+            s,
+            h,
+            couleur: couleurs[Math.floor(r() * couleurs.length)] ?? '#ffffff',
+          });
+          groupes.set(forme, liste);
+        }
+      }
+    }
+    return groupes;
+    // Les détails ne dépendent que de la taille et du décor, déjà listés ; `etat` ne sert qu’à `monX`/`monZ`.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [etat.decor, etat.largeur, etat.hauteur, theme.id, theme.ambiance]);
+  return (
+    <group>
+      {[...parForme].map(([forme, items]) => (
+        <Eparpiller key={`${forme}-${items.length}`} items={items} geometrie={GEOMETRIE_DETAIL[forme]} />
       ))}
     </group>
   );

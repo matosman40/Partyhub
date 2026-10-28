@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import type { ThemePlateau } from '@partyhub/shared';
 import { Forme, GEO } from './Forme';
 import { hasard, texFeuillage, texGlace, texHerbe } from './materiaux';
+import { canvasTexture } from './canvas-texture';
 
 export { hasard } from './materiaux';
 
@@ -66,9 +67,10 @@ export function Environnement({ theme, taille, reduced }: { theme: ThemePlateau;
     <>
       <Ciel haut={cie.haut} bas={cie.bas} />
       {theme.ambiance === 'mer' && <Mer theme={theme} taille={taille} reduced={reduced} />}
+      {theme.ambiance === 'mer' && <Glacons taille={taille} />}
       {theme.ambiance === 'plateforme' && <Plateforme taille={taille} reduced={reduced} />}
       {theme.ambiance === 'pelouse' && <Pelouse theme={theme} taille={taille} />}
-      {theme.ambiance === 'gymnase' && <Gymnase />}
+      {theme.ambiance === 'gymnase' && <Gymnase taille={taille} />}
       {theme.ambiance === 'ile' && <Ile theme={theme} taille={taille} reduced={reduced} />}
       {(theme.ambiance === 'pelouse' || theme.ambiance === 'mer' || theme.ambiance === 'ile') && <Nuages />}
     </>
@@ -214,6 +216,8 @@ function Pelouse({ theme, taille }: { theme: ThemePlateau; taille: Taille }) {
       {champignons.map((p, i) => (
         <Champignon key={`c${i}`} x={p.x} z={p.z} taille={0.9 + p.aleat * 0.4} />
       ))}
+      <RochersDecor taille={taille} nombre={12} couleur="#8f9187" graine={29} y={SOL_PELOUSE} />
+      {theme.id === 'fete' && <Guirlande taille={taille} />}
     </group>
   );
 }
@@ -703,13 +707,257 @@ function Ile({ theme, taille, reduced }: { theme: ThemePlateau; taille: Taille; 
 }
 
 /** Une salle d’escalade : un sol sombre sous le tapis, loin sous le plateau. */
-function Gymnase() {
-  const sol = useMemo(() => new THREE.MeshStandardMaterial({ color: '#1a2336', roughness: 1 }), []);
-  useEffect(() => () => sol.dispose(), [sol]);
+/** Des rochers posés au hasard autour du plateau, à demi enfouis dans le sol. */
+function RochersDecor({
+  taille,
+  nombre,
+  couleur,
+  graine,
+  y,
+}: {
+  taille: Taille;
+  nombre: number;
+  couleur: string;
+  graine: number;
+  y: number;
+}) {
+  const pierre = useMemo(() => new THREE.MeshToonMaterial({ color: couleur }), [couleur]);
+  useEffect(() => () => pierre.dispose(), [pierre]);
+  const pts = useMemo(
+    () => autour(nombre, taille.largeur, taille.hauteur, 2.2, 18, graine),
+    [nombre, taille.largeur, taille.hauteur, graine],
+  );
   return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -3, 0]} material={sol}>
-      <planeGeometry args={[140, 140]} />
-    </mesh>
+    <group>
+      {pts.map((p, i) => (
+        <Forme
+          key={i}
+          geometrie={GEO.rocher}
+          materiau={pierre}
+          contour={0.035}
+          position={[p.x, y + 0.2, p.z]}
+          rotation={[0, p.aleat * 6, 0]}
+          scale={[0.7 + p.aleat * 0.8, 0.45 + p.aleat * 0.35, 0.6 + p.aleat * 0.7]}
+        />
+      ))}
+    </group>
+  );
+}
+
+/** Un segment horizontal entre deux points du sol, en fil fin. */
+function Segment({
+  a,
+  b,
+  y,
+  materiau,
+}: {
+  a: [number, number];
+  b: [number, number];
+  y: number;
+  materiau: THREE.Material;
+}) {
+  const dx = b[0] - a[0];
+  const dz = b[1] - a[1];
+  const longueur = Math.hypot(dx, dz);
+  const q = useMemo(
+    () =>
+      new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(dx, 0, dz).normalize()),
+    [dx, dz],
+  );
+  return (
+    <mesh
+      geometry={GEO.cylindre}
+      material={materiau}
+      position={[(a[0] + b[0]) / 2, y, (a[1] + b[1]) / 2]}
+      quaternion={q}
+      scale={[0.022, longueur, 0.022]}
+    />
+  );
+}
+
+/** Une guirlande de fanions autour de la fête : quatre mâts, un fil sur chaque côté. */
+function Guirlande({ taille }: { taille: Taille }) {
+  const hauteur = 1.5;
+  const dx = taille.largeur / 2 + 1.8;
+  const dz = taille.hauteur / 2 + 1.8;
+  const coins: Array<[number, number]> = [
+    [-dx, -dz],
+    [dx, -dz],
+    [dx, dz],
+    [-dx, dz],
+  ];
+  const bois = useMemo(() => new THREE.MeshToonMaterial({ color: '#7a4e2d' }), []);
+  const fil = useMemo(() => new THREE.MeshToonMaterial({ color: '#3b2a1e' }), []);
+  const fanions = useMemo(
+    () => ['#ff5d8f', '#ffd23f', '#6ee7ff', '#b67aff', '#ff9f1c'].map((c) => new THREE.MeshToonMaterial({ color: c })),
+    [],
+  );
+  useEffect(
+    () => () => {
+      bois.dispose();
+      fil.dispose();
+      fanions.forEach((f) => f.dispose());
+    },
+    [bois, fil, fanions],
+  );
+  const cotes = coins.map((a, i) => [a, coins[(i + 1) % coins.length] ?? a] as const);
+  const pieces = cotes.flatMap(([a, b], c) =>
+    Array.from({ length: 9 }, (_, k) => {
+      const t = (k + 0.5) / 9;
+      return {
+        key: `${c}-${k}`,
+        x: a[0] + (b[0] - a[0]) * t,
+        z: a[1] + (b[1] - a[1]) * t,
+        materiau: fanions[(c * 3 + k) % fanions.length] ?? fanions[0],
+      };
+    }),
+  );
+  return (
+    <group>
+      {coins.map(([x, z], i) => (
+        <mesh
+          key={`m${i}`}
+          geometry={GEO.cylindre}
+          material={bois}
+          position={[x, SOL_PELOUSE + hauteur / 2, z]}
+          scale={[0.05, hauteur, 0.05]}
+        />
+      ))}
+      {cotes.map(([a, b], i) => (
+        <Segment key={`s${i}`} a={a} b={b} y={SOL_PELOUSE + hauteur - 0.05} materiau={fil} />
+      ))}
+      {pieces.map((f) => (
+        <mesh
+          key={f.key}
+          geometry={GEO.cone}
+          material={f.materiau}
+          position={[f.x, SOL_PELOUSE + hauteur - 0.2, f.z]}
+          rotation={[Math.PI, 0, 0]}
+          scale={[0.13, 0.24, 0.13]}
+        />
+      ))}
+    </group>
+  );
+}
+
+/** Des glaçons qui flottent sur la mer, autour du plateau. */
+function Glacons({ taille }: { taille: Taille }) {
+  const glace = useMemo(() => new THREE.MeshStandardMaterial({ color: '#eefbff', roughness: 0.35 }), []);
+  useEffect(() => () => glace.dispose(), [glace]);
+  const pts = useMemo(() => autour(12, taille.largeur, taille.hauteur, 3, 26, 97), [taille.largeur, taille.hauteur]);
+  return (
+    <group>
+      {pts.map((p, i) => (
+        <Forme
+          key={i}
+          geometrie={GEO.bloc}
+          materiau={glace}
+          contour={0.03}
+          position={[p.x, SURFACE_MER + 0.04, p.z]}
+          rotation={[0, p.aleat * 6.28, 0]}
+          scale={[1.4 + p.aleat * 1.6, 0.16, 1.1 + p.aleat]}
+        />
+      ))}
+    </group>
+  );
+}
+
+/** Des îlots de pierre et d’herbe qui flottent dans le vide, sous le plateau. */
+function IlotsFlottants({ taille }: { taille: Taille }) {
+  const roche = useMemo(() => new THREE.MeshToonMaterial({ color: '#5b6b7d' }), []);
+  const herbe = useMemo(() => new THREE.MeshToonMaterial({ color: '#7fb86a' }), []);
+  useEffect(
+    () => () => {
+      roche.dispose();
+      herbe.dispose();
+    },
+    [roche, herbe],
+  );
+  const pts = useMemo(() => autour(6, taille.largeur, taille.hauteur, 8, 46, 113), [taille.largeur, taille.hauteur]);
+  return (
+    <group>
+      {pts.map((p, i) => {
+        const t = 2.5 + p.aleat * 3;
+        return (
+          <group key={i} position={[p.x, -4.2 - p.aleat * 1.2, p.z]}>
+            <Forme geometrie={GEO.rocher} materiau={roche} contour={0.04} scale={[t, t * 0.7, t]} />
+            <Forme
+              geometrie={GEO.dome}
+              materiau={herbe}
+              contour={0.04}
+              position={[0, t * 0.55, 0]}
+              scale={[t * 0.95, t * 0.2, t * 0.95]}
+            />
+          </group>
+        );
+      })}
+    </group>
+  );
+}
+
+function Gymnase({ taille }: { taille: Taille }) {
+  const sol = useMemo(() => {
+    const t = canvasTexture(512, 512, (ctx, w, h) => {
+      ctx.fillStyle = '#1a2336';
+      ctx.fillRect(0, 0, w, h);
+      ctx.strokeStyle = 'rgba(140,180,255,0.22)';
+      ctx.lineWidth = 5;
+      for (let i = 0; i <= w; i += 128) {
+        ctx.beginPath();
+        ctx.moveTo(i, 0);
+        ctx.lineTo(i, h);
+        ctx.stroke();
+      }
+      for (let j = 0; j <= h; j += 128) {
+        ctx.beginPath();
+        ctx.moveTo(0, j);
+        ctx.lineTo(w, j);
+        ctx.stroke();
+      }
+    });
+    t.wrapS = THREE.RepeatWrapping;
+    t.wrapT = THREE.RepeatWrapping;
+    t.repeat.set(16, 16);
+    return t;
+  }, []);
+  const mat = useMemo(() => new THREE.MeshStandardMaterial({ map: sol, roughness: 1 }), [sol]);
+  const tapis = useMemo(
+    () => [
+      new THREE.MeshStandardMaterial({ color: '#ff4d6d', roughness: 0.9 }),
+      new THREE.MeshStandardMaterial({ color: '#ffd23f', roughness: 0.9 }),
+    ],
+    [],
+  );
+  useEffect(
+    () => () => {
+      sol.dispose();
+      mat.dispose();
+      tapis.forEach((t) => t.dispose());
+    },
+    [sol, mat, tapis],
+  );
+  const bord = taille.largeur / 2 + 3.2;
+  return (
+    <group>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -3, 0]} material={mat}>
+        <planeGeometry args={[140, 140]} />
+      </mesh>
+      {/* Deux tapis de réception, de part et d’autre du mur de prises. */}
+      <Forme
+        geometrie={GEO.bloc}
+        materiau={tapis[0] ?? mat}
+        contour={0.03}
+        position={[-bord, -2.8, 0]}
+        scale={[2.6, 0.4, 5]}
+      />
+      <Forme
+        geometrie={GEO.bloc}
+        materiau={tapis[1] ?? mat}
+        contour={0.03}
+        position={[bord, -2.8, 0]}
+        scale={[2.6, 0.4, 5]}
+      />
+    </group>
   );
 }
 
@@ -722,6 +970,7 @@ function Plateforme({ taille, reduced }: { taille: Taille; reduced: boolean }) {
         <meshStandardMaterial color="#1d6470" roughness={1} />
       </mesh>
       <Bulles taille={taille} reduced={reduced} />
+      <IlotsFlottants taille={taille} />
     </group>
   );
 }
