@@ -14,6 +14,7 @@ import {
   type EtatGrille,
   type ObjetGrille,
   formeContient,
+  CASE_PLATEFORME,
 } from '../grille.js';
 
 /** Plateau vide entouré de murs, avec des personnages et des objets placés à la main. */
@@ -73,7 +74,7 @@ describe('décor du plateau', () => {
   });
 
   it('les coins de départ restent libres : aucun objet à deux cases d’un coin', () => {
-    const e = creerGrille({ graine: 3 });
+    const e = creerGrille({ graine: 3, theme: 'arene' });
     for (const [x, y] of [
       [1, 1],
       [GRILLE_LARGEUR - 2, GRILLE_HAUTEUR - 2],
@@ -290,5 +291,61 @@ describe('thèmes du plateau', () => {
     expect(themeDePlateau('arene').id).toBe('arene');
     expect(themeDePlateau('inconnu').id).toBe(THEME_PAR_DEFAUT);
     expect(themeDePlateau(null).id).toBe(THEME_PAR_DEFAUT);
+  });
+});
+
+/** Pose une plateforme de 2 × 2 cases, à partir de (x, y). */
+function avecPlateforme(e: EtatGrille, x: number, y: number): EtatGrille {
+  const decor = e.decor.map((ligne, cy) =>
+    ligne
+      .split('')
+      .map((c, cx) => (cx >= x && cx <= x + 1 && cy >= y && cy <= y + 1 ? CASE_PLATEFORME : c))
+      .join(''),
+  );
+  return { ...e, decor };
+}
+
+describe('plateformes', () => {
+  it('on ne monte pas sur une plateforme en marchant depuis le sol', () => {
+    const e = avecPlateforme(plateau([], { a: [2, 2] }), 3, 2);
+    const r = appliquerAction(e, 'a', { type: 'marcher', dir: 'right' });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.etat.personnages.a).toMatchObject({ x: 2, y: 2, dir: 'right' });
+  });
+
+  it('on monte sur une plateforme en sautant, et on en redescend en marchant', () => {
+    const e = avecPlateforme(plateau([], { a: [2, 2] }), 3, 2);
+    const saut = appliquerAction(e, 'a', { type: 'sauter', dir: 'right' });
+    expect(saut.ok).toBe(true);
+    if (!saut.ok) return;
+    expect(saut.etat.personnages.a).toMatchObject({ x: 4, y: 2 });
+
+    const descente = appliquerAction(saut.etat, 'a', { type: 'marcher', dir: 'left' });
+    expect(descente.ok).toBe(true);
+    if (!descente.ok) return;
+    expect(descente.etat.personnages.a).toMatchObject({ x: 3, y: 2 });
+    const aLaPorte = appliquerAction(descente.etat, 'a', { type: 'marcher', dir: 'left' });
+    expect(aLaPorte.ok).toBe(true);
+    if (!aLaPorte.ok) return;
+    expect(aLaPorte.etat.personnages.a).toMatchObject({ x: 2, y: 2 });
+  });
+
+  it('les thèmes qui les prévoient ont des plateformes, hors des départs ; le tennis n’en a pas', () => {
+    for (const id of ['fete', 'arene', 'banquise', 'arene-ronde', 'escalade', 'ile'] as const) {
+      const e = creerGrille({ theme: id, graine: 3 });
+      expect(e.decor.join('')).toContain(CASE_PLATEFORME);
+      for (const personnage of [0, 1, 2, 3]) {
+        const cases = e.decor.map((l) => l.split(''));
+        const pos = { x: 0, y: 0 };
+        const joue = ajouterPersonnage(e, `j${personnage}`);
+        const p = joue.personnages[`j${personnage}`];
+        if (!p) throw new Error('personnage absent');
+        pos.x = p.x;
+        pos.y = p.y;
+        expect(cases[pos.y]?.[pos.x]).toBe('.');
+      }
+    }
+    expect(creerGrille({ theme: 'tennis' }).decor.join('')).not.toContain(CASE_PLATEFORME);
   });
 });

@@ -8,15 +8,18 @@ import { THEME_PAR_DEFAUT, themeDePlateau, type Decor, type Forme, type ThemeId 
  * Un personnage se déplace case par case. Il peut :
  * - marcher, et tourner vers la case devant lui ;
  * - pousser une caisse ou un ballon, s’il y a de la place derrière ;
- * - sauter par-dessus la case devant lui, pour atterrir deux cases plus loin ;
+ * - sauter par-dessus la case devant lui, pour atterrir deux cases plus loin (c'est ainsi qu'on monte
+ *   sur une plateforme : on ne la rejoint pas en marchant depuis le sol) ;
  * - saluer, sur place ;
  * - porter une boîte : la prendre devant lui, la marcher avec lui, puis la poser devant lui.
  *
  * Tout jeu peut réutiliser ce plateau : il suffit de placer ses personnages (`ajouterPersonnage`).
  */
 
-export const GRILLE_LARGEUR = 13;
-export const GRILLE_HAUTEUR = 11;
+export const GRILLE_LARGEUR = 21;
+export const GRILLE_HAUTEUR = 15;
+/** Case de plateforme : on y monte en sautant, et on en redescend en marchant. */
+export const CASE_PLATEFORME = 'P';
 
 export type Direction = 'up' | 'down' | 'left' | 'right';
 const DELTA: Record<Direction, { dx: number; dy: number }> = {
@@ -82,14 +85,18 @@ export const actionGrilleSchema = z.discriminatedUnion('type', [
 ]);
 
 /**
- * Le contour organique : le rayon du bord dans une direction donnée (1 = le bord de l’ellipse du plateau).
- * Quelques ondulations, pour que la forme ne soit ni un carré ni un cercle parfait.
+ * Le contour organique : le rayon du bord dans une direction donnée (1 = le bord du plateau).
+ * C’est une forme presque carrée aux coins adoucis (une superellipse), pour que la zone de jeu couvre
+ * tout ce qui est visible, avec quelques ondulations pour qu’elle ne soit pas un rectangle parfait.
  */
 export function rayonOrganique(theta: number): number {
-  return 1 + 0.04 * Math.sin(3 * theta + 0.6) + 0.03 * Math.sin(5 * theta + 2.1);
+  const c = Math.abs(Math.cos(theta));
+  const s = Math.abs(Math.sin(theta));
+  const superellipse = Math.pow(Math.pow(c, 4) + Math.pow(s, 4), -1 / 4);
+  return superellipse * (1 + 0.03 * Math.sin(3 * theta + 0.6) + 0.02 * Math.sin(5 * theta + 2.1));
 }
 
-/** Vrai si la case (x, y) est dans la forme du plateau. Le carré garde tout ; le disque et le contour organique coupent les coins. */
+/** Vrai si la case (x, y) est dans la forme du plateau. Le carré garde tout ; le disque coupe les coins, le contour organique les adoucit. */
 export function formeContient(forme: Forme, largeur: number, hauteur: number, x: number, y: number): boolean {
   if (forme === 'carree') return true;
   const dx = (x - (largeur - 1) / 2) / (largeur / 2 - 1);
@@ -122,15 +129,13 @@ export function contourDeLaForme(
 /** Cases de départ, dans l’ordre : les coins d’abord, puis le centre-bas. */
 function departs(largeur: number, hauteur: number, forme: Forme = 'carree'): Array<[number, number]> {
   if (forme !== 'carree') {
-    // Dans une forme courbe, les départs sont à l’intérieur, jamais dans les coins.
-    return [
-      [3, 2],
-      [largeur - 4, hauteur - 3],
-      [largeur - 4, 2],
-      [3, hauteur - 3],
-      [Math.floor(largeur / 2), hauteur - 3],
-      [Math.floor(largeur / 2), 2],
-    ];
+    // Dans une forme courbe, les départs sont à l'intérieur, à l'échelle de la grille, jamais dans les coins.
+    const cx = (largeur - 1) / 2;
+    const cy = (hauteur - 1) / 2;
+    const rx = largeur / 2 - 1;
+    const ry = hauteur / 2 - 1;
+    const p = (fx: number, fy: number): [number, number] => [Math.round(cx + fx * rx), Math.round(cy + fy * ry)];
+    return [p(-0.5, -0.5), p(0.5, 0.5), p(0.5, -0.5), p(-0.5, 0.5), p(0, 0.6), p(0, -0.6)];
   }
   return [
     [1, 1],
@@ -188,6 +193,38 @@ function protege(x: number, y: number, largeur: number, hauteur: number, forme: 
 }
 
 /**
+ * Plateformes de 2 × 2 cases, posées au hasard (graine fixe), dans la forme et hors des départs.
+ */
+function poserPlateformes(decor: string[], largeur: number, hauteur: number, forme: Forme, graine: number): string[] {
+  const lignes = decor.map((l) => l.split(''));
+  const hasard = generateur(graine);
+  let posees = 0;
+  for (let essai = 0; essai < 300 && posees < 6; essai++) {
+    const x = 2 + Math.floor(hasard() * (largeur - 5));
+    const y = 2 + Math.floor(hasard() * (hauteur - 5));
+    const cases: Array<[number, number]> = [
+      [x, y],
+      [x + 1, y],
+      [x, y + 1],
+      [x + 1, y + 1],
+    ];
+    const libre = cases.every(
+      ([cx, cy]) =>
+        lignes[cy]?.[cx] === '.' &&
+        formeContient(forme, largeur, hauteur, cx, cy) &&
+        !protege(cx, cy, largeur, hauteur, forme),
+    );
+    if (!libre) continue;
+    for (const [cx, cy] of cases) {
+      const ligne = lignes[cy];
+      if (ligne) ligne[cx] = CASE_PLATEFORME;
+    }
+    posees++;
+  }
+  return lignes.map((l) => l.join(''));
+}
+
+/**
  * Plateau de départ, sans personnage. Des caisses au hasard (graine fixe), quelques boîtes et ballons.
  * Les coins de départ restent libres.
  */
@@ -197,7 +234,10 @@ export function creerGrille(
   const largeur = options.largeur ?? GRILLE_LARGEUR;
   const hauteur = options.hauteur ?? GRILLE_HAUTEUR;
   const theme = themeDePlateau(options.theme);
-  const decor = creerDecor(largeur, hauteur, { forme: theme.forme, decor: theme.decor });
+  const decor0 = creerDecor(largeur, hauteur, { forme: theme.forme, decor: theme.decor });
+  const decor = theme.plateformes
+    ? poserPlateformes(decor0, largeur, hauteur, theme.forme, (options.graine ?? 7) + 99)
+    : decor0;
   const hasard = generateur(options.graine ?? 7);
   const libres: Array<[number, number]> = [];
   for (let y = 1; y < hauteur - 1; y++) {
@@ -241,7 +281,8 @@ function dansLaGrille(e: EtatGrille, x: number, y: number): boolean {
 }
 
 function solLibre(e: EtatGrille, x: number, y: number): boolean {
-  if (!dansLaGrille(e, x, y) || e.decor[y]?.[x] !== '.') return false;
+  const c = e.decor[y]?.[x];
+  if (!dansLaGrille(e, x, y) || (c !== '.' && c !== CASE_PLATEFORME)) return false;
   if (Object.values(e.personnages).some((p) => p.x === x && p.y === y)) return false;
   return !e.objets.some((o) => o.porte === null && o.x === x && o.y === y);
 }
@@ -291,7 +332,9 @@ export function appliquerAction(e: EtatGrille, joueurId: string, action: ActionG
     case 'marcher': {
       const cible = avance(perso.x, perso.y, action.dir);
       // Une case bloquée : on tourne seulement, comme pour un personnage qui butte contre un mur.
-      if (!solLibre(e, cible.x, cible.y)) {
+      // Une plateforme ne se rejoint pas en marchant depuis le sol : il faut sauter dessus.
+      const monte = e.decor[perso.y]?.[perso.x] === '.' && e.decor[cible.y]?.[cible.x] === CASE_PLATEFORME;
+      if (monte || !solLibre(e, cible.x, cible.y)) {
         return { ok: true, etat: fin(e, joueurId, { dir: action.dir }, 'repos') };
       }
       return { ok: true, etat: deplacer(e, joueurId, cible.x, cible.y, action.dir, 'repos') };
@@ -386,7 +429,8 @@ export function devantLePersonnage(e: EtatGrille, joueurId: string): Devant | nu
   const perso = e.personnages[joueurId];
   if (!perso) return null;
   const d = avance(perso.x, perso.y, perso.dir);
-  if (!dansLaGrille(e, d.x, d.y) || e.decor[d.y]?.[d.x] !== '.') return 'mur';
+  const c = e.decor[d.y]?.[d.x];
+  if (!dansLaGrille(e, d.x, d.y) || (c !== '.' && c !== CASE_PLATEFORME)) return 'mur';
   if (Object.values(e.personnages).some((p) => p.id !== joueurId && p.x === d.x && p.y === d.y)) return 'personnage';
   return objetA(e, d.x, d.y)?.nature ?? 'rien';
 }

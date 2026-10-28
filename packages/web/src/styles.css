@@ -12634,6 +12634,14 @@ input[type='file']::file-selector-button {
     inset 0 0 0 2px var(--mur-joint, #5b3a24);
 }
 
+/* Plateforme : on y monte en sautant, elle se voit comme une marche. */
+.grille-case.is-plateforme {
+  background: var(--mur, #8a5a3b);
+  box-shadow:
+    inset 0 0 0 3px rgba(255, 255, 255, 0.35),
+    inset 0 -6px 0 rgba(0, 0, 0, 0.3);
+}
+
 .grille-scene {
   position: absolute;
   inset: 0;

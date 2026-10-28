@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react';
 import {
   ATTITUDE_POSE,
+  CASE_PLATEFORME,
   themeDePlateau,
   type ThemeId,
   type CharacterSpec,
@@ -48,11 +49,14 @@ function Decor({ etat }: { etat: EtatGrille }) {
   for (let y = 0; y < etat.hauteur; y++) {
     for (let x = 0; x < etat.largeur; x++) {
       const mur = etat.decor[y]?.[x] === '#';
+      const plateforme = etat.decor[y]?.[x] === CASE_PLATEFORME;
       const classe = mur
         ? 'grille-case is-mur'
-        : (x + y) % 2 === 0
-          ? 'grille-case is-sol'
-          : 'grille-case is-sol is-sol-b';
+        : plateforme
+          ? 'grille-case is-plateforme'
+          : (x + y) % 2 === 0
+            ? 'grille-case is-sol'
+            : 'grille-case is-sol is-sol-b';
       cases.push(<span key={`${x}-${y}`} className={classe} />);
     }
   }

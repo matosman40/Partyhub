@@ -3,6 +3,7 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import {
   ATTITUDE_POSE,
+  CASE_PLATEFORME,
   contourDeLaForme,
   formeContient,
   themeDePlateau,
@@ -35,6 +36,8 @@ const HAUTEUR_TETE = 1.3;
 /** Saut : durée et hauteur maximale, en unités du plateau. */
 const DUREE_SAUT = 0.5;
 const HAUTEUR_SAUT = 0.7;
+/** Hauteur d’une plateforme : on monte dessus en sautant. */
+const HAUTEUR_PLATEFORME = 0.5;
 /** Vitesse de glissement vers la case d’arrivée (par seconde, approx.). */
 const VITESSE = 12;
 /** Taille de base d’un personnage à l’écran (px) pour une case de 100 px. */
@@ -71,6 +74,11 @@ function nouvelleMemoire(): Mon {
 const monX = (x: number, e: EtatGrille) => x - (e.largeur - 1) / 2;
 const monZ = (y: number, e: EtatGrille) => y - (e.hauteur - 1) / 2;
 
+/** Hauteur du sol sur une case : celle d’une plateforme, ou le plateau. */
+function hauteurDuSol(e: EtatGrille, x: number, y: number): number {
+  return e.decor[y]?.[x] === CASE_PLATEFORME ? HAUTEUR_PLATEFORME : 0;
+}
+
 /** Hauteur du centre d’un objet posé, selon sa nature. */
 function hauteurPosee(nature: ObjetGrille['nature']): number {
   if (nature === 'caisse') return TAILLE_CAISSE / 2;
@@ -84,9 +92,9 @@ function cibleObjet(o: ObjetGrille, e: EtatGrille, mon: Mon): THREE.Vector3 | nu
     const porteur = mon.sol.get(o.porte);
     if (!porteur) return null;
     const saut = mon.hauteur.get(o.porte) ?? 0;
-    return new THREE.Vector3(porteur.x, HAUTEUR_TETE + saut, porteur.z);
+    return new THREE.Vector3(porteur.x, porteur.y + HAUTEUR_TETE + saut, porteur.z);
   }
-  return new THREE.Vector3(monX(o.x, e), hauteurPosee(o.nature), monZ(o.y, e));
+  return new THREE.Vector3(monX(o.x, e), hauteurDuSol(e, o.x, o.y) + hauteurPosee(o.nature), monZ(o.y, e));
 }
 
 /** Place un personnage à l’écran : son pied tombe sur sa case, et sa taille suit la perspective. */
@@ -98,8 +106,8 @@ function placerFigure(
   largeur: number,
   hauteur: number,
 ) {
-  const pied = new THREE.Vector3(sol.x, saut, sol.z).project(camera);
-  const cote = new THREE.Vector3(sol.x + 1, saut, sol.z).project(camera);
+  const pied = new THREE.Vector3(sol.x, sol.y + saut, sol.z).project(camera);
+  const cote = new THREE.Vector3(sol.x + 1, sol.y + saut, sol.z).project(camera);
   const sx = ((pied.x + 1) / 2) * largeur;
   const sy = ((1 - pied.y) / 2) * hauteur;
   const cellule = Math.abs(((cote.x + 1) / 2) * largeur - sx);
@@ -119,8 +127,9 @@ function cadrer(
 ) {
   const tan = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
   const aspect = ecranL / Math.max(1, ecranH);
-  const demiL = cases.largeur / 2 + 0.9;
-  const demiH = cases.hauteur / 2 + 0.9;
+  // Marge réduite : la zone de jeu occupe tout ce qui est visible.
+  const demiL = cases.largeur / 2 + 0.5;
+  const demiH = cases.hauteur / 2 + 0.5;
   const distance = Math.max(demiH / tan, demiL / (tan * aspect));
   camera.position.set(0, distance * 0.82, distance * 0.58);
   camera.lookAt(0, 0, 0);
@@ -491,9 +500,55 @@ function Decor({
         </>
       )}
       <Murs theme={theme} positions={positionsMurs} materiau={murMat} />
+      <Plateformes etat={etat} theme={theme} />
       {theme.filet && <Filet etat={etat} />}
       {theme.murs === 'grillage' && <Grillage etat={etat} />}
       {theme.murs === 'grillage' && <Accessoires etat={etat} />}
+    </group>
+  );
+}
+
+/** Plateformes : des blocs surélevés, à la couleur du mur, avec un dessus de la couleur du sol. */
+function Plateformes({ etat, theme }: { etat: EtatGrille; theme: ThemePlateau }) {
+  const cases = useMemo(() => {
+    const liste: Array<[number, number]> = [];
+    etat.decor.forEach((ligne, y) =>
+      ligne.split('').forEach((c, x) => {
+        if (c === CASE_PLATEFORME) liste.push([x, y]);
+      }),
+    );
+    return liste;
+  }, [etat.decor]);
+  const corps = useMemo(() => new THREE.MeshStandardMaterial({ color: theme.mur.couleur, roughness: 0.8 }), [theme]);
+  const dessus = useMemo(() => new THREE.MeshStandardMaterial({ color: theme.dalles[0], roughness: 0.9 }), [theme]);
+  useEffect(
+    () => () => {
+      corps.dispose();
+      dessus.dispose();
+    },
+    [corps, dessus],
+  );
+  return (
+    <group>
+      {cases.map(([x, y]) => (
+        <group key={`${x}-${y}`} position={[monX(x, etat), 0, monZ(y, etat)]}>
+          <mesh
+            geometry={GEO.bloc}
+            material={corps}
+            position={[0, HAUTEUR_PLATEFORME / 2, 0]}
+            scale={[0.96, HAUTEUR_PLATEFORME, 0.96]}
+            castShadow
+            receiveShadow
+          />
+          <mesh
+            geometry={GEO.bloc}
+            material={dessus}
+            position={[0, HAUTEUR_PLATEFORME + 0.02, 0]}
+            scale={[0.98, 0.06, 0.98]}
+            receiveShadow
+          />
+        </group>
+      ))}
     </group>
   );
 }
@@ -638,7 +693,7 @@ function Monde({
       }
     }
     for (const p of Object.values(e.personnages)) {
-      const cible = new THREE.Vector3(monX(p.x, e), 0, monZ(p.y, e));
+      const cible = new THREE.Vector3(monX(p.x, e), hauteurDuSol(e, p.x, p.y), monZ(p.y, e));
       let sol = mon.sol.get(p.id);
       if (!sol) {
         sol = cible.clone();

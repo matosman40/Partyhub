@@ -52,6 +52,8 @@ export interface ThemePlateau {
   filet?: boolean;
   /** Le contour : des haies (par défaut) ou un grillage de court. */
   murs?: 'haie' | 'grillage';
+  /** Des plateformes surélevées, qu’on rejoint en sautant. */
+  plateformes?: boolean;
 }
 
 export const THEMES_PLATEAU: Record<ThemeId, ThemePlateau> = {
@@ -74,6 +76,7 @@ export const THEMES_PLATEAU: Record<ThemeId, ThemePlateau> = {
     densiteCaisses: 0.1,
     forme: 'organique',
     decor: 'epars',
+    plateformes: true,
   },
   arene: {
     id: 'arene',
@@ -95,6 +98,7 @@ export const THEMES_PLATEAU: Record<ThemeId, ThemePlateau> = {
     densiteCaisses: 0.08,
     forme: 'carree',
     decor: 'epars',
+    plateformes: true,
   },
   banquise: {
     id: 'banquise',
@@ -115,6 +119,7 @@ export const THEMES_PLATEAU: Record<ThemeId, ThemePlateau> = {
     densiteCaisses: 0.1,
     forme: 'organique',
     decor: 'epars',
+    plateformes: true,
   },
   'arene-ronde': {
     id: 'arene-ronde',
@@ -136,6 +141,7 @@ export const THEMES_PLATEAU: Record<ThemeId, ThemePlateau> = {
     densiteCaisses: 0.06,
     forme: 'ronde',
     decor: 'bord',
+    plateformes: true,
   },
   tennis: {
     id: 'tennis',
@@ -178,6 +184,7 @@ export const THEMES_PLATEAU: Record<ThemeId, ThemePlateau> = {
     densiteCaisses: 0.08,
     forme: 'carree',
     decor: 'epars',
+    plateformes: true,
   },
   ile: {
     id: 'ile',
@@ -198,6 +205,7 @@ export const THEMES_PLATEAU: Record<ThemeId, ThemePlateau> = {
     densiteCaisses: 0.08,
     forme: 'organique',
     decor: 'epars',
+    plateformes: true,
   },
 };
 
