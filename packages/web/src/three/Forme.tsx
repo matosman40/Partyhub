@@ -48,6 +48,8 @@ export const GEO = {
   sphere: new THREE.SphereGeometry(1, 20, 14),
   dome: new THREE.SphereGeometry(1, 18, 10, 0, Math.PI * 2, 0, Math.PI / 2),
   cylindre: new THREE.CylinderGeometry(1, 1, 1, 14),
+  /** Un disque lisse, pour que l’arène ronde ne montre pas de facettes. */
+  disque: new THREE.CylinderGeometry(1, 1, 1, 56),
   cone: new THREE.ConeGeometry(1, 1, 10),
   cube: new THREE.BoxGeometry(1, 1, 1),
   rocher: new THREE.DodecahedronGeometry(1, 0),

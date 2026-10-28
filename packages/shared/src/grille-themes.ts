@@ -50,6 +50,8 @@ export interface ThemePlateau {
   decor: Decor;
   /** Un filet au milieu du plateau (décor seulement, il ne bloque pas les personnages). */
   filet?: boolean;
+  /** Le contour : des haies (par défaut) ou un grillage de court. */
+  murs?: 'haie' | 'grillage';
 }
 
 export const THEMES_PLATEAU: Record<ThemeId, ThemePlateau> = {
@@ -155,6 +157,7 @@ export const THEMES_PLATEAU: Record<ThemeId, ThemePlateau> = {
     forme: 'carree',
     decor: 'bord',
     filet: true,
+    murs: 'grillage',
   },
   escalade: {
     id: 'escalade',

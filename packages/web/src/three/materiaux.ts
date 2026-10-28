@@ -242,7 +242,7 @@ export function texPrises(couleur: string, graine: number): THREE.CanvasTexture 
         ctx.fillRect(r() * w, r() * h, 2 + r() * 4, 2 + r() * 4);
       }
       const couleurs = ['#ef4444', '#facc15', '#22c55e', '#3b82f6', '#a855f7', '#f97316'];
-      for (let i = 0; i < 24; i++) {
+      for (let i = 0; i < 34; i++) {
         const x = r() * w;
         const y = r() * h;
         const rayon = 7 + r() * 6;
@@ -258,7 +258,29 @@ export function texPrises(couleur: string, graine: number): THREE.CanvasTexture 
         ctx.beginPath();
         ctx.arc(x - rayon * 0.3, y - rayon * 0.35, rayon * 0.3, 0, Math.PI * 2);
         ctx.fill();
+        // Le boulon qui fixe la prise.
+        ctx.fillStyle = 'rgba(20,20,25,0.7)';
+        ctx.beginPath();
+        ctx.arc(x, y, rayon * 0.16, 0, Math.PI * 2);
+        ctx.fill();
       }
+    }),
+  );
+}
+
+/** Une toile de grillage : un quadrillage fin sur fond transparent, à répéter sur les panneaux. */
+export function texFiletMaille(): THREE.CanvasTexture {
+  return repete(
+    canvasTexture(64, 64, (ctx, w, h) => {
+      ctx.clearRect(0, 0, w, h);
+      ctx.strokeStyle = 'rgba(60,80,75,0.9)';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(w, h);
+      ctx.moveTo(w, 0);
+      ctx.lineTo(0, h);
+      ctx.stroke();
     }),
   );
 }

@@ -564,6 +564,18 @@ function formesDesMurs(theme: ThemePlateau): Array<{
   contour: number;
   decalages: Array<{ x: number; y: number; z: number; sx: number; sy: number; sz: number }>;
 }> {
+  if (theme.murs === 'grillage') {
+    // Des poteaux blancs tous les cases du contour ; la toile est posée par-dessus (voir Grillage).
+    return [
+      {
+        geometrie: GEO.cube,
+        materiau: new THREE.MeshStandardMaterial({ color: '#f4f4f4', roughness: 0.5 }),
+        copies: 1,
+        contour: 0.05,
+        decalages: [{ x: 0, y: 0.45, z: 0, sx: 0.07, sy: 0.9, sz: 0.07 }],
+      },
+    ];
+  }
   if (theme.ambiance === 'pelouse') {
     return [
       {

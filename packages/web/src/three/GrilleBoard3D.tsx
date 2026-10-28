@@ -14,7 +14,7 @@ import { Character, usePrefersReducedMotion, type GrilleApparence } from '@party
 import { canvasTexture } from './canvas-texture';
 import { Environnement, Murs, cieDe, hasard, socleDe } from './Ambiance3D';
 import { Forme, GEO } from './Forme';
-import { texBois, texFeuillage, texGlace, texPierre, texPrises, touffesHerbe } from './materiaux';
+import { texBois, texFeuillage, texFiletMaille, texGlace, texPierre, texPrises, touffesHerbe } from './materiaux';
 
 /**
  * Plateau en grille en 3D, plein écran sur la TV, dans le style d’un jeu de plateau de fête : matières
@@ -161,6 +161,11 @@ function textures(cases: { largeur: number; hauteur: number }, theme: ThemePlate
             ctx.arc(x * cw + cw * fx, y * ch + ch * fy, 2.5, 0, Math.PI * 2);
             ctx.fill();
           }
+        } else if (theme.motifSol === 'mousse') {
+          // Les coutures d’un tapis de réception.
+          ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(x * cw + 1, y * ch + 1, cw - 2, ch - 2);
         } else if (theme.motifSol === 'glace') {
           // De la glace : un reflet blanc en biais sur chaque case.
           ctx.strokeStyle = 'rgba(255,255,255,0.55)';
@@ -174,18 +179,48 @@ function textures(cases: { largeur: number; hauteur: number }, theme: ThemePlate
     }
     if (theme.motifSol === 'herbe') touffesHerbe(ctx, w, h, couleurA, 11, 0.02);
     if (theme.motifSol === 'court') {
-      // Les lignes blanches d’un court : contour, ligne de service et ligne médiane (sous le filet).
-      const m = (w / cases.largeur) * 0.5;
-      ctx.strokeStyle = 'rgba(255,255,255,0.92)';
+      // Un court en dur : grain fin, lignes doubles et simples, ligne de service et marques de fond de court.
+      const r = hasard(29);
+      for (let k = 0; k < 900; k++) {
+        ctx.fillStyle = r() < 0.5 ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.07)';
+        ctx.fillRect(r() * w, r() * h, 2, 2);
+      }
+      const cw = w / cases.largeur;
+      const ch = h / cases.hauteur;
+      const m = cw * 0.5;
+      const simple = ch * 1.4;
+      ctx.strokeStyle = 'rgba(255,255,255,0.94)';
       ctx.lineWidth = 5;
       ctx.strokeRect(m, m, w - 2 * m, h - 2 * m);
       ctx.beginPath();
-      ctx.moveTo(w * 0.25, m);
-      ctx.lineTo(w * 0.25, h - m);
-      ctx.moveTo(w * 0.75, m);
-      ctx.lineTo(w * 0.75, h - m);
+      // Lignes simples, le long des côtés.
+      ctx.moveTo(m, simple);
+      ctx.lineTo(w - m, simple);
+      ctx.moveTo(m, h - simple);
+      ctx.lineTo(w - m, h - simple);
+      // Lignes de service, à 3,5 cases du filet.
+      ctx.moveTo(cw * 3, simple);
+      ctx.lineTo(cw * 3, h - simple);
+      ctx.moveTo(cw * 10, simple);
+      ctx.lineTo(cw * 10, h - simple);
+      ctx.moveTo(cw * 3, h / 2);
+      ctx.lineTo(cw * 10, h / 2);
+      // Le filet, au milieu.
       ctx.moveTo(w / 2, 0);
       ctx.lineTo(w / 2, h);
+      // Marques de fond de court.
+      ctx.moveTo(m, h / 2);
+      ctx.lineTo(m + cw * 0.4, h / 2);
+      ctx.moveTo(w - m, h / 2);
+      ctx.lineTo(w - m - cw * 0.4, h / 2);
+      ctx.stroke();
+    }
+    if (theme.forme === 'ronde') {
+      // Un anneau de combat, peint au sol.
+      ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.ellipse(w / 2, h / 2, w * 0.42, h * 0.42, 0, 0, Math.PI * 2);
       ctx.stroke();
     }
     if (theme.motifSol === 'glace') {
@@ -256,6 +291,96 @@ function Filet({ etat }: { etat: EtatGrille }) {
   );
 }
 
+/** Les centres des blocs qui bordent l’arène ronde : un anneau elliptique, juste au-delà des cases libres. */
+function anneauRond(largeur: number, hauteur: number, n: number): Array<[number, number]> {
+  const rx = largeur / 2 - 0.5;
+  const rz = hauteur / 2 - 0.5;
+  return Array.from({ length: n }, (_, i) => {
+    const a = (i / n) * Math.PI * 2;
+    return [rx * Math.cos(a), rz * Math.sin(a)];
+  });
+}
+
+/** Le grillage d’un court : des panneaux de toile tout autour, fixés sur les poteaux. */
+function Grillage({ etat }: { etat: EtatGrille }) {
+  const toile = useMemo(() => {
+    const t = texFiletMaille();
+    t.repeat.set(6, 1);
+    return new THREE.MeshStandardMaterial({
+      map: t,
+      transparent: true,
+      alphaTest: 0.2,
+      side: THREE.DoubleSide,
+      roughness: 0.7,
+    });
+  }, []);
+  useEffect(
+    () => () => {
+      toile.map?.dispose();
+      toile.dispose();
+    },
+    [toile],
+  );
+  const x0 = monX(0, etat);
+  const x1 = monX(etat.largeur - 1, etat);
+  const z0 = monZ(0, etat);
+  const z1 = monZ(etat.hauteur - 1, etat);
+  return (
+    <group>
+      {[z0, z1].map((z) => (
+        <mesh
+          key={`z${z}`}
+          geometry={GEO.cube}
+          material={toile}
+          position={[0, 0.42, z]}
+          scale={[etat.largeur - 1, 0.8, 0.03]}
+        />
+      ))}
+      {[x0, x1].map((x) => (
+        <mesh
+          key={`x${x}`}
+          geometry={GEO.cube}
+          material={toile}
+          position={[x, 0.42, 0]}
+          scale={[0.03, 0.8, etat.hauteur - 1]}
+        />
+      ))}
+    </group>
+  );
+}
+
+/** Le mobilier d’un court, hors du jeu : la chaise de l’arbitre et deux bancs de joueurs. */
+function Accessoires({ etat }: { etat: EtatGrille }) {
+  const blanc = useMemo(() => new THREE.MeshStandardMaterial({ color: '#f4f4f4', roughness: 0.5 }), []);
+  const bleu = useMemo(() => new THREE.MeshStandardMaterial({ color: '#1f4fa0', roughness: 0.6 }), []);
+  const acier = useMemo(() => new THREE.MeshStandardMaterial({ color: '#7d8590', roughness: 0.4, metalness: 0.5 }), []);
+  useEffect(
+    () => () => {
+      blanc.dispose();
+      bleu.dispose();
+      acier.dispose();
+    },
+    [blanc, bleu, acier],
+  );
+  const zChaise = monZ(0, etat) - 1.8;
+  const zBanc = monZ(etat.hauteur - 1, etat) + 1.8;
+  return (
+    // Le mobilier pose sur la pelouse, au niveau du sol.
+    <group position={[0, -0.36, 0]}>
+      <mesh geometry={GEO.cube} material={acier} position={[0, 0.9, zChaise]} scale={[0.1, 1.8, 0.1]} />
+      <mesh geometry={GEO.cube} material={bleu} position={[0, 2, zChaise]} scale={[0.9, 0.7, 0.8]} castShadow />
+      <mesh geometry={GEO.cube} material={blanc} position={[0, 2.42, zChaise]} scale={[1, 0.1, 0.9]} castShadow />
+      {[-3.5, 3.5].map((x) => (
+        <group key={x} position={[x, 0, zBanc]}>
+          <mesh geometry={GEO.cube} material={blanc} position={[0, 0.5, 0]} scale={[1.6, 0.1, 0.5]} castShadow />
+          <mesh geometry={GEO.cube} material={acier} position={[-0.6, 0.25, 0]} scale={[0.08, 0.5, 0.4]} />
+          <mesh geometry={GEO.cube} material={acier} position={[0.6, 0.25, 0]} scale={[0.08, 0.5, 0.4]} />
+        </group>
+      ))}
+    </group>
+  );
+}
+
 function Decor({
   etat,
   theme,
@@ -274,8 +399,10 @@ function Decor({
       if (etat.decor[y]?.[x] === '#') murs.push([x, y]);
     }
   }
+  const ronde = theme.forme === 'ronde';
   const positionsMurs = useMemo(
-    () => murs.map(([x, y]): [number, number] => [monX(x, etat), monZ(y, etat)]),
+    () =>
+      ronde ? anneauRond(largeur, hauteur, 40) : murs.map(([x, y]): [number, number] => [monX(x, etat), monZ(y, etat)]),
     // Les murs ne bougent pas : on ne refait leur liste que si le plateau change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [etat.decor, largeur, hauteur],
@@ -298,24 +425,49 @@ function Decor({
     <group>
       <Environnement theme={theme} taille={{ largeur, hauteur }} reduced={reduced} />
       {/* Le plateau est un bloc : dessus peint, flancs de la couleur du lieu, bord clair autour. */}
-      <mesh
-        geometry={GEO.cube}
-        material={rebord}
-        position={[0, -socle.epaisseur / 2 - 0.06, 0]}
-        scale={[largeur + 1.2, socle.epaisseur, hauteur + 1.2]}
-        receiveShadow
-        castShadow
-      />
-      <mesh
-        geometry={GEO.cube}
-        material={[flancs, flancs, dessus, flancs, flancs, flancs]}
-        position={[0, -socle.epaisseur / 2, 0]}
-        scale={[largeur, socle.epaisseur, hauteur]}
-        receiveShadow
-        castShadow
-      />
+      {ronde ? (
+        <>
+          <mesh
+            geometry={GEO.disque}
+            material={rebord}
+            position={[0, -socle.epaisseur / 2 - 0.06, 0]}
+            scale={[largeur / 2 + 0.6, socle.epaisseur, hauteur / 2 + 0.6]}
+            receiveShadow
+            castShadow
+          />
+          <mesh
+            geometry={GEO.disque}
+            material={[flancs, dessus, flancs]}
+            position={[0, -socle.epaisseur / 2, 0]}
+            scale={[largeur / 2, socle.epaisseur, hauteur / 2]}
+            receiveShadow
+            castShadow
+          />
+        </>
+      ) : (
+        <>
+          <mesh
+            geometry={GEO.cube}
+            material={rebord}
+            position={[0, -socle.epaisseur / 2 - 0.06, 0]}
+            scale={[largeur + 1.2, socle.epaisseur, hauteur + 1.2]}
+            receiveShadow
+            castShadow
+          />
+          <mesh
+            geometry={GEO.cube}
+            material={[flancs, flancs, dessus, flancs, flancs, flancs]}
+            position={[0, -socle.epaisseur / 2, 0]}
+            scale={[largeur, socle.epaisseur, hauteur]}
+            receiveShadow
+            castShadow
+          />
+        </>
+      )}
       <Murs theme={theme} positions={positionsMurs} materiau={murMat} />
       {theme.filet && <Filet etat={etat} />}
+      {theme.murs === 'grillage' && <Grillage etat={etat} />}
+      {theme.murs === 'grillage' && <Accessoires etat={etat} />}
     </group>
   );
 }
