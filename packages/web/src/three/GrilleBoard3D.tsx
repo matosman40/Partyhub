@@ -12,20 +12,22 @@ import {
 } from '@partyhub/shared';
 import { Character, usePrefersReducedMotion, type GrilleApparence } from '@partyhub/games/client';
 import { canvasTexture } from './canvas-texture';
-import { Environnement, MurDecor, hasard, socleDe } from './Ambiance3D';
+import { Environnement, Murs, cieDe, hasard, socleDe } from './Ambiance3D';
+import { Forme, GEO } from './Forme';
+import { texBois, texFeuillage, texGlace, texPierre, touffesHerbe } from './materiaux';
 
 /**
- * Plateau en grille en 3D, plein écran sur la TV. Le décor (sol, murs, caisses, ballons, boîtes) est en
- * trois dimensions, aux couleurs du thème choisi par le jeu ; les personnages restent les dessins 2D de
- * leur profil, posés sur le plateau. Leur place à l’écran est calculée à partir de la caméra : ils suivent
- * le sol, sautent et portent.
+ * Plateau en grille en 3D, plein écran sur la TV, dans le style d’un jeu de plateau de fête : matières
+ * peintes, contours sombres, ombres nettes, brume au loin et un léger halo sur les lumières. Le lieu
+ * (pelouse, mer, plateforme) est décrit par le thème. Les personnages restent les dessins 2D de leur
+ * profil, posés sur le plateau ; leur place à l’écran suit la caméra.
  *
  * Réutilisable par tout jeu qui a un plateau en grille (voir `shared/grille.ts`).
  */
 
-const TAILLE_CAISSE = 0.78;
 const RAYON_BALLON = 0.3;
 const TAILLE_BOITE = 0.55;
+const TAILLE_CAISSE = 0.78;
 /** Hauteur où la boîte portée est tenue, au-dessus du sol (en tête du porteur). */
 const HAUTEUR_TETE = 1.3;
 /** Saut : durée et hauteur maximale, en unités du plateau. */
@@ -124,8 +126,15 @@ function cadrer(
   camera.updateMatrixWorld();
 }
 
-/** Textures dessinées aux couleurs du thème : sol, murs, caisses. Aucune image externe à charger. */
-function textures(cases: { largeur: number; hauteur: number }, theme: ThemePlateau) {
+/** Les matières du plateau : sol peint, murs (buisson, glace ou pierre), caisses en bois. */
+interface Surfaces {
+  sol: THREE.Texture;
+  mur: THREE.Texture;
+  caisse: THREE.Texture;
+}
+
+/** Dessine le sol case par case, aux couleurs du thème, avec de l’herbe, des fissures de glace ou des dalles. */
+function textures(cases: { largeur: number; hauteur: number }, theme: ThemePlateau): Surfaces {
   const [couleurA, couleurB] = theme.dalles;
   const sol = canvasTexture(cases.largeur * 64, cases.hauteur * 64, (ctx, w, h) => {
     const cw = w / cases.largeur;
@@ -136,7 +145,7 @@ function textures(cases: { largeur: number; hauteur: number }, theme: ThemePlate
         ctx.fillRect(x * cw, y * ch, cw, ch);
         if (theme.motifSol === 'dalles') {
           // Des dalles de pierre : un liseré sombre autour de chaque case.
-          ctx.strokeStyle = 'rgba(0,0,0,0.28)';
+          ctx.strokeStyle = 'rgba(0,0,0,0.3)';
           ctx.lineWidth = 3;
           ctx.strokeRect(x * cw + 1.5, y * ch + 1.5, cw - 3, ch - 3);
         } else if (theme.motifSol === 'glace') {
@@ -150,134 +159,110 @@ function textures(cases: { largeur: number; hauteur: number }, theme: ThemePlate
         }
       }
     }
-    if (theme.motifSol === 'herbe') {
-      // Une pelouse : des touffes d’herbe claires et sombres, posées au hasard (graine fixe).
-      const r = hasard(11);
-      for (let i = 0; i < cases.largeur * cases.hauteur * 14; i++) {
-        const px = r() * w;
-        const py = r() * h;
-        ctx.strokeStyle = r() < 0.5 ? 'rgba(255,255,255,0.14)' : 'rgba(0,40,0,0.2)';
-        ctx.lineWidth = 2;
+    if (theme.motifSol === 'herbe') touffesHerbe(ctx, w, h, couleurA, 11, 0.05);
+    if (theme.motifSol === 'glace') {
+      // Des fissures blanches qui traversent la banquise.
+      const r = hasard(21);
+      ctx.strokeStyle = 'rgba(255,255,255,0.45)';
+      ctx.lineWidth = 2;
+      for (let i = 0; i < 18; i++) {
         ctx.beginPath();
-        ctx.moveTo(px, py);
-        ctx.lineTo(px + (r() - 0.5) * 6, py - 4 - r() * 5);
-        ctx.stroke();
-      }
-    }
-  });
-  const mur = canvasTexture(128, 128, (ctx, w, h) => {
-    ctx.fillStyle = theme.mur.couleur;
-    ctx.fillRect(0, 0, w, h);
-    if (theme.mur.motif === 'feuillage') {
-      // Un buisson : des feuilles claires et sombres, éparpillées.
-      const r = hasard(5);
-      for (let i = 0; i < 70; i++) {
-        ctx.fillStyle = r() < 0.5 ? 'rgba(255,255,255,0.14)' : 'rgba(0,0,0,0.22)';
-        ctx.beginPath();
-        ctx.arc(r() * w, r() * h, 5 + r() * 9, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    } else if (theme.mur.motif === 'glace') {
-      // De la glace : deux reflets blancs.
-      ctx.strokeStyle = 'rgba(255,255,255,0.7)';
-      ctx.lineWidth = 8;
-      ctx.beginPath();
-      ctx.moveTo(w * 0.1, h * 0.9);
-      ctx.lineTo(w * 0.5, h * 0.1);
-      ctx.moveTo(w * 0.6, h);
-      ctx.lineTo(w * 0.95, h * 0.4);
-      ctx.stroke();
-    } else {
-      // Pierre de taille : des blocs décalés d’une rangée à l’autre.
-      ctx.strokeStyle = theme.mur.joint;
-      ctx.lineWidth = 4;
-      for (let r = 0; r < 4; r++) {
-        const y = (r * h) / 4;
-        const decal = r % 2 === 0 ? 0 : w / 4;
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(w, y);
-        ctx.stroke();
-        for (let c = -1; c <= 2; c++) {
-          const x = decal + (c * w) / 2;
-          ctx.beginPath();
-          ctx.moveTo(x, y);
-          ctx.lineTo(x, y + h / 4);
-          ctx.stroke();
+        let x = r() * w;
+        let y = r() * h;
+        ctx.moveTo(x, y);
+        for (let k = 0; k < 3; k++) {
+          x += (r() - 0.5) * 90;
+          y += (r() - 0.5) * 90;
+          ctx.lineTo(x, y);
         }
+        ctx.stroke();
       }
     }
   });
-  const caisse = canvasTexture(128, 128, (ctx, w, h) => {
-    ctx.fillStyle = theme.caisse.couleur;
-    ctx.fillRect(0, 0, w, h);
-    ctx.strokeStyle = theme.caisse.trait;
-    ctx.lineWidth = 8;
-    ctx.strokeRect(4, 4, w - 8, h - 8);
-    ctx.beginPath();
-    ctx.moveTo(8, 8);
-    ctx.lineTo(w - 8, h - 8);
-    ctx.moveTo(w - 8, 8);
-    ctx.lineTo(8, h - 8);
-    ctx.stroke();
-  });
+  const mur =
+    theme.mur.motif === 'feuillage'
+      ? texFeuillage(theme.mur.couleur, 9)
+      : theme.mur.motif === 'glace'
+        ? texGlace(theme.mur.couleur, 4)
+        : texPierre(theme.mur.couleur, theme.mur.joint, 6);
+  const caisse = texBois(theme.caisse.couleur, theme.caisse.trait, 2);
   return { sol, mur, caisse };
 }
 
-function Decor({ etat, theme, reduced }: { etat: EtatGrille; theme: ThemePlateau; reduced: boolean }) {
-  // Les textures ne dépendent que de la taille du plateau et du thème.
+function Decor({
+  etat,
+  theme,
+  tex,
+  reduced,
+}: {
+  etat: EtatGrille;
+  theme: ThemePlateau;
+  tex: Surfaces;
+  reduced: boolean;
+}) {
   const { largeur, hauteur } = etat;
-  const tex = useMemo(() => textures({ largeur, hauteur }, theme), [largeur, hauteur, theme]);
-  useEffect(
-    () => () => {
-      tex.sol.dispose();
-      tex.mur.dispose();
-      tex.caisse.dispose();
-    },
-    [tex],
-  );
   const murs: Array<[number, number]> = [];
-  for (let y = 0; y < etat.hauteur; y++) {
-    for (let x = 0; x < etat.largeur; x++) {
+  for (let y = 0; y < hauteur; y++) {
+    for (let x = 0; x < largeur; x++) {
       if (etat.decor[y]?.[x] === '#') murs.push([x, y]);
     }
   }
-  // Le plateau est un bloc : dessus = sol peint, flancs de la couleur du lieu, bord clair autour.
+  const positionsMurs = useMemo(
+    () => murs.map(([x, y]): [number, number] => [monX(x, etat), monZ(y, etat)]),
+    // Les murs ne bougent pas : on ne refait leur liste que si le plateau change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [etat.decor, largeur, hauteur],
+  );
   const socle = socleDe(theme.ambiance);
-  const flancs = useMemo(() => new THREE.MeshToonMaterial({ color: socle.flanc }), [socle.flanc]);
-  const dessus = useMemo(() => new THREE.MeshToonMaterial({ map: tex.sol }), [tex]);
-  const rebord = useMemo(() => new THREE.MeshToonMaterial({ color: socle.rebord }), [socle.rebord]);
+  const dessus = useMemo(() => new THREE.MeshStandardMaterial({ map: tex.sol, roughness: 0.9 }), [tex]);
+  const flancs = useMemo(() => new THREE.MeshStandardMaterial({ color: socle.flanc, roughness: 0.85 }), [socle.flanc]);
+  const rebord = useMemo(() => new THREE.MeshStandardMaterial({ color: socle.rebord, roughness: 0.7 }), [socle.rebord]);
+  const murMat = useMemo(() => new THREE.MeshStandardMaterial({ map: tex.mur, roughness: 0.85 }), [tex]);
   useEffect(
     () => () => {
-      flancs.dispose();
       dessus.dispose();
+      flancs.dispose();
       rebord.dispose();
+      murMat.dispose();
     },
-    [flancs, dessus, rebord],
+    [dessus, flancs, rebord, murMat],
   );
   return (
     <group>
       <Environnement theme={theme} taille={{ largeur, hauteur }} reduced={reduced} />
-      <mesh position={[0, -socle.epaisseur / 2 - 0.06, 0]} receiveShadow castShadow material={rebord}>
-        <boxGeometry args={[largeur + 1.2, socle.epaisseur, hauteur + 1.2]} />
-      </mesh>
+      {/* Le plateau est un bloc : dessus peint, flancs de la couleur du lieu, bord clair autour. */}
       <mesh
-        position={[0, -socle.epaisseur / 2, 0]}
+        geometry={GEO.cube}
+        material={rebord}
+        position={[0, -socle.epaisseur / 2 - 0.06, 0]}
+        scale={[largeur + 1.2, socle.epaisseur, hauteur + 1.2]}
         receiveShadow
         castShadow
+      />
+      <mesh
+        geometry={GEO.cube}
         material={[flancs, flancs, dessus, flancs, flancs, flancs]}
-      >
-        <boxGeometry args={[largeur, socle.epaisseur, hauteur]} />
-      </mesh>
-      {murs.map(([x, y]) => (
-        <MurDecor key={`m${x}-${y}`} theme={theme} x={monX(x, etat)} z={monZ(y, etat)} texture={tex.mur} />
-      ))}
+        position={[0, -socle.epaisseur / 2, 0]}
+        scale={[largeur, socle.epaisseur, hauteur]}
+        receiveShadow
+        castShadow
+      />
+      <Murs theme={theme} positions={positionsMurs} materiau={murMat} />
     </group>
   );
 }
 
+/** Les matières des objets : une seule fois pour tout le plateau. */
+interface Materiaux {
+  caisse: THREE.Material;
+  ballon: THREE.Material;
+  boite: THREE.Material;
+  ruban: THREE.Material;
+  reflet: THREE.Material;
+}
+
 /** Un objet 3D : caisse, ballon ou cadeau. Sa place est tenue à jour par la boucle d’animation. */
-function ObjetMesh({ objet, mon, theme }: { objet: ObjetGrille; mon: Mon; theme: ThemePlateau }) {
+function ObjetMesh({ objet, mon, mats }: { objet: ObjetGrille; mon: Mon; mats: Materiaux }) {
   const ref = (m: THREE.Object3D | null) => {
     if (m) mon.objets.set(objet.id, m);
     else mon.objets.delete(objet.id);
@@ -285,47 +270,58 @@ function ObjetMesh({ objet, mon, theme }: { objet: ObjetGrille; mon: Mon; theme:
   if (objet.nature === 'ballon') {
     return (
       <group ref={ref}>
-        <mesh castShadow>
-          <sphereGeometry args={[RAYON_BALLON, 28, 20]} />
-          <meshToonMaterial color={theme.ballon} />
-        </mesh>
+        <Forme geometrie={GEO.sphere} materiau={mats.ballon} contour={0.05} scale={RAYON_BALLON} />
         {/* Un reflet blanc, pour un ballon brillant. */}
-        <mesh position={[-RAYON_BALLON * 0.35, RAYON_BALLON * 0.45, RAYON_BALLON * 0.7]}>
-          <sphereGeometry args={[RAYON_BALLON * 0.22, 10, 8]} />
-          <meshToonMaterial color="#ffffff" />
-        </mesh>
+        <mesh
+          geometry={GEO.sphere}
+          material={mats.reflet}
+          position={[-RAYON_BALLON * 0.35, RAYON_BALLON * 0.45, RAYON_BALLON * 0.7]}
+          scale={RAYON_BALLON * 0.22}
+        />
       </group>
     );
   }
   if (objet.nature === 'boite') {
     // Un cadeau : une boîte, un ruban en croix et un nœud dessus.
-    const ruban = theme.ballon;
     return (
       <group ref={ref}>
-        <mesh castShadow>
-          <boxGeometry args={[TAILLE_BOITE, TAILLE_BOITE, TAILLE_BOITE]} />
-          <meshToonMaterial color={theme.boite} />
-        </mesh>
-        <mesh position={[0, 0, 0]}>
-          <boxGeometry args={[TAILLE_BOITE * 1.02, TAILLE_BOITE * 1.02, TAILLE_BOITE * 0.18]} />
-          <meshToonMaterial color={ruban} />
-        </mesh>
-        <mesh position={[0, 0, 0]}>
-          <boxGeometry args={[TAILLE_BOITE * 0.18, TAILLE_BOITE * 1.02, TAILLE_BOITE * 1.02]} />
-          <meshToonMaterial color={ruban} />
-        </mesh>
-        <mesh position={[0, TAILLE_BOITE / 2 + 0.07, 0]} castShadow>
-          <sphereGeometry args={[0.1, 10, 8]} />
-          <meshToonMaterial color={ruban} />
-        </mesh>
+        <Forme geometrie={GEO.cube} materiau={mats.boite} contour={0.045} scale={TAILLE_BOITE} />
+        <mesh
+          geometry={GEO.cube}
+          material={mats.ruban}
+          scale={[TAILLE_BOITE * 1.03, TAILLE_BOITE * 1.03, TAILLE_BOITE * 0.2]}
+        />
+        <mesh
+          geometry={GEO.cube}
+          material={mats.ruban}
+          scale={[TAILLE_BOITE * 0.2, TAILLE_BOITE * 1.03, TAILLE_BOITE * 1.03]}
+        />
+        <mesh
+          geometry={GEO.sphere}
+          material={mats.ruban}
+          position={[0, TAILLE_BOITE / 2 + 0.08, 0]}
+          scale={0.11}
+          castShadow
+        />
+        <mesh
+          geometry={GEO.sphere}
+          material={mats.ruban}
+          position={[-0.09, TAILLE_BOITE / 2 + 0.12, 0]}
+          scale={[0.09, 0.05, 0.05]}
+        />
+        <mesh
+          geometry={GEO.sphere}
+          material={mats.ruban}
+          position={[0.09, TAILLE_BOITE / 2 + 0.12, 0]}
+          scale={[0.09, 0.05, 0.05]}
+        />
       </group>
     );
   }
   return (
-    <mesh ref={ref} castShadow receiveShadow>
-      <boxGeometry args={[TAILLE_CAISSE, TAILLE_CAISSE, TAILLE_CAISSE]} />
-      <meshToonMaterial color={theme.caisse.couleur} />
-    </mesh>
+    <group ref={ref}>
+      <Forme geometrie={GEO.cube} materiau={mats.caisse} contour={0.05} scale={TAILLE_CAISSE} />
+    </group>
   );
 }
 
@@ -333,7 +329,19 @@ function ObjetMesh({ objet, mon, theme }: { objet: ObjetGrille; mon: Mon; theme:
  * Le monde : caméra, lumière, décor, objets, et la boucle qui fait glisser chaque élément vers sa case
  * (et place les personnages 2D à l’écran).
  */
-function Monde({ etat, mon, reduced, theme }: { etat: EtatGrille; mon: Mon; reduced: boolean; theme: ThemePlateau }) {
+function Monde({
+  etat,
+  mon,
+  reduced,
+  theme,
+  tex,
+}: {
+  etat: EtatGrille;
+  mon: Mon;
+  reduced: boolean;
+  theme: ThemePlateau;
+  tex: Surfaces;
+}) {
   const { camera, size } = useThree();
   const etatRef = useRef(etat);
   etatRef.current = etat;
@@ -342,6 +350,27 @@ function Monde({ etat, mon, reduced, theme }: { etat: EtatGrille; mon: Mon; redu
   useEffect(() => {
     cadrer(camera as THREE.PerspectiveCamera, { largeur, hauteur }, size.width, size.height);
   }, [camera, largeur, hauteur, size.width, size.height]);
+
+  const mats = useMemo<Materiaux>(
+    () => ({
+      caisse: new THREE.MeshStandardMaterial({ map: tex.caisse, roughness: 0.75 }),
+      ballon: new THREE.MeshStandardMaterial({ color: theme.ballon, roughness: 0.3, metalness: 0.05 }),
+      boite: new THREE.MeshStandardMaterial({ color: theme.boite, roughness: 0.55 }),
+      ruban: new THREE.MeshStandardMaterial({ color: theme.ballon, roughness: 0.4 }),
+      reflet: new THREE.MeshBasicMaterial({ color: '#ffffff' }),
+    }),
+    [tex, theme],
+  );
+  useEffect(
+    () => () => {
+      mats.caisse.dispose();
+      mats.ballon.dispose();
+      mats.boite.dispose();
+      mats.ruban.dispose();
+      mats.reflet.dispose();
+    },
+    [mats],
+  );
 
   useFrame((state, dt) => {
     const e = etatRef.current;
@@ -392,14 +421,33 @@ function Monde({ etat, mon, reduced, theme }: { etat: EtatGrille; mon: Mon; redu
   });
 
   const { lumiere } = theme;
+  const cie = cieDe(theme.ambiance);
   return (
     <>
-      <ambientLight intensity={lumiere.ambiante} />
-      <directionalLight position={[4, 9, 6]} intensity={lumiere.soleil} color={lumiere.couleurSoleil} castShadow />
-      <hemisphereLight args={[theme.ciel, theme.sol, 0.45]} />
-      <Decor etat={etat} theme={theme} reduced={reduced} />
+      <fog attach="fog" args={[cie.bas, 30, 95]} />
+      <ambientLight intensity={lumiere.ambiante * 0.55} />
+      <hemisphereLight args={[cie.haut, theme.sol, 0.7]} />
+      {/* Le soleil, avec des ombres nettes ; un contre-jour bleuté adoucit les ombres. */}
+      <directionalLight
+        position={[7, 13, 6]}
+        intensity={lumiere.soleil * 1.1}
+        color={lumiere.couleurSoleil}
+        castShadow
+        shadow-mapSize-width={1024}
+        shadow-mapSize-height={1024}
+        shadow-camera-left={-14}
+        shadow-camera-right={14}
+        shadow-camera-top={14}
+        shadow-camera-bottom={-14}
+        shadow-camera-near={1}
+        shadow-camera-far={60}
+        shadow-bias={-0.0004}
+        shadow-normalBias={0.02}
+      />
+      <directionalLight position={[-8, 6, -6]} intensity={lumiere.soleil * 0.25} color="#b8d8ff" />
+      <Decor etat={etat} theme={theme} tex={tex} reduced={reduced} />
       {etat.objets.map((o) => (
-        <ObjetMesh key={o.id} objet={o} mon={mon} theme={theme} />
+        <ObjetMesh key={o.id} objet={o} mon={mon} mats={mats} />
       ))}
     </>
   );
@@ -456,7 +504,7 @@ export interface GrilleBoard3DProps {
   apparences: Record<string, GrilleApparence>;
   /** Nom du plateau pour les lecteurs d’écran. */
   label: string;
-  /** Décor du plateau : fête foraine, arène de combat, banquise… */
+  /** Décor du plateau : pelouse de fête, plateforme de combat, banquise en mer. */
   theme?: ThemeId;
 }
 
@@ -465,21 +513,39 @@ export default function GrilleBoard3D({ etat, apparences, label, theme }: Grille
   const reduced = usePrefersReducedMotion();
   const [mon] = useState(nouvelleMemoire);
   const decor = themeDePlateau(theme);
+  const cie = cieDe(decor.ambiance);
+  const tex = useMemo(
+    () => textures({ largeur: etat.largeur, hauteur: etat.hauteur }, decor),
+    [etat.largeur, etat.hauteur, decor],
+  );
+  useEffect(
+    () => () => {
+      tex.sol.dispose();
+      tex.mur.dispose();
+      tex.caisse.dispose();
+    },
+    [tex],
+  );
   const personnages = Object.values(etat.personnages);
   return (
     <div
       className="grille3d"
       role="group"
       aria-label={label}
-      style={{ background: `linear-gradient(180deg, ${decor.ciel} 0%, ${decor.fond} 88%)` }}
+      style={{ background: `linear-gradient(180deg, ${cie.haut} 0%, ${cie.bas} 90%)` }}
     >
       <Canvas
         camera={{ position: [0, 10, 8], fov: 36 }}
         shadows
         dpr={[1, 2]}
-        gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
+        gl={{ antialias: false, alpha: false, powerPreference: 'high-performance' }}
+        onCreated={({ gl }) => {
+          // Couleurs franches et douces, sans écraser les clairs ni délaver les ombres.
+          gl.toneMapping = THREE.NeutralToneMapping;
+          gl.toneMappingExposure = 1;
+        }}
       >
-        <Monde etat={etat} mon={mon} reduced={reduced} theme={decor} />
+        <Monde etat={etat} mon={mon} reduced={reduced} theme={decor} tex={tex} />
       </Canvas>
       <div className="grille3d-figures">
         {personnages.map((perso) => (

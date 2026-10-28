@@ -88,9 +88,9 @@ def main() -> int:
 
             # L'écran principal : un plateau 3D (canevas WebGL) et les personnages posés dessus.
             canevas = tv.locator(".grille3d canvas").first
-            canevas.wait_for(timeout=20000)
+            canevas.wait_for(timeout=60000)
             check("l'écran principal affiche le plateau en 3D", canevas.is_visible())
-            tv.locator(".grille3d-figure").first.wait_for(state="attached", timeout=10000)
+            tv.locator(".grille3d-figure").first.wait_for(state="attached", timeout=60000)
 
             # Le téléphone : le plateau et la manette, par-dessus.
             manette = phone.locator(".grille-console").first
@@ -139,7 +139,7 @@ def main() -> int:
             salut_vu = True
             try:
                 # Le rendu 3D s'exécute en logiciel dans un navigateur de test : on laisse le temps.
-                tv.locator('.grille3d-figure[data-attitude="salut"]').first.wait_for(state="attached", timeout=10000)
+                tv.locator('.grille3d-figure[data-attitude="salut"]').first.wait_for(state="attached", timeout=30000)
             except Exception:  # noqa: BLE001 - l'échec est signalé par le contrôle juste après
                 salut_vu = False
             check("saluer : l'écran principal voit l'attitude « salut »", salut_vu)
