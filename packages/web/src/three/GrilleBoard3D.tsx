@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import {
   ATTITUDE_POSE,
   contourDeLaForme,
+  formeContient,
   themeDePlateau,
   type EtatGrille,
   type ObjetGrille,
@@ -414,14 +415,16 @@ function Decor({
     }
   }
   const courbe = theme.forme !== 'carree';
+  // Dans une forme courbe, la barrière extérieure reste une règle (les cases hors de la zone bloquent)
+  // mais elle ne se dessine pas : seuls les murs à l’intérieur de la zone sont visibles.
   const positionsMurs = useMemo(
     () =>
-      courbe
-        ? contourDeLaForme(theme.forme, largeur, hauteur, 44, 0.5)
-        : murs.map(([x, y]): [number, number] => [monX(x, etat), monZ(y, etat)]),
+      murs
+        .filter(([x, y]) => !courbe || formeContient(theme.forme, largeur, hauteur, x, y))
+        .map(([x, y]): [number, number] => [monX(x, etat), monZ(y, etat)]),
     // Les murs ne bougent pas : on ne refait leur liste que si le plateau change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [etat.decor, largeur, hauteur],
+    [etat.decor, largeur, hauteur, courbe, theme.forme],
   );
   const socle = socleDe(theme.ambiance);
   const dessus = useMemo(() => new THREE.MeshStandardMaterial({ map: tex.sol, roughness: 0.9 }), [tex]);
