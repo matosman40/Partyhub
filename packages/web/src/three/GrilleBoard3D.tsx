@@ -148,6 +148,13 @@ function textures(cases: { largeur: number; hauteur: number }, theme: ThemePlate
           ctx.strokeStyle = 'rgba(0,0,0,0.3)';
           ctx.lineWidth = 3;
           ctx.strokeRect(x * cw + 1.5, y * ch + 1.5, cw - 3, ch - 3);
+          // Des rivets aux quatre coins : des plaques de métal.
+          ctx.fillStyle = 'rgba(255,255,255,0.4)';
+          for (const [fx, fy] of [[0.14, 0.14], [0.86, 0.14], [0.14, 0.86], [0.86, 0.86]] as const) {
+            ctx.beginPath();
+            ctx.arc(x * cw + cw * fx, y * ch + ch * fy, 2.5, 0, Math.PI * 2);
+            ctx.fill();
+          }
         } else if (theme.motifSol === 'glace') {
           // De la glace : un reflet blanc en biais sur chaque case.
           ctx.strokeStyle = 'rgba(255,255,255,0.55)';
@@ -159,7 +166,7 @@ function textures(cases: { largeur: number; hauteur: number }, theme: ThemePlate
         }
       }
     }
-    if (theme.motifSol === 'herbe') touffesHerbe(ctx, w, h, couleurA, 11, 0.05);
+    if (theme.motifSol === 'herbe') touffesHerbe(ctx, w, h, couleurA, 11, 0.02);
     if (theme.motifSol === 'glace') {
       // Des fissures blanches qui traversent la banquise.
       const r = hasard(21);

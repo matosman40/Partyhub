@@ -3,7 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import type { ThemePlateau } from '@partyhub/shared';
 import { Forme, GEO } from './Forme';
-import { hasard, texFeuillage, texGlace, texHerbe, texPierre } from './materiaux';
+import { hasard, texFeuillage, texGlace, texHerbe } from './materiaux';
 
 export { hasard } from './materiaux';
 
@@ -24,14 +24,14 @@ const SURFACE_MER = -0.62;
 /** Le bloc sous le plateau : son épaisseur, la couleur de ses flancs et celle de son rebord. */
 export function socleDe(ambiance: ThemePlateau['ambiance']) {
   if (ambiance === 'mer') return { epaisseur: 0.5, flanc: '#2f77a8', rebord: '#eaf9ff' };
-  if (ambiance === 'plateforme') return { epaisseur: 1.5, flanc: '#23262f', rebord: '#3c4150' };
+  if (ambiance === 'plateforme') return { epaisseur: 1.5, flanc: '#2a3442', rebord: '#f0a04b' };
   return { epaisseur: 0.32, flanc: '#7a4f2e', rebord: '#5fae45' };
 }
 
 /** Les couleurs du ciel (haut) et de l’horizon (bas) : l’horizon sert aussi de couleur de brume. */
 export function cieDe(ambiance: ThemePlateau['ambiance']) {
   if (ambiance === 'mer') return { haut: '#1f7fcf', bas: '#b9e8ff' };
-  if (ambiance === 'plateforme') return { haut: '#0c0a18', bas: '#3a2a50' };
+  if (ambiance === 'plateforme') return { haut: '#1f8a9c', bas: '#9be3e6' };
   return { haut: '#4fb3f2', bas: '#dff6ff' };
 }
 
@@ -62,7 +62,7 @@ export function Environnement({ theme, taille, reduced }: { theme: ThemePlateau;
     <>
       <Ciel haut={cie.haut} bas={cie.bas} />
       {theme.ambiance === 'mer' && <Mer theme={theme} taille={taille} reduced={reduced} />}
-      {theme.ambiance === 'plateforme' && <Plateforme theme={theme} taille={taille} />}
+      {theme.ambiance === 'plateforme' && <Plateforme taille={taille} reduced={reduced} />}
       {theme.ambiance === 'pelouse' && <Pelouse theme={theme} taille={taille} />}
       {theme.ambiance !== 'plateforme' && <Nuages />}
     </>
@@ -416,63 +416,63 @@ function Pingouin({
   );
 }
 
-function Plateforme({ theme, taille }: { theme: ThemePlateau; taille: Taille }) {
-  const piliers = useMemo(
-    () => autour(10, taille.largeur, taille.hauteur, 2.5, 18, 37),
+/**
+ * L’arène : des bulles translucides flottent autour du plateau, au-dessus d’un vide turquoise. Le plateau
+ * a son anneau orangé (dans socleDe) ; ici, seulement le décor qui l’entoure.
+ */
+function Bulles({ taille, reduced }: { taille: Taille; reduced: boolean }) {
+  const points = useMemo(
+    () => autour(22, taille.largeur, taille.hauteur, 1.8, 17, 67),
     [taille.largeur, taille.hauteur],
   );
-  const roches = useMemo(() => autour(7, taille.largeur, taille.hauteur, 4, 30, 91), [taille.largeur, taille.hauteur]);
-  const pierre = useMemo(
-    () => new THREE.MeshStandardMaterial({ map: texPierre(theme.mur.couleur, theme.mur.joint, 47), roughness: 0.9 }),
-    [theme.mur.couleur, theme.mur.joint],
+  const hauteurs = useMemo(() => points.map((p) => 1 + p.aleat * 7), [points]);
+  const groupes = useRef<Array<THREE.Group | null>>([]);
+  const materiau = useMemo(
+    () =>
+      new THREE.MeshStandardMaterial({
+        color: '#e9fbff',
+        transparent: true,
+        opacity: 0.5,
+        roughness: 0.08,
+        depthWrite: false,
+      }),
+    [],
   );
-  const roche = useMemo(() => new THREE.MeshStandardMaterial({ color: '#2a2f3a', roughness: 1 }), []);
-  const lueur = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: theme.ballon, emissive: theme.ballon, emissiveIntensity: 2.2 }),
-    [theme.ballon],
-  );
-  useEffect(
-    () => () => {
-      pierre.map?.dispose();
-      pierre.dispose();
-      roche.dispose();
-      lueur.dispose();
-    },
-    [pierre, roche, lueur],
-  );
+  useEffect(() => () => materiau.dispose(), [materiau]);
+  useFrame((state) => {
+    if (reduced) return;
+    const t = state.clock.elapsedTime;
+    hauteurs.forEach((h, i) => {
+      const g = groupes.current[i];
+      if (g) g.position.y = h + Math.sin(t * 0.8 + i) * 0.25;
+    });
+  });
   return (
     <group>
-      {/* Le vide, très bas : la plateforme est suspendue au-dessus. */}
+      {points.map((p, i) => (
+        <group
+          key={i}
+          ref={(g) => {
+            groupes.current[i] = g;
+          }}
+          position={[p.x, hauteurs[i] ?? 1, p.z]}
+        >
+          <mesh geometry={GEO.sphere} material={materiau} scale={0.5 + p.aleat * 0.9} />
+        </group>
+      ))}
+    </group>
+  );
+}
+
+function Plateforme({ taille, reduced }: { taille: Taille; reduced: boolean }) {
+  return (
+    <group>
+      {/* Le vide, très bas : le plateau flotte au-dessus d’une mer turquoise. */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -6, 0]}>
         <planeGeometry args={[140, 140]} />
-        <meshStandardMaterial color="#262a4a" roughness={1} />
+        <meshStandardMaterial color="#1d6470" roughness={1} />
       </mesh>
-      {roches.map((p, i) => (
-        <Forme
-          key={`r${i}`}
-          geometrie={GEO.rocher}
-          materiau={roche}
-          contour={0.03}
-          position={[p.x, -4 - p.aleat * 3, p.z]}
-          rotation={[p.aleat, p.aleat * 2, 0]}
-          scale={2 + p.aleat * 2.5}
-        />
-      ))}
-      {piliers.map((p, i) => {
-        const hauteur = 4 + p.aleat * 5;
-        return (
-          <group key={`p${i}`} position={[p.x, 0, p.z]}>
-            <Forme
-              geometrie={GEO.cylindre}
-              materiau={pierre}
-              contour={0.035}
-              position={[0, hauteur / 2 - 6, 0]}
-              scale={[0.65, hauteur, 0.65]}
-            />
-            <mesh position={[0, hauteur - 5.8, 0]} geometry={GEO.sphere} material={lueur} scale={0.22} />
-          </group>
-        );
-      })}
+      <Bulles taille={taille} reduced={reduced} />
     </group>
   );
 }
@@ -553,13 +553,10 @@ function formesDesMurs(theme: ThemePlateau): Array<{
   if (theme.ambiance === 'pelouse') {
     return [
       {
-        geometrie: GEO.sphere,
-        copies: 2,
+        geometrie: GEO.bloc,
+        copies: 1,
         contour: 0.045,
-        decalages: [
-          { x: 0, y: 0.5, z: 0, sx: 0.46, sy: 0.46, sz: 0.46 },
-          { x: 0.2, y: 0.36, z: 0.14, sx: 0.28, sy: 0.28, sz: 0.28 },
-        ],
+        decalages: [{ x: 0, y: 0.45, z: 0, sx: 0.9, sy: 0.9, sz: 0.9 }],
       },
     ];
   }
@@ -582,10 +579,10 @@ function formesDesMurs(theme: ThemePlateau): Array<{
   }
   return [
     {
-      geometrie: GEO.cylindre,
+      geometrie: GEO.bloc,
       copies: 1,
-      contour: 0.035,
-      decalages: [{ x: 0, y: HAUT_MUR / 2, z: 0, sx: 0.44, sy: HAUT_MUR, sz: 0.44 }],
+      contour: 0.04,
+      decalages: [{ x: 0, y: HAUT_MUR / 2, z: 0, sx: 0.9, sy: HAUT_MUR, sz: 0.9 }],
     },
     {
       geometrie: GEO.dome,

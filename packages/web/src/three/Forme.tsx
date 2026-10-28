@@ -1,3 +1,4 @@
+import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 
@@ -50,4 +51,6 @@ export const GEO = {
   cone: new THREE.ConeGeometry(1, 1, 10),
   cube: new THREE.BoxGeometry(1, 1, 1),
   rocher: new THREE.DodecahedronGeometry(1, 0),
+  /** Un bloc aux arêtes arrondies, comme les murs de Bombes party. */
+  bloc: new RoundedBoxGeometry(1, 1, 1, 4, 0.14),
 };
