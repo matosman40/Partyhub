@@ -137,7 +137,9 @@ export function creerDecor(largeur: number, hauteur: number, options: { forme?: 
         ligne += bord || dehors ? '#' : '.';
         continue;
       }
-      const pilier = decor === 'piliers' && x % 2 === 0 && y % 2 === 0;
+      // Piliers une case sur deux (Bomberman), ou un pilier sur seize pour le décor épars.
+      const pilier =
+        (decor === 'piliers' && x % 2 === 0 && y % 2 === 0) || (decor === 'epars' && x % 4 === 2 && y % 4 === 2);
       ligne += bord || pilier ? '#' : '.';
     }
     lignes.push(ligne);

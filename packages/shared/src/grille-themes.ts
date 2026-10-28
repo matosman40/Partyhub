@@ -17,8 +17,8 @@ export type Ambiance = 'pelouse' | 'mer' | 'plateforme' | 'gymnase';
 
 /** La forme du plateau : un rectangle, ou un disque (les cases hors du disque sont des murs). */
 export type Forme = 'carree' | 'ronde';
-/** Le décor intérieur : des piliers façon Bomberman, ou seulement le bord. */
-export type Decor = 'piliers' | 'bord';
+/** Le décor intérieur : des piliers façon Bomberman, quelques piliers épars, ou seulement le bord. */
+export type Decor = 'piliers' | 'epars' | 'bord';
 
 export type MotifSol = 'herbe' | 'dalles' | 'glace' | 'court' | 'mousse';
 export type MotifMur = 'feuillage' | 'pierre' | 'glace' | 'prise';
@@ -71,9 +71,9 @@ export const THEMES_PLATEAU: Record<ThemeId, ThemePlateau> = {
     caisse: { couleur: '#b9783f', trait: '#6b4220' },
     boite: '#e0b57a',
     ballon: '#ef4444',
-    densiteCaisses: 0.18,
+    densiteCaisses: 0.1,
     forme: 'carree',
-    decor: 'piliers',
+    decor: 'epars',
   },
   arene: {
     id: 'arene',
@@ -92,9 +92,9 @@ export const THEMES_PLATEAU: Record<ThemeId, ThemePlateau> = {
     caisse: { couleur: '#e8733a', trait: '#7a2f14' },
     boite: '#d8dbe6',
     ballon: '#ffd23f',
-    densiteCaisses: 0.12,
+    densiteCaisses: 0.08,
     forme: 'carree',
-    decor: 'piliers',
+    decor: 'epars',
   },
   banquise: {
     id: 'banquise',
@@ -112,9 +112,9 @@ export const THEMES_PLATEAU: Record<ThemeId, ThemePlateau> = {
     caisse: { couleur: '#c58b52', trait: '#6b4220' },
     boite: '#f0f8ff',
     ballon: '#ff7a59',
-    densiteCaisses: 0.2,
+    densiteCaisses: 0.1,
     forme: 'carree',
-    decor: 'piliers',
+    decor: 'epars',
   },
   'arene-ronde': {
     id: 'arene-ronde',
@@ -133,7 +133,7 @@ export const THEMES_PLATEAU: Record<ThemeId, ThemePlateau> = {
     caisse: { couleur: '#e8733a', trait: '#7a2f14' },
     boite: '#d8dbe6',
     ballon: '#ffd23f',
-    densiteCaisses: 0.1,
+    densiteCaisses: 0.06,
     forme: 'ronde',
     decor: 'bord',
   },
@@ -175,9 +175,9 @@ export const THEMES_PLATEAU: Record<ThemeId, ThemePlateau> = {
     caisse: { couleur: '#e8733a', trait: '#7a2f14' },
     boite: '#d8dbe6',
     ballon: '#ff4d6d',
-    densiteCaisses: 0.14,
+    densiteCaisses: 0.08,
     forme: 'carree',
-    decor: 'piliers',
+    decor: 'epars',
   },
 };
 
