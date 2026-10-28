@@ -12,7 +12,7 @@ import {
 } from '@partyhub/shared';
 import { Character, usePrefersReducedMotion, type GrilleApparence } from '@partyhub/games/client';
 import { canvasTexture } from './canvas-texture';
-import { Environnement, MurDecor, hasard } from './Ambiance3D';
+import { Environnement, MurDecor, hasard, socleDe } from './Ambiance3D';
 
 /**
  * Plateau en grille en 3D, plein écran sur la TV. Le décor (sol, murs, caisses, ballons, boîtes) est en
@@ -242,23 +242,32 @@ function Decor({ etat, theme, reduced }: { etat: EtatGrille; theme: ThemePlateau
       if (etat.decor[y]?.[x] === '#') murs.push([x, y]);
     }
   }
-  // Le socle : un bord de pelouse, une berge de glace au-dessus de l’eau, ou un plateau épais au-dessus du vide.
-  const socle =
-    theme.ambiance === 'mer'
-      ? { y: -0.14, h: 0.36 }
-      : theme.ambiance === 'plateforme'
-        ? { y: -0.75, h: 1.5 }
-        : { y: -0.12, h: 0.2 };
+  // Le plateau est un bloc : dessus = sol peint, flancs de la couleur du lieu, bord clair autour.
+  const socle = socleDe(theme.ambiance);
+  const flancs = useMemo(() => new THREE.MeshToonMaterial({ color: socle.flanc }), [socle.flanc]);
+  const dessus = useMemo(() => new THREE.MeshToonMaterial({ map: tex.sol }), [tex]);
+  const rebord = useMemo(() => new THREE.MeshToonMaterial({ color: socle.rebord }), [socle.rebord]);
+  useEffect(
+    () => () => {
+      flancs.dispose();
+      dessus.dispose();
+      rebord.dispose();
+    },
+    [flancs, dessus, rebord],
+  );
   return (
     <group>
-      <Environnement theme={theme} taille={{ largeur: etat.largeur, hauteur: etat.hauteur }} reduced={reduced} />
-      <mesh position={[0, socle.y, 0]} receiveShadow castShadow>
-        <boxGeometry args={[etat.largeur + 1.2, socle.h, etat.hauteur + 1.2]} />
-        <meshStandardMaterial color={theme.mur.joint} roughness={0.9} />
+      <Environnement theme={theme} taille={{ largeur, hauteur }} reduced={reduced} />
+      <mesh position={[0, -socle.epaisseur / 2 - 0.06, 0]} receiveShadow castShadow material={rebord}>
+        <boxGeometry args={[largeur + 1.2, socle.epaisseur, hauteur + 1.2]} />
       </mesh>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
-        <planeGeometry args={[etat.largeur, etat.hauteur]} />
-        <meshStandardMaterial map={tex.sol} roughness={0.95} />
+      <mesh
+        position={[0, -socle.epaisseur / 2, 0]}
+        receiveShadow
+        castShadow
+        material={[flancs, flancs, dessus, flancs, flancs, flancs]}
+      >
+        <boxGeometry args={[largeur, socle.epaisseur, hauteur]} />
       </mesh>
       {murs.map(([x, y]) => (
         <MurDecor key={`m${x}-${y}`} theme={theme} x={monX(x, etat)} z={monZ(y, etat)} texture={tex.mur} />
@@ -267,7 +276,7 @@ function Decor({ etat, theme, reduced }: { etat: EtatGrille; theme: ThemePlateau
   );
 }
 
-/** Un objet 3D : caisse, ballon ou boîte. Sa place est tenue à jour par la boucle d’animation. */
+/** Un objet 3D : caisse, ballon ou cadeau. Sa place est tenue à jour par la boucle d’animation. */
 function ObjetMesh({ objet, mon, theme }: { objet: ObjetGrille; mon: Mon; theme: ThemePlateau }) {
   const ref = (m: THREE.Object3D | null) => {
     if (m) mon.objets.set(objet.id, m);
@@ -275,24 +284,47 @@ function ObjetMesh({ objet, mon, theme }: { objet: ObjetGrille; mon: Mon; theme:
   };
   if (objet.nature === 'ballon') {
     return (
-      <mesh ref={ref} castShadow>
-        <sphereGeometry args={[RAYON_BALLON, 28, 20]} />
-        <meshStandardMaterial color={theme.ballon} roughness={0.35} metalness={0.05} />
-      </mesh>
+      <group ref={ref}>
+        <mesh castShadow>
+          <sphereGeometry args={[RAYON_BALLON, 28, 20]} />
+          <meshToonMaterial color={theme.ballon} />
+        </mesh>
+        {/* Un reflet blanc, pour un ballon brillant. */}
+        <mesh position={[-RAYON_BALLON * 0.35, RAYON_BALLON * 0.45, RAYON_BALLON * 0.7]}>
+          <sphereGeometry args={[RAYON_BALLON * 0.22, 10, 8]} />
+          <meshToonMaterial color="#ffffff" />
+        </mesh>
+      </group>
     );
   }
   if (objet.nature === 'boite') {
+    // Un cadeau : une boîte, un ruban en croix et un nœud dessus.
+    const ruban = theme.ballon;
     return (
-      <mesh ref={ref} castShadow>
-        <boxGeometry args={[TAILLE_BOITE, TAILLE_BOITE, TAILLE_BOITE]} />
-        <meshStandardMaterial color={theme.boite} roughness={0.85} />
-      </mesh>
+      <group ref={ref}>
+        <mesh castShadow>
+          <boxGeometry args={[TAILLE_BOITE, TAILLE_BOITE, TAILLE_BOITE]} />
+          <meshToonMaterial color={theme.boite} />
+        </mesh>
+        <mesh position={[0, 0, 0]}>
+          <boxGeometry args={[TAILLE_BOITE * 1.02, TAILLE_BOITE * 1.02, TAILLE_BOITE * 0.18]} />
+          <meshToonMaterial color={ruban} />
+        </mesh>
+        <mesh position={[0, 0, 0]}>
+          <boxGeometry args={[TAILLE_BOITE * 0.18, TAILLE_BOITE * 1.02, TAILLE_BOITE * 1.02]} />
+          <meshToonMaterial color={ruban} />
+        </mesh>
+        <mesh position={[0, TAILLE_BOITE / 2 + 0.07, 0]} castShadow>
+          <sphereGeometry args={[0.1, 10, 8]} />
+          <meshToonMaterial color={ruban} />
+        </mesh>
+      </group>
     );
   }
   return (
     <mesh ref={ref} castShadow receiveShadow>
       <boxGeometry args={[TAILLE_CAISSE, TAILLE_CAISSE, TAILLE_CAISSE]} />
-      <meshStandardMaterial color={theme.caisse.couleur} roughness={0.8} />
+      <meshToonMaterial color={theme.caisse.couleur} />
     </mesh>
   );
 }
@@ -435,7 +467,12 @@ export default function GrilleBoard3D({ etat, apparences, label, theme }: Grille
   const decor = themeDePlateau(theme);
   const personnages = Object.values(etat.personnages);
   return (
-    <div className="grille3d" role="group" aria-label={label} style={{ background: decor.fond }}>
+    <div
+      className="grille3d"
+      role="group"
+      aria-label={label}
+      style={{ background: `linear-gradient(180deg, ${decor.ciel} 0%, ${decor.fond} 88%)` }}
+    >
       <Canvas
         camera={{ position: [0, 10, 8], fov: 36 }}
         shadows
