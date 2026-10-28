@@ -5,6 +5,7 @@ export * from './schemas.js';
 export * from './avatars.js';
 export * from './characters.js';
 export * from './lobby-presence.js';
+export * from './grille.js';
 export * from './card-games.js';
 export * from './card-csv.js';
 export * from './board-games.js';

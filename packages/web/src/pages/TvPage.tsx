@@ -1,6 +1,6 @@
 import { Suspense, lazy, useEffect, useState, type CSSProperties } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import type { ChampionshipSettings, CharacterMood, ChatMessage, HostRoomView } from '@partyhub/shared';
+import type { ChampionshipSettings, ChatMessage, HostRoomView } from '@partyhub/shared';
 import { DEVICE_KIND_ICONS, DEVICE_KIND_LABELS } from '@partyhub/shared';
 import { getSocket } from '../realtime.js';
 import { viewsFor } from '../games.js';
@@ -9,8 +9,7 @@ import { GameLogo } from '../components/GameLogo.js';
 import { GameScene } from '../components/GameScene.js';
 import { logoFor } from '../components/gameLogos.js';
 import { useArrivalMoods } from '../components/useArrivalMoods.js';
-import { poseOf, useLobbyMoods } from '../components/useLobbyMoods.js';
-import { useLobbyPositions } from '../components/useLobbyPositions.js';
+import { useLobbyMoods } from '../components/useLobbyMoods.js';
 import { RoomSensors } from '../components/RoomSensors.js';
 import { ChatPanel, EmoteBar, ReactionLayer } from '../components/Social.js';
 import { VoiceLayer } from '../components/VoiceLayer.js';
@@ -65,16 +64,6 @@ export function TvPage() {
   const arrivals = useArrivalMoods(view ? view.lobby.players.map((p) => p.name) : []);
   // Émotions du salon (par identifiant) et saluts d’arrivée (par pseudo) réunis par identifiant.
   const emotes = useLobbyMoods(getSocket());
-  const positions = useLobbyPositions(getSocket());
-  const lobbyPoses: Record<string, CharacterMood> = {
-    ...Object.fromEntries(Object.entries(emotes).map(([id, e]) => [id, poseOf(e)])),
-    ...Object.fromEntries(
-      Object.entries(arrivals).flatMap(([name, mood]) => {
-        const id = view?.lobby.players.find((p) => p.name === name)?.id;
-        return id ? [[id, mood]] : [];
-      }),
-    ),
-  };
   // Menu discret et commandes de partie : elles reviennent au moindre mouvement, puis s’effacent.
   // Code pour ouvrir l’écran hôte sur un téléphone (affiché dans le salon, jamais envoyé aux joueurs).
   const [handoff, setHandoff] = useState<HandoffCode | null>(null);
@@ -490,9 +479,7 @@ export function TvPage() {
                 lobby={lobby}
                 joinUrl={joinUrl}
                 canStart={canStart}
-                poses={lobbyPoses}
                 emotes={emotes}
-                positions={positions}
                 onStart={() => emitAck('host:start')}
                 handoff={handoff}
                 onHandoff={createHandoff}

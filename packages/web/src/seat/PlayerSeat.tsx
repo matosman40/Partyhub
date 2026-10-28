@@ -2,16 +2,16 @@ import { Suspense, useCallback, useEffect, useRef, useState, type FormEvent, typ
 import {
   PLATEAU_TEST_ID,
   PROFILE_SESSION_EXPIRED,
+  type ActionGrille,
   type ChatMessage,
   type LobbyMoodChoice,
-  type LobbyPosition,
   type PlayerRoomView,
   type SensorSample,
 } from '@partyhub/shared';
 import { createSocket, type AppSocket } from '../realtime.js';
 import { newId } from '../api.js';
 import { viewsFor } from '../games.js';
-import { AvatarsContext, PauseContext, SensorSenderContext } from '@partyhub/games/client';
+import { AvatarsContext, GrilleCommandes, PauseContext, SensorSenderContext } from '@partyhub/games/client';
 import { PlayerAvatar } from '../components/PlayerAvatar.js';
 import { ChatPanel, EmoteBar } from '../components/Social.js';
 import { Link } from 'react-router-dom';
@@ -23,10 +23,10 @@ import { ConnectingNotice } from '../components/ConnectingNotice.js';
 import { PendingNotice } from '../components/PendingNotice.js';
 import { rememberMyRoom } from './my-rooms.js';
 import { ACK_TIMEOUT_MS, canSend, NO_ANSWER_ERROR, OFFLINE_ACTION_ERROR, useConnection } from '../connection.js';
-import { LobbyHeads, LobbyMoodBar, LobbyPlateau } from '../components/LobbyPlateau.js';
+import { LobbyHeads, LobbyMoodBar } from '../components/LobbyPlateau.js';
+import { LobbyGrille } from '../components/LobbyGrille.js';
 import { TestModeBadge } from '../components/TestModeBadge.js';
-import { poseOf, useLobbyMoods } from '../components/useLobbyMoods.js';
-import { useLobbyPositions } from '../components/useLobbyPositions.js';
+import { useLobbyMoods } from '../components/useLobbyMoods.js';
 import { NoticeDialog } from '../components/NoticeDialog.js';
 import { GameViewBoundary } from '../components/GameView.js';
 import { Qr } from '../components/Qr.js';
@@ -124,8 +124,6 @@ export function PlayerSeat({
   const profileRef = useRef({ profileId, profileToken });
   profileRef.current = { profileId, profileToken };
   const emotes = useLobbyMoods(socket);
-  const positions = useLobbyPositions(socket);
-  const poses = Object.fromEntries(Object.entries(emotes).map(([id, e]) => [id, poseOf(e)]));
   const [joined, setJoined] = useState(false);
   const [view, setView] = useState<PlayerRoomView | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -327,10 +325,12 @@ export function PlayerSeat({
     socket.volatile.emit('player:sensor', sample);
   }
 
-  function sendLobbyMove(position: LobbyPosition) {
-    if (!connected) return;
-    // Les refus de déplacement (débit, fin du salon) ne sont pas affichés : la place revient d’elle-même.
-    socket.emit('player:lobby-move', position, () => undefined);
+  /** Un geste sur le plateau en grille. Le message d’erreur (refus du plateau) est rendu par les commandes. */
+  function sendGrille(action: ActionGrille): Promise<string | null> {
+    if (!connected) return Promise.resolve(OFFLINE_ACTION_ERROR);
+    return new Promise((resolve) => {
+      socket.emit('player:grille', action, (res) => resolve(res.ok ? null : res.error));
+    });
   }
 
   function sendLobbyMood(choice: LobbyMoodChoice) {
@@ -592,15 +592,17 @@ export function PlayerSeat({
               ))}
             {lobby.game.id === PLATEAU_TEST_ID ? (
               !compact && (
-                <LobbyPlateau
-                  players={lobby.players}
-                  poses={poses}
-                  emotes={emotes}
-                  positions={positions}
-                  me={you.id}
-                  onMove={sendLobbyMove}
-                  label="Salon : déplacez votre personnage"
-                />
+                <>
+                  {lobby.grille && (
+                    <LobbyGrille
+                      etat={lobby.grille}
+                      players={lobby.players}
+                      me={you.id}
+                      label="Plateau de test : vos gestes"
+                    />
+                  )}
+                  <GrilleCommandes onAction={sendGrille} disabled={!connected} />
+                </>
               )
             ) : (
               <>

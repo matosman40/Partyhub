@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { Server, Socket } from 'socket.io';
 import {
+  actionGrilleSchema,
   actionSchema,
   chatSchema,
   championshipSchema,
@@ -208,6 +209,8 @@ export class RealtimeHub {
     // Capteurs : débit propre à la socket (pas de compte dans les commandes), relayé sans accusé.
     const sensorLimiter = new RateLimiter(SENSOR_MAX_PER_SECOND, 1000);
     const lobbyMoodLimiter = new RateLimiter(() => 6 * this.cadence(), 4000);
+    // Un geste du plateau : une case par pas, à peu près quatre gestes par seconde au plus.
+    const grilleLimiter = new RateLimiter(12, 3000);
     // Voix : une toutes les quelques secondes et par socket ; la salle a aussi sa file d’attente côté écran.
     // Le mode test multiplie ces deux cadences par son facteur.
     const voiceLimiter = new RateLimiter(() => 3 * this.cadence(), 10_000);
@@ -556,6 +559,17 @@ export class RealtimeHub {
         face: 'face' in choice ? choice.face : null,
       });
       ack({ ok: true });
+    });
+
+    socket.on('player:grille', (p, ack) => {
+      if (limited(ack)) return;
+      const current = this.playerRoomOf(socket);
+      if (!current) return invalid(ack, 'Vous n’êtes pas dans une salle.');
+      if (!grilleLimiter.take()) return ack({ ok: false, error: 'Doucement avec les gestes.' });
+      const parsed = actionGrilleSchema.safeParse(p);
+      if (!parsed.success) return invalid(ack);
+      const done = current.room.grilleAction(current.playerId, parsed.data);
+      ack(done.ok ? { ok: true } : done);
     });
 
     socket.on('player:reaction', (p, ack) => {

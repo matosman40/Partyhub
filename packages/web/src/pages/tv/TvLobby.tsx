@@ -1,8 +1,8 @@
-import { PLATEAU_TEST_ID, type CharacterMood, type HostRoomView } from '@partyhub/shared';
-import type { LobbyPosition } from '@partyhub/shared';
+import { PLATEAU_TEST_ID, type HostRoomView } from '@partyhub/shared';
 import { Qr } from '../../components/Qr.js';
 import { GameLogo } from '../../components/GameLogo.js';
-import { LobbyHeads, LobbyPlateau } from '../../components/LobbyPlateau.js';
+import { LobbyHeads } from '../../components/LobbyPlateau.js';
+import { LobbyGrille } from '../../components/LobbyGrille.js';
 import { TestModeBadge } from '../../components/TestModeBadge.js';
 import type { LobbyEmote } from '../../components/useLobbyMoods.js';
 
@@ -20,9 +20,7 @@ export function TvLobby({
   lobby,
   joinUrl,
   canStart,
-  poses,
   emotes,
-  positions,
   onStart,
   handoff,
   onHandoff,
@@ -31,9 +29,7 @@ export function TvLobby({
   lobby: HostRoomView['lobby'];
   joinUrl: string;
   canStart: boolean;
-  poses: Record<string, CharacterMood>;
   emotes: Record<string, LobbyEmote>;
-  positions: Record<string, LobbyPosition>;
   onStart: () => void;
   handoff: HandoffCode | null;
   onHandoff: () => void;
@@ -64,14 +60,8 @@ export function TvLobby({
 
         <TestModeBadge />
         <div className="stage-people">
-          {isTest ? (
-            <LobbyPlateau
-              players={lobby.players}
-              poses={poses}
-              emotes={emotes}
-              positions={positions}
-              label="Plateau de test"
-            />
+          {isTest && lobby.grille ? (
+            <LobbyGrille etat={lobby.grille} players={lobby.players} label="Plateau de test" />
           ) : (
             <>
               <p className="stage-label">

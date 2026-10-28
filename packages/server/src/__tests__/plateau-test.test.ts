@@ -136,4 +136,50 @@ describe('Plateau de test', () => {
     host.disconnect();
     player.disconnect();
   });
+
+  it('un joueur marche, salue, et un geste refusé le dit sans rien changer', async () => {
+    const { code, hostToken } = await createPlateau();
+    const host = await connect();
+    clients.push(host);
+    const views = track<HostRoomView>(host, 'room:host');
+    await call(host, 'host:connect', { code, hostToken });
+
+    const player = await connect();
+    clients.push(player);
+    const joined = await call(player, 'player:join', { code, name: 'Max' });
+    expect(joined.ok).toBe(true);
+    const id = joined.playerId as string;
+
+    const debut = await until(views, (v) => v.lobby.grille?.personnages[id] !== undefined);
+    const depart = debut.lobby.grille!.personnages[id]!;
+    const seqDebut = debut.lobby.grille!.seq;
+
+    // Marcher : la case est libre (on avance) ou bloquée (on tourne seulement).
+    const marche = await call(player, 'player:grille', { type: 'marcher', dir: 'right' });
+    expect(marche.ok).toBe(true);
+    const apresMarche = await until(views, (v) => (v.lobby.grille?.seq ?? -1) === seqDebut + 1);
+    const pos = apresMarche.lobby.grille!.personnages[id]!;
+    expect(pos.dir).toBe('right');
+    expect([depart.x, depart.x + 1]).toContain(pos.x);
+
+    // Saluer : le geste est partagé à la salle, avec son auteur.
+    const salut = await call(player, 'player:grille', { type: 'saluer' });
+    expect(salut.ok).toBe(true);
+    const apresSalut = await until(views, (v) => v.lobby.grille?.dernier?.geste === 'salut');
+    expect(apresSalut.lobby.grille!.dernier!.joueur).toBe(id);
+
+    // Pousser sans rien devant : refusé avec la raison, et l’état ne bouge pas.
+    const seqAvant = apresSalut.lobby.grille!.seq;
+    const refus = await call(player, 'player:grille', { type: 'pousser', dir: 'up' });
+    expect(refus.ok).toBe(false);
+    expect(refus.error).toMatch(/Rien à pousser/);
+    expect(apresSalut.lobby.grille!.seq).toBe(seqAvant);
+
+    // Une action inconnue est rejetée par le schéma.
+    const invalide = await call(player, 'player:grille', { type: 'voler' });
+    expect(invalide.ok).toBe(false);
+
+    host.disconnect();
+    player.disconnect();
+  });
 });

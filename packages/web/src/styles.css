@@ -12593,3 +12593,330 @@ input[type='file']::file-selector-button {
   border-radius: 0;
   box-shadow: none;
 }
+
+/* Plateau en grille (façon Bomberman) : décor, objets, personnages du profil, commandes. */
+.grille {
+  --cols: 13;
+  --rows: 11;
+  position: relative;
+  width: min(100%, calc(60vh * var(--cols) / var(--rows)));
+  aspect-ratio: var(--cols) / var(--rows);
+  margin-inline: auto;
+  border-radius: 14px;
+  overflow: hidden;
+  isolation: isolate;
+  background: #3f2a1a;
+  box-shadow:
+    inset 0 0 0 4px #2a1a10,
+    0 18px 36px -18px rgba(0, 0, 0, 0.6);
+  user-select: none;
+}
+
+.grille-decor {
+  position: absolute;
+  inset: 0;
+  display: grid;
+}
+
+.grille-case.is-sol {
+  background: #6cc063;
+  box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.08);
+}
+
+.grille-case.is-mur {
+  background:
+    repeating-linear-gradient(0deg, transparent 0 14px, rgba(0, 0, 0, 0.18) 14px 16px),
+    repeating-linear-gradient(90deg, #9a6a44 0 24px, #7a4f2a 24px 26px);
+  background-color: #8a5a3b;
+  box-shadow:
+    inset 0 -5px 0 rgba(0, 0, 0, 0.25),
+    inset 0 0 0 2px #5b3a24;
+}
+
+.grille-scene {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  pointer-events: none;
+}
+
+.grille-objet,
+.grille-personnage {
+  position: absolute;
+  margin: 0;
+  padding: 0;
+  transition:
+    left 0.18s ease-out,
+    top 0.18s ease-out;
+}
+
+.grille-objet.is-caisse {
+  box-sizing: border-box;
+  border: 3px solid #5b3a1e;
+  border-radius: 4px;
+  background:
+    linear-gradient(45deg, transparent 46%, #6b4220 46% 54%, transparent 54%),
+    linear-gradient(-45deg, transparent 46%, #6b4220 46% 54%, transparent 54%),
+    linear-gradient(135deg, #d39a57, #a5692f);
+}
+
+.grille-objet.is-ballon {
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #fff 0 8%, #ff6b6b 10% 58%, #b52424 100%);
+  box-shadow: inset -3px -4px 0 rgba(0, 0, 0, 0.2);
+}
+
+.grille-objet.is-boite {
+  box-sizing: border-box;
+  border: 2px solid #8a5a2b;
+  border-radius: 3px;
+  background:
+    linear-gradient(90deg, transparent 42%, #e9c99a 42% 58%, transparent 58%), linear-gradient(180deg, #e2b985, #c9975a);
+}
+
+/* Une boîte portée reste au-dessus de la tête de son porteur. */
+.grille-objet.is-porte {
+  transform: translateY(-62%) scale(0.6);
+}
+
+.grille-personnage {
+  transition:
+    left 0.18s ease-out,
+    top 0.18s ease-out;
+}
+
+.grille-personnage.is-away {
+  opacity: 0.45;
+}
+
+.grille-face {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 165%;
+  transition: transform 0.15s ease-out;
+  transform-origin: 50% 100%;
+}
+
+.grille-bob {
+  width: 100%;
+  height: 100%;
+}
+
+.grille-bob > * {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.grille-initiale {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  font-weight: 800;
+  color: #fff;
+  background: #4b3a7a;
+  border-radius: 50%;
+}
+
+.grille-nom {
+  position: absolute;
+  left: 50%;
+  top: -1.1rem;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 0.25em;
+  align-items: center;
+  max-width: 16ch;
+  padding: 0 0.45em;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.grille-tag {
+  font-size: 0.6rem;
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+.grille-personnage.is-own .grille-nom {
+  background: #1f6feb;
+}
+
+.grille-personnage.is-own::after {
+  content: '';
+  position: absolute;
+  left: 15%;
+  right: 15%;
+  bottom: 2%;
+  height: 12%;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.6);
+}
+
+/* Gestes : rejoués une fois, pour le personnage qui vient de jouer. */
+.grille-personnage.is-geste-saut .grille-bob {
+  animation: grille-saut 0.5s ease-out;
+}
+
+.grille-personnage.is-geste-pousse .grille-bob {
+  animation: grille-pousse 0.3s ease-out;
+}
+
+.grille-personnage.is-geste-salut .grille-bob {
+  animation: grille-salut 0.6s ease-in-out 2;
+}
+
+@keyframes grille-saut {
+  0% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-35%);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+@keyframes grille-pousse {
+  0% {
+    transform: scale(1, 1);
+  }
+  50% {
+    transform: scale(1.08, 0.92);
+  }
+  100% {
+    transform: scale(1, 1);
+  }
+}
+
+@keyframes grille-salut {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(-6deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .grille-objet,
+  .grille-personnage,
+  .grille-face {
+    transition: none;
+  }
+  .grille-bob {
+    animation: none !important;
+  }
+}
+
+.grille-commandes {
+  display: grid;
+  justify-items: center;
+  gap: 0.6rem;
+  margin-top: 0.8rem;
+}
+
+.grille-modes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+.grille-mode {
+  min-height: 44px;
+  padding: 0.4rem 0.9rem;
+  border: 2px solid #7a4f2a;
+  border-radius: 999px;
+  background: #fff8ec;
+  color: #2b1a0c;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.grille-mode.is-active {
+  background: #7a4f2a;
+  color: #fff;
+}
+
+.grille-aide {
+  max-width: 36ch;
+  margin: 0;
+  text-align: center;
+}
+
+.grille-pad {
+  display: grid;
+  grid-template-columns: repeat(3, 64px);
+  grid-template-rows: repeat(3, 64px);
+  gap: 6px;
+}
+
+.grille-dir,
+.grille-saluer {
+  min-height: 44px;
+  border: 2px solid #7a4f2a;
+  border-radius: 16px;
+  background: #fff8ec;
+  color: #2b1a0c;
+  font: inherit;
+  cursor: pointer;
+}
+
+.grille-dir {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.grille-dir-up {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.grille-dir-left {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.grille-dir-right {
+  grid-column: 3;
+  grid-row: 2;
+}
+
+.grille-dir-down {
+  grid-column: 2;
+  grid-row: 3;
+}
+
+.grille-saluer {
+  grid-column: 3;
+  grid-row: 3;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.grille-dir:disabled,
+.grille-saluer:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.grille-erreur {
+  margin: 0;
+  color: #b42318;
+  text-align: center;
+}

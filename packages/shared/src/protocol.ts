@@ -1,4 +1,5 @@
 import type { LobbyMoodChoice, LobbyMoodEvent, LobbyPosition, LobbyPositionEvent } from './lobby-presence.js';
+import type { ActionGrille, EtatGrille } from './grille.js';
 import type { GameCategory, GameNotice, ScoreEntry } from './game-types.js';
 import type { GameDetails } from './schemas.js';
 import type { DeviceInfo, DeviceKind } from './devices.js';
@@ -174,6 +175,8 @@ export interface LobbyView {
   championship: ChampionshipSettings;
   series: SeriesView | null;
   lastResult: LastResultView | null;
+  /** Plateau en grille du salon de test (null dans les autres salles). */
+  grille: EtatGrille | null;
 }
 
 export interface HostRoomView {
@@ -294,6 +297,7 @@ export interface ClientToServerEvents {
   'player:reaction': (p: { emoji: string }, ack: Ack) => void;
   'player:lobby-move': (p: LobbyPosition, ack: Ack) => void;
   'player:lobby-mood': (p: LobbyMoodChoice, ack: Ack) => void;
+  'player:grille': (p: ActionGrille, ack: Ack) => void;
   'player:voice': (p: { id: string }, ack: Ack) => void;
   /** Capteurs du téléphone : pas d’accusé, relayé seulement aux écrans pendant une partie. */
   'player:sensor': (p: SensorSample) => void;

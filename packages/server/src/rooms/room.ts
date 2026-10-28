@@ -1,4 +1,14 @@
-import { clampLobbyPosition, type LobbyPosition } from '@partyhub/shared';
+import {
+  ajouterPersonnage,
+  appliquerAction,
+  clampLobbyPosition,
+  creerGrille,
+  PLATEAU_TEST_ID,
+  retirerPersonnage,
+  type ActionGrille,
+  type EtatGrille,
+  type LobbyPosition,
+} from '@partyhub/shared';
 import { randomBytes, randomInt, randomUUID } from 'node:crypto';
 import { settingsIssueMessage, type DeviceKind, type ObserverRoomView, type ObserverSummary } from '@partyhub/shared';
 import type {
@@ -115,6 +125,8 @@ export class Room {
   readonly players = new Map<string, RoomPlayer>();
   /** Place de chaque personnage dans le salon (perdue avec la salle, jamais enregistrée). */
   private readonly positions = new Map<string, LobbyPosition>();
+  /** Plateau en grille, seulement dans le salon de test : il vit avec la salle, sans rien enregistrer. */
+  private grille: EtatGrille | null = null;
   readonly hostSockets = new Set<string>();
   /** Sous-ensemble des sockets hôte : les écrans principaux (ils jouent les voix des joueurs). */
   private readonly screens = new Set<string>();
@@ -160,6 +172,7 @@ export class Room {
     this.createdAt = env.now();
     this.lastActivity = this.createdAt;
     this.settings = { ...(module.defaultSettings as Record<string, unknown>) };
+    this.grille = module.manifest.id === PLATEAU_TEST_ID ? creerGrille() : null;
 
     this.ctx = {
       now: () => this.clock(),
@@ -323,6 +336,7 @@ export class Room {
       championship: { length: this.series.length, teams: this.series.teamCount },
       series: seriesView(this.series),
       lastResult: this.lastResult,
+      grille: this.grille,
     };
   }
 
@@ -440,6 +454,7 @@ export class Room {
       avatar: profile?.avatar ?? guestAvatar(finalName),
     };
     this.players.set(player.id, player);
+    if (this.grille) this.grille = ajouterPersonnage(this.grille, player.id);
     this.state = this.module.onPlayerJoin(
       this.state,
       { id: player.id, name: player.name, profileId: player.profileId },
@@ -566,6 +581,7 @@ export class Room {
     this.clearGrace(p);
     this.players.delete(p.id);
     this.positions.delete(p.id);
+    if (this.grille) this.grille = retirerPersonnage(this.grille, p.id);
     this.state = this.module.onPlayerLeave(this.state, { id: p.id, name: p.name }, this.ctx);
     this.refreshStatus();
   }
@@ -590,6 +606,22 @@ export class Room {
     const clamped = clampLobbyPosition(position);
     this.positions.set(playerId, clamped);
     return { ok: true, position: clamped };
+  }
+
+  /**
+   * Un geste sur le plateau de test. Le serveur applique la règle et garde le nouvel état ; la vue
+   * de la salle, diffusée à tous, le porte ensuite.
+   */
+  grilleAction(playerId: string, action: ActionGrille): Result<{ grille: EtatGrille }> {
+    if (!this.grille) return { ok: false, error: 'Ce jeu n’a pas de plateau.' };
+    if (!this.players.has(playerId)) return { ok: false, error: 'Joueur inconnu.' };
+    if (!this.inLobby) return { ok: false, error: 'Le plateau ne sert qu’avant la partie.' };
+    const r = appliquerAction(this.grille, playerId, action);
+    if (!r.ok) return { ok: false, error: r.erreur };
+    this.grille = r.etat;
+    this.touch();
+    this.hooks.onChange(this);
+    return { ok: true, grille: r.etat };
   }
 
   /** Une émotion n’est possible que dans le salon ; le serveur la diffuse, rien n’est gardé. */
