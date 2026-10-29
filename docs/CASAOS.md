@@ -9,7 +9,8 @@ L'image Docker est publiée sur GHCR : `ghcr.io/matosman40/partyhub:<version>`. 
 
 - CasaOS installé sur un serveur accessible sur le réseau local, avec accès au terminal (application Terminal, ou SSH).
 - Le serveur doit pouvoir télécharger l'image depuis `ghcr.io`.
-- Les ports indiqués dans `.env` doivent être libres (8282 par défaut).
+- Le port HTTPS doit être libre : 443 par défaut, réglable avec `PARTYHUB_HTTPS_PORT` dans `.env` (avec `compose.yaml`).
+  Le port 8282 n'est plus publié sur le serveur : il reste interne au conteneur.
 
 ## 2. Installation depuis le terminal (méthode recommandée)
 
@@ -27,9 +28,12 @@ sudo docker compose ps             # doit afficher « healthy » après quelques
 
 ## 3. Installation depuis l'interface CasaOS
 
-1. Ouvrir la page du fichier `compose.yaml` sur GitHub, puis cliquer sur **Raw** et copier tout le contenu.
+1. Ouvrir la page du fichier `deploy/casaos/compose.https.yaml` sur GitHub, puis cliquer sur **Raw** et copier tout le contenu.
+   Ce fichier contient PartyHub et Caddy ensemble. Le `compose.yaml` du dépôt ne se colle pas seul dans CasaOS : il monte
+   le fichier `deploy/https/Caddyfile`, qui n'existe que dans le dépôt cloné (voir la section 10).
 2. Dans CasaOS : **App Store → Install a customized app** (ou « Importer un compose » selon la version).
-3. Coller le contenu copié, renseigner les variables (au minimum `ADMIN_PASSWORD`), puis valider.
+3. Coller le contenu copié, remplacer l'adresse `192.168.1.156` (deux endroits, voir la section 10), renseigner
+   `ADMIN_PASSWORD` si besoin, puis valider.
 4. Attendre que l'application passe à l'état « en cours d'exécution ».
 
 Les données sont stockées dans le volume Docker `partyhub-data`. Ce volume est créé une seule fois et réutilisé
@@ -39,15 +43,18 @@ lors des installations et mises à jour suivantes.
 
 Sur le même Wi-Fi que le serveur :
 
-- Écran principal (TV ou ordinateur) : `http://<adresse-du-serveur>:8282`
-- Téléphones : scanner le QR code affiché sur l'écran, ou ouvrir `http://<adresse-du-serveur>:8282/join`
+- Écran principal (TV ou ordinateur) : `https://<adresse-du-serveur>` (port 443)
+- Téléphones : scanner le QR code affiché sur l'écran, ou ouvrir `https://<adresse-du-serveur>/join`
+
+Le certificat étant interne, l'avertissement du navigateur est normal la première fois, et le certificat se
+télécharge depuis la page `/certificat` (voir [HTTPS-LAN.md](HTTPS-LAN.md)).
 
 Trouver l'adresse du serveur : `hostname -I` sur le serveur, ou l'adresse affichée dans CasaOS.
 Une adresse IP fixe (réservation DHCP sur le routeur) évite de devoir la retrouver.
 
 ## 5. Administration et mot de passe
 
-Page : `http://<adresse-du-serveur>:8282/admin`.
+Page : `https://<adresse-du-serveur>/admin`.
 
 - Mot de passe défini dans `.env` : il est appliqué à chaque démarrage. Pour le changer, modifier `ADMIN_PASSWORD`,
   puis relancer : `sudo docker compose up -d`.
@@ -60,7 +67,7 @@ sudo docker compose exec partyhub rm /data/admin-password.txt
 
 ## 6. Mise à jour sans perdre les données
 
-Chaque version fixe son image dans `compose.yaml`. Mettre à jour consiste donc à récupérer ce fichier, puis à
+Chaque version fixe son image dans `compose.yaml` (et dans `deploy/casaos/compose.https.yaml`). Mettre à jour consiste donc à récupérer ce fichier, puis à
 télécharger la nouvelle image :
 
 ```bash
@@ -76,7 +83,7 @@ Le dépôt est sur un tag de version (« HEAD détaché »), donc un `git pull` 
 de mise à jour installé, la rubrique *Système* de l'administration propose les nouvelles versions avec leur changelog,
 et s'en charge (voir [MISE-A-JOUR.md](MISE-A-JOUR.md)).
 
-Depuis CasaOS : réimporter le nouveau `compose.yaml` (même procédure que la section 3), en gardant le même nom
+Depuis CasaOS : réimporter le nouveau `deploy/casaos/compose.https.yaml` (même procédure que la section 10), en gardant le même nom
 d'application et les mêmes variables, afin de réutiliser le volume existant.
 
 **Ne jamais exécuter `docker compose down -v`** : l'option `-v` supprime le volume, donc les données.
@@ -105,8 +112,8 @@ Les sauvegardes automatiques de la base sont aussi dans le dossier `backups` du 
 
 | Symptôme                                                    | Cause probable                             | Action                                                                          |
 | ----------------------------------------------------------- | ------------------------------------------ | ------------------------------------------------------------------------------- |
-| Le site ne s'ouvre pas                                      | Port déjà utilisé                          | Changer `PARTYHUB_PORT` dans `.env`, puis `sudo docker compose up -d`           |
-| `manifest unknown` ou `denied` au téléchargement de l'image | Version absente, ou paquet GHCR non public | Vérifier la version dans `compose.yaml` ; le paquet doit être public sur GitHub |
+| Le site ne s'ouvre pas                                      | Port 443 déjà utilisé                      | Libérer le port 443, ou changer `PARTYHUB_HTTPS_PORT` dans `.env` (avec `compose.yaml`), puis `sudo docker compose up -d` |
+| `manifest unknown` ou `denied` au téléchargement de l'image | Version absente, ou paquet GHCR non public | Vérifier la version dans le fichier installé (`compose.yaml` ou `deploy/casaos/compose.https.yaml`) ; le paquet doit être public sur GitHub |
 | « Connexion impossible »                                    | Conteneur arrêté ou non prêt               | `sudo docker compose logs`                                                      |
 | Le QR code ouvre une mauvaise adresse                       | L'écran est ouvert avec `localhost`        | Ouvrir l'écran avec l'adresse IP du serveur                                     |
 | Le conteneur est « unhealthy »                              | Serveur bloqué au démarrage                | Consulter les journaux, vérifier la place disque                                |

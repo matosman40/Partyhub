@@ -5,6 +5,7 @@ Merci de votre intérêt. PartyHub est un jeu de soirée sur navigateur, déploy
 ## Avant de commencer
 
 - Ouvrez une issue pour un bug ou une fonctionnalité avant un gros changement, pour vérifier que l'idée convient.
+- Les agents (Claude Code ou autre) suivent les consignes de `CLAUDE.md`, à la racine du dépôt.
 - Une fonctionnalité qui touche aux données (base, paquets, sauvegardes) doit dire comment les données existantes
   sont migrées. Voir `packages/server/src/db/store.ts` : une migration ne se modifie jamais une fois publiée.
 
@@ -14,12 +15,16 @@ Merci de votre intérêt. PartyHub est un jeu de soirée sur navigateur, déploy
 npm ci
 npm run build
 npm run lint
+npm run format:check
 npm run typecheck
 npm test
 ```
 
 `npm run lint` vérifie le code avec ESLint (configuration `eslint.config.js`). Les erreurs bloquent ; les
-avertissements, comme les `any` restants, sont à réduire mais ne bloquent pas.
+avertissements, comme les `any` restants, sont à réduire mais ne bloquent pas. `npm run format:check` vérifie la
+mise en forme avec Prettier (`npm run format` la corrige). La CI (`.github/workflows/ci.yml`) lance ces contrôles sur
+chaque pull request, et un contrôle des secrets (`python3 scripts/secret-scan.py`) cherche une clé, un jeton ou un
+mot de passe dans les fichiers suivis.
 
 Pour tester le déploiement sur votre machine : `docker compose -f compose.dev.yaml up -d --build`.
 Pour un utilisateur final, `compose.yaml` utilise l'image publiée et ne compile rien.

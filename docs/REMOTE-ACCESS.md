@@ -49,7 +49,7 @@ Dans `.env`, passer `COOKIE_SECURE=true` puis relancer le conteneur :
 sudo docker compose up -d
 ```
 
-L'administration reste accessible sur le réseau local : `http://<adresse-locale>:8282/admin`.
+L'administration reste accessible sur le réseau local, par HTTPS : `https://<adresse-locale>/admin`.
 
 ### 3. Autres proxys
 
@@ -62,7 +62,7 @@ Nginx Proxy Manager, Traefik ou Nginx fonctionnent de la même façon. Trois poi
 ### 4. Adresse réelle des joueurs
 
 Le proxy transmet l'adresse du joueur dans l'en-tête `X-Forwarded-For`. PartyHub ne le lit que si la connexion vient
-d'un proxy de confiance (variable `TRUST_PROXY`, `loopback` par défaut). Avec Docker, la connexion arrive souvent
+d'un proxy de confiance (variable `TRUST_PROXY`, `loopback` par défaut dans le code, `172.16.0.0/12` dans `compose.yaml`). Avec Docker, la connexion arrive souvent
 depuis la passerelle du réseau Docker, et non depuis le proxy : sans réglage, tous les joueurs semblent venir de la
 même adresse, ce qui fausse le ralentissement des codes inconnus et les journaux.
 
@@ -82,6 +82,7 @@ de se faire passer pour une autre adresse.
 ## Sécurité supplémentaire
 
 - Changer le mot de passe administrateur pour une phrase longue et unique.
-- Garder l'image à jour (`docker compose up -d --build` après `git pull`).
+- Garder PartyHub à jour avec une version publiée (`git checkout vX.Y.Z`, puis `docker compose pull` et
+  `docker compose up -d`, voir [MISE-A-JOUR.md](MISE-A-JOUR.md)).
 - Ne pas publier le port 8282 à la fois en direct et derrière le proxy.
 - Surveiller les journaux : `sudo docker compose logs --since 24h | grep -i "tentative"`.

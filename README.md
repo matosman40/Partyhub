@@ -3,7 +3,7 @@
 Plateforme de jeux de soirée sur navigateur. L'écran principal (TV ou ordinateur) affiche la partie ;
 chaque joueur rejoint avec son téléphone, sans rien installer ni créer de compte.
 
-Jeux fournis (architecture modulaire, un dossier par jeu, voir [docs/ADDING-A-GAME.md](docs/ADDING-A-GAME.md)) :
+Extrait des jeux fournis (le catalogue complet est sur l'accueil ; architecture modulaire, un dossier par jeu, voir [docs/ADDING-A-GAME.md](docs/ADDING-A-GAME.md)) :
 
 Sur une installation neuve, les jeux intégrés sont désactivés : l'administrateur les active un par un, ou avec `BUILTIN_GAMES=on`. Une installation existante garde ses réglages. Les jeux installés depuis une source GitHub ou un paquet sont actifs.
 
@@ -11,11 +11,11 @@ Sur une installation neuve, les jeux intégrés sont désactivés : l'administra
 | -------------------------- | --------- | --------------------------------------------------------------------------------- |
 | 🧠 **Quiz Party**          | Quiz      | Questions à choix multiples, points et bonus de rapidité. Les mots-clés de chacun peuvent devenir les questions (IA). |
 | 🧩 **Phrases à trous**     | Quiz      | L’IA écrit des phrases à trou. Chacun pose une carte dans le trou, puis tout le monde vote anonymement. |
-| 💭 **Association express** | Soirée    | Écrivez le premier mot qui vous vient, puis votez anonymement pour le plus drôle. |
-| 👉 **Plutôt qui ?**        | Soirée    | « Qui est le plus susceptible de… ? » Votez en secret et suivez la majorité.      |
-| 🕵️ **L'Imposteur**         | Soirée    | Un imposteur ignore le mot secret : donnez des indices, puis démasquez-le.        |
+| 💭 **Association express** | Quiz      | Écrivez le premier mot qui vous vient, puis votez anonymement pour le plus drôle. |
+| 👉 **Plutôt qui ?**        | Quiz      | « Qui est le plus susceptible de… ? » Votez en secret et suivez la majorité.      |
+| 🕵️ **L’Imposteur**         | Rôle      | Un imposteur ignore le mot secret : donnez des indices, puis démasquez-le.        |
 | 🃏 **Plus ou moins**       | Cartes    | Un paquet de 52 cartes : la suivante sera-t-elle plus haute ou plus basse ?       |
-| ⚡ **Réflexe**             | Adresse   | Attendez le vert, puis touchez le plus vite possible.                             |
+| ⚡ **Réflexe**             | Ambiance  | Attendez le vert, puis touchez le plus vite possible.                             |
 | 🃏 **Rami 51**             | Cartes    | Ouvrez à 51 points, posez vos combinaisons, videz votre main le premier.          |
 | 🎴 **Tarot**               | Cartes    | Enchères, chien, écart et plis à quatre joueurs.                                  |
 
@@ -147,8 +147,8 @@ Le fichier `.env` sert à l'installation. Les réglages du serveur se modifient 
 | `LOG_DIR`                            | `DATA_DIR/logs`                | Dossier du journal des erreurs (fichier `partyhub.log`, JSON une ligne par événement)                                                                                                                                                                                                                              |
 | `LOG_MAX_MB`                         | `5`                            | Taille d'un fichier de journal avant rotation (1 à 100)                                                                                                                                                                                                                                                            |
 | `LOG_FILES`                          | `6`                            | Nombre d'anciens fichiers gardés en plus du courant                                                                                                                                                                                                                                                                |
-| `COOKIE_SECURE`                      | `false`                        | `true` uniquement derrière un proxy HTTPS                                                                                                                                                                                                                                                                          |
-| `TRUST_PROXY`                        | `loopback`                     | Proxys de confiance pour lire l'adresse réelle des joueurs dans `X-Forwarded-For`. Même syntaxe qu'Express : `loopback`, une adresse, ou un réseau comme `172.16.0.0/12` (voir [docs/REMOTE-ACCESS.md](docs/REMOTE-ACCESS.md))                                                                                     |
+| `COOKIE_SECURE`                      | `false` (`true` dans `compose.yaml`) | `true` uniquement derrière un proxy HTTPS                                                                                                                                                                                                                                                                          |
+| `TRUST_PROXY`                        | `loopback` (`172.16.0.0/12` dans `compose.yaml`) | Proxys de confiance pour lire l'adresse réelle des joueurs dans `X-Forwarded-For`. Même syntaxe qu'Express : `loopback`, une adresse, ou un réseau comme `172.16.0.0/12` (voir [docs/REMOTE-ACCESS.md](docs/REMOTE-ACCESS.md))                                                                                     |
 | `DATA_DIR`                           | `./data` (`/data` dans Docker) | Dossier de la base SQLite                                                                                                                                                                                                                                                                                          |
 | `DB_BACKUP_EVERY_HOURS`              | `24`                           | Sauvegarde automatique de la base, en heures (`0` pour la désactiver)                                                                                                                                                                                                                                              |
 | `DB_BACKUP_KEEP`                     | `7`                            | Nombre de sauvegardes de la base conservées                                                                                                                                                                                                                                                                        |
@@ -198,16 +198,19 @@ Les images (portraits des personnages, fonds de décor) sont générées par une
 
 | Variable                                        | Défaut                        | Rôle                                                                                      |
 | ----------------------------------------------- | ----------------------------- | ----------------------------------------------------------------------------------------- |
-| `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN` | vide                          | Cloudflare Workers AI (FLUX.1 schnell), gratuit dans la limite d'un quota quotidien.      |
+| `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN` | vide                          | Cloudflare Workers AI (FLUX.1 schnell), gratuit dans la limite d'un quota quotidien. Le même compte sert à l'analyse des photos (création de personnage).      |
 | `MODELSCOPE_API_KEY`                            | vide                          | ModelScope (Qwen-Image). Usage non commercial uniquement, avec un compte Alibaba vérifié. |
 | `MODELSCOPE_ALLOW_NONCOMMERCIAL`                | vide (désactivé)              | Mettre `1` pour déclarer un usage non commercial. Sans cela, ModelScope reste désactivé.  |
 | `IMAGE_PROVIDERS`                               | ceux dont la clé est présente | Ordre d'appel, séparé par des virgules (ex. `cloudflare,modelscope`).                     |
 | `IMAGE_MAX_PER_DAY`                             | `150`                         | Nombre maximal d'images par jour, tous fournisseurs confondus (1 à 100000).               |
 | `IMAGE_TIMEOUT_MS`                              | `60000`                       | Délai maximal pour une image, de 5000 à 300000 ms.                                        |
+| `PORTRAIT_ENABLED`                              | activée si Cloudflare est configuré | `0` ou `false` désactive la création de personnage à partir d'une photo.            |
+| `PORTRAIT_MAX_PER_DAY`                          | `50`                          | Nombre maximal d'analyses de photo par jour, tous profils confondus (1 à 1000). Compté en mémoire, remis à zéro au redémarrage. |
 
 - Les images sont stockées dans la base, et suivent ses sauvegardes. Le plafond journalier est compté en base, donc il survit au redémarrage.
 - Les clés d'images se règlent dans l'environnement du serveur. Il n'y a pas encore d'écran d'administration pour elles.
 - ModelScope n'est pas autorisé pour un usage commercial : pour un service public ou payant, utiliser Cloudflare, ou un autre fournisseur.
+- La création de personnage à partir d'une photo (« Créer depuis une photo », dans le profil) utilise le même compte Cloudflare. La photo n'est ni gardée ni journalisée, et n'entre pas dans la bibliothèque d'images : voir [docs/PERSONNAGES-PACK.md](docs/PERSONNAGES-PACK.md), section « Créer depuis une photo ».
 
 Réglages modifiables depuis l'administration (sans redémarrage) : joueurs maximum par salle, délai de
 reconnexion, délai d'inactivité, durée maximale d'une salle, nombre de chiffres du code de salle (4 à 6, 4 par défaut).
@@ -299,7 +302,7 @@ d'en ajouter une copie. Le résumé indique ce qui a été ajouté, ignoré ou r
 - Les sessions d'administration sont stockées dans la base : elles survivent à un redémarrage et expirent au bout de
   12 heures. Une restauration de sauvegarde rétablit aussi les sessions qu'elle contient, jusqu'à leur expiration.
 - Sur un réseau local en HTTP, le navigateur de l'écran principal doit rester ouvert pendant la partie.
-- Les jeux fournis sont volontairement simples : pas de blind test audio ni de dessin. Ils suivent le guide
+- Les jeux fournis sont volontairement simples : pas de blind test audio. Ils suivent le guide
   [docs/ADDING-A-GAME.md](docs/ADDING-A-GAME.md) pour en ajouter d'autres.
 
 ## Licence et ressources

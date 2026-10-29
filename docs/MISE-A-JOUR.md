@@ -48,7 +48,8 @@ journalctl -u partyhub-update.service -n 20     # chaque minute, une ligne d'act
 Le service doit être installé sur une version de PartyHub qui le contient. Pour cette première mise à jour, passez
 par la section 5.
 
-Si le port publié n'est pas 8282, modifiez `PARTYHUB_HEALTH_URL` dans `/etc/partyhub-updater.env`.
+Le contrôle de santé passe par HTTPS : `https://127.0.0.1/api/health` (port 443) par défaut. Si le port HTTPS publié n'est
+pas 443, modifiez `PARTYHUB_HEALTH_URL` dans `/etc/partyhub-updater.env`.
 
 ## 3. Ce qui tourne sur le serveur
 

@@ -31,7 +31,7 @@ export interface VoteState {
 export const voteExpress: GameModule<VoteState, VoteSettings> = {
   manifest: {
     id: 'vote-express',          // identifiant unique, en minuscules
-    category: 'quiz',            // 'cartes' | 'plateau' | 'quiz' | 'role' (filtre de l'accueil)
+    category: 'quiz',            // 'cartes' | 'plateau' | 'quiz' | 'role' | 'solo' (filtre de l'accueil)
     name: 'Vote Express',
     description: 'Un sondage rapide : chacun vote depuis son téléphone.',
     icon: '🗳️',
@@ -229,6 +229,11 @@ export const clientViews: Record<string, GameClientViews> = {
 
 L'identifiant (`vote-express`) doit être identique dans `manifest.id` et dans la clé de `clientViews`.
 
+Les vues peuvent aussi se charger à la demande, comme la plupart des jeux de ce fichier : on enveloppe chaque
+ensemble de vues avec `lazyViews` (`packages/games/src/client/lazy-views.ts`), et le code du jeu n'est téléchargé
+qu'à son ouverture. Par exemple `'vote-express': lazyViews(() => import('../vote-express/client/index.js').then((m) => m.voteViews))`,
+avec un `client/index.ts` qui exporte `voteViews`.
+
 ## Étape 4 : compiler, tester, activer
 
 ```bash
@@ -239,16 +244,25 @@ npm test               # les tests existants doivent toujours passer
 Ajouter un test dans `packages/server/src/__tests__/` pour la logique du jeu, sur le modèle de `quiz.test.ts` :
 appeler directement `voteExpress.initialize`, `start`, `handleAction`, et vérifier qu'un second vote est refusé.
 
-Le jeu apparaît automatiquement dans le catalogue de l'accueil. Il est **activé par défaut** ; l'administration
-(`/admin`) permet de le désactiver sans redéployer.
+Le jeu apparaît automatiquement dans le catalogue de l'accueil. Sur une installation existante, il est **actif** ;
+sur une installation neuve, un jeu intégré reste **désactivé** tant que `BUILTIN_GAMES=on` n'est pas défini (voir le
+[README](../README.md)). L'administration (`/admin`) permet de l'activer ou de le désactiver sans redéployer.
 
-Pour une mise en production : `docker compose up -d --build`, puis vérifier la carte du nouveau jeu sur l'accueil.
+Pour tester le déploiement sur votre machine : `docker compose -f compose.dev.yaml up -d --build`, puis vérifier la carte
+du nouveau jeu sur l'accueil. La production n'utilise pas cette compilation locale : elle installe l'image d'une version
+publiée (voir [MISE-A-JOUR.md](MISE-A-JOUR.md)).
 
 ## Un plateau de personnages
 
-Pour un jeu où les joueurs se déplacent sur un plan (salon, carte, plateau), le composant `Plateau`
-de `@partyhub/games/client` fournit le décor, les personnages déplaçables et les bulles d'émotion.
-Le salon l'utilise déjà (`packages/web/src/components/LobbyPlateau.tsx`).
+Pour un jeu où les joueurs se déplacent sur un plan, `@partyhub/games/client` fournit deux familles de composants :
+
+- `Plateau` : le décor, les personnages déplaçables et les bulles d'émotion, en 2D. Le salon ne l'utilise plus :
+  il n'est plus rendu par l'interface, mais il reste disponible pour un jeu, avec son décor `PrairieScene`.
+- la grille du plateau de test : `GrilleView` (2D) et `GrilleBoard3D` (3D, sur l'écran principal, avec un repli en 2D
+  sans WebGL). Sur le téléphone, `GrilleControleur` porte la manette (croix de direction, Action, Sauter, Saluer).
+
+Le salon affiche les joueurs comme des têtes, sans plateau à déplacer (`LobbyHeads`, dans
+`packages/web/src/components/LobbyPlateau.tsx`).
 
 ```tsx
 import { Plateau, type PlateauFigure } from '@partyhub/games/client';
@@ -256,7 +270,7 @@ import { Plateau, type PlateauFigure } from '@partyhub/games/client';
 const figures: PlateauFigure[] = players.map((p) => ({
   id: p.id,
   name: p.name,
-  position: p.position,            // fractions 0 à 1 du plateau, envoyées par le serveur
+  position: p.position ?? { x: 0.5, y: 0.5 },   // fractions 0 à 1 du plateau ; le centre tant que le serveur n'en donne pas
   character: p.avatar.character,   // ou `avatar: <PlayerAvatar … />` pour un avatar non dessiné
   mood: 'idle',                    // pose du personnage
   bubble: null,                    // { emoji, key } pour une émotion, la clé relance son apparition
@@ -270,8 +284,10 @@ const figures: PlateauFigure[] = players.map((p) => ({
   bornée au cadre). Sans `onMove`, le plateau sert seulement d'affichage (écran principal).
 - Le décor est le thème « prairie » (`plateau-scene.tsx`). Un autre thème s'ajoute à côté, sans toucher au
   composant.
-- Le plateau de test (`packages/games/src/plateau-test/module.ts`) est un jeu sans partie, non listé au catalogue :
-  il sert à essayer le plateau, et ne doit pas être copié tel quel.
+- Le plateau de test (`packages/games/src/plateau-test/module.ts`, identifiant `plateau-test`) est un outil de test
+  sans partie, non listé au catalogue : il n'apparaît pas sur l'accueil. Une salle s'ouvre par l'API
+  (`POST /api/rooms` avec `"gameId": "plateau-test"`), et il figure dans l'administration, où il peut être désactivé
+  comme les autres jeux. Il sert à essayer le plateau, et ne doit pas être copié tel quel.
 
 ## Micro et caméra
 

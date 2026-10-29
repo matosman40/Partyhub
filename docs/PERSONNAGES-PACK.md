@@ -94,6 +94,19 @@ retombe sur le premier look restant du personnage.
 Le profil propose d'abord le personnage (dessiné ou illustré). Si le personnage illustré a plusieurs looks, une
 seconde ligne **Look** apparaît pour choisir le look. Le choix est enregistré avec le profil.
 
+## Créer depuis une photo
+
+Dans l'éditeur de personnage du profil, le bouton **Créer depuis une photo** crée un personnage à partir d'une photo
+de votre visage : teint, coiffure, couleur de cheveux, accessoire et expression sont choisis dans les listes de
+PartyHub, et la couleur du corps est conservée. Le bouton n'apparaît que si le serveur propose la fonction
+(`GET /api/features`, champ `portrait`). Il faut être connecté à son profil et cocher l'accord : pour un enfant, celui
+d'un parent est nécessaire.
+
+Confidentialité : le navigateur réduit la photo (768 px) et la réencode, ce qui supprime les métadonnées, dont la
+position GPS. Le serveur la transmet à Cloudflare Workers AI, qui ne répond que par des valeurs fixes. La photo n'est
+ni enregistrée, ni journalisée, ni sauvegardée : seul le personnage est gardé, et aucun texte libre n'entre en base.
+Un seul visage est accepté. Activation et plafond : `PORTRAIT_ENABLED` et `PORTRAIT_MAX_PER_DAY` (voir le README).
+
 ## Dans le code
 
 - Validation et stockage : `packages/server/src/characters/packs.ts` (zip lu par `packages/server/src/packages/zip.ts`).

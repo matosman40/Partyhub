@@ -4,6 +4,36 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 
 ## [Non publié]
 
+## [0.18.0] - 2026-10-29
+
+### Ajouté
+
+- Plateau de test : un outil de test non listé, absent de l'accueil. Une salle s'ouvre par l'API (`POST /api/rooms`, avec `gameId` « plateau-test »), et le jeu figure dans l'administration, où il peut être désactivé. Sept décors (pelouse de fête, plateforme de combat, banquise en mer, arène ronde, court de tennis, mur d'escalade, île tropicale), en 3D sur l'écran principal et en 2D si le navigateur ne sait pas afficher la 3D.
+- Plateau de test : manette sur le téléphone, avec la croix de direction (ou les flèches du clavier), Action, Sauter, Saluer et un tiroir d'actions. Action pousse une caisse ou un ballon, et porte ou pose une boîte. On monte sur une plateforme en sautant, et on en descend en marchant.
+- Profil : « Créer depuis une photo », dans l'éditeur de personnage, crée un personnage à partir d'une photo de votre visage (teint, coiffure, couleur de cheveux, accessoire, expression), que vous pouvez ensuite modifier. Il faut cocher l'accord (pour un enfant, celui d'un parent). La photo est analysée par Cloudflare Workers AI, mais elle n'est ni enregistrée, ni journalisée, ni sauvegardée : seul le personnage est gardé. Le navigateur retire au passage les métadonnées, dont la position GPS. Le bouton n'apparaît que si l'installation a activé la fonction.
+- Serveur : `GET /api/features` indique les fonctions facultatives activées (pour l'instant `portrait`), sans aucun secret. L'interface n'affiche une fonction que si le serveur la propose.
+
+### Modifié
+
+- Plateau de test : la salle de test affiche la grille à la place du plateau à prairie. Le salon des autres jeux n'utilise plus ce plateau : les joueurs y apparaissent comme des têtes avec leur pseudo.
+
+### Corrigé
+
+- Serveur : il ne s'arrête plus quand un client envoie un message sans accusé de réception.
+- Plateau de test : une rafale de gestes ne bloque plus les autres commandes du joueur.
+- Plateau de test : un geste sans effet, comme marcher contre un mur, n'est plus rediffusé à toute la salle.
+- Plateau de test : on ne monte plus sur une plateforme en poussant une caisse.
+- Plateau de test : un robot ajouté dans le salon est placé sur le plateau.
+- Plateau de test : fluidité du rendu 3D (décor mémorisé, ombres figées, résolution adaptée à la taille de la fenêtre).
+- Plateau de test, manette : Entrée et Espace n'activent plus la manette à la place du bouton qui a le focus, la bande de messages et le menu ne se chevauchent plus, et le plateau entier tient à l'écran sur tablette, ordinateur et petits téléphones. Le contraste et les marges des écrans à encoche sont améliorés.
+- Plateau de test, télévision : les noms des joueurs sont lisibles, et le panneau du code et du QR code ne masque plus une case de départ.
+- Reprise de session : un joueur dont l'absence a dépassé le délai de grâce retrouve son siège, et ne voit plus de message d'erreur.
+- Sécurité : les tentatives de connexion à l'administration et aux profils sont comptées même lorsqu'elles arrivent en rafale.
+- Sécurité : la consultation des codes de salle est limitée à 60 par minute et par adresse.
+- Sécurité : le jeton d'hôte est comparé en temps constant.
+- Sécurité : un cookie mal encodé ne provoque plus d'erreur 500.
+- Quiz et jeux : les libellés du classement ne se répètent plus (par exemple « 1er de la partie » suivi de « 1ᵉ du classement »).
+
 ## [0.17.5] - 2026-10-27
 
 ### Ajouté

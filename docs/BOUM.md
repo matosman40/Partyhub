@@ -65,14 +65,14 @@ Dans l'administration, « Musiques et bruitages » choisit un fichier de la méd
 Les musiques bouclent sans fin. Le volume (0 à 100 %, 50 % par défaut) se règle dans la même section.
 
 Par défaut, la musique est coupée et les bruitages restent ceux d'origine. Chaque appareil joue la musique de la page
-qu'il affiche. Le bouton muet coupe aussi la musique. Les téléphones ne jouent pas de musique de salon dans cette version.
+qu'il affiche. Le bouton muet coupe aussi la musique. Les téléphones ne jouent la musique que lorsqu’aucun écran principal n’est relié à la salle.
 
 ## Salon : positions et émotions
 
-Dans le salon d’attente (un plateau, voir `docs/ADDING-A-GAME.md`), chaque joueur déplace son personnage et envoie une émotion (joie, danse, salut, tristesse).
-Positions et émotions sont visibles par toute la salle, sur l’écran principal et sur les téléphones.
+Dans le salon d’attente, chaque joueur envoie une émotion (joie, danse, salut, tristesse). Le salon n’a pas de plateau à déplacer (voir `docs/ADDING-A-GAME.md`).
+Les émotions sont visibles par toute la salle, sur l’écran principal et sur les téléphones.
 
-- Les positions sont gardées en mémoire du serveur, pour la salle en cours : un redémarrage du serveur les remet à zéro, comme les salles elles-mêmes. Rien n’est écrit en base.
+- Le serveur accepte encore des positions (`player:lobby-move`), mais l’interface ne les envoie plus. Elles restent en mémoire du serveur, pour la salle en cours : un redémarrage les remet à zéro, comme les salles elles-mêmes. Rien n’est écrit en base.
 - Une position est bornée au cadre du salon. Les émotions sont limitées à 6 par joueur sur 4 secondes.
 - Le volume n’est pas réglable par appareil dans cette version : le réglage de l’administration (musique et bruitages) reste le seul. Le bouton muet coupe la musique.
 
