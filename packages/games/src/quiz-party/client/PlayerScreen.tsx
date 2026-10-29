@@ -51,7 +51,6 @@ export function QuizPlayer({ publicState: pub, playerState: me, now, send }: Pla
       <section className="player-game fade-in">
         <h2>Partie terminée</h2>
         <p className="big-number">{me?.points ?? 0} pts</p>
-        <p>Vous êtes {me?.rank ? `${me.rank}ᵉ` : '—'} du classement.</p>
         <p className="muted">Regardez l’écran principal pour le podium final.</p>
       </section>
     );

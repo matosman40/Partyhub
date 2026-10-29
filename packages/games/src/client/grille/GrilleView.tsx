@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from 'react';
+import { memo, type CSSProperties, type ReactNode } from 'react';
 import {
   ATTITUDE_POSE,
   CASE_PLATEFORME,
@@ -43,8 +43,14 @@ export interface GrilleViewProps {
 
 const pct = (n: number, total: number) => `${(n / total) * 100}%`;
 
-/** Le sol et les murs, une case après l’autre. */
-function Decor({ etat }: { etat: EtatGrille }) {
+function memeDecor(a: { etat: EtatGrille }, b: { etat: EtatGrille }): boolean {
+  const x = a.etat;
+  const y = b.etat;
+  return x.largeur === y.largeur && x.hauteur === y.hauteur && x.decor.every((ligne, i) => ligne === y.decor[i]);
+}
+
+/** Le sol et les murs, une case après l’autre. Redessiné seulement si le décor change (pas à chaque pas). */
+const Decor = memo(function Decor({ etat }: { etat: EtatGrille }) {
   const cases: ReactNode[] = [];
   for (let y = 0; y < etat.hauteur; y++) {
     for (let x = 0; x < etat.largeur; x++) {
@@ -72,7 +78,7 @@ function Decor({ etat }: { etat: EtatGrille }) {
       {cases}
     </div>
   );
-}
+}, memeDecor);
 
 function ObjetView({ objet, etat }: { objet: ObjetGrille; etat: EtatGrille }) {
   // Un objet porté suit son porteur : on le dessine juste au-dessus de sa tête.

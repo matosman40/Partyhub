@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import {
   actionContextuelle,
   devantLePersonnage,
@@ -27,7 +27,7 @@ const DIRECTIONS: Array<{ dir: Direction; label: string; fleche: string; cle: st
 ];
 
 /** Ce que dit la bande du haut, selon ce qui est devant. */
-export function libelleDevant(devant: Devant | null, portant: boolean): string {
+export function libelleDevant(devant: Devant | 'plateforme' | null, portant: boolean): string {
   if (portant) return 'Vous portez une boîte : Action la pose devant vous';
   switch (devant) {
     case 'mur':
@@ -40,11 +40,100 @@ export function libelleDevant(devant: Devant | null, portant: boolean): string {
       return 'Un ballon devant vous : Action le pousse';
     case 'boite':
       return 'Une boîte devant vous : Action la prend';
+    case 'plateforme':
+      return 'Plateforme devant vous : Sauter pour monter';
     case 'rien':
       return 'Rien devant vous';
     default:
       return 'Vous n’êtes pas sur le plateau';
   }
+}
+
+/** Ce que le clavier peut déclencher sur la manette. */
+export type ActionTouche =
+  { type: 'marcher'; dir: Direction } | { type: 'action' } | { type: 'sauter' } | { type: 'saluer' };
+
+/** Ce qu’il faut savoir de la cible d’une touche (sans DOM, pour tester la règle). */
+export interface CibleTouche {
+  /** Nom de balise en majuscules (BUTTON, A, INPUT…). */
+  tag: string;
+  role?: string | null;
+  /** Zone éditable (contentEditable). */
+  editable?: boolean;
+  /** La cible est dans une boîte de dialogue. */
+  dansDialogue?: boolean;
+}
+
+export interface ToucheInfo {
+  key: string;
+  repeat?: boolean;
+  defaultPrevented?: boolean;
+  ctrlKey?: boolean;
+  metaKey?: boolean;
+  altKey?: boolean;
+  cible?: CibleTouche | null;
+}
+
+/** Délai minimal entre deux gestes envoyés au clavier (ms). */
+export const DELAI_GESTE_MS = 150;
+
+/** Durée d’affichage d’un message de la bande (ms). */
+export const DUREE_MESSAGE_MS = 4000;
+
+const SAISIE = new Set(['INPUT', 'TEXTAREA', 'SELECT']);
+const INTERACTIF = new Set(['BUTTON', 'A', 'SELECT']);
+
+/**
+ * Traduit une frappe en geste, ou null si la frappe ne regarde pas la manette : déjà traitée par un
+ * autre élément, combinée à Ctrl/Cmd/Alt, dans un champ de saisie. Espace et Entrée gardent leur sens
+ * natif sur un bouton, un lien, une liste ou une boîte de dialogue. Une touche maintenue enfoncée ne
+ * répète que la marche : les autres gestes demandent une nouvelle pression.
+ */
+export function actionDepuisTouche(t: ToucheInfo): ActionTouche | null {
+  if (t.defaultPrevented || t.ctrlKey || t.metaKey || t.altKey) return null;
+  const c = t.cible ?? null;
+  if (c && (SAISIE.has(c.tag) || c.editable)) return null;
+  const d = DIRECTIONS.find((x) => x.cle === t.key);
+  if (d) return { type: 'marcher', dir: d.dir };
+  if (t.repeat) return null;
+  if (t.key === ' ' || t.key === 'Enter') {
+    if (c && (INTERACTIF.has(c.tag) || c.role === 'button' || c.role === 'dialog' || c.dansDialogue)) return null;
+    return t.key === ' ' ? { type: 'action' } : { type: 'sauter' };
+  }
+  if (t.key === 's' || t.key === 'S') return { type: 'saluer' };
+  return null;
+}
+
+/** Décrit la cible d’un événement clavier pour `actionDepuisTouche`. */
+function decrireCible(cible: EventTarget | null): CibleTouche | null {
+  if (!(cible instanceof HTMLElement)) return null;
+  const el = cible.closest<HTMLElement>('button, a, select, [role="button"]') ?? cible;
+  return {
+    tag: el.tagName,
+    role: el.getAttribute('role'),
+    editable: cible.isContentEditable,
+    dansDialogue: cible.closest('[role="dialog"]') !== null,
+  };
+}
+
+/**
+ * Rend inerte tout ce qui entoure l’élément (la manette couvre la page : Tab ne doit pas passer dessous).
+ * Le menu du coin reste actif. Retourne la fonction qui remet les éléments dans leur état.
+ */
+function isolerDuReste(el: HTMLElement): () => void {
+  const rendus: HTMLElement[] = [];
+  for (let n: HTMLElement | null = el; n && n !== document.body; n = n.parentElement) {
+    for (const frere of Array.from(n.parentElement?.children ?? [])) {
+      if (!(frere instanceof HTMLElement) || frere === n || frere.inert) continue;
+      if (frere.tagName === 'SCRIPT' || frere.tagName === 'STYLE') continue;
+      if (frere.matches('.corner-button, .corner-scrim, .corner-drawer')) continue;
+      frere.inert = true;
+      rendus.push(frere);
+    }
+  }
+  return () => {
+    for (const r of rendus) r.inert = false;
+  };
 }
 
 export interface GrilleControleurProps {
@@ -65,6 +154,8 @@ export interface GrilleControleurProps {
    * Absent : pas de tiroir.
    */
   tiroir?: ReactNode;
+  /** Avis à garder visibles dans la bande du haut (connexion perdue, retour au départ…). */
+  avis?: ReactNode;
 }
 
 export function GrilleControleur({
@@ -76,9 +167,14 @@ export function GrilleControleur({
   children,
   theme,
   tiroir,
+  avis,
 }: GrilleControleurProps) {
   const [message, setMessage] = useState<string | null>(null);
   const [ouvert, setOuvert] = useState(false);
+  const racine = useRef<HTMLElement>(null);
+  const poignee = useRef<HTMLButtonElement>(null);
+  const dernierGeste = useRef(0);
+  const tiroirId = useId();
   const t = themeDePlateau(theme);
   const perso = etat.personnages[moi];
   const portant = etat.objets.some((o) => o.porte === moi);
@@ -103,25 +199,68 @@ export function GrilleControleur({
     void envoyer({ type: 'sauter', dir: perso.dir });
   }
 
+  // Un message de la bande s’efface après un délai.
+  useEffect(() => {
+    if (!message) return;
+    const id = window.setTimeout(() => setMessage(null), DUREE_MESSAGE_MS);
+    return () => window.clearTimeout(id);
+  }, [message]);
+
+  // La manette couvre la page : le reste devient inerte pour que Tab ne passe pas dessous.
+  useEffect(() => {
+    const el = racine.current;
+    return el ? isolerDuReste(el) : undefined;
+  }, []);
+
+  // Échap referme le tiroir ouvert et rend le focus à sa poignée.
+  useEffect(() => {
+    if (!ouvert) return;
+    function onEchap(e: KeyboardEvent) {
+      if (e.key !== 'Escape' || e.defaultPrevented) return;
+      setOuvert(false);
+      poignee.current?.focus();
+    }
+    window.addEventListener('keydown', onEchap);
+    return () => window.removeEventListener('keydown', onEchap);
+  }, [ouvert]);
+
+  // Seul ce qui est utile à entendre est annoncé : ce qu’on peut prendre ou pousser, pas « rien devant vous ».
+  const devantUtile =
+    portant || devant === 'caisse' || devant === 'ballon' || devant === 'boite' || (devant as string) === 'plateforme';
+  const texteDevant = libelleDevant(devant, portant);
+  const [annonceDevant, setAnnonceDevant] = useState<string | null>(null);
+  useEffect(() => {
+    if (!devantUtile) {
+      setAnnonceDevant(null);
+      return;
+    }
+    setAnnonceDevant(texteDevant);
+    const id = window.setTimeout(() => setAnnonceDevant(null), DUREE_MESSAGE_MS);
+    return () => window.clearTimeout(id);
+  }, [devantUtile, texteDevant]);
+
   // Les touches suivent l’état courant : l’écouteur est refait à chaque changement de plateau.
   useEffect(() => {
     if (!clavier || disabled) return;
     function onKey(e: KeyboardEvent) {
-      const cible = e.target as HTMLElement | null;
-      if (cible && (cible.tagName === 'INPUT' || cible.tagName === 'TEXTAREA' || cible.isContentEditable)) return;
-      const d = DIRECTIONS.find((x) => x.cle === e.key);
-      if (d) {
-        e.preventDefault();
-        void envoyer({ type: 'marcher', dir: d.dir });
-      } else if (e.key === ' ') {
-        e.preventDefault();
-        action();
-      } else if (e.key === 'Enter') {
-        e.preventDefault();
-        sauter();
-      } else if (e.key === 's' || e.key === 'S') {
-        void envoyer({ type: 'saluer' });
-      }
+      const t = actionDepuisTouche({
+        key: e.key,
+        repeat: e.repeat,
+        defaultPrevented: e.defaultPrevented,
+        ctrlKey: e.ctrlKey,
+        metaKey: e.metaKey,
+        altKey: e.altKey,
+        cible: decrireCible(e.target),
+      });
+      if (!t) return;
+      if (t.type !== 'saluer') e.preventDefault();
+      // Les gestes sont espacés : une frappe trop rapprochée de la précédente est ignorée.
+      const maintenant = Date.now();
+      if (maintenant - dernierGeste.current < DELAI_GESTE_MS) return;
+      dernierGeste.current = maintenant;
+      if (t.type === 'action') action();
+      else if (t.type === 'sauter') sauter();
+      else void envoyer(t);
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -131,20 +270,36 @@ export function GrilleControleur({
 
   return (
     <section
+      ref={racine}
       className={`grille-console${ouvert ? ' is-ouvert' : ''}`}
       aria-label="Manette du personnage"
       style={{ '--fond': t.fond, '--ciel': t.ciel } as CSSProperties}
     >
       <div className="grille-plateau">{children}</div>
 
-      <div className="grille-bande" aria-live="polite">
-        <span className="grille-bande-devant">{libelleDevant(devant, portant)}</span>
-        {message && (
-          <span className="grille-bande-message" role="status">
-            {message}
-          </span>
+      <div className="grille-haut">
+        <div className="grille-bande">
+          <span className="grille-bande-devant">{texteDevant}</span>
+          {message && <span className="grille-bande-message">{message}</span>}
+          {avis}
+        </div>
+        {tiroir && (
+          <button
+            type="button"
+            ref={poignee}
+            className="grille-tiroir-poignee"
+            aria-expanded={ouvert}
+            aria-controls={tiroirId}
+            onClick={() => setOuvert((o) => !o)}
+          >
+            <span aria-hidden="true">{ouvert ? '⌄' : '⌃'}</span> {ouvert ? 'Fermer' : 'Plus d’actions'}
+          </button>
         )}
       </div>
+      {/* Seule zone annoncée : le message, sinon ce qui est utile devant le personnage. */}
+      <p className="sr-only" role="status" aria-live="polite">
+        {message ?? annonceDevant ?? ''}
+      </p>
 
       <div className="grille-manette">
         <div className="grille-croix" role="group" aria-label="Direction">
@@ -184,20 +339,9 @@ export function GrilleControleur({
       </div>
 
       {tiroir && (
-        <>
-          <button
-            type="button"
-            className="grille-tiroir-poignee"
-            aria-expanded={ouvert}
-            aria-controls="grille-tiroir"
-            onClick={() => setOuvert((o) => !o)}
-          >
-            <span aria-hidden="true">{ouvert ? '⌄' : '⌃'}</span> {ouvert ? 'Fermer' : 'Plus d’actions'}
-          </button>
-          <div id="grille-tiroir" className="grille-tiroir" aria-hidden={!ouvert} inert={!ouvert}>
-            {tiroir}
-          </div>
-        </>
+        <div id={tiroirId} className="grille-tiroir" aria-hidden={!ouvert} inert={!ouvert}>
+          {tiroir}
+        </div>
       )}
     </section>
   );

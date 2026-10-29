@@ -32,7 +32,7 @@ export function PlusOuMoinsPlayer({ publicState: pub, playerState: me, now, send
     }
 
     return (
-      <section className="player-game fade-in">
+      <section className="player-game bet-screen fade-in">
         <div className="round-info">
           Carte {pub.round + 1} / {pub.total} · <Countdown remaining={remaining} />
         </div>

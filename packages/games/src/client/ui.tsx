@@ -126,13 +126,15 @@ export function WaitingScreen({ title, text }: { title: string; text?: string })
   );
 }
 
-/** Fin de partie côté téléphone : score personnel et rang. */
-export function FinalScreen({ points, rank }: { points: number; rank: number | null }) {
+/**
+ * Fin de partie côté téléphone : score personnel. Le rang est dit une fois, par le résultat du salon
+ * (« 1er de la partie ») : on ne le répète pas ici, d’où le paramètre `rank` ignoré (gardé pour les jeux).
+ */
+export function FinalScreen({ points }: { points: number; rank?: number | null }) {
   return (
     <section className="player-game fade-in">
       <h2>Partie terminée</h2>
       <p className="big-number">{points} pts</p>
-      <p>Vous êtes {rank ? `${rank}ᵉ` : '—'} du classement.</p>
       <p className="muted">Regardez l’écran principal pour le podium final.</p>
     </section>
   );
