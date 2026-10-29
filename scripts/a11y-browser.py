@@ -83,13 +83,27 @@ def main() -> int:
         page.wait_for_selector(".stage-lobby", timeout=10000)
         audit(page, "écran TV (salon)")
 
-        # Plateau de test : le salon devient un plateau où chacun déplace son personnage.
+        # Plateau de test : l'écran principal montre le plateau en 3D (canevas WebGL), où les téléphones jouent.
         plateau = post_json("/api/rooms", {"gameId": "plateau-test", "practice": False})
         page.goto(f"{BASE_URL}/", wait_until="networkidle")
         page.evaluate(f"() => sessionStorage.setItem('ph:host:{plateau['code']}', {json.dumps(plateau['hostToken'])})")
         page.goto(f"{BASE_URL}/tv/{plateau['code']}", wait_until="networkidle")
-        page.wait_for_selector(".lobby-plateau .plateau-figures", timeout=10000)
+        page.wait_for_selector(".grille3d canvas", timeout=30000)
         audit(page, "écran TV (plateau de test)")
+
+        phone = browser.new_context(viewport={"width": 390, "height": 844}, is_mobile=True, has_touch=True, bypass_csp=True)
+        mobile = phone.new_page()
+        mobile.goto(f"{BASE_URL}/j/{code}", wait_until="networkidle")
+        audit(mobile, "téléphone (rejoindre)")
+
+        # Téléphone dans le plateau de test : la manette (croix, Saluer, Action, Sauter) par-dessus le plateau.
+        on_plateau = phone.new_page()
+        on_plateau.goto(f"{BASE_URL}/j/{plateau['code']}", wait_until="networkidle")
+        on_plateau.get_by_label("Votre nom", exact=False).first.fill("Audit")
+        on_plateau.get_by_role("button", name="Continuer").click()
+        on_plateau.get_by_role("button", name=re.compile("entrer dans la salle", re.I)).first.click()
+        on_plateau.wait_for_selector(".grille-console", timeout=30000)
+        audit(on_plateau, "téléphone (plateau de test)")
 
         page.goto(f"{BASE_URL}/admin", wait_until="networkidle")
         audit(page, "administration (connexion)")
@@ -109,20 +123,6 @@ def main() -> int:
         page.goto(f"{BASE_URL}/admin", wait_until="networkidle")
         page.wait_for_selector("text=Salles ouvertes", timeout=10000)
         audit(page, "administration (connectée)")
-
-        phone = browser.new_context(viewport={"width": 390, "height": 844}, is_mobile=True, has_touch=True, bypass_csp=True)
-        mobile = phone.new_page()
-        mobile.goto(f"{BASE_URL}/j/{code}", wait_until="networkidle")
-        audit(mobile, "téléphone (rejoindre)")
-
-        # Téléphone dans le plateau de test : son personnage est déplaçable (bouton, flèches).
-        on_plateau = phone.new_page()
-        on_plateau.goto(f"{BASE_URL}/j/{plateau['code']}", wait_until="networkidle")
-        on_plateau.get_by_label("Votre nom", exact=False).first.fill("Audit")
-        on_plateau.get_by_role("button", name="Continuer").click()
-        on_plateau.get_by_role("button", name=re.compile("entrer dans la salle", re.I)).first.click()
-        on_plateau.wait_for_selector(".lobby-plateau .plateau-figures", timeout=10000)
-        audit(on_plateau, "téléphone (plateau de test)")
 
         browser.close()
 

@@ -198,6 +198,22 @@ describe('MyResult', () => {
     expect(html).toContain('Habitué');
   });
 
+  it('après une partie unique, ni champion ni badges : le rang n’est pas redit', () => {
+    const html = renderToStaticMarkup(
+      <MyResult
+        lobby={lobby({
+          championship: { length: 1, teams: 0 },
+          series: series({ finished: true, champion: { names: ['Ana'], team: null } }),
+        })}
+        playerId="a"
+      />,
+    );
+    expect(html).toContain('1er de la partie');
+    expect(html).not.toContain('remporte le championnat');
+    expect(html).not.toContain('Invaincu');
+    expect(html).not.toContain('Championnat :');
+  });
+
   it('montre l’équipe du joueur quand le salon en a', () => {
     const teams = [
       { index: 0, name: 'Rouge', icon: '🔴', color: '#ff5f6d', points: 16, rank: 1, members: ['Ana'] },

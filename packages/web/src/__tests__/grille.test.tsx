@@ -9,7 +9,7 @@ import {
   type EtatGrille,
   type PublicPlayer,
 } from '@partyhub/shared';
-import { GrilleControleur, GrilleView, libelleDevant } from '@partyhub/games/client';
+import { GrilleControleur, GrilleView, actionDepuisTouche, libelleDevant } from '@partyhub/games/client';
 import { apparencesGrille } from '../components/LobbyGrille.js';
 
 /**
@@ -111,6 +111,7 @@ describe('GrilleControleur', () => {
     expect(libelleDevant('caisse', false)).toContain('Action la pousse');
     expect(libelleDevant('boite', false)).toContain('Action la prend');
     expect(libelleDevant('rien', false)).toBe('Rien devant vous');
+    expect(libelleDevant('plateforme', false)).toBe('Plateforme devant vous : Sauter pour monter');
     expect(libelleDevant('rien', true)).toContain('Vous portez une boîte');
   });
 });
@@ -172,5 +173,54 @@ describe('Décor et tiroir', () => {
       </GrilleControleur>,
     );
     expect(html).not.toContain('grille-tiroir-poignee');
+  });
+});
+
+describe('actionDepuisTouche', () => {
+  it('traduit les flèches, Espace, Entrée et S en gestes', () => {
+    expect(actionDepuisTouche({ key: 'ArrowUp' })).toEqual({ type: 'marcher', dir: 'up' });
+    expect(actionDepuisTouche({ key: 'ArrowLeft' })).toEqual({ type: 'marcher', dir: 'left' });
+    expect(actionDepuisTouche({ key: ' ' })).toEqual({ type: 'action' });
+    expect(actionDepuisTouche({ key: 'Enter' })).toEqual({ type: 'sauter' });
+    expect(actionDepuisTouche({ key: 's' })).toEqual({ type: 'saluer' });
+    expect(actionDepuisTouche({ key: 'S' })).toEqual({ type: 'saluer' });
+    expect(actionDepuisTouche({ key: 'x' })).toBeNull();
+  });
+
+  it('ignore une frappe déjà traitée ou combinée à Ctrl, Cmd ou Alt', () => {
+    expect(actionDepuisTouche({ key: ' ', defaultPrevented: true })).toBeNull();
+    expect(actionDepuisTouche({ key: 'ArrowUp', ctrlKey: true })).toBeNull();
+    expect(actionDepuisTouche({ key: 's', metaKey: true })).toBeNull();
+    expect(actionDepuisTouche({ key: 'ArrowLeft', altKey: true })).toBeNull();
+  });
+
+  it('laisse Espace et Entrée aux boutons, liens, listes et boîtes de dialogue', () => {
+    for (const cible of [
+      { tag: 'BUTTON' },
+      { tag: 'A' },
+      { tag: 'SELECT' },
+      { tag: 'DIV', role: 'button' },
+      { tag: 'DIV', role: 'dialog' },
+      { tag: 'SPAN', dansDialogue: true },
+    ]) {
+      expect(actionDepuisTouche({ key: ' ', cible })).toBeNull();
+      expect(actionDepuisTouche({ key: 'Enter', cible })).toBeNull();
+    }
+    // Les flèches restent actives sur un bouton.
+    expect(actionDepuisTouche({ key: 'ArrowDown', cible: { tag: 'BUTTON' } })).toEqual({
+      type: 'marcher',
+      dir: 'down',
+    });
+  });
+
+  it('ne touche à rien dans un champ de saisie', () => {
+    for (const cible of [{ tag: 'INPUT' }, { tag: 'TEXTAREA' }, { tag: 'SELECT' }, { tag: 'DIV', editable: true }]) {
+      for (const key of ['ArrowUp', ' ', 'Enter', 's']) expect(actionDepuisTouche({ key, cible })).toBeNull();
+    }
+  });
+
+  it('une touche maintenue ne répète que la marche', () => {
+    expect(actionDepuisTouche({ key: 'ArrowRight', repeat: true })).toEqual({ type: 'marcher', dir: 'right' });
+    for (const key of [' ', 'Enter', 's']) expect(actionDepuisTouche({ key, repeat: true })).toBeNull();
   });
 });

@@ -1,12 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { io as ioClient, type Socket } from 'socket.io-client';
-import type {
-  CatalogGame,
-  ClientToServerEvents,
-  HostRoomView,
-  LobbyPositionEvent,
-  ServerToClientEvents,
-} from '@partyhub/shared';
+import type { CatalogGame, ClientToServerEvents, HostRoomView, ServerToClientEvents } from '@partyhub/shared';
 import { createServer, type PartyServer } from '../server.js';
 import { createLogger } from '../logger.js';
 import type { AppConfig } from '../config.js';
@@ -100,7 +94,6 @@ describe('Plateau de test', () => {
   it('ouvre une salle, où le lancement est refusé (aucune partie)', async () => {
     const { code, hostToken } = await createPlateau();
     const host = await connect();
-    clients.push(host);
     const views = track<HostRoomView>(host, 'room:host');
     expect((await call(host, 'host:connect', { code, hostToken })).ok).toBe(true);
     const view = await until(views, (v) => v.lobby.game.id === 'plateau-test');
@@ -108,7 +101,6 @@ describe('Plateau de test', () => {
 
     // Avec un joueur présent, la vérification du nombre passe : c'est le plateau qui refuse.
     const player = await connect();
-    clients.push(player);
     expect((await call(player, 'player:join', { code, name: 'Test' })).ok).toBe(true);
     const start = await call(host, 'host:start');
     expect(start.ok).toBe(false);
@@ -117,35 +109,13 @@ describe('Plateau de test', () => {
     player.disconnect();
   });
 
-  it('un joueur se déplace sur le plateau : la position est partagée à la salle', async () => {
+  it('un joueur marche, salue, et un geste refusé le dit sans toucher au compteur', async () => {
     const { code, hostToken } = await createPlateau();
     const host = await connect();
-    clients.push(host);
-    await call(host, 'host:connect', { code, hostToken });
-    const moves = track<LobbyPositionEvent>(host, 'room:lobby-position');
-
-    const player = await connect();
-    clients.push(player);
-    const joined = await call(player, 'player:join', { code, name: 'Lina' });
-    expect(joined.ok).toBe(true);
-
-    const moved = await call(player, 'player:lobby-move', { x: 0.2, y: 0.7 });
-    expect(moved.ok).toBe(true);
-    const seen = await until(moves, (m) => m.position.x === 0.2 && m.position.y === 0.7);
-    expect(seen.playerId).toBe(joined.playerId);
-    host.disconnect();
-    player.disconnect();
-  });
-
-  it('un joueur marche, salue, et un geste refusé le dit sans rien changer', async () => {
-    const { code, hostToken } = await createPlateau();
-    const host = await connect();
-    clients.push(host);
     const views = track<HostRoomView>(host, 'room:host');
     await call(host, 'host:connect', { code, hostToken });
 
     const player = await connect();
-    clients.push(player);
     const joined = await call(player, 'player:join', { code, name: 'Max' });
     expect(joined.ok).toBe(true);
     const id = joined.playerId as string;
@@ -154,13 +124,14 @@ describe('Plateau de test', () => {
     const depart = debut.lobby.grille!.personnages[id]!;
     const seqDebut = debut.lobby.grille!.seq;
 
-    // Marcher : la case est libre (on avance) ou bloquée (on tourne seulement).
+    // Marcher : le départ est déterministe et la case à droite est libre, on avance d’une case.
     const marche = await call(player, 'player:grille', { type: 'marcher', dir: 'right' });
     expect(marche.ok).toBe(true);
     const apresMarche = await until(views, (v) => (v.lobby.grille?.seq ?? -1) === seqDebut + 1);
     const pos = apresMarche.lobby.grille!.personnages[id]!;
     expect(pos.dir).toBe('right');
-    expect([depart.x, depart.x + 1]).toContain(pos.x);
+    expect(pos.x).toBe(depart.x + 1);
+    expect(pos.y).toBe(depart.y);
 
     // Saluer : le geste est partagé à la salle, avec son auteur.
     const salut = await call(player, 'player:grille', { type: 'saluer' });
@@ -173,7 +144,13 @@ describe('Plateau de test', () => {
     const refus = await call(player, 'player:grille', { type: 'pousser', dir: 'up' });
     expect(refus.ok).toBe(false);
     expect(refus.error).toMatch(/Rien à pousser/);
-    expect(apresSalut.lobby.grille!.seq).toBe(seqAvant);
+    await new Promise((r) => setTimeout(r, 150));
+    expect(Math.max(...views.map((v) => v.lobby.grille?.seq ?? -1))).toBe(seqAvant);
+
+    // Le geste suivant est le premier à faire avancer le compteur : le refus n’en a consommé aucun.
+    expect((await call(player, 'player:grille', { type: 'saluer' })).ok).toBe(true);
+    const apresRefus = await until(views, (v) => (v.lobby.grille?.seq ?? -1) > seqAvant);
+    expect(apresRefus.lobby.grille!.seq).toBe(seqAvant + 1);
 
     // Une action inconnue est rejetée par le schéma.
     const invalide = await call(player, 'player:grille', { type: 'voler' });
@@ -190,7 +167,6 @@ describe('Décor du plateau', () => {
     const defaut = await createPlateau();
     const hostChoisi = await connect();
     const hostDefaut = await connect();
-    clients.push(hostChoisi, hostDefaut);
     const viewsChoisi = track<HostRoomView>(hostChoisi, 'room:host');
     const viewsDefaut = track<HostRoomView>(hostDefaut, 'room:host');
     expect((await call(hostChoisi, 'host:connect', { code: choisi.code, hostToken: choisi.hostToken })).ok).toBe(true);

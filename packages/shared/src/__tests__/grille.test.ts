@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { THEMES_PLATEAU, THEME_PAR_DEFAUT, themeDePlateau, type ThemeId } from '../grille-themes.js';
+import { THEMES_PLATEAU, THEME_IDS, THEME_PAR_DEFAUT, themeDePlateau, type ThemeId } from '../grille-themes.js';
 import {
   actionContextuelle,
+  avance,
   ajouterPersonnage,
   appliquerAction,
   devantLePersonnage,
@@ -154,9 +155,24 @@ describe('sauter', () => {
   it('refuse si la case d’atterrissage est bloquée ou hors du plateau', () => {
     const bloque = appliquerAction(plateau([caisse('c', 3, 1)], { a: [1, 1] }), 'a', { type: 'sauter', dir: 'right' });
     expect(bloque.ok).toBe(false);
+    const dehors = appliquerAction(plateau([], { a: [GRILLE_LARGEUR - 2, 1] }), 'a', { type: 'sauter', dir: 'right' });
+    expect(dehors.ok).toBe(false);
   });
 
-  it('emmène la boîte portée avec soi', () => {
+  it('franchit un pilier (règle documentée : seule la case d’atterrissage compte)', () => {
+    const e = plateau([], { a: [1, 1] });
+    const decor = e.decor.map((l, y) => (y === 1 ? l.slice(0, 2) + '#' + l.slice(3) : l));
+    const r = ok(appliquerAction({ ...e, decor }, 'a', { type: 'sauter', dir: 'right' }));
+    expect(r.personnages.a).toMatchObject({ x: 3, y: 1, attitude: 'saut' });
+  });
+
+  it('franchit un autre joueur sans le déplacer', () => {
+    const r = ok(appliquerAction(plateau([], { a: [1, 1], b: [2, 1] }), 'a', { type: 'sauter', dir: 'right' }));
+    expect(r.personnages.a).toMatchObject({ x: 3, y: 1 });
+    expect(r.personnages.b).toMatchObject({ x: 2, y: 1 });
+  });
+
+  it('refuse de sauter en portant une boîte', () => {
     const e0 = plateau([boite('b', 2, 1)], { a: [1, 1] });
     const e1 = ok(appliquerAction(e0, 'a', { type: 'porter', dir: 'right' }));
     expect(appliquerAction(e1, 'a', { type: 'sauter', dir: 'right' }).ok).toBe(false);
@@ -204,6 +220,15 @@ describe('saluer et gestes partagés', () => {
     const e1 = ok(appliquerAction(plateau([], { a: [4, 3] }), 'a', { type: 'saluer' }));
     const e2 = ok(appliquerAction(e1, 'a', { type: 'saluer' }));
     expect(e2.seq).toBe(e1.seq + 1);
+  });
+
+  it('une marche refusée sans changer de direction rend le même état, sans toucher au compteur', () => {
+    const e = ok(appliquerAction(plateau([], { a: [1, 1] }), 'a', { type: 'marcher', dir: 'up' }));
+    const encore = appliquerAction(e, 'a', { type: 'marcher', dir: 'up' });
+    expect(encore.ok).toBe(true);
+    if (encore.ok) expect(encore.etat).toBe(e);
+    const tourne = ok(appliquerAction(e, 'a', { type: 'marcher', dir: 'left' }));
+    expect(tourne.seq).toBe(e.seq + 1);
   });
 
   it('un personnage inconnu est refusé', () => {
@@ -265,6 +290,17 @@ describe('bouton d’action', () => {
     expect(devantLePersonnage(e, 'inconnu')).toBeNull();
   });
 
+  it('reconnaît une plateforme devant soi : pas d’action, et la marche refusée garde sa référence', () => {
+    const base = plateau([], { a: [2, 1] });
+    const decor = base.decor.map((l, y) => (y === 1 ? l.slice(0, 3) + CASE_PLATEFORME + l.slice(4) : l));
+    const e = { ...base, decor, personnages: { a: { ...base.personnages.a!, dir: 'right' as const } } };
+    expect(devantLePersonnage(e, 'a')).toBe('plateforme');
+    expect(actionContextuelle(e, 'a')).toBeNull();
+    const r = appliquerAction(e, 'a', { type: 'marcher', dir: 'right' });
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.etat).toBe(e);
+  });
+
   it('pousse une caisse devant soi, et porte une boîte devant soi', () => {
     const avecCaisse = plateau([{ id: 'c', nature: 'caisse', x: 3, y: 2, porte: null }], { a: [2, 2] });
     const caisse = { ...avecCaisse, personnages: { a: { ...avecCaisse.personnages.a!, dir: 'right' as const } } };
@@ -280,6 +316,15 @@ describe('bouton d’action', () => {
     expect(actionContextuelle(portee, 'a')).toEqual({ type: 'porter', dir: 'down' });
     const vide = plateau([], { a: [2, 2] });
     expect(actionContextuelle(vide, 'a')).toBeNull();
+  });
+
+  it('ne propose rien face à un mur, ni quand le geste serait refusé', () => {
+    const e = plateau([], { a: [1, 1] });
+    const mur = { ...e, personnages: { a: { ...e.personnages.a!, dir: 'up' as const } } };
+    expect(actionContextuelle(mur, 'a')).toBeNull();
+    const coince = plateau([caisse('c', 2, 1), caisse('d', 3, 1)], { a: [1, 1] });
+    const vers = { ...coince, personnages: { a: { ...coince.personnages.a!, dir: 'right' as const } } };
+    expect(actionContextuelle(vers, 'a')).toBeNull();
   });
 });
 
@@ -306,6 +351,43 @@ function avecPlateforme(e: EtatGrille, x: number, y: number): EtatGrille {
 }
 
 describe('plateformes', () => {
+  /** Plateau avec une plateforme 2 × 2 sur les cases (4..5, 2..3). */
+  const pf = (objets: ObjetGrille[], persos: Record<string, [number, number]>) =>
+    avecPlateforme(plateau(objets, persos), 4, 2);
+
+  it('pousser ne fait jamais monter : ni le pousseur, ni l’objet poussé', () => {
+    const refus = { ok: false, erreur: 'Pour monter, sautez.' };
+    // Pousseur au sol, caisse sur la plateforme : le pousseur monterait.
+    const a = appliquerAction(pf([caisse('c', 4, 2)], { a: [3, 2] }), 'a', { type: 'pousser', dir: 'right' });
+    expect(a).toEqual(refus);
+    // Caisse au sol poussée sur la plateforme.
+    const b = appliquerAction(pf([caisse('c', 3, 2)], { a: [2, 2] }), 'a', { type: 'pousser', dir: 'right' });
+    expect(b).toEqual(refus);
+    const balle: ObjetGrille = { id: 'b', nature: 'ballon', x: 3, y: 3, porte: null };
+    const c = appliquerAction(pf([balle], { a: [2, 3] }), 'a', { type: 'pousser', dir: 'right' });
+    expect(c).toEqual(refus);
+  });
+
+  it('sur la plateforme, on pousse vers le sol (descente permise) et d’une plateforme à l’autre', () => {
+    const r = ok(appliquerAction(pf([caisse('c', 3, 2)], { a: [4, 2] }), 'a', { type: 'pousser', dir: 'left' }));
+    expect(r.objets[0]).toMatchObject({ x: 2, y: 2 });
+    expect(r.personnages.a).toMatchObject({ x: 3, y: 2 });
+    const deux = avecPlateforme(pf([caisse('c', 4, 3)], { a: [4, 2] }), 4, 4);
+    const pp = ok(appliquerAction(deux, 'a', { type: 'pousser', dir: 'down' }));
+    expect(pp.objets[0]).toMatchObject({ x: 4, y: 4 });
+    expect(pp.personnages.a).toMatchObject({ x: 4, y: 3 });
+  });
+
+  it('on saute de plateforme à plateforme et au sol ; sol vers plateforme occupée est refusé', () => {
+    const sol = ok(appliquerAction(pf([], { a: [4, 2] }), 'a', { type: 'sauter', dir: 'right' }));
+    expect(sol.personnages.a).toMatchObject({ x: 6, y: 2 }); // P -> sol
+    const deux = avecPlateforme(pf([], { a: [4, 2] }), 6, 2);
+    const pp = ok(appliquerAction(deux, 'a', { type: 'sauter', dir: 'right' }));
+    expect(pp.personnages.a).toMatchObject({ x: 6, y: 2 }); // P -> P
+    const bloque = appliquerAction(pf([caisse('c', 4, 2)], { a: [2, 2] }), 'a', { type: 'sauter', dir: 'right' });
+    expect(bloque.ok).toBe(false);
+  });
+
   it('on ne monte pas sur une plateforme en marchant depuis le sol', () => {
     const e = avecPlateforme(plateau([], { a: [2, 2] }), 3, 2);
     const r = appliquerAction(e, 'a', { type: 'marcher', dir: 'right' });
@@ -331,20 +413,45 @@ describe('plateformes', () => {
     expect(aLaPorte.etat.personnages.a).toMatchObject({ x: 2, y: 2 });
   });
 
-  it('les thèmes qui les prévoient ont des plateformes, hors des départs ; le tennis n’en a pas', () => {
+  it('cumule 6 puis 12 joueurs sur chaque thème et 50 graines : jamais sur une plateforme, toujours une sortie', () => {
+    for (const id of THEME_IDS) {
+      const forme = themeDePlateau(id).forme;
+      for (let graine = 1; graine <= 50; graine++) {
+        let e = creerGrille({ theme: id, graine });
+        for (let i = 0; i < 12; i++) {
+          const avant = e;
+          e = ajouterPersonnage(e, `j${i}`);
+          const p = e.personnages[`j${i}`];
+          if (!p) throw new Error(`${id}/${graine} : joueur ${i} non placé`);
+          expect(e.decor[p.y]?.[p.x], `${id}/${graine}/${i} sur du sol`).toBe('.');
+          expect(formeContient(forme, e.largeur, e.hauteur, p.x, p.y)).toBe(true);
+          expect(
+            avant.objets.some((o) => o.porte === null && o.x === p.x && o.y === p.y),
+            `${id}/${graine}/${i} pas sur un objet`,
+          ).toBe(false);
+          const voisinLibre = (['up', 'down', 'left', 'right'] as const).some((d) => {
+            const v = avance(p.x, p.y, d);
+            const c = e.decor[v.y]?.[v.x];
+            return (
+              (c === '.' || c === CASE_PLATEFORME) &&
+              !Object.values(avant.personnages).some((q) => q.x === v.x && q.y === v.y) &&
+              !e.objets.some((o) => o.porte === null && o.x === v.x && o.y === v.y)
+            );
+          });
+          expect(voisinLibre, `${id}/${graine}/${i} a un voisin libre`).toBe(true);
+        }
+        expect(Object.keys(e.personnages)).toHaveLength(12);
+      }
+    }
+  });
+
+  it('les plateformes ne touchent pas les six départs ; le tennis n’en a pas', () => {
     for (const id of ['fete', 'arene', 'banquise', 'arene-ronde', 'escalade', 'ile'] as const) {
       const e = creerGrille({ theme: id, graine: 3 });
       expect(e.decor.join('')).toContain(CASE_PLATEFORME);
-      for (const personnage of [0, 1, 2, 3]) {
-        const cases = e.decor.map((l) => l.split(''));
-        const pos = { x: 0, y: 0 };
-        const joue = ajouterPersonnage(e, `j${personnage}`);
-        const p = joue.personnages[`j${personnage}`];
-        if (!p) throw new Error('personnage absent');
-        pos.x = p.x;
-        pos.y = p.y;
-        expect(cases[pos.y]?.[pos.x]).toBe('.');
-      }
+      let f = e;
+      for (let i = 0; i < 6; i++) f = ajouterPersonnage(f, `j${i}`);
+      for (const p of Object.values(f.personnages)) expect(e.decor[p.y]?.[p.x]).toBe('.');
     }
     expect(creerGrille({ theme: 'tennis' }).decor.join('')).not.toContain(CASE_PLATEFORME);
   });
