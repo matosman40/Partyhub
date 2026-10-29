@@ -626,6 +626,8 @@ export class Room {
     if (!this.inLobby) return { ok: false, error: 'Le plateau ne sert qu’avant la partie.' };
     const r = appliquerAction(this.grille, playerId, action);
     if (!r.ok) return { ok: false, error: r.erreur };
+    // Geste sans effet (marche contre un mur, même direction) : l’état est la même référence, rien à diffuser.
+    if (r.etat === this.grille) return { ok: true, grille: r.etat };
     this.grille = r.etat;
     this.touch();
     this.hooks.onChange(this);
@@ -679,6 +681,7 @@ export class Room {
     };
     this.players.set(bot.id, bot);
     this.state = this.module.onPlayerJoin(this.state, { id: bot.id, name }, this.ctx);
+    if (this.grille) this.grille = ajouterPersonnage(this.grille, bot.id);
     this.refreshStatus();
     this.touch();
     this.hooks.onChange(this);

@@ -117,13 +117,30 @@ export class LoginLimiter {
   }
 }
 
+/**
+ * Compare deux secrets (jetons) en temps constant. Les deux valeurs passent par SHA-256 pour avoir
+ * une longueur égale, puis `timingSafeEqual` : le temps de réponse ne révèle pas le préfixe commun.
+ */
+export function sameSecret(given: unknown, expected: string): boolean {
+  if (typeof given !== 'string') return false;
+  const a = createHash('sha256').update(given).digest();
+  const b = createHash('sha256').update(expected).digest();
+  return timingSafeEqual(a, b);
+}
+
 export function readCookie(header: string | undefined, name: string): string | undefined {
   if (!header) return undefined;
   for (const part of header.split(';')) {
     const index = part.indexOf('=');
     if (index === -1) continue;
     if (part.slice(0, index).trim() === name) {
-      return decodeURIComponent(part.slice(index + 1).trim());
+      const value = part.slice(index + 1).trim();
+      try {
+        return decodeURIComponent(value);
+      } catch {
+        // Cookie mal encodé (« %E0%A4%A »…) : on l’ignore au lieu de lever une erreur 500.
+        return undefined;
+      }
     }
   }
   return undefined;

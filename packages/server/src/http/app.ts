@@ -35,7 +35,7 @@ import {
   type CopyServices,
 } from '../packages/copy.js';
 import type { MediaQuizService } from '../media/service.js';
-import { AdminSessions, LoginLimiter, readCookie, verifyPassword } from '../auth.js';
+import { AdminSessions, LoginLimiter, readCookie, sameSecret, verifyPassword } from '../auth.js';
 import { catalog, gameInfo, originOf } from '../catalog.js';
 import { withOverrides } from '../game-details.js';
 import {
@@ -81,6 +81,12 @@ import { GAME_IMAGE_ID } from '@partyhub/shared';
 import { aiProviderUpdateSchema } from '../ai/settings.js';
 import type { ServerSettingsService } from '../server-settings.js';
 import { PRESETS } from '../config.js';
+import { PortraitProviderError, sniffPortrait, type PortraitGuard } from '../images/portrait.js';
+import { PORTRAIT_MAX_BYTES, portraitRequestSchema, traitsToCharacter, type PortraitErrorCode } from '@partyhub/shared';
+
+const PORTRAIT_ROUTE = '/api/characters/from-photo';
+/** Corps JSON de la route de portrait : la photo (≤ 1,5 Mo) en base64, soit environ 2 Mo. */
+const PORTRAIT_BODY_LIMIT = '2200kb';
 
 export interface AppDeps {
   config: AppConfig;
@@ -126,6 +132,8 @@ export interface AppDeps {
   gamePhotos: GamePhotoStore;
   /** Mise à jour depuis l’administration (absente hors serveur complet). */
   update?: UpdateService;
+  /** Personnage à partir d’une photo : analyseur et limiteurs. Absent = fonction indisponible. */
+  portrait?: PortraitGuard;
 }
 
 const GAME_PHOTO_ERRORS: Record<GamePhotoRejection, string> = {
@@ -175,6 +183,9 @@ export function createApp(deps: AppDeps): express.Express {
   const limiter = new LoginLimiter();
   const registerLimiter = new LoginLimiter(40);
   const profileLimiter = new LoginLimiter(10);
+  // Consultation d’un code de salle : sans frein, un appareil du réseau énumère les codes en quelques secondes.
+  // Un salon qui s’ouvre fait entrer une dizaine de téléphones d’une même adresse : la limite reste large.
+  const roomLookupLimiter = new LoginLimiter(60, 60_000);
 
   app.disable('x-powered-by');
   app.set('trust proxy', config.trustProxy ?? 'loopback');
@@ -186,6 +197,7 @@ export function createApp(deps: AppDeps): express.Express {
   // Ces routes lisent elles-mêmes leur corps (limite propre) : le JSON global ne doit pas y toucher.
   app.use((req, res, next) => {
     const selfParsed =
+      (req.method === 'POST' && req.path === PORTRAIT_ROUTE) ||
       req.path === '/api/admin/backup/import' ||
       req.path === '/api/admin/card-games/import' ||
       (req.method === 'POST' && (req.path === '/api/admin/assets' || req.path === '/api/admin/backup/archive')) ||
@@ -225,6 +237,12 @@ export function createApp(deps: AppDeps): express.Express {
     res.json({ ok: true });
   });
 
+  /** Fonctions facultatives du serveur, selon sa configuration. Aucun secret. */
+  api.get('/features', (_req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({ portrait: deps.portrait?.available === true });
+  });
+
   api.get('/catalog', (_req, res) => {
     res.json({ games: catalog(store, false) });
   });
@@ -259,6 +277,12 @@ export function createApp(deps: AppDeps): express.Express {
 
   /** Vérifie qu’un code existe avant d’afficher le formulaire d’entrée. */
   api.get('/rooms/:code', (req, res) => {
+    const ip = req.ip ?? 'inconnue';
+    if (!roomLookupLimiter.allow(ip)) {
+      res.status(429).json({ error: 'Trop de recherches de salle. Patientez une minute.' });
+      return;
+    }
+    roomLookupLimiter.hit(ip);
     const parsed = roomCodeSchema.safeParse(req.params.code);
     const room = parsed.success ? manager.getByCode(parsed.data) : undefined;
     res.json({
@@ -293,7 +317,7 @@ export function createApp(deps: AppDeps): express.Express {
       res.status(404).json({ error: 'Salle introuvable.' });
       return;
     }
-    if (req.get('x-host-token') !== room.hostToken) {
+    if (!sameSecret(req.get('x-host-token'), room.hostToken)) {
       res.status(403).json({ error: 'Accès refusé.' });
       return;
     }
@@ -459,6 +483,113 @@ export function createApp(deps: AppDeps): express.Express {
     throw err;
   };
 
+  /**
+   * Personnage à partir d’une photo de portrait. La photo n’est ni écrite sur disque, ni journalisée, ni gardée :
+   * elle ne vit que le temps de la requête. Ordre : consentement, session, limiteurs, taille, type réel, analyse.
+   */
+  const portraitFail = (res: Response, status: number, code: PortraitErrorCode, error: string) => {
+    res.setHeader('Cache-Control', 'no-store');
+    res.status(status).json({ error, code });
+  };
+  const portraitJson = express.json({ limit: PORTRAIT_BODY_LIMIT });
+  const portraitBody = (req: Request, res: Response, next: NextFunction) => {
+    portraitJson(req, res, (err?: unknown) => {
+      if (!err) return next();
+      // Aucun écho du contenu reçu.
+      const status = (err as { status?: unknown })?.status;
+      if (status === 413) {
+        return portraitFail(res, 413, 'too_large', 'Cette photo est trop lourde. Essayez-en une plus petite.');
+      }
+      return portraitFail(res, 400, 'bad_type', 'Demande invalide.');
+    });
+  };
+  const portraitAuth = (req: Request, res: Response, next: NextFunction) => {
+    const body = req.body as { consent?: unknown } | undefined;
+    if (body?.consent !== true) {
+      return portraitFail(res, 400, 'consent_required', 'Votre accord est nécessaire pour analyser la photo.');
+    }
+    const profileId = profiles.authenticate(bearer(req));
+    if (!profileId) return portraitFail(res, 401, 'unauthorized', 'Connexion au profil requise.');
+    (req as Request & { profileId: string }).profileId = profileId;
+    next();
+  };
+
+  app.post(PORTRAIT_ROUTE, portraitBody, portraitAuth, async (req, res) => {
+    const guard = deps.portrait;
+    const analyzer = guard?.settings.analyzer;
+    if (!guard || !analyzer || !guard.available) {
+      return portraitFail(res, 503, 'unavailable', 'La création à partir d’une photo n’est pas disponible.');
+    }
+    if (!guard.admit(profileOf(req), req.ip ?? 'inconnue')) {
+      return portraitFail(res, 429, 'rate_limited', 'Trop d’essais. Réessayez dans quelques minutes.');
+    }
+    const parsed = portraitRequestSchema.safeParse(req.body);
+    const rawImage = (req.body as { image?: unknown } | undefined)?.image;
+    // Trop long pour le schéma : c’est une photo trop lourde, pas une demande mal formée.
+    if (!parsed.success) {
+      if (typeof rawImage === 'string' && rawImage.length > Math.ceil((PORTRAIT_MAX_BYTES * 4) / 3) + 200) {
+        return portraitFail(res, 413, 'too_large', 'Cette photo est trop lourde. Essayez-en une plus petite.');
+      }
+      return portraitFail(res, 415, 'bad_type', 'Photo non reconnue. Utilisez une image JPEG, PNG ou WebP.');
+    }
+    const match = /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/]+={0,2})$/.exec(parsed.data.image);
+    if (!match) {
+      return portraitFail(res, 415, 'bad_type', 'Photo non reconnue. Utilisez une image JPEG, PNG ou WebP.');
+    }
+    const [, announced = '', encoded = ''] = match;
+    const padding = encoded.endsWith('==') ? 2 : encoded.endsWith('=') ? 1 : 0;
+    if (Math.floor((encoded.length * 3) / 4) - padding > PORTRAIT_MAX_BYTES) {
+      return portraitFail(res, 413, 'too_large', 'Cette photo est trop lourde. Essayez-en une plus petite.');
+    }
+    const image: { bytes: Buffer; mime: string } = { bytes: Buffer.from(encoded, 'base64'), mime: announced };
+    try {
+      const real = sniffPortrait(image.bytes);
+      if (real === null || real !== announced) {
+        return portraitFail(res, 415, 'bad_type', 'Photo non reconnue. Utilisez une image JPEG, PNG ou WebP.');
+      }
+      if (!guard.reserveDaily()) {
+        return portraitFail(res, 503, 'unavailable', 'La limite d’analyses du jour est atteinte. Revenez demain.');
+      }
+      const started = Date.now();
+      const abort = new AbortController();
+      res.on('close', () => {
+        if (!res.writableEnded) abort.abort();
+      });
+      try {
+        const traits = await analyzer.analyze(image, abort.signal);
+        const ms = Date.now() - started;
+        if (traits.faces === 0) {
+          logger.info({ event: 'portrait.analyse', outcome: 'refuse', ms }, 'Portrait analysé');
+          return portraitFail(
+            res,
+            422,
+            'no_face',
+            'Nous ne voyons pas de visage sur cette photo. Essayez avec une photo de face, bien éclairée.',
+          );
+        }
+        if (traits.faces > 1) {
+          logger.info({ event: 'portrait.analyse', outcome: 'refuse', ms }, 'Portrait analysé');
+          return portraitFail(
+            res,
+            422,
+            'several_faces',
+            'Plusieurs visages sont visibles. Choisissez une photo où vous êtes seul(e).',
+          );
+        }
+        logger.info({ event: 'portrait.analyse', outcome: 'ok', ms }, 'Portrait analysé');
+        res.setHeader('Cache-Control', 'no-store');
+        res.json({ character: traitsToCharacter(traits, null) });
+      } catch (err) {
+        if (!(err instanceof PortraitProviderError)) throw err;
+        // Ni le message du fournisseur ni la photo ne sont journalisés.
+        logger.warn({ event: 'portrait.analyse', outcome: 'erreur', ms: Date.now() - started }, 'Portrait en échec');
+        return portraitFail(res, 502, 'provider_error', 'L’analyse a échoué. Réessayez dans un instant.');
+      }
+    } finally {
+      // Rien à libérer explicitement : le tampon n’est référencé que par cette requête.
+    }
+  });
+
   const profileRoutes = express.Router();
 
   profileRoutes.post('/register', async (req, res) => {
@@ -492,12 +623,13 @@ export function createApp(deps: AppDeps): express.Express {
       res.status(400).json({ error: 'Identifiant et mot de passe requis.' });
       return;
     }
+    // Comptée avant la vérification asynchrone (voir la connexion administrateur), remise à zéro en cas de succès.
+    profileLimiter.hit(ip);
     try {
       const result = await profiles.login(parsed.data.username, parsed.data.password);
       profileLimiter.reset(ip);
       res.json(result);
     } catch (err) {
-      profileLimiter.fail(ip);
       fail(res, err);
     }
   });
@@ -745,11 +877,13 @@ export function createApp(deps: AppDeps): express.Express {
       res.status(429).json({ error: 'Trop de tentatives. Réessayez dans quelques minutes.' });
       return;
     }
+    // La tentative est comptée AVANT la vérification (asynchrone) : sinon une rafale de requêtes simultanées
+    // passerait toutes le contrôle. Elle est remise à zéro en cas de succès.
+    limiter.hit(ip);
     const password = typeof req.body?.password === 'string' ? req.body.password : '';
     const stored = store.getKv('admin_password_hash') ?? '';
     const valid = password.length > 0 && (await verifyPassword(password, stored));
     if (!valid) {
-      limiter.fail(ip);
       logger.warn({ event: 'admin.login.refused', ip }, 'Tentative de connexion administrateur refusée');
       res.status(401).json({ error: 'Mot de passe incorrect.' });
       return;

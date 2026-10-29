@@ -33,6 +33,7 @@ import {
   type ServerToClientEvents,
 } from '@partyhub/shared';
 import type { Logger } from '../logger.js';
+import { sameSecret } from '../auth.js';
 import { clientIp } from './client-ip.js';
 import { JOIN_THROTTLE_DEFAULTS, JoinThrottle, type JoinThrottleOptions } from './join-throttle.js';
 import { compileTrustProxy, type TrustProxy } from '../trust-proxy.js';
@@ -68,6 +69,24 @@ class RateLimiter {
     return true;
   }
 }
+
+/**
+ * Événements dont le gestionnaire ne prend qu’un accusé (`(ack) => …`), sans charge utile.
+ * À tenir d’accord avec les `socket.on` de `onConnection` : le test `hub-ack` le vérifie.
+ */
+export const EVENEMENTS_ACCUSE_SEUL: ReadonlySet<string> = new Set([
+  'host:handoff',
+  'host:start',
+  'host:next',
+  'host:end',
+  'host:replay',
+  'host:addBot',
+  'host:close',
+  'observer:leave',
+  'player:leave',
+]);
+/** Seul événement émis sans accusé par les clients : les mesures de capteurs. */
+const EVENEMENT_SANS_ACCUSE = 'player:sensor';
 
 const COMMANDS_PER_WINDOW = 20;
 const WINDOW_MS = 5000;
@@ -216,6 +235,22 @@ export class RealtimeHub {
     const voiceLimiter = new RateLimiter(() => 3 * this.cadence(), 10_000);
     const ip = clientIp(this.trust, socket.handshake.address, socket.handshake.headers['x-forwarded-for']);
 
+    // Un client peut émettre sans demander d’accusé, ou avec une charge à la place de l’accusé. `ack(...)` lèverait
+    // alors hors du gestionnaire : l’exception, non rattrapée, arrêterait le processus. On garantit donc, pour
+    // chaque événement, un dernier argument qui est une fonction.
+    socket.use((packet, next) => {
+      if (packet[0] !== EVENEMENT_SANS_ACCUSE) {
+        const dernier: unknown = packet[packet.length - 1];
+        const accuse = typeof dernier === 'function' ? dernier : () => undefined;
+        // Avec un accusé, la charge est ce qui le précède ; sans, tout ce qui suit le nom de l’événement.
+        const charge: unknown[] = packet.slice(1, typeof dernier === 'function' ? -1 : undefined);
+        // Forme attendue par les gestionnaires : (accusé) ou (charge, accusé), jamais plus.
+        if (EVENEMENTS_ACCUSE_SEUL.has(String(packet[0]))) packet.splice(1, packet.length - 1, accuse);
+        else packet.splice(1, packet.length - 1, charge[0], accuse);
+      }
+      next();
+    });
+
     const limited = (ack: Ack): boolean => {
       if (limiter.take()) return false;
       ack({ ok: false, error: 'Trop de commandes : patientez une seconde.' });
@@ -252,7 +287,7 @@ export class RealtimeHub {
       const parsed = hostConnectSchema.safeParse(p);
       if (!parsed.success) return invalid(ack);
       const room = this.mgr.getByCode(parsed.data.code);
-      if (!room || room.hostToken !== parsed.data.hostToken) {
+      if (!room || !sameSecret(parsed.data.hostToken, room.hostToken)) {
         return invalid(ack, 'Salle introuvable ou accès refusé.');
       }
       this.leave(socket);
@@ -562,10 +597,10 @@ export class RealtimeHub {
     });
 
     socket.on('player:grille', (p, ack) => {
-      if (limited(ack)) return;
+      // Budget propre aux gestes : une flèche maintenue ne doit pas épuiser celui des autres commandes (prêt, discussion…).
+      if (!grilleLimiter.take()) return ack({ ok: false, error: 'Doucement avec les gestes.' });
       const current = this.playerRoomOf(socket);
       if (!current) return invalid(ack, 'Vous n’êtes pas dans une salle.');
-      if (!grilleLimiter.take()) return ack({ ok: false, error: 'Doucement avec les gestes.' });
       const parsed = actionGrilleSchema.safeParse(p);
       if (!parsed.success) return invalid(ack);
       const done = current.room.grilleAction(current.playerId, parsed.data);

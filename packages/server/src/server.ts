@@ -37,6 +37,7 @@ import { AiRuntime } from './ai/runtime.js';
 import { IMAGES_DEFAULTS, buildImageProviders } from './images/config.js';
 import { createGameImages } from './images/game-images.js';
 import { ImageLibrary } from './images/library.js';
+import { PortraitGuard, portraitFromEnv, type PortraitSettings } from './images/portrait.js';
 import { GamePhotoStore } from './game-photos/store.js';
 import { DbBackupScheduler } from './db/backup.js';
 import { UpdateService, readAppVersion } from './update/service.js';
@@ -72,6 +73,8 @@ export interface ServerOptions {
   bootOverrides?: Record<string, string>;
   /** Redémarrage demandé depuis l’administration. Absent : la demande n’est pas proposée (tests). */
   onRestart?: () => void;
+  /** Personnage à partir d’une photo : analyseur injectable (essais). Absent : lu dans l’environnement. */
+  portrait?: Partial<PortraitSettings>;
 }
 
 /**
@@ -270,6 +273,11 @@ export async function createServer(opts: ServerOptions): Promise<PartyServer> {
     characterPacks,
     dbBackups,
     update,
+    portrait: new PortraitGuard(
+      opts.portrait
+        ? { analyzer: null, enabled: true, maxPerDay: 50, ...opts.portrait }
+        : portraitFromEnv(opts.bootEnv ?? process.env),
+    ),
   });
   dbBackups?.start();
   const httpServer = createHttpServer(app);
