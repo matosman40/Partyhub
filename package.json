@@ -1,6 +1,6 @@
 {
   "name": "partyhub",
-  "version": "0.17.5",
+  "version": "0.18.0",
   "private": true,
   "description": "Plateforme de jeux multijoueurs sur navigateur (TV + smartphones)",
   "type": "module",
@@ -15,7 +15,8 @@
   },
   "scripts": {
     "build": "npm run build -w @partyhub/shared && npm run build -w @partyhub/games && npm run build -w @partyhub/web && npm run build -w @partyhub/server",
-    "test": "npm run build -w @partyhub/shared && npm run build -w @partyhub/games && npm test -w @partyhub/shared && npm test -w @partyhub/games && npm test -w @partyhub/server && npm test -w @partyhub/web && bash deploy/updater/test/partyhub-update.test.sh",
+    "test": "node scripts/check-casse.mjs && npm run build -w @partyhub/shared && npm run build -w @partyhub/games && npm test -w @partyhub/shared && npm test -w @partyhub/games && npm test -w @partyhub/server && npm test -w @partyhub/web && bash deploy/updater/test/partyhub-update.test.sh",
+    "check:casse": "node scripts/check-casse.mjs",
     "typecheck": "npm run typecheck -w @partyhub/shared && npm run typecheck -w @partyhub/games && npm run typecheck -w @partyhub/server && npm run typecheck -w @partyhub/web",
     "lint": "eslint .",
     "format": "prettier --write \"packages/*/src/**/*.{ts,tsx,css}\"",
