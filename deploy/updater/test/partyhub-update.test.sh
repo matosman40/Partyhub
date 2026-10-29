@@ -117,6 +117,16 @@ check "version invalide : demande retirée" absent "$DATA/update/request.process
 check "version invalide : aucune commande de mise à jour" calls_lacks "compose"
 check "version invalide : code d’erreur" exit_is 1
 
+echo "— Nom de sauvegarde avec chemin"
+new_case
+write_request 0.13.0 "../../etc/passwd.db"
+write_heartbeat 0.12.0 0
+run
+check "sauvegarde invalide : statut échec" state_is failed
+check "sauvegarde invalide : demande retirée" absent "$DATA/update/request.processing.json"
+check "sauvegarde invalide : aucune commande de mise à jour" calls_lacks "compose"
+check "sauvegarde invalide : code d’erreur" exit_is 1
+
 echo "— Dépôt modifié à la main"
 new_case
 write_request 0.13.0

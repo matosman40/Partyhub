@@ -6,6 +6,7 @@
 #   sh install.sh 192.168.1.156    ou donnée explicitement
 #
 # Relancer le script est sûr : il garde les réglages déjà présents dans .env.
+# Ordre de l'adresse : argument, puis PARTYHUB_HOST de .env, puis détection automatique.
 # Ensuite, tout se règle dans l'administration (Système → Réglages du serveur).
 
 set -eu
@@ -33,12 +34,12 @@ detect_fallback() {
 }
 
 addr="${1:-}"
-[ -n "$addr" ] || addr="$(detect_address || true)"
-[ -n "$addr" ] || addr="$(detect_fallback || true)"
-# Relance : l'adresse déjà présente dans .env est gardée.
+# Relance : l'adresse déjà présente dans .env passe avant la détection automatique.
 if [ -z "$addr" ] && [ -f .env ]; then
   addr="$(sed -n 's/^PARTYHUB_HOST=//p' .env | tail -n 1 | tr -d '\r')"
 fi
+[ -n "$addr" ] || addr="$(detect_address || true)"
+[ -n "$addr" ] || addr="$(detect_fallback || true)"
 [ -n "$addr" ] || die "Adresse du serveur introuvable. Relancez avec elle : sh install.sh 192.168.1.156"
 case "$addr" in
   *[!0-9A-Za-z.-]*) die "Adresse invalide : $addr" ;;
@@ -52,6 +53,8 @@ if grep -q '^#* *PARTYHUB_HOST=' .env; then
 else
   printf '\nPARTYHUB_HOST=%s\n' "$addr" >> .env
 fi
+# .env peut contenir des clés et le mot de passe administrateur : lisible par le propriétaire et son groupe seulement.
+chmod 640 .env 2>/dev/null || true
 
 echo "Démarrage de PartyHub en HTTPS à l'adresse $addr…"
 docker compose up -d

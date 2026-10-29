@@ -10,6 +10,8 @@
 #   PARTYHUB_SAUVEGARDES         dossier de destination (défaut : /root/partyhub-sauvegardes)
 #   PARTYHUB_SAUVEGARDES_GARDER  nombre de sauvegardes gardées par volume (défaut : 14)
 set -euo pipefail
+# Archives lisibles par leur propriétaire seulement : elles contiennent la base et la clé de l'autorité HTTPS.
+umask 077
 
 DEST="${PARTYHUB_SAUVEGARDES:-/root/partyhub-sauvegardes}"
 GARDER="${PARTYHUB_SAUVEGARDES_GARDER:-14}"
@@ -46,6 +48,8 @@ for vol in "${VOLUMES[@]}"; do
   # Le volume est monté en lecture seule : la sauvegarde ne modifie jamais les données.
   docker run --rm -v "$vol:/source:ro" -v "$DEST:/sauvegarde" alpine:3.20 \
     sh -c "tar czf /sauvegarde/$NOM -C /source ."
+  # tar tourne dans le conteneur (umask 022) : le umask de cet hôte ne s'y applique pas, on restreint ici.
+  chmod 600 "$DEST/$NOM"
   # Une archive illisible ne doit pas passer pour une sauvegarde valable.
   tar tzf "$DEST/$NOM" >/dev/null
   echo "Sauvegardé : $DEST/$NOM"

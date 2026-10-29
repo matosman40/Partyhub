@@ -22,7 +22,10 @@ RUN npm run build
 
 # Dépendances de production seulement : c'est ce qui part dans l'image finale.
 FROM build AS prod
-RUN npm prune --omit=dev --no-audit --no-fund
+# Les dossiers node_modules propres aux paquets peuvent manquer si npm a tout placé à la racine :
+# on les crée pour que les COPY de l'étape finale n'échouent pas.
+RUN npm prune --omit=dev --no-audit --no-fund \
+ && mkdir -p packages/shared/node_modules packages/games/node_modules packages/server/node_modules
 
 # ---------------------------------------------------------------------------
 # Étape 2 : image finale minimale, utilisateur non privilégié

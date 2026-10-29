@@ -70,7 +70,7 @@ rollback() { # version tentée, version précédente, commit précédent, sauveg
   # Une sauvegarde de migration créée après la demande prouve que la nouvelle version a modifié la base.
   # L’ancienne version refuserait alors de démarrer : on remet la base d’avant la mise à jour.
   if [[ -n "$(find "$DATA/migrations" -name 'avant-schema-*.db' -newer "$UPD/request.processing.json" 2>/dev/null | head -n 1)" ]]; then
-    if [[ -n "$backup" && -f "$DATA/backups/$backup" ]]; then
+    if [[ -n "$backup" && -f "$DATA/backups/$backup" && ! -L "$DATA/backups/$backup" ]]; then
       cp -p "$DATA/backups/$backup" "$DATA/partyhub.db.restore"
       mv -f "$DATA/partyhub.db.restore" "$DATA/partyhub.db"
       rm -f "$DATA/partyhub.db-wal" "$DATA/partyhub.db-shm"
@@ -124,6 +124,11 @@ main() {
 
   if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
     finish failed "$version" "" "Demande refusée : « $version » n’est pas un numéro de version."
+    exit 1
+  fi
+  # Nom de fichier simple seulement (jamais de chemin) : il sert plus tard à restaurer la base.
+  if [[ -n "$backup" && ! "$backup" =~ ^[A-Za-z0-9._-]+\.db$ ]]; then
+    finish failed "$version" "" "Demande refusée : nom de sauvegarde invalide."
     exit 1
   fi
 
