@@ -234,6 +234,19 @@
   accent-color: var(--cyan);
 }
 
+/* Au toucher, toute la ligne (case et libellé) est la cible : 44 px de haut, case de 24 px. */
+@media (pointer: coarse) {
+  .filter-option {
+    min-height: 44px;
+    padding: 0;
+  }
+
+  .filter-option input {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+}
+
 .filter-option input:disabled + span {
   opacity: 0.45;
 }

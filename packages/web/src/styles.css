@@ -1474,6 +1474,10 @@ input[type='checkbox'] {
   border-color: transparent;
 }
 
+.seat-panel[hidden] {
+  display: none;
+}
+
 .seat-panel {
   display: flex;
   flex-direction: column;
@@ -12636,7 +12640,7 @@ input[type='file']::file-selector-button {
 
 /* Plateforme : on y monte en sautant, elle se voit comme une marche. */
 .grille-case.is-plateforme {
-  background: var(--mur, #8a5a3b);
+  background: color-mix(in srgb, var(--mur, #8a5a3b) 35%, #ffe7a3);
   box-shadow:
     inset 0 0 0 3px rgba(255, 255, 255, 0.35),
     inset 0 -6px 0 rgba(0, 0, 0, 0.3);
@@ -12687,12 +12691,6 @@ input[type='file']::file-selector-button {
 /* Une boîte portée reste au-dessus de la tête de son porteur. */
 .grille-objet.is-porte {
   transform: translateY(-62%) scale(0.6);
-}
-
-.grille-personnage {
-  transition:
-    left 0.18s ease-out,
-    top 0.18s ease-out;
 }
 
 .grille-personnage.is-away {
@@ -12752,9 +12750,8 @@ input[type='file']::file-selector-button {
 }
 
 .grille-tag {
-  font-size: 0.6rem;
+  font-size: 0.75rem;
   font-weight: 600;
-  opacity: 0.85;
 }
 
 .grille-personnage.is-own .grille-nom {
@@ -12843,7 +12840,15 @@ input[type='file']::file-selector-button {
   );
   color: #fff;
   touch-action: manipulation;
+  overscroll-behavior: none;
   user-select: none;
+  /* Place réservée au plateau : en haut la bande et la poignée, en bas la manette ; sur les côtés en paysage. */
+  --reserve-haut: 8.5rem;
+  --reserve-bas: 12.5rem;
+  --reserve-cote: 6px;
+  /* Taille d'une touche : elle se réduit avec la largeur pour garder 14 px de marge à 360 px. */
+  --touche: clamp(44px, calc((100vw - 3.25rem) / 6), 3.625rem);
+  --touche-croix: min(var(--touche), 3.25rem);
 }
 
 /* Le plateau est centré entre la bande du haut et la manette du bas. */
@@ -12853,7 +12858,7 @@ input[type='file']::file-selector-button {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 3.6rem 10px 13.5rem;
+  padding: var(--reserve-haut) var(--reserve-cote) var(--reserve-bas);
 }
 
 .grille-plein {
@@ -12862,17 +12867,32 @@ input[type='file']::file-selector-button {
 }
 
 .grille-console .grille.grille-plein {
-  width: 100%;
+  /* Largeur bornée par la hauteur libre (écran moins la place réservée en haut et en bas). */
+  width: min(100%, calc((100vh - var(--reserve-haut) - var(--reserve-bas)) * var(--cols) / var(--rows)));
+  width: min(100%, calc((100dvh - var(--reserve-haut) - var(--reserve-bas)) * var(--cols) / var(--rows)));
   aspect-ratio: var(--cols) / var(--rows);
   border-radius: 12px;
 }
 
-.grille-bande {
+/* Haut de la manette : la bande, puis la poignée du tiroir dessous (à côté en paysage). */
+.grille-haut {
   position: absolute;
   top: 0.6rem;
-  left: 0.6rem;
-  right: 0.6rem;
-  z-index: 2;
+  left: max(0.6rem, env(safe-area-inset-left));
+  right: max(0.6rem, env(safe-area-inset-right));
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  /* Le bouton Menu (fixe, 46 px) occupe le coin haut droit. */
+  padding-right: 3.6rem;
+  pointer-events: none;
+}
+
+.grille-bande {
+  box-sizing: border-box;
+  width: 100%;
   display: grid;
   gap: 0.15rem;
   padding: 0.5rem 0.8rem;
@@ -12880,7 +12900,6 @@ input[type='file']::file-selector-button {
   background: rgba(10, 6, 26, 0.45);
   backdrop-filter: blur(3px);
   text-align: center;
-  pointer-events: none;
 }
 
 .grille-bande-devant {
@@ -12893,6 +12912,23 @@ input[type='file']::file-selector-button {
   font-size: 0.85rem;
 }
 
+/* Avis de connexion : visibles dans la bande, la manette couvre le reste de la page. */
+.grille-bande-avis {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #ffd27a;
+  font: inherit;
+  font-size: 0.85rem;
+  pointer-events: auto;
+}
+
+button.grille-bande-avis {
+  cursor: pointer;
+  text-decoration: underline;
+}
+
 .grille-manette {
   position: absolute;
   left: 0;
@@ -12902,7 +12938,7 @@ input[type='file']::file-selector-button {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  padding: 0 0.9rem;
+  padding: 0 max(0.9rem, env(safe-area-inset-right)) 0 max(0.9rem, env(safe-area-inset-left));
   pointer-events: none;
 }
 
@@ -12913,14 +12949,14 @@ input[type='file']::file-selector-button {
 }
 
 .grille-croix {
-  grid-template-columns: repeat(3, 52px);
-  grid-template-rows: repeat(3, 52px);
+  grid-template-columns: repeat(3, var(--touche-croix));
+  grid-template-rows: repeat(3, var(--touche-croix));
   gap: 4px;
 }
 
 .grille-boutons {
-  grid-template-columns: repeat(3, 58px);
-  grid-template-rows: repeat(3, 58px);
+  grid-template-columns: repeat(3, var(--touche));
+  grid-template-rows: repeat(3, var(--touche));
   gap: 4px;
 }
 
@@ -12957,7 +12993,7 @@ input[type='file']::file-selector-button {
 }
 
 .grille-bouton-nom {
-  font-size: 0.6rem;
+  font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.02em;
 }
@@ -13020,17 +13056,21 @@ input[type='file']::file-selector-button {
 
 .tv-monde-info {
   position: absolute;
-  left: 1.2rem;
-  bottom: 1.2rem;
+  left: 0.6rem;
+  /* Au milieu du bord gauche : les six cases de départ sont dans les coins et au centre haut/bas. */
+  top: 50%;
   z-index: 3;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 1rem;
-  padding: 0.8rem 1rem;
-  border-radius: 18px;
+  gap: 0.4rem;
+  padding: 0.6rem 0.7rem;
+  border-radius: 14px;
   background: rgba(10, 6, 26, 0.55);
   backdrop-filter: blur(4px);
   color: #fff;
+  text-align: center;
+  transform: translateY(-50%);
 }
 
 .tv-monde-info .stage-label {
@@ -13039,9 +13079,21 @@ input[type='file']::file-selector-button {
 
 .tv-monde-code {
   margin: 0.1rem 0;
-  font-size: clamp(2rem, 4vw, 3.2rem);
+  font-size: clamp(1.4rem, 2.4vw, 2rem);
   font-weight: 800;
   letter-spacing: 0.08em;
+}
+
+.tv-monde-plat {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+
+.tv-monde-plat .grille {
+  width: min(100%, calc((100vh - 2rem) * var(--cols) / var(--rows)));
 }
 
 .tv-monde-chargement {
@@ -13112,23 +13164,34 @@ input[type='file']::file-selector-button {
   background: #1f6feb;
 }
 
+/*
+ * L'étiquette ne rétrécit pas avec la figure : `--contre` (posé par `placerFigure`) annule la réduction
+ * jusqu'à une taille minimale lisible de loin ; `--nom-dx` la décale pour qu'elle reste dans l'écran.
+ * L'échelle part du bas : l'étiquette grandit vers le haut, sans recouvrir son propre personnage.
+ */
 .grille3d-figure .grille-nom {
   top: -1.2rem;
+  max-width: 11ch;
+  font-size: 14px;
+  line-height: 1.35;
+  transform: translateX(-50%) translateX(var(--nom-dx, 0px)) scale(var(--contre, 1));
+  transform-origin: 50% 100%;
+}
+
+.grille3d-figure .grille-tag {
+  font-size: 14px;
 }
 
 /* Tiroir « ascenseur » : les actions secondaires montent depuis le bas, à la demande. */
 /* Sous la bande du haut (qui reste lisible), au-dessus du tiroir quand il monte. */
 .grille-tiroir-poignee {
-  position: absolute;
-  left: 50%;
-  top: 4.9rem;
-  z-index: 4;
-  transform: translateX(-50%);
+  flex: none;
   min-height: 36px;
+  pointer-events: auto;
   padding: 0 0.9rem;
   border: 2px solid rgba(255, 255, 255, 0.55);
   border-radius: 999px;
-  background: rgba(10, 6, 26, 0.5);
+  background: rgba(10, 6, 26, 0.88);
   backdrop-filter: blur(3px);
   color: #fff;
   font: inherit;
@@ -13146,7 +13209,8 @@ input[type='file']::file-selector-button {
   z-index: 5;
   max-height: 62%;
   overflow-y: auto;
-  padding: 0.9rem 0.9rem calc(0.9rem + env(safe-area-inset-bottom));
+  padding: 0.9rem max(0.9rem, env(safe-area-inset-right)) calc(0.9rem + env(safe-area-inset-bottom))
+    max(0.9rem, env(safe-area-inset-left));
   border-radius: 20px 20px 0 0;
   background: rgba(10, 6, 26, 0.92);
   backdrop-filter: blur(6px);
@@ -13162,15 +13226,35 @@ input[type='file']::file-selector-button {
   visibility: visible;
 }
 
-/* Paysage : le plateau prend la hauteur, les commandes se mettent sur les côtés, sur le pouce. */
-@media (orientation: landscape) and (max-height: 560px) {
-  .grille-plateau {
-    padding: 2.6rem 13.5rem 0.4rem;
+/*
+ * Paysage large (téléphone couché, tablette, ordinateur) : le plateau prend la hauteur, les commandes se mettent
+ * sur les côtés, sur le pouce. La poignée du tiroir passe à gauche de la bande.
+ */
+@media (orientation: landscape) and (max-height: 560px), (min-aspect-ratio: 3/2) {
+  .grille-console {
+    --reserve-haut: 4.4rem;
+    --reserve-bas: 0.4rem;
+    /* Une croix (3 touches) plus sa marge et un petit jeu avant le plateau. */
+    --reserve-cote: calc(var(--touche) * 3 + 8px + 0.9rem + 0.4rem);
   }
 
   .grille-console .grille.grille-plein {
+    height: auto;
+  }
+
+  .grille-haut {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  .grille-tiroir-poignee {
+    order: -1;
+  }
+
+  .grille-bande {
+    flex: 1 1 0;
     width: auto;
-    height: calc(100% - 3rem);
+    min-width: 0;
   }
 
   .grille-manette {
@@ -13185,8 +13269,162 @@ input[type='file']::file-selector-button {
   }
 }
 
+/* Paysage bas : touches au minimum tactile (44 px) pour laisser la largeur au plateau. */
+@media (orientation: landscape) and (max-height: 440px) {
+  .grille-console {
+    --touche: 44px;
+    --touche-croix: 44px;
+    --reserve-cote: calc(44px * 3 + 8px + 0.9rem + 0.2rem);
+  }
+
+  .grille-boutons .grille-bouton-nom {
+    font-size: 0.7rem;
+    letter-spacing: 0;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .grille-tiroir {
     transition: none;
+  }
+}
+
+/* Plus ou moins, téléphone couché : la carte se place à côté des boutons de pari, qui restent visibles. */
+@media (orientation: landscape) and (max-height: 480px) {
+  .player-game.bet-screen {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    column-gap: 1.2rem;
+    row-gap: 0.4rem;
+  }
+
+  .bet-screen .round-info {
+    grid-column: 1 / -1;
+  }
+
+  .bet-screen .playing-card {
+    grid-column: 1;
+    grid-row: 2 / span 2;
+    width: clamp(96px, calc((100dvh - 11rem) * 5 / 7), 240px);
+    font-size: clamp(2.4rem, 12dvh, 4rem);
+  }
+
+  .bet-screen .bet-buttons {
+    grid-column: 2;
+    grid-template-columns: 1fr;
+  }
+
+  .bet-screen .muted {
+    grid-column: 2;
+    margin: 0;
+    font-size: 0.8rem;
+  }
+}
+
+/* Personnage créé à partir d'une photo (éditeur du profil) */
+.portrait-box {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.portrait-panel {
+  min-width: 0;
+  padding: 0.8rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-lg);
+}
+
+.portrait-open,
+.portrait-box .btn {
+  min-height: 44px;
+}
+
+.portrait-pick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+  min-width: 0;
+}
+
+.portrait-file-label {
+  flex: 1 1 100%;
+  font-weight: 700;
+}
+
+.portrait-file-input {
+  flex: 1 1 12rem;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 44px;
+}
+
+.portrait-preview {
+  display: grid;
+  justify-items: start;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.portrait-preview img {
+  display: block;
+  width: min(100%, 200px);
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--line-strong);
+}
+
+.portrait-consent {
+  display: flex;
+  gap: 0.7rem;
+  align-items: flex-start;
+  min-height: 44px;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.portrait-consent input {
+  flex: none;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin: 0.1rem 0 0;
+}
+
+.portrait-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.portrait-status {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  min-height: 1.5rem;
+  overflow-wrap: anywhere;
+}
+
+.portrait-spinner {
+  flex: none;
+  width: 1.1rem;
+  height: 1.1rem;
+  border: 3px solid var(--line-strong);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: portrait-spin 0.9s linear infinite;
+}
+
+@keyframes portrait-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .portrait-spinner {
+    animation: none;
   }
 }

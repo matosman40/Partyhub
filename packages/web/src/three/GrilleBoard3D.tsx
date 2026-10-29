@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import {
@@ -49,6 +49,30 @@ const HAUTEUR_SAUT = 0.7;
 const HAUTEUR_PLATEFORME = 0.5;
 /** Vitesse de glissement vers la case d’arrivée (par seconde, approx.). */
 const VITESSE = 12;
+/**
+ * Ombres : `true` choisirait PCFSoftShadowMap, retiré de three r186 (avertissement), d’où PCFShadowMap.
+ * Elles ne se mettent pas à jour seules (`autoUpdate: false`) : la scène est presque immobile, `Monde`
+ * demande un nouveau calcul quand une caisse, un ballon ou une boîte bouge, ou que le décor change.
+ * L’objet est constant : R3F ne le réapplique pas à chaque rendu.
+ */
+const SHADOWS = { enabled: true, type: THREE.PCFShadowMap, autoUpdate: false };
+/** Résolution : au plus 1,5 pixel par pixel CSS, et 1 au-delà de 4 Mpx rendus (une télé 4K à DPR 2 en ferait 8). */
+const DPR_MAX = 1.5;
+const PIXELS_MAX = 4_000_000;
+/** Le plateau remplit la fenêtre : la résolution se choisit d’après sa taille (voir DPR_MAX). */
+function useResolution(): number {
+  const calculer = () => {
+    const voulu = Math.min(window.devicePixelRatio || 1, DPR_MAX);
+    return window.innerWidth * window.innerHeight * voulu * voulu > PIXELS_MAX ? 1 : Math.max(1, voulu);
+  };
+  const [dpr, setDpr] = useState(calculer);
+  useEffect(() => {
+    const maj = () => setDpr(calculer());
+    window.addEventListener('resize', maj);
+    return () => window.removeEventListener('resize', maj);
+  }, []);
+  return dpr;
+}
 /** Taille de base d’un personnage à l’écran (px) pour une case de 100 px. */
 const CASE_REF_PX = 100;
 
@@ -80,8 +104,14 @@ function nouvelleMemoire(): Mon {
 }
 
 /** Coordonnées du plateau : la grille est centrée sur l’origine. */
-const monX = (x: number, e: EtatGrille) => x - (e.largeur - 1) / 2;
-const monZ = (y: number, e: EtatGrille) => y - (e.hauteur - 1) / 2;
+const monX = (x: number, e: Pick<EtatGrille, 'largeur'>) => x - (e.largeur - 1) / 2;
+const monZ = (y: number, e: Pick<EtatGrille, 'hauteur'>) => y - (e.hauteur - 1) / 2;
+
+/**
+ * Ce que le décor lit de l’état : le plan et sa taille. Chaque message serveur recrée `etat.decor` (même
+ * contenu, autre identité) : `Monde` en garde une version stable, pour que le décor ne soit pas redessiné.
+ */
+type Plan = Pick<EtatGrille, 'decor' | 'largeur' | 'hauteur'>;
 
 /** Hauteur du sol sur une case : celle d’une plateforme, ou le plateau. */
 function hauteurDuSol(e: EtatGrille, x: number, y: number): number {
@@ -106,6 +136,11 @@ function cibleObjet(o: ObjetGrille, e: EtatGrille, mon: Mon): THREE.Vector3 | nu
   return new THREE.Vector3(monX(o.x, e), hauteurDuSol(e, o.x, o.y) + hauteurPosee(o.nature), monZ(o.y, e));
 }
 
+/** Échelle minimale de l’étiquette : 14 px de base x 1,5 = 21 px à l’écran, lisible à distance de télé. */
+const NOM_ECHELLE_MIN = 1.5;
+/** Demi-largeur réservée à l’étiquette (11 caractères) pour ne pas être rognée par le bord de l’écran. */
+const NOM_MARGE_PX = 90;
+
 /** Place un personnage à l’écran : son pied tombe sur sa case, et sa taille suit la perspective. */
 function placerFigure(
   el: HTMLElement,
@@ -122,6 +157,14 @@ function placerFigure(
   const cellule = Math.abs(((cote.x + 1) / 2) * largeur - sx);
   const echelle = Math.max(0.15, cellule / CASE_REF_PX);
   el.style.transform = `translate3d(${sx}px, ${sy}px, 0) scale(${echelle})`;
+  // L’étiquette garde une taille minimale à l’écran (lisible de loin) et reste dans l’écran.
+  const contre = Math.max(echelle, NOM_ECHELLE_MIN) / echelle;
+  const dx = Math.min(Math.max(sx, NOM_MARGE_PX), Math.max(NOM_MARGE_PX, largeur - NOM_MARGE_PX)) - sx;
+  // Seules les valeurs qui changent sont écrites : un personnage immobile ne touche plus au style.
+  const valeurContre = String(contre);
+  const valeurDx = `${dx / echelle}px`;
+  if (el.style.getPropertyValue('--contre') !== valeurContre) el.style.setProperty('--contre', valeurContre);
+  if (el.style.getPropertyValue('--nom-dx') !== valeurDx) el.style.setProperty('--nom-dx', valeurDx);
 }
 
 /**
@@ -275,7 +318,7 @@ function textures(cases: { largeur: number; hauteur: number }, theme: ThemePlate
 }
 
 /** Le filet d’un court, au milieu du plateau : une toile et deux poteaux. Il ne bloque pas les personnages. */
-function Filet({ etat }: { etat: EtatGrille }) {
+function Filet({ etat }: { etat: Plan }) {
   const x = monX(Math.floor(etat.largeur / 2), etat);
   const z0 = monZ(0, etat) - 0.5;
   const z1 = monZ(etat.hauteur - 1, etat) + 0.5;
@@ -335,7 +378,7 @@ function contourEnGeometrie(
 }
 
 /** Le grillage d’un court : des panneaux de toile tout autour, fixés sur les poteaux. */
-function Grillage({ etat }: { etat: EtatGrille }) {
+function Grillage({ etat }: { etat: Plan }) {
   const toile = useMemo(() => {
     const t = texFiletMaille();
     t.repeat.set(6, 1);
@@ -383,7 +426,7 @@ function Grillage({ etat }: { etat: EtatGrille }) {
 }
 
 /** Le mobilier d’un court, hors du jeu : la chaise de l’arbitre et deux bancs de joueurs. */
-function Accessoires({ etat }: { etat: EtatGrille }) {
+function Accessoires({ etat }: { etat: Plan }) {
   const blanc = useMemo(() => new THREE.MeshStandardMaterial({ color: '#f4f4f4', roughness: 0.5 }), []);
   const bleu = useMemo(() => new THREE.MeshStandardMaterial({ color: '#1f4fa0', roughness: 0.6 }), []);
   const acier = useMemo(() => new THREE.MeshStandardMaterial({ color: '#7d8590', roughness: 0.4, metalness: 0.5 }), []);
@@ -414,13 +457,13 @@ function Accessoires({ etat }: { etat: EtatGrille }) {
   );
 }
 
-function Decor({
+const Decor = memo(function Decor({
   etat,
   theme,
   tex,
   reduced,
 }: {
-  etat: EtatGrille;
+  etat: Plan;
   theme: ThemePlateau;
   tex: Surfaces;
   reduced: boolean;
@@ -516,10 +559,10 @@ function Decor({
       {theme.murs === 'grillage' && <Accessoires etat={etat} />}
     </group>
   );
-}
+});
 
 /** Plateformes : des blocs surélevés, en pierre, avec un dessus de la matière du sol. */
-function Plateformes({ etat, theme }: { etat: EtatGrille; theme: ThemePlateau }) {
+function Plateformes({ etat, theme }: { etat: Plan; theme: ThemePlateau }) {
   const cases = useMemo(() => {
     const liste: Array<[number, number]> = [];
     etat.decor.forEach((ligne, y) =>
@@ -646,7 +689,7 @@ function graineDeLieu(id: string): number {
 }
 
 /** Petits détails répartis sur les cases libres du sol. */
-function DetailsSol({ etat, theme }: { etat: EtatGrille; theme: ThemePlateau }) {
+function DetailsSol({ etat, theme }: { etat: Plan; theme: ThemePlateau }) {
   const parForme = useMemo(() => {
     const r = hasard(graineDeLieu(theme.id));
     const groupes = new Map<FormeDetail, Eparpille[]>();
@@ -782,11 +825,27 @@ function Monde({
   theme: ThemePlateau;
   tex: Surfaces;
 }) {
-  const { camera, size } = useThree();
+  const { camera, size, gl } = useThree();
+
+  // Les ombres sont figées (voir SHADOWS) : on ne les redessine que quand un objet qui en projette bouge,
+  // ou que le décor change. `ombresAJour` compte les images où il faut encore les recalculer.
+  const ombresAJour = useRef(3);
   const etatRef = useRef(etat);
   etatRef.current = etat;
 
   const { largeur, hauteur } = etat;
+  // Le plan garde la même identité tant que son contenu ne change pas : le décor reste en l’état.
+  const cle = etat.decor.join('|');
+  const plan = useMemo<Plan>(
+    () => ({ decor: etatRef.current.decor, largeur, hauteur }),
+    // La clé résume le contenu du plan.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [cle, largeur, hauteur],
+  );
+  const objetsCle = etat.objets.map((o) => o.id).join('|');
+  useEffect(() => {
+    ombresAJour.current = 3;
+  }, [plan, theme, tex, objetsCle]);
   useEffect(() => {
     cadrer(camera as THREE.PerspectiveCamera, { largeur, hauteur }, size.width, size.height);
   }, [camera, largeur, hauteur, size.width, size.height]);
@@ -854,9 +913,16 @@ function Monde({
       if (!mon.vus.has(o.id)) {
         m.position.copy(cible);
         mon.vus.add(o.id);
+        ombresAJour.current = 3;
       } else {
+        // Un objet qui avance de plus d’un millimètre déplace son ombre : on la redessine.
+        if (m.position.distanceToSquared(cible) > 1e-6) ombresAJour.current = 3;
         m.position.lerp(cible, k);
       }
+    }
+    if (ombresAJour.current > 0) {
+      ombresAJour.current--;
+      gl.shadowMap.needsUpdate = true;
     }
   });
 
@@ -885,7 +951,7 @@ function Monde({
         shadow-normalBias={0.02}
       />
       <directionalLight position={[-8, 6, -6]} intensity={lumiere.soleil * 0.25} color="#b8d8ff" />
-      <Decor etat={etat} theme={theme} tex={tex} reduced={reduced} />
+      <Decor etat={plan} theme={theme} tex={tex} reduced={reduced} />
       {etat.objets.map((o) => (
         <ObjetMesh key={o.id} objet={o} mon={mon} mats={mats} />
       ))}
@@ -951,6 +1017,7 @@ export interface GrilleBoard3DProps {
 /** Plateau en grille en 3D, plein écran. Les personnages 2D sont superposés, au-dessus du canevas. */
 export default function GrilleBoard3D({ etat, apparences, label, theme }: GrilleBoard3DProps) {
   const reduced = usePrefersReducedMotion();
+  const resolution = useResolution();
   const [mon] = useState(nouvelleMemoire);
   const decor = themeDePlateau(theme);
   const cie = cieDe(decor.ambiance);
@@ -976,8 +1043,8 @@ export default function GrilleBoard3D({ etat, apparences, label, theme }: Grille
     >
       <Canvas
         camera={{ position: [0, 10, 8], fov: 36 }}
-        shadows
-        dpr={[1, 2]}
+        shadows={SHADOWS}
+        dpr={resolution}
         gl={{ antialias: false, alpha: false, powerPreference: 'high-performance' }}
         onCreated={({ gl }) => {
           // Couleurs franches et douces, sans écraser les clairs ni délaver les ombres.

@@ -128,6 +128,8 @@ export function PlayerSeat({
   const [view, setView] = useState<PlayerRoomView | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [socialError, setSocialError] = useState<string | null>(null);
+  // Information (pas une erreur) : la place a été recréée après une absence trop longue.
+  const [rejoinNotice, setRejoinNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const { connected } = useConnection(socket);
   // Case « Je suis prêt » : le choix s’affiche tout de suite, le salon le confirme ensuite.
@@ -175,6 +177,13 @@ export function PlayerSeat({
       }
       socket.emit('player:join', { code, name: stored.name, token: stored.token, device: getDevice() }, (res) => {
         if (res.ok) {
+          // Après le délai de grâce, le serveur recrée le joueur : nouveau jeton, retour au départ.
+          if (res.token !== stored.token) {
+            writeSeat(code, seatId, { ...stored, token: res.token });
+            setRejoinNotice('Vous avez été absent trop longtemps : vous revenez au départ.');
+          } else {
+            setRejoinNotice(null);
+          }
           setJoined(true);
           setError(null);
           setEnded(null);
@@ -327,9 +336,12 @@ export function PlayerSeat({
 
   /** Un geste sur le plateau en grille. Le message d’erreur (refus du plateau) est rendu par les commandes. */
   function sendGrille(action: ActionGrille): Promise<string | null> {
-    if (!connected) return Promise.resolve(OFFLINE_ACTION_ERROR);
+    if (!socket.connected) return Promise.resolve(OFFLINE_ACTION_ERROR);
     return new Promise((resolve) => {
-      socket.emit('player:grille', action, (res) => resolve(res.ok ? null : res.error));
+      socket.timeout(ACK_TIMEOUT_MS).emit('player:grille', action, (err, res) => {
+        if (err) resolve(NO_ANSWER_ERROR);
+        else resolve(res.ok ? null : res.error);
+      });
     });
   }
 
@@ -496,6 +508,30 @@ export function PlayerSeat({
     hostSocket.emit('host:pause', { paused }, (res) => setError(res.ok ? null : res.error));
   }
 
+  // La manette du plateau de test couvre la page : les avis de connexion s’affichent dans sa bande.
+  const manetteAffichee = inLobby && lobby.game.id === PLATEAU_TEST_ID && !compact && !hidden && !!lobby.grille;
+  const avisBande = (
+    <>
+      {!connected && (
+        <span className="grille-bande-avis" role="status">
+          Connexion perdue. Reconnexion en cours…
+        </span>
+      )}
+      {rejoinNotice && (
+        <button type="button" className="grille-bande-avis" onClick={() => setRejoinNotice(null)}>
+          {rejoinNotice}
+        </button>
+      )}
+      {error && (
+        <span role="alert">
+          <button type="button" className="grille-bande-avis" onClick={() => setError(null)}>
+            {error}
+          </button>
+        </span>
+      )}
+    </>
+  );
+
   return wrapper(
     <AvatarsContext.Provider value={avatars}>
       <PauseContext.Provider value={lobby.paused}>
@@ -505,16 +541,26 @@ export function PlayerSeat({
           <span className="muted small">Salle {lobby.code}</span>
         </div>
 
-        {!connected && (
-          <p className="notice" role="status">
-            Connexion perdue. Reconnexion en cours…
-          </p>
-        )}
+        {!manetteAffichee && (
+          <>
+            {!connected && (
+              <p className="notice" role="status">
+                Connexion perdue. Reconnexion en cours…
+              </p>
+            )}
 
-        {error && (
-          <p className="error" role="alert" onClick={() => setError(null)}>
-            {error}
-          </p>
+            {rejoinNotice && (
+              <p className="notice" role="status" onClick={() => setRejoinNotice(null)}>
+                {rejoinNotice}
+              </p>
+            )}
+
+            {error && (
+              <p className="error" role="alert" onClick={() => setError(null)}>
+                {error}
+              </p>
+            )}
+          </>
         )}
 
         {inLobby ? (
@@ -592,19 +638,17 @@ export function PlayerSeat({
               ))}
             {lobby.game.id === PLATEAU_TEST_ID ? (
               !compact &&
+              !hidden &&
               lobby.grille && (
                 <GrilleControleur
                   etat={lobby.grille}
                   moi={you.id}
                   onAction={sendGrille}
                   disabled={!connected}
+                  clavier={!hidden}
                   theme={lobby.grille.theme}
-                  tiroir={
-                    <>
-                      <LobbyMoodBar onPick={sendLobbyMood} />
-                      <EmoteBar onPick={sendReaction} />
-                    </>
-                  }
+                  tiroir={<EmoteBar onPick={sendReaction} />}
+                  avis={avisBande}
                 >
                   <LobbyGrille
                     etat={lobby.grille}

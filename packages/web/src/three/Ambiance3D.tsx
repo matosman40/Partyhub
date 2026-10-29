@@ -288,6 +288,34 @@ function Champignon({ x, z, taille }: { x: number; z: number; taille: number }) 
   );
 }
 
+/** La mer : un plan de `MER_COTE` m de côté, en `MER_SEGMENTS` x `MER_SEGMENTS` carreaux. */
+const MER_COTE = 150;
+const MER_SEGMENTS = 56;
+const MER_PAS = MER_COTE / MER_SEGMENTS;
+/** Houle : amplitude et fréquence (dans l’espace puis dans le temps) sur x, puis sur z. */
+const HOULE_X = { amp: 0.05, k: 0.45, w: 1.1 };
+const HOULE_Z = { amp: 0.04, k: 0.35, w: 0.8 };
+
+/**
+ * Hauteur et pente de la houle le long d’un axe, pour chaque rangée de sommets. La pente est la différence
+ * centrée sur un carreau de la hauteur, en forme fermée : c’est ce que donnerait `computeVertexNormals`
+ * sur ce plan régulier, sans parcourir les triangles.
+ */
+function houleParRangee(
+  t: number,
+  houle: { amp: number; k: number; w: number },
+  cosinus: boolean,
+  hauteurs: Float32Array,
+  pentes: Float32Array,
+) {
+  const facteur = (houle.amp * Math.sin(houle.k * MER_PAS)) / MER_PAS;
+  for (let i = 0; i <= MER_SEGMENTS; i++) {
+    const phase = houle.k * (i * MER_PAS - MER_COTE / 2) + t * houle.w;
+    hauteurs[i] = houle.amp * (cosinus ? Math.cos(phase) : Math.sin(phase));
+    pentes[i] = cosinus ? -facteur * Math.sin(phase) : facteur * Math.cos(phase);
+  }
+}
+
 function Mer({ theme, taille, reduced }: { theme: ThemePlateau; taille: Taille; reduced: boolean }) {
   const eau = useRef<THREE.Mesh>(null);
   const banquise = useMemo(
@@ -300,7 +328,7 @@ function Mer({ theme, taille, reduced }: { theme: ThemePlateau; taille: Taille; 
     [taille.largeur, taille.hauteur],
   );
   const geometrieEau = useMemo(() => {
-    const g = new THREE.PlaneGeometry(150, 150, 56, 56);
+    const g = new THREE.PlaneGeometry(MER_COTE, MER_COTE, MER_SEGMENTS, MER_SEGMENTS);
     g.rotateX(-Math.PI / 2);
     return g;
   }, []);
@@ -311,6 +339,15 @@ function Mer({ theme, taille, reduced }: { theme: ThemePlateau; taille: Taille; 
   const materiauEau = useMemo(
     () => new THREE.MeshStandardMaterial({ color: theme.eau, roughness: 0.18, metalness: 0.2 }),
     [theme.eau],
+  );
+  const rangees = useMemo(
+    () => ({
+      hx: new Float32Array(MER_SEGMENTS + 1),
+      px: new Float32Array(MER_SEGMENTS + 1),
+      hz: new Float32Array(MER_SEGMENTS + 1),
+      pz: new Float32Array(MER_SEGMENTS + 1),
+    }),
+    [],
   );
   const glace = useMemo(() => {
     const t = texGlace(theme.ciel, 31);
@@ -333,13 +370,22 @@ function Mer({ theme, taille, reduced }: { theme: ThemePlateau; taille: Taille; 
     if (reduced || !eau.current) return;
     const t = state.clock.elapsedTime;
     const pos = geometrieEau.attributes.position;
+    const normales = geometrieEau.attributes.normal;
+    // La houle est une somme d’une onde en x et d’une onde en z : on calcule chaque rangée une fois.
+    houleParRangee(t, HOULE_X, false, rangees.hx, rangees.px);
+    houleParRangee(t, HOULE_Z, true, rangees.hz, rangees.pz);
     for (let i = 0; i < pos.count; i++) {
-      const x = base[i * 3] ?? 0;
-      const z = base[i * 3 + 2] ?? 0;
-      pos.setY(i, Math.sin(x * 0.45 + t * 1.1) * 0.05 + Math.cos(z * 0.35 + t * 0.8) * 0.04);
+      const ix = Math.round(((base[i * 3] ?? 0) + MER_COTE / 2) / MER_PAS);
+      const iz = Math.round(((base[i * 3 + 2] ?? 0) + MER_COTE / 2) / MER_PAS);
+      pos.setY(i, (rangees.hx[ix] ?? 0) + (rangees.hz[iz] ?? 0));
+      // Normale (-dh/dx, 1, -dh/dz), normalisée.
+      const nx = -(rangees.px[ix] ?? 0);
+      const nz = -(rangees.pz[iz] ?? 0);
+      const inverse = 1 / Math.sqrt(nx * nx + 1 + nz * nz);
+      normales.setXYZ(i, nx * inverse, inverse, nz * inverse);
     }
     pos.needsUpdate = true;
-    geometrieEau.computeVertexNormals();
+    normales.needsUpdate = true;
   });
   return (
     <group>

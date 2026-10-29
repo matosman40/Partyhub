@@ -58,9 +58,19 @@ export function CreateProfileForm({
           maxLength={PLAYER_NAME_MAX}
           autoComplete="nickname"
           autoFocus
+          aria-describedby="create-profile-name-count"
           onChange={(e) => setName(e.target.value)}
         />
       </label>
+      <p
+        id="create-profile-name-count"
+        className={`muted small${name.length >= PLAYER_NAME_MAX ? ' warn' : ''}`}
+        aria-live="polite"
+      >
+        {name.length >= PLAYER_NAME_MAX
+          ? `Limite atteinte : ${PLAYER_NAME_MAX} caractères au maximum (un émoji en compte deux).`
+          : `${name.length} / ${PLAYER_NAME_MAX} caractères`}
+      </p>
       <button type="submit" className="btn primary big" disabled={busy || !name.trim()}>
         {busy ? 'Création…' : 'Continuer'}
       </button>

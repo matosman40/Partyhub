@@ -1,9 +1,11 @@
-import { Suspense, lazy } from 'react';
+import { Suspense, lazy, useMemo, useState } from 'react';
 import { PLATEAU_TEST_ID, type HostRoomView } from '@partyhub/shared';
 import { Qr } from '../../components/Qr.js';
 import { GameLogo } from '../../components/GameLogo.js';
 import { LobbyHeads } from '../../components/LobbyPlateau.js';
-import { apparencesGrille } from '../../components/LobbyGrille.js';
+import { LobbyGrille, apparencesGrille } from '../../components/LobbyGrille.js';
+import { Boundary } from '../../components/Boundary.js';
+import { supportsWebGL } from '../../three/prefs.js';
 import { TestModeBadge } from '../../components/TestModeBadge.js';
 import type { LobbyEmote } from '../../components/useLobbyMoods.js';
 
@@ -41,18 +43,38 @@ export function TvLobby({
   onAddBot?: () => void;
 }) {
   const connected = lobby.players.filter((p) => p.connected).length;
+  const apparences = useMemo(() => apparencesGrille(lobby.players), [lobby.players]);
+  // Sans WebGL, ou si le plateau 3D échoue : le plateau 2D prend le relais (comme le Promoteur).
+  const [echec3d, setEchec3d] = useState(false);
   if (lobby.game.id === PLATEAU_TEST_ID && lobby.grille) {
+    const plat = (
+      <div className="tv-monde-plat">
+        <LobbyGrille
+          etat={lobby.grille}
+          players={lobby.players}
+          label="Plateau de test"
+          theme={lobby.grille.theme}
+          className="grille-plein"
+        />
+      </div>
+    );
     // Le plateau de test prend tout l’écran de la TV ; le code pour rejoindre reste dans un coin.
     return (
       <section className="tv-monde" aria-label="Plateau de test">
-        <Suspense fallback={<p className="muted tv-monde-chargement">Chargement du plateau…</p>}>
-          <GrilleBoard3D
-            etat={lobby.grille}
-            apparences={apparencesGrille(lobby.players)}
-            label="Plateau de test"
-            theme={lobby.grille.theme}
-          />
-        </Suspense>
+        {echec3d || !supportsWebGL() ? (
+          plat
+        ) : (
+          <Boundary fallback={plat} onError={() => setEchec3d(true)}>
+            <Suspense fallback={<p className="muted tv-monde-chargement">Chargement du plateau…</p>}>
+              <GrilleBoard3D
+                etat={lobby.grille}
+                apparences={apparences}
+                label="Plateau de test"
+                theme={lobby.grille.theme}
+              />
+            </Suspense>
+          </Boundary>
+        )}
         <div className="tv-monde-info">
           <Qr value={joinUrl} size={132} />
           <div>

@@ -15,6 +15,7 @@ import {
   resolveLook,
 } from '@partyhub/shared';
 import { Character, PackFigure, useCharacterPacks } from '@partyhub/games/client';
+import { PortraitCharacter } from './PortraitCharacter.js';
 
 /** Noms affichés pour chaque choix. Les clés sont les valeurs de la liste partagée. */
 const BODY_NAMES: Record<string, string> = {
@@ -64,7 +65,7 @@ const ACCESSORY_NAMES: Record<CharacterAccessory, string> = {
 export const EXPRESSION_NAMES: Record<CharacterExpression, string> = {
   calme: 'Calme',
   souriant: 'Souriant',
-  rieur: 'Rieur',
+  rieur: 'Rire',
   clin: 'Clin d’œil',
   triste: 'Triste',
   etonne: 'Étonné',
@@ -124,6 +125,7 @@ export function CharacterEditor({
       </div>
 
       <div className="chara-options">
+        <PortraitCharacter current={spec} disabled={busy} onApply={onChange} />
         <Group label="Personnage">
           <button
             type="button"

@@ -340,3 +340,27 @@
   display: grid;
   gap: 0.2rem;
 }
+
+/* Téléphone couché : les quatre boutons tiennent sur une ligne, le dock ne cache plus la main de cartes. */
+@media (orientation: landscape) and (max-height: 480px) {
+  .rami-dock {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.4rem;
+    padding: 8px max(16px, env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom, 0px))
+      max(16px, env(safe-area-inset-left));
+  }
+
+  .rami-dock .btn.big {
+    min-height: 44px;
+    padding: 0.3rem 0.3rem;
+    font-size: 0.85rem;
+  }
+
+  .player-game.rami-player:has(> .rami-dock) {
+    padding-bottom: 76px;
+  }
+
+  .stack:has(> .player-game > .rami-dock) > .emote-bar {
+    margin-bottom: 76px;
+  }
+}

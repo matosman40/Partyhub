@@ -257,8 +257,9 @@ export function MyResult({ lobby, playerId }: { lobby: LobbyView; playerId: stri
   const standing = series?.standings.find((r) => r.playerId === playerId);
   const teamIndex = lobby.players.find((p) => p.id === playerId)?.team ?? null;
   const team = teamIndex !== null ? series?.teams?.[teamIndex] : undefined;
+  const enChampionnat = hasChampionship(lobby.championship);
   // Un jeu sans score (contrôle, bilan) n’a rien à dire ici : pas de cadre vide.
-  if (!result && !standing && !team && !series?.champion) return null;
+  if (!result && !standing && !team && !(series?.champion && enChampionnat)) return null;
   return (
     <section className="my-result" aria-label="Votre résultat">
       {result && (
@@ -285,8 +286,11 @@ export function MyResult({ lobby, playerId }: { lobby: LobbyView; playerId: stri
           {points(team.points)}, {rankLabel(team.rank)}
         </p>
       )}
-      {standing && <BadgeList badges={standing.badges} />}
-      {series?.champion && <p className="champ-champion">{championText(series.champion, series.teams)}</p>}
+      {/* Badges et champion ne valent que pour un vrai championnat : après une partie unique, ils redisent le rang. */}
+      {standing && enChampionnat && <BadgeList badges={standing.badges} />}
+      {series?.champion && enChampionnat && (
+        <p className="champ-champion">{championText(series.champion, series.teams)}</p>
+      )}
     </section>
   );
 }

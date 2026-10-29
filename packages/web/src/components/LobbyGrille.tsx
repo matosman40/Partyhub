@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import type { EtatGrille, PublicPlayer, ThemeId } from '@partyhub/shared';
 import { GrilleView, type GrilleApparence } from '@partyhub/games/client';
 import { PlayerAvatar } from './PlayerAvatar.js';
@@ -40,13 +41,6 @@ export function LobbyGrille({
   theme?: ThemeId;
   className?: string;
 }) {
-  return (
-    <GrilleView
-      etat={etat}
-      apparences={apparencesGrille(players, me)}
-      label={label}
-      theme={theme}
-      className={className}
-    />
-  );
+  const apparences = useMemo(() => apparencesGrille(players, me), [players, me]);
+  return <GrilleView etat={etat} apparences={apparences} label={label} theme={theme} className={className} />;
 }
