@@ -9,7 +9,10 @@ import { THEME_PAR_DEFAUT, themeDePlateau, type Decor, type Forme, type ThemeId 
  * - marcher, et tourner vers la case devant lui ;
  * - pousser une caisse ou un ballon, s’il y a de la place derrière ;
  * - sauter par-dessus la case devant lui, pour atterrir deux cases plus loin (c'est ainsi qu'on monte
- *   sur une plateforme : on ne la rejoint pas en marchant depuis le sol) ;
+ *   sur une plateforme : on ne la rejoint ni en marchant ni en poussant depuis le sol ; ni le pousseur
+ *   ni l'objet poussé ne montent. Descendre d'une plateforme au sol reste permis, en marchant ou en poussant) ;
+ * - le saut ignore la case survolée : on peut franchir un pilier, un mur, un objet ou un autre personnage.
+ *   Seule la case d'atterrissage doit être libre. C'est voulu (règle documentée et figée par les tests) ;
  * - saluer, sur place ;
  * - porter une boîte : la prendre devant lui, la marcher avec lui, puis la poser devant lui.
  *
@@ -21,7 +24,9 @@ export const GRILLE_HAUTEUR = 15;
 /** Case de plateforme : on y monte en sautant, et on en redescend en marchant. */
 export const CASE_PLATEFORME = 'P';
 
-export type Direction = 'up' | 'down' | 'left' | 'right';
+/** Source unique des directions : le type `Direction` et le schéma zod en dérivent. */
+export const DIRECTIONS = ['up', 'down', 'left', 'right'] as const;
+export type Direction = (typeof DIRECTIONS)[number];
 const DELTA: Record<Direction, { dx: number; dy: number }> = {
   up: { dx: 0, dy: -1 },
   down: { dx: 0, dy: 1 },
@@ -55,7 +60,7 @@ export interface PersonnageGrille {
 export interface EtatGrille {
   largeur: number;
   hauteur: number;
-  /** Lignes du décor : `#` mur, `.` sol. */
+  /** Lignes du décor : `#` mur, `.` sol, `P` plateforme. */
   decor: string[];
   objets: ObjetGrille[];
   personnages: Record<string, PersonnageGrille>;
@@ -67,15 +72,6 @@ export interface EtatGrille {
   theme: ThemeId;
 }
 
-export type ActionGrille =
-  | { type: 'marcher'; dir: Direction }
-  | { type: 'pousser'; dir: Direction }
-  | { type: 'sauter'; dir: Direction }
-  | { type: 'porter'; dir: Direction }
-  | { type: 'saluer' };
-
-const DIRECTIONS = ['up', 'down', 'left', 'right'] as const;
-
 export const actionGrilleSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('marcher'), dir: z.enum(DIRECTIONS) }).strict(),
   z.object({ type: z.literal('pousser'), dir: z.enum(DIRECTIONS) }).strict(),
@@ -83,6 +79,9 @@ export const actionGrilleSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('porter'), dir: z.enum(DIRECTIONS) }).strict(),
   z.object({ type: z.literal('saluer') }).strict(),
 ]);
+
+/** Dérivé du schéma : ajouter un variant au schéma seul suffit à le propager aux types. */
+export type ActionGrille = z.infer<typeof actionGrilleSchema>;
 
 /**
  * Le contour organique : le rayon du bord dans une direction donnée (1 = le bord du plateau).
@@ -185,11 +184,9 @@ export function creerDecor(largeur: number, hauteur: number, options: { forme?: 
   return lignes;
 }
 
-/** Vrai près d’un coin de départ : on n’y pose pas de caisse, pour que chacun puisse bouger. */
+/** Vrai près d’un des six points de départ : on n’y pose ni caisse ni plateforme, pour que chacun puisse bouger. */
 function protege(x: number, y: number, largeur: number, hauteur: number, forme: Forme): boolean {
-  return departs(largeur, hauteur, forme)
-    .slice(0, 4)
-    .some(([dx, dy]) => Math.abs(dx - x) + Math.abs(dy - y) <= 2);
+  return departs(largeur, hauteur, forme).some(([dx, dy]) => Math.abs(dx - x) + Math.abs(dy - y) <= 2);
 }
 
 /**
@@ -256,6 +253,13 @@ export function creerGrille(
     if (hasard() < densite) ajouter('caisse', c);
     else reste.push(c);
   }
+  // Mélange (Fisher-Yates, même graine) pour répartir boîtes et ballons sur tout le plateau.
+  for (let i = reste.length - 1; i > 0; i--) {
+    const j = Math.floor(hasard() * (i + 1));
+    const a = reste[i]!;
+    reste[i] = reste[j]!;
+    reste[j] = a;
+  }
   reste.slice(0, 3).forEach((c) => ajouter('boite', c));
   reste.slice(3, 5).forEach((c) => ajouter('ballon', c));
   return {
@@ -280,9 +284,19 @@ function dansLaGrille(e: EtatGrille, x: number, y: number): boolean {
   return x >= 0 && y >= 0 && x < e.largeur && y < e.hauteur;
 }
 
-function solLibre(e: EtatGrille, x: number, y: number): boolean {
+/** Case de décor praticable : sol ou plateforme, dans la grille (ni mur ni dehors). */
+function caseOuverte(e: EtatGrille, x: number, y: number): boolean {
   const c = e.decor[y]?.[x];
-  if (!dansLaGrille(e, x, y) || (c !== '.' && c !== CASE_PLATEFORME)) return false;
+  return dansLaGrille(e, x, y) && (c === '.' || c === CASE_PLATEFORME);
+}
+
+/** Vrai si passer de (x1, y1) à (x2, y2) ferait monter du sol sur une plateforme (il faut sauter). */
+function monte(e: EtatGrille, x1: number, y1: number, x2: number, y2: number): boolean {
+  return e.decor[y1]?.[x1] === '.' && e.decor[y2]?.[x2] === CASE_PLATEFORME;
+}
+
+function solLibre(e: EtatGrille, x: number, y: number): boolean {
+  if (!caseOuverte(e, x, y)) return false;
   if (Object.values(e.personnages).some((p) => p.x === x && p.y === y)) return false;
   return !e.objets.some((o) => o.porte === null && o.x === x && o.y === y);
 }
@@ -333,8 +347,9 @@ export function appliquerAction(e: EtatGrille, joueurId: string, action: ActionG
       const cible = avance(perso.x, perso.y, action.dir);
       // Une case bloquée : on tourne seulement, comme pour un personnage qui butte contre un mur.
       // Une plateforme ne se rejoint pas en marchant depuis le sol : il faut sauter dessus.
-      const monte = e.decor[perso.y]?.[perso.x] === '.' && e.decor[cible.y]?.[cible.x] === CASE_PLATEFORME;
-      if (monte || !solLibre(e, cible.x, cible.y)) {
+      if (monte(e, perso.x, perso.y, cible.x, cible.y) || !solLibre(e, cible.x, cible.y)) {
+        // Ni position ni direction ne changent : rien à diffuser, on rend le même état.
+        if (perso.dir === action.dir) return { ok: true, etat: e };
         return { ok: true, etat: fin(e, joueurId, { dir: action.dir }, 'repos') };
       }
       return { ok: true, etat: deplacer(e, joueurId, cible.x, cible.y, action.dir, 'repos') };
@@ -346,6 +361,9 @@ export function appliquerAction(e: EtatGrille, joueurId: string, action: ActionG
       const objet = objetA(e, devant.x, devant.y);
       if (!objet || objet.nature === 'boite') return { ok: false, erreur: 'Rien à pousser devant vous.' };
       const derriere = avance(devant.x, devant.y, action.dir);
+      if (monte(e, perso.x, perso.y, devant.x, devant.y) || monte(e, devant.x, devant.y, derriere.x, derriere.y)) {
+        return { ok: false, erreur: 'Pour monter, sautez.' };
+      }
       if (!solLibre(e, derriere.x, derriere.y)) return { ok: false, erreur: 'Impossible : un obstacle derrière.' };
       const objets = e.objets.map((o) => (o.id === objet.id ? { ...o, x: derriere.x, y: derriere.y } : o));
       return {
@@ -380,17 +398,46 @@ export function appliquerAction(e: EtatGrille, joueurId: string, action: ActionG
   }
 }
 
-/** Place un personnage sur la première case de départ libre, ou sur une case libre quelconque. */
+/** Vrai si la case (x, y) a au moins un voisin libre où aller. */
+function aUnVoisinLibre(e: EtatGrille, x: number, y: number): boolean {
+  return DIRECTIONS.some((d) => {
+    const v = avance(x, y, d);
+    return solLibre(e, v.x, v.y);
+  });
+}
+
+/**
+ * Place un personnage sur la première case de départ libre. Si les six départs sont pris, repli sur une case
+ * de sol (jamais une plateforme tant qu’une case de sol est libre) qui a un voisin libre, la plus éloignée
+ * des autres personnages.
+ */
 export function ajouterPersonnage(e: EtatGrille, joueurId: string): EtatGrille {
   if (e.personnages[joueurId]) return e;
-  const depart = departs(e.largeur, e.hauteur, themeDePlateau(e.theme).forme).find(([x, y]) => solLibre(e, x, y));
-  let place = depart;
+  const sol = (x: number, y: number) => e.decor[y]?.[x] === '.' && solLibre(e, x, y);
+  let place = departs(e.largeur, e.hauteur, themeDePlateau(e.theme).forme).find(([x, y]) => sol(x, y));
   if (!place) {
-    for (let y = 1; y < e.hauteur - 1 && !place; y++) {
-      for (let x = 1; x < e.largeur - 1 && !place; x++) {
-        if (solLibre(e, x, y)) place = [x, y];
+    const autres = Object.values(e.personnages);
+    const distance = (x: number, y: number) =>
+      autres.reduce((m, p) => Math.min(m, Math.abs(p.x - x) + Math.abs(p.y - y)), Infinity);
+    const plusLoin = (accepte: (x: number, y: number) => boolean) => {
+      let meilleur: [number, number] | undefined;
+      let score = -1;
+      for (let y = 1; y < e.hauteur - 1; y++) {
+        for (let x = 1; x < e.largeur - 1; x++) {
+          if (!accepte(x, y)) continue;
+          const d = distance(x, y);
+          if (d > score) {
+            score = d;
+            meilleur = [x, y];
+          }
+        }
       }
-    }
+      return meilleur;
+    };
+    place =
+      plusLoin((x, y) => sol(x, y) && aUnVoisinLibre(e, x, y)) ??
+      plusLoin(sol) ??
+      plusLoin((x, y) => solLibre(e, x, y));
   }
   if (!place) return e;
   const [x, y] = place;
@@ -421,18 +468,19 @@ export const ATTITUDE_POSE: Record<Attitude, 'idle' | 'wave' | 'joy'> = {
   saut: 'joy',
 };
 
-/** Ce qui se trouve devant un personnage : le mur du plateau, un autre personnage, ou l’objet posé. */
-export type Devant = 'rien' | 'mur' | 'personnage' | NatureObjet;
+/** Ce qui se trouve devant un personnage : le mur du plateau, un autre personnage, une plateforme ou l’objet posé. */
+export type Devant = 'rien' | 'mur' | 'personnage' | 'plateforme' | NatureObjet;
 
 /** Ce qui est devant le personnage, dans la direction où il regarde. Null si le personnage est inconnu. */
 export function devantLePersonnage(e: EtatGrille, joueurId: string): Devant | null {
   const perso = e.personnages[joueurId];
   if (!perso) return null;
   const d = avance(perso.x, perso.y, perso.dir);
-  const c = e.decor[d.y]?.[d.x];
-  if (!dansLaGrille(e, d.x, d.y) || (c !== '.' && c !== CASE_PLATEFORME)) return 'mur';
+  if (!caseOuverte(e, d.x, d.y)) return 'mur';
   if (Object.values(e.personnages).some((p) => p.id !== joueurId && p.x === d.x && p.y === d.y)) return 'personnage';
-  return objetA(e, d.x, d.y)?.nature ?? 'rien';
+  const objet = objetA(e, d.x, d.y);
+  if (objet) return objet.nature;
+  return e.decor[d.y]?.[d.x] === CASE_PLATEFORME ? 'plateforme' : 'rien';
 }
 
 /**
@@ -442,9 +490,10 @@ export function devantLePersonnage(e: EtatGrille, joueurId: string): Devant | nu
 export function actionContextuelle(e: EtatGrille, joueurId: string): ActionGrille | null {
   const perso = e.personnages[joueurId];
   if (!perso) return null;
-  if (objetPorte(e, joueurId)) return { type: 'porter', dir: perso.dir };
   const devant = devantLePersonnage(e, joueurId);
-  if (devant === 'boite') return { type: 'porter', dir: perso.dir };
-  if (devant === 'caisse' || devant === 'ballon') return { type: 'pousser', dir: perso.dir };
-  return null;
+  let action: ActionGrille | null = null;
+  if (objetPorte(e, joueurId) || devant === 'boite') action = { type: 'porter', dir: perso.dir };
+  else if (devant === 'caisse' || devant === 'ballon') action = { type: 'pousser', dir: perso.dir };
+  // Le bouton n’est proposé que si le geste serait accepté (rien derrière une caisse, pas de place pour poser…).
+  return action && appliquerAction(e, joueurId, action).ok ? action : null;
 }

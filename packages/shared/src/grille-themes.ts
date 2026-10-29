@@ -56,7 +56,7 @@ export interface ThemePlateau {
   plateformes?: boolean;
 }
 
-export const THEMES_PLATEAU: Record<ThemeId, ThemePlateau> = {
+export const THEMES_PLATEAU: { readonly [K in ThemeId]: ThemePlateau & { readonly id: K } } = {
   fete: {
     id: 'fete',
     nom: 'Pelouse de fête',
@@ -211,8 +211,13 @@ export const THEMES_PLATEAU: Record<ThemeId, ThemePlateau> = {
 
 export const THEME_PAR_DEFAUT: ThemeId = 'fete';
 
+/** Vrai si `id` est une clé propre de THEMES_PLATEAU (exclut `constructor`, `__proto__`…). */
+export function estThemeId(id: string): id is ThemeId {
+  return Object.prototype.hasOwnProperty.call(THEMES_PLATEAU, id);
+}
+
 /** Le thème demandé, ou le thème par défaut si l’identifiant est inconnu ou absent. */
 export function themeDePlateau(id: string | null | undefined): ThemePlateau {
-  if (id && Object.prototype.hasOwnProperty.call(THEMES_PLATEAU, id)) return THEMES_PLATEAU[id as ThemeId];
+  if (id && estThemeId(id)) return THEMES_PLATEAU[id];
   return THEMES_PLATEAU[THEME_PAR_DEFAUT];
 }
