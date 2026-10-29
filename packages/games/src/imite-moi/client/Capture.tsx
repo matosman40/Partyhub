@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { canUseMedia, requestCamera, requestMicrophone, useMediaPrefs } from '../../client/media.js';
-import { CLIP_MS, photoFromFile, photoFromVideo, recordClip } from './capture.js';
+import { CLIP_MS, photoFromFile, photoFromVideo, recordClip } from './media-capture.js';
 
 /** Message en français pour un refus ou une absence de caméra ou de micro. */
 function mediaMessage(err: unknown, kind: 'micro' | 'caméra'): string {
