@@ -35,8 +35,8 @@ export function portraitErrorMessage(code: unknown): string {
 }
 
 /**
- * Personnage reçu appliqué au personnage actuel : teint, coiffure, cheveux, accessoire et expression viennent de
- * la photo ; la couleur du corps et le reste (attitude, etc.) restent ceux de la personne. Aucun pack.
+ * Personnage reçu appliqué au personnage actuel : teint, coiffure, cheveux, accessoire, expression, pilosité et
+ * couleur des yeux viennent de la photo ; la couleur du corps et le reste (attitude, etc.) restent ceux de la personne. Aucun pack.
  */
 export function mergePortraitCharacter(received: CharacterSpec, current: CharacterSpec): CharacterSpec {
   return {
@@ -46,6 +46,8 @@ export function mergePortraitCharacter(received: CharacterSpec, current: Charact
     hairColor: received.hairColor,
     accessory: received.accessory,
     expression: received.expression,
+    facialHair: received.facialHair,
+    eyeColor: received.eyeColor,
     pack: null,
     look: null,
   };

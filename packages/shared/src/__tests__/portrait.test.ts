@@ -3,6 +3,8 @@ import {
   CHARACTER_ACCESSORIES,
   CHARACTER_BODY_COLORS,
   CHARACTER_EXPRESSIONS,
+  CHARACTER_EYE_COLORS,
+  CHARACTER_FACIAL_HAIR,
   CHARACTER_HAIR_COLORS,
   CHARACTER_HAIR_STYLES,
   CHARACTER_SKIN_TONES,
@@ -23,6 +25,8 @@ describe('Personnage à partir d’une photo : contrat', () => {
     hair_color: 'brown',
     accessory: 'glasses',
     expression: 'souriant',
+    facial_hair: 'beard',
+    eye_color: 'green',
   } as const;
 
   it('les valeurs reconnues couvrent exactement les listes fermées du personnage', () => {
@@ -39,6 +43,8 @@ describe('Personnage à partir d’une photo : contrat', () => {
       hairColor: PORTRAIT_HAIR_COLOR_VALUES.indexOf('brown'),
       accessory: CHARACTER_ACCESSORIES.indexOf('glasses'),
       expression: CHARACTER_EXPRESSIONS.indexOf('souriant'),
+      facialHair: CHARACTER_FACIAL_HAIR.indexOf('beard'),
+      eyeColor: CHARACTER_EYE_COLORS.indexOf('green'),
       pack: null,
     });
     expect(characterSchema.safeParse(character).success).toBe(true);
@@ -49,12 +55,39 @@ describe('Personnage à partir d’une photo : contrat', () => {
       for (const hair_style of CHARACTER_HAIR_STYLES)
         for (const hair_color of PORTRAIT_HAIR_COLOR_VALUES)
           for (const accessory of CHARACTER_ACCESSORIES)
-            for (const expression of CHARACTER_EXPRESSIONS) {
-              const t = portraitTraitsSchema.parse({ faces: 1, skin, hair_style, hair_color, accessory, expression });
-              const c = traitsToCharacter(t);
-              expect(characterSchema.safeParse(c).success).toBe(true);
-              expect(c.body).toBeLessThan(CHARACTER_BODY_COLORS.length);
-            }
+            for (const expression of CHARACTER_EXPRESSIONS)
+              for (const facial_hair of CHARACTER_FACIAL_HAIR)
+                for (const eye_color of CHARACTER_EYE_COLORS) {
+                  const t = portraitTraitsSchema.parse({
+                    faces: 1,
+                    skin,
+                    hair_style,
+                    hair_color,
+                    accessory,
+                    expression,
+                    facial_hair,
+                    eye_color,
+                  });
+                  const c = traitsToCharacter(t);
+                  expect(characterSchema.safeParse(c).success).toBe(true);
+                  expect(c.body).toBeLessThan(CHARACTER_BODY_COLORS.length);
+                }
+  });
+
+  it('les profils existants, sans barbe ni couleur d’yeux, restent valides', () => {
+    expect(characterSchema.safeParse({ body: 1, skin: 2, hair: 3, hairColor: 4, accessory: 5 }).success).toBe(true);
+    expect(
+      characterSchema.safeParse({ body: 1, skin: 2, hair: 3, hairColor: 4, accessory: 5, facialHair: 3 }).success,
+    ).toBe(false);
+    expect(portraitTraitsSchema.safeParse({ ...traits, eye_color: 'purple' }).success).toBe(false);
+    // Un modèle qui oublie la barbe ou la couleur des yeux n'est pas rejeté : valeurs par défaut sobres.
+    const { facial_hair: _f, eye_color: _e, ...sans } = traits;
+    const parsed = portraitTraitsSchema.safeParse(sans);
+    expect(parsed.success).toBe(true);
+    expect(parsed.success && parsed.data.facial_hair).toBe('none');
+    expect(parsed.success && parsed.data.eye_color).toBe('dark');
+    // Une valeur présente mais hors liste reste refusée.
+    expect(portraitTraitsSchema.safeParse({ ...traits, facial_hair: 'mustache-xl' }).success).toBe(false);
   });
 
   it('refuse toute valeur hors liste, toute clé en plus et tout texte libre', () => {

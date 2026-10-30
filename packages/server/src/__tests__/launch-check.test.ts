@@ -13,6 +13,8 @@ const first = gameRegistry[0] as GameModule;
 describe('contrôle de lancement', () => {
   // Jeux intégrés que les robots mènent à leur fin. Les trois autres (bombes-party, banquise : parties
   // que les robots ne terminent pas ; plateau-test : plateau d'essai) échouaient déjà avant ce contrôle.
+  // `sauteurs` est exclu volontairement : ses résultats viennent de l'écran principal (action d'hôte), pas des
+  // robots ; il est couvert par sauteurs-module.test.ts.
   const PLAYABLE_BY_BOTS = [
     'quiz-party',
     'phrases-trous',

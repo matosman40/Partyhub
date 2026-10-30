@@ -43,6 +43,12 @@ export type CharacterExpression = (typeof CHARACTER_EXPRESSIONS)[number];
 /** Attitudes du personnage : chacune correspond à un moment de la partie (voir CharacterMood). */
 export const CHARACTER_MOODS = ['idle', 'joy', 'sad', 'wave', 'dance'] as const;
 
+/** Pilosité du visage (rendu pixel seulement) : 0 aucune, 1 moustache, 2 barbe. */
+export const CHARACTER_FACIAL_HAIR = ['none', 'moustache', 'beard'] as const;
+
+/** Teintes d’yeux (rendu pixel seulement) : sombre, marron, bleu, vert. Le dessin SVG les ignore. */
+export const CHARACTER_EYE_COLORS = ['dark', 'brown', 'blue', 'green'] as const;
+
 export type HairStyle = (typeof CHARACTER_HAIR_STYLES)[number];
 export type CharacterAccessory = (typeof CHARACTER_ACCESSORIES)[number];
 export type CharacterMood = (typeof CHARACTER_MOODS)[number];
@@ -62,6 +68,10 @@ export interface CharacterSpec {
   look?: string | null;
   /** Expression du visage au repos (index dans CHARACTER_EXPRESSIONS). Absent : « calme ». */
   expression?: number;
+  /** Moustache ou barbe (index dans CHARACTER_FACIAL_HAIR). Absent : aucune. */
+  facialHair?: number;
+  /** Couleur des yeux (index dans CHARACTER_EYE_COLORS). Absent : sombre. */
+  eyeColor?: number;
 }
 
 /** Identifiant d’un pack : minuscules, chiffres et tirets (le même que dans l’URL). */
@@ -127,6 +137,8 @@ export const characterSchema = z.object({
   pack: z.string().regex(CHARACTER_PACK_ID).nullable().optional(),
   look: z.string().regex(CHARACTER_LOOK_ID).nullable().optional(),
   expression: index(CHARACTER_EXPRESSIONS.length).optional(),
+  facialHair: index(CHARACTER_FACIAL_HAIR.length).optional(),
+  eyeColor: index(CHARACTER_EYE_COLORS.length).optional(),
 });
 
 /** Personnage généré pour un texte donné (pseudo) : même pseudo, même personnage partout. */

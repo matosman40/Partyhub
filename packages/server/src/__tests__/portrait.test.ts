@@ -22,6 +22,8 @@ const GOOD: PortraitTraits = {
   hair_color: 'black',
   accessory: 'glasses',
   expression: 'souriant',
+  facial_hair: 'moustache',
+  eye_color: 'brown',
 };
 
 const JPEG = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(200, 7)]);
@@ -72,6 +74,18 @@ describe('Analyseur de portrait', () => {
       JSON.stringify({ ...GOOD, faces: 1.5 }),
     ]) {
       const f = vi.fn(async () => reply(completion(content)));
+      await expect(make(f as unknown as typeof fetch).analyze(image)).rejects.toBeInstanceOf(PortraitProviderError);
+    }
+  });
+
+  it('la consigne demande la barbe et la couleur des yeux, et l’analyseur refuse une valeur hors liste', async () => {
+    expect(PORTRAIT_PROMPT).toContain('"facial_hair":"none|moustache|beard"');
+    expect(PORTRAIT_PROMPT).toContain('"eye_color":"dark|brown|blue|green"');
+    for (const bad of [
+      { ...GOOD, eye_color: 'violet' },
+      { ...GOOD, facial_hair: 'goatee' },
+    ]) {
+      const f = vi.fn(async () => reply(completion(JSON.stringify(bad))));
       await expect(make(f as unknown as typeof fetch).analyze(image)).rejects.toBeInstanceOf(PortraitProviderError);
     }
   });

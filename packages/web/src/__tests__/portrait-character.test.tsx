@@ -99,6 +99,11 @@ describe('Personnage depuis une photo', () => {
     });
   });
 
+  it('reprend la barbe et la couleur des yeux de la photo', () => {
+    const merged = mergePortraitCharacter({ ...received, facialHair: 2, eyeColor: 3 }, current);
+    expect(merged).toMatchObject({ facialHair: 2, eyeColor: 3 });
+  });
+
   it('donne un message français par code d’erreur', () => {
     const codes: PortraitErrorCode[] = [
       'consent_required',

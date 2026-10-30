@@ -17,8 +17,10 @@ export const PORTRAIT_DEFAULT_PER_DAY = 50;
 
 export const PORTRAIT_PROMPT =
   'You are a character-creator assistant for a party game. Look at the portrait and answer with ONE JSON object and nothing else, using ONLY these allowed values: ' +
-  '{"faces":<integer, number of human faces visible>,"skin":"very_light|light|medium|tan|dark","hair_style":"none|short|bob|spiky|bun|curly","hair_color":"black|brown|orange|pink|blue_purple|blond_white","accessory":"none|glasses|headphones|cap|bow|flower|crown|party","expression":"calme|souriant|rieur|clin|triste|etonne"} ' +
-  'Rules: describe only what is visible; never identify anyone; if no face is visible set "faces":0.';
+  '{"faces":<integer, number of human faces visible>,"skin":"very_light|light|medium|tan|dark","hair_style":"none|short|bob|spiky|bun|curly","hair_color":"black|brown|orange|pink|blue_purple|blond_white","accessory":"none|glasses|headphones|cap|bow|flower|crown|party","expression":"calme|souriant|rieur|clin|triste|etonne","facial_hair":"none|moustache|beard","eye_color":"dark|brown|blue|green"} ' +
+  'Rules: describe only what is visible; never identify anyone; if no face is visible set "faces":0; ' +
+  'facial_hair is "moustache" for a moustache only, "beard" for a beard (with or without moustache), otherwise "none"; ' +
+  'eye_color is the closest of dark (black or very dark), brown, blue (blue or grey) or green (green or hazel); if unsure use "dark".';
 
 export interface PortraitImage {
   bytes: Buffer;
@@ -70,7 +72,16 @@ function extractTraits(data: unknown): PortraitTraits {
   // visages compte alors, la route refuse avant d’utiliser le reste. On le lit donc avant la validation stricte.
   const faces = (raw as { faces?: unknown } | null)?.faces;
   if (typeof faces === 'number' && Number.isInteger(faces) && faces !== 1 && faces >= 0 && faces <= 20) {
-    return { faces, skin: 'medium', hair_style: 'none', hair_color: 'black', accessory: 'none', expression: 'calme' };
+    return {
+      faces,
+      skin: 'medium',
+      hair_style: 'none',
+      hair_color: 'black',
+      accessory: 'none',
+      expression: 'calme',
+      facial_hair: 'none',
+      eye_color: 'dark',
+    };
   }
   const parsed = portraitTraitsSchema.safeParse(raw);
   if (!parsed.success) throw new PortraitProviderError('Réponse du fournisseur hors des valeurs permises.');

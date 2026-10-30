@@ -2,6 +2,8 @@ import { z } from 'zod';
 import {
   CHARACTER_ACCESSORIES,
   CHARACTER_EXPRESSIONS,
+  CHARACTER_EYE_COLORS,
+  CHARACTER_FACIAL_HAIR,
   CHARACTER_HAIR_STYLES,
   defaultCharacterFor,
   type CharacterSpec,
@@ -35,6 +37,10 @@ export const portraitTraitsSchema = z
     hair_color: z.enum(PORTRAIT_HAIR_COLOR_VALUES),
     accessory: z.enum(CHARACTER_ACCESSORIES),
     expression: z.enum(CHARACTER_EXPRESSIONS),
+    /** Moustache ou barbe visible. */
+    facial_hair: z.enum(CHARACTER_FACIAL_HAIR).default('none'),
+    /** Couleur des yeux. */
+    eye_color: z.enum(CHARACTER_EYE_COLORS).default('dark'),
   })
   .strict();
 export type PortraitTraits = z.infer<typeof portraitTraitsSchema>;
@@ -88,6 +94,8 @@ export function traitsToCharacter(traits: PortraitTraits, current?: CharacterSpe
     hairColor: PORTRAIT_HAIR_COLOR_VALUES.indexOf(traits.hair_color),
     accessory: CHARACTER_ACCESSORIES.indexOf(traits.accessory),
     expression: CHARACTER_EXPRESSIONS.indexOf(traits.expression),
+    facialHair: CHARACTER_FACIAL_HAIR.indexOf(traits.facial_hair),
+    eyeColor: CHARACTER_EYE_COLORS.indexOf(traits.eye_color),
     pack: null,
   };
 }
