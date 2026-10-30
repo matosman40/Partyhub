@@ -63,7 +63,8 @@ describe('chiffrement des clés', () => {
     const sealed = box.seal(ADMIN_KEY);
     expect(sealed).not.toContain(ADMIN_KEY);
     expect(box.open(sealed)).toBe(ADMIN_KEY);
-    expect(statSync(join(dir, 'roundtrip.key')).mode & 0o777).toBe(0o600);
+    // Windows n’a pas de droits Unix : le fichier y apparaît toujours en 0o666.
+    if (process.platform !== 'win32') expect(statSync(join(dir, 'roundtrip.key')).mode & 0o777).toBe(0o600);
   });
 
   it('sans la clé locale, ou avec une valeur abîmée, rien n’est révélé', () => {

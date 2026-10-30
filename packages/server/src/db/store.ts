@@ -566,7 +566,13 @@ export class Store {
     this.db = new Database(file);
     this.db.pragma('journal_mode = WAL');
     this.db.pragma('foreign_keys = ON');
-    this.migration = migrate(this.db, options.migrations ?? MIGRATIONS, options);
+    try {
+      this.migration = migrate(this.db, options.migrations ?? MIGRATIONS, options);
+    } catch (err) {
+      // Une base refusée ou une migration en échec ne doit pas laisser le fichier ouvert.
+      this.db.close();
+      throw err;
+    }
   }
 
   close(): void {
