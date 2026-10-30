@@ -8,7 +8,12 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 
 - Jeu « Course des sauteurs » : une course de plateforme en pixel art, avec classement, pièces, plusieurs niveaux, des robots, et une manette de téléphone à trois boutons (gauche, droite, saut). Le clavier (flèches et espace) commande le premier joueur sur l'écran principal. Il a son logo, son fond et ses photos de salon.
 - Personnages en pixel art : portrait (8 expressions), corps entier (8 poses) et marche animée (4 images, 3 directions), dessinés à partir du personnage du profil.
-- Refonte visuelle : jetons de design communs, rideau de théâtre et confettis sur l'accueil, fonds illustrés pour 27 jeux, images de menu (accueil, salon, rejoindre, victoire, égalité, fin de partie, bandeau du catalogue) et nouveaux favicons.
+- Course des sauteurs : les robots courent, avec peu de clairvoyance et des distractions. Ils finissent plus lentement qu'un joueur attentif et tombent parfois.
+- Refonte visuelle : jetons de design communs, rideau de théâtre et confettis sur l'accueil, fonds illustrés pour 29 jeux (dont Poker et Rami 51), animations d'entrée discrètes (écrans, cartes du catalogue, résultats, podium), absentes si l'on demande moins de mouvement, images de menu (accueil, salon, rejoindre, victoire, égalité, fin de partie, bandeau du catalogue) et nouveaux favicons.
+
+### Modifié
+
+- Quiz Party et quiz média : les robots répondent dans la seconde moitié du temps imparti, au hasard (Quiz Party) ou une fois sur cinq avec la bonne réponse (quiz média). Ils ne gagnent plus de bonus de rapidité. Un jeu peut fixer l'attente d'un robot (`delayMs` de `BotSuggestion`).
 
 ### Corrigé
 

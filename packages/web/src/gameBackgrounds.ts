@@ -1,7 +1,7 @@
 /**
  * Fonds illustrés (images WebP 1280x720 servies par l'application, dossier public/game-backgrounds) et images des
- * menus (public/menus). Un jeu absent de la liste garde sa scène dessinée : rami-51, poker-texas et les jeux
- * ajoutés plus tard n'ont pas de fond, et l'écran reste correct sans.
+ * menus (public/menus). Un jeu absent de la liste garde sa scène dessinée : les jeux ajoutés plus tard n'ont pas
+ * de fond, et l'écran reste correct sans.
  */
 
 const GAMES_WITH_BACKGROUND: ReadonlySet<string> = new Set([
@@ -23,9 +23,11 @@ const GAMES_WITH_BACKGROUND: ReadonlySet<string> = new Set([
   'phrases-trous',
   'plus-ou-moins',
   'plutot-qui',
+  'poker-texas',
   'president',
   'promoteur',
   'quiz-party',
+  'rami-51',
   'reflexe',
   'sauteurs',
   'solitaire',

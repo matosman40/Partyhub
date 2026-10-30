@@ -481,3 +481,73 @@ html.is-tv
   ) {
   font-size: max(1em, var(--tv-text));
 }
+
+/* Animations d'entrée : discrètes, et absentes pour qui demande moins de mouvement. */
+@keyframes screen-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Opacité seule sur les écrans entiers : une transformation casserait les éléments en position fixe. */
+  .stage-game,
+  .stage-lobby {
+    animation: screen-in 0.4s ease both;
+  }
+
+  .game-card {
+    animation: rise-in 0.45s ease both;
+  }
+
+  .game-card:nth-child(2) {
+    animation-delay: 0.04s;
+  }
+
+  .game-card:nth-child(3) {
+    animation-delay: 0.08s;
+  }
+
+  .game-card:nth-child(4) {
+    animation-delay: 0.12s;
+  }
+
+  .game-card:nth-child(n + 5) {
+    animation-delay: 0.16s;
+  }
+
+  .results-panel {
+    animation: pop-in 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+  }
+
+  /* Le podium se dévoile du dernier au premier. */
+  .podium-row {
+    animation: rise-in 0.5s ease both;
+  }
+
+  .podium-row.place-3 {
+    animation-delay: 0.1s;
+  }
+
+  .podium-row.place-2 {
+    animation-delay: 0.3s;
+  }
+
+  .podium-row.place-1 {
+    animation-delay: 0.55s;
+  }
+}
