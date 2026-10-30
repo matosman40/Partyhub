@@ -340,5 +340,5 @@ export type { Group } from '../promoteur/board.js';
 export type { PlayerPub, PromoteurPub, TilePub } from '../promoteur/client/types.js';
 export { useSteppedPositions } from '../promoteur/client/useStepped.js';
 export { usePrefersReducedMotion } from './motion.js';
-export { PauseContext, useRemaining } from './hooks.js';
+export { BotsContext, PauseContext, useRemaining } from './hooks.js';
 export { TimerBar } from './ui.js';

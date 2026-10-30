@@ -26,6 +26,10 @@ export interface BotOptions {
   horizon?: number;
   /** Pas pendant lesquels un plan retenu est suivi avant de replanifier. */
   replan?: number;
+  /** Probabilité, à chaque pas, de se laisser distraire (le robot s'arrête un instant). 0 par défaut : sans faute. */
+  lapse?: number;
+  /** Hasard utilisé pour les distractions. */
+  random?: () => number;
 }
 
 const RIGHT: PlayerInput = { left: false, right: true, jump: false };
@@ -141,6 +145,9 @@ export interface Bot {
 export function createBot(id: string, options: BotOptions = {}): Bot {
   const horizon = options.horizon ?? 85;
   const replan = options.replan ?? 3;
+  const lapse = options.lapse ?? 0;
+  const random = options.random ?? Math.random;
+  let lapseLeft = 0;
   let queue: PlayerInput[] = [];
   let lastPlan = 'course';
   return {
@@ -148,6 +155,16 @@ export function createBot(id: string, options: BotOptions = {}): Bot {
       return lastPlan;
     },
     act(world: World): PlayerInput {
+      // Une distraction fait lâcher les commandes quelques instants : le robot ralentit, rate un saut, tombe.
+      if (lapseLeft > 0) {
+        lapseLeft--;
+        return WAIT;
+      }
+      if (lapse > 0 && random() < lapse) {
+        lapseLeft = 8 + Math.floor(random() * 28);
+        queue = [];
+        return WAIT;
+      }
       const p: PlayerState | undefined = world.players.find((q) => q.id === id);
       if (!p || p.dead || p.finished) {
         queue = [];

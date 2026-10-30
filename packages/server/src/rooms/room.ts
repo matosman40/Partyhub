@@ -857,7 +857,7 @@ export class Room {
       }
       if (pending && pending.key === suggestion.key) continue;
       if (pending) clearTimeout(pending.timer);
-      const delay = BOT_MIN_DELAY_MS + Math.floor(this.env.random() * BOT_JITTER_MS);
+      const delay = suggestion.delayMs ?? BOT_MIN_DELAY_MS + Math.floor(this.env.random() * BOT_JITTER_MS);
       const timer = setTimeout(() => this.botAct(p.id), delay);
       timer.unref();
       this.botTimers.set(p.id, { key: suggestion.key, timer });

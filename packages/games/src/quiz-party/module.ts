@@ -476,7 +476,14 @@ export const quizParty: GameModule<QuizState, QuizSettings> = {
     if (s.phase !== 'question' || s.answers[playerId]) return null;
     const q = s.questions[s.index];
     if (!q) return null;
-    return { type: 'answer', payload: { choice: Math.floor(random() * q.choices.length) }, key: `q${s.index}` };
+    // Un robot répond au hasard et tard dans le temps imparti : peu de bonnes réponses, et presque aucun bonus de rapidité.
+    const delayMs = s.settings.answerSeconds * 1000 * (0.55 + 0.35 * random());
+    return {
+      type: 'answer',
+      payload: { choice: Math.floor(random() * q.choices.length) },
+      key: `q${s.index}`,
+      delayMs,
+    };
   },
 };
 

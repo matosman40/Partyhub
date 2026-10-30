@@ -2,8 +2,9 @@ import { useContext, useEffect, useRef } from 'react';
 import { defaultCharacterFor, type CharacterSpec } from '@partyhub/shared';
 import { AvatarsContext } from '../../client/avatar-context.js';
 import { play } from '../../client/audio.js';
-import { PauseContext } from '../../client/hooks.js';
+import { BotsContext, PauseContext } from '../../client/hooks.js';
 import { SensorsContext, type SensorReading } from '../../client/sensors.js';
+import { createBot, type Bot } from '../bot.js';
 import { createWorld, step, summary, type PlayerInput, type World } from '../engine.js';
 import { LEVELS } from '../levels.js';
 import { KeyboardState, mergeInputs, sampleToInput } from './input.js';
@@ -55,16 +56,17 @@ export function racersFor(
 export function RaceView({ pub, hostState, now, onAction }: RaceViewProps) {
   const avatars = useContext(AvatarsContext);
   const paused = useContext(PauseContext);
+  const bots = useContext(BotsContext);
   const sensors = useContext(SensorsContext);
   const boxRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   // Tout ce que la boucle lit passe par une référence : elle n'est jamais relancée par un rendu.
-  const latest = useRef({ pub, hostState, onAction, paused, avatars });
+  const latest = useRef({ pub, hostState, onAction, paused, avatars, bots });
   const sensorsRef = useRef<Record<string, SensorReading>>(sensors);
   const clock = useRef({ offset: -Infinity });
   useEffect(() => {
-    latest.current = { pub, hostState, onAction, paused, avatars };
+    latest.current = { pub, hostState, onAction, paused, avatars, bots };
     sensorsRef.current = sensors;
   });
   useEffect(() => {
@@ -96,6 +98,12 @@ export function RaceView({ pub, hostState, now, onAction }: RaceViewProps) {
     const inputs: Record<string, PlayerInput> = {};
     for (const r of racers) inputs[r.id] = { left: false, right: false, jump: false };
     const firstId = racers[0]?.id;
+    // Les robots courent avec un robot de planification peu clairvoyant et distrait : ils ne battent pas un joueur attentif.
+    const botOf = new Map<string, Bot>();
+    racers.forEach((r, i) => {
+      if (first.bots.has(r.id))
+        botOf.set(r.id, createBot(r.id, { horizon: [22, 18, 26, 20][i % 4], replan: 4, lapse: 0.03 }));
+    });
 
     // Repli clavier : le premier joueur se commande aussi au clavier quand l'hôte a une souris (ordinateur).
     const fine = typeof window.matchMedia === 'function' && window.matchMedia('(pointer: fine)').matches;
@@ -226,7 +234,10 @@ export function RaceView({ pub, hostState, now, onAction }: RaceViewProps) {
           for (const r of racers) {
             const reading = sensorsRef.current[r.id];
             const input = inputs[r.id]!;
-            if (r.id === firstId && fine) {
+            const bot = botOf.get(r.id);
+            if (bot) {
+              Object.assign(input, bot.act(world));
+            } else if (r.id === firstId && fine) {
               sampleToInput(reading, nowMs, phoneInput);
               mergeInputs(phoneInput, keyboard.read(kbInput), input);
             } else {

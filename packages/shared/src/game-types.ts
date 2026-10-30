@@ -152,6 +152,8 @@ export interface BotSuggestion {
   type: string;
   payload?: unknown;
   key: string;
+  /** Attente (ms) avant que le robot agisse, à la place de l’attente par défaut : un robot lent n’a pas le bonus de rapidité. */
+  delayMs?: number;
 }
 
 export interface ScoreEntry {

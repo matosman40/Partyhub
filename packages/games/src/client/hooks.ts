@@ -6,6 +6,9 @@ import { createContext, useContext, useEffect, useMemo, useState } from 'react';
  */
 export const PauseContext = createContext(false);
 
+/** Identifiants des joueurs qui sont des robots : un jeu dont l'écran principal fait tourner la partie les pilote lui-même. */
+export const BotsContext = createContext<ReadonlySet<string>>(new Set());
+
 /**
  * Temps restant (ms) avant une échéance exprimée dans l’horloge serveur.
  * N’utilise pas l’horloge du navigateur : on ne mesure que le temps écoulé

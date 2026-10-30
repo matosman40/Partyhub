@@ -372,9 +372,10 @@ export function createMediaQuiz(
       if (s.phase !== 'playing' || s.answers[playerId]) return null;
       const q = currentItem(s);
       if (!q) return null;
-      // Le robot connaît la réponse une fois sur deux, sinon il tape au hasard.
-      const text = random() < 0.5 ? q.answer : 'Je ne sais pas';
-      return { type: 'answer', payload: { text }, key: `q${s.index}` };
+      // Le robot connaît la réponse une fois sur cinq, et répond tard dans le temps imparti.
+      const text = random() < 0.2 ? q.answer : 'Je ne sais pas';
+      const delayMs = s.settings.answerSeconds * 1000 * (0.55 + 0.35 * random());
+      return { type: 'answer', payload: { text }, key: `q${s.index}`, delayMs };
     },
   };
 }
