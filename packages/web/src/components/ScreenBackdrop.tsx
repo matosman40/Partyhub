@@ -1,5 +1,6 @@
-import { useEffect } from 'react';
+import { useEffect, type CSSProperties } from 'react';
 import { useLocation } from 'react-router-dom';
+import { menuImageUrl } from '../gameBackgrounds.js';
 import { backgroundFor, loadScreenBackgrounds, screenForPath, useScreenBackgrounds } from '../screenBackgrounds.js';
 
 /**
@@ -9,7 +10,15 @@ import { backgroundFor, loadScreenBackgrounds, screenForPath, useScreenBackgroun
 export function ScreenBackdrop() {
   const { pathname } = useLocation();
   const backgrounds = useScreenBackgrounds();
-  const url = backgroundFor(backgrounds, screenForPath(pathname));
+  const screen = screenForPath(pathname);
+  const url = backgroundFor(backgrounds, screen);
+  // Sans fond choisi dans l'administration, l'accueil et « Rejoindre » ont leur illustration d'origine.
+  const defaultUrl =
+    url === null && screen === 'home'
+      ? menuImageUrl('accueil')
+      : url === null && screen === 'join'
+        ? menuImageUrl('rejoindre-telephone')
+        : null;
 
   useEffect(() => {
     void loadScreenBackgrounds();
@@ -21,6 +30,15 @@ export function ScreenBackdrop() {
     return () => root.classList.remove('has-screen-bg');
   }, [url]);
 
+  if (!url && defaultUrl) {
+    return (
+      <div
+        className="screen-backdrop is-default"
+        aria-hidden="true"
+        style={{ '--photo': `url("${defaultUrl}")` } as CSSProperties}
+      />
+    );
+  }
   if (!url) return null;
   return <div className="screen-backdrop" aria-hidden="true" style={{ backgroundImage: `url("${url}")` }} />;
 }

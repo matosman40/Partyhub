@@ -7,6 +7,8 @@ import { viewsFor } from '../games.js';
 import { PlayerAvatar } from '../components/PlayerAvatar.js';
 import { GameLogo } from '../components/GameLogo.js';
 import { GameScene } from '../components/GameScene.js';
+import { StagePhoto } from '../components/StagePhoto.js';
+import { gameBackgroundUrl, menuImageUrl } from '../gameBackgrounds.js';
 import { logoFor } from '../components/gameLogos.js';
 import { useArrivalMoods } from '../components/useArrivalMoods.js';
 import { useLobbyMoods } from '../components/useLobbyMoods.js';
@@ -183,6 +185,19 @@ export function TvPage() {
     </RoomSensors>
   );
   const sky = logoFor(lobby.game.id, lobby.game.name).sky;
+  // Photo d'ambiance : le salon, puis le fond du jeu ; en fin de partie, victoire, égalité ou résultats.
+  const ranking = lobby.lastResult?.ranking ?? [];
+  const winners = ranking.filter((r) => r.rank === 1).length;
+  const photo: { url: string; variant: 'lobby' | 'game' | 'end' } | null = inLobby
+    ? { url: menuImageUrl('salon'), variant: 'lobby' }
+    : lobby.status === 'ended' && hasEndResults(lobby)
+      ? {
+          url: menuImageUrl(winners > 1 ? 'egalite' : winners === 1 ? 'victoire' : 'fin-de-partie'),
+          variant: 'end',
+        }
+      : gameBackgroundUrl(lobby.game.id)
+        ? { url: gameBackgroundUrl(lobby.game.id)!, variant: 'game' }
+        : null;
   const skyStyle = { '--sky-a': sky[0], '--sky-b': sky[1] } as CSSProperties;
 
   /** Action propre au jeu, demandée par l’écran principal (ex. générer des personnages). */
@@ -459,6 +474,7 @@ export function TvPage() {
               name={lobby.game.name}
               className={`stage-scene${inLobby ? '' : ' is-quiet'}`}
             />
+            {photo && <StagePhoto url={photo.url} variant={photo.variant} />}
             <ReactionLayer socket={socket} />
             <VoiceLayer socket={socket} />
 

@@ -7,6 +7,8 @@ export { Avatar } from './ui.js';
 export { AvatarsContext, MoodsContext } from './avatar-context.js';
 export type { AvatarData } from './avatar-context.js';
 export { Character } from './character.js';
+export { PixelSprite, pixelBitmapFor } from './PixelSprite.js';
+export type { PixelSpriteProps } from './PixelSprite.js';
 export { Plateau, PLATEAU_KEY_STEP } from './plateau.js';
 export { GrilleView } from './grille/GrilleView.js';
 export type { GrilleApparence, GrilleViewProps } from './grille/GrilleView.js';
@@ -207,6 +209,20 @@ export const clientViews: Record<string, GameClientViews> = {
       Settings: fieldSettings([{ key: 'rounds', label: 'Manches', min: 1, max: 6 }]),
       Host: FunambuleHost,
       Player: FunambulePlayer,
+    };
+  }),
+  sauteurs: lazyViews(async () => {
+    const [{ SauteursHost }, { SauteursPlayer }] = await Promise.all([
+      import('../sauteurs/client/HostScreen.js'),
+      import('../sauteurs/client/PlayerScreen.js'),
+    ]);
+    return {
+      Settings: fieldSettings([
+        { key: 'levelCount', label: 'Niveaux (1 à 3)', min: 1, max: 3 },
+        { key: 'singleLevel', label: 'Niveau joué si un seul (1 à 3)', min: 1, max: 3 },
+      ]),
+      Host: SauteursHost,
+      Player: SauteursPlayer,
     };
   }),
   'aventure-ia': lazyViews(async () => {

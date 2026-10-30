@@ -11,7 +11,7 @@
 const CACHE_PREFIX = 'partyhub-shell-';
 const CACHE = CACHE_PREFIX + '__SW_VERSION__';
 const SHELL_PATHS = ['/', '/manifest.webmanifest', '/icons/icon.svg'];
-const STATIC_PREFIXES = ['/assets/', '/fonts/', '/icons/'];
+const STATIC_PREFIXES = ['/assets/', '/fonts/', '/icons/', '/menus/', '/game-backgrounds/'];
 const NEVER_CACHED_PREFIXES = ['/api', '/socket.io'];
 const OFFLINE_MESSAGE = 'PartyHub a besoin de la connexion pour afficher cette page.';
 

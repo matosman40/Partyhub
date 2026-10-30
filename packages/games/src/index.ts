@@ -25,6 +25,7 @@ import { banquise } from './banquise/module.js';
 import { boum } from './boum/module.js';
 import { plateauTest } from './plateau-test/module.js';
 import { aventureIa } from './aventure/module.js';
+import { sauteurs } from './sauteurs/module.js';
 
 /**
  * Registre explicite des jeux disponibles.
@@ -61,6 +62,7 @@ export const gameRegistry: GameModule[] = [
   banquise,
   boum,
   plateauTest,
+  sauteurs,
 ];
 
 export function findGame(id: string): GameModule | undefined {
@@ -87,6 +89,8 @@ export type { Gag, GagId } from './gags-en-rafale/gags.js';
 export { funambule, funambuleSettingsSchema } from './funambule/module.js';
 export type { FunambuleState, FunambuleSettings, FunambulePhase } from './funambule/module.js';
 export { judgeWalk, windAt, windStrength, FallDetector, WALK_MS } from './funambule/rules.js';
+export { sauteurs, sauteursSettingsSchema, minFinishTicks, maxFinishTicks, scoreLevel } from './sauteurs/module.js';
+export type { SauteursState, SauteursSettings, SauteursPhase, LevelScore } from './sauteurs/module.js';
 export { bombesParty } from './bombes-party/module.js';
 export { banquise, LEVEL_RULES as BANQUISE_LEVELS, LEVEL_COUNT as BANQUISE_LEVEL_COUNT } from './banquise/module.js';
 export type { BanquiseState, BanquiseSettings } from './banquise/module.js';

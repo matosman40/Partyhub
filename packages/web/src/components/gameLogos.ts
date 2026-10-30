@@ -8,7 +8,19 @@ import { hashText } from '@partyhub/shared';
 
 /** Motif graphique posé autour du titre. */
 export type LogoMark =
-  'bubble' | 'fuse' | 'lens' | 'moon' | 'arrows' | 'crown' | 'skyline' | 'deck' | 'bolt' | 'star' | 'duo' | 'frame';
+  | 'bubble'
+  | 'fuse'
+  | 'lens'
+  | 'moon'
+  | 'arrows'
+  | 'crown'
+  | 'skyline'
+  | 'deck'
+  | 'bolt'
+  | 'star'
+  | 'duo'
+  | 'frame'
+  | 'runner';
 
 export interface LogoSpec {
   /** Une ou deux lignes ; la seconde est plus petite. */
@@ -80,6 +92,15 @@ export const GAME_LOGOS: Record<string, LogoSpec> = {
     sky: ['#1b0f3d', '#070318'],
     mark: 'bolt',
     tilt: -3,
+  },
+  sauteurs: {
+    lines: ['Course des', 'sauteurs'],
+    fill: '#ffee58',
+    edge: '#3a86ff',
+    ink: '#101010',
+    sky: ['#1b3a8a', '#0a1233'],
+    mark: 'runner',
+    tilt: -2,
   },
   funambule: {
     lines: ['Funambule'],

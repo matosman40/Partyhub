@@ -10,6 +10,7 @@ import { registerOfflineShell } from './offline.js';
 import { installClientLogging } from './log/clientLog.js';
 import '@fontsource/dela-gothic-one/latin-400.css';
 import '@fontsource-variable/outfit';
+import './styles/tokens.css';
 import './styles.css';
 import './styles/rami51.css';
 import './styles/tarot.css';
@@ -19,6 +20,8 @@ import './styles/championship.css';
 import './styles/catalog.css';
 import './styles/game-sheet.css';
 import './styles/game-gallery.css';
+import './styles/sauteurs.css';
+import './styles/refonte.css';
 
 installClientLogging(__APP_VERSION__);
 applyTheme(loadTheme());

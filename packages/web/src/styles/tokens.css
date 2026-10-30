@@ -1,0 +1,105 @@
+/* ==========================================================================
+   PartyHub : jetons de conception (couleurs sémantiques, espacements, rayons, ombres, typographie, appareils).
+
+   Ce fichier est chargé AVANT styles.css : il ne définit que des noms nouveaux (--color-*, --space-*, --fs-*, ...)
+   qui s'appuient sur les variables d'origine (--bg0, --text, --muted, --sun, ...) sans les remplacer. Les écrans
+   les plus vus (accueil, rejoindre, salon, quiz, fin de partie) les utilisent via styles/refonte.css ; le reste de
+   la feuille migre au fil des changements.
+
+   Contrastes vérifiés (WCAG 2.2, rapport de luminance) sur le fond sombre le plus clair du dégradé (#2a1466) :
+   --color-text 13,8:1 · --color-text-muted 7,1:1 · --color-text-subtle 5,9:1 · jaune d'accent sur sombre 9,8:1.
+   Texte principal de l'écran principal (TV) : toujours --color-text ou --color-text-muted, soit >= 7:1.
+   ========================================================================== */
+
+:root {
+  /* --- Couleurs sémantiques (thème sombre ; le thème clair les redéfinit plus bas) --- */
+  --color-bg: var(--bg0);
+  --color-bg-raised: var(--bg1);
+  --color-surface: var(--glass);
+  --color-surface-strong: var(--glass-2);
+  --color-border: var(--line);
+  --color-border-strong: var(--line-strong);
+  --color-text: var(--text);
+  --color-text-muted: var(--muted);
+  --color-text-subtle: var(--faint);
+  --color-accent: var(--sun);
+  --color-accent-ink: #1a1030;
+  --color-link: var(--cyan);
+  --color-success: var(--lime);
+  --color-danger: var(--danger);
+  --color-focus: var(--focus);
+
+  /* Voile sous le texte posé sur une image : l'image reste visible sur les bords, le centre est sombre. */
+  --scrim-ink: 8, 6, 26;
+  --scrim: linear-gradient(
+    180deg,
+    rgba(var(--scrim-ink), 0.72) 0%,
+    rgba(var(--scrim-ink), 0.8) 45%,
+    rgba(var(--scrim-ink), 0.9) 100%
+  );
+  --scrim-strong: rgba(var(--scrim-ink), 0.86);
+
+  /* --- Espacement (échelle de 4 px, en rem pour suivre l'échelle de l'appareil) --- */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4rem;
+  /* Gouttière de page : fluide entre 16 px (petit téléphone) et 40 px (écran large). */
+  --gutter: clamp(1rem, 3.5vw, 2.5rem);
+
+  /* --- Rayons --- */
+  --radius-sm: var(--r-sm);
+  --radius-md: var(--r-md);
+  --radius-lg: var(--r-lg);
+  --radius-xl: var(--r-xl);
+  --radius-pill: 999px;
+
+  /* --- Ombres --- */
+  --shadow-1: 0 2px 6px rgba(0, 0, 0, 0.28);
+  --shadow-2: 0 10px 24px -10px rgba(0, 0, 0, 0.55);
+  --shadow-3: 0 24px 48px -16px rgba(0, 0, 0, 0.65);
+  --shadow-glow: 0 0 32px -6px rgba(139, 92, 255, 0.55);
+
+  /* --- Échelle typographique fluide (de 320 px à 1920 px de large) --- */
+  --fs-xs: clamp(0.8125rem, 0.78rem + 0.15vw, 0.875rem);
+  --fs-sm: clamp(0.9rem, 0.86rem + 0.2vw, 1rem);
+  --fs-md: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+  --fs-lg: clamp(1.15rem, 1rem + 0.7vw, 1.5rem);
+  --fs-xl: clamp(1.4rem, 1.1rem + 1.4vw, 2.1rem);
+  --fs-2xl: clamp(1.8rem, 1.2rem + 2.6vw, 3.2rem);
+  --fs-display: clamp(2.6rem, 1.4rem + 6vw, 6.5rem);
+
+  /* --- Cibles et focus --- */
+  --tap: 44px;
+  --focus-ring: 3px solid var(--color-focus);
+  --focus-offset: 3px;
+
+  /* --- Zones sûres (encoche, barres système, marges TV) --- */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+
+  /* --- Télévision lue à 3 m : texte important à 28 px à 1920x1080 (1,46 vw), proportionnel ensuite. --- */
+  --tv-text: clamp(16px, min(1.46vw, 2.6vh), 72px);
+  --tv-text-lg: calc(var(--tv-text) * 1.3);
+  --tv-text-xl: calc(var(--tv-text) * 1.8);
+  --tv-title: calc(var(--tv-text) * 2.4);
+  /* Marge de sécurité des téléviseurs (surbalayage) : 3,5 % de chaque côté. */
+  --tv-safe-x: 3.5vw;
+  --tv-safe-y: 3.5vh;
+}
+
+/* Thème clair : mêmes noms, valeurs pour papier lilas (contrastes >= 4,5:1 sur #f3efff). */
+:root[data-theme='light'] {
+  --color-accent-ink: #ffffff;
+  --scrim-ink: 243, 239, 255;
+  --shadow-1: 0 2px 6px rgba(40, 20, 90, 0.14);
+  --shadow-2: 0 10px 24px -10px rgba(40, 20, 90, 0.3);
+  --shadow-3: 0 24px 48px -16px rgba(40, 20, 90, 0.38);
+  --shadow-glow: 0 0 32px -8px rgba(109, 60, 255, 0.4);
+}

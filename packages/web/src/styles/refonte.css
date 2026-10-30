@@ -1,0 +1,483 @@
+/* ==========================================================================
+   Refonte « lisibilité et appareils » : chargée EN DERNIER, elle s'appuie sur les jetons de styles/tokens.css.
+   Elle ne change ni les couleurs ni les polices de l'identité (néon violet, Luckiest Guy, Fredoka) : elle règle
+   les tailles, les contrastes, les mises en page par appareil, les fonds illustrés et les cibles tactiles.
+
+   1. Bases : focus, cases à cocher, cibles tactiles
+   2. Fonds illustrés (accueil, rejoindre, salon, partie, fin de partie, bandeau du catalogue)
+   3. Télévision lue à 3 m (/tv/**) : texte >= 28 px à 1920x1080, contraste >= 7:1, marges de sécurité
+   4. Téléphone et tablette : une colonne en portrait, paysage bas, zones sûres
+   ========================================================================== */
+
+/* ---- 1. Bases ------------------------------------------------------------------------------------------------ */
+
+:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+/* Cases à cocher et boutons radio : case de 24 px, ligne entière (libellé compris) de 44 px au moins, à la souris
+   comme au doigt. */
+input[type='checkbox'],
+input[type='radio'] {
+  flex: none;
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.check,
+.checkbox,
+label:has(> input[type='checkbox']),
+label:has(> input[type='radio']),
+label.field:has(input[type='checkbox']) {
+  min-height: var(--tap);
+}
+
+.checkbox,
+.check,
+label:has(> input[type='checkbox']):not(.field),
+label:has(> input[type='radio']):not(.field) {
+  display: inline-flex;
+  align-items: center;
+}
+
+.btn,
+.link-btn,
+.home-action {
+  min-height: var(--tap);
+}
+
+/* Avis « hors ligne » de l'écran sans profil. */
+.offline-notice {
+  width: 100%;
+  text-align: left;
+  background: rgba(255, 200, 61, 0.14);
+  border-color: rgba(255, 200, 61, 0.6);
+}
+
+/* ---- 2. Fonds illustrés -------------------------------------------------------------------------------------- */
+
+/* Accueil et « Rejoindre » : illustration d'origine sous un voile dégradé. Sans image (hors ligne, 404), le voile
+   seul reste, sur le fond sombre habituel : le texte garde son contraste. */
+.screen-backdrop.is-default {
+  background-color: transparent;
+  background-image: var(--scrim), var(--photo);
+  background-size: cover;
+  background-position: center;
+}
+
+.screen-backdrop.is-default::after {
+  background: none;
+}
+
+/* Écran principal : photo d'ambiance sous le contenu, voile peint dans le même fond. */
+.stage-photo {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-color: transparent;
+  background-image:
+    linear-gradient(180deg, rgba(var(--scrim-ink), 0.55) 0%, rgba(var(--scrim-ink), 0.78) 100%), var(--photo);
+  background-size: cover;
+  background-position: center;
+  animation: stage-photo-in 0.6s ease both;
+}
+
+/* Le salon et la partie portent du texte et des plateaux : voile fort. La fin de partie laisse respirer l'image. */
+.stage-photo.is-game {
+  background-image:
+    linear-gradient(180deg, rgba(var(--scrim-ink), 0.74) 0%, rgba(var(--scrim-ink), 0.86) 100%), var(--photo);
+}
+
+.stage-photo.is-lobby {
+  background-image:
+    radial-gradient(70% 70% at 50% 50%, rgba(var(--scrim-ink), 0.84), rgba(var(--scrim-ink), 0.72) 100%), var(--photo);
+}
+
+.stage-photo.is-end {
+  background-image:
+    linear-gradient(180deg, rgba(var(--scrim-ink), 0.76) 0%, rgba(var(--scrim-ink), 0.86) 100%), var(--photo);
+}
+
+@keyframes stage-photo-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* L'image choisie dans l'administration pour l'écran principal prime sur la photo d'ambiance. */
+html.has-screen-bg .stage-photo {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stage-photo {
+    animation: none;
+  }
+}
+
+/* Bandeau du catalogue : décoratif, au-dessus du titre, jamais sous du texte. */
+.catalog::before {
+  content: '';
+  display: block;
+  height: clamp(4.5rem, 14vw, 8.5rem);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  background:
+    linear-gradient(180deg, transparent 55%, rgba(var(--scrim-ink), 0.55) 100%), url('/menus/bandeau-catalogue.webp'),
+    var(--color-surface);
+  background-size: cover;
+  background-position: center;
+}
+
+/* ---- 3. Télévision (/tv/**) ---------------------------------------------------------------------------------- */
+
+/* Marges de sécurité : le contenu reste à l'intérieur de 3,5 % de chaque bord (surbalayage des téléviseurs). */
+html.is-tv .stage {
+  padding-inline: var(--tv-safe-x);
+  padding-block: var(--tv-safe-y);
+}
+
+html.is-tv .stage-game {
+  left: var(--tv-safe-x);
+  right: var(--tv-safe-x);
+}
+
+html.is-tv .stage.has-results .stage-game {
+  right: calc(min(30rem, 36vw) + var(--tv-safe-x) * 2);
+}
+
+html.is-tv .stage-mini {
+  left: var(--tv-safe-x);
+}
+
+html.is-tv :focus-visible {
+  outline-width: 5px;
+}
+
+/* Salon : code, QR, joueurs. */
+html.is-tv .stage-lobby {
+  max-width: min(1500px, 100%);
+}
+
+html.is-tv .stage-label,
+html.is-tv .stage-hint,
+html.is-tv .stage-note,
+html.is-tv .stage-empty {
+  font-size: var(--tv-text);
+  opacity: 1;
+  color: var(--color-text-muted);
+  line-height: 1.35;
+}
+
+html.is-tv .stage-code-big {
+  font-size: clamp(3rem, min(13vh, 9vw), 9rem);
+}
+
+html.is-tv .stage-qr img.qr {
+  width: clamp(150px, min(30vh, 18vw), 420px);
+}
+
+html.is-tv .stage-player {
+  width: clamp(110px, 12vw, 260px);
+}
+
+html.is-tv .stage-player-name {
+  font-size: var(--tv-text);
+}
+
+html.is-tv .stage-player-tag {
+  font-size: calc(var(--tv-text) * 0.86);
+  padding: 0.1em 0.6em;
+}
+
+html.is-tv .stage-player-tag.is-ready {
+  background: var(--lime);
+  color: #0b2a12;
+}
+
+html.is-tv .stage-launch {
+  font-size: var(--tv-text-xl);
+}
+
+html.is-tv .stage-people,
+html.is-tv .stage-join {
+  background: rgba(var(--scrim-ink), 0.72);
+}
+
+html.is-tv .stage-handoff .link-btn,
+html.is-tv .stage-start .link-btn,
+html.is-tv .stage-lobby .btn,
+html.is-tv .stage-lobby .link-btn {
+  font-size: var(--tv-text);
+}
+
+html.is-tv .stage-handoff-code {
+  font-size: clamp(2.4rem, min(8vh, 6vw), 6rem);
+}
+
+/* Partie : textes de second rang des écrans de jeu, à la taille de lecture TV. */
+html.is-tv .stage-game :is(.round-info, .muted, .small, .label, .tag, .hint, .explanation, .quiz-notice) {
+  font-size: var(--tv-text);
+  line-height: 1.3;
+}
+
+html.is-tv .stage-game .muted {
+  color: var(--color-text-muted);
+}
+
+/* Quiz : question, tuiles de réponse, résultats et classement. */
+html.is-tv .quiz-host .question-title {
+  font-size: max(clamp(1.9rem, 4.6vw, 3.6rem), var(--tv-title));
+}
+
+html.is-tv .quiz-host .choice {
+  font-size: var(--tv-text-lg);
+  min-height: calc(var(--tv-text-lg) * 2.1);
+}
+
+html.is-tv .quiz-host .choice .letter {
+  font-size: var(--tv-text);
+  width: 1.9em;
+  height: 1.9em;
+}
+
+html.is-tv .quiz-host .choice .count {
+  font-size: var(--tv-text-lg);
+}
+
+html.is-tv .quiz-host .choices-grid {
+  gap: calc(var(--tv-text) * 0.5);
+}
+
+html.is-tv .quiz-host .reveal-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: calc(var(--tv-text) * 1.2);
+  text-align: left;
+}
+
+html.is-tv .quiz-host .reveal-grid h3 {
+  font-size: var(--tv-text);
+  color: var(--color-text-muted);
+}
+
+html.is-tv .quiz-host .results li,
+html.is-tv .quiz-host .answer-roster li {
+  font-size: var(--tv-text);
+}
+
+html.is-tv .stage-game .ranking {
+  width: 100%;
+}
+
+html.is-tv .stage-game .ranking li {
+  font-size: var(--tv-text);
+}
+
+html.is-tv .stage-game .ranking .rank {
+  font-size: var(--tv-text);
+  width: 1.9em;
+  height: 1.9em;
+}
+
+html.is-tv .stage-game .ranking li .avatar {
+  width: 1.7em;
+  height: 1.7em;
+}
+
+html.is-tv .stage-game .ranking .points {
+  color: var(--color-accent);
+  font-size: var(--tv-text);
+}
+
+/* Fin de partie : panneau de résultats et podium, grands et sur fond opaque. */
+html.is-tv .results-panel {
+  background: rgba(var(--scrim-ink), 0.9);
+  width: min(30rem, 36vw);
+  font-size: var(--tv-text);
+  right: var(--tv-safe-x);
+}
+
+html.is-tv .results-panel :is(h2, h3) {
+  font-size: var(--tv-text-lg);
+}
+
+html.is-tv .results-panel :is(li, p, span, .muted, .small) {
+  font-size: var(--tv-text);
+}
+
+/* Barre d'actions de l'écran principal et pastille du salon. */
+html.is-tv .champ-pill {
+  font-size: var(--tv-text);
+}
+
+html.is-tv .stage-toast {
+  font-size: var(--tv-text);
+}
+
+/* ---- 4. Téléphone et tablette -------------------------------------------------------------------------------- */
+
+/* Portrait étroit : une seule colonne, rien ne dépasse de 320 px à 600 px. */
+@media (max-width: 600px) {
+  .page {
+    padding-inline: max(var(--gutter), var(--safe-left)) max(var(--gutter), var(--safe-right));
+  }
+
+  .home-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Tablette : le principe en trois temps et les actions se répartissent sur une ligne. */
+@media (min-width: 720px) {
+  .home .steps {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    max-width: none;
+  }
+
+  .home .hero {
+    max-width: 100%;
+  }
+}
+
+/* Paysage bas (téléphone couché) : titre compact, contenu défilable, boutons visibles. */
+@media (orientation: landscape) and (max-height: 480px) {
+  .page {
+    padding-top: max(0.6rem, var(--safe-top));
+    padding-bottom: 1.5rem;
+    gap: 0.75rem;
+  }
+
+  .page.center {
+    min-height: 0;
+  }
+
+  .hero {
+    padding-top: 0.25rem;
+    gap: 0.4rem;
+  }
+
+  .brand-title {
+    font-size: clamp(2rem, 14vh, 3.2rem);
+    margin-bottom: -0.1em;
+  }
+
+  .hero p {
+    font-size: 0.95rem;
+    line-height: 1.35;
+  }
+
+  .home .steps {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    max-width: none;
+    margin-top: 0.2rem;
+  }
+
+  .home-actions {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .catalog::before {
+    height: 3.5rem;
+  }
+
+  /* Quiz sur téléphone couché : la question et au moins quatre réponses tiennent à l'écran. */
+  .player-game:has(.choice-btn) {
+    gap: 0.5rem;
+  }
+
+  .player-game:has(.choice-btn) .round-info {
+    padding: 0.2rem 0.8rem;
+    font-size: 0.85rem;
+  }
+
+  .player-game:has(.choice-btn) .question-small {
+    font-size: clamp(1.05rem, 5.4vh, 1.5rem);
+    line-height: 1.15;
+  }
+
+  .player-game .choices-stack {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+
+  .player-game .choice-btn {
+    min-height: var(--tap);
+    padding-block: 0.35rem;
+    font-size: 0.95rem;
+  }
+
+  .seat-head {
+    padding-block: 0.25rem;
+  }
+
+  .seat-head .muted {
+    display: none;
+  }
+}
+
+/* Petit téléphone en portrait (320 à 380 px) : titres et boutons plus serrés. */
+@media (max-width: 380px) {
+  .brand-title {
+    font-size: clamp(2.6rem, 14vw, 3.4rem);
+  }
+
+  .btn {
+    padding-inline: 0.9rem;
+  }
+}
+
+/* Écran principal : pastille de salle et barre d'actions lisibles à 3 m (la barre reste discrète au repos). */
+html.is-tv .stage-mini {
+  opacity: 0.6;
+}
+
+html.is-tv .stage-mini.is-visible {
+  opacity: 1;
+}
+
+html.is-tv .stage-mini > span {
+  font-size: var(--tv-text);
+  background: rgba(var(--scrim-ink), 0.78);
+}
+
+html.is-tv .stage-mini-logo {
+  width: clamp(140px, 13vw, 340px);
+}
+
+html.is-tv .stage-bar .btn,
+html.is-tv .stage-bar button {
+  font-size: var(--tv-text);
+  min-height: calc(var(--tv-text) * 2.2);
+}
+
+html.is-tv :is(.fnb, .mdf) :is(.small, .muted) {
+  font-size: var(--tv-text);
+}
+
+/* Noms, scores, paris, verdicts et intertitres des jeux : jamais sous la taille de lecture TV. */
+html.is-tv
+  .stage-game
+  :is(
+    .name,
+    .points,
+    .bet,
+    .verdict-host,
+    h3,
+    h4,
+    .count,
+    .votes,
+    .seat-name,
+    .seat-score,
+    .hud-pill,
+    .cards-event,
+    .mdf-round,
+    .mdf-verdict,
+    .mdf-gain,
+    .solo-name,
+    .solo-status
+  ) {
+  font-size: max(1em, var(--tv-text));
+}

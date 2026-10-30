@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useState, useSyncExternalStore, type ReactNode } from 'react';
 import type { ProfileView } from '@partyhub/shared';
 import { api } from '../api.js';
 import { CreateProfileForm } from './CreateProfileForm.js';
@@ -11,6 +11,24 @@ import {
   rememberDeviceProfile,
   switchDeviceProfile,
 } from './session.js';
+
+function subscribeOnline(listener: () => void): () => void {
+  window.addEventListener('online', listener);
+  window.addEventListener('offline', listener);
+  return () => {
+    window.removeEventListener('online', listener);
+    window.removeEventListener('offline', listener);
+  };
+}
+
+/** Vrai tant que le navigateur se dit connecté (l'application s'ouvre aussi hors ligne, depuis le cache). */
+function useOnline(): boolean {
+  return useSyncExternalStore(
+    subscribeOnline,
+    () => navigator.onLine,
+    () => true,
+  );
+}
 
 type Status = 'checking' | 'ready' | 'create' | 'offline';
 
@@ -52,6 +70,7 @@ async function resolveProfile(): Promise<'ready' | 'create' | 'offline'> {
  * Les écrans du joueur (accueil, saisie du code, téléphone) ne s’ouvrent qu’ensuite.
  */
 export function ProfileGate({ children }: { children: ReactNode }) {
+  const online = useOnline();
   const [status, setStatus] = useState<Status>('checking');
   const [attempt, setAttempt] = useState(0);
 
@@ -98,6 +117,12 @@ export function ProfileGate({ children }: { children: ReactNode }) {
   if (status === 'create') {
     return (
       <main className="page center fade-in" style={{ maxWidth: 520 }}>
+        {!online && (
+          <p className="notice offline-notice" role="status">
+            Hors ligne : l’application s’ouvre, mais votre profil ne peut pas être créé sans connexion. Reconnectez-vous
+            au réseau, puis appuyez sur Continuer.
+          </p>
+        )}
         <CreateProfileForm onCreated={() => setStatus('ready')} />
       </main>
     );

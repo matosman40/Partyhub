@@ -4,6 +4,17 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 
 ## [Non publié]
 
+### Ajouté
+
+- Jeu « Course des sauteurs » : une course de plateforme en pixel art, avec classement, pièces, plusieurs niveaux, des robots, et une manette de téléphone à trois boutons (gauche, droite, saut). Le clavier (flèches et espace) commande le premier joueur sur l'écran principal. Il a son logo, son fond et ses photos de salon.
+- Personnages en pixel art : portrait (8 expressions), corps entier (8 poses) et marche animée (4 images, 3 directions), dessinés à partir du personnage du profil.
+- Refonte visuelle : jetons de design communs, rideau de théâtre et confettis sur l'accueil, fonds illustrés pour 27 jeux, images de menu (accueil, salon, rejoindre, victoire, égalité, fin de partie, bandeau du catalogue) et nouveaux favicons.
+
+### Corrigé
+
+- Profil : « Créer depuis une photo » reprend maintenant la barbe et la couleur des yeux détectées, qui étaient écartées.
+- Serveur : une base refusée (plus récente que le programme) ou une migration en échec ne laisse plus le fichier de la base ouvert.
+
 ## [0.18.0] - 2026-10-29
 
 ### Ajouté

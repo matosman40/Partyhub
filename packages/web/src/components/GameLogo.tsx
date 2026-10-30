@@ -154,6 +154,49 @@ function Mark({ mark, spec }: { mark: LogoMark; spec: LogoSpec }): ReactNode {
       }
       return <polygon points={pts.join(' ')} {...shape} opacity={0.9} />;
     }
+    case 'runner': {
+      /* Petit coureur en pixels qui saute, un fanion à la main : palette du jeu (16 couleurs). */
+      const rows = [
+        '..hhhh...',
+        '.hhhhhh..',
+        '.ssskss..',
+        '..sss....',
+        '..bbbbb.s',
+        '.bbbbbb.s',
+        'bb.bbb.s.',
+        '...bbl...',
+        '..ll..ll.',
+        '.ll....ll',
+        'll......l',
+      ];
+      const colors: Record<string, string> = { h: '#d62828', s: '#f6d7b5', k: '#101010', b: '#3a86ff', l: '#7b2fbe' };
+      const cell = 9;
+      const ox = 500;
+      const oy = 38;
+      const cells: ReactNode[] = [];
+      rows.forEach((row, y) =>
+        [...row].forEach((ch, x) => {
+          if (ch === '.') return;
+          cells.push(
+            <rect key={`${x}-${y}`} x={ox + x * cell} y={oy + y * cell} width={cell} height={cell} fill={colors[ch]} />,
+          );
+        }),
+      );
+      return (
+        <g shapeRendering="crispEdges">
+          <rect x={ox + 8 * cell + 2} y={10} width={5} height={78} fill={spec.ink} />
+          <path
+            d={`M ${ox + 8 * cell + 7} 10 h 36 v 12 h -12 v 12 h -24 Z`}
+            fill="#ff8c1a"
+            stroke={spec.ink}
+            strokeWidth={4}
+          />
+          <g>{cells}</g>
+          <rect x={470} y={150} width={150} height={9} fill={spec.edge} />
+          <rect x={470} y={159} width={150} height={9} fill="#1e6b3a" />
+        </g>
+      );
+    }
     case 'duo':
       return (
         <g opacity={0.92}>

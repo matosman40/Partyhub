@@ -715,6 +715,52 @@ const funambule: Scene = (c) => {
   );
 };
 
+/** Course des sauteurs : ciel de pixels, nuages et collines en gradins, dans la palette du jeu. */
+const sauteurs: Scene = (c) => {
+  const px = 40;
+  const clouds: ReactNode[] = [];
+  for (let i = 0; i < 5; i++) {
+    const x = Math.round(span(c.r, 0, W - 280) / px) * px;
+    const y = Math.round(span(c.r, 40, 300) / px) * px;
+    clouds.push(
+      <g key={i}>
+        <rect x={x + px} y={y} width={px * 3} height={px} />
+        <rect x={x} y={y + px} width={px * 5} height={px} />
+      </g>,
+    );
+  }
+  const hills: ReactNode[] = [];
+  const cols = W / px;
+  for (let i = 0; i < cols; i++) {
+    const far = 3 + Math.round(2 + 2 * Math.sin(i * 0.45));
+    const near = 2 + Math.round(1.5 + 1.5 * Math.sin(i * 0.7 + 1.3));
+    hills.push(
+      <rect
+        key={`f${i}`}
+        x={i * px}
+        y={H - far * px - 4 * px}
+        width={px}
+        height={far * px + 4 * px}
+        fill="#1e6b3a"
+        opacity={0.55}
+      />,
+    );
+    hills.push(
+      <rect key={`n${i}`} x={i * px} y={H - near * px} width={px} height={near * px} fill="#3dbe5a" opacity={0.5} />,
+    );
+  }
+  return (
+    <g shapeRendering="crispEdges">
+      <rect x={W - 3 * px} y={px} width={2 * px} height={2 * px} fill="#ffd23f" opacity={0.5} />
+      <g fill="#ffffff" opacity={0.14}>
+        {clouds}
+      </g>
+      {hills}
+      <rect x={0} y={H - px} width={W} height={px} fill="#7a4a2a" opacity={0.6} />
+    </g>
+  );
+};
+
 /** Essai des appareils : un banc de mesure, cercles concentriques autour d’un objectif, et un horizon de collines. */
 const essaiAppareils: Scene = (c) => {
   const cx = W / 2;
@@ -1108,6 +1154,7 @@ const SCENES: Record<string, Scene> = {
   association,
   'poker-texas': poker,
   funambule,
+  sauteurs,
   'micro-defis': microDefis,
   'essai-appareils': essaiAppareils,
   'gags-en-rafale': gagsEnRafale,

@@ -106,7 +106,7 @@
   /* Texte */
   --text: #f6f3ff;
   --muted: #b3acdb;
-  --faint: #7c75ab;
+  --faint: #a29bd2;
 
   /* Néons */
   --magenta: #ff3d8b;
@@ -153,13 +153,13 @@
   --line-strong: rgba(40, 20, 90, 0.24);
   --text: #1a1030;
   --muted: #5b5383;
-  --faint: #8a84b0;
+  --faint: #6e6699;
   --btn-face: #ffffff;
   --btn-shade: #c9bfef;
   --btn-glow: rgba(139, 92, 255, 0.25);
-  --accent: #ff3d8b;
+  --accent: #c21f63;
   --accent-ink: #ffffff;
-  --primary-bg: #ff3d8b;
+  --primary-bg: #c21f63;
   --primary-ink: #ffffff;
   --focus: #6d3cff;
   color-scheme: light;

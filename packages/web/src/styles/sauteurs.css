@@ -1,0 +1,387 @@
+/*
+ * Course des sauteurs : écran principal (course en canvas, bilan, podium) et manette du téléphone.
+ * Couleurs : les 16 de la palette pixel (#101010 contour, #FFFFFF, #9A9AA8, #4A4A5A, #F6D7B5, #C58A5A, #7A4A2A,
+ * #3B2314, #D62828, #FF8C1A, #FFD23F, #3DBE5A, #1E6B3A, #3A86FF, #7B2FBE, #7FE0FF).
+ */
+
+/* ---- Écran principal : la course ---- */
+
+.sau-race {
+  background: #101010;
+  overflow: hidden;
+}
+
+.sau-race.is-tv {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+}
+
+.sau-race.is-embedded {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+}
+
+.sau-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+/* ---- Écran principal : salon, bilan, podium ---- */
+
+.sau-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(0.8rem, 2vh, 1.6rem);
+  color: #fff;
+  text-align: center;
+}
+
+.sau-title {
+  margin: 0;
+  font-family: 'Dela Gothic One', 'Outfit Variable', system-ui, sans-serif;
+  font-size: clamp(2.2rem, 5vh, 3.6rem);
+  font-weight: 400;
+  color: #ffd23f;
+  text-shadow:
+    0 4px 0 #101010,
+    3px 0 0 #101010,
+    -3px 0 0 #101010,
+    0 -3px 0 #101010;
+}
+
+.sau-lead,
+.sau-hint {
+  margin: 0;
+  font-size: max(28px, 1.75rem);
+  font-weight: 700;
+  text-shadow: 0 2px 0 #101010;
+}
+
+.sau-hint {
+  color: #7fe0ff;
+}
+
+.sau-name {
+  font-size: max(28px, 1.75rem);
+  font-weight: 800;
+  text-shadow: 0 2px 0 #101010;
+}
+
+.sau-points {
+  font-size: max(28px, 1.75rem);
+  font-weight: 800;
+  color: #ffd23f;
+  text-shadow: 0 2px 0 #101010;
+}
+
+.sau-roster {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.8rem 2rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sau-roster-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.sau-results {
+  display: grid;
+  gap: 0.5rem;
+  width: min(1500px, 94vw);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sau-result {
+  display: grid;
+  grid-template-columns: 100px 56px minmax(0, 1.6fr) 1fr 1fr 1fr 110px 140px;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.2rem 1rem;
+  border: 4px solid #fff;
+  border-radius: 6px;
+  background: rgba(16, 16, 16, 0.78);
+  font-size: max(28px, 1.75rem);
+  font-weight: 700;
+  text-align: left;
+}
+
+.sau-result.is-first {
+  border-color: #ffd23f;
+  background: rgba(59, 35, 20, 0.85);
+}
+
+.sau-result > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sau-rank {
+  color: #ffd23f;
+  font-weight: 800;
+}
+
+.sau-time,
+.sau-coins,
+.sau-deaths {
+  font-size: max(28px, 1.75rem);
+  color: #f6d7b5;
+}
+
+.sau-total {
+  text-align: right;
+  color: #7fe0ff;
+}
+
+.sau-result .sau-points {
+  text-align: right;
+}
+
+.sau-podium {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 1.2rem;
+  min-height: 46vh;
+}
+
+.sau-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  min-width: 18vw;
+}
+
+.sau-block {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  border: 4px solid #101010;
+  background: #c58a5a;
+  box-shadow: inset 0 6px 0 #f6d7b5;
+  font-family: 'Dela Gothic One', 'Outfit Variable', system-ui, sans-serif;
+  font-size: 3rem;
+  color: #3b2314;
+}
+
+.sau-step.is-1 .sau-block {
+  height: 18vh;
+  background: #ffd23f;
+  box-shadow: inset 0 6px 0 #fff;
+}
+
+.sau-step.is-2 .sau-block {
+  height: 12vh;
+  background: #9a9aa8;
+  box-shadow: inset 0 6px 0 #fff;
+}
+
+.sau-step.is-3 .sau-block {
+  height: 8vh;
+}
+
+.sau-others {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem 2rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sau-others li {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+/* ---- Téléphone : la manette ---- */
+
+.sau-wait {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.sau-pad {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.8fr) minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-areas:
+    'top top top'
+    'dir run jump';
+  gap: 8px 12px;
+  padding: max(10px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right))
+    max(14px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
+  background: #1e6b3a;
+  background-image: linear-gradient(180deg, #3a86ff 0 38%, #7fe0ff 38% 62%, #1e6b3a 62%);
+  color: #fff;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+  overflow: hidden;
+}
+
+.sau-pad * {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.sau-pad-top {
+  grid-area: top;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 12px;
+  border: 3px solid #101010;
+  border-radius: 6px;
+  background: rgba(16, 16, 16, 0.78);
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.sau-pad-score {
+  color: #ffd23f;
+}
+
+.sau-pad-runner {
+  grid-area: run;
+  display: grid;
+  place-items: center;
+  min-height: 0;
+}
+
+.sau-pad-count {
+  margin: 0;
+  font-family: 'Dela Gothic One', 'Outfit Variable', system-ui, sans-serif;
+  font-size: clamp(5rem, 28vh, 9rem);
+  line-height: 1;
+  color: #ffd23f;
+  text-shadow:
+    0 6px 0 #101010,
+    4px 0 0 #101010,
+    -4px 0 0 #101010,
+    0 -4px 0 #101010;
+}
+
+.sau-pad-dir {
+  grid-area: dir;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  align-items: stretch;
+  align-self: end;
+  min-height: 0;
+}
+
+.sau-btn {
+  appearance: none;
+  display: grid;
+  place-items: center;
+  min-width: 64px;
+  min-height: 64px;
+  margin: 0;
+  padding: 0;
+  border: 5px solid #101010;
+  border-radius: 14px;
+  background: #3a86ff;
+  box-shadow:
+    inset 0 -8px 0 #1e4fa0,
+    inset 0 5px 0 #7fe0ff,
+    0 6px 0 #101010;
+  color: #fff;
+  font:
+    800 clamp(2rem, 11vh, 3.4rem) / 1 'Outfit Variable',
+    system-ui,
+    sans-serif;
+  text-shadow: 0 3px 0 #101010;
+  cursor: pointer;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.sau-pad-dir .sau-btn {
+  height: clamp(88px, 36vh, 170px);
+}
+
+.sau-btn.is-held {
+  background: #ffd23f;
+  box-shadow:
+    inset 0 -4px 0 #ff8c1a,
+    inset 0 3px 0 #fff,
+    0 2px 0 #101010;
+  transform: translateY(4px);
+  color: #101010;
+  text-shadow: none;
+}
+
+.sau-btn-jump {
+  grid-area: jump;
+  align-self: end;
+  justify-self: stretch;
+  height: clamp(110px, 56vh, 250px);
+  border-radius: 999px;
+  background: #d62828;
+  box-shadow:
+    inset 0 -10px 0 #7a1a1a,
+    inset 0 6px 0 #ff8c1a,
+    0 8px 0 #101010;
+  font-size: clamp(1.8rem, 9vh, 3rem);
+  letter-spacing: 0.04em;
+}
+
+.sau-btn-jump.is-held {
+  background: #ffd23f;
+}
+
+@media (orientation: portrait) {
+  .sau-pad {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      'top top'
+      'run run'
+      'dir jump';
+  }
+
+  .sau-pad-dir .sau-btn {
+    height: clamp(96px, 20vh, 160px);
+  }
+
+  .sau-btn-jump {
+    height: clamp(120px, 24vh, 200px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sau-btn.is-held {
+    transform: none;
+  }
+}
