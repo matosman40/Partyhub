@@ -3,6 +3,12 @@
 # de faux programmes qui notent leurs appels. Lancer : bash deploy/updater/test/partyhub-update.test.sh
 set -euo pipefail
 
+# Le script de mise à jour vise Linux et utilise flock, absent de Git Bash sous Windows : rien à vérifier ici.
+if ! command -v flock > /dev/null 2>&1; then
+  echo "flock introuvable : tests du script de mise à jour ignorés (à lancer sous Linux)."
+  exit 0
+fi
+
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SCRIPT="$HERE/partyhub-update.sh"
 ROOT="$(mktemp -d)"
