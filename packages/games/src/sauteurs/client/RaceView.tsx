@@ -131,35 +131,41 @@ export function RaceView({ pub, hostState, now, onAction }: RaceViewProps) {
     let disposed = false;
     let retryTimer = 0;
 
+    // Un envoi par joueur : un résultat refusé ne fait pas perdre ceux des autres, et seuls les refus sont renvoyés.
+    const unsent = new Set<string>();
     const sendResults = (attempt: number) => {
       const cur = latest.current;
-      if (!cur.onAction || disposed) {
+      const send = cur.onAction;
+      if (!send || disposed) {
         sendState = 'sent';
         return;
       }
       sendState = 'sending';
-      const results = world.players.map((p) => {
-        const s = summary(world, p.id);
-        return { playerId: p.id, finishTick: s.finished ? s.finishTick : null, coins: s.coins, deaths: s.deaths };
+      if (attempt === 0) for (const p of world.players) unsent.add(p.id);
+      const errors: string[] = [];
+      const tries = [...unsent].map((id) => {
+        const s = summary(world, id);
+        const result = { playerId: id, finishTick: s.finished ? s.finishTick : null, coins: s.coins, deaths: s.deaths };
+        return send('level-result', { levelIndex, results: [result] })
+          .then((res) => {
+            if (res.ok) unsent.delete(id);
+            else errors.push(res.error ?? 'refusé');
+          })
+          .catch(() => {
+            errors.push('réseau');
+          });
       });
-      void cur
-        .onAction('level-result', { levelIndex, results })
-        .then((res) => {
-          if (disposed) return;
-          if (res.ok) {
-            sendState = 'sent';
-          } else if (attempt + 1 < SEND_TRIES) {
-            retryTimer = window.setTimeout(() => sendResults(attempt + 1), SEND_RETRY_MS);
-          } else {
-            sendState = 'failed';
-            box.dataset.sendError = res.error ?? 'refusé';
-          }
-        })
-        .catch(() => {
-          if (disposed) return;
-          if (attempt + 1 < SEND_TRIES) retryTimer = window.setTimeout(() => sendResults(attempt + 1), SEND_RETRY_MS);
-          else sendState = 'failed';
-        });
+      void Promise.all(tries).then(() => {
+        if (disposed) return;
+        if (unsent.size === 0) {
+          sendState = 'sent';
+        } else if (attempt + 1 < SEND_TRIES) {
+          retryTimer = window.setTimeout(() => sendResults(attempt + 1), SEND_RETRY_MS);
+        } else {
+          sendState = 'failed';
+          box.dataset.sendError = errors[0] ?? 'refusé';
+        }
+      });
     };
 
     const publish = () => {

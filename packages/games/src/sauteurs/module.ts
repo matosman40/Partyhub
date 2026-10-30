@@ -343,7 +343,7 @@ export const sauteurs: GameModule<SauteursState, SauteursSettings> = {
     const deathsMax = maxDeaths(levelIndex);
 
     const accepted: Record<string, LevelEntry> = {};
-    // Tout ou rien : un seul résultat refusé annule l’envoi entier, l’hôte renvoie alors un lot corrigé.
+    // Tout ou rien par lot : un résultat refusé annule le lot. L’écran principal envoie un lot par joueur.
     for (const r of results) {
       const name = s.players[r.playerId];
       if (name === undefined) return fail('Joueur inconnu dans cette partie');
