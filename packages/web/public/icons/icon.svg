@@ -1,20 +1,21 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#14122E" />
   <defs>
-    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#3a1670" />
-      <stop offset="1" stop-color="#0b0630" />
-    </linearGradient>
+    <path id="chapeau" d="M256 106c5 0 9 4 12 11l125 273c8 17 1 28-18 28H137c-19 0-26-11-18-28l125-273c3-7 7-11 12-11Z" />
+    <clipPath id="corps-chapeau">
+      <use href="#chapeau" />
+    </clipPath>
   </defs>
-  <rect width="512" height="512" rx="112" fill="url(#sky)" />
-  <g transform="rotate(-12 256 256)">
-    <polygon points="130,400 382,400 256,96" fill="#ffd23f" stroke="#ff3d8b" stroke-width="14" stroke-linejoin="round" />
-    <line x1="200" y1="230" x2="312" y2="230" stroke="#ff3d8b" stroke-width="22" stroke-linecap="round" />
-    <line x1="167" y1="310" x2="345" y2="310" stroke="#7cf3ff" stroke-width="22" stroke-linecap="round" />
-    <circle cx="256" cy="96" r="30" fill="#7cf3ff" stroke="#ffffff" stroke-width="8" />
+  <g transform="translate(13 4)">
+    <use href="#chapeau" fill="#FF4F8B" />
   </g>
-  <rect x="96" y="150" width="26" height="12" rx="4" fill="#ff3d8b" transform="rotate(30 109 156)" />
-  <circle cx="412" cy="170" r="13" fill="#9dff4a" />
-  <rect x="402" y="300" width="26" height="12" rx="4" fill="#7cf3ff" transform="rotate(-25 415 306)" />
-  <circle cx="110" cy="330" r="11" fill="#ffffff" />
-  <circle cx="340" cy="420" r="10" fill="#ff3d8b" />
+  <use href="#chapeau" fill="#FFD23F" stroke="#14122E" stroke-width="16" stroke-linejoin="round" />
+  <g clip-path="url(#corps-chapeau)">
+    <path d="M142 282h228" fill="none" stroke="#FF4F8B" stroke-width="30" />
+    <path d="M119 344h274" fill="none" stroke="#3247E0" stroke-width="30" />
+  </g>
+  <circle cx="256" cy="91" r="35" fill="#3247E0" stroke="#14122E" stroke-width="14" />
+  <rect x="83" y="188" width="34" height="14" rx="7" fill="#FF4F8B" transform="rotate(-28 100 195)" />
+  <circle cx="414" cy="175" r="11" fill="#3247E0" />
+  <rect x="401" y="311" width="30" height="13" rx="6.5" fill="#FFD23F" transform="rotate(28 416 317.5)" />
 </svg>
