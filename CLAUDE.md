@@ -47,3 +47,4 @@ Toutes les commandes se lancent à la racine du dépôt.
 
 - Une tâche = un thème, une règle ou un bug. Préférer plusieurs demandes courtes à une grosse demande.
 - Relire le diff avant chaque commit.
+- Duo avec Codex : Claude est chef de projet, Codex développeur associé. Claude délègue par `node scripts/codex-dev.mjs` (skill `codex-dev`) et relit tout ce que Codex rend. Le rôle de Codex est dans `AGENTS.md`.
