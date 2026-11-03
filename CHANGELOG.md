@@ -4,6 +4,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 
 ## [Non publié]
 
+## [0.19.0] - 2026-11-03
+
 ### Ajouté
 
 - Jeu « Course des sauteurs » : une course de plateforme en pixel art, avec classement, pièces, plusieurs niveaux, des robots, et une manette de téléphone à trois boutons (gauche, droite, saut). Le clavier (flèches et espace) commande le premier joueur sur l'écran principal. Il a son logo, son fond et ses photos de salon.
@@ -13,6 +15,9 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 
 ### Modifié
 
+- Style « nuit » : les fonds des 29 jeux et les 7 images de menu sont redessinés en affiche sérigraphiée sur fond nuit-encre, aux quatre encres de la charte (rose fluo, outremer, jaune soleil, papier), avec un centre calme qui garde le texte lisible sous le voile. L'image « Rejoindre » est composée pour le téléphone en portrait.
+- Logos des jeux aux encres de la charte, avec un décalage de repérage et une trame de points ; les jeux sans logo dessiné reçoivent la même palette.
+- Nouvelle icône de l'application (chapeau de fête sur fond nuit), favicons et couleur de thème `#14122E`.
 - Quiz Party et quiz média : les robots répondent dans la seconde moitié du temps imparti, au hasard (Quiz Party) ou une fois sur cinq avec la bonne réponse (quiz média). Ils ne gagnent plus de bonus de rapidité. Un jeu peut fixer l'attente d'un robot (`delayMs` de `BotSuggestion`).
 
 ### Corrigé
