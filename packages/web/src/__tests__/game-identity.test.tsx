@@ -20,8 +20,11 @@ describe('Identité visuelle des jeux du catalogue', () => {
     expect(listed.filter((id) => !hasDrawnScene(id))).toEqual([]);
   });
 
-  it('chaque logo dessiné a sa propre couleur de titre', () => {
-    const fills = listed.map((id) => GAME_LOGOS[id]?.fill).filter((f): f is string => Boolean(f));
-    expect(new Set(fills).size).toBe(fills.length);
+  it('chaque logo dessiné a une combinaison de couleurs et motif propre', () => {
+    const combinations = listed.map((id) => {
+      const spec = GAME_LOGOS[id]!;
+      return `${spec.fill}|${spec.edge}|${spec.mark}`;
+    });
+    expect(new Set(combinations).size).toBe(listed.length);
   });
 });

@@ -1,8 +1,8 @@
-import type { CSSProperties, ReactNode } from 'react';
+import { useId, type CSSProperties, type ReactNode } from 'react';
 import { logoFor, type LogoMark, type LogoSpec } from './gameLogos.js';
 
 /**
- * Logo d’un jeu : titre en lettres épaisses avec relief, et une marque propre au jeu.
+ * Logo d’un jeu : titre en lettres épaisses avec un décalage de repérage, et une marque propre au jeu.
  * Le dessin est un SVG : il reste net à toutes les tailles et le texte n’est jamais déformé.
  */
 
@@ -13,12 +13,19 @@ const CY = H / 2;
 
 /** Taille de police qui fait tenir un texte dans une largeur donnée (estimation, sans mesure). */
 function fitSize(text: string, maxSize: number, maxWidth: number): number {
-  const estimated = Math.max(1, text.length) * 0.56;
+  const estimated = Math.max(1, text.length) * 0.72;
   return Math.min(maxSize, maxWidth / estimated);
 }
 
-function Mark({ mark, spec }: { mark: LogoMark; spec: LogoSpec }): ReactNode {
-  const shape = { fill: spec.edge, stroke: spec.ink, strokeWidth: 9, strokeLinejoin: 'round' as const };
+function Mark({ mark, spec, overlay }: { mark: LogoMark; spec: LogoSpec; overlay?: string }): ReactNode {
+  const fill = (color: string) => overlay ?? color;
+  const stroke = overlay ? 'none' : spec.ink;
+  const shape = {
+    fill: fill(spec.edge),
+    stroke,
+    strokeWidth: overlay ? 0 : 9,
+    strokeLinejoin: 'round' as const,
+  };
   switch (mark) {
     case 'bubble':
       return (
@@ -27,35 +34,54 @@ function Mark({ mark, spec }: { mark: LogoMark; spec: LogoSpec }): ReactNode {
             d="M 46 44 H 594 A 34 34 0 0 1 628 78 V 178 A 34 34 0 0 1 594 212 H 290 L 214 244 L 226 212 H 46 A 34 34 0 0 1 12 178 V 78 A 34 34 0 0 1 46 44 Z"
             {...shape}
           />
-          <circle cx={596} cy={46} r={30} fill={spec.fill} stroke={spec.ink} strokeWidth={8} />
-          <text
-            x={596}
-            y={58}
-            textAnchor="middle"
-            fontSize={40}
-            fill={spec.ink}
-            style={{ fontFamily: 'var(--display)' }}
-          >
-            ?
-          </text>
+          <circle cx={596} cy={46} r={30} fill={fill(spec.fill)} stroke={stroke} strokeWidth={overlay ? 0 : 8} />
+          {!overlay && (
+            <text
+              x={596}
+              y={58}
+              textAnchor="middle"
+              fontSize={40}
+              fill={spec.ink}
+              style={{ fontFamily: 'var(--display)' }}
+            >
+              ?
+            </text>
+          )}
         </g>
       );
     case 'fuse':
       return (
         <g fill="none" strokeLinecap="round">
-          <path d="M 24 226 Q 190 262 320 220 T 616 196" stroke={spec.ink} strokeWidth={22} />
-          <path d="M 24 226 Q 190 262 320 220 T 616 196" stroke={spec.edge} strokeWidth={9} strokeDasharray="2 14" />
-          <circle cx={618} cy={190} r={22} fill={spec.fill} stroke={spec.ink} strokeWidth={8} />
-          <circle cx={618} cy={190} r={8} fill="#fff" />
+          <path d="M 24 226 Q 190 262 320 220 T 616 196" stroke={overlay ? 'none' : spec.ink} strokeWidth={22} />
+          <path
+            d="M 24 226 Q 190 262 320 220 T 616 196"
+            stroke={overlay ? 'none' : spec.edge}
+            strokeWidth={9}
+            strokeDasharray="2 14"
+          />
+          <circle cx={618} cy={190} r={22} fill={fill(spec.fill)} stroke={stroke} strokeWidth={overlay ? 0 : 8} />
+          <circle cx={618} cy={190} r={8} fill={fill('#ECEAE3')} />
         </g>
       );
     case 'lens':
       return (
         <g>
-          <circle cx={560} cy={78} r={50} fill="none" stroke={spec.ink} strokeWidth={22} />
-          <circle cx={560} cy={78} r={50} fill="none" stroke={spec.edge} strokeWidth={10} />
-          <path d="M 522 116 L 478 160" stroke={spec.ink} strokeWidth={24} strokeLinecap="round" />
-          <path d="M 522 116 L 478 160" stroke={spec.edge} strokeWidth={10} strokeLinecap="round" />
+          <circle cx={560} cy={78} r={50} fill="none" stroke={overlay ? 'none' : spec.ink} strokeWidth={22} />
+          <circle cx={560} cy={78} r={50} fill="none" stroke={overlay ? 'none' : spec.edge} strokeWidth={10} />
+          <path
+            d="M 522 116 L 478 160"
+            fill="none"
+            stroke={overlay ? 'none' : spec.ink}
+            strokeWidth={24}
+            strokeLinecap="round"
+          />
+          <path
+            d="M 522 116 L 478 160"
+            fill="none"
+            stroke={overlay ? 'none' : spec.edge}
+            strokeWidth={10}
+            strokeLinecap="round"
+          />
         </g>
       );
     case 'moon':
@@ -70,9 +96,9 @@ function Mark({ mark, spec }: { mark: LogoMark; spec: LogoSpec }): ReactNode {
             <path
               key={i}
               d={`M ${x} ${y - 16} L ${x + 5} ${y - 5} L ${x + 16} ${y} L ${x + 5} ${y + 5} L ${x} ${y + 16} L ${x - 5} ${y + 5} L ${x - 16} ${y} L ${x - 5} ${y - 5} Z`}
-              fill={spec.fill}
-              stroke={spec.ink}
-              strokeWidth={5}
+              fill={fill(spec.fill)}
+              stroke={stroke}
+              strokeWidth={overlay ? 0 : 5}
             />
           ))}
         </g>
@@ -104,8 +130,8 @@ function Mark({ mark, spec }: { mark: LogoMark; spec: LogoSpec }): ReactNode {
           {blocks.map(([x, y, w], i) => (
             <g key={i}>
               <rect x={x} y={y} width={w} height={240 - y} rx={6} {...shape} />
-              <rect x={x + 14} y={y + 16} width={12} height={12} fill={spec.ink} />
-              <rect x={x + w - 26} y={y + 16} width={12} height={12} fill={spec.ink} />
+              <rect x={x + 14} y={y + 16} width={12} height={12} fill={fill(spec.ink)} />
+              <rect x={x + w - 26} y={y + 16} width={12} height={12} fill={fill(spec.ink)} />
             </g>
           ))}
         </g>
@@ -122,9 +148,9 @@ function Mark({ mark, spec }: { mark: LogoMark; spec: LogoSpec }): ReactNode {
               width={184}
               height={236}
               rx={20}
-              fill={i === 1 ? '#ffffff' : spec.edge}
-              stroke={spec.ink}
-              strokeWidth={9}
+              fill={fill(i === 1 ? '#ECEAE3' : spec.edge)}
+              stroke={stroke}
+              strokeWidth={overlay ? 0 : 9}
               transform={`rotate(${deg} ${CX} ${CY})`}
             />
           ))}
@@ -138,7 +164,8 @@ function Mark({ mark, spec }: { mark: LogoMark; spec: LogoSpec }): ReactNode {
             <path
               key={i}
               d={`M ${500 + i * 22} ${60 + i * 46} L ${600 + i * 6} ${60 + i * 46}`}
-              stroke={spec.edge}
+              fill="none"
+              stroke={overlay ? 'none' : spec.edge}
               strokeWidth={12}
               strokeLinecap="round"
             />
@@ -155,7 +182,7 @@ function Mark({ mark, spec }: { mark: LogoMark; spec: LogoSpec }): ReactNode {
       return <polygon points={pts.join(' ')} {...shape} opacity={0.9} />;
     }
     case 'runner': {
-      /* Petit coureur en pixels qui saute, un fanion à la main : palette du jeu (16 couleurs). */
+      /* Petit coureur en pixels qui saute, un fanion à la main : palette nuit. */
       const rows = [
         '..hhhh...',
         '.hhhhhh..',
@@ -169,10 +196,16 @@ function Mark({ mark, spec }: { mark: LogoMark; spec: LogoSpec }): ReactNode {
         '.ll....ll',
         'll......l',
       ];
-      const colors: Record<string, string> = { h: '#d62828', s: '#f6d7b5', k: '#101010', b: '#3a86ff', l: '#7b2fbe' };
-      const cell = 9;
-      const ox = 500;
-      const oy = 38;
+      const colors: Record<string, string> = {
+        h: spec.fill,
+        s: '#ECEAE3',
+        k: spec.ink,
+        b: spec.edge,
+        l: '#1B1A4B',
+      };
+      const cell = 6.5;
+      const ox = 535;
+      const oy = 0;
       const cells: ReactNode[] = [];
       rows.forEach((row, y) =>
         [...row].forEach((ch, x) => {
@@ -184,16 +217,16 @@ function Mark({ mark, spec }: { mark: LogoMark; spec: LogoSpec }): ReactNode {
       );
       return (
         <g shapeRendering="crispEdges">
-          <rect x={ox + 8 * cell + 2} y={10} width={5} height={78} fill={spec.ink} />
+          <rect x={ox + 8 * cell + 2} y={oy} width={4} height={cell * 9} fill={spec.ink} />
           <path
-            d={`M ${ox + 8 * cell + 7} 10 h 36 v 12 h -12 v 12 h -24 Z`}
-            fill="#ff8c1a"
-            stroke={spec.ink}
-            strokeWidth={4}
+            d={`M ${ox + 8 * cell + 6} ${oy} h 28 v 8 h -9 v 8 h -19 Z`}
+            fill={overlay ?? '#FFD23F'}
+            stroke={overlay ? 'none' : spec.ink}
+            strokeWidth={overlay ? 0 : 4}
           />
           <g>{cells}</g>
-          <rect x={470} y={150} width={150} height={9} fill={spec.edge} />
-          <rect x={470} y={159} width={150} height={9} fill="#1e6b3a" />
+          <rect x={470} y={224} width={150} height={9} fill={spec.edge} />
+          <rect x={470} y={233} width={150} height={9} fill="#3247E0" />
         </g>
       );
     }
@@ -207,14 +240,22 @@ function Mark({ mark, spec }: { mark: LogoMark; spec: LogoSpec }): ReactNode {
     case 'frame':
       return (
         <g fill="none">
-          <rect x={18} y={14} width={W - 36} height={H - 28} rx={30} stroke={spec.edge} strokeWidth={8} />
+          <rect
+            x={18}
+            y={14}
+            width={W - 36}
+            height={H - 28}
+            rx={30}
+            stroke={overlay ? 'none' : spec.edge}
+            strokeWidth={8}
+          />
           <rect
             x={34}
             y={30}
             width={W - 68}
             height={H - 60}
             rx={22}
-            stroke={spec.edge}
+            stroke={overlay ? 'none' : spec.edge}
             strokeWidth={3}
             strokeDasharray="10 10"
           />
@@ -225,6 +266,9 @@ function Mark({ mark, spec }: { mark: LogoMark; spec: LogoSpec }): ReactNode {
 
 export function GameLogo({ gameId, name, className }: { gameId: string; name: string; className?: string }) {
   const spec = logoFor(gameId, name);
+  const id = useId().replace(/:/g, '');
+  const patternId = `mark-dots-${id}`;
+  const mark = <Mark mark={spec.mark} spec={spec} />;
   const [first, second] = spec.lines;
   const two = second !== undefined && second !== '';
   const size1 = fitSize(first, two ? 150 : 170, 560);
@@ -235,25 +279,23 @@ export function GameLogo({ gameId, name, className }: { gameId: string; name: st
   const baseline2 = baseline1 + size2 * 0.95;
 
   const lineStyle: CSSProperties = { fontFamily: 'var(--display)', letterSpacing: '0.01em' };
-  // Relief : copies décalées vers le bas, dans la couleur de l’encre, sous le titre.
+  // Décalage de repérage : une copie colorée sous le titre principal.
   const title = (text: string, y: number, size: number) => (
     <g key={`${text}-${y}`}>
-      {[14, 10, 6].map((dy) => (
-        <text
-          key={dy}
-          x={CX}
-          y={y + dy}
-          textAnchor="middle"
-          fontSize={size}
-          fill={spec.ink}
-          stroke={spec.ink}
-          strokeWidth={14}
-          strokeLinejoin="round"
-          style={lineStyle}
-        >
-          {text}
-        </text>
-      ))}
+      <text
+        x={CX + 6}
+        y={y + 6}
+        textAnchor="middle"
+        fontSize={size}
+        fill={spec.edge}
+        stroke={spec.ink}
+        strokeWidth={8}
+        strokeLinejoin="round"
+        paintOrder="stroke"
+        style={lineStyle}
+      >
+        {text}
+      </text>
       <text
         x={CX}
         y={y}
@@ -261,7 +303,7 @@ export function GameLogo({ gameId, name, className }: { gameId: string; name: st
         fontSize={size}
         fill={spec.fill}
         stroke={spec.ink}
-        strokeWidth={14}
+        strokeWidth={8}
         strokeLinejoin="round"
         paintOrder="stroke"
         style={lineStyle}
@@ -279,8 +321,14 @@ export function GameLogo({ gameId, name, className }: { gameId: string; name: st
       aria-label={name}
       focusable="false"
     >
+      <defs>
+        <pattern id={patternId} width={14} height={14} patternUnits="userSpaceOnUse">
+          <circle cx={3} cy={3} r={1.4} fill={spec.ink} opacity={0.3} />
+        </pattern>
+      </defs>
       <g transform={`rotate(${spec.tilt} ${CX} ${CY})`}>
-        <Mark mark={spec.mark} spec={spec} />
+        {mark}
+        {spec.mark !== 'runner' && <Mark mark={spec.mark} spec={spec} overlay={`url(#${patternId})`} />}
         {title(first, baseline1, size1)}
         {two && title(second, baseline2, size2)}
       </g>
