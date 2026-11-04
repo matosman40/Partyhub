@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import type { CatalogGame } from '@partyhub/shared';
 import { CATEGORY_LABEL } from '../catalog/labels.js';
 import { CATEGORY_CLASS, artStyle, playersLabel } from '../catalog/display.js';
-import { GameLogo } from './GameLogo.js';
+import { GameArtwork } from './GameArtwork.js';
 
 /**
  * Une ligne de la liste du catalogue : vignette, nom et repères. Un clic ouvre la fiche du jeu,
@@ -13,7 +13,7 @@ export function GameListRow({ game }: { game: CatalogGame }) {
     <li className={`game-row cat-${CATEGORY_CLASS[game.category] ?? 'party'}`}>
       <Link to={`/jeux/${game.id}`} className="game-row-head">
         <span className="game-row-art" style={artStyle(game.id, game.name)} aria-hidden="true">
-          <GameLogo gameId={game.id} name={game.name} className="game-row-logo" />
+          <GameArtwork gameId={game.id} name={game.name} className="game-row-emblem" logoClassName="game-row-logo" />
         </span>
         <span className="game-row-title">
           <span className="game-row-name">{game.name}</span>

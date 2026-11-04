@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import {
   ADMIN_CATEGORIES,
   ADMIN_SUBSECTIONS,
@@ -7,7 +7,7 @@ import {
   type AdminSubsection,
 } from './admin-menu.js';
 import { Link, useSearchParams } from 'react-router-dom';
-import { DEVICE_KIND_ICONS, type CatalogGame, type DeviceKind } from '@partyhub/shared';
+import { type CatalogGame, type DeviceKind } from '@partyhub/shared';
 import { DEFAULT_TEST_MODE, TEST_MODE_FACTORS, testModeLabel, type TestMode } from '@partyhub/shared';
 import { api } from '../api.js';
 import { openRoomsText } from '../admin/messages.js';
@@ -34,6 +34,7 @@ import { ServerSettings } from '../admin/ServerSettings.js';
 import { Breadcrumb, type Crumb } from '../components/Breadcrumb.js';
 import { SearchButton } from '../nav/SearchButton.js';
 import { readRecents } from '../nav/recents.js';
+import { Icon, type IconName } from '../components/Icon.js';
 
 const ORIGIN_LABEL: Record<CatalogGame['origin'], string | null> = {
   builtin: null,
@@ -63,12 +64,29 @@ interface RoomSummary {
   lastActivity: string;
 }
 
-/** Résume les types d’appareils d’une salle, par exemple « 📱 2 · 💻 1 ». */
-function deviceSummary(devices: Record<string, number>): string {
-  const parts = Object.entries(devices)
-    .filter(([, count]) => count > 0)
-    .map(([kind, count]) => `${DEVICE_KIND_ICONS[kind as DeviceKind] ?? '❔'} ${count}`);
-  return parts.length > 0 ? parts.join(' · ') : '—';
+/** R?sume les types d?appareils d?une salle. */
+const DEVICE_ICONS: Record<DeviceKind, IconName> = {
+  phone: 'phone',
+  tablet: 'phone',
+  tv: 'tv',
+  desktop: 'players',
+  unknown: 'info',
+};
+
+function deviceSummary(devices: Record<string, number>): ReactNode {
+  const parts = Object.entries(devices).filter(([, count]) => count > 0);
+  return parts.length > 0 ? (
+    <span className="device-summary">
+      {parts.map(([kind, count]) => (
+        <span key={kind}>
+          <Icon name={DEVICE_ICONS[kind as DeviceKind] ?? 'info'} size={16} />
+          {count}
+        </span>
+      ))}
+    </span>
+  ) : (
+    '?'
+  );
 }
 
 interface Overview {

@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { api } from '../api.js';
+import { Icon } from '../components/Icon.js';
 
 interface SourceRecord {
   id: string;
@@ -163,7 +164,7 @@ export function PackageSourcesAdmin({ onChanged }: { onChanged: () => void }) {
         {sources?.map((s) => (
           <li key={s.id} className="ed-list-item">
             <div className="ed-list-preview" aria-hidden="true">
-              🔗
+              <Icon name="link" />
             </div>
             <div className="ed-list-body">
               <strong>

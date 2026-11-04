@@ -12,7 +12,7 @@ const STORAGE_KEY = 'ph:theme';
 export function applyTheme(name: ThemeName): void {
   document.documentElement.setAttribute('data-theme', name);
   const meta = document.querySelector('meta[name="theme-color"]');
-  meta?.setAttribute('content', name === 'dark' ? '#08061a' : '#f3efff');
+  meta?.setAttribute('content', '#14122e');
 }
 
 /** Préférence mémorisée sur cet appareil ; repli sur le thème par défaut. */

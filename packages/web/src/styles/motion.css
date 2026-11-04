@@ -1,0 +1,278 @@
+/* Animations brèves, prévues pour rester lisibles sur écran et téléphone. */
+.anim-registre {
+  position: relative;
+  isolation: isolate;
+}
+
+.anim-registre::after {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  color: var(--ink-rose);
+  content: attr(data-text);
+  pointer-events: none;
+  animation: anim-registre var(--duration-long) var(--ease-rebound) both;
+}
+
+.anim-pop {
+  animation: anim-pop var(--duration-medium) var(--ease-rebound) both;
+}
+
+.anim-wiggle {
+  animation: anim-wiggle 420ms var(--ease-standard) both;
+}
+
+.anim-pulse {
+  animation: anim-pulse 1.1s var(--ease-standard) infinite;
+}
+
+.anim-shake {
+  animation: anim-shake 360ms var(--ease-standard) both;
+}
+
+.anim-float {
+  animation: anim-float 3.2s var(--ease-standard) infinite;
+}
+
+.anim-slide-up {
+  animation: anim-slide-up var(--duration-medium) var(--ease-standard) both;
+}
+
+.anim-page,
+.page {
+  animation: anim-page-in var(--duration-medium) var(--ease-standard) both;
+}
+
+.anim-stagger > * {
+  animation: anim-slide-up var(--duration-medium) var(--ease-standard) backwards;
+}
+
+.anim-stagger > :nth-child(1) {
+  animation-delay: 30ms;
+}
+
+.anim-stagger > :nth-child(2) {
+  animation-delay: 60ms;
+}
+
+.anim-stagger > :nth-child(3) {
+  animation-delay: 90ms;
+}
+
+.anim-stagger > :nth-child(4) {
+  animation-delay: 120ms;
+}
+
+.anim-stagger > :nth-child(5) {
+  animation-delay: 150ms;
+}
+
+.anim-stagger > :nth-child(n + 6) {
+  animation-delay: 180ms;
+}
+
+.game-grid > li {
+  animation: game-card-enter 440ms var(--ease-rebound) both;
+  animation-delay: var(--card-delay, 0ms);
+}
+
+@keyframes anim-registre {
+  0% {
+    opacity: 0;
+    transform: translate(var(--registre-x), var(--registre-y));
+  }
+  55% {
+    opacity: 1;
+    transform: translate(-2px, -1px);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(0, 0);
+  }
+}
+
+@keyframes anim-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.82);
+  }
+  72% {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes anim-wiggle {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+  25% {
+    transform: rotate(-4deg);
+  }
+  70% {
+    transform: rotate(3deg);
+  }
+}
+
+@keyframes anim-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.035);
+  }
+}
+
+@keyframes anim-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-6px);
+  }
+  55% {
+    transform: translateX(5px);
+  }
+  78% {
+    transform: translateX(-3px);
+  }
+}
+
+@keyframes anim-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes anim-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes anim-page-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes game-card-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(14px) scale(0.95);
+  }
+  72% {
+    opacity: 1;
+    transform: translateY(-3px) scale(1.015);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes game-emblem-bounce {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0);
+  }
+  38% {
+    transform: translateY(-5px) rotate(-3deg);
+  }
+  70% {
+    transform: translateY(1px) rotate(2deg);
+  }
+}
+
+@keyframes filters-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes home-spotlight-drift {
+  0%,
+  100% {
+    opacity: 0.08;
+    transform: rotate(-7deg) translateY(0);
+  }
+  50% {
+    opacity: 0.15;
+    transform: rotate(7deg) translateY(12px);
+  }
+}
+
+.confetti-burst {
+  position: fixed;
+  z-index: 2000;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.confetti-burst__piece {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 8px;
+  height: 13px;
+  border: 1px solid var(--ink-night);
+  background: var(--confetti-color);
+  opacity: 0;
+  transform: translate(0, 0) rotate(0) scale(0.7);
+  animation: confetti-burst 760ms var(--ease-rebound) var(--confetti-delay) both;
+}
+
+.confetti-burst__piece:nth-child(3n) {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+@keyframes confetti-burst {
+  12% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--confetti-x), var(--confetti-y)) rotate(var(--confetti-turn)) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-delay: 0ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}

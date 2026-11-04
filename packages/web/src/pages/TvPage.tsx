@@ -1,10 +1,11 @@
 import { Suspense, lazy, useEffect, useState, type CSSProperties } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import type { ChampionshipSettings, ChatMessage, HostRoomView } from '@partyhub/shared';
-import { DEVICE_KIND_ICONS, DEVICE_KIND_LABELS } from '@partyhub/shared';
+import { DEVICE_KIND_LABELS } from '@partyhub/shared';
 import { getSocket } from '../realtime.js';
 import { viewsFor } from '../games.js';
 import { PlayerAvatar } from '../components/PlayerAvatar.js';
+import { DeviceIcons } from '../components/DeviceIcons.js';
 import { GameLogo } from '../components/GameLogo.js';
 import { GameScene } from '../components/GameScene.js';
 import { StagePhoto } from '../components/StagePhoto.js';
@@ -343,7 +344,7 @@ export function TvPage() {
                 )}
                 {p.devices.length > 0 && (
                   <span className="device-icons" title={p.devices.map((d) => DEVICE_KIND_LABELS[d]).join(', ')}>
-                    {p.devices.map((d) => DEVICE_KIND_ICONS[d]).join(' ')}
+                    <DeviceIcons devices={p.devices} />
                   </span>
                 )}
                 {p.bot ? (

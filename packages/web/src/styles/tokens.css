@@ -6,31 +6,42 @@
    les plus vus (accueil, rejoindre, salon, quiz, fin de partie) les utilisent via styles/refonte.css ; le reste de
    la feuille migre au fil des changements.
 
-   Contrastes vérifiés (WCAG 2.2, rapport de luminance) sur le fond sombre le plus clair du dégradé (#2a1466) :
-   --color-text 13,8:1 · --color-text-muted 7,1:1 · --color-text-subtle 5,9:1 · jaune d'accent sur sombre 9,8:1.
-   Texte principal de l'écran principal (TV) : toujours --color-text ou --color-text-muted, soit >= 7:1.
+   Contrastes WCAG sur nuit : papier 15,1:1 · texte atténué 10,9:1 · rose 5,8:1 · jaune 12,6:1.
    ========================================================================== */
 
 :root {
-  /* --- Couleurs sémantiques (thème sombre ; le thème clair les redéfinit plus bas) --- */
-  --color-bg: var(--bg0);
-  --color-bg-raised: var(--bg1);
-  --color-surface: var(--glass);
-  --color-surface-strong: var(--glass-2);
-  --color-border: var(--line);
-  --color-border-strong: var(--line-strong);
-  --color-text: var(--text);
-  --color-text-muted: var(--muted);
-  --color-text-subtle: var(--faint);
-  --color-accent: var(--sun);
-  --color-accent-ink: #1a1030;
-  --color-link: var(--cyan);
-  --color-success: var(--lime);
-  --color-danger: var(--danger);
-  --color-focus: var(--focus);
+  /* Palette d’encres : les feuilles de composants consomment ces jetons. */
+  --ink-night: #14122e;
+  --ink-emblem-background: #111031;
+  --ink-marine: #1b1a4b;
+  --ink-paper: #eceae3;
+  --ink-rose: #ff4f8b;
+  --ink-ultramarine: #3247e0;
+  --ink-yellow: #ffd23f;
+  --ink-muted: #c9c6d8;
+  --ink-faint: #b7b3ca;
+  --ink-night-rgb: 20, 18, 46;
+  --ink-paper-rgb: 236, 234, 227;
+
+  /* --- Couleurs sémantiques --- */
+  --color-bg: var(--ink-night);
+  --color-bg-raised: var(--ink-marine);
+  --color-surface: var(--ink-marine);
+  --color-surface-strong: var(--ink-marine);
+  --color-border: var(--ink-paper);
+  --color-border-strong: var(--ink-rose);
+  --color-text: var(--ink-paper);
+  --color-text-muted: var(--ink-muted);
+  --color-text-subtle: var(--ink-faint);
+  --color-accent: var(--ink-yellow);
+  --color-accent-ink: var(--ink-night);
+  --color-link: var(--ink-rose);
+  --color-success: var(--ink-yellow);
+  --color-danger: var(--ink-rose);
+  --color-focus: var(--ink-yellow);
 
   /* Voile sous le texte posé sur une image : l'image reste visible sur les bords, le centre est sombre. */
-  --scrim-ink: 8, 6, 26;
+  --scrim-ink: var(--ink-night-rgb);
   --scrim: linear-gradient(
     180deg,
     rgba(var(--scrim-ink), 0.72) 0%,
@@ -59,10 +70,33 @@
   --radius-pill: 999px;
 
   /* --- Ombres --- */
-  --shadow-1: 0 2px 6px rgba(0, 0, 0, 0.28);
-  --shadow-2: 0 10px 24px -10px rgba(0, 0, 0, 0.55);
-  --shadow-3: 0 24px 48px -16px rgba(0, 0, 0, 0.65);
-  --shadow-glow: 0 0 32px -6px rgba(139, 92, 255, 0.55);
+  --shadow-button-secondary: 4px 4px 0 var(--ink-ultramarine);
+  --shadow-button-secondary-hover: 6px 6px 0 var(--ink-ultramarine);
+  --shadow-button-secondary-press: 1px 1px 0 var(--ink-ultramarine);
+  --shadow-button-primary: 4px 4px 0 var(--ink-yellow);
+  --shadow-button-primary-hover: 6px 6px 0 var(--ink-yellow);
+  --shadow-button-primary-press: 1px 1px 0 var(--ink-yellow);
+  --shadow-button-danger: 4px 4px 0 var(--ink-rose);
+  --shadow-button-danger-hover: 6px 6px 0 var(--ink-rose);
+  --shadow-button-danger-press: 1px 1px 0 var(--ink-rose);
+  --shadow-card: 4px 4px 0 var(--ink-ultramarine);
+  --shadow-card-hover: 6px 6px 0 var(--ink-ultramarine);
+  --shadow-active: 3px 3px 0 var(--ink-yellow);
+  --shadow-1: var(--shadow-button-secondary);
+  --shadow-2: 5px 5px 0 var(--ink-rose);
+  --shadow-3: 7px 7px 0 var(--ink-marine);
+  --shadow-glow: var(--shadow-button-primary);
+
+  /* Durées et courbes des animations courtes, ainsi que le repérage des encres. */
+  --duration-fast: 120ms;
+  --duration-medium: 220ms;
+  --duration-long: 520ms;
+  --ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-snappy: cubic-bezier(0.2, 1, 0.2, 1);
+  --ease-rebound: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-bounce: cubic-bezier(0.28, 1.8, 0.5, 1);
+  --registre-x: 4px;
+  --registre-y: 3px;
 
   /* --- Échelle typographique fluide (de 320 px à 1920 px de large) --- */
   --fs-xs: clamp(0.8125rem, 0.78rem + 0.15vw, 0.875rem);
@@ -96,10 +130,8 @@
 
 /* Thème clair : mêmes noms, valeurs pour papier lilas (contrastes >= 4,5:1 sur #f3efff). */
 :root[data-theme='light'] {
-  --color-accent-ink: #ffffff;
-  --scrim-ink: 243, 239, 255;
-  --shadow-1: 0 2px 6px rgba(40, 20, 90, 0.14);
-  --shadow-2: 0 10px 24px -10px rgba(40, 20, 90, 0.3);
-  --shadow-3: 0 24px 48px -16px rgba(40, 20, 90, 0.38);
-  --shadow-glow: 0 0 32px -8px rgba(109, 60, 255, 0.4);
+  --color-accent-ink: var(--ink-night);
+  --color-border: var(--ink-paper);
+  --color-border-strong: var(--ink-rose);
+  --scrim-ink: var(--ink-night-rgb);
 }

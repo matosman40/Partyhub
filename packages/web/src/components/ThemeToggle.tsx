@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { applyTheme, loadTheme, saveTheme, type ThemeName } from '../theme/index.js';
+import { Icon } from './Icon.js';
 
 /** Bouton clair/sombre. La préférence est retenue sur l’appareil. */
 export function ThemeToggle() {
@@ -21,7 +22,7 @@ export function ThemeToggle() {
       aria-label={isDark ? 'Passer au thème clair' : 'Passer au thème sombre'}
       title={isDark ? 'Thème clair' : 'Thème sombre'}
     >
-      <span aria-hidden="true">{isDark ? '☀️' : '🌙'}</span>
+      <Icon name={isDark ? 'sun' : 'moon'} />
     </button>
   );
 }

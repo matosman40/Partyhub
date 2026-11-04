@@ -22,6 +22,8 @@ import './styles/game-sheet.css';
 import './styles/game-gallery.css';
 import './styles/sauteurs.css';
 import './styles/refonte.css';
+import './styles/motion.css';
+import './styles/nuit.css';
 
 installClientLogging(__APP_VERSION__);
 applyTheme(loadTheme());

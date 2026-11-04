@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import type { CatalogGame } from '@partyhub/shared';
 import { CATEGORY_LABEL } from '../catalog/labels.js';
-import { GameLogo } from './GameLogo.js';
+import { GameArtwork } from './GameArtwork.js';
 import { artStyle, playersLabel } from '../catalog/display.js';
 
 /**
@@ -16,7 +16,7 @@ export function GameCard({ game, compact = false }: { game: CatalogGame; compact
       style={artStyle(game.id, game.name)}
     >
       <span className="game-card-art" aria-hidden="true">
-        <GameLogo gameId={game.id} name={game.name} className="game-card-logo" />
+        <GameArtwork gameId={game.id} name={game.name} className="game-card-emblem" logoClassName="game-card-logo" />
       </span>
       <span className="game-card-body">
         <span className="game-card-name">{game.name}</span>

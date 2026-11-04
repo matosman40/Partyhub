@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { api } from '../api.js';
+import { Icon } from '../components/Icon.js';
 
 /**
  * Éditeur des jeux de code : création depuis le modèle, fichiers et vérification.
@@ -382,7 +383,7 @@ export function CodeEditorAdmin() {
         {drafts?.map((item) => (
           <li key={item.id} className="ed-list-item">
             <div className="ed-list-preview" aria-hidden="true">
-              ✏️
+              <Icon name="edit" />
             </div>
             <div className="ed-list-body">
               <strong>{item.name}</strong>

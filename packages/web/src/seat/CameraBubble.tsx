@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { api } from '../api.js';
 import { authHeaders } from '../profile/session.js';
 import { WebcamPhoto, webcamAvailable } from '../profile/WebcamPhoto.js';
+import { Icon } from '../components/Icon.js';
 
 /**
  * Caméra en bulle, depuis le téléphone d’un joueur connecté à son profil : la bulle ouvre la prise de
@@ -57,7 +58,7 @@ export function CameraBubble({ token }: { token?: string | null }) {
             setOpen(true);
           }}
         >
-          <span aria-hidden="true">📷</span>
+          <Icon name="camera" />
           <span className="camera-bubble-text">{saving ? 'Un instant…' : 'Ma photo'}</span>
         </button>
       )}

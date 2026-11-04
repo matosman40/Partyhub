@@ -1,7 +1,7 @@
 import { Suspense, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import type { ChatMessage, ObserverRoomView } from '@partyhub/shared';
-import { DEVICE_KIND_ICONS, DEVICE_KIND_LABELS } from '@partyhub/shared';
+import { DEVICE_KIND_LABELS } from '@partyhub/shared';
 import { canSend } from '../connection.js';
 import { createSocket, type AppSocket } from '../realtime.js';
 import { viewsFor } from '../games.js';
@@ -13,6 +13,7 @@ import { ChatPanel, EmoteBar, ReactionLayer } from '../components/Social.js';
 import { ConnectingNotice } from '../components/ConnectingNotice.js';
 import { NoticeDialog } from '../components/NoticeDialog.js';
 import { PlayerAvatar } from '../components/PlayerAvatar.js';
+import { DeviceIcons } from '../components/DeviceIcons.js';
 import { PlayerSeat } from '../seat/PlayerSeat.js';
 import { getDevice } from '../device/device.js';
 import { useDevice } from '../device/useDevice.js';
@@ -126,7 +127,7 @@ export function ObserverPage() {
                 role="img"
                 aria-label={p.devices.map((d) => DEVICE_KIND_LABELS[d]).join(', ')}
               >
-                {p.devices.map((d) => DEVICE_KIND_ICONS[d]).join(' ')}
+                <DeviceIcons devices={p.devices} />
               </span>
             )}
             {p.ready && <span className="badge ready">Prêt</span>}
@@ -168,7 +169,7 @@ export function ObserverPage() {
                 {lobby.observers.devices.length > 0 && (
                   <span className="device-icons">
                     {' '}
-                    {lobby.observers.devices.map((d) => DEVICE_KIND_ICONS[d]).join(' ')}
+                    <DeviceIcons devices={lobby.observers.devices} />
                   </span>
                 )}
               </span>

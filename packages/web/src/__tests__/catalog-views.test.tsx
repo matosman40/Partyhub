@@ -3,8 +3,11 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { MemoryRouter } from 'react-router-dom';
 import type { CatalogGame } from '@partyhub/shared';
 import { GameCard } from '../components/GameCard.js';
+import { GameListRow } from '../components/GameListRow.js';
+import { CatalogCategoryPills } from '../components/CatalogCategoryPills.js';
 import { CatalogFilterPanel } from '../components/CatalogFilterPanel.js';
 import { DEFAULT_FILTERS, type CatalogFilters } from '../catalog/filters.js';
+import { countHiddenFilters, HomePage } from '../pages/HomePage.js';
 
 /** Fiche du catalogue et panneau de filtres : rendu statique, sans navigateur. */
 
@@ -39,6 +42,23 @@ describe('GameCard', () => {
     expect(html).toContain('tag-ai');
   });
 
+  it('affiche l’emblème des jeux intégrés', () => {
+    const html = card();
+    expect(html).toContain('src="/game-icons/quiz-party.webp"');
+    expect(html).toContain('<span class="game-card-name">Quiz Party</span>');
+    expect(html).toContain('loading="lazy"');
+    expect(html).toContain('decoding="async"');
+    expect(html).toContain('width="512" height="512"');
+    expect(html).toContain('alt=""');
+    expect(html).not.toContain('game-logo');
+  });
+
+  it('garde le logo SVG pour un jeu sans emblème', () => {
+    const html = card({ id: 'jeu-installe', name: 'Jeu installé' });
+    expect(html).toContain('game-logo');
+    expect(html).not.toContain('/game-icons/jeu-installe.webp');
+  });
+
   it('sans IA, n’affiche pas le repère IA', () => {
     expect(card({ ai: false })).not.toContain('tag-ai');
   });
@@ -54,6 +74,64 @@ describe('GameCard', () => {
   });
 });
 
+describe('GameListRow', () => {
+  it('affiche la même vignette emblème dans la vue Liste', () => {
+    const html = renderToStaticMarkup(
+      <MemoryRouter>
+        <GameListRow game={quiz} />
+      </MemoryRouter>,
+    );
+    expect(html).toContain('src="/game-icons/quiz-party.webp"');
+    expect(html).toContain('class="game-row-emblem"');
+  });
+});
+
+describe('CatalogCategoryPills', () => {
+  it('propose Tous et uniquement les catégories présentes avec leur état sélectionné', () => {
+    const html = renderToStaticMarkup(
+      <CatalogCategoryPills categories={['quiz', 'solo']} selected={['quiz']} onChange={() => undefined} />,
+    );
+    expect(html).toContain('aria-label="Catégories de jeux"');
+    expect(html).toContain('<button type="button" aria-pressed="false">Tous</button>');
+    expect(html).toContain('aria-pressed="true">Quiz</button>');
+    expect(html).toContain('aria-pressed="false">Solo</button>');
+    expect(html).not.toContain('Cartes');
+  });
+});
+
+describe('HomePage', () => {
+  it('affiche seulement Jouer et Rejoindre comme actions principales', () => {
+    const html = renderToStaticMarkup(
+      <MemoryRouter>
+        <HomePage />
+      </MemoryRouter>,
+    );
+    expect([...html.matchAll(/class="home-action /g)]).toHaveLength(2);
+    expect(html).toContain('href="#catalog"');
+    expect(html).toContain('>Jouer</span>');
+    expect(html).toContain('href="/join"');
+    expect(html).toContain('>Rejoindre</span>');
+    expect(html).not.toContain('Magasin de jeux</span>');
+    expect(html).not.toContain('Administration</span>');
+  });
+});
+
+describe('countHiddenFilters', () => {
+  it('ne compte que les filtres derrière « Plus de filtres »', () => {
+    expect(countHiddenFilters({ ...DEFAULT_FILTERS, categories: ['quiz'] })).toBe(0);
+    expect(
+      countHiddenFilters({
+        ...DEFAULT_FILTERS,
+        categories: ['quiz'],
+        players: 4,
+        duration: 'short',
+        ai: 'yes',
+        recent: true,
+      }),
+    ).toBe(4);
+  });
+});
+
 function panel(
   over: Partial<CatalogFilters> = {},
   props: { hidden?: boolean; recentCount?: number; activeCount?: number } = {},
@@ -63,7 +141,6 @@ function panel(
       id="catalog-filters"
       hidden={props.hidden ?? false}
       filters={{ ...DEFAULT_FILTERS, ...over }}
-      categories={['quiz', 'solo']}
       recentCount={props.recentCount ?? 0}
       activeCount={props.activeCount ?? 0}
       onChange={() => undefined}
@@ -78,11 +155,9 @@ describe('CatalogFilterPanel', () => {
     expect(panel({}, { hidden: false })).not.toMatch(/<aside[^>]*hidden/);
   });
 
-  it('ne propose que les catégories présentes dans le catalogue', () => {
-    const html = panel();
-    expect(html).toContain('Quiz');
-    expect(html).toContain('Solo');
-    expect(html).not.toContain('Cartes');
+  it('ne contient plus les catégories proposées en pastilles au-dessus de la grille', () => {
+    expect(panel()).not.toContain('Type de jeu');
+    expect(panel()).not.toContain('Quiz');
   });
 
   it('coche le filtre IA et la durée choisis', () => {

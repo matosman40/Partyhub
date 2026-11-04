@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { api } from '../api.js';
 import { Breadcrumb } from '../components/Breadcrumb.js';
+import { Icon } from '../components/Icon.js';
 import { SearchButton } from '../nav/SearchButton.js';
 import {
   FILTER_LABEL,
@@ -77,7 +78,7 @@ function StoreCover({ game, className }: { game: StoreGame; className: string })
   if (!game.hasCover) {
     return (
       <div className={`${className} store-cover-empty`} aria-hidden="true">
-        🧩
+        <Icon name="puzzle" />
       </div>
     );
   }

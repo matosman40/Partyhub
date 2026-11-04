@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import type {
   ChampionshipSettings,
   LastResultView,
@@ -8,14 +8,13 @@ import type {
   SeriesView,
 } from '@partyhub/shared';
 import { PlayerAvatar } from './PlayerAvatar.js';
+import { Icon } from './Icon.js';
 
 /**
  * Championnat d’un salon : podium de la dernière partie (pour tous les jeux), classement cumulé,
  * équipes, icônes de victoire et réglage avant la partie. Les calculs sont faits par le serveur ;
  * ici on n’affiche que ce qui est reçu.
  */
-
-const MEDALS = ['🥇', '🥈', '🥉'] as const;
 
 /** Vrai quand le salon joue un championnat (plusieurs manches ou des équipes), pas une simple partie. */
 export function hasChampionship(c: ChampionshipSettings): boolean {
@@ -57,8 +56,10 @@ function points(n: number): string {
   return `${n} point${n > 1 ? 's' : ''}`;
 }
 
-function medal(rank: number): string {
-  return MEDALS[rank - 1] ?? rankLabel(rank);
+function medal(rank: number): ReactNode {
+  if (rank === 1) return <Icon name="trophy" size={22} />;
+  if (rank <= 3) return <Icon name="star" size={22} />;
+  return rankLabel(rank);
 }
 
 type Champion = NonNullable<SeriesView['champion']>;
@@ -144,7 +145,7 @@ export function ChampionshipPanel({ series }: { series: SeriesView }) {
       </header>
       {series.champion && (
         <p className="champ-champion">
-          <span aria-hidden="true">🏆</span> {championText(series.champion, series.teams)}
+          <Icon name="trophy" size={18} /> {championText(series.champion, series.teams)}
         </p>
       )}
       {series.teams && <TeamStandings teams={series.teams} />}

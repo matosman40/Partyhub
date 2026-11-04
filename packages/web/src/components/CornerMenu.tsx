@@ -1,5 +1,6 @@
 import { useEffect, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
+import { Icon } from './Icon.js';
 
 /**
  * Menu discret dans un coin de l’écran : un petit bouton qui ouvre un tiroir. Les options et les
@@ -38,9 +39,7 @@ export function CornerMenu({
         aria-controls="corner-drawer"
         onClick={open ? onClose : onOpen}
       >
-        <span aria-hidden="true" />
-        <span aria-hidden="true" />
-        <span aria-hidden="true" />
+        <Icon name={open ? 'close' : 'menu'} />
       </button>
       {open &&
         // Hors de la page : les animations et les contextes d’empilement de l’écran ne doivent pas
@@ -58,6 +57,7 @@ export function CornerMenu({
               <div className="corner-drawer-head">
                 <p>Menu</p>
                 <button type="button" className="btn ghost small" onClick={onClose}>
+                  <Icon name="close" size={18} />
                   Fermer
                 </button>
               </div>

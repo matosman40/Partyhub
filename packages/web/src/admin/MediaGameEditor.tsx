@@ -301,7 +301,7 @@ function ItemEditor({
               <option value="">— choisir —</option>
               {playable.map((a) => (
                 <option key={a.id} value={a.id}>
-                  {a.kind === 'video' ? '🎞️' : '🔊'} {a.name}
+                  {a.kind === 'video' ? 'Vid?o' : 'Audio'} ? {a.name}
                 </option>
               ))}
             </select>

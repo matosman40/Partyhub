@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { api } from '../api.js';
 import { CodeEditorAdmin } from './CodeEditorAdmin.js';
+import { Icon } from '../components/Icon.js';
 
 /** Jeux de code : chaque version installée, son état, et la revue avant approbation. */
 
@@ -375,7 +376,7 @@ export function CodeGamesAdmin({ refreshToken, onChanged }: { refreshToken: numb
         {games?.map((g) => (
           <li key={keyOf(g)} className="ed-list-item">
             <div className="ed-list-preview" aria-hidden="true">
-              🧩
+              <Icon name="puzzle" />
             </div>
             <div className="ed-list-body">
               <strong>{g.name}</strong>

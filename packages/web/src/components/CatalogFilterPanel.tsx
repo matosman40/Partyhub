@@ -1,19 +1,16 @@
-import type { GameCategory } from '@partyhub/shared';
-import { CATEGORY_LABEL, PLAYER_CHOICES } from '../catalog/labels.js';
+import { PLAYER_CHOICES } from '../catalog/labels.js';
 import { AI_LABEL, DURATION_LABEL, type AiChoice, type CatalogFilters, type Duration } from '../catalog/filters.js';
 
 const DURATION_CHOICES = Object.keys(DURATION_LABEL) as Duration[];
 const AI_CHOICES = Object.keys(AI_LABEL) as AiChoice[];
 
 /**
- * Panneau des filtres du catalogue. À gauche sur grand écran ; sur téléphone, il s’ouvre
- * depuis le bouton « Filtres » (le parent gère `hidden`).
+ * Panneau déroulant des filtres complémentaires. Le parent gère `hidden`.
  */
 export function CatalogFilterPanel({
   id,
   hidden,
   filters,
-  categories,
   recentCount,
   activeCount,
   onChange,
@@ -22,21 +19,12 @@ export function CatalogFilterPanel({
   id: string;
   hidden: boolean;
   filters: CatalogFilters;
-  /** Catégories présentes dans le catalogue, seules proposées. */
-  categories: GameCategory[];
   /** Nombre de jeux joués récemment sur cet appareil. */
   recentCount: number;
   activeCount: number;
   onChange: (patch: Partial<CatalogFilters>) => void;
   onReset: () => void;
 }) {
-  function toggleCategory(c: GameCategory) {
-    const next = filters.categories.includes(c)
-      ? filters.categories.filter((x) => x !== c)
-      : [...filters.categories, c];
-    onChange({ categories: next });
-  }
-
   return (
     <aside id={id} className="filters-panel" aria-label="Filtres des jeux" hidden={hidden}>
       <div className="filter-field">
@@ -56,16 +44,6 @@ export function CatalogFilterPanel({
           ))}
         </select>
       </div>
-
-      <fieldset className="filter-group">
-        <legend>Type de jeu</legend>
-        {categories.map((c) => (
-          <label key={c} className="filter-option">
-            <input type="checkbox" checked={filters.categories.includes(c)} onChange={() => toggleCategory(c)} />
-            <span>{CATEGORY_LABEL[c]}</span>
-          </label>
-        ))}
-      </fieldset>
 
       <fieldset className="filter-group">
         <legend>Durée</legend>

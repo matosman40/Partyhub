@@ -16,6 +16,7 @@ import {
 } from '@partyhub/shared';
 import { CardFace, cardGamePresets, cardGameTemplates } from '@partyhub/games/client';
 import { api } from '../api.js';
+import { Icon } from '../components/Icon.js';
 import { GameMenu } from '../components/GameMenu.js';
 
 export interface CardGameRecord {
@@ -767,7 +768,7 @@ function CardGameEditor({
               />
               <span className="ed-card-actions">
                 <button type="button" className="btn ghost small" onClick={() => addCard(c)} aria-label="Dupliquer">
-                  ⧉
+                  <Icon name="copy" size={18} />
                 </button>
                 <button
                   type="button"
@@ -775,7 +776,7 @@ function CardGameEditor({
                   onClick={() => removeCard(c.id)}
                   aria-label="Supprimer"
                 >
-                  ✕
+                  <Icon name="close" size={18} />
                 </button>
               </span>
               <div className="ed-card-extra">

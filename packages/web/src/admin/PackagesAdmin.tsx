@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api.js';
 import { CodeGamesAdmin } from './CodeGamesAdmin.js';
+import { Icon } from '../components/Icon.js';
 
 export interface PackageRecord {
   id: string;
@@ -315,7 +316,7 @@ export function PackagesAdmin({ onChanged }: { onChanged: () => void }) {
         {records?.map((r) => (
           <li key={r.id} className="ed-list-item">
             <div className="ed-list-preview" aria-hidden="true">
-              📦
+              <Icon name="package" />
             </div>
             <div className="ed-list-body">
               <strong>{r.name}</strong>

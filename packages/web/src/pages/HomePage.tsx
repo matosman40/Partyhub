@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties, type MouseEvent } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import type { CatalogGame } from '@partyhub/shared';
 import { api } from '../api.js';
@@ -22,8 +22,10 @@ import {
   type SortKey,
 } from '../catalog/filters.js';
 import { readRecent } from '../catalog/recentGames.js';
-import { SearchButton } from '../nav/SearchButton.js';
 import { MyRooms } from '../components/MyRooms.js';
+import { Icon } from '../components/Icon.js';
+import { CatalogCategoryPills } from '../components/CatalogCategoryPills.js';
+import { ConfettiBurst } from '../components/ConfettiBurst.js';
 
 const SORT_CHOICES = Object.keys(SORT_LABEL) as SortKey[];
 const MAX_RECENT_SHOWN = 6;
@@ -31,6 +33,15 @@ const MAX_RECENT_SHOWN = 6;
 function countLabel(n: number): string {
   if (n === 0) return 'Aucun jeu';
   return n === 1 ? '1 jeu' : `${n} jeux`;
+}
+
+export function countHiddenFilters(filters: CatalogFilters): number {
+  return (
+    Number(filters.players !== null) +
+    Number(filters.duration !== 'any') +
+    Number(filters.ai !== 'any') +
+    Number(filters.recent)
+  );
 }
 
 /**
@@ -44,12 +55,14 @@ export function HomePage() {
   const [error, setError] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
+  const [playTrigger, setPlayTrigger] = useState(0);
   const [recentIds] = useState<string[]>(() => readRecent());
 
   // Les filtres vivent dans l’écran (saisie instantanée) et sont reportés dans l’URL sans nouvelle entrée d’historique.
   // L’URL n’est relue qu’au montage : un retour depuis une fiche remonte la page.
   const [filters, setFilters] = useState<CatalogFilters>(() => parseFilters(params));
   const activeCount = countActiveFilters(filters);
+  const hiddenFilterCount = countHiddenFilters(filters);
 
   useEffect(() => {
     api<{ games: CatalogGame[] }>('/api/catalog')
@@ -84,6 +97,17 @@ export function HomePage() {
 
   function clearFilters() {
     commit(resetFilters(filters));
+  }
+
+  function play(event: MouseEvent<HTMLAnchorElement>) {
+    event.preventDefault();
+    setPlayTrigger((current) => current + 1);
+    const catalog = document.getElementById('catalog');
+    if (!catalog) return;
+    catalog.scrollIntoView({
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+      block: 'start',
+    });
   }
 
   return (
@@ -122,47 +146,41 @@ export function HomePage() {
       </div>
 
       <header className="hero">
-        <h1 className="brand-title register-in" data-text="PartyHub">
+        <h1 className="brand-title anim-registre" data-text="PartyHub">
           PartyHub
         </h1>
         <p>Choisissez un jeu, affichez la salle sur l’écran, et chacun rejoint depuis son téléphone.</p>
         <ul className="steps" aria-label="Le principe en trois temps">
           <li>
-            <span aria-hidden="true">🖥️</span>
+            <Icon name="tv" />
             Ouvrez la salle sur l’écran
           </li>
           <li>
-            <span aria-hidden="true">📱</span>
+            <Icon name="phone" />
             Rejoignez avec votre téléphone
           </li>
           <li>
-            <span aria-hidden="true">🎉</span>
+            <Icon name="players" />
             Jouez ensemble
           </li>
         </ul>
       </header>
 
       <nav className="home-actions" aria-label="Actions principales">
-        <Link className="home-action" to="/join">
+        <a className="home-action home-action--play" href="#catalog" onClick={play}>
           <span className="home-action-icon" aria-hidden="true">
-            📱
+            <Icon name="play" />
           </span>
-          <span className="home-action-text">Rejoindre une salle</span>
-        </Link>
-        <Link className="home-action" to="/magasin">
+          <span className="home-action-text">Jouer</span>
+        </a>
+        <Link className="home-action home-action--join" to="/join">
           <span className="home-action-icon" aria-hidden="true">
-            🛍️
+            <Icon name="join" />
           </span>
-          <span className="home-action-text">Magasin de jeux</span>
-        </Link>
-        <SearchButton className="home-action" />
-        <Link className="home-action" to="/admin">
-          <span className="home-action-icon" aria-hidden="true">
-            ⚙️
-          </span>
-          <span className="home-action-text">Administration</span>
+          <span className="home-action-text">Rejoindre</span>
         </Link>
       </nav>
+      <ConfettiBurst trigger={playTrigger} />
 
       {error && (
         <p className="error" role="alert">
@@ -173,7 +191,7 @@ export function HomePage() {
       {games?.length === 0 && <p className="notice">Aucun jeu n’est disponible pour le moment.</p>}
 
       {games && games.length > 0 && (
-        <section className="catalog" aria-labelledby="catalog-title">
+        <section className="catalog" id="catalog" aria-labelledby="catalog-title">
           <div className="catalog-head">
             <h2 id="catalog-title" className="catalog-title">
               Jeux
@@ -222,16 +240,21 @@ export function HomePage() {
               aria-controls="catalog-filters"
               onClick={() => setPanelOpen((open) => !open)}
             >
-              Filtres{activeCount > 0 ? ` · ${activeCount}` : ''}
+              Plus de filtres{hiddenFilterCount > 0 ? ` · ${hiddenFilterCount}` : ''}
             </button>
           </div>
+
+          <CatalogCategoryPills
+            categories={presentCategories}
+            selected={filters.categories}
+            onChange={(categories) => update({ categories })}
+          />
 
           <div className="catalog-body">
             <CatalogFilterPanel
               id="catalog-filters"
               hidden={!panelOpen}
               filters={filters}
-              categories={presentCategories}
               recentCount={recentIds.length}
               activeCount={activeCount}
               onChange={update}
@@ -263,8 +286,8 @@ export function HomePage() {
                 </div>
               ) : filters.view === 'cards' ? (
                 <ul className="game-grid" aria-label="Jeux disponibles">
-                  {visible.map((g) => (
-                    <li key={g.id}>
+                  {visible.map((g, index) => (
+                    <li key={g.id} style={{ '--card-delay': `${Math.min(index, 16) * 35}ms` } as CSSProperties}>
                       <GameCard game={g} />
                     </li>
                   ))}

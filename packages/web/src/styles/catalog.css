@@ -140,7 +140,47 @@
   background: var(--glass-2);
 }
 
-/* ---- Mise en page : filtres à gauche sur grand écran ------------------------ */
+/* ---- Catégories en pastilles ------------------------------------------------- */
+
+.category-pills {
+  display: flex;
+  gap: 0.5rem;
+  min-width: 0;
+  overflow-x: auto;
+  padding: 0.1rem 0 0.35rem;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.category-pills::-webkit-scrollbar {
+  display: none;
+}
+
+.category-pills button {
+  flex: none;
+  min-height: 44px;
+  padding: 0.45rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--glass);
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.category-pills button[aria-pressed='true'] {
+  border-color: var(--line-strong);
+  background: var(--glass-2);
+}
+
+.category-pills button:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* ---- Mise en page ------------------------------------------------------------ */
 
 .catalog-body {
   display: grid;
@@ -156,7 +196,9 @@
 
 .filters-panel {
   display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr));
   gap: 1.1rem;
+  align-items: start;
   align-content: start;
   padding: 1rem 1.1rem 1.2rem;
   border-radius: var(--r-md);
@@ -168,29 +210,16 @@
   display: none;
 }
 
-@media (min-width: 900px) {
-  .catalog-body {
-    grid-template-columns: 240px minmax(0, 1fr);
-    align-items: start;
-  }
-
-  /* Le panneau reste visible à gauche et suit le défilement ; le bouton « Filtres » disparaît. */
-  .filters-panel,
-  .filters-panel[hidden] {
-    display: grid;
-    position: sticky;
-    top: 1rem;
-  }
-
-  .filters-toggle {
-    display: none;
-  }
+.filters-panel:not([hidden]) {
+  animation: filters-panel-in 180ms var(--ease-rebound) both;
 }
 
 /* ---- Filtres ------------------------------------------------------------------ */
 
 .filter-field {
   display: grid;
+  align-items: start;
+  align-content: start;
   gap: 0.35rem;
 }
 
@@ -205,6 +234,8 @@
 
 .filter-group {
   display: grid;
+  align-items: start;
+  align-content: start;
   gap: 0.25rem;
   min-width: 0;
   margin: 0;
@@ -259,7 +290,8 @@
 }
 
 .filters-reset {
-  justify-self: start;
+  justify-self: end;
+  align-self: end;
 }
 
 .filters-reset:disabled {
@@ -291,6 +323,23 @@
   transition: border-color 0.2s ease;
 }
 
+.game-card,
+.game-card *,
+.game-card:link,
+.game-card:visited,
+.game-card:hover,
+.game-card:focus,
+.game-card:active,
+.game-row-head,
+.game-row-head *,
+.game-row-head:link,
+.game-row-head:visited,
+.game-row-head:hover,
+.game-row-head:focus,
+.game-row-head:active {
+  text-decoration: none;
+}
+
 /* Ligne de liste : toute la ligne ouvre la fiche (c'est un lien). */
 .game-list a.game-row-head {
   text-decoration: none;
@@ -301,8 +350,10 @@
 }
 
 .game-card-art {
+  position: relative;
   display: grid;
   place-items: center;
+  overflow: hidden;
   aspect-ratio: 16 / 9;
   background: linear-gradient(160deg, var(--sky-a, #2a1466), var(--sky-b, #0b0630));
 }
@@ -312,6 +363,14 @@
   max-width: 180px;
   height: auto;
   filter: drop-shadow(0 4px 0 rgba(0, 0, 0, 0.25));
+}
+
+.game-card-emblem {
+  position: absolute;
+  inset: 0.4rem;
+  width: calc(100% - 0.8rem);
+  height: calc(100% - 0.8rem);
+  object-fit: contain;
 }
 
 .game-card-body {
@@ -386,6 +445,12 @@
 
 .game-card.is-compact .game-card-art {
   aspect-ratio: 16 / 8;
+}
+
+.game-card.is-compact .game-card-emblem {
+  inset: 0.25rem;
+  width: calc(100% - 0.5rem);
+  height: calc(100% - 0.5rem);
 }
 
 /* ---- Aucun résultat ---------------------------------------------------------------- */
