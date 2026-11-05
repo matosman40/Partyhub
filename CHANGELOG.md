@@ -13,11 +13,18 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 - Quiz Party et Photo mystère : curseur de difficulté (quiz : 2, 3 ou 4 choix ; photo : échelle de points, et pays affiché au niveau facile).
 - Quiz Party : image jointe aux questions, et 13 questions « Qui a peint ce tableau ? » à partir de tableaux du Metropolitan Museum (CC0).
 - Lot de 8 sons libres (CC0, Openverse) dans packages/web/public/sons/, avec leur source dans SOURCES.json. Non affectés par défaut : à choisir dans la médiathèque.
-- Photo mystère : un nouveau jeu. Une photo s'affiche dans un viseur ; chacun place son point sur la carte du monde, et gagne d'autant plus de points qu'il est proche du lieu. 25 photos de Wikimedia Commons (licences libres, auteur et source affichés).
+- Photo mystère : 29 lieux (et non 25) : Machu Picchu, la Statue de la Liberté, le Colisée et Uluru ajoutés.
+- Magasin : Plus ou moins, Réflexe et Plutôt qui ? sont construits en paquets de code signés (premier pas vers le magasin comme source unique des jeux). Une version de code remplace le jeu intégré de même identifiant ; le jeu intégré revient si le paquet est retiré.
+- Vues des jeux de code : elles reçoivent le style de l'application et ne se connectent plus au réseau pour les personnages.
+- Publication des jeux de code : workflow `publier-code.yml` (tags `code/<jeu>-vX.Y.Z`) avec signature et contrôle.
+- Sons : lot de 8 sons CC0 dans packages/web/public/sons/ (non affectés par défaut).
+- Documentation : `docs/PLAN-MAGASIN-UNIQUE.md` (plan et avancement), `docs/JEU-TIRAGE.md`, `docs/OUTILS-EXTERNES.md`.
+- Photo mystère : un nouveau jeu. Une photo s'affiche dans un viseur ; chacun place son point sur la carte du monde, et gagne d'autant plus de points qu'il est proche du lieu. 29 photos de Wikimedia Commons (licences libres, auteur et source affichés).
 - Quiz Party : 79 questions tirées de données ouvertes (Wikidata, API Géo) : capitales, symboles chimiques, tableaux célèbres, départements. Script de génération et bilan des API publiques étudiées dans `docs/API-PUBLIQUES.md`.
 
 ### Modifié
 
+- Plus ou moins, Réflexe et Plutôt qui ? : version 2.0.3 du paquet de code (le numéro passe au-dessus des paquets de données publiés).
 - Interface « nuit » : aplats, ombres décalées réservées aux éléments cliquables (jaune pour l'action principale, outremer pour la secondaire, rose pour le danger), icônes SVG à la place des emoji d'interface.
 - Jetons de couleur `--ink-emblem-background` ajoutés pour les vignettes avec emblème.
 
