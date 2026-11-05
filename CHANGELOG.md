@@ -13,7 +13,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 - Quiz Party et Photo mystère : curseur de difficulté (quiz : 2, 3 ou 4 choix ; photo : échelle de points, et pays affiché au niveau facile).
 - Quiz Party : image jointe aux questions, et 13 questions « Qui a peint ce tableau ? » à partir de tableaux du Metropolitan Museum (CC0).
 - Volumes : réglage général des bruitages dans l'administration, et volumes personnels de la musique et des bruitages sur chaque profil (page Profil). Appliqués tout de suite, sur toutes les pages.
-- Lot de 8 sons libres (CC0, Openverse) dans packages/web/public/sons/, avec leur source dans SOURCES.json. Non affectés par défaut : à choisir dans la médiathèque.
+- Sons : `scripts/sons-activer.mjs` téléverse le lot dans la médiathèque d'une installation et affecte les bruitages (clic, carte, explosion, victoire, votre tour).
+- Lot de 8 sons libres (CC0, Openverse) — activé par le script ci-dessus dans packages/web/public/sons/, avec leur source dans SOURCES.json. Non affectés par défaut : à choisir dans la médiathèque.
 - Photo mystère : 29 lieux (et non 25) : Machu Picchu, la Statue de la Liberté, le Colisée et Uluru ajoutés.
 - Magasin : Plus ou moins, Réflexe et Plutôt qui ? sont construits en paquets de code signés (premier pas vers le magasin comme source unique des jeux). Une version de code remplace le jeu intégré de même identifiant ; le jeu intégré revient si le paquet est retiré.
 - Vues des jeux de code : elles reçoivent le style de l'application et ne se connectent plus au réseau pour les personnages.
