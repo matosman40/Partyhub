@@ -60,3 +60,19 @@ une empreinte et une signature. Le cœur de PartyHub ne contient plus de code de
 2. **Code intégré gardé en secours** pendant la migration, jusqu'à l'étape 4.
 3. **Vues en iframe** : validé.
 4. **Quiz Party** : la version du magasin remplace le code intégré à la fin de l'étape 3.
+
+## Résultats de la lecture (étape 1)
+
+- **Runtime actuel** (`packages/server/src/packages/code-runtime.ts`) : isolat V8, 64 Mio, 2 s par appel, pas de réseau.
+  Il ne fournit ni IA, ni images, ni données de profil, ni travaux asynchrones (`runJob`).
+- **Vues actuelles** : 87 composants client importent la bibliothèque commune (`client/ui`, `hooks`, avatars).
+  Les vues en iframe devront embarquer cette bibliothèque dans le bundle, ou la servir au document de vues.
+- **Services à ajouter au runtime avant l'étape 3** : IA, images, profil, travaux asynchrones (`runJob`).
+  Seul Aventure IA utilise directement IA, images et profil ; Quiz Party passe par des travaux asynchrones.
+- **Candidats pour l'étape 1**, sans capteur, sans média et sans travail asynchrone :
+  - Plus ou moins (module de 309 lignes, vues de 2 fichiers) ;
+  - Réflexe (283 lignes, vues de 2 fichiers) ;
+  - Plutôt qui ? (273 lignes, vues de 2 fichiers).
+- Les jeux qui utilisent capteurs, micro, caméra ou médiathèque (Banquise, Imite-moi) restent pour l'étape 2.
+
+Estimation révisée de l'étape 1 : 7 à 9 jours, dont environ 2 jours pour embarquer la bibliothèque commune dans l'iframe.
