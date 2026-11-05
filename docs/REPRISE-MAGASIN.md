@@ -56,3 +56,19 @@ Les releases `code/…-v2.0.3` sont signées par `624b0eada9c33c61` (ancienne cl
 2. Installer un paquet depuis le magasin sur un serveur de test (avec la clé publique en place), approuver, activer, jouer une manche.
 3. Publier les paquets de code sur le magasin de façon définitive, puis mettre à jour `docs/PLAN-MAGASIN-UNIQUE.md`.
 4. Étapes 2 à 4 du plan (cartes et plateau, quiz et IA, reste).
+
+## État du 2026-11-05 (fin de session, 16 h 15)
+
+Fait et poussé :
+- Volumes : réglage général des bruitages (administration), volumes personnels de la musique et des bruitages (page Profil), migration 15. Vérifié dans le navigateur (section Profil).
+- Sons : `scripts/sons-activer.mjs <adresse>` (avec `ADMIN_PASSWORD`) téléverse les huit sons et affecte cinq bruitages. À lancer une fois sur chaque installation.
+- Lint : `npx eslint .` ne plante plus (0 erreur, 85 avertissements).
+- Tirage surprise : banque du mode Estimer (117 entrées, `scripts/tirage-banque.mjs`).
+- Magasin : routage des tags `<jeu>-vX.Y.Z` en place (job d'aiguillage). Version 2.0.4 prête dans PartyHub, sans tag.
+
+Reste, dans l'ordre :
+1. Clé de signature : nouvelle paire, secret `PHGAME_SIGNING_KEY` remplacé, ancienne clé supprimée, clé publique communiquée.
+2. Tags `plus-ou-moins-v2.0.4`, `reflexe-v2.0.4`, `plutot-qui-v2.0.4` sur le commit `fb5381d`… ou le dernier commit de `feature/publier-jeux-code` (vérifier qu'il contient le job d'aiguillage).
+3. Test du magasin : installation, approbation, activation, partie jouée.
+4. Tirage surprise : module du jeu, vues, banque Identifier, tests.
+5. Étapes 2 à 4 de la migration (cartes et plateau, quiz et IA, reste).
