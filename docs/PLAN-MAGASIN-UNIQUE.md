@@ -84,7 +84,8 @@ Estimation révisée de l'étape 1 : 7 à 9 jours, dont environ 2 jours pour emb
   revient quand le paquet est retiré. Test : `packages/server/src/__tests__/code-override.test.ts`.
 - **Fait** : essai de bout en bout sur le serveur de test. Paquet de Plus ou moins construit et signé, déposé,
   approuvé, activé. La partie s'est jouée depuis le paquet (trois robots, une manche, aucune erreur console).
-- **Constat** : les vues en iframe n'ont pas le style de l'application (fond blanc, polices par défaut). Il faut
-  embarquer le CSS dans le bundle de vues.
-- **Reste** : CSS dans l'iframe (environ 1 jour), puis Réflexe et Plutôt qui ? (environ 2 jours), puis publication
-  des paquets sur `jeux-partyhub` et installation depuis le magasin (environ 1 jour).
+- **Fait** : CSS de l'application embarqué dans les vues de jeu de code (feuille compilée, règles de police retirées).
+  Essai : cartes et couleurs de l'application affichées dans l'iframe, sans erreur. Paquet : 423 Ko. Test :
+  `packages/server/src/__tests__/code-view-style.test.ts`.
+- **Reste** : Réflexe et Plutôt qui ? (environ 2 jours), puis publication des paquets sur `jeux-partyhub` et
+  installation depuis le magasin (environ 1 jour).

@@ -19,6 +19,15 @@ import { writeZip, type ZipFileEntry } from '../packages/zip.js';
 import { listFiles } from '../cli/list-files.js';
 import { viewEntrySource } from './view-entry.js';
 
+/** Feuille de style compilée de l'application (packages/web/dist). Embarquée dans chaque vue de jeu de code. */
+export function appStylesheet(): string {
+  const WEB_ASSETS = path.resolve(HERE, '../../../web/dist/assets');
+  const file = fs.existsSync(WEB_ASSETS) ? fs.readdirSync(WEB_ASSETS).find((n) => /^index-.*.css$/.test(n)) : undefined;
+  if (!file) throw new Error('Feuille de style de l’application introuvable : lancer npm run build -w @partyhub/web.');
+  // Les polices ne peuvent pas être chargées depuis une vue : les règles @font-face sont retirées.
+  return fs.readFileSync(path.join(WEB_ASSETS, file), 'utf8').replace(/@font-faces*{[^}]*}/g, '');
+}
+
 /**
  * Construction et contrôle des jeux de code. Utilisés par la commande `phgame` (poste du développeur ou image
  * Docker) et par l'éditeur de l'administration. Le contrôle exécute le code du jeu, dans l'isolat de production :
@@ -124,7 +133,7 @@ export async function buildCodePackage(
   // Les vues sont rendues par une amorce générée (incluse dans le paquet) qui importe src/client.tsx.
   const client = await bundle(
     CODE_VIEW_GLOBAL,
-    { source: viewEntrySource(), resolveDir: path.join(sourceDir, 'src') },
+    { source: viewEntrySource(appStylesheet()), resolveDir: path.join(sourceDir, 'src') },
     roots,
   );
   // Le module doit annoncer le même identifiant, nom et version que manifest.json : vérifié dès la construction.

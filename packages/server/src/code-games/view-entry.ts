@@ -5,12 +5,13 @@ import { CODE_VIEW_MESSAGE } from '@partyhub/shared';
  * (donc relue et empreintée comme le reste). Elle rend les vues du jeu (Hôte, Joueur, Réglages)
  * dans l'iframe, et relaie les appels à la page par postMessage. Pas d'autre accès au monde.
  */
-export function viewEntrySource(): string {
+export function viewEntrySource(css: string): string {
   return `import * as React from 'react';
 import { createRoot } from 'react-dom/client';
 import views from './client';
 
 const MSG = ${JSON.stringify(CODE_VIEW_MESSAGE)};
+const CSS = ${JSON.stringify(css)};
 
 type Result = { ok: boolean; error?: string; data?: string };
 const pending = new Map<number, (result: Result) => void>();
@@ -43,7 +44,12 @@ class Boundary extends React.Component<{ children?: React.ReactNode }, { failed:
 }
 
 document.documentElement.style.height = '100%';
-document.body.style.cssText = 'margin:0;height:100%;font-family:system-ui,sans-serif;color:#111;background:#fff;';
+// Le style de l'application (fond, polices, cartes) vient de la feuille embarquée : on n'impose rien de plus.
+const styleTag = document.createElement('style');
+styleTag.textContent = CSS;
+document.head.appendChild(styleTag);
+document.body.style.margin = '0';
+document.body.style.height = '100%';
 const root = createRoot(document.getElementById('root') as HTMLElement);
 
 function render(role: string, props: Record<string, unknown>, flags: { onAction?: boolean }): void {
