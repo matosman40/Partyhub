@@ -1,0 +1,90 @@
+[
+  {
+    "nom": "bonne-reponse",
+    "fichier": "/sons/bonne-reponse.mp3",
+    "titre": "Correct.wav",
+    "auteur": "bwg2020",
+    "licence": "cc0",
+    "version": "1.0",
+    "source": "https://freesound.org/people/bwg2020/sounds/456161",
+    "duree_ms": 1413,
+    "octets": 34235
+  },
+  {
+    "nom": "erreur",
+    "fichier": "/sons/erreur.mp3",
+    "titre": "Wrong Answer",
+    "auteur": "-Andreas",
+    "licence": "cc0",
+    "version": "1.0",
+    "source": "https://freesound.org/people/-Andreas/sounds/648462",
+    "duree_ms": 1063,
+    "octets": 27236
+  },
+  {
+    "nom": "compte-a-rebours",
+    "fichier": "/sons/compte-a-rebours.mp3",
+    "titre": "countdown-click.wav",
+    "auteur": "Troube",
+    "licence": "cc0",
+    "version": "1.0",
+    "source": "https://freesound.org/people/Troube/sounds/631547",
+    "duree_ms": 2144,
+    "octets": 47984
+  },
+  {
+    "nom": "votre-tour",
+    "fichier": "/sons/votre-tour.mp3",
+    "titre": "Soft-Notifications - Bell - Ding-Dong.mp3",
+    "auteur": "LegitCheese",
+    "licence": "cc0",
+    "version": "1.0",
+    "source": "https://freesound.org/people/LegitCheese/sounds/571513",
+    "duree_ms": 800,
+    "octets": 15144
+  },
+  {
+    "nom": "victoire",
+    "fichier": "/sons/victoire.mp3",
+    "titre": "Game Success Fanfare",
+    "auteur": "el_boss",
+    "licence": "cc0",
+    "version": "1.0",
+    "source": "https://freesound.org/people/el_boss/sounds/677859",
+    "duree_ms": 3381,
+    "octets": 75936
+  },
+  {
+    "nom": "explosion",
+    "fichier": "/sons/explosion.mp3",
+    "titre": "Air Explosion.wav",
+    "auteur": "1histori",
+    "licence": "cc0",
+    "version": "1.0",
+    "source": "https://freesound.org/people/1histori/sounds/401609",
+    "duree_ms": 2052,
+    "octets": 47424
+  },
+  {
+    "nom": "clic",
+    "fichier": "/sons/clic.mp3",
+    "titre": "UI click",
+    "auteur": "Ranner",
+    "licence": "cc0",
+    "version": "1.0",
+    "source": "https://freesound.org/people/Ranner/sounds/488534",
+    "duree_ms": 599,
+    "octets": 17014
+  },
+  {
+    "nom": "carte",
+    "fichier": "/sons/carte.mp3",
+    "titre": "flipCard.wav",
+    "auteur": "Splashdust",
+    "licence": "cc0",
+    "version": "1.0",
+    "source": "https://freesound.org/people/Splashdust/sounds/84322",
+    "duree_ms": 940,
+    "octets": 24004
+  }
+]
