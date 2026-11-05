@@ -72,3 +72,12 @@ Reste, dans l'ordre :
 3. Test du magasin : installation, approbation, activation, partie jouée.
 4. Tirage surprise : module du jeu, vues, banque Identifier, tests.
 5. Étapes 2 à 4 de la migration (cartes et plateau, quiz et IA, reste).
+
+## État final de la session du 2026-11-05 (16 h 35)
+
+- Tirage surprise, mode Estimer : **jouable** (module, vues, logo, décor, enregistré au catalogue). Essai réel : une manche complète.
+  Banque limitée aux populations (59 pays) : les altitudes sont désactivées (données Wikidata erronées, voir `docs/JEU-TIRAGE.md`).
+  À faire : mode Identifier (Met Museum, iNaturalist), vérification des altitudes, bilan final.
+- Volumes : fait. Sons : `scripts/sons-activer.mjs` (à lancer sur chaque installation). Lint : passe.
+- Clé de signature et publication 2.0.4 : **en attente**, à reprendre quand la clé sera réglée.
+- Migration du magasin (étapes 2 à 4) : pas commencée.
