@@ -43,11 +43,12 @@ d'auteur. Rien de ce qui suit n'est encore copié dans le code.
 Points à décider : le style, la durée, la taille totale (un film de 1080p pèse plusieurs mégaoctets : quinze
 personnages et deux issues représentent plusieurs dizaines de Mo), et le coût de fabrication.
 
-## Écartés
+## Usage personnel, hors dépôt
 
-- **lemo-wake** (lemomo-ai/lemo-wake) : licence CC BY-NC 4.0, qui interdit l'usage commercial. Écarté, faute de cadre clair pour PartyHub. À reconsidérer seulement si la licence change ou si l'auteur accorde une autre licence.
+- **lemo-wake** (lemomo-ai/lemo-wake) : licence CC BY-NC 4.0. Le projet ne sera pas vendu : l'usage reste non commercial, ce que la licence autorise. L'outil s'utilise sur la machine de travail, **hors du dépôt**. Ses boucles d'animation ne doivent pas être embarquées dans le dépôt ni dans une distribution du jeu sans nouvelle vérification de la licence.
 
 ## Ce qui reste ouvert
 
 - pixelfx : aucune copie faite. Attendre une demande d'effet précis.
 - lemo-opuscar : plan ci-dessus, en attente de validation (coût et taille).
+- lemo-wake : outil personnel, à utiliser seulement hors dépôt.
