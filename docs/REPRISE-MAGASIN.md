@@ -39,6 +39,17 @@ La clé privée d'origine a été exposée dans une conversation. Elle a signé 
 - Le CSS des vues vient du build de l'interface : le workflow construit `@partyhub/web` avant de signer.
 - Les fins de ligne Windows (CRLF) cassent les ancres de remplacement de fichiers : normaliser avant d'éditer.
 
+## Convention de tags (corrigée)
+
+Le magasin ne lit que les tags `<jeu>-vX.Y.Z`. Les tags `code/<jeu>-vX.Y.Z` utilisés jusqu'ici sont **invisibles** pour lui.
+Les jeux de code utilisent désormais `<jeu>-vX.Y.Z`. Les deux workflows de `jeux-partyhub` (branche
+`feature/publier-jeux-code`) commencent par un job d'aiguillage : si `packages/games/code-games/<jeu>` existe dans PartyHub,
+c'est `publier-code.yml` qui agit, sinon `publier.yml`.
+
+Constat au 2026-11-05 (test du magasin sur un serveur de test) : le magasin voit `plus-ou-moins-v1.0.2`, signé par une
+autre clé (`b74b3e02b58cac70`), et refuse de l'installer tant que cette clé n'est pas dans `DATA_DIR/cles-de-confiance/`.
+Les releases `code/…-v2.0.3` sont signées par `624b0eada9c33c61` (ancienne clé exposée).
+
 ## Reste à faire (ordre)
 
 1. Nouvelle clé, secret mis à jour, republication en 2.0.4 (ci-dessus).
