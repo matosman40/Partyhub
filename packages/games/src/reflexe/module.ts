@@ -107,7 +107,7 @@ export const reflexe: GameModule<ReflexeState, ReflexeSettings> = {
     name: 'Réflexe',
     description: 'Attendez le vert… puis touchez votre téléphone le plus vite possible !',
     icon: '⚡',
-    version: '2.0.1',
+    version: '2.0.2',
     apiVersion: 1,
     minPlayers: 1,
     maxPlayers: 12,

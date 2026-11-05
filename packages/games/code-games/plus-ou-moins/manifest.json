@@ -4,7 +4,7 @@
   "kind": "code",
   "id": "plus-ou-moins",
   "name": "Plus ou moins",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "Un nombre caché : les joueurs parient s'il est plus haut ou plus bas. Le bon pari rapporte un point.",
   "author": "PartyHub",
   "engine": { "minVersion": "0.19.0", "api": 1 },
