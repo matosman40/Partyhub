@@ -141,7 +141,7 @@ export const plusOuMoins: GameModule<PlusOuMoinsState, PlusOuMoinsSettings> = {
     name: 'Plus ou moins',
     description: 'Une carte est tirée : la suivante sera-t-elle plus haute ou plus basse ?',
     icon: '🃏',
-    version: '1.0.0',
+    version: '2.0.0',
     apiVersion: 1,
     minPlayers: 1,
     maxPlayers: 12,
