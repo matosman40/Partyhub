@@ -83,3 +83,5 @@ Décisions retenues par défaut (à confirmer) : nom « Tirage surprise », mode
 
 - **Fait** : banque du mode Estimer, `packages/games/src/tirage/banque-estimer.fr.json` (117 entrées : 60 populations de pays, 57 altitudes de montagnes, Wikidata CC0). Générée par `scripts/tirage-banque.mjs`. Altitudes limitées à l'Everest pour écarter les unités erronées de Wikidata ; doublons retirés.
 - **Reste** : le module du jeu (règles, phases, score à écart relatif), les vues, la banque du mode Identifier (Met et iNaturalist), et les tests.
+
+- **Fait (16 h 40)** : module serveur du mode Estimer (`packages/games/src/tirage/module.ts`) : tirage sans répétition, points selon l'écart et le niveau, confidentialité des estimations. 10 tests. **Non enregistré** dans le catalogue : il faut d'abord les vues.
