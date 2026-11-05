@@ -12,6 +12,7 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 - Animations d'entrée en cascade et réactions au survol des cartes, coupées si l'appareil demande moins de mouvement.
 - Quiz Party et Photo mystère : curseur de difficulté (quiz : 2, 3 ou 4 choix ; photo : échelle de points, et pays affiché au niveau facile).
 - Quiz Party : image jointe aux questions, et 13 questions « Qui a peint ce tableau ? » à partir de tableaux du Metropolitan Museum (CC0).
+- Tirage surprise (nouveau jeu, mode Estimer) : des chiffres réels de Wikidata à deviner ; le score dépend de l'écart et du niveau de difficulté. 117 questions.
 - Volumes : réglage général des bruitages dans l'administration, et volumes personnels de la musique et des bruitages sur chaque profil (page Profil). Appliqués tout de suite, sur toutes les pages.
 - Sons : `scripts/sons-activer.mjs` téléverse le lot dans la médiathèque d'une installation et affecte les bruitages (clic, carte, explosion, victoire, votre tour).
 - Lot de 8 sons libres (CC0, Openverse) — activé par le script ci-dessus dans packages/web/public/sons/, avec leur source dans SOURCES.json. Non affectés par défaut : à choisir dans la médiathèque.

@@ -26,6 +26,7 @@ import { boum } from './boum/module.js';
 import { plateauTest } from './plateau-test/module.js';
 import { aventureIa } from './aventure/module.js';
 import { sauteurs } from './sauteurs/module.js';
+import { tirageEstimer } from './tirage/module.js';
 import { photoMystere } from './photo-mystere/module.js';
 
 /**
@@ -65,6 +66,7 @@ export const gameRegistry: GameModule[] = [
   plateauTest,
   sauteurs,
   photoMystere,
+  tirageEstimer,
 ];
 
 export function findGame(id: string): GameModule | undefined {

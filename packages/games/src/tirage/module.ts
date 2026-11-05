@@ -208,6 +208,7 @@ export const tirageEstimer: GameModule<TirageState, TirageSettings> = {
       round: s.index + 1,
       total: s.entrees.length,
       endsAt: s.phase === 'guess' ? s.guessEndsAt : undefined,
+      guessSeconds: s.settings.guessSeconds,
       question: visible ? entree.question : null,
       unit: visible ? entree.unite : null,
       answered: Object.keys(s.guesses).length,
@@ -250,5 +251,17 @@ export const tirageEstimer: GameModule<TirageState, TirageSettings> = {
 
   isFinished(s) {
     return s.phase === 'final';
+  },
+
+  // Mode test : un robot estime au hasard, entre la moitié et le double de la bonne valeur.
+  suggest(s, playerId, random) {
+    const entree = s.entrees[s.index];
+    if (s.phase !== 'guess' || !entree || playerId in s.guesses) return null;
+    return {
+      type: 'estimate',
+      payload: { valeur: Math.round(entree.valeur * (0.5 + random() * 1.5)) },
+      key: `estimate-${s.index}-${playerId}`,
+      delayMs: 3000 + random() * 5000,
+    };
   },
 };

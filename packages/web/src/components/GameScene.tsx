@@ -1137,6 +1137,40 @@ const boum: Scene = (c) => {
 const FALLBACK: Scene[] = [plutotQui, tarot, association, promoteur];
 
 /** Photo mystère : un globe quadrillé de méridiens et de parallèles, cadré par un viseur. */
+/** Tirage surprise : des dés et des chiffres sur un fond étoilé. */
+const tirageSurprise: Scene = (c) => {
+  const dots: ReactNode[] = Array.from({ length: 40 }, (_, i) => {
+    const x = Math.round(span(c.r, 40, W - 40) / 20) * 20;
+    const y = Math.round(span(c.r, 40, H - 40) / 20) * 20;
+    return <rect key={i} x={x} y={y} width={8} height={8} fill={c.edge} opacity={0.35} />;
+  });
+  return (
+    <>
+      {dots}
+      <rect
+        x={W / 2 - 220}
+        y={H / 2 - 220}
+        width={440}
+        height={440}
+        rx={60}
+        fill={c.fill}
+        opacity={0.2}
+        transform={`rotate(12 ${W / 2} ${H / 2})`}
+      />
+      <rect
+        x={W / 2 - 150}
+        y={H / 2 - 150}
+        width={300}
+        height={300}
+        rx={50}
+        fill={c.fill}
+        opacity={0.35}
+        transform={`rotate(-8 ${W / 2} ${H / 2})`}
+      />
+    </>
+  );
+};
+
 const photoMystere: Scene = (c) => {
   const cx = W / 2;
   const cy = H / 2 + 40;
@@ -1212,6 +1246,7 @@ const SCENES: Record<string, Scene> = {
   funambule,
   sauteurs,
   'photo-mystere': photoMystere,
+  'tirage-surprise': tirageSurprise,
   'micro-defis': microDefis,
   'essai-appareils': essaiAppareils,
   'gags-en-rafale': gagsEnRafale,
