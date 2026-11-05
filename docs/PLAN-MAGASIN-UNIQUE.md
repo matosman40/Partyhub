@@ -1,6 +1,6 @@
 # Plan : le magasin comme source unique des jeux
 
-Statut : **proposition**, à valider avant tout code. Date : 2026-11-05.
+Statut : **validé** le 2026-11-05 pour les points 2 à 4, installation en ligne uniquement (point 1). Étape 1 à lancer.
 
 ## Objectif
 
@@ -54,11 +54,9 @@ une empreinte et une signature. Le cœur de PartyHub ne contient plus de code de
 | Étape 4 : reste, nettoyage, tests de non-régression | 4 à 5 jours |
 | **Total** | **environ 20 à 24 jours** |
 
-## Décisions à prendre
+## Décisions prises
 
-1. **Hors ligne** : faut-il qu'une installation sans Internet fonctionne (archive « tout inclus » à importer) ?
-   Ma recommandation : oui, c'est un usage de salle des fêtes.
-2. **Garder le code intégré comme secours** pendant la migration ? Recommandation : oui, jusqu'à l'étape 4.
-3. **Vues en iframe** plutôt que React partagé ? Recommandation : oui, c'est le seul moyen de tenir la
-   séparation promise.
-4. **Quiz Party** : on garde la version du magasin, et on supprime le code intégré à la fin de l'étape 3.
+1. **Installation en ligne uniquement** : pas d'archive hors ligne. Une installation sans Internet ne reçoit pas les jeux du magasin.
+2. **Code intégré gardé en secours** pendant la migration, jusqu'à l'étape 4.
+3. **Vues en iframe** : validé.
+4. **Quiz Party** : la version du magasin remplace le code intégré à la fin de l'étape 3.
