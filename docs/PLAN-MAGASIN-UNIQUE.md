@@ -76,3 +76,15 @@ une empreinte et une signature. Le cœur de PartyHub ne contient plus de code de
 - Les jeux qui utilisent capteurs, micro, caméra ou médiathèque (Banquise, Imite-moi) restent pour l'étape 2.
 
 Estimation révisée de l'étape 1 : 7 à 9 jours, dont environ 2 jours pour embarquer la bibliothèque commune dans l'iframe.
+
+## Avancement de l'étape 1 (2026-11-05)
+
+- **Fait** : règle de remplacement. Un paquet de code actif remplace le jeu intégré de même identifiant, uniquement
+  pour les identifiants listés dans `MIGRATED_BUILTIN_IDS` (`packages/server/src/games-registry.ts`). Le jeu intégré
+  revient quand le paquet est retiré. Test : `packages/server/src/__tests__/code-override.test.ts`.
+- **Fait** : essai de bout en bout sur le serveur de test. Paquet de Plus ou moins construit et signé, déposé,
+  approuvé, activé. La partie s'est jouée depuis le paquet (trois robots, une manche, aucune erreur console).
+- **Constat** : les vues en iframe n'ont pas le style de l'application (fond blanc, polices par défaut). Il faut
+  embarquer le CSS dans le bundle de vues.
+- **Reste** : CSS dans l'iframe (environ 1 jour), puis Réflexe et Plutôt qui ? (environ 2 jours), puis publication
+  des paquets sur `jeux-partyhub` et installation depuis le magasin (environ 1 jour).

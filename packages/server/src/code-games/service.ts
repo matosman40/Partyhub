@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { GameModule } from '@partyhub/shared';
 import type { CodeGameRow, Store } from '../db/store.js';
-import { resolveGame, setCustomGames } from '../games-registry.js';
+import { MIGRATED_BUILTIN_IDS, resolveGame, setCustomGames, sourceOf } from '../games-registry.js';
 import {
   CODE_ENTRY_CLIENT,
   CODE_ENTRY_SERVER,
@@ -367,7 +367,9 @@ export class CodeGameService implements CodeGamesPort {
    */
   private conflictOf(id: string, version: string, pkg: ValidatedCodePackage): CodeGameInstallResult | null {
     const own = this.store.listCodeGames().some((row) => row.id === id);
-    if (!own && resolveGame(id)) {
+    // Un jeu intégré migré vers le magasin peut être remplacé par son paquet de code ; les autres ne le peuvent pas.
+    const replaceable = sourceOf(id) === 'builtin' && MIGRATED_BUILTIN_IDS.has(id);
+    if (!own && resolveGame(id) && !replaceable) {
       return { ok: false, error: `L’identifiant « ${id} » est déjà utilisé par un autre jeu.` };
     }
     const existing = this.store.getCodeGame(id, version);

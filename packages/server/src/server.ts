@@ -8,7 +8,7 @@ import { Server } from 'socket.io';
 import type { ClientToServerEvents, ServerToClientEvents } from '@partyhub/shared';
 import { appliedCadence } from '@partyhub/shared';
 import { gameRegistry } from '@partyhub/games';
-import { resolveGame } from './games-registry.js';
+import { MIGRATED_BUILTIN_IDS, resolveGame } from './games-registry.js';
 import { CardGameService } from './cards/service.js';
 import { BoumBankService } from './boum/service.js';
 import { BoardGameService } from './boards/service.js';
@@ -161,7 +161,8 @@ export async function createServer(opts: ServerOptions): Promise<PartyServer> {
     dataDir: config.dataDir,
     defaultRepo: config.storeRepo,
     token: config.githubToken,
-    isBuiltin: (gameId) => builtinIds.has(gameId),
+    // Un jeu intégré migré vers le magasin s'y installe ; les autres restent dans l'application.
+    isBuiltin: (gameId) => builtinIds.has(gameId) && !MIGRATED_BUILTIN_IDS.has(gameId),
     code: codeGames,
   });
   const characterPacks = new CharacterPackService(store.db);
