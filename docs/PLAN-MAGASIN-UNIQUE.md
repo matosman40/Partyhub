@@ -101,3 +101,24 @@ Estimation révisée de l'étape 1 : 7 à 9 jours, dont environ 2 jours pour emb
 - **Reste** : publication des trois paquets sur `jeux-partyhub` (tags `<jeu>-v1.0.0`) et installation depuis le magasin.
   Les versions déjà publiées du magasin (ex. `plutot-qui` 1.0.2) sont des paquets de données : elles devront être
   remplacées par la version de code, avec un numéro supérieur.
+
+## Publication des paquets de code (bloquée, 2026-11-05)
+
+Ce qui est prêt : les trois paquets (`plus-ou-moins`, `reflexe`, `plutot-qui`) se construisent et se signent localement.
+
+Ce qui bloque, et qui relève du propriétaire du dépôt :
+
+1. **Clé de signature de production** : à créer, puis à enregistrer comme secret `PHGAME_SIGNING_KEY` sur
+   `matosman40/jeux-partyhub`. Je ne peux pas poser de secret GitHub.
+2. **Clé publique de confiance** : PartyHub n'embarque aucune clé officielle. Chaque installation doit recevoir la clé
+   publique dans `DATA_DIR/cles-de-confiance/`, sinon elle refuse les paquets de code du magasin. Il faut décider comment
+   la distribuer (fichier fourni avec l'installation, ou clé intégrée au code).
+3. **Sources des paquets** : le workflow `publier.yml` construit depuis `jeux/<jeu>/` de `jeux-partyhub`, alors que les
+   sources des jeux de code sont dans `packages/games/code-games/` du dépôt PartyHub. Il faut soit construire depuis le
+   dépôt PartyHub à un tag donné, soit copier les sources dans `jeux-partyhub` (ce qui n'est pas possible tel quel : les
+   imports pointent vers le moteur).
+4. **Version de PartyHub du workflow** : `PARTYHUB_REF` vaut `v0.17.2` par défaut, qui ne connaît pas les jeux de code
+   (`minVersion` 0.19.0). Il faut un tag de PartyHub qui les prend en charge.
+
+Une fois ces quatre points tranchés, la publication est un tag `<jeu>-v1.0.0` par jeu, puis l'installation depuis le
+magasin, avec un numéro de version supérieur à celui des paquets de données déjà publiés.
