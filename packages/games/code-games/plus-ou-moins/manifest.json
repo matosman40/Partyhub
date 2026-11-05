@@ -1,0 +1,13 @@
+{
+  "format": "phgame",
+  "formatVersion": 5,
+  "kind": "code",
+  "id": "plus-ou-moins",
+  "name": "Plus ou moins",
+  "version": "1.0.0",
+  "description": "Un nombre caché : les joueurs parient s'il est plus haut ou plus bas. Le bon pari rapporte un point.",
+  "author": "PartyHub",
+  "engine": { "minVersion": "0.19.0", "api": 1 },
+  "entry": { "server": "code/server.js", "client": "code/client.js" },
+  "licenses": [{ "path": "licenses/LICENCE.txt", "covers": [] }]
+}
