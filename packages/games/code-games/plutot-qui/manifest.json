@@ -4,7 +4,7 @@
   "kind": "code",
   "id": "plutot-qui",
   "name": "Plutôt qui ?",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Qui est le plus susceptible de… ? Votez en secret et suivez la majorité.",
   "author": "PartyHub",
   "engine": {
