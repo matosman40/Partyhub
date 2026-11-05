@@ -43,19 +43,11 @@ d'auteur. Rien de ce qui suit n'est encore copié dans le code.
 Points à décider : le style, la durée, la taille totale (un film de 1080p pèse plusieurs mégaoctets : quinze
 personnages et deux issues représentent plusieurs dizaines de Mo), et le coût de fabrication.
 
-## lemo-wake (lemomo-ai/lemo-wake)
+## Écartés
 
-- **Licence** : CC BY-NC 4.0 (attribution, pas d'usage commercial). GitHub la signale comme « NOASSERTION ».
-- **Contenu** : transforme une image fixe en boucle de 5 secondes sans couture (MP4, GIF, WebP). Python, ffmpeg,
-  Chromium headless. Plugin Claude Code.
-- **Pour PartyHub** : animer les portraits des personnages (respiration, clignement) et les logos de jeux.
-- **Point bloquant** : la licence interdit l'usage commercial. Le projet PartyHub est sous MIT, sans usage
-  commercial déclaré, mais l'outil ne doit pas entrer dans le dépôt. L'idée reste possible comme outil de
-  fabrication hors dépôt, à condition que les boucles produites soient elles-mêmes sous une licence compatible.
-  **Décision à prendre** : accepter ou non l'outil, sachant que son auteur impose le non-commercial.
+- **lemo-wake** (lemomo-ai/lemo-wake) : licence CC BY-NC 4.0, qui interdit l'usage commercial. Écarté, faute de cadre clair pour PartyHub. À reconsidérer seulement si la licence change ou si l'auteur accorde une autre licence.
 
 ## Ce qui reste ouvert
 
 - pixelfx : aucune copie faite. Attendre une demande d'effet précis.
 - lemo-opuscar : plan ci-dessus, en attente de validation (coût et taille).
-- lemo-wake : décision de licence à prendre avant tout usage.
