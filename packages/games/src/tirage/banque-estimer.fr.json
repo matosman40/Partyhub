@@ -1,0 +1,941 @@
+{
+  "licence": "CC0 (Wikidata)",
+  "entrees": [
+    {
+      "id": "pop-Q148",
+      "question": "Combien d'habitants compte République populaire de Chine ?",
+      "valeur": 1404890000,
+      "unite": "habitants",
+      "theme": "Pays",
+      "source": "https://www.wikidata.org/wiki/Q148"
+    },
+    {
+      "id": "pop-Q668",
+      "question": "Combien d'habitants compte Inde ?",
+      "valeur": 1326093247,
+      "unite": "habitants",
+      "theme": "Pays",
+      "source": "https://www.wikidata.org/wiki/Q668"
+    },
+    {
+      "id": "pop-Q30",
+      "question": "Combien d'habitants compte États-Unis ?",
+      "valeur": 340110988,
+      "unite": "habitants",
+      "theme": "Pays",
+      "source": "https://www.wikidata.org/wiki/Q30"
+    },
+    {
+      "id": "pop-Q252",
+      "question": "Combien d'habitants compte Indonésie ?",
+      "valeur": 275439000,
+      "unite": "habitants",
+      "theme": "Pays",
+      "source": "https://www.wikidata.org/wiki/Q252"
+    },
+    {
+      "id": "pop-Q843",
+      "question": "Combien d'habitants compte Pakistan ?",
+      "valeur": 223773700,
+      "unite": "habitants",
+      "theme": "Pays",
+      "source": "https://www.wikidata.org/wiki/Q843"
+    },
+    {
+      "id": "pop-Q155",
+      "question": "Combien d'habitants compte Brésil ?",
+      "valeur": 214211951,
+      "unite": "habitants",
+      "theme": "Pays",
+      "source": "https://www.wikidata.org/wiki/Q155"
+    },
+    {
+      "id": "pop-Q1033",
+      "question": "Combien d'habitants compte Nigeria ?",
+      "valeur": 211400708,
+      "unite": "habitants",
+      "theme": "Pays",
+      "source": "https://www.wikidata.org/wiki/Q1033"
+    },
+    {
+      "id": "pop-Q902",
+      "question": "Combien d'habitants compte Bangladesh ?",
+      "valeur": 171466990,
+      "unite": "habitants",
+      "theme": "Pays",
+      "source": "https://www.wikidata.org/wiki/Q902"
+    },
+    {
+      "id": "pop-Q159",
+      "question": "Combien d'habitants compte Russie ?",
+      "valeur": 146119928,
+      "unite": "habitants",
+      "theme": "Pays",
+      "source": "https://www.wikidata.org/wiki/Q159"
+    },
+    {
+      "id": "pop-Q96",
+      "question": "Combien d'habitants compte Mexique ?",
+      "valeur": 132274416,
+      "unite": "habitants",
+      "theme": "Pays",
+      "source": "https://www.wikidata.org/wiki/Q96"
+    },
+    {
+      "id": "pop-Q115",
+      "question": "Combien d'habitants compte Éthiopie ?",
+      "valeur": 128691692,
+      "unite": "habitants",
+      "theme": "Pays",
+      "source": "https://www.wikidata.org/wiki/Q115"
+    },
+    {
+      "id": "pop-Q17",
+      "question": "Combien d'habitants compte Japon ?",
+      "valeur": 123802000,
+      "unite": "habitants",
+      "theme": "Pays",
+      "source": "https://www.wikidata.org/wiki/Q17"
+    },
+    {
+      "id": "pop-Q79",
+      "question": "Combien d'habitants compte Égypte ?",
+      "valeur": 114535772,
+      "unite": "habitants",
+      "theme": "Pays",
+      "source": "https://www.wikidata.org/wiki/Q79"
+    },
+    {
+      "id": "pop-Q928",
+      "question": "Combien d'habitants compte Philippines ?",
+      "valeur": 112729484,
+      "unite": "habitants",
+      "theme": "Pays",
+      "source": "https://www.wikidata.org/wiki/Q928"
+    },
+    {
+      "id": "pop-Q974",
+      "question": "Combien d'habitants compte République démocratique du Congo ?",
+      "valeur": 105789731,
+      "unite": "habitants",
+      "theme": "Pays",
+      "source": "https://www.wikidata.org/wiki/Q974"
+    },
+    {
+      "id": "pop-Q881",
+      "question": "Combien d'habitants compte Vietnam ?",
+      "valeur": 96208984,
+      "unite": "habitants",
+      "theme": "Pays",
+      "source": "https://www.wikidata.org/wiki/Q881"
+    },
+    {
+      "id": "pop-Q794",
+      "question": "Combien d'habitants compte Iran ?",
+      "valeur": 92417700,
+      "unite": "habitants",
+      "theme": "Pays",
+      "source": "https://www.wikidata.org/wiki/Q794"
+    },
+    {
+      "id": "pop-Q43",
+      "question": "Combien d'habitants compte Turquie ?",
+      "valeur": 85372377,
+      "unite": "habitants",
+      "theme": "Pays",
+      "source": "https://www.wikidata.org/wiki/Q43"
+    },
+    {
+      "id": "pop-Q183",
+      "question": "Combien d'habitants compte Allemagne ?",
+      "valeur": 83467117,
+      "unite": "habitants",
+      "theme": "Pays",
+      "source": "https://www.wikidata.org/wiki/Q183"
+    },
+    {
+      "id": "pop-Q142",
+      "question": "Combien d'habitants compte France ?",
+      "valeur": 68605616,
+      "unite": "habitants",
+      "theme": "Pays",
+      "source": "https://www.wikidata.org/wiki/Q142"
+    },
+    {
+      "id": "pop-Q145",
+      "question": "Combien d'habitants compte Royaume-Uni ?",
+      "valeur": 67326569,
+      "unite": "habitants",
+      "theme": "Pays",
+      "source": "https://www.wikidata.org/wiki/Q145"
+    },
+    {
+      "id": "pop-Q869",
+      "question": "Combien d'habitants compte Thaïlande ?",
+      "valeur": 66188503,
+      "unite": "habitants",
+      "theme": "Pays",
+      "source": "https://www.wikidata.org/wiki/Q869"
+    },
+    {
+      "id": "pop-Q258",
+      "question": "Combien d'habitants compte Afrique du Sud ?",
+      "valeur": 62027503,
+      "unite": "habitants",
+      "theme": "Pays",
+      "source": "https://www.wikidata.org/wiki/Q258"
+    },
+    {
+      "id": "pop-Q38",
+      "question": "Combien d'habitants compte Italie ?",
+      "valeur": 58850717,
+      "unite": "habitants",
+      "theme": "Pays",
+      "source": "https://www.wikidata.org/wiki/Q38"
+    },
+    {
+      "id": "pop-Q924",
+      "question": "Combien d'habitants compte Tanzanie ?",
+      "valeur": 57310019,
+      "unite": "habitants",
+      "theme": "Pays",
+      "source": "https://www.wikidata.org/wiki/Q924"
+    },
+    {
+      "id": "pop-Q836",
+      "question": "Combien d'habitants compte Birmanie ?",
+      "valeur": 53370609,
+      "unite": "habitants",
+      "theme": "Pays",
+      "source": "https://www.wikidata.org/wiki/Q836"
+    },
+    {
+      "id": "pop-Q739",
+      "question": "Combien d'habitants compte Colombie ?",
+      "valeur": 52321152,
+      "unite": "habitants",
+      "theme": "Pays",
+      "source": "https://www.wikidata.org/wiki/Q739"
+    },
+    {
+      "id": "pop-Q884",
+      "question": "Combien d'habitants compte Corée du Sud ?",
+      "valeur": 51466201,
+      "unite": "habitants",
+      "theme": "Pays",
+      "source": "https://www.wikidata.org/wiki/Q884"
+    },
+    {
+      "id": "pop-Q29",
+      "question": "Combien d'habitants compte Espagne ?",
+      "valeur": 48592909,
+      "unite": "habitants",
+      "theme": "Pays",
+      "source": "https://www.wikidata.org/wiki/Q29"
+    },
+    {
+      "id": "pop-Q114",
+      "question": "Combien d'habitants compte Kenya ?",
+      "valeur": 48468138,
+      "unite": "habitants",
+      "theme": "Pays",
+      "source": "https://www.wikidata.org/wiki/Q114"
+    },
+    {
+      "id": "pop-Q414",
+      "question": "Combien d'habitants compte Argentine ?",
+      "valeur": 47327407,
+      "unite": "habitants",
+      "theme": "Pays",
+      "source": "https://www.wikidata.org/wiki/Q414"
+    },
+    {
+      "id": "pop-Q1036",
+      "question": "Combien d'habitants compte Ouganda ?",
+      "valeur": 47123531,
+      "unite": "habitants",
+      "theme": "Pays",
+      "source": "https://www.wikidata.org/wiki/Q1036"
+    },
+    {
+      "id": "pop-Q262",
+      "question": "Combien d'habitants compte Algérie ?",
+      "valeur": 46164219,
+      "unite": "habitants",
+      "theme": "Pays",
+      "source": "https://www.wikidata.org/wiki/Q262"
+    },
+    {
+      "id": "pop-Q889",
+      "question": "Combien d'habitants compte Afghanistan ?",
+      "valeur": 41454761,
+      "unite": "habitants",
+      "theme": "Pays",
+      "source": "https://www.wikidata.org/wiki/Q889"
+    },
+    {
+      "id": "pop-Q212",
+      "question": "Combien d'habitants compte Ukraine ?",
+      "valeur": 41167335,
+      "unite": "habitants",
+      "theme": "Pays",
+      "source": "https://www.wikidata.org/wiki/Q212"
+    },
+    {
+      "id": "pop-Q1049",
+      "question": "Combien d'habitants compte Soudan ?",
+      "valeur": 40533330,
+      "unite": "habitants",
+      "theme": "Pays",
+      "source": "https://www.wikidata.org/wiki/Q1049"
+    },
+    {
+      "id": "pop-Q796",
+      "question": "Combien d'habitants compte Irak ?",
+      "valeur": 38274618,
+      "unite": "habitants",
+      "theme": "Pays",
+      "source": "https://www.wikidata.org/wiki/Q796"
+    },
+    {
+      "id": "pop-Q36",
+      "question": "Combien d'habitants compte Pologne ?",
+      "valeur": 37563071,
+      "unite": "habitants",
+      "theme": "Pays",
+      "source": "https://www.wikidata.org/wiki/Q36"
+    },
+    {
+      "id": "pop-Q16",
+      "question": "Combien d'habitants compte Canada ?",
+      "valeur": 36991981,
+      "unite": "habitants",
+      "theme": "Pays",
+      "source": "https://www.wikidata.org/wiki/Q16"
+    },
+    {
+      "id": "pop-Q1028",
+      "question": "Combien d'habitants compte Maroc ?",
+      "valeur": 36828330,
+      "unite": "habitants",
+      "theme": "Pays",
+      "source": "https://www.wikidata.org/wiki/Q1028"
+    },
+    {
+      "id": "pop-Q916",
+      "question": "Combien d'habitants compte Angola ?",
+      "valeur": 36749906,
+      "unite": "habitants",
+      "theme": "Pays",
+      "source": "https://www.wikidata.org/wiki/Q916"
+    },
+    {
+      "id": "pop-Q265",
+      "question": "Combien d'habitants compte Ouzbékistan ?",
+      "valeur": 34915100,
+      "unite": "habitants",
+      "theme": "Pays",
+      "source": "https://www.wikidata.org/wiki/Q265"
+    },
+    {
+      "id": "pop-Q833",
+      "question": "Combien d'habitants compte Malaisie ?",
+      "valeur": 34231700,
+      "unite": "habitants",
+      "theme": "Pays",
+      "source": "https://www.wikidata.org/wiki/Q833"
+    },
+    {
+      "id": "pop-Q419",
+      "question": "Combien d'habitants compte Pérou ?",
+      "valeur": 34157732,
+      "unite": "habitants",
+      "theme": "Pays",
+      "source": "https://www.wikidata.org/wiki/Q419"
+    },
+    {
+      "id": "pop-Q851",
+      "question": "Combien d'habitants compte Arabie saoudite ?",
+      "valeur": 33000000,
+      "unite": "habitants",
+      "theme": "Pays",
+      "source": "https://www.wikidata.org/wiki/Q851"
+    },
+    {
+      "id": "pop-Q117",
+      "question": "Combien d'habitants compte Ghana ?",
+      "valeur": 32833031,
+      "unite": "habitants",
+      "theme": "Pays",
+      "source": "https://www.wikidata.org/wiki/Q117"
+    },
+    {
+      "id": "pop-Q1019",
+      "question": "Combien d'habitants compte Madagascar ?",
+      "valeur": 31964956,
+      "unite": "habitants",
+      "theme": "Pays",
+      "source": "https://www.wikidata.org/wiki/Q1019"
+    },
+    {
+      "id": "pop-Q717",
+      "question": "Combien d'habitants compte Venezuela ?",
+      "valeur": 31250306,
+      "unite": "habitants",
+      "theme": "Pays",
+      "source": "https://www.wikidata.org/wiki/Q717"
+    },
+    {
+      "id": "pop-Q1008",
+      "question": "Combien d'habitants compte Côte d'Ivoire ?",
+      "valeur": 31165654,
+      "unite": "habitants",
+      "theme": "Pays",
+      "source": "https://www.wikidata.org/wiki/Q1008"
+    },
+    {
+      "id": "pop-Q1029",
+      "question": "Combien d'habitants compte Mozambique ?",
+      "valeur": 29668834,
+      "unite": "habitants",
+      "theme": "Pays",
+      "source": "https://www.wikidata.org/wiki/Q1029"
+    },
+    {
+      "id": "pop-Q837",
+      "question": "Combien d'habitants compte Népal ?",
+      "valeur": 29164578,
+      "unite": "habitants",
+      "theme": "Pays",
+      "source": "https://www.wikidata.org/wiki/Q837"
+    },
+    {
+      "id": "pop-Q1009",
+      "question": "Combien d'habitants compte Cameroun ?",
+      "valeur": 28372687,
+      "unite": "habitants",
+      "theme": "Pays",
+      "source": "https://www.wikidata.org/wiki/Q1009"
+    },
+    {
+      "id": "pop-Q805",
+      "question": "Combien d'habitants compte Yémen ?",
+      "valeur": 28250420,
+      "unite": "habitants",
+      "theme": "Pays",
+      "source": "https://www.wikidata.org/wiki/Q805"
+    },
+    {
+      "id": "pop-Q408",
+      "question": "Combien d'habitants compte Australie ?",
+      "valeur": 27614411,
+      "unite": "habitants",
+      "theme": "Pays",
+      "source": "https://www.wikidata.org/wiki/Q408"
+    },
+    {
+      "id": "pop-Q423",
+      "question": "Combien d'habitants compte Corée du Nord ?",
+      "valeur": 26418204,
+      "unite": "habitants",
+      "theme": "Pays",
+      "source": "https://www.wikidata.org/wiki/Q423"
+    },
+    {
+      "id": "pop-Q858",
+      "question": "Combien d'habitants compte Syrie ?",
+      "valeur": 23865423,
+      "unite": "habitants",
+      "theme": "Pays",
+      "source": "https://www.wikidata.org/wiki/Q858"
+    },
+    {
+      "id": "pop-Q865",
+      "question": "Combien d'habitants compte Taïwan ?",
+      "valeur": 23317031,
+      "unite": "habitants",
+      "theme": "Pays",
+      "source": "https://www.wikidata.org/wiki/Q865"
+    },
+    {
+      "id": "pop-Q965",
+      "question": "Combien d'habitants compte Burkina Faso ?",
+      "valeur": 23025776,
+      "unite": "habitants",
+      "theme": "Pays",
+      "source": "https://www.wikidata.org/wiki/Q965"
+    },
+    {
+      "id": "pop-Q912",
+      "question": "Combien d'habitants compte Mali ?",
+      "valeur": 22395489,
+      "unite": "habitants",
+      "theme": "Pays",
+      "source": "https://www.wikidata.org/wiki/Q912"
+    },
+    {
+      "id": "alt-Q513",
+      "question": "Quelle est l'altitude de Everest ?",
+      "valeur": 8849,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q513"
+    },
+    {
+      "id": "alt-Q28604457",
+      "question": "Quelle est l'altitude de mont Helen ?",
+      "valeur": 8842,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q28604457"
+    },
+    {
+      "id": "alt-Q3375694",
+      "question": "Quelle est l'altitude de Tohil Mons ?",
+      "valeur": 8800,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q3375694"
+    },
+    {
+      "id": "alt-Q7620137",
+      "question": "Quelle est l'altitude de Storm King Mountain ?",
+      "valeur": 8797,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q7620137"
+    },
+    {
+      "id": "alt-Q4997321",
+      "question": "Quelle est l'altitude de Bumpass Mountain ?",
+      "valeur": 8757,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q4997321"
+    },
+    {
+      "id": "alt-Q3026098",
+      "question": "Quelle est l'altitude de pic Diamond ?",
+      "valeur": 8748,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q3026098"
+    },
+    {
+      "id": "alt-Q3140792",
+      "question": "Quelle est l'altitude de Horse Ranch Mountain ?",
+      "valeur": 8743,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q3140792"
+    },
+    {
+      "id": "alt-Q4748391",
+      "question": "Quelle est l'altitude de Amphitheater Mountain ?",
+      "valeur": 8690,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q4748391"
+    },
+    {
+      "id": "alt-Q49025953",
+      "question": "Quelle est l'altitude de Dry Mountain ?",
+      "valeur": 8678,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q49025953"
+    },
+    {
+      "id": "alt-Q48773762",
+      "question": "Quelle est l'altitude de Mica Mountain ?",
+      "valeur": 8668,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q48773762"
+    },
+    {
+      "id": "alt-Q28604355",
+      "question": "Quelle est l'altitude de pic Loomis ?",
+      "valeur": 8658,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q28604355"
+    },
+    {
+      "id": "alt-Q16849682",
+      "question": "Quelle est l'altitude de Bush Mountain ?",
+      "valeur": 8631,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q16849682"
+    },
+    {
+      "id": "alt-Q43512",
+      "question": "Quelle est l'altitude de K2 ?",
+      "valeur": 8611,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q43512"
+    },
+    {
+      "id": "alt-Q21839568",
+      "question": "Quelle est l'altitude de Mongibello Mons ?",
+      "valeur": 8600,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q21839568"
+    },
+    {
+      "id": "alt-Q82019",
+      "question": "Quelle est l'altitude de Kangchenjunga ?",
+      "valeur": 8586,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q82019"
+    },
+    {
+      "id": "alt-Q4997905",
+      "question": "Quelle est l'altitude de pic Bunsen ?",
+      "valeur": 8564,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q4997905"
+    },
+    {
+      "id": "alt-Q168702",
+      "question": "Quelle est l'altitude de Lhotse ?",
+      "valeur": 8516,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q168702"
+    },
+    {
+      "id": "alt-Q1054706",
+      "question": "Quelle est l'altitude de Ceraunius Tholus ?",
+      "valeur": 8500,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q1054706"
+    },
+    {
+      "id": "alt-Q3322181",
+      "question": "Quelle est l'altitude de mont Watkins ?",
+      "valeur": 8497,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q3322181"
+    },
+    {
+      "id": "alt-Q169986",
+      "question": "Quelle est l'altitude de Makalu ?",
+      "valeur": 8485,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q169986"
+    },
+    {
+      "id": "alt-Q104875173",
+      "question": "Quelle est l'altitude de Point Lookout ?",
+      "valeur": 8428,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q104875173"
+    },
+    {
+      "id": "alt-Q7261437",
+      "question": "Quelle est l'altitude de montagne Purple ?",
+      "valeur": 8392,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q7261437"
+    },
+    {
+      "id": "alt-Q11237699",
+      "question": "Quelle est l'altitude de Lhotse Shar ?",
+      "valeur": 8383,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q11237699"
+    },
+    {
+      "id": "alt-Q8530306",
+      "question": "Quelle est l'altitude de mont Haynes ?",
+      "valeur": 8235,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q8530306"
+    },
+    {
+      "id": "alt-Q6921474",
+      "question": "Quelle est l'altitude de mont Jackson ?",
+      "valeur": 8231,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q6921474"
+    },
+    {
+      "id": "alt-Q170089",
+      "question": "Quelle est l'altitude de Cho Oyu ?",
+      "valeur": 8188,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q170089"
+    },
+    {
+      "id": "alt-Q3105821",
+      "question": "Quelle est l'altitude de pic Gilbert ?",
+      "valeur": 8184,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q3105821"
+    },
+    {
+      "id": "alt-Q165440",
+      "question": "Quelle est l'altitude de Dhaulagiri ?",
+      "valeur": 8167,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q165440"
+    },
+    {
+      "id": "alt-Q170070",
+      "question": "Quelle est l'altitude de Manaslu ?",
+      "valeur": 8163,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q170070"
+    },
+    {
+      "id": "alt-Q1201788",
+      "question": "Quelle est l'altitude de mont Mazama ?",
+      "valeur": 8159,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q1201788"
+    },
+    {
+      "id": "alt-Q130736",
+      "question": "Quelle est l'altitude de Nanga Parbat ?",
+      "valeur": 8126,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q130736"
+    },
+    {
+      "id": "alt-Q28604195",
+      "question": "Quelle est l'altitude de mont Conard ?",
+      "valeur": 8117,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q28604195"
+    },
+    {
+      "id": "alt-Q16466024",
+      "question": "Quelle est l'altitude de Annapurna I ?",
+      "valeur": 8091,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q16466024"
+    },
+    {
+      "id": "alt-Q187138",
+      "question": "Quelle est l'altitude de Gasherbrum I ?",
+      "valeur": 8080,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q187138"
+    },
+    {
+      "id": "alt-Q3141668",
+      "question": "Quelle est l'altitude de Hozomeen Mountain ?",
+      "valeur": 8071,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q3141668"
+    },
+    {
+      "id": "alt-Q5350921",
+      "question": "Quelle est l'altitude de El Capitan ?",
+      "valeur": 8064,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q5350921"
+    },
+    {
+      "id": "alt-Q180996",
+      "question": "Quelle est l'altitude de Broad Peak ?",
+      "valeur": 8051,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q180996"
+    },
+    {
+      "id": "alt-Q8554430",
+      "question": "Quelle est l'altitude de cratère Sunset ?",
+      "valeur": 8042,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q8554430"
+    },
+    {
+      "id": "alt-Q5125039",
+      "question": "Quelle est l'altitude de butte Clagett ?",
+      "valeur": 8041,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q5125039"
+    },
+    {
+      "id": "alt-Q186853",
+      "question": "Quelle est l'altitude de Gasherbrum II ?",
+      "valeur": 8034,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q186853"
+    },
+    {
+      "id": "alt-Q105124",
+      "question": "Quelle est l'altitude de Shishapangma ?",
+      "valeur": 8027,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q105124"
+    },
+    {
+      "id": "alt-Q7703183",
+      "question": "Quelle est l'altitude de montagne Terrace ?",
+      "valeur": 8002,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q7703183"
+    },
+    {
+      "id": "alt-Q1478283",
+      "question": "Quelle est l'altitude de Maat Mons ?",
+      "valeur": 8000,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q1478283"
+    },
+    {
+      "id": "alt-Q6924259",
+      "question": "Quelle est l'altitude de mont Union ?",
+      "valeur": 7988,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q6924259"
+    },
+    {
+      "id": "alt-Q28604453",
+      "question": "Quelle est l'altitude de pic Diamond ?",
+      "valeur": 7968,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q28604453"
+    },
+    {
+      "id": "alt-Q582128",
+      "question": "Quelle est l'altitude de Gyachung Kang ?",
+      "valeur": 7952,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q582128"
+    },
+    {
+      "id": "alt-Q1137636",
+      "question": "Quelle est l'altitude de Gasherbrum III ?",
+      "valeur": 7946,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q1137636"
+    },
+    {
+      "id": "alt-Q449534",
+      "question": "Quelle est l'altitude de Annapurna II ?",
+      "valeur": 7937,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q449534"
+    },
+    {
+      "id": "alt-Q2975652",
+      "question": "Quelle est l'altitude de Clark Mountain ?",
+      "valeur": 7933,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q2975652"
+    },
+    {
+      "id": "alt-Q834454",
+      "question": "Quelle est l'altitude de Gasherbrum IV ?",
+      "valeur": 7932,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q834454"
+    },
+    {
+      "id": "alt-Q8553599",
+      "question": "Quelle est l'altitude de Medicine Lake ?",
+      "valeur": 7921,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q8553599"
+    },
+    {
+      "id": "alt-Q1723728",
+      "question": "Quelle est l'altitude de Kangbachen ?",
+      "valeur": 7902,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q1723728"
+    },
+    {
+      "id": "alt-Q1145646",
+      "question": "Quelle est l'altitude de Himalchuli ?",
+      "valeur": 7893,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q1145646"
+    },
+    {
+      "id": "alt-Q782496",
+      "question": "Quelle est l'altitude de Distaghil Sar ?",
+      "valeur": 7885,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q782496"
+    },
+    {
+      "id": "alt-Q1754634",
+      "question": "Quelle est l'altitude de Ngadi Chuli ?",
+      "valeur": 7871,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q1754634"
+    },
+    {
+      "id": "alt-Q1139538",
+      "question": "Quelle est l'altitude de Nuptse ?",
+      "valeur": 7861,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q1139538"
+    },
+    {
+      "id": "alt-Q1480438",
+      "question": "Quelle est l'altitude de Khunyang Chhish ?",
+      "valeur": 7852,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q1480438"
+    },
+    {
+      "id": "alt-Q3486736",
+      "question": "Quelle est l'altitude de pic Sloan ?",
+      "valeur": 7835,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q3486736"
+    }
+  ]
+}

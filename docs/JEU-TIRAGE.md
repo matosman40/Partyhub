@@ -76,3 +76,10 @@ Une fois la banque en place, un thème libre peut être résolu dans Wikidata pu
 | Thèmes libres avec IA (plus tard) | 2 jours |
 
 Total pour la première version : environ **3,5 jours** de travail.
+
+## Avancement (2026-11-05)
+
+Décisions retenues par défaut (à confirmer) : nom « Tirage surprise », modes Estimer, Identifier, Localiser, cinq thèmes.
+
+- **Fait** : banque du mode Estimer, `packages/games/src/tirage/banque-estimer.fr.json` (117 entrées : 60 populations de pays, 57 altitudes de montagnes, Wikidata CC0). Générée par `scripts/tirage-banque.mjs`. Altitudes limitées à l'Everest pour écarter les unités erronées de Wikidata ; doublons retirés.
+- **Reste** : le module du jeu (règles, phases, score à écart relatif), les vues, la banque du mode Identifier (Met et iNaturalist), et les tests.
