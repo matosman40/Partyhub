@@ -123,6 +123,14 @@ export const clientViews: Record<string, GameClientViews> = {
     ]);
     return { Settings: QuizSettings, Host: QuizHost, Player: QuizPlayer };
   }),
+  'photo-mystere': lazyViews(async () => {
+    const [{ PhotoHost }, { PhotoPlayer }, { PhotoSettings }] = await Promise.all([
+      import('../photo-mystere/client/HostScreen.js'),
+      import('../photo-mystere/client/PlayerScreen.js'),
+      import('../photo-mystere/client/Settings.js'),
+    ]);
+    return { Settings: PhotoSettings, Host: PhotoHost, Player: PhotoPlayer };
+  }),
   'phrases-trous': lazyViews(async () => {
     const [{ PhrasesHost }, { PhrasesPlayer }, { PhrasesSettings }] = await Promise.all([
       import('../phrases-trous/client/HostScreen.js'),

@@ -1,0 +1,950 @@
+[
+  {
+    "id": "od-cap-Q668",
+    "category": "Géographie",
+    "question": "Quelle est la capitale du pays « Inde » ?",
+    "choices": [
+      "Manille",
+      "New Delhi",
+      "Beyrouth",
+      "Tokyo"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "od-cap-Q889",
+    "category": "Géographie",
+    "question": "Quelle est la capitale du pays « Afghanistan » ?",
+    "choices": [
+      "Dacca",
+      "Singapour",
+      "Kaboul",
+      "Hanoï"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "od-cap-Q191",
+    "category": "Géographie",
+    "question": "Quelle est la capitale du pays « Estonie » ?",
+    "choices": [
+      "Chișinău",
+      "Tallinn",
+      "Monaco",
+      "Madrid"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "od-cap-Q189",
+    "category": "Géographie",
+    "question": "Quelle est la capitale du pays « Islande » ?",
+    "choices": [
+      "Reykjavik",
+      "Tbilissi",
+      "Madrid",
+      "Luxembourg"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "od-cap-Q213",
+    "category": "Géographie",
+    "question": "Quelle est la capitale du pays « Tchéquie » ?",
+    "choices": [
+      "Rome",
+      "Sofia",
+      "Vienne",
+      "Prague"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "od-cap-Q31",
+    "category": "Géographie",
+    "question": "Quelle est la capitale du pays « Belgique » ?",
+    "choices": [
+      "Andorre-la-Vieille",
+      "Reykjavik",
+      "Bucarest",
+      "Bruxelles"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "od-cap-Q399",
+    "category": "Géographie",
+    "question": "Quelle est la capitale du pays « Arménie » ?",
+    "choices": [
+      "Moscou",
+      "Amman",
+      "Erevan",
+      "Pékin"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "od-cap-Q28",
+    "category": "Géographie",
+    "question": "Quelle est la capitale du pays « Hongrie » ?",
+    "choices": [
+      "Budapest",
+      "Reykjavik",
+      "Sarajevo",
+      "Lisbonne"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "od-cap-Q79",
+    "category": "Géographie",
+    "question": "Quelle est la capitale du pays « Égypte » ?",
+    "choices": [
+      "Lusaka",
+      "Le Caire",
+      "Gaborone",
+      "Yamoussoukro"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "od-cap-Q851",
+    "category": "Géographie",
+    "question": "Quelle est la capitale du pays « Arabie saoudite » ?",
+    "choices": [
+      "Kuala Lumpur",
+      "Ankara",
+      "Bichkek",
+      "Riyad"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "od-cap-Q27",
+    "category": "Géographie",
+    "question": "Quelle est la capitale du pays « Irlande » ?",
+    "choices": [
+      "Dublin",
+      "Podgorica",
+      "Sarajevo",
+      "Berne"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "od-cap-Q148",
+    "category": "Géographie",
+    "question": "Quelle est la capitale du pays « République populaire de Chine » ?",
+    "choices": [
+      "Naypyidaw",
+      "Tachkent",
+      "Pékin",
+      "Abou Dabi"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "od-cap-Q414",
+    "category": "Géographie",
+    "question": "Quelle est la capitale du pays « Argentine » ?",
+    "choices": [
+      "Quito",
+      "Buenos Aires",
+      "Asuncion",
+      "Montevideo"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "od-cap-Q41",
+    "category": "Géographie",
+    "question": "Quelle est la capitale du pays « Grèce » ?",
+    "choices": [
+      "Athènes",
+      "Varsovie",
+      "Nicosie",
+      "Podgorica"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "od-cap-Q403",
+    "category": "Géographie",
+    "question": "Quelle est la capitale du pays « Serbie » ?",
+    "choices": [
+      "Londres",
+      "Tirana",
+      "Madrid",
+      "Belgrade"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "od-cap-Q881",
+    "category": "Géographie",
+    "question": "Quelle est la capitale du pays « Vietnam » ?",
+    "choices": [
+      "Bichkek",
+      "Erevan",
+      "Hanoï",
+      "Katmandou"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "od-cap-Q869",
+    "category": "Géographie",
+    "question": "Quelle est la capitale du pays « Thaïlande » ?",
+    "choices": [
+      "Beyrouth",
+      "Bagdad",
+      "Kuala Lumpur",
+      "Bangkok"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "od-cap-Q115",
+    "category": "Géographie",
+    "question": "Quelle est la capitale du pays « Éthiopie » ?",
+    "choices": [
+      "Dakar",
+      "Addis-Abeba",
+      "Yaoundé",
+      "Bamako"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "od-cap-Q34",
+    "category": "Géographie",
+    "question": "Quelle est la capitale du pays « Suède » ?",
+    "choices": [
+      "Bruxelles",
+      "Reykjavik",
+      "Stockholm",
+      "Sarajevo"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "od-chi-Q713",
+    "category": "Sciences",
+    "question": "Quel élément chimique a pour symbole « Sc » ?",
+    "choices": [
+      "Calcium",
+      "Soufre",
+      "Cobalt",
+      "Scandium"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "od-chi-Q861",
+    "category": "Sciences",
+    "question": "Quel élément chimique a pour symbole « Ga » ?",
+    "choices": [
+      "Molybdène",
+      "Gallium",
+      "Béryllium",
+      "Niobium"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "od-chi-Q722",
+    "category": "Sciences",
+    "question": "Quel élément chimique a pour symbole « V » ?",
+    "choices": [
+      "Phosphore",
+      "Iode",
+      "Vanadium",
+      "Ruthénium"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "od-chi-Q716",
+    "category": "Sciences",
+    "question": "Quel élément chimique a pour symbole « Ti » ?",
+    "choices": [
+      "Titane",
+      "Manganèse",
+      "Strontium",
+      "Brome"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "od-chi-Q1094",
+    "category": "Sciences",
+    "question": "Quel élément chimique a pour symbole « In » ?",
+    "choices": [
+      "Chrome",
+      "Zirconium",
+      "Baryum",
+      "Indium"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "od-chi-Q696",
+    "category": "Sciences",
+    "question": "Quel élément chimique a pour symbole « Ar » ?",
+    "choices": [
+      "Chlore",
+      "Argon",
+      "Argent",
+      "Titane"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "od-chi-Q623",
+    "category": "Sciences",
+    "question": "Quel élément chimique a pour symbole « C » ?",
+    "choices": [
+      "Yttrium",
+      "Titane",
+      "Manganèse",
+      "Carbone"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "od-chi-Q556",
+    "category": "Sciences",
+    "question": "Quel élément chimique a pour symbole « H » ?",
+    "choices": [
+      "Hydrogène",
+      "Sodium",
+      "Strontium",
+      "Cobalt"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "od-chi-Q1091",
+    "category": "Sciences",
+    "question": "Quel élément chimique a pour symbole « Cd » ?",
+    "choices": [
+      "Bore",
+      "Argent",
+      "Vanadium",
+      "Cadmium"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "od-chi-Q888",
+    "category": "Sciences",
+    "question": "Quel élément chimique a pour symbole « Kr » ?",
+    "choices": [
+      "Lithium",
+      "Sodium",
+      "Manganèse",
+      "Krypton"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "od-chi-Q744",
+    "category": "Sciences",
+    "question": "Quel élément chimique a pour symbole « Ni » ?",
+    "choices": [
+      "Néon",
+      "Nickel",
+      "Argon",
+      "Brome"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "od-chi-Q560",
+    "category": "Sciences",
+    "question": "Quel élément chimique a pour symbole « He » ?",
+    "choices": [
+      "Soufre",
+      "Hélium",
+      "Strontium",
+      "Technétium"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "od-chi-Q1046",
+    "category": "Sciences",
+    "question": "Quel élément chimique a pour symbole « Nb » ?",
+    "choices": [
+      "Technétium",
+      "Xénon",
+      "Calcium",
+      "Niobium"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "od-chi-Q938",
+    "category": "Sciences",
+    "question": "Quel élément chimique a pour symbole « Sr » ?",
+    "choices": [
+      "Rhodium",
+      "Fluor",
+      "Brome",
+      "Strontium"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "od-chi-Q569",
+    "category": "Sciences",
+    "question": "Quel élément chimique a pour symbole « Be » ?",
+    "choices": [
+      "Cérium",
+      "Soufre",
+      "Béryllium",
+      "Strontium"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "od-chi-Q1801",
+    "category": "Sciences",
+    "question": "Quel élément chimique a pour symbole « La » ?",
+    "choices": [
+      "Palladium",
+      "Bore",
+      "Baryum",
+      "Lanthane"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "od-chi-Q682",
+    "category": "Sciences",
+    "question": "Quel élément chimique a pour symbole « S » ?",
+    "choices": [
+      "Phosphore",
+      "Scandium",
+      "Palladium",
+      "Soufre"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "od-chi-Q879",
+    "category": "Sciences",
+    "question": "Quel élément chimique a pour symbole « Br » ?",
+    "choices": [
+      "Carbone",
+      "Technétium",
+      "Brome",
+      "Oxygène"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "od-chi-Q658",
+    "category": "Sciences",
+    "question": "Quel élément chimique a pour symbole « Na » ?",
+    "choices": [
+      "Vanadium",
+      "Néodyme",
+      "Niobium",
+      "Sodium"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "od-chi-Q758",
+    "category": "Sciences",
+    "question": "Quel élément chimique a pour symbole « Zn » ?",
+    "choices": [
+      "Germanium",
+      "Technétium",
+      "Zinc",
+      "Krypton"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "od-art-Q328523",
+    "category": "Culture",
+    "question": "Qui a peint « Impression, Soleil levant » ?",
+    "choices": [
+      "Claude Monet",
+      "Sandro Botticelli",
+      "Édouard Manet",
+      "Jan van Eyck"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "od-art-Q698487",
+    "category": "Culture",
+    "question": "Qui a peint « Le Baiser » ?",
+    "choices": [
+      "Vincent van Gogh",
+      "Eugène Delacroix",
+      "Jacques-Louis David",
+      "Gustav Klimt"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "od-art-Q45585",
+    "category": "Culture",
+    "question": "Qui a peint « La Nuit étoilée » ?",
+    "choices": [
+      "Vincent van Gogh",
+      "Jan van Eyck",
+      "Sandro Botticelli",
+      "Diego Vélasquez"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "od-art-Q661378",
+    "category": "Culture",
+    "question": "Qui a peint « La Leçon d'anatomie du docteur Tulp » ?",
+    "choices": [
+      "Vincent van Gogh",
+      "Claude Monet",
+      "Rembrandt",
+      "Diego Vélasquez"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "od-art-Q152867",
+    "category": "Culture",
+    "question": "Qui a peint « La Maja nue » ?",
+    "choices": [
+      "Gustav Klimt",
+      "Diego Vélasquez",
+      "Théodore Géricault",
+      "Francisco de Goya"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "od-art-Q311243",
+    "category": "Culture",
+    "question": "Qui a peint « Le Voyageur contemplant une mer de nuages » ?",
+    "choices": [
+      "Salvador Dalí",
+      "Caspar David Friedrich",
+      "Auguste Renoir",
+      "Sandro Botticelli"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "od-art-Q1091086",
+    "category": "Culture",
+    "question": "Qui a peint « Tres de mayo » ?",
+    "choices": [
+      "Sandro Botticelli",
+      "Francisco de Goya",
+      "Rembrandt",
+      "Johannes Vermeer"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "od-art-Q220859",
+    "category": "Culture",
+    "question": "Qui a peint « Les Époux Arnolfini » ?",
+    "choices": [
+      "Théodore Géricault",
+      "Jan van Eyck",
+      "Gustav Klimt",
+      "Auguste Renoir"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "od-art-Q321303",
+    "category": "Culture",
+    "question": "Qui a peint « Le Jardin des délices » ?",
+    "choices": [
+      "Salvador Dalí",
+      "Théodore Géricault",
+      "Jérôme Bosch",
+      "Gustav Klimt"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "od-art-Q219831",
+    "category": "Culture",
+    "question": "Qui a peint « La Ronde de nuit » ?",
+    "choices": [
+      "Rembrandt",
+      "Vincent van Gogh",
+      "Johannes Vermeer",
+      "Édouard Manet"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "od-art-Q185372",
+    "category": "Culture",
+    "question": "Qui a peint « La Jeune Fille à la perle » ?",
+    "choices": [
+      "Ilia Répine",
+      "Johannes Vermeer",
+      "Jan van Eyck",
+      "Rembrandt"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "od-art-Q474338",
+    "category": "Culture",
+    "question": "Qui a peint « La Dame à l'hermine » ?",
+    "choices": [
+      "Francisco de Goya",
+      "Jacques-Louis David",
+      "Léonard de Vinci",
+      "Jérôme Bosch"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "od-art-Q1752990",
+    "category": "Culture",
+    "question": "Qui a peint « La Mort de Socrate » ?",
+    "choices": [
+      "Jacques-Louis David",
+      "Johannes Vermeer",
+      "Léonard de Vinci",
+      "Francisco de Goya"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "od-art-Q25729",
+    "category": "Culture",
+    "question": "Qui a peint « La Persistance de la mémoire » ?",
+    "choices": [
+      "Gustav Klimt",
+      "Salvador Dalí",
+      "Caspar David Friedrich",
+      "Théodore Géricault"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "od-art-Q208758",
+    "category": "Culture",
+    "question": "Qui a peint « Les Ménines » ?",
+    "choices": [
+      "Diego Vélasquez",
+      "Édouard Manet",
+      "Gustav Klimt",
+      "Claude Monet"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "od-art-Q549847",
+    "category": "Culture",
+    "question": "Qui a peint « Le Printemps » ?",
+    "choices": [
+      "Sandro Botticelli",
+      "Édouard Manet",
+      "Théodore Géricault",
+      "Léonard de Vinci"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "od-art-Q151047",
+    "category": "Culture",
+    "question": "Qui a peint « La Naissance de Vénus » ?",
+    "choices": [
+      "Salvador Dalí",
+      "Sandro Botticelli",
+      "Eugène Delacroix",
+      "Gustave Courbet"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "od-art-Q212616",
+    "category": "Culture",
+    "question": "Qui a peint « Le Radeau de la Méduse » ?",
+    "choices": [
+      "Jérôme Bosch",
+      "Théodore Géricault",
+      "Sandro Botticelli",
+      "Vincent van Gogh"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "od-art-Q29530",
+    "category": "Culture",
+    "question": "Qui a peint « La Liberté guidant le peuple » ?",
+    "choices": [
+      "Grant Wood",
+      "Rembrandt",
+      "Diego Vélasquez",
+      "Eugène Delacroix"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "od-art-Q634122",
+    "category": "Culture",
+    "question": "Qui a peint « Champ de blé aux corbeaux » ?",
+    "choices": [
+      "Francisco de Goya",
+      "Ilia Répine",
+      "Vincent van Gogh",
+      "Jérôme Bosch"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "od-pre-92",
+    "category": "Géographie",
+    "question": "Quelle est la préfecture du département Hauts-de-Seine ?",
+    "choices": [
+      "Nanterre",
+      "Évry-Courcouronnes",
+      "Amiens",
+      "Toulon"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "od-pre-19",
+    "category": "Géographie",
+    "question": "Quelle est la préfecture du département Corrèze ?",
+    "choices": [
+      "La Rochelle",
+      "Bordeaux",
+      "Tulle",
+      "Guéret"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "od-pre-06",
+    "category": "Géographie",
+    "question": "Quelle est la préfecture du département Alpes-Maritimes ?",
+    "choices": [
+      "Nice",
+      "Chambéry",
+      "Troyes",
+      "Clermont-Ferrand"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "od-pre-61",
+    "category": "Géographie",
+    "question": "Quelle est la préfecture du département Orne ?",
+    "choices": [
+      "Alençon",
+      "Clermont-Ferrand",
+      "Fort-de-France",
+      "Rouen"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "od-pre-86",
+    "category": "Géographie",
+    "question": "Quelle est la préfecture du département Vienne ?",
+    "choices": [
+      "La Rochelle",
+      "Poitiers",
+      "Bordeaux",
+      "Guéret"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "od-pre-73",
+    "category": "Géographie",
+    "question": "Quelle est la préfecture du département Savoie ?",
+    "choices": [
+      "Nanterre",
+      "Chambéry",
+      "Alençon",
+      "Metz"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "od-pre-972",
+    "category": "Géographie",
+    "question": "Quelle est la préfecture du département Martinique ?",
+    "choices": [
+      "Amiens",
+      "Nanterre",
+      "Fort-de-France",
+      "Bordeaux"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "od-pre-33",
+    "category": "Géographie",
+    "question": "Quelle est la préfecture du département Gironde ?",
+    "choices": [
+      "Poitiers",
+      "Bordeaux",
+      "La Rochelle",
+      "Tulle"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "od-pre-10",
+    "category": "Géographie",
+    "question": "Quelle est la préfecture du département Aube ?",
+    "choices": [
+      "Nanterre",
+      "Amiens",
+      "Troyes",
+      "Nice"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "od-pre-76",
+    "category": "Géographie",
+    "question": "Quelle est la préfecture du département Seine-Maritime ?",
+    "choices": [
+      "Nanterre",
+      "Rouen",
+      "Poitiers",
+      "Gap"
+    ],
+    "answer": 1
+  },
+  {
+    "id": "od-dep-68",
+    "category": "Géographie",
+    "question": "Quel département porte le numéro 68 ?",
+    "choices": [
+      "Puy-de-Dôme",
+      "Seine-et-Marne",
+      "Haut-Rhin",
+      "Tarn-et-Garonne"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "od-dep-80",
+    "category": "Géographie",
+    "question": "Quel département porte le numéro 80 ?",
+    "choices": [
+      "Somme",
+      "Deux-Sèvres",
+      "Corrèze",
+      "Hérault"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "od-dep-23",
+    "category": "Géographie",
+    "question": "Quel département porte le numéro 23 ?",
+    "choices": [
+      "Yvelines",
+      "Pas-de-Calais",
+      "Creuse",
+      "Essonne"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "od-dep-63",
+    "category": "Géographie",
+    "question": "Quel département porte le numéro 63 ?",
+    "choices": [
+      "Puy-de-Dôme",
+      "Yonne",
+      "Cantal",
+      "Pyrénées-Atlantiques"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "od-dep-17",
+    "category": "Géographie",
+    "question": "Quel département porte le numéro 17 ?",
+    "choices": [
+      "Charente-Maritime",
+      "Corrèze",
+      "Deux-Sèvres",
+      "Alpes-Maritimes"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "od-dep-37",
+    "category": "Géographie",
+    "question": "Quel département porte le numéro 37 ?",
+    "choices": [
+      "Lozère",
+      "Seine-Saint-Denis",
+      "Indre-et-Loire",
+      "Haut-Rhin"
+    ],
+    "answer": 2
+  },
+  {
+    "id": "od-dep-05",
+    "category": "Géographie",
+    "question": "Quel département porte le numéro 05 ?",
+    "choices": [
+      "Hautes-Alpes",
+      "Finistère",
+      "Dordogne",
+      "Aisne"
+    ],
+    "answer": 0
+  },
+  {
+    "id": "od-dep-57",
+    "category": "Géographie",
+    "question": "Quel département porte le numéro 57 ?",
+    "choices": [
+      "Deux-Sèvres",
+      "Indre",
+      "Haute-Vienne",
+      "Moselle"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "od-dep-91",
+    "category": "Géographie",
+    "question": "Quel département porte le numéro 91 ?",
+    "choices": [
+      "Maine-et-Loire",
+      "Ille-et-Vilaine",
+      "Gironde",
+      "Essonne"
+    ],
+    "answer": 3
+  },
+  {
+    "id": "od-dep-83",
+    "category": "Géographie",
+    "question": "Quel département porte le numéro 83 ?",
+    "choices": [
+      "Alpes-de-Haute-Provence",
+      "Var",
+      "Meuse",
+      "Drôme"
+    ],
+    "answer": 1
+  }
+]

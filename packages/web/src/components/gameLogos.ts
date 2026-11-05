@@ -93,6 +93,15 @@ export const GAME_LOGOS: Record<string, LogoSpec> = {
     mark: 'bolt',
     tilt: -3,
   },
+  'photo-mystere': {
+    lines: ['Photo', 'mystère'],
+    fill: '#FFD23F',
+    edge: '#FF4F8B',
+    ink: '#14122E',
+    sky: ['#1B1A4B', '#14122E'],
+    mark: 'lens',
+    tilt: 2,
+  },
   sauteurs: {
     lines: ['Course des', 'sauteurs'],
     fill: '#FFD23F',

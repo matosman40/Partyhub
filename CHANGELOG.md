@@ -4,6 +4,20 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 
 ## [Non publié]
 
+### Ajouté
+
+- Accueil réduit à deux actions, « Jouer » (défilement vers le catalogue, avec confettis) et « Rejoindre ». Magasin et administration restent dans le menu.
+- Catalogue : catégories en pastilles sur une ligne ; les autres filtres sont derrière « Plus de filtres ».
+- Cartes et liste du catalogue : emblème illustré pour les 29 jeux intégrés, logo SVG en secours pour les jeux importés.
+- Animations d'entrée en cascade et réactions au survol des cartes, coupées si l'appareil demande moins de mouvement.
+- Photo mystère : un nouveau jeu. Une photo s'affiche dans un viseur ; chacun place son point sur la carte du monde, et gagne d'autant plus de points qu'il est proche du lieu. 25 photos de Wikimedia Commons (licences libres, auteur et source affichés).
+- Quiz Party : 79 questions tirées de données ouvertes (Wikidata, API Géo) : capitales, symboles chimiques, tableaux célèbres, départements. Script de génération et bilan des API publiques étudiées dans `docs/API-PUBLIQUES.md`.
+
+### Modifié
+
+- Interface « nuit » : aplats, ombres décalées réservées aux éléments cliquables (jaune pour l'action principale, outremer pour la secondaire, rose pour le danger), icônes SVG à la place des emoji d'interface.
+- Jetons de couleur `--ink-emblem-background` ajoutés pour les vignettes avec emblème.
+
 ## [0.19.0] - 2026-11-03
 
 ### Ajouté

@@ -1,5 +1,7 @@
 import { z } from 'zod';
 import rawQuestions from './questions.fr.json' with { type: 'json' };
+// Généré par scripts/questions-donnees-ouvertes.mjs (Wikidata, API Géo) : ne pas éditer à la main.
+import openDataQuestions from './questions-ouvertes.fr.json' with { type: 'json' };
 
 /**
  * Chargement et validation des questions au démarrage.
@@ -21,4 +23,10 @@ const questionSchema = z
 
 export type QuizQuestion = z.infer<typeof questionSchema>;
 
-export const QUESTIONS: QuizQuestion[] = z.array(questionSchema).min(1).parse(rawQuestions);
+export const QUESTIONS: QuizQuestion[] = z
+  .array(questionSchema)
+  .min(1)
+  .refine((list) => new Set(list.map((q) => q.id)).size === list.length, {
+    message: 'Identifiant de question en double',
+  })
+  .parse([...rawQuestions, ...openDataQuestions]);

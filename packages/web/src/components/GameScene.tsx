@@ -1136,6 +1136,62 @@ const boum: Scene = (c) => {
 
 const FALLBACK: Scene[] = [plutotQui, tarot, association, promoteur];
 
+/** Photo mystère : un globe quadrillé de méridiens et de parallèles, cadré par un viseur. */
+const photoMystere: Scene = (c) => {
+  const cx = W / 2;
+  const cy = H / 2 + 40;
+  const R = 330;
+  const meridians: ReactNode[] = [];
+  for (let i = -2; i <= 2; i++) {
+    meridians.push(
+      <ellipse
+        key={`m${i}`}
+        cx={cx}
+        cy={cy}
+        rx={Math.abs(i) * 110 + 4}
+        ry={R}
+        fill="none"
+        stroke={c.edge}
+        strokeOpacity={0.35}
+        strokeWidth={6}
+      />,
+    );
+  }
+  const parallels: ReactNode[] = [-0.5, 0, 0.5].map((k) => (
+    <ellipse
+      key={`p${k}`}
+      cx={cx}
+      cy={cy + k * R}
+      rx={Math.sqrt(1 - k * k) * R}
+      ry={18}
+      fill="none"
+      stroke={c.edge}
+      strokeOpacity={0.35}
+      strokeWidth={6}
+    />
+  ));
+  const pixels: ReactNode[] = Array.from({ length: 6 }, (_, i) => {
+    const x = Math.round(span(c.r, 180, W - 180) / 40) * 40;
+    const y = Math.round(span(c.r, 120, H - 160) / 40) * 40;
+    return <rect key={i} x={x} y={y} width={40} height={40} fill={c.fill} opacity={0.7} />;
+  });
+  return (
+    <>
+      {pixels}
+      <circle cx={cx} cy={cy} r={R} fill={c.fill} opacity={0.22} />
+      <circle cx={cx} cy={cy} r={R} fill="none" stroke={c.edge} strokeWidth={10} opacity={0.6} />
+      {meridians}
+      {parallels}
+      <g fill="none" stroke={c.fill} strokeWidth={12}>
+        <path d="M 60 170 V 60 H 170" />
+        <path d="M 1540 170 V 60 H 1430" />
+        <path d="M 60 730 V 840 H 170" />
+        <path d="M 1540 730 V 840 H 1430" />
+      </g>
+    </>
+  );
+};
+
 const SCENES: Record<string, Scene> = {
   'quiz-party': quizParty,
   'phrases-trous': phrasesTrous,
@@ -1155,6 +1211,7 @@ const SCENES: Record<string, Scene> = {
   'poker-texas': poker,
   funambule,
   sauteurs,
+  'photo-mystere': photoMystere,
   'micro-defis': microDefis,
   'essai-appareils': essaiAppareils,
   'gags-en-rafale': gagsEnRafale,
