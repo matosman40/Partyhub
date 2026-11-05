@@ -26,6 +26,8 @@ async function sparql(query) {
   throw new Error('Wikidata indisponible');
 }
 
+const MONTAGNES_ACTIVES = false;
+
 const val = (b, k) => b[k]?.value;
 const id = (uri) => uri.replace('http://www.wikidata.org/entity/', '');
 
@@ -52,7 +54,8 @@ const entrees = [
     theme: 'Pays',
     source: `https://www.wikidata.org/wiki/${id(val(b, 'e'))}`,
   })),
-  ...montagnes.map((b) => ({
+  // Altitudes désactivées : Wikidata mêle des entités homonymes (ex. « El Capitan » à 8 064 m). À réactiver après vérification.
+  ...(MONTAGNES_ACTIVES ? montagnes : []).map((b) => ({
     id: `alt-${id(val(b, 'e'))}`,
     question: `Quelle est l'altitude de ${val(b, 'l')} ?`,
     valeur: Math.round(Number(val(b, 'h'))),

@@ -85,3 +85,6 @@ Décisions retenues par défaut (à confirmer) : nom « Tirage surprise », mode
 - **Reste** : le module du jeu (règles, phases, score à écart relatif), les vues, la banque du mode Identifier (Met et iNaturalist), et les tests.
 
 - **Fait (16 h 40)** : module serveur du mode Estimer (`packages/games/src/tirage/module.ts`) : tirage sans répétition, points selon l'écart et le niveau, confidentialité des estimations. 10 tests. **Non enregistré** dans le catalogue : il faut d'abord les vues.
+
+- **Correction (16 h 35)** : les altitudes de montagnes sont désactivées. Un essai réel a révélé une erreur de Wikidata (« El Capitan » à 8 064 m, entité homonyme). La banque ne contient que les populations (59 pays). Les altitudes reviendront après vérification manuelle des entités.
+- **Jeu enregistré et jouable** en mode Estimer (vues, logo, décor). Essai réel : une manche complète, avec estimations des robots et révélation.
