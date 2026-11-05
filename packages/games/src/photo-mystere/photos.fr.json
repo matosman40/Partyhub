@@ -11,6 +11,17 @@
     "source": "https://commons.wikimedia.org/wiki/File:Eiffel_Tower_by_night,_Paris,_FRANCE.jpg"
   },
   {
+    "id": "machu-picchu",
+    "place": "Machu Picchu",
+    "country": "Pérou",
+    "lat": -13.1631667,
+    "lon": -72.5448333,
+    "file": "/photo-mystere/machu-picchu.jpg",
+    "credit": "Patty Ho",
+    "license": "CC BY 2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Machu_Picchu_4_day_hike_Day_4.jpg"
+  },
+  {
     "id": "taj-mahal",
     "place": "Le Taj Mahal",
     "country": "Inde",
@@ -20,6 +31,28 @@
     "credit": "Dilip4starplus",
     "license": "CC BY-SA 3.0",
     "source": "https://commons.wikimedia.org/wiki/File:TajMehel.jpg"
+  },
+  {
+    "id": "statue-liberte",
+    "place": "La statue de la Liberté",
+    "country": "États-Unis",
+    "lat": 40.68923,
+    "lon": -74.04452,
+    "file": "/photo-mystere/statue-liberte.jpg",
+    "credit": "yoryet",
+    "license": "CC BY 3.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Estatua_libertad_-_panoramio.jpg"
+  },
+  {
+    "id": "colisee",
+    "place": "Le Colisée",
+    "country": "Italie",
+    "lat": 41.8902,
+    "lon": 12.4922,
+    "file": "/photo-mystere/colisee.jpg",
+    "credit": "Yoal Desurmont dr_snap",
+    "license": "CC0",
+    "source": "https://commons.wikimedia.org/wiki/File:Colosseum,_Roma,_Italy_(Unsplash_ddawgJ7eGDA).jpg"
   },
   {
     "id": "petra",
@@ -36,8 +69,8 @@
     "id": "pyramides-gizeh",
     "place": "Les pyramides de Gizeh",
     "country": "Égypte",
-    "lat": 29.979175,
-    "lon": 31.134358,
+    "lat": 29.9792,
+    "lon": 31.1342,
     "file": "/photo-mystere/pyramides-gizeh.jpg",
     "credit": "Jorge Láscar from Melbourne, Australia",
     "license": "CC BY 2.0",
@@ -102,8 +135,8 @@
     "id": "iguazu",
     "place": "Les chutes d’Iguazú",
     "country": "Argentine",
-    "lat": -25.695278,
-    "lon": -54.436667,
+    "lat": -25.6953,
+    "lon": -54.4367,
     "file": "/photo-mystere/iguazu.jpg",
     "credit": "Eferreira 86",
     "license": "CC BY-SA 3.0",
@@ -152,6 +185,17 @@
     "credit": "lienyuan lee",
     "license": "CC BY 3.0",
     "source": "https://commons.wikimedia.org/wiki/File:Ha_Long_Bay_%E4%B8%8B%E9%BE%8D%E7%81%A3_-_panoramio_(1).jpg"
+  },
+  {
+    "id": "uluru",
+    "place": "Uluru",
+    "country": "Australie",
+    "lat": -25.345,
+    "lon": 131.036111,
+    "file": "/photo-mystere/uluru.jpg",
+    "credit": "Jorge Láscar from Australia",
+    "license": "CC BY 2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Lascar_Uluru_(Ayers_Rock)_(4562369783).jpg"
   },
   {
     "id": "moai",

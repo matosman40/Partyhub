@@ -30,7 +30,7 @@ Mention de source à reprendre dans les crédits de l'application : « Données 
 
 ## Photo mystère : photos et carte
 
-Les 25 photos viennent de Wikimedia Commons, relues une à une sur planches de contrôle avant d'être épinglées dans le script. Elles sont dans `packages/web/public/photo-mystere/` (5,2 Mo) avec leur auteur, leur licence et leur source dans `packages/games/src/photo-mystere/photos.fr.json`. Le jeu ne fait aucun appel réseau pendant une partie. La carte est celle du jeu Boum (`packages/games/src/boum/geo/`, données Natural Earth, domaine public).
+Les 29 photos viennent de Wikimedia Commons, relues une à une sur planches de contrôle avant d'être épinglées dans le script. Elles sont dans `packages/web/public/photo-mystere/` (5,2 Mo) avec leur auteur, leur licence et leur source dans `packages/games/src/photo-mystere/photos.fr.json`. Le jeu ne fait aucun appel réseau pendant une partie. La carte est celle du jeu Boum (`packages/games/src/boum/geo/`, données Natural Earth, domaine public).
 
 Licences : à vérifier à nouveau avant le déploiement final (voir la mémoire du projet sur les licences d'images). Les crédits affichés à la révélation reprennent auteur, licence et source de chaque photo.
 

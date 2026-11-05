@@ -28,6 +28,10 @@ const RADIUS_M = 1500;
  * Titres Commons relus visuellement (planches de contrôle, 2026-11-05). Un lieu sans titre est ignoré.
  */
 const PINNED = {
+  "machu-picchu": "File:Machu Picchu 4 day hike Day 4.jpg",
+  "statue-liberte": "File:Estatua libertad - panoramio.jpg",
+  "colisee": "File:Colosseum, Roma, Italy (Unsplash ddawgJ7eGDA).jpg",
+  "uluru": "File:Lascar Uluru (Ayers Rock) (4562369783).jpg",
   'angkor-vat': 'File:Angkor Wat 119.jpg',
   bagan: 'File:Temples and hot air balloons. (Unsplash).jpg',
   'baie-halong': 'File:Ha Long Bay 下龍灣 - panoramio (1).jpg',
@@ -61,10 +65,10 @@ const PINNED = {
  */
 const SITES = [
   { id: 'tour-eiffel', place: 'La tour Eiffel', country: 'France', lat: 48.8584, lon: 2.2945 },
-  { id: 'machu-picchu', place: 'Machu Picchu', country: 'Pérou', lat: -13.1631, lon: -72.545 },
+  { id: 'machu-picchu', place: 'Machu Picchu', country: 'Pérou', lat: -13.1631, lon: -72.545 , rayonM: 5000 },
   { id: 'taj-mahal', place: 'Le Taj Mahal', country: 'Inde', lat: 27.1751, lon: 78.0421 },
-  { id: 'statue-liberte', place: 'La statue de la Liberté', country: 'États-Unis', lat: 40.6892, lon: -74.0445 },
-  { id: 'colisee', place: 'Le Colisée', country: 'Italie', lat: 41.8902, lon: 12.4922 },
+  { id: 'statue-liberte', place: 'La statue de la Liberté', country: 'États-Unis', lat: 40.6892, lon: -74.0445 , rayonM: 5000 },
+  { id: 'colisee', place: 'Le Colisée', country: 'Italie', lat: 41.8902, lon: 12.4922 , rayonM: 5000 },
   { id: 'petra', place: 'Pétra', country: 'Jordanie', lat: 30.3285, lon: 35.4444 },
   { id: 'pyramides-gizeh', place: 'Les pyramides de Gizeh', country: 'Égypte', lat: 29.9792, lon: 31.1342 },
   { id: 'big-ben', place: 'Big Ben', country: 'Royaume-Uni', lat: 51.5007, lon: -0.1246 },
@@ -78,7 +82,7 @@ const SITES = [
   { id: 'kremlin', place: 'Le Kremlin', country: 'Russie', lat: 55.752, lon: 37.6175 },
   { id: 'sainte-sophie', place: 'Sainte-Sophie', country: 'Turquie', lat: 41.0086, lon: 28.9802 },
   { id: 'baie-halong', place: 'La baie d’Along', country: 'Viêt Nam', lat: 20.9101, lon: 107.1839 },
-  { id: 'uluru', place: 'Uluru', country: 'Australie', lat: -25.3444, lon: 131.0369 },
+  { id: 'uluru', place: 'Uluru', country: 'Australie', lat: -25.3444, lon: 131.0369 , rayonM: 5000 },
   { id: 'moai', place: 'Les moaï de l’île de Pâques', country: 'Chili', lat: -27.1127, lon: -109.3497 },
   { id: 'mont-saint-michel', place: 'Le Mont-Saint-Michel', country: 'France', lat: 48.6361, lon: -1.5114 },
   { id: 'shibuya', place: 'Le carrefour de Shibuya', country: 'Japon', lat: 35.6595, lon: 139.7005 },
@@ -131,9 +135,9 @@ async function candidates(site) {
     action: 'query',
     generator: 'geosearch',
     ggscoord: `${site.lat}|${site.lon}`,
-    ggsradius: String(RADIUS_M),
+    ggsradius: String(site.rayonM ?? RADIUS_M),
     ggsnamespace: '6',
-    ggslimit: '20',
+    ggslimit: '40',
     prop: 'imageinfo|coordinates',
     iiprop: 'url|extmetadata|size|mime',
     iiurlwidth: '960',
