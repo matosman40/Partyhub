@@ -1,0 +1,24 @@
+{
+  "format": "phgame",
+  "formatVersion": 5,
+  "kind": "code",
+  "id": "plutot-qui",
+  "name": "Plutôt qui ?",
+  "version": "1.0.0",
+  "description": "Qui est le plus susceptible de… ? Votez en secret et suivez la majorité.",
+  "author": "PartyHub",
+  "engine": {
+    "minVersion": "0.19.0",
+    "api": 1
+  },
+  "entry": {
+    "server": "code/server.js",
+    "client": "code/client.js"
+  },
+  "licenses": [
+    {
+      "path": "licenses/LICENCE.txt",
+      "covers": []
+    }
+  ]
+}

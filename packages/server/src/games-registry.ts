@@ -23,7 +23,7 @@ function customGames(): GameModule[] {
  * actif remplace le jeu intégré : il est résolu d'abord, et le jeu intégré revient quand le paquet est retiré.
  * Chaque étape de la migration ajoute ici ses jeux. Liste vide : rien ne remplace rien.
  */
-export const MIGRATED_BUILTIN_IDS: ReadonlySet<string> = new Set(['plus-ou-moins']);
+export const MIGRATED_BUILTIN_IDS: ReadonlySet<string> = new Set(['plus-ou-moins', 'reflexe', 'plutot-qui']);
 
 /** Identifiants des jeux de code actifs qui remplacent un jeu intégré. */
 function replacedIds(): Set<string> {

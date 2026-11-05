@@ -24,7 +24,16 @@ function publish(next: CharacterPackState): void {
 }
 
 /** Charge la liste des packs. Un appel pendant un chargement réutilise la même requête. */
+/** Vue d'un jeu de code : sans réseau, la liste reste vide (les personnages sont dessinés). Drapeau posé par l'amorce. */
+function offlineView(): boolean {
+  return (globalThis as { __partyhubOfflineView?: boolean }).__partyhubOfflineView === true;
+}
+
 export function loadCharacterPacks(): Promise<void> {
+  if (offlineView()) {
+    if (state.status !== 'ready') publish({ status: 'ready', packs: [] });
+    return Promise.resolve();
+  }
   if (pending) return pending;
   publish({ ...state, status: 'loading' });
   pending = (async () => {

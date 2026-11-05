@@ -89,3 +89,15 @@ Estimation révisée de l'étape 1 : 7 à 9 jours, dont environ 2 jours pour emb
   `packages/server/src/__tests__/code-view-style.test.ts`.
 - **Reste** : Réflexe et Plutôt qui ? (environ 2 jours), puis publication des paquets sur `jeux-partyhub` et
   installation depuis le magasin (environ 1 jour).
+
+## Avancement de l'étape 1 : trois jeux (2026-11-05)
+
+- **Fait** : Plus ou moins, Réflexe et Plutôt qui ? sont construits en paquets de code signés (environ 423 Ko chacun),
+  `packages/games/code-games/<jeu>/`. Ils sont listés dans `MIGRATED_BUILTIN_IDS`.
+- **Fait** : essai complet sur un serveur neuf (`e2e.sh`) : dépôt, scan, approbation, activation, puis partie lancée
+  sur l'écran TV. Les trois jeux affichent leur manche dans l'iframe, sans erreur de console.
+- **Fait** : les vues de jeu de code n'appellent plus le réseau pour les packs de personnages : un drapeau global,
+  posé par l'amorce des vues, est lu par le chargeur (`client/character-packs.ts`).
+- **Reste** : publication des trois paquets sur `jeux-partyhub` (tags `<jeu>-v1.0.0`) et installation depuis le magasin.
+  Les versions déjà publiées du magasin (ex. `plutot-qui` 1.0.2) sont des paquets de données : elles devront être
+  remplacées par la version de code, avec un numéro supérieur.

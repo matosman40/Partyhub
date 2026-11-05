@@ -12,6 +12,7 @@ import views from './client';
 
 const MSG = ${JSON.stringify(CODE_VIEW_MESSAGE)};
 const CSS = ${JSON.stringify(css)};
+globalThis.__partyhubOfflineView = true;
 
 type Result = { ok: boolean; error?: string; data?: string };
 const pending = new Map<number, (result: Result) => void>();
