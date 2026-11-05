@@ -46,6 +46,10 @@ export function SoundSettingsAdmin({ libraryVersion }: { libraryVersion: number 
     );
   }
 
+  function chooseSfxVolume(percent: number) {
+    setDraft((current) => (current ? { ...current, sfxVolume: percent } : current));
+  }
+
   function chooseSfx(name: SfxName, id: string) {
     setDraft((current) => (current ? { ...current, sfx: { ...current.sfx, [name]: id || null } } : current));
   }
@@ -129,6 +133,17 @@ export function SoundSettingsAdmin({ libraryVersion }: { libraryVersion: number 
       })}
 
       <h3>Bruitages des jeux</h3>
+      <label className="field">
+        <span>Volume général des bruitages : {draft.sfxVolume} %</span>
+        <input
+          type="range"
+          min={0}
+          max={100}
+          step={5}
+          value={draft.sfxVolume}
+          onChange={(e) => chooseSfxVolume(Number(e.target.value))}
+        />
+      </label>
       <p className="muted small">Un fichier remplace le son synthétisé d’origine de l’effet correspondant.</p>
       {SFX_NAMES.map((name) => {
         const id = draft.sfx[name];

@@ -428,6 +428,19 @@ export const MIGRATIONS: Migration[] = [
       `);
     },
   },
+  {
+    version: 15,
+    description: 'Volumes de musique et de bruitages par profil (0 à 100)',
+    up(db) {
+      const columns = (db.prepare('PRAGMA table_info(profiles)').all() as { name: string }[]).map((c) => c.name);
+      if (!columns.includes('sound_music_volume')) {
+        db.exec('ALTER TABLE profiles ADD COLUMN sound_music_volume INTEGER NOT NULL DEFAULT 100');
+      }
+      if (!columns.includes('sound_sfx_volume')) {
+        db.exec('ALTER TABLE profiles ADD COLUMN sound_sfx_volume INTEGER NOT NULL DEFAULT 100');
+      }
+    },
+  },
 ];
 
 /** Entrée d’une banque BOUM ! telle qu’elle est stockée. */

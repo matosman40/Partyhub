@@ -45,6 +45,7 @@ export {
   playCue,
   setMuted,
   setSfxFiles,
+  setSoundLevels,
   startMusic,
   stopMusic,
   playLoopFile,

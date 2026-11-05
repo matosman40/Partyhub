@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { isMuted, SoundToggle } from '@partyhub/games/client';
-import { loadSoundSettings, useActiveMusicSlot, useMuted, usePublicSounds } from '../sounds.js';
+import { loadSoundSettings, profileMusicFactor, useActiveMusicSlot, useMuted, usePublicSounds } from '../sounds.js';
 
 /**
  * Lecteur de la musique de fond : une seule piste à la fois, celle de l’emplacement actif, en boucle.
@@ -12,7 +12,7 @@ export function MusicPlayer() {
   const muted = useMuted();
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const url = slot && sounds ? sounds.music[slot] : null;
-  const volume = slot && sounds ? sounds.musicVolume[slot] / 100 : 0.5;
+  const volume = slot && sounds ? (sounds.musicVolume[slot] / 100) * profileMusicFactor() : 0.5;
 
   useEffect(() => {
     void loadSoundSettings();

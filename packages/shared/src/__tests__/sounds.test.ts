@@ -35,3 +35,23 @@ describe('Réglages des sons', () => {
     ).toBe(false);
   });
 });
+
+describe('Volume général des bruitages', () => {
+  it('vaut 100 par défaut, soit le niveau d’origine', () => {
+    expect(EMPTY_SOUND_SETTINGS.sfxVolume).toBe(100);
+    expect(parseSoundSettings(undefined).sfxVolume).toBe(100);
+    expect(
+      soundSettingsSchema.parse({
+        music: EMPTY_SOUND_SETTINGS.music,
+        musicVolume: EMPTY_SOUND_SETTINGS.musicVolume,
+        sfx: EMPTY_SOUND_SETTINGS.sfx,
+      }).sfxVolume,
+    ).toBe(100);
+  });
+
+  it('lit une valeur valide et ignore une valeur hors plage', () => {
+    expect(parseSoundSettings(JSON.stringify({ sfxVolume: 40 })).sfxVolume).toBe(40);
+    expect(parseSoundSettings(JSON.stringify({ sfxVolume: 150 })).sfxVolume).toBe(100);
+    expect(parseSoundSettings(JSON.stringify({ sfxVolume: 'fort' })).sfxVolume).toBe(100);
+  });
+});

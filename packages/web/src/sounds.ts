@@ -1,5 +1,6 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
-import { isMuted, onMuteChange, playLoopFile, setSfxFiles, stopLoopFile } from '@partyhub/games/client';
+import { isMuted, onMuteChange, playLoopFile, setSfxFiles, setSoundLevels, stopLoopFile } from '@partyhub/games/client';
+import { authHeaders, readProfileToken } from './profile/session.js';
 import type { MusicSlot, SfxName } from '@partyhub/shared';
 import { api } from './api.js';
 
@@ -12,7 +13,29 @@ export interface PublicSounds {
   music: Record<MusicSlot, string | null>;
   /** Volume de chaque musique, de 0 à 100. */
   musicVolume: Record<MusicSlot, number>;
+  /** Volume général des bruitages, de 0 à 100. */
+  sfxVolume: number;
   sfx: Record<SfxName, string | null>;
+}
+
+/** Volume général (administration) et volume du profil connecté, en pourcentage. */
+let adminSfxVolume = 100;
+let profileVolume = { music: 100, sfx: 100 };
+
+function applyVolumes(): void {
+  setSoundLevels({ sfx: (adminSfxVolume * profileVolume.sfx) / 100, music: profileVolume.music });
+}
+
+/** Volume de la musique choisi par le profil, de 0 à 1 : multiplie le volume de l'emplacement. */
+export function profileMusicFactor(): number {
+  return profileVolume.music / 100;
+}
+
+/** Applique le volume du profil : les bruitages et la musique suivent tout de suite. */
+export function setProfileSoundVolume(volume: { music: number; sfx: number }): void {
+  profileVolume = volume;
+  applyVolumes();
+  publishSounds(sounds);
 }
 
 let sounds: PublicSounds | null = null;
@@ -35,6 +58,8 @@ function applySfx(): void {
 
 function publishSounds(next: PublicSounds | null): void {
   sounds = next;
+  adminSfxVolume = next?.sfxVolume ?? 100;
+  applyVolumes();
   applySfx();
   for (const listener of soundListeners) listener();
 }
@@ -46,6 +71,17 @@ export async function loadSoundSettings(): Promise<void> {
     publishSounds(res.sounds);
   } catch {
     publishSounds(null);
+  }
+  // Le volume du profil connecté (s'il y en a un) s'applique à toutes les pages.
+  if (readProfileToken()) {
+    try {
+      const me = await api<{ profile: { soundVolume: { music: number; sfx: number } } }>('/api/profiles/me', {
+        headers: authHeaders(),
+      });
+      setProfileSoundVolume(me.profile.soundVolume);
+    } catch {
+      /* sans profil valide, le volume reste celui de l'administration */
+    }
   }
 }
 

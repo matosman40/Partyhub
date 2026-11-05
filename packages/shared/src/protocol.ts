@@ -251,6 +251,8 @@ export interface ProfileView {
   avatar: AvatarInfo;
   createdAt: string;
   stats: ProfileStats;
+  /** Volumes choisis par le joueur, de 0 à 100 : musique et bruitages. */
+  soundVolume: { music: number; sfx: number };
 }
 
 /** Réponse à une commande. Toujours `ok` + éventuelle erreur lisible. */

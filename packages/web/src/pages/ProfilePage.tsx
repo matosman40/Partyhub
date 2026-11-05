@@ -20,7 +20,7 @@ import { fileToAvatarDataUrl } from '../profile/avatarImage.js';
 import { WebcamPhoto, webcamAvailable } from '../profile/WebcamPhoto.js';
 import { CharacterEditor } from '../profile/CharacterEditor.js';
 import { DeviceChooser } from '../device/DeviceChooser.js';
-import { useMusicSlot } from '../sounds.js';
+import { setProfileSoundVolume, useMusicSlot } from '../sounds.js';
 import { ProposeBoumCard } from '../profile/ProposeBoumCard.js';
 import { VoicesSection } from '../profile/VoicesSection.js';
 
@@ -307,6 +307,29 @@ export function ProfilePage() {
         />
       </section>
 
+      <section id="volume" className="card stack" aria-labelledby="volume-title">
+        <h2 id="volume-title">Volume</h2>
+        <SoundVolumeForm
+          current={profile.soundVolume}
+          busy={busy}
+          onSave={(soundVolume) =>
+            run(
+              () =>
+                api('/api/profiles/me', {
+                  method: 'PUT',
+                  headers: authHeaders(),
+                  body: JSON.stringify({ soundVolume }),
+                }),
+              () => {
+                setProfileSoundVolume(soundVolume);
+                void reload();
+                return 'Volume enregistré.';
+              },
+            )
+          }
+        />
+      </section>
+
       <section id="appareil" className="card stack" aria-labelledby="devices-title">
         <h2 id="devices-title">Micro et caméra</h2>
         <p className="muted small">
@@ -577,6 +600,48 @@ function AvatarSection({
         </p>
       )}
     </section>
+  );
+}
+
+/** Volumes personnels : musique et bruitages, de 0 à 100 %. Appliqués tout de suite, enregistrés sur le profil. */
+function SoundVolumeForm({
+  current,
+  busy,
+  onSave,
+}: {
+  current: { music: number; sfx: number };
+  busy: boolean;
+  onSave: (volume: { music: number; sfx: number }) => void;
+}) {
+  const [music, setMusic] = useState(current.music);
+  const [sfx, setSfx] = useState(current.sfx);
+  return (
+    <form
+      className="stack"
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSave({ music, sfx });
+      }}
+    >
+      <label className="field">
+        <span>Musique : {music} %</span>
+        <input
+          type="range"
+          min={0}
+          max={100}
+          step={5}
+          value={music}
+          onChange={(e) => setMusic(Number(e.target.value))}
+        />
+      </label>
+      <label className="field">
+        <span>Bruitages : {sfx} %</span>
+        <input type="range" min={0} max={100} step={5} value={sfx} onChange={(e) => setSfx(Number(e.target.value))} />
+      </label>
+      <button type="submit" className="btn primary small" disabled={busy}>
+        Enregistrer le volume
+      </button>
+    </form>
   );
 }
 

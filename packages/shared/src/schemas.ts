@@ -107,6 +107,7 @@ export const profileUpdateSchema = z.object({
   avatarImage: avatarImageSchema.nullable().optional(),
   avatarShared: z.boolean().optional(),
   avatarCharacter: characterSchema.nullable().optional(),
+  soundVolume: z.object({ music: z.number().int().min(0).max(100), sfx: z.number().int().min(0).max(100) }).optional(),
 });
 
 export const passwordChangeSchema = z.object({

@@ -53,6 +53,9 @@ export const MUSIC_LABELS: Record<MusicSlot, string> = {
   fin: 'Fin de partie (résultats)',
 };
 
+/** Volume général des bruitages par défaut : 100, le niveau d'origine. */
+export const SFX_VOLUME_DEFAULT = 100;
+
 const slotValue = z.string().min(1).max(64).nullable().default(null);
 
 /** Volume de chaque musique de fond, en pourcentage. */
@@ -73,6 +76,8 @@ const musicVolumeShape = Object.fromEntries(MUSIC_SLOTS.map((slot) => [slot, vol
 export const soundSettingsSchema = z.object({
   music: z.object(musicShape),
   musicVolume: z.object(musicVolumeShape).default(() => defaultMusicVolume()),
+  /** Volume général des bruitages, de 0 à 100 (100 : niveau d'origine). */
+  sfxVolume: z.number().int().min(0).max(100).default(SFX_VOLUME_DEFAULT),
   sfx: z.object(sfxShape),
 });
 
@@ -84,12 +89,14 @@ function defaultMusicVolume(): Record<MusicSlot, number> {
 export type SoundSettings = {
   music: Record<MusicSlot, string | null>;
   musicVolume: Record<MusicSlot, number>;
+  sfxVolume: number;
   sfx: Record<SfxName, string | null>;
 };
 
 export const EMPTY_SOUND_SETTINGS: SoundSettings = {
   music: Object.fromEntries(MUSIC_SLOTS.map((slot) => [slot, null])) as Record<MusicSlot, null>,
   musicVolume: defaultMusicVolume(),
+  sfxVolume: SFX_VOLUME_DEFAULT,
   sfx: Object.fromEntries(SFX_NAMES.map((name) => [name, null])) as Record<SfxName, null>,
 };
 
@@ -117,6 +124,11 @@ export function parseSoundSettings(raw: string | undefined): SoundSettings {
     typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= 100 ? value : MUSIC_VOLUME_DEFAULT;
   for (const slot of MUSIC_SLOTS) out.music[slot] = read(source.music?.[slot]);
   for (const slot of MUSIC_SLOTS) out.musicVolume[slot] = readVolume(source.musicVolume?.[slot]);
+  const sfxVolume = (data as { sfxVolume?: unknown } | null)?.sfxVolume;
+  out.sfxVolume =
+    typeof sfxVolume === 'number' && Number.isInteger(sfxVolume) && sfxVolume >= 0 && sfxVolume <= 100
+      ? sfxVolume
+      : SFX_VOLUME_DEFAULT;
   for (const name of SFX_NAMES) out.sfx[name] = read(source.sfx?.[name]);
   return out;
 }

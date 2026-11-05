@@ -650,7 +650,8 @@ export function createApp(deps: AppDeps): express.Express {
       res.status(400).json({ error: parsed.error.issues[0]?.message ?? 'Données invalides.' });
       return;
     }
-    const { displayName, avatarHue, avatarEmoji, avatarImage, avatarShared, avatarCharacter } = parsed.data;
+    const { displayName, avatarHue, avatarEmoji, avatarImage, avatarShared, avatarCharacter, soundVolume } =
+      parsed.data;
     if (avatarCharacter?.pack && !characterPacks.exists(avatarCharacter.pack)) {
       res.status(400).json({ error: 'Ce personnage n’existe plus. Choisissez-en un autre.' });
       return;
@@ -670,6 +671,7 @@ export function createApp(deps: AppDeps): express.Express {
       avatarImage,
       avatarShared,
       avatarCharacter,
+      soundVolume,
     });
     // Une salle en cours montre tout de suite le nouvel état (une photo retirée disparaît aussitôt).
     const inRooms = profiles.playerProfile(profileId);
@@ -1876,6 +1878,7 @@ export function createApp(deps: AppDeps): express.Express {
     return {
       music: Object.fromEntries(MUSIC_SLOTS.map((slot) => [slot, url(stored.music[slot])])),
       musicVolume: stored.musicVolume,
+      sfxVolume: stored.sfxVolume,
       sfx: Object.fromEntries(SFX_NAMES.map((name) => [name, url(stored.sfx[name])])),
     };
   };

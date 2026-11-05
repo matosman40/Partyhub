@@ -37,6 +37,22 @@ function saveMuted(value: boolean): void {
   }
 }
 
+/** Niveaux de volume, de 0 à 1 : réglage général de l'administration multiplié par celui du profil. */
+let sfxLevel = 1;
+let musicLevel = 1;
+
+function applyLevels(): void {
+  if (sfxBus) sfxBus.gain.value = 0.7 * sfxLevel;
+  if (musicBus) musicBus.gain.value = 0.2 * musicLevel;
+}
+
+/** Règle les volumes des bruitages et de la musique synthétisée, en pourcentage (0 à 100). */
+export function setSoundLevels(levels: { sfx: number; music: number }): void {
+  sfxLevel = Math.min(1, Math.max(0, levels.sfx / 100));
+  musicLevel = Math.min(1, Math.max(0, levels.music / 100));
+  applyLevels();
+}
+
 function context(): AudioContext | null {
   try {
     if (!ctx) {
@@ -48,11 +64,10 @@ function context(): AudioContext | null {
       master.gain.value = muted ? 0 : 0.85;
       master.connect(ctx.destination);
       sfxBus = ctx.createGain();
-      sfxBus.gain.value = 0.7;
       sfxBus.connect(master);
       musicBus = ctx.createGain();
-      musicBus.gain.value = 0.2;
       musicBus.connect(master);
+      applyLevels();
       noise = makeNoise(ctx);
     }
     if (ctx.state === 'suspended') void ctx.resume();

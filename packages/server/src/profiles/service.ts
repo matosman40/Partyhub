@@ -42,6 +42,8 @@ interface ProfileRow {
   avatar_version: number;
   avatar_shared: number;
   avatar_character: string | null;
+  sound_music_volume: number;
+  sound_sfx_volume: number;
   created_at: string;
 }
 
@@ -207,6 +209,7 @@ export class ProfileService {
       displayName: row.display_name,
       avatar: this.avatarOf(row),
       avatarShared: row.avatar_shared === 1,
+      soundVolume: { music: row.sound_music_volume, sfx: row.sound_sfx_volume },
       hasPassword: row.password_hash !== '',
       createdAt: row.created_at,
       stats: this.stats(profileId),
@@ -223,8 +226,15 @@ export class ProfileService {
       avatarShared?: boolean;
       /** null : revenir au personnage généré à partir du pseudo. */
       avatarCharacter?: CharacterSpec | null;
+      /** Volumes de la musique et des bruitages, de 0 à 100. */
+      soundVolume?: { music: number; sfx: number };
     },
   ): ProfileView {
+    if (patch.soundVolume !== undefined) {
+      this.db
+        .prepare('UPDATE profiles SET sound_music_volume = ?, sound_sfx_volume = ? WHERE id = ?')
+        .run(patch.soundVolume.music, patch.soundVolume.sfx, profileId);
+    }
     if (patch.displayName !== undefined) {
       this.db.prepare('UPDATE profiles SET display_name = ? WHERE id = ?').run(patch.displayName, profileId);
     }
