@@ -13428,3 +13428,25 @@ button.grille-bande-avis {
     animation: none;
   }
 }
+
+/* Image jointe à une question du quiz : cadre sobre, hauteur bornée pour rester dans l'écran. */
+.quiz-image {
+  margin: 0 auto 0.75rem;
+  max-width: min(640px, 100%);
+  text-align: center;
+}
+
+.quiz-image img {
+  display: block;
+  width: 100%;
+  max-height: 42vh;
+  object-fit: contain;
+  border-radius: var(--radius-md);
+  background: var(--ink-night);
+}
+
+.quiz-image-credit {
+  margin-top: 0.35rem;
+  font-size: 0.75rem;
+  color: var(--color-text-subtle);
+}

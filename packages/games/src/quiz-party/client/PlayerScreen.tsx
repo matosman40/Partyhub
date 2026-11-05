@@ -3,6 +3,7 @@ import type { PlayerViewProps } from '../../client/types.js';
 import { useRemaining } from '../../client/hooks.js';
 import { LETTERS } from '../../client/ui.js';
 import { KeywordForm } from '../../common/client/keywords-ui.js';
+import { QuizImage } from './QuizImage.js';
 
 export function QuizPlayer({ publicState: pub, playerState: me, now, send }: PlayerViewProps) {
   const remaining = useRemaining(pub?.endsAt ?? pub?.answerEndsAt, now);
@@ -103,6 +104,7 @@ export function QuizPlayer({ publicState: pub, playerState: me, now, send }: Pla
       <div className="round-info">
         {index + 1} / {pub.total} · {q.category} · {Math.ceil(remaining / 1000)} s
       </div>
+      {q.image && <QuizImage image={q.image} />}
       <h2 className="question-small">{q.text}</h2>
       <div className="choices-stack">
         {q.choices.map((c: string, i: number) => (

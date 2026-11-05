@@ -8,7 +8,11 @@ interface QuizDraft {
   answerSeconds: number;
   topicSeconds: number;
   speedBonus: boolean;
+  difficulty: number;
 }
+
+/** Libellés des trois niveaux, dans l'ordre du curseur (1 facile, 2 moyen, 3 difficile). */
+const NIVEAUX = ['Facile · 2 choix', 'Moyen · 3 choix', 'Difficile · 4 choix'];
 
 /**
  * Réglages de Quiz Party. Les valeurs saisies sont validées par le serveur :
@@ -54,6 +58,19 @@ export function QuizSettings({ settings, disabled, onChange }: SettingsProps) {
           disabled={disabled}
           onChange={(e) => setDraft({ ...draft, questionCount: Number(e.target.value) })}
           onBlur={() => commit({ ...draft, questionCount: clampInt(draft.questionCount, 1, 20) })}
+        />
+      </label>
+      <label className="field">
+        <span>Difficulté : {NIVEAUX[(draft.difficulty ?? 3) - 1]}</span>
+        <input
+          type="range"
+          min={1}
+          max={3}
+          step={1}
+          value={draft.difficulty ?? 3}
+          disabled={disabled}
+          aria-valuetext={NIVEAUX[(draft.difficulty ?? 3) - 1]}
+          onChange={(e) => commit({ ...draft, difficulty: Number(e.target.value) })}
         />
       </label>
       <label className="field">

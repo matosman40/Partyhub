@@ -67,6 +67,7 @@ export function PhotoPlayer({ publicState: pub, playerState: me, send, now }: Pl
           <TimerBar remaining={remaining} total={pub.guessSeconds * 1000} />
           <p className="pm-hint">
             {myPin ? 'Point posé. Touchez ailleurs pour le déplacer.' : 'Touchez la carte où la photo a été prise.'}
+            {pub.photo.indice && <> Pays : {pub.photo.indice}.</>}
           </p>
           <PhotoMap label="Carte : touchez le lieu" markers={markers} onPick={pick} />
         </>

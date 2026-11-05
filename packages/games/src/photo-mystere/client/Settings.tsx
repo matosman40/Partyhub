@@ -5,7 +5,11 @@ import { clampInt } from '../../common/client/numbers.js';
 interface PhotoDraft {
   rounds: number;
   guessSeconds: number;
+  difficulty: number;
 }
+
+/** Libellés des trois niveaux, dans l’ordre du curseur. */
+const NIVEAUX = ['Facile · pays affiché', 'Moyen', 'Difficile · points plus sévères'];
 
 /** Réglages de Photo mystère. Le serveur valide les valeurs ; le navigateur ne fait que borner la saisie. */
 export function PhotoSettings({ settings, disabled, onChange }: SettingsProps) {
@@ -34,6 +38,19 @@ export function PhotoSettings({ settings, disabled, onChange }: SettingsProps) {
           disabled={disabled}
           onChange={(e) => setDraft({ ...draft, rounds: Number(e.target.value) })}
           onBlur={() => commit({ ...draft, rounds: clampInt(draft.rounds, 1, 10) })}
+        />
+      </label>
+      <label className="field">
+        <span>Difficulté : {NIVEAUX[(draft.difficulty ?? 2) - 1]}</span>
+        <input
+          type="range"
+          min={1}
+          max={3}
+          step={1}
+          value={draft.difficulty ?? 2}
+          disabled={disabled}
+          aria-valuetext={NIVEAUX[(draft.difficulty ?? 2) - 1]}
+          onChange={(e) => commit({ ...draft, difficulty: Number(e.target.value) })}
         />
       </label>
       <label className="field">

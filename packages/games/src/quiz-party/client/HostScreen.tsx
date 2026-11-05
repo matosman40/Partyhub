@@ -5,6 +5,7 @@ import { useRemaining } from '../../client/hooks.js';
 import { Avatar, LETTERS, Ranking, TimerBar, type RankRow } from '../../client/ui.js';
 import { KeywordTurnsBoard } from '../../common/client/keywords-ui.js';
 import { quizMoods } from './moods.js';
+import { QuizImage } from './QuizImage.js';
 
 /** Écran TV du quiz : les personnages réagissent à la phase (salut, joie, tristesse, danse). */
 export function QuizHost(props: HostViewProps) {
@@ -57,6 +58,7 @@ function QuizBoard({ publicState: pub, hostState: host, now }: HostViewProps) {
         <div className="round-info">
           Question {pub.index + 1} / {pub.total} · <span className="tag">{q.category}</span>
         </div>
+        {q.image && <QuizImage image={q.image} />}
         <h2 className="question-title">{q.text}</h2>
         <ol className="choices-grid">
           {q.choices.map((c: string, i: number) => (
@@ -90,6 +92,7 @@ function QuizBoard({ publicState: pub, hostState: host, now }: HostViewProps) {
       <div className="round-info">
         Question {pub.index + 1} / {pub.total} · <span className="tag">{q.category}</span>
       </div>
+      {q.image && <QuizImage image={q.image} showCredit />}
       <h2 className="question-title">{q.text}</h2>
       <ol className="choices-grid">
         {q.choices.map((c: string, i: number) => {

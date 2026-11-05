@@ -1,0 +1,184 @@
+[
+  {
+    "id": "met-459123",
+    "category": "Culture",
+    "question": "Qui a peint ce tableau ?",
+    "choices": ["Paul Gauguin", "Paul Cézanne", "Rembrandt", "Vincent van Gogh"],
+    "answer": 3,
+    "image": {
+      "src": "/quiz-party/met-459123.jpg",
+      "alt": "Tableau à identifier : le peintre n’est pas nommé",
+      "credit": "The Met, Madame Roulin and Her Baby",
+      "license": "CC0 (domaine public)",
+      "source": "https://www.metmuseum.org/art/collection/search/459123"
+    }
+  },
+  {
+    "id": "met-437397",
+    "category": "Culture",
+    "question": "Qui a peint ce tableau ?",
+    "choices": ["Rembrandt", "Pierre-Auguste Renoir", "Peter Paul Rubens", "Camille Corot"],
+    "answer": 0,
+    "image": {
+      "src": "/quiz-party/met-437397.jpg",
+      "alt": "Tableau à identifier : le peintre n’est pas nommé",
+      "credit": "The Met, Self-Portrait",
+      "license": "CC0 (domaine public)",
+      "source": "https://www.metmuseum.org/art/collection/search/437397"
+    }
+  },
+  {
+    "id": "met-437881",
+    "category": "Culture",
+    "question": "Qui a peint ce tableau ?",
+    "choices": ["Johannes Vermeer", "Diego Velázquez", "Le Caravage", "Paul Gauguin"],
+    "answer": 0,
+    "image": {
+      "src": "/quiz-party/met-437881.jpg",
+      "alt": "Tableau à identifier : le peintre n’est pas nommé",
+      "credit": "The Met, Young Woman with a Water Pitcher",
+      "license": "CC0 (domaine public)",
+      "source": "https://www.metmuseum.org/art/collection/search/437881"
+    }
+  },
+  {
+    "id": "met-459112",
+    "category": "Culture",
+    "question": "Qui a peint ce tableau ?",
+    "choices": ["Camille Corot", "Diego Velázquez", "Georges Seurat", "Pierre-Auguste Renoir"],
+    "answer": 3,
+    "image": {
+      "src": "/quiz-party/met-459112.jpg",
+      "alt": "Tableau à identifier : le peintre n’est pas nommé",
+      "credit": "The Met, Two Young Girls at the Piano",
+      "license": "CC0 (domaine public)",
+      "source": "https://www.metmuseum.org/art/collection/search/459112"
+    }
+  },
+  {
+    "id": "met-435876",
+    "category": "Culture",
+    "question": "Qui a peint ce tableau ?",
+    "choices": ["Johannes Vermeer", "Peter Paul Rubens", "Paul Gauguin", "Paul Cézanne"],
+    "answer": 3,
+    "image": {
+      "src": "/quiz-party/met-435876.jpg",
+      "alt": "Tableau à identifier : le peintre n’est pas nommé",
+      "credit": "The Met, Madame Cézanne (Hortense Fiquet, 1850–1922) in a Red Dress",
+      "license": "CC0 (domaine public)",
+      "source": "https://www.metmuseum.org/art/collection/search/435876"
+    }
+  },
+  {
+    "id": "met-438821",
+    "category": "Culture",
+    "question": "Qui a peint ce tableau ?",
+    "choices": ["Paul Gauguin", "Diego Velázquez", "Vincent van Gogh", "Paul Cézanne"],
+    "answer": 0,
+    "image": {
+      "src": "/quiz-party/met-438821.jpg",
+      "alt": "Tableau à identifier : le peintre n’est pas nommé",
+      "credit": "The Met, Ia Orana Maria (Hail Mary)",
+      "license": "CC0 (domaine public)",
+      "source": "https://www.metmuseum.org/art/collection/search/438821"
+    }
+  },
+  {
+    "id": "met-436944",
+    "category": "Culture",
+    "question": "Qui a peint ce tableau ?",
+    "choices": ["Pierre-Auguste Renoir", "Rembrandt", "Édouard Manet", "Paul Cézanne"],
+    "answer": 2,
+    "image": {
+      "src": "/quiz-party/met-436944.jpg",
+      "alt": "Tableau à identifier : le peintre n’est pas nommé",
+      "credit": "The Met, The Spanish Singer",
+      "license": "CC0 (domaine public)",
+      "source": "https://www.metmuseum.org/art/collection/search/436944"
+    }
+  },
+  {
+    "id": "met-438820",
+    "category": "Culture",
+    "question": "Qui a peint ce tableau ?",
+    "choices": ["Peter Paul Rubens", "Gustave Courbet", "Camille Corot", "Johannes Vermeer"],
+    "answer": 1,
+    "image": {
+      "src": "/quiz-party/met-438820.jpg",
+      "alt": "Tableau à identifier : le peintre n’est pas nommé",
+      "credit": "The Met, Young Ladies of the Village",
+      "license": "CC0 (domaine public)",
+      "source": "https://www.metmuseum.org/art/collection/search/438820"
+    }
+  },
+  {
+    "id": "met-437869",
+    "category": "Culture",
+    "question": "Qui a peint ce tableau ?",
+    "choices": ["Diego Velázquez", "Paul Cézanne", "Camille Corot", "Rembrandt"],
+    "answer": 0,
+    "image": {
+      "src": "/quiz-party/met-437869.jpg",
+      "alt": "Tableau à identifier : le peintre n’est pas nommé",
+      "credit": "The Met, Juan de Pareja (ca. 1608–1670)",
+      "license": "CC0 (domaine public)",
+      "source": "https://www.metmuseum.org/art/collection/search/437869"
+    }
+  },
+  {
+    "id": "met-437532",
+    "category": "Culture",
+    "question": "Qui a peint ce tableau ?",
+    "choices": ["Peter Paul Rubens", "Rembrandt", "Pierre-Auguste Renoir", "Édouard Manet"],
+    "answer": 0,
+    "image": {
+      "src": "/quiz-party/met-437532.jpg",
+      "alt": "Tableau à identifier : le peintre n’est pas nommé",
+      "credit": "The Met, Rubens, Helena Fourment (1614–1673), and Their Son Frans (1633–1678)",
+      "license": "CC0 (domaine public)",
+      "source": "https://www.metmuseum.org/art/collection/search/437532"
+    }
+  },
+  {
+    "id": "met-435844",
+    "category": "Culture",
+    "question": "Qui a peint ce tableau ?",
+    "choices": ["Peter Paul Rubens", "Gustave Courbet", "Paul Cézanne", "Le Caravage"],
+    "answer": 3,
+    "image": {
+      "src": "/quiz-party/met-435844.jpg",
+      "alt": "Tableau à identifier : le peintre n’est pas nommé",
+      "credit": "The Met, The Musicians",
+      "license": "CC0 (domaine public)",
+      "source": "https://www.metmuseum.org/art/collection/search/435844"
+    }
+  },
+  {
+    "id": "met-435984",
+    "category": "Culture",
+    "question": "Qui a peint ce tableau ?",
+    "choices": ["Diego Velázquez", "Peter Paul Rubens", "Georges Seurat", "Camille Corot"],
+    "answer": 3,
+    "image": {
+      "src": "/quiz-party/met-435984.jpg",
+      "alt": "Tableau à identifier : le peintre n’est pas nommé",
+      "credit": "The Met, Sibylle",
+      "license": "CC0 (domaine public)",
+      "source": "https://www.metmuseum.org/art/collection/search/435984"
+    }
+  },
+  {
+    "id": "met-437658",
+    "category": "Culture",
+    "question": "Qui a peint ce tableau ?",
+    "choices": ["Gustave Courbet", "Georges Seurat", "Johannes Vermeer", "Paul Cézanne"],
+    "answer": 1,
+    "image": {
+      "src": "/quiz-party/met-437658.jpg",
+      "alt": "Tableau à identifier : le peintre n’est pas nommé",
+      "credit": "The Met, Study for \"A Sunday on La Grande Jatte\"",
+      "license": "CC0 (domaine public)",
+      "source": "https://www.metmuseum.org/art/collection/search/437658"
+    }
+  }
+]

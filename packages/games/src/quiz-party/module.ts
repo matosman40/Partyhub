@@ -23,9 +23,33 @@ export const quizSettingsSchema = z.object({
   answerSeconds: z.number().int().min(5).max(60).default(20),
   topicSeconds: z.number().int().min(10).max(60).default(TOPIC_SECONDS_DEFAULT),
   speedBonus: z.boolean().default(true),
+  /** Niveau de difficulté : 1 facile (2 choix), 2 moyen (3 choix), 3 difficile (4 choix, le défaut). */
+  difficulty: z.number().int().min(1).max(3).default(3),
 });
 
 export type QuizSettings = z.infer<typeof quizSettingsSchema>;
+
+/** Nombre maximal de choix affichés à chaque niveau de difficulté. */
+export const CHOICES_BY_DIFFICULTY: Record<1 | 2 | 3, number> = { 1: 2, 2: 3, 3: 4 };
+
+/**
+ * Réduit une question à `max` choix : la bonne réponse et des mauvaises réponses tirées au hasard, dans l'ordre
+ * d'origine. Une question déjà assez courte est renvoyée telle quelle, sans toucher au générateur aléatoire.
+ */
+export function adaptChoices(q: QuizQuestion, max: number, random: () => number): QuizQuestion {
+  if (q.choices.length <= max) return q;
+  const autres = q.choices.map((_, i) => i).filter((i) => i !== q.answer);
+  for (let i = autres.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    [autres[i], autres[j]] = [autres[j]!, autres[i]!];
+  }
+  const garde = [q.answer, ...autres.slice(0, max - 1)].sort((a, b) => a - b);
+  return {
+    ...q,
+    choices: garde.map((i) => q.choices[i]!),
+    answer: garde.indexOf(q.answer),
+  };
+}
 
 const BASE_POINTS = 100;
 const MAX_SPEED_BONUS = 50;
@@ -104,8 +128,18 @@ function beginQuestion(s: QuizState, ctx: GameContext): QuizState {
   const now = ctx.now();
   const limit = s.settings.answerSeconds * 1000;
   ctx.schedule(ANSWER_TIMEOUT, limit);
+  // Le niveau de difficulté règle le nombre de choix ; la question adaptée remplace l'originale pour toute la manche.
+  const courante = s.questions[s.index];
+  const questions = courante
+    ? s.questions.map((q, i) =>
+        i === s.index
+          ? adaptChoices(courante, CHOICES_BY_DIFFICULTY[s.settings.difficulty as 1 | 2 | 3], ctx.random)
+          : q,
+      )
+    : s.questions;
   return {
     ...s,
+    questions,
     phase: 'question',
     startedAt: now,
     answerEndsAt: now + limit,
@@ -231,7 +265,12 @@ function publicView(s: QuizState) {
   const q = currentQuestion(s);
   if (!q) return { ...base, question: null };
 
-  const question = { category: q.category, text: q.question, choices: q.choices };
+  const question = {
+    category: q.category,
+    text: q.question,
+    choices: q.choices,
+    ...(q.image ? { image: q.image } : {}),
+  };
 
   if (s.phase === 'question') {
     return {

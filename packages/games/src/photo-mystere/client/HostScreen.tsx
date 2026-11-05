@@ -70,6 +70,7 @@ export function PhotoHost({ publicState: pub, now }: HostViewProps) {
           <TimerBar remaining={remaining} total={pub.guessSeconds * 1000} />
           <p className="pm-status">
             Placez votre point sur la carte · {pub.placedCount} / {pub.playerCount} ont placé
+            {pub.photo.indice && <> · Pays : {pub.photo.indice}</>}
           </p>
         </>
       )}

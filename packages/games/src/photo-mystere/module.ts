@@ -12,6 +12,8 @@ import { PHOTOS, type Photo } from './photos.js';
 export const photoSettingsSchema = z.object({
   rounds: z.number().int().min(1).max(10).default(5),
   guessSeconds: z.number().int().min(20).max(180).default(90),
+  /** Niveau : 1 facile (le pays est affiché), 2 moyen (le défaut), 3 difficile (score plus sévère). */
+  difficulty: z.number().int().min(1).max(3).default(2),
 });
 
 export type PhotoSettings = z.infer<typeof photoSettingsSchema>;
@@ -66,9 +68,12 @@ export function distanceKm(a: Pin, b: Pin): number {
   return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
 }
 
+/** Échelle de décroissance selon le niveau : plus elle est grande, plus on est pardonné. */
+export const SCALE_BY_DIFFICULTY: Record<1 | 2 | 3, number> = { 1: 3000, 2: SCALE_KM, 3: 700 };
+
 /** Points d’une manche selon la distance : décroissance exponentielle, 5 000 pile sur la cible. */
-export function pointsFor(km: number): number {
-  return Math.round(MAX_POINTS * Math.exp(-km / SCALE_KM));
+export function pointsFor(km: number, echelleKm: number = SCALE_KM): number {
+  return Math.round(MAX_POINTS * Math.exp(-km / echelleKm));
 }
 
 function pickPhotos(count: number, random: () => number): Photo[] {
@@ -96,7 +101,7 @@ function reveal(s: PhotoState, ctx: GameContext): PhotoState {
       continue;
     }
     const d = distanceKm(pin, target);
-    const gained = pointsFor(d);
+    const gained = pointsFor(d, SCALE_BY_DIFFICULTY[s.settings.difficulty as 1 | 2 | 3]);
     placements[id] = { pin, km: Math.round(d), gained };
     points = addPoints(points, id, gained);
   }
@@ -238,7 +243,8 @@ export const photoMystere: GameModule<PhotoState, PhotoSettings> = {
       total: s.photos.length,
       guessSeconds: s.settings.guessSeconds,
       endsAt: s.phase === 'guess' ? s.guessEndsAt : undefined,
-      photo: showPhoto ? { src: photo.file } : null,
+      // Niveau facile : le pays est donné pendant la devinette, pour servir d'indice.
+      photo: showPhoto ? { src: photo.file, indice: s.settings.difficulty === 1 ? photo.country : null } : null,
       placedCount: Object.keys(s.pins).length,
       playerCount: Object.keys(s.names).length,
       answer:
