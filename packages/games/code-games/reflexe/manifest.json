@@ -4,7 +4,7 @@
   "kind": "code",
   "id": "reflexe",
   "name": "Réflexe",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "description": "Attendez le vert… puis touchez votre téléphone le plus vite possible !",
   "author": "PartyHub",
   "engine": {
