@@ -15,7 +15,14 @@ import {
 } from '../tirage/module.js';
 import { A, B, mulberry32, must } from './aventure-helpers.js';
 import { harness } from './turn-harness.js';
-import { nettoyerTheme, questionsPays } from '../tirage/theme-libre.js';
+import {
+  anneeCreation,
+  chronologiesLibres,
+  estimationsLongueur,
+  longueurKm,
+  nettoyerTheme,
+  questionsPays,
+} from '../tirage/theme-libre.js';
 
 /** Met une estimation de la banque en tête de partie, pour les tests qui jouent des estimations. */
 function estimationEnTete(s: TirageState): TirageState {
@@ -478,5 +485,173 @@ describe('thème libre : nettoyage et questions', () => {
 
   it('refuse les entités sans assez de pays distincts', () => {
     expect(questionsPays([{ id: 'Q1', nom: 'Loire', pays: 'France' }], 'fleuves')).toEqual([]);
+  });
+});
+
+describe('thème libre : estimations de longueur', () => {
+  it('ne lit que les longueurs en kilomètres', () => {
+    const km = {
+      id: 'Q1',
+      claims: {
+        P2043: [
+          { mainsnak: { datavalue: { value: { amount: '+1232.7', unit: 'http://www.wikidata.org/entity/Q828224' } } } },
+        ],
+      },
+    };
+    const metres = {
+      id: 'Q2',
+      claims: {
+        P2043: [
+          { mainsnak: { datavalue: { value: { amount: '+800', unit: 'http://www.wikidata.org/entity/Q11573' } } } },
+        ],
+      },
+    };
+    expect(longueurKm(km)).toBe(1233);
+    expect(longueurKm(metres)).toBeNull();
+    expect(longueurKm({ id: 'Q3' })).toBeNull();
+  });
+
+  it('une entité avec longueur donne une estimation ; sans longueur, une question sur le pays', () => {
+    const entites = [
+      { id: 'Q1', nom: 'Rhin', pays: 'Suisse', longueurKm: 1233 },
+      { id: 'Q2', nom: 'Tage', pays: 'Portugal', longueurKm: null },
+      { id: 'Q3', nom: 'Elbe', pays: 'Allemagne', longueurKm: null },
+      { id: 'Q4', nom: 'Dniepr', pays: 'Ukraine', longueurKm: 2201 },
+    ];
+    const est = estimationsLongueur(entites);
+    expect(est.map((e) => e.valeur)).toEqual([1233, 2201]);
+    expect(est[0]).toMatchObject({ unite: 'kilomètres' });
+    const pays = questionsPays(
+      entites.filter((e) => e.longueurKm === null),
+      'fleuves',
+      entites,
+    );
+    expect(pays.map((q) => q.titre)).toEqual(['Tage', 'Elbe']);
+  });
+
+  it('une partie libre mêle estimations et pays, sans répéter une entité', () => {
+    const h = harness({ connected: [A.id, B.id], random: mulberry32(8) });
+    const resultatAvecKm = {
+      theme: 'fleuves',
+      classe: 'Q4022',
+      entrees: [
+        {
+          id: 'libre-Q2',
+          question: 'Dans quel pays se trouve « Loire » ?',
+          reponse: 'France',
+          leurres: ['Espagne', 'Italie', 'Suisse'],
+          titre: 'Loire',
+          source: 'https://www.wikidata.org/wiki/Q2',
+        },
+        {
+          id: 'libre-Q3',
+          question: 'Dans quel pays se trouve « Volga » ?',
+          reponse: 'Russie',
+          leurres: ['Chine', 'Inde', 'Brésil'],
+          titre: 'Volga',
+          source: 'https://www.wikidata.org/wiki/Q3',
+        },
+      ],
+      estimations: [
+        {
+          id: 'libre-km-Q1',
+          question: 'Quelle est la longueur de « Rhin » ?',
+          valeur: 1233,
+          unite: 'kilomètres',
+          source: 'https://www.wikidata.org/wiki/Q1',
+        },
+        {
+          id: 'libre-km-Q4',
+          question: 'Quelle est la longueur de « Oder » ?',
+          valeur: 854,
+          unite: 'kilomètres',
+          source: 'https://www.wikidata.org/wiki/Q4',
+        },
+      ],
+    };
+    const init = tirageSurprise.initialize(
+      { rounds: 4, guessSeconds: 60, difficulty: 2, themeLibre: 'fleuves' },
+      [A, B],
+      h.ctx,
+    );
+    const attente = must(tirageSurprise.start(init, h.ctx));
+    const s = tirageSurprise.completeJob!(attente, 'theme:fleuves', { ok: true, value: resultatAvecKm }, h.ctx);
+    const kinds = s.entrees.map((e) => e.kind);
+    expect(kinds).toContain('estimer');
+    expect(new Set(s.entrees.map((e) => e.id)).size).toBe(s.entrees.length);
+    expect(s.entrees.length).toBe(4);
+  });
+});
+
+describe('thème libre : chronologie', () => {
+  const fiche = (annee: string, precision: number) => ({
+    id: 'Qx',
+    claims: { P571: [{ mainsnak: { datavalue: { value: { time: annee, precision } } } }] },
+  });
+
+  it('garde la date de création à la précision de l’année, après l’an 1000', () => {
+    expect(anneeCreation(fiche('+1855-00-00T00:00:00Z', 9))).toBe(1855);
+    expect(anneeCreation(fiche('+1855-00-00T00:00:00Z', 8))).toBeNull();
+    expect(anneeCreation(fiche('-0300-00-00T00:00:00Z', 9))).toBeNull();
+    expect(anneeCreation({ id: 'Qy' })).toBeNull();
+  });
+
+  it('associe deux entités datées assez loin, la plus ancienne étant la bonne réponse', () => {
+    const entites = [
+      { id: 'Q1', nom: 'Château neuf', pays: 'France', longueurKm: null, annee: 1500 },
+      { id: 'Q2', nom: 'Château ancien', pays: 'Italie', longueurKm: null, annee: 1100 },
+      { id: 'Q3', nom: 'Château proche', pays: 'Espagne', longueurKm: null, annee: 1105 },
+    ];
+    const { questions, utilises } = chronologiesLibres(entites);
+    expect(questions).toHaveLength(1);
+    expect(questions[0]).toMatchObject({ reponse: 'Château ancien', leurre: 'Château neuf' });
+    expect([...utilises].sort()).toEqual(['Q1', 'Q2']);
+  });
+
+  it('une partie libre peut poser une chronologie, sans répéter une entité', () => {
+    const h = harness({ connected: [A.id, B.id], random: mulberry32(12) });
+    const resultat = {
+      theme: 'châteaux',
+      classe: 'Q751876',
+      entrees: [
+        {
+          id: 'libre-Q9',
+          question: 'Dans quel pays se trouve « Bran » ?',
+          reponse: 'Roumanie',
+          leurres: ['Hongrie', 'Bulgarie', 'Serbie'],
+          titre: 'Bran',
+          source: 'https://www.wikidata.org/wiki/Q9',
+        },
+      ],
+      estimations: [],
+      chronologies: [
+        {
+          id: 'libre-chrono-Q1-Q2',
+          question: 'Lequel a été créé en premier ?',
+          reponse: 'Château ancien',
+          leurre: 'Château neuf',
+          titre: 'Château ancien / Château neuf',
+          source: 'https://www.wikidata.org/wiki/Q2',
+          credit: 'Date de création : 1100 (Wikidata)',
+        },
+      ],
+    };
+    const init = tirageSurprise.initialize(
+      { rounds: 3, guessSeconds: 60, difficulty: 2, themeLibre: 'châteaux' },
+      [A, B],
+      h.ctx,
+    );
+    const attente = must(tirageSurprise.start(init, h.ctx));
+    const s = tirageSurprise.completeJob!(attente, 'theme:châteaux', { ok: true, value: resultat }, h.ctx);
+    const chrono = s.entrees.find((e) => e.id.startsWith('libre-chrono-')) as {
+      choix: string[];
+      bonne: number;
+      credit?: string;
+    };
+    expect(chrono).toBeDefined();
+    expect(chrono.choix).toHaveLength(2);
+    expect(chrono.choix[chrono.bonne]).toBe('Château ancien');
+    expect(chrono.credit).toContain('1100');
+    expect(new Set(s.entrees.map((e) => e.id)).size).toBe(s.entrees.length);
   });
 });

@@ -458,7 +458,7 @@ export const tirageSurprise: GameModule<TirageState, TirageSettings> = {
     const parsed = outcome.ok ? resultatLibreSchema.safeParse(outcome.value) : null;
     if (parsed?.success) {
       // Les questions libres sont prêtes : quatre choix, les trois leurres étant des pays de la même recherche.
-      const entrees: Entree[] = parsed.data.entrees.map((q) => {
+      const identifications: Entree[] = parsed.data.entrees.map((q) => {
         const choix = shuffle([q.reponse, ...q.leurres], ctx.random);
         return {
           kind: 'identifier' as const,
@@ -472,10 +472,37 @@ export const tirageSurprise: GameModule<TirageState, TirageSettings> = {
           bonne: choix.indexOf(q.reponse),
         };
       });
+      const estimations: Entree[] = parsed.data.estimations.map((e) => ({
+        kind: 'estimer' as const,
+        id: e.id,
+        question: e.question,
+        valeur: e.valeur,
+        unite: e.unite,
+        theme: parsed.data.theme,
+        source: e.source,
+      }));
+      // Chronologies : deux choix, le plus ancien étant la bonne réponse (vide tant que la chronologie libre est coupée).
+      const chronologies: Entree[] = parsed.data.chronologies.map((c) => {
+        const choix = shuffle([c.reponse, c.leurre], ctx.random);
+        return {
+          kind: 'identifier' as const,
+          id: c.id,
+          question: c.question,
+          reponse: c.reponse,
+          titre: c.titre,
+          theme: parsed.data.theme,
+          source: c.source,
+          credit: c.credit,
+          choix,
+          bonne: choix.indexOf(c.reponse),
+        };
+      });
+      // Les trois types mêlés, sans répétition ; le nombre de manches reste celui du réglage.
+      const melange = shuffle([...identifications, ...estimations, ...chronologies], ctx.random);
       const pret: TirageState = {
         ...s,
         libre: { ...s.libre, etat: 'pret', erreur: null },
-        entrees: entrees.slice(0, s.settings.rounds),
+        entrees: melange.slice(0, s.settings.rounds),
         index: 0,
       };
       return beginRound(pret, ctx);
