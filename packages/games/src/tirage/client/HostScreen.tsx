@@ -42,6 +42,11 @@ export function TirageHost({ publicState: pub, now }: HostViewProps) {
       <div className="round-info">
         Question {pub.round} / {pub.total}
       </div>
+      {pub.libre?.etat === 'pret' && pub.libre.classe && (
+        <p className="muted">
+          Thème « {pub.libre.theme} » : {pub.libre.classe} (Wikidata)
+        </p>
+      )}
       <h2 className="question-title">{pub.question}</h2>
       {pub.libre?.etat === 'secours' && (
         <p className="notice">

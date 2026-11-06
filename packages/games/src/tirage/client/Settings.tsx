@@ -73,7 +73,8 @@ export function TirageSettings({ settings, disabled, onChange }: SettingsProps) 
           onBlur={() => commit({ ...draft, themeLibre: (draft.themeLibre ?? '').trim() })}
         />
         <small className="muted">
-          Les questions viennent de Wikidata et portent sur les pays. Vide : les thèmes cochés.
+          Les questions viennent de Wikidata (pays, longueurs). Si une IA est configurée, elle aide seulement à
+          comprendre le thème. Vide : les thèmes cochés.
         </small>
       </label>
       <fieldset className="field" disabled={disabled}>

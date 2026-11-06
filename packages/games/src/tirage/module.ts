@@ -7,7 +7,7 @@ import banqueEstimer from './banque-estimer.fr.json' with { type: 'json' };
 import banqueEspeces from './banque-especes.fr.json' with { type: 'json' };
 import banqueLivres from './banque-livres.fr.json' with { type: 'json' };
 import banqueIdentifier from './banque-identifier.fr.json' with { type: 'json' };
-import { rechercherThemeLibre, resultatLibreSchema } from './theme-libre.js';
+import { rechercherThemeLibre, resultatLibreSchema, suggererTermes } from './theme-libre.js';
 
 /**
  * Tirage surprise : chaque manche est tirée au hasard parmi trois modes.
@@ -225,6 +225,8 @@ export interface LibreEtat {
   theme: string;
   etat: 'attente' | 'pret' | 'secours';
   erreur: string | null;
+  /** Classe Wikidata retenue (ex. « fleuve ») : montrée à l'hôte, pour qu'il voie comment son thème a été compris. */
+  classe: string | null;
 }
 
 export interface TirageState {
@@ -404,7 +406,7 @@ export const tirageSurprise: GameModule<TirageState, TirageSettings> = {
       if (prete) entrees.push(prete);
     }
     const libre: LibreEtat | null = parsed.themeLibre
-      ? { theme: parsed.themeLibre, etat: 'attente', erreur: null }
+      ? { theme: parsed.themeLibre, etat: 'attente', erreur: null, classe: null }
       : null;
     return {
       settings: parsed,
@@ -449,8 +451,11 @@ export const tirageSurprise: GameModule<TirageState, TirageSettings> = {
     return { id: `theme:${s.libre.theme}`, kind: 'theme-libre', input: { theme: s.libre.theme } };
   },
 
-  runJob(job, _ctx, signal) {
-    return rechercherThemeLibre((job.input as { theme: string }).theme, signal);
+  // L'IA de l'installation, si elle existe, propose des termes pour trouver la classe ; Wikidata donne les faits.
+  async runJob(job, ctx, signal) {
+    const theme = (job.input as { theme: string }).theme;
+    const termes = await suggererTermes(ctx, theme, signal);
+    return rechercherThemeLibre(theme, signal, termes);
   },
 
   completeJob(s, jobId, outcome, ctx) {
@@ -501,7 +506,7 @@ export const tirageSurprise: GameModule<TirageState, TirageSettings> = {
       const melange = shuffle([...identifications, ...estimations, ...chronologies], ctx.random);
       const pret: TirageState = {
         ...s,
-        libre: { ...s.libre, etat: 'pret', erreur: null },
+        libre: { ...s.libre, etat: 'pret', erreur: null, classe: parsed.data.classeNom ?? null },
         entrees: melange.slice(0, s.settings.rounds),
         index: 0,
       };
@@ -509,7 +514,7 @@ export const tirageSurprise: GameModule<TirageState, TirageSettings> = {
     }
     // Échec : la partie continue avec les thèmes fixes, et l'hôte voit pourquoi.
     const erreur = outcome.ok ? 'Réponse de Wikidata inexploitable' : outcome.error;
-    const secours: TirageState = { ...s, libre: { ...s.libre, etat: 'secours', erreur } };
+    const secours: TirageState = { ...s, libre: { ...s.libre, etat: 'secours', erreur, classe: null } };
     if (secours.entrees.length === 0) return finish(secours, ctx);
     return beginRound(secours, ctx);
   },
@@ -572,7 +577,9 @@ export const tirageSurprise: GameModule<TirageState, TirageSettings> = {
     const cible = revealed && localisation ? { lat: localisation.lat, lon: localisation.lon } : null;
     return {
       phase: s.phase,
-      libre: s.libre ? { theme: s.libre.theme, etat: s.libre.etat, erreur: s.libre.erreur } : null,
+      libre: s.libre
+        ? { theme: s.libre.theme, etat: s.libre.etat, erreur: s.libre.erreur, classe: s.libre.classe }
+        : null,
       round: s.index + 1,
       total: s.entrees.length,
       endsAt: s.phase === 'guess' ? s.guessEndsAt : undefined,

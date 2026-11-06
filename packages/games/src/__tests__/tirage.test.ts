@@ -417,7 +417,7 @@ describe('thème libre : travail hors moteur', () => {
   it('au lancement, la partie attend le thème : pas de manche avant le travail', () => {
     const { s } = attente();
     expect(s.phase).toBe('preparation');
-    expect(s.libre).toEqual({ theme: 'fleuves', etat: 'attente', erreur: null });
+    expect(s.libre).toEqual({ theme: 'fleuves', etat: 'attente', erreur: null, classe: null });
     const job = tirageSurprise.pendingJob!(s);
     expect(job).toEqual({ id: 'theme:fleuves', kind: 'theme-libre', input: { theme: 'fleuves' } });
   });
@@ -442,7 +442,7 @@ describe('thème libre : travail hors moteur', () => {
     const { h, s } = attente();
     const apres = tirageSurprise.completeJob!(s, 'theme:fleuves', { ok: false, error: 'Wikidata indisponible' }, h.ctx);
     expect(apres.phase).toBe('guess');
-    expect(apres.libre).toEqual({ theme: 'fleuves', etat: 'secours', erreur: 'Wikidata indisponible' });
+    expect(apres.libre).toEqual({ theme: 'fleuves', etat: 'secours', erreur: 'Wikidata indisponible', classe: null });
     expect(apres.entrees.length).toBeGreaterThan(0);
   });
 
