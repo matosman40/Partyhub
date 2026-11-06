@@ -17,6 +17,15 @@ export function TirageHost({ publicState: pub, now }: HostViewProps) {
     );
   }
 
+  if (pub.phase === 'preparation') {
+    return (
+      <section className="pm-host fade-in">
+        <h2 className="big-title">Préparation</h2>
+        <p className="muted">Recherche du thème « {pub.libre?.theme} » sur Wikidata…</p>
+      </section>
+    );
+  }
+
   if (pub.phase === 'ready' || !pub.question) {
     return (
       <section className="pm-host fade-in">
@@ -34,6 +43,11 @@ export function TirageHost({ publicState: pub, now }: HostViewProps) {
         Question {pub.round} / {pub.total}
       </div>
       <h2 className="question-title">{pub.question}</h2>
+      {pub.libre?.etat === 'secours' && (
+        <p className="notice">
+          Thème « {pub.libre.theme} » indisponible ({pub.libre.erreur}) : questions des thèmes cochés.
+        </p>
+      )}
       {pub.image && (
         <figure className="tirage-image">
           <img src={pub.image} alt={localisation ? 'Lieu à placer sur la carte' : 'Tableau à identifier'} />

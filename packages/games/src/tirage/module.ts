@@ -7,6 +7,7 @@ import banqueEstimer from './banque-estimer.fr.json' with { type: 'json' };
 import banqueEspeces from './banque-especes.fr.json' with { type: 'json' };
 import banqueLivres from './banque-livres.fr.json' with { type: 'json' };
 import banqueIdentifier from './banque-identifier.fr.json' with { type: 'json' };
+import { rechercherThemeLibre, resultatLibreSchema } from './theme-libre.js';
 
 /**
  * Tirage surprise : chaque manche est tirée au hasard parmi trois modes.
@@ -28,6 +29,11 @@ export const tirageSettingsSchema = z.object({
     .array(z.enum(THEMES))
     .min(1)
     .default([...THEMES]),
+  /** Thème libre facultatif, tapé par l'hôte : il remplace les thèmes cochés. Vide = pas de thème libre. */
+  themeLibre: z.preprocess(
+    (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+    z.string().max(40).optional(),
+  ),
 });
 
 export type TirageSettings = z.infer<typeof tirageSettingsSchema>;
@@ -214,9 +220,18 @@ export interface Manche {
   gains: Record<string, number>;
 }
 
+/** Thème libre en cours : « attente » pendant la recherche Wikidata, puis « pret » ou « secours » (thèmes fixes). */
+export interface LibreEtat {
+  theme: string;
+  etat: 'attente' | 'pret' | 'secours';
+  erreur: string | null;
+}
+
 export interface TirageState {
   settings: TirageSettings;
-  phase: 'ready' | 'guess' | 'reveal' | 'final';
+  phase: 'ready' | 'preparation' | 'guess' | 'reveal' | 'final';
+  /** Présent quand l'hôte a tapé un thème libre. */
+  libre: LibreEtat | null;
   names: Record<string, string>;
   /** Manches tirées pour la partie, sans répétition, les trois modes mêlés. */
   entrees: Entree[];
@@ -388,9 +403,13 @@ export const tirageSurprise: GameModule<TirageState, TirageSettings> = {
       const prete = preparerIdentification(candidat, memeTheme, ctx.random);
       if (prete) entrees.push(prete);
     }
+    const libre: LibreEtat | null = parsed.themeLibre
+      ? { theme: parsed.themeLibre, etat: 'attente', erreur: null }
+      : null;
     return {
       settings: parsed,
       phase: 'ready',
+      libre,
       names: Object.fromEntries(players.map((p) => [p.id, p.name])),
       entrees,
       index: 0,
@@ -418,8 +437,54 @@ export const tirageSurprise: GameModule<TirageState, TirageSettings> = {
 
   start(s, ctx): GameResult<TirageState> {
     if (s.phase !== 'ready') return fail('La partie a déjà commencé');
+    // Thème libre : la recherche Wikidata se fait dans un travail hors moteur ; la première manche suit son résultat.
+    if (s.libre?.etat === 'attente') return ok({ ...s, phase: 'preparation' });
     if (s.entrees.length === 0) return fail('Aucune question disponible');
     return ok(beginRound(s, ctx));
+  },
+
+  // Travail hors moteur : la recherche du thème libre sur Wikidata (réseau), jamais dans le moteur.
+  pendingJob(s) {
+    if (s.phase !== 'preparation' || s.libre?.etat !== 'attente') return null;
+    return { id: `theme:${s.libre.theme}`, kind: 'theme-libre', input: { theme: s.libre.theme } };
+  },
+
+  runJob(job, _ctx, signal) {
+    return rechercherThemeLibre((job.input as { theme: string }).theme, signal);
+  },
+
+  completeJob(s, jobId, outcome, ctx) {
+    if (s.phase !== 'preparation' || !s.libre || jobId !== `theme:${s.libre.theme}`) return s;
+    const parsed = outcome.ok ? resultatLibreSchema.safeParse(outcome.value) : null;
+    if (parsed?.success) {
+      // Les questions libres sont prêtes : quatre choix, les trois leurres étant des pays de la même recherche.
+      const entrees: Entree[] = parsed.data.entrees.map((q) => {
+        const choix = shuffle([q.reponse, ...q.leurres], ctx.random);
+        return {
+          kind: 'identifier' as const,
+          id: q.id,
+          question: q.question,
+          reponse: q.reponse,
+          titre: q.titre,
+          theme: parsed.data.theme,
+          source: q.source,
+          choix,
+          bonne: choix.indexOf(q.reponse),
+        };
+      });
+      const pret: TirageState = {
+        ...s,
+        libre: { ...s.libre, etat: 'pret', erreur: null },
+        entrees: entrees.slice(0, s.settings.rounds),
+        index: 0,
+      };
+      return beginRound(pret, ctx);
+    }
+    // Échec : la partie continue avec les thèmes fixes, et l'hôte voit pourquoi.
+    const erreur = outcome.ok ? 'Réponse de Wikidata inexploitable' : outcome.error;
+    const secours: TirageState = { ...s, libre: { ...s.libre, etat: 'secours', erreur } };
+    if (secours.entrees.length === 0) return finish(secours, ctx);
+    return beginRound(secours, ctx);
   },
 
   handleAction(s, p, type, payload, ctx): GameResult<TirageState> {
@@ -480,6 +545,7 @@ export const tirageSurprise: GameModule<TirageState, TirageSettings> = {
     const cible = revealed && localisation ? { lat: localisation.lat, lon: localisation.lon } : null;
     return {
       phase: s.phase,
+      libre: s.libre ? { theme: s.libre.theme, etat: s.libre.etat, erreur: s.libre.erreur } : null,
       round: s.index + 1,
       total: s.entrees.length,
       endsAt: s.phase === 'guess' ? s.guessEndsAt : undefined,

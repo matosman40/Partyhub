@@ -15,6 +15,7 @@ import {
 } from '../tirage/module.js';
 import { A, B, mulberry32, must } from './aventure-helpers.js';
 import { harness } from './turn-harness.js';
+import { nettoyerTheme, questionsPays } from '../tirage/theme-libre.js';
 
 /** Met une estimation de la banque en tête de partie, pour les tests qui jouent des estimations. */
 function estimationEnTete(s: TirageState): TirageState {
@@ -352,5 +353,130 @@ describe('thèmes au lancement', () => {
     expect(tirageSettingsSchema.safeParse({ themes: [] }).success).toBe(false);
     expect(tirageSettingsSchema.safeParse({ themes: ['Sciences'] }).success).toBe(false);
     expect(tirageSettingsSchema.safeParse({}).success).toBe(true);
+  });
+});
+
+describe('thème libre : travail hors moteur', () => {
+  const resultat = {
+    theme: 'fleuves',
+    classe: 'Q4022',
+    entrees: [
+      {
+        id: 'libre-1',
+        question: 'Dans quel pays se trouve « Loire » ?',
+        reponse: 'France',
+        leurres: ['Espagne', 'Italie', 'Suisse'],
+        titre: 'Loire',
+        source: 'https://www.wikidata.org/wiki/Q1',
+      },
+      {
+        id: 'libre-2',
+        question: 'Dans quel pays se trouve « Volga » ?',
+        reponse: 'Russie',
+        leurres: ['Chine', 'Inde', 'Brésil'],
+        titre: 'Volga',
+        source: 'https://www.wikidata.org/wiki/Q2',
+      },
+      {
+        id: 'libre-3',
+        question: 'Dans quel pays se trouve « Danube » ?',
+        reponse: 'Hongrie',
+        leurres: ['Pologne', 'Grèce', 'Turquie'],
+        titre: 'Danube',
+        source: 'https://www.wikidata.org/wiki/Q3',
+      },
+      {
+        id: 'libre-4',
+        question: 'Dans quel pays se trouve « Rhin » ?',
+        reponse: 'Suisse',
+        leurres: ['Autriche', 'Allemagne', 'Belgique'],
+        titre: 'Rhin',
+        source: 'https://www.wikidata.org/wiki/Q4',
+      },
+    ],
+  };
+
+  function attente(seed = 3) {
+    const h = harness({ connected: [A.id, B.id], random: mulberry32(seed) });
+    const init = tirageSurprise.initialize(
+      { rounds: 4, guessSeconds: 60, difficulty: 2, themeLibre: 'fleuves' },
+      [A, B],
+      h.ctx,
+    );
+    const s = must(tirageSurprise.start(init, h.ctx));
+    return { h, s };
+  }
+
+  it('au lancement, la partie attend le thème : pas de manche avant le travail', () => {
+    const { s } = attente();
+    expect(s.phase).toBe('preparation');
+    expect(s.libre).toEqual({ theme: 'fleuves', etat: 'attente', erreur: null });
+    const job = tirageSurprise.pendingJob!(s);
+    expect(job).toEqual({ id: 'theme:fleuves', kind: 'theme-libre', input: { theme: 'fleuves' } });
+  });
+
+  it('un résultat réussi lance la première manche avec quatre choix, du thème libre', () => {
+    const { h, s } = attente();
+    const apres = tirageSurprise.completeJob!(s, 'theme:fleuves', { ok: true, value: resultat }, h.ctx);
+    expect(apres.phase).toBe('guess');
+    expect(apres.libre?.etat).toBe('pret');
+    expect(apres.entrees.length).toBe(4);
+    for (const e of apres.entrees) {
+      expect(e.kind).toBe('identifier');
+      const q = e as { choix: string[]; bonne: number; reponse: string; theme: string };
+      expect(q.theme).toBe('fleuves');
+      expect(q.choix).toHaveLength(4);
+      expect(new Set(q.choix).size).toBe(4);
+      expect(q.choix[q.bonne]).toBe(q.reponse);
+    }
+  });
+
+  it('un échec garde la partie avec les thèmes fixes, et dit pourquoi', () => {
+    const { h, s } = attente();
+    const apres = tirageSurprise.completeJob!(s, 'theme:fleuves', { ok: false, error: 'Wikidata indisponible' }, h.ctx);
+    expect(apres.phase).toBe('guess');
+    expect(apres.libre).toEqual({ theme: 'fleuves', etat: 'secours', erreur: 'Wikidata indisponible' });
+    expect(apres.entrees.length).toBeGreaterThan(0);
+  });
+
+  it('un résultat tardif d’un autre thème est ignoré', () => {
+    const { h, s } = attente();
+    const apres = tirageSurprise.completeJob!(s, 'theme:autre', { ok: true, value: resultat }, h.ctx);
+    expect(apres).toBe(s);
+  });
+
+  it('une chaîne vide de thème libre revient à « pas de thème libre »', () => {
+    const r = tirageSettingsSchema.parse({ themeLibre: '   ' });
+    expect(r.themeLibre).toBeUndefined();
+    expect(tirageSettingsSchema.safeParse({ themeLibre: 'x'.repeat(41) }).success).toBe(false);
+  });
+});
+
+describe('thème libre : nettoyage et questions', () => {
+  it('nettoie la saisie : minuscules, sans caractères spéciaux, bornes de longueur', () => {
+    expect(nettoyerTheme('  Fleuves !! du  Monde ')).toBe('fleuves du monde');
+    expect(() => nettoyerTheme('ab')).toThrow();
+    expect(() => nettoyerTheme('a'.repeat(41))).toThrow();
+  });
+
+  it('construit une question par entité, avec trois pays différents de la bonne réponse', () => {
+    const entites = [
+      { id: 'Q1', nom: 'Loire', pays: 'France' },
+      { id: 'Q2', nom: 'Volga', pays: 'Russie' },
+      { id: 'Q3', nom: 'Danube', pays: 'Hongrie' },
+      { id: 'Q4', nom: 'Rhin', pays: 'Suisse' },
+      { id: 'Q5', nom: 'Tage', pays: 'Portugal' },
+    ];
+    const questions = questionsPays(entites, 'fleuves');
+    expect(questions).toHaveLength(5);
+    for (const q of questions) {
+      expect(q.leurres).toHaveLength(3);
+      expect(q.leurres).not.toContain(q.reponse);
+      expect(new Set(q.leurres).size).toBe(3);
+    }
+  });
+
+  it('refuse les entités sans assez de pays distincts', () => {
+    expect(questionsPays([{ id: 'Q1', nom: 'Loire', pays: 'France' }], 'fleuves')).toEqual([]);
   });
 });

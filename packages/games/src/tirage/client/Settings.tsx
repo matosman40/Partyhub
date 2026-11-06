@@ -9,6 +9,7 @@ interface TirageDraft {
   rounds: number;
   guessSeconds: number;
   themes: string[];
+  themeLibre?: string;
 }
 
 /** Réglages de Tirage surprise : nombre de manches, temps, et thèmes cochés. Le serveur valide les valeurs. */
@@ -59,6 +60,21 @@ export function TirageSettings({ settings, disabled, onChange }: SettingsProps) 
           onChange={(e) => setDraft({ ...draft, guessSeconds: Number(e.target.value) })}
           onBlur={() => commit({ ...draft, guessSeconds: clampInt(draft.guessSeconds, 20, 180) })}
         />
+      </label>
+      <label className="field">
+        <span>Thème libre (facultatif)</span>
+        <input
+          type="text"
+          maxLength={40}
+          placeholder="ex. fleuves"
+          value={draft.themeLibre ?? ''}
+          disabled={disabled}
+          onChange={(e) => setDraft({ ...draft, themeLibre: e.target.value })}
+          onBlur={() => commit({ ...draft, themeLibre: (draft.themeLibre ?? '').trim() })}
+        />
+        <small className="muted">
+          Les questions viennent de Wikidata et portent sur les pays. Vide : les thèmes cochés.
+        </small>
       </label>
       <fieldset className="field" disabled={disabled}>
         <legend>Thèmes</legend>
