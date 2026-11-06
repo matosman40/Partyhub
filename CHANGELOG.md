@@ -4,6 +4,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 
 ## [Non publié]
 
+## [0.20.0] - 2026-11-06
+
 ### Ajouté
 
 - Accueil réduit à deux actions, « Jouer » (défilement vers le catalogue, avec confettis) et « Rejoindre ». Magasin et administration restent dans le menu.
