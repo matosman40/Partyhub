@@ -36,3 +36,15 @@
 .tirage-reponses li + li {
   margin-top: 0.5rem;
 }
+
+/* Téléphone : la photo du lieu à placer, au-dessus de la carte. */
+.tirage-photo-tel {
+  display: block;
+  margin: 0 auto;
+  max-width: 100%;
+  max-height: 30vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 0.5rem;
+}

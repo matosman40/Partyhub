@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
   BANQUE,
+  BANQUE_LOCALISATION,
   BANQUE_IDENTIFICATION,
   MAX_POINTS,
   POINTS_IDENTIFICATION,
   pointsEstimation,
   pointsIdentification,
+  pairesChronologie,
   preparerIdentification,
   tirageSurprise,
   type TirageState,
@@ -119,12 +121,21 @@ describe('déroulé d’une partie Tirage surprise', () => {
 });
 
 describe('banque du mode Identifier', () => {
-  it('chaque entrée a une réponse, une image locale et une source ouverte (Met ou iNaturalist)', () => {
+  it('chaque entrée a une réponse et une source ouverte ; une image locale quand elle existe', () => {
     expect(new Set(BANQUE_IDENTIFICATION.map((e) => e.id)).size).toBe(BANQUE_IDENTIFICATION.length);
     for (const e of BANQUE_IDENTIFICATION) {
       expect(e.reponse.length).toBeGreaterThan(0);
-      expect(e.image).toMatch(/^\/tirage\/(met|inat)\/\d+\.(jpg|png|gif)$/);
-      expect(e.source).toMatch(/^https:\/\/www\.(metmuseum\.org|inaturalist\.org)\//);
+      if (e.image !== undefined) expect(e.image).toMatch(/^\/tirage\/(met|inat)\/\d+\.(jpg|png|gif)$/);
+      expect(e.source).toMatch(/^https:\/\/(www\.metmuseum\.org|www\.inaturalist\.org|openlibrary\.org)\//);
+    }
+  });
+
+  it('les livres posent la question avec leur titre, et n’ont pas d’image', () => {
+    const livres = BANQUE_IDENTIFICATION.filter((e) => e.theme === 'Littérature');
+    expect(livres.length).toBeGreaterThan(0);
+    for (const l of livres) {
+      expect(l.image).toBeUndefined();
+      expect(l.question).toContain(l.titre);
     }
   });
 
@@ -216,5 +227,95 @@ describe('déroulé en mode Identifier', () => {
     expect(pub.answer.reponse).toBe(entree.reponse);
     expect(pub.placements.find((p) => p.playerId === A.id)?.choice).toBe(entree.reponse);
     expect(pub.placements.find((p) => p.playerId === B.id)?.choice).toBeNull();
+  });
+});
+
+describe('mode Chronologie : lequel a été publié en premier', () => {
+  const livres = BANQUE_IDENTIFICATION.filter((e) => e.annee !== undefined);
+
+  it('chaque paire a deux titres, et la bonne réponse est le plus ancien', () => {
+    const { paires } = pairesChronologie(livres, mulberry32(11));
+    expect(paires.length).toBeGreaterThan(0);
+    for (const p of paires) {
+      expect(p.choix).toHaveLength(2);
+      expect(new Set(p.choix).size).toBe(2);
+      const reponse = p.choix[p.bonne]!;
+      const autre = p.choix[1 - p.bonne]!;
+      const vieux = livres.find((l) => l.titre === reponse)!;
+      const recent = livres.find((l) => l.titre === autre)!;
+      expect(vieux.annee!).toBeLessThan(recent.annee!);
+      expect(recent.annee! - vieux.annee!).toBeGreaterThanOrEqual(5);
+    }
+  });
+
+  it('les livres d’une paire ne reviennent pas en Attribuer dans la même partie', () => {
+    const { paires, utilises } = pairesChronologie(livres, mulberry32(11));
+    expect(utilises.size).toBe(paires.length * 2);
+    for (const id of utilises) expect(id.startsWith('livre-')).toBe(true);
+  });
+
+  it('les parties tirent des questions de Chronologie, sans répéter une entrée', () => {
+    let tirees = 0;
+    for (let seed = 1; seed <= 20; seed++) {
+      const h = harness({ connected: [A.id, B.id], random: mulberry32(seed) });
+      const s = tirageSurprise.initialize({ rounds: 10, guessSeconds: 60, difficulty: 2 }, [A, B], h.ctx);
+      expect(new Set(s.entrees.map((e) => e.id)).size).toBe(s.entrees.length);
+      const chrono = s.entrees.filter((e) => e.id.startsWith('chrono-'));
+      for (const e of chrono) expect(e.kind).toBe('identifier');
+      tirees += chrono.length;
+    }
+    expect(tirees).toBeGreaterThan(0);
+  });
+});
+
+describe('mode Localiser : placer un lieu sur la carte', () => {
+  function setupLieu() {
+    const h = harness({ connected: [A.id, B.id], random: mulberry32(9) });
+    let s = tirageSurprise.initialize({ rounds: 3, guessSeconds: 60, difficulty: 2 }, [A, B], h.ctx);
+    const i = s.entrees.findIndex((e) => e.kind === 'localiser');
+    s = { ...s, entrees: [s.entrees[i >= 0 ? i : 0]!, ...s.entrees.filter((_, j) => j !== (i >= 0 ? i : 0))] };
+    s = must(tirageSurprise.start({ ...s, entrees: [BANQUE_LOCALISATION[0]!, ...s.entrees] }, h.ctx));
+    return { h, s };
+  }
+
+  it('la banque de lieux reprend les photos de Photo mystère, avec leur crédit et leur source', () => {
+    expect(BANQUE_LOCALISATION.length).toBeGreaterThan(0);
+    for (const l of BANQUE_LOCALISATION) {
+      expect(l.credit).toMatch(/CC/);
+      expect(l.source).toMatch(/^https:\/\//);
+      expect(Math.abs(l.lat)).toBeLessThanOrEqual(90);
+    }
+  });
+
+  it('accepte un point sur un lieu, et refuse une estimation ou un choix sur cette question', () => {
+    const { h, s } = setupLieu();
+    expect(tirageSurprise.handleAction(s, A, 'locate', { lat: 48.8, lon: 2.3 }, h.ctx).ok).toBe(true);
+    expect(tirageSurprise.handleAction(s, A, 'estimate', { valeur: 5 }, h.ctx).ok).toBe(false);
+    expect(tirageSurprise.handleAction(s, A, 'choose', { choix: 0 }, h.ctx).ok).toBe(false);
+    expect(tirageSurprise.handleAction(s, A, 'locate', { lat: 200, lon: 0 }, h.ctx).ok).toBe(false);
+  });
+
+  it('cache les points posés par les autres avant la révélation, et montre le sien', () => {
+    const { h, s } = setupLieu();
+    const apres = must(tirageSurprise.handleAction(s, A, 'locate', { lat: 10, lon: 10 }, h.ctx));
+    const pub = tirageSurprise.getPublicState(apres) as { placements: unknown[]; target: unknown; answered: number };
+    expect(pub.placements).toEqual([]);
+    expect(pub.target).toBeNull();
+    expect(pub.answered).toBe(1);
+    const vueB = tirageSurprise.getPlayerState(apres, B.id) as { myPin: unknown; guessed: boolean };
+    expect(vueB.myPin).toBeNull();
+    expect(vueB.guessed).toBe(false);
+    const vueA = tirageSurprise.getPlayerState(apres, A.id) as { myPin: unknown };
+    expect(vueA.myPin).toEqual({ lat: 10, lon: 10 });
+  });
+
+  it('rapporte le maximum pile sur le lieu, et très peu au large', () => {
+    const { h, s } = setupLieu();
+    const cible = BANQUE_LOCALISATION[0]!;
+    let st = must(tirageSurprise.handleAction(s, A, 'locate', { lat: cible.lat, lon: cible.lon }, h.ctx));
+    st = must(tirageSurprise.handleAction(st, B, 'locate', { lat: cible.lat - 60, lon: cible.lon + 90 }, h.ctx));
+    expect(st.phase).toBe('reveal');
+    expect(st.points[A.id]).toBe(MAX_POINTS);
+    expect(st.points[B.id] ?? 0).toBeLessThan(MAX_POINTS / 10);
   });
 });

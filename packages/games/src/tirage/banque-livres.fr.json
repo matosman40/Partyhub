@@ -1,0 +1,605 @@
+{
+  "licence": "CC0 (Open Library, métadonnées)",
+  "entrees": [
+    {
+      "id": "livre-OL1230631W",
+      "question": "Qui a écrit « La chute » ?",
+      "reponse": "Albert Camus",
+      "titre": "La chute",
+      "annee": 1917,
+      "theme": "Littérature",
+      "source": "https://openlibrary.org/works/OL1230631W",
+      "licence": "Open Library (données CC0)"
+    },
+    {
+      "id": "livre-OL1230690W",
+      "question": "Qui a écrit « The Myth of Sisyphus and Other Essays » ?",
+      "reponse": "Albert Camus",
+      "titre": "The Myth of Sisyphus and Other Essays",
+      "annee": 1955,
+      "theme": "Littérature",
+      "source": "https://openlibrary.org/works/OL1230690W",
+      "licence": "Open Library (données CC0)"
+    },
+    {
+      "id": "livre-OL1230601W",
+      "question": "Qui a écrit « Le mythe de Sisyphe » ?",
+      "reponse": "Albert Camus",
+      "titre": "Le mythe de Sisyphe",
+      "annee": 1941,
+      "theme": "Littérature",
+      "source": "https://openlibrary.org/works/OL1230601W",
+      "licence": "Open Library (données CC0)"
+    },
+    {
+      "id": "livre-OL1287903W",
+      "question": "Qui a écrit « Voyage au bout de la nuit » ?",
+      "reponse": "Louis-Ferdinand Céline",
+      "titre": "Voyage au bout de la nuit",
+      "annee": 1932,
+      "theme": "Littérature",
+      "source": "https://openlibrary.org/works/OL1287903W",
+      "licence": "Open Library (données CC0)"
+    },
+    {
+      "id": "livre-OL1161171W",
+      "question": "Qui a écrit « La nausée » ?",
+      "reponse": "Jean-Paul Sartre",
+      "titre": "La nausée",
+      "annee": 1938,
+      "theme": "Littérature",
+      "source": "https://openlibrary.org/works/OL1161171W",
+      "licence": "Open Library (données CC0)"
+    },
+    {
+      "id": "livre-OL1230613W",
+      "question": "Qui a écrit « L’étranger » ?",
+      "reponse": "Albert Camus",
+      "titre": "L’étranger",
+      "annee": 1942,
+      "theme": "Littérature",
+      "source": "https://openlibrary.org/works/OL1230613W",
+      "licence": "Open Library (données CC0)"
+    },
+    {
+      "id": "livre-OL1158921W",
+      "question": "Qui a écrit « Les fleurs du mal » ?",
+      "reponse": "Charles Baudelaire",
+      "titre": "Les fleurs du mal",
+      "annee": 1855,
+      "theme": "Littérature",
+      "source": "https://openlibrary.org/works/OL1158921W",
+      "licence": "Open Library (données CC0)"
+    },
+    {
+      "id": "livre-OL36287W",
+      "question": "Qui a écrit « Le Comte de Monte-Cristo » ?",
+      "reponse": "Alexandre Dumas",
+      "titre": "Le Comte de Monte-Cristo",
+      "annee": 1830,
+      "theme": "Littérature",
+      "source": "https://openlibrary.org/works/OL36287W",
+      "licence": "Open Library (données CC0)"
+    },
+    {
+      "id": "livre-OL1063588W",
+      "question": "Qui a écrit « Les Misérables » ?",
+      "reponse": "Victor Hugo",
+      "titre": "Les Misérables",
+      "annee": 1862,
+      "theme": "Littérature",
+      "source": "https://openlibrary.org/works/OL1063588W",
+      "licence": "Open Library (données CC0)"
+    },
+    {
+      "id": "livre-OL1230600W",
+      "question": "Qui a écrit « L'Homme révolté » ?",
+      "reponse": "Albert Camus",
+      "titre": "L'Homme révolté",
+      "annee": 1951,
+      "theme": "Littérature",
+      "source": "https://openlibrary.org/works/OL1230600W",
+      "licence": "Open Library (données CC0)"
+    },
+    {
+      "id": "livre-OL1064114W",
+      "question": "Qui a écrit « La légende des siècles » ?",
+      "reponse": "Victor Hugo",
+      "titre": "La légende des siècles",
+      "annee": 1800,
+      "theme": "Littérature",
+      "source": "https://openlibrary.org/works/OL1064114W",
+      "licence": "Open Library (données CC0)"
+    },
+    {
+      "id": "livre-OL15202030W",
+      "question": "Qui a écrit « Notre Dame de Paris » ?",
+      "reponse": "Victor Hugo",
+      "titre": "Notre Dame de Paris",
+      "annee": 1831,
+      "theme": "Littérature",
+      "source": "https://openlibrary.org/works/OL15202030W",
+      "licence": "Open Library (données CC0)"
+    },
+    {
+      "id": "livre-OL100672W",
+      "question": "Qui a écrit « Candide » ?",
+      "reponse": "Voltaire",
+      "titre": "Candide",
+      "annee": 1746,
+      "theme": "Littérature",
+      "source": "https://openlibrary.org/works/OL100672W",
+      "licence": "Open Library (données CC0)"
+    },
+    {
+      "id": "livre-OL10263W",
+      "question": "Qui a écrit « Le petit prince » ?",
+      "reponse": "Antoine de Saint-Exupéry",
+      "titre": "Le petit prince",
+      "annee": 1943,
+      "theme": "Littérature",
+      "source": "https://openlibrary.org/works/OL10263W",
+      "licence": "Open Library (données CC0)"
+    },
+    {
+      "id": "livre-OL551668W",
+      "question": "Qui a écrit « Cyrano de Bergerac » ?",
+      "reponse": "Edmond Rostand",
+      "titre": "Cyrano de Bergerac",
+      "annee": 1821,
+      "theme": "Littérature",
+      "source": "https://openlibrary.org/works/OL551668W",
+      "licence": "Open Library (données CC0)"
+    },
+    {
+      "id": "livre-OL1364376W",
+      "question": "Qui a écrit « Excercices de style » ?",
+      "reponse": "Raymond Queneau",
+      "titre": "Excercices de style",
+      "annee": 1947,
+      "theme": "Littérature",
+      "source": "https://openlibrary.org/works/OL1364376W",
+      "licence": "Open Library (données CC0)"
+    },
+    {
+      "id": "livre-OL1099280W",
+      "question": "Qui a écrit « Vingt mille lieues sous les mers » ?",
+      "reponse": "Jules Verne",
+      "titre": "Vingt mille lieues sous les mers",
+      "annee": 1870,
+      "theme": "Littérature",
+      "source": "https://openlibrary.org/works/OL1099280W",
+      "licence": "Open Library (données CC0)"
+    },
+    {
+      "id": "livre-OL3632909W",
+      "question": "Qui a écrit « Emmanuelle » ?",
+      "reponse": "Emmanuelle Arsan",
+      "titre": "Emmanuelle",
+      "annee": 1967,
+      "theme": "Littérature",
+      "source": "https://openlibrary.org/works/OL3632909W",
+      "licence": "Open Library (données CC0)"
+    },
+    {
+      "id": "livre-OL1230571W",
+      "question": "Qui a écrit « La Mort heureuse » ?",
+      "reponse": "Albert Camus",
+      "titre": "La Mort heureuse",
+      "annee": 1971,
+      "theme": "Littérature",
+      "source": "https://openlibrary.org/works/OL1230571W",
+      "licence": "Open Library (données CC0)"
+    },
+    {
+      "id": "livre-OL584245W",
+      "question": "Qui a écrit « Aimez-vous Brahms... » ?",
+      "reponse": "Françoise Sagan",
+      "titre": "Aimez-vous Brahms...",
+      "annee": 1959,
+      "theme": "Littérature",
+      "source": "https://openlibrary.org/works/OL584245W",
+      "licence": "Open Library (données CC0)"
+    },
+    {
+      "id": "livre-OL2286728W",
+      "question": "Qui a écrit « Extension du domaine de la lutte » ?",
+      "reponse": "Michel Houellebecq",
+      "titre": "Extension du domaine de la lutte",
+      "annee": 1994,
+      "theme": "Littérature",
+      "source": "https://openlibrary.org/works/OL2286728W",
+      "licence": "Open Library (données CC0)"
+    },
+    {
+      "id": "livre-OL1230611W",
+      "question": "Qui a écrit « L'exil et le royaume » ?",
+      "reponse": "Albert Camus",
+      "titre": "L'exil et le royaume",
+      "annee": 1951,
+      "theme": "Littérature",
+      "source": "https://openlibrary.org/works/OL1230611W",
+      "licence": "Open Library (données CC0)"
+    },
+    {
+      "id": "livre-OL1077449W",
+      "question": "Qui a écrit « Paul et Virginie » ?",
+      "reponse": "Bernardin de Saint-Pierre",
+      "titre": "Paul et Virginie",
+      "annee": 1789,
+      "theme": "Littérature",
+      "source": "https://openlibrary.org/works/OL1077449W",
+      "licence": "Open Library (données CC0)"
+    },
+    {
+      "id": "livre-OL2239396W",
+      "question": "Qui a écrit « À rebours » ?",
+      "reponse": "Joris-Karl Huysmans",
+      "titre": "À rebours",
+      "annee": 1884,
+      "theme": "Littérature",
+      "source": "https://openlibrary.org/works/OL2239396W",
+      "licence": "Open Library (données CC0)"
+    },
+    {
+      "id": "livre-OL15164672W",
+      "question": "Qui a écrit « En attendant Godot » ?",
+      "reponse": "Samuel Beckett",
+      "titre": "En attendant Godot",
+      "annee": 1952,
+      "theme": "Littérature",
+      "source": "https://openlibrary.org/works/OL15164672W",
+      "licence": "Open Library (données CC0)"
+    },
+    {
+      "id": "livre-OL1099915W",
+      "question": "Qui a écrit « L'Île mystérieuse » ?",
+      "reponse": "Jules Verne",
+      "titre": "L'Île mystérieuse",
+      "annee": 1870,
+      "theme": "Littérature",
+      "source": "https://openlibrary.org/works/OL1099915W",
+      "licence": "Open Library (données CC0)"
+    },
+    {
+      "id": "livre-OL156818W",
+      "question": "Qui a écrit « Illuminations » ?",
+      "reponse": "Arthur Rimbaud",
+      "titre": "Illuminations",
+      "annee": 1949,
+      "theme": "Littérature",
+      "source": "https://openlibrary.org/works/OL156818W",
+      "licence": "Open Library (données CC0)"
+    },
+    {
+      "id": "livre-OL30053009W",
+      "question": "Qui a écrit « Du côté de chez Swann » ?",
+      "reponse": "Marcel Proust",
+      "titre": "Du côté de chez Swann",
+      "annee": 1908,
+      "theme": "Littérature",
+      "source": "https://openlibrary.org/works/OL30053009W",
+      "licence": "Open Library (données CC0)"
+    },
+    {
+      "id": "livre-OL260382W",
+      "question": "Qui a écrit « Mémoires d'une jeune fille rangée » ?",
+      "reponse": "Simone de Beauvoir",
+      "titre": "Mémoires d'une jeune fille rangée",
+      "annee": 1900,
+      "theme": "Littérature",
+      "source": "https://openlibrary.org/works/OL260382W",
+      "licence": "Open Library (données CC0)"
+    },
+    {
+      "id": "livre-OL471576W",
+      "question": "Qui a écrit « Murder on the Orient Express » ?",
+      "reponse": "Agatha Christie",
+      "titre": "Murder on the Orient Express",
+      "annee": 1933,
+      "theme": "Littérature",
+      "source": "https://openlibrary.org/works/OL471576W",
+      "licence": "Open Library (données CC0)"
+    },
+    {
+      "id": "livre-OL1161329W",
+      "question": "Qui a écrit « No Exit (and Three Other Plays) » ?",
+      "reponse": "Jean-Paul Sartre",
+      "titre": "No Exit (and Three Other Plays)",
+      "annee": 1945,
+      "theme": "Littérature",
+      "source": "https://openlibrary.org/works/OL1161329W",
+      "licence": "Open Library (données CC0)"
+    },
+    {
+      "id": "livre-OL584283W",
+      "question": "Qui a écrit « Un certain sourire » ?",
+      "reponse": "Françoise Sagan",
+      "titre": "Un certain sourire",
+      "annee": 1956,
+      "theme": "Littérature",
+      "source": "https://openlibrary.org/works/OL584283W",
+      "licence": "Open Library (données CC0)"
+    },
+    {
+      "id": "livre-OL1086528W",
+      "question": "Qui a écrit « Essais » ?",
+      "reponse": "Montaigne, Michel de",
+      "titre": "Essais",
+      "annee": 1600,
+      "theme": "Littérature",
+      "source": "https://openlibrary.org/works/OL1086528W",
+      "licence": "Open Library (données CC0)"
+    },
+    {
+      "id": "livre-OL1230715W",
+      "question": "Qui a écrit « La Peste » ?",
+      "reponse": "Albert Camus",
+      "titre": "La Peste",
+      "annee": 1942,
+      "theme": "Littérature",
+      "source": "https://openlibrary.org/works/OL1230715W",
+      "licence": "Open Library (données CC0)"
+    },
+    {
+      "id": "livre-OL963341W",
+      "question": "Qui a écrit « Les Enfants Terribles » ?",
+      "reponse": "Jean Cocteau",
+      "titre": "Les Enfants Terribles",
+      "annee": 1900,
+      "theme": "Littérature",
+      "source": "https://openlibrary.org/works/OL963341W",
+      "licence": "Open Library (données CC0)"
+    },
+    {
+      "id": "livre-OL4489217W",
+      "question": "Qui a écrit « Words » ?",
+      "reponse": "Jean-Paul Sartre",
+      "titre": "Words",
+      "annee": 1964,
+      "theme": "Littérature",
+      "source": "https://openlibrary.org/works/OL4489217W",
+      "licence": "Open Library (données CC0)"
+    },
+    {
+      "id": "livre-OL274574W",
+      "question": "Qui a écrit « Crónica de una muerte anunciada » ?",
+      "reponse": "Gabriel García Márquez",
+      "titre": "Crónica de una muerte anunciada",
+      "annee": 1980,
+      "theme": "Littérature",
+      "source": "https://openlibrary.org/works/OL274574W",
+      "licence": "Open Library (données CC0)"
+    },
+    {
+      "id": "livre-OL50348W",
+      "question": "Qui a écrit « Fables » ?",
+      "reponse": "Jean de La Fontaine",
+      "titre": "Fables",
+      "annee": 1678,
+      "theme": "Littérature",
+      "source": "https://openlibrary.org/works/OL50348W",
+      "licence": "Open Library (données CC0)"
+    },
+    {
+      "id": "livre-OL15144788W",
+      "question": "Qui a écrit « Tartuffe » ?",
+      "reponse": "Molière",
+      "titre": "Tartuffe",
+      "annee": 1707,
+      "theme": "Littérature",
+      "source": "https://openlibrary.org/works/OL15144788W",
+      "licence": "Open Library (données CC0)"
+    },
+    {
+      "id": "livre-OL1064115W",
+      "question": "Qui a écrit « Ruy Blas » ?",
+      "reponse": "Victor Hugo",
+      "titre": "Ruy Blas",
+      "annee": 1838,
+      "theme": "Littérature",
+      "source": "https://openlibrary.org/works/OL1064115W",
+      "licence": "Open Library (données CC0)"
+    },
+    {
+      "id": "livre-OL1064284W",
+      "question": "Qui a écrit « Arsène Lupin contre Herlock Sholmès » ?",
+      "reponse": "Maurice Leblanc",
+      "titre": "Arsène Lupin contre Herlock Sholmès",
+      "annee": 1906,
+      "theme": "Littérature",
+      "source": "https://openlibrary.org/works/OL1064284W",
+      "licence": "Open Library (données CC0)"
+    },
+    {
+      "id": "livre-OL1260919W",
+      "question": "Qui a écrit « Le Rivage des Syrtes » ?",
+      "reponse": "Julien Gracq",
+      "titre": "Le Rivage des Syrtes",
+      "annee": 1951,
+      "theme": "Littérature",
+      "source": "https://openlibrary.org/works/OL1260919W",
+      "licence": "Open Library (données CC0)"
+    },
+    {
+      "id": "livre-OL631007W",
+      "question": "Qui a écrit « L'immoraliste » ?",
+      "reponse": "André Gide",
+      "titre": "L'immoraliste",
+      "annee": 1902,
+      "theme": "Littérature",
+      "source": "https://openlibrary.org/works/OL631007W",
+      "licence": "Open Library (données CC0)"
+    },
+    {
+      "id": "livre-OL893601W",
+      "question": "Qui a écrit « Bouvard et Pécuchet » ?",
+      "reponse": "Gustave Flaubert",
+      "titre": "Bouvard et Pécuchet",
+      "annee": 1896,
+      "theme": "Littérature",
+      "source": "https://openlibrary.org/works/OL893601W",
+      "licence": "Open Library (données CC0)"
+    },
+    {
+      "id": "livre-OL1132652W",
+      "question": "Qui a écrit « Manon Lescaut » ?",
+      "reponse": "Abbé Prévost",
+      "titre": "Manon Lescaut",
+      "annee": 1734,
+      "theme": "Littérature",
+      "source": "https://openlibrary.org/works/OL1132652W",
+      "licence": "Open Library (données CC0)"
+    },
+    {
+      "id": "livre-OL85241W",
+      "question": "Qui a écrit « Illusions perdues » ?",
+      "reponse": "Honoré de Balzac",
+      "titre": "Illusions perdues",
+      "annee": 1837,
+      "theme": "Littérature",
+      "source": "https://openlibrary.org/works/OL85241W",
+      "licence": "Open Library (données CC0)"
+    },
+    {
+      "id": "livre-OL1100007W",
+      "question": "Qui a écrit « Le Tour du Monde en Quatre-Vingts Jours » ?",
+      "reponse": "Jules Verne",
+      "titre": "Le Tour du Monde en Quatre-Vingts Jours",
+      "annee": 1872,
+      "theme": "Littérature",
+      "source": "https://openlibrary.org/works/OL1100007W",
+      "licence": "Open Library (données CC0)"
+    },
+    {
+      "id": "livre-OL733285W",
+      "question": "Qui a écrit « La chartreuse de Parme » ?",
+      "reponse": "Stendhal",
+      "titre": "La chartreuse de Parme",
+      "annee": 1800,
+      "theme": "Littérature",
+      "source": "https://openlibrary.org/works/OL733285W",
+      "licence": "Open Library (données CC0)"
+    },
+    {
+      "id": "livre-OL1237267W",
+      "question": "Qui a écrit « Trois filles de leur mère » ?",
+      "reponse": "Pierre Louÿs",
+      "titre": "Trois filles de leur mère",
+      "annee": 1926,
+      "theme": "Littérature",
+      "source": "https://openlibrary.org/works/OL1237267W",
+      "licence": "Open Library (données CC0)"
+    },
+    {
+      "id": "livre-OL8193465W",
+      "question": "Qui a écrit « A Tale of Two Cities » ?",
+      "reponse": "Charles Dickens",
+      "titre": "A Tale of Two Cities",
+      "annee": 1800,
+      "theme": "Littérature",
+      "source": "https://openlibrary.org/works/OL8193465W",
+      "licence": "Open Library (données CC0)"
+    },
+    {
+      "id": "livre-OL260381W",
+      "question": "Qui a écrit « Les Mandarins » ?",
+      "reponse": "Simone de Beauvoir",
+      "titre": "Les Mandarins",
+      "annee": 1954,
+      "theme": "Littérature",
+      "source": "https://openlibrary.org/works/OL260381W",
+      "licence": "Open Library (données CC0)"
+    },
+    {
+      "id": "livre-OL74826W",
+      "question": "Qui a écrit « Le neveu de Rameau » ?",
+      "reponse": "Denis Diderot",
+      "titre": "Le neveu de Rameau",
+      "annee": 1862,
+      "theme": "Littérature",
+      "source": "https://openlibrary.org/works/OL74826W",
+      "licence": "Open Library (données CC0)"
+    },
+    {
+      "id": "livre-OL1230627W",
+      "question": "Qui a écrit « Noces / L'Été » ?",
+      "reponse": "Albert Camus",
+      "titre": "Noces / L'Été",
+      "annee": 1959,
+      "theme": "Littérature",
+      "source": "https://openlibrary.org/works/OL1230627W",
+      "licence": "Open Library (données CC0)"
+    },
+    {
+      "id": "livre-OL893957W",
+      "question": "Qui a écrit « Trois contes » ?",
+      "reponse": "Gustave Flaubert",
+      "titre": "Trois contes",
+      "annee": 1877,
+      "theme": "Littérature",
+      "source": "https://openlibrary.org/works/OL893957W",
+      "licence": "Open Library (données CC0)"
+    },
+    {
+      "id": "livre-OL740305W",
+      "question": "Qui a écrit « Mission to Kala » ?",
+      "reponse": "Mongo Beti",
+      "titre": "Mission to Kala",
+      "annee": 1957,
+      "theme": "Littérature",
+      "source": "https://openlibrary.org/works/OL740305W",
+      "licence": "Open Library (données CC0)"
+    },
+    {
+      "id": "livre-OL982018W",
+      "question": "Qui a écrit « La charca del diablo » ?",
+      "reponse": "George Sand",
+      "titre": "La charca del diablo",
+      "annee": 1846,
+      "theme": "Littérature",
+      "source": "https://openlibrary.org/works/OL982018W",
+      "licence": "Open Library (données CC0)"
+    },
+    {
+      "id": "livre-OL3521623W",
+      "question": "Qui a écrit « Therese Raquin » ?",
+      "reponse": "Émile Zola",
+      "titre": "Therese Raquin",
+      "annee": 1900,
+      "theme": "Littérature",
+      "source": "https://openlibrary.org/works/OL3521623W",
+      "licence": "Open Library (données CC0)"
+    },
+    {
+      "id": "livre-OL77958W",
+      "question": "Qui a écrit « The Last of the Mohicans » ?",
+      "reponse": "James Fenimore Cooper",
+      "titre": "The Last of the Mohicans",
+      "annee": 1826,
+      "theme": "Littérature",
+      "source": "https://openlibrary.org/works/OL77958W",
+      "licence": "Open Library (données CC0)"
+    },
+    {
+      "id": "livre-OL93842W",
+      "question": "Qui a écrit « Bel-Ami » ?",
+      "reponse": "Guy de Maupassant",
+      "titre": "Bel-Ami",
+      "annee": 1893,
+      "theme": "Littérature",
+      "source": "https://openlibrary.org/works/OL93842W",
+      "licence": "Open Library (données CC0)"
+    },
+    {
+      "id": "livre-OL36861W",
+      "question": "Qui a écrit « Les trois Mousquetaires » ?",
+      "reponse": "Alexandre Dumas",
+      "titre": "Les trois Mousquetaires",
+      "annee": 1844,
+      "theme": "Littérature",
+      "source": "https://openlibrary.org/works/OL36861W",
+      "licence": "Open Library (données CC0)"
+    }
+  ]
+}

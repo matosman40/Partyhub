@@ -1,14 +1,19 @@
 import { z } from 'zod';
 import type { GameContext, GameModule, GameResult, PlayerRef, ScoreEntry } from '@partyhub/shared';
 import { addPoints, everyConnectedDone, fail, ok, rankEntries, shuffle } from '../common/engine.js';
+import { distanceKm, pinSchema, pointsFor, SCALE_BY_DIFFICULTY, type Pin } from '../photo-mystere/module.js';
+import { PHOTOS } from '../photo-mystere/photos.js';
 import banqueEstimer from './banque-estimer.fr.json' with { type: 'json' };
 import banqueEspeces from './banque-especes.fr.json' with { type: 'json' };
+import banqueLivres from './banque-livres.fr.json' with { type: 'json' };
 import banqueIdentifier from './banque-identifier.fr.json' with { type: 'json' };
 
 /**
- * Tirage surprise : chaque manche est tirée au hasard, soit en mode Estimer (un chiffre réel à deviner, Wikidata),
- * soit en mode Identifier (l'auteur d'un tableau, parmi quatre choix, Met Museum). Ce fichier contient les règles ;
- * il est pur.
+ * Tirage surprise : chaque manche est tirée au hasard parmi trois modes.
+ * - Estimer : un chiffre réel à deviner (Wikidata).
+ * - Identifier : quatre choix (auteur d'un tableau, espèce, auteur d'un livre) ou deux choix (Chronologie).
+ * - Localiser : un point à placer sur la carte, à partir d'une photo de lieu (Wikimedia Commons, via Photo mystère).
+ * Ce fichier contient les règles ; il est pur.
  */
 
 export const tirageSettingsSchema = z.object({
@@ -33,11 +38,14 @@ const identifierSchema = z.object({
   question: z.string().min(5),
   reponse: z.string().min(1),
   titre: z.string().min(1),
-  image: z.string().startsWith('/tirage/'),
+  /** Image locale ; absente pour les livres (les couvertures ne sont pas libres). */
+  image: z.string().startsWith('/tirage/').optional(),
   theme: z.string().min(1),
   source: z.string().min(1),
   /** Crédit du photographe ou de la collection, quand la licence le demande (CC BY, CC BY-SA). */
   credit: z.string().min(1).optional(),
+  /** Année de première publication (livres), pour le mode Chronologie. */
+  annee: z.number().int().optional(),
 });
 
 /** Une estimation : le chiffre réel et son unité. */
@@ -50,13 +58,27 @@ export interface IdentificationBase extends z.infer<typeof identifierSchema> {
   kind: 'identifier';
 }
 
-/** Une identification prête à jouer : quatre choix, dont la bonne réponse à l'index `bonne`. */
+/** Une identification prête à jouer : des choix, dont la bonne réponse à l'index `bonne`. */
 export interface Identification extends IdentificationBase {
   choix: string[];
   bonne: number;
 }
 
-export type Entree = Estimation | Identification;
+/** Un lieu à placer sur la carte : la photo, et les coordonnées de la bonne place. */
+export interface Localisation {
+  kind: 'localiser';
+  id: string;
+  question: string;
+  titre: string;
+  image: string;
+  theme: string;
+  source: string;
+  credit: string;
+  lat: number;
+  lon: number;
+}
+
+export type Entree = Estimation | Identification | Localisation;
 
 /** Banques chargées et validées au démarrage ; une entrée mal formée fait échouer le chargement, pas une partie. */
 export const BANQUE: Estimation[] = z
@@ -66,11 +88,26 @@ export const BANQUE: Estimation[] = z
 
 const identificationSchema = z.object({ entrees: z.array(identifierSchema).min(1) });
 
-/** Tableaux (Met Museum) et espèces (iNaturalist) : une seule liste, les distracteurs sont tirés dans le même thème. */
+/** Tableaux (Met Museum), espèces (iNaturalist) et livres (Open Library) : une seule liste, les distracteurs viennent du même thème. */
 export const BANQUE_IDENTIFICATION: IdentificationBase[] = [
   ...identificationSchema.parse(banqueIdentifier).entrees,
   ...identificationSchema.parse(banqueEspeces).entrees,
+  ...identificationSchema.parse(banqueLivres).entrees,
 ].map((e) => ({ ...e, kind: 'identifier' as const }));
+
+/** Lieux : les photos de Photo mystère, déjà contrôlées pour leur licence (auteur et source notés). */
+export const BANQUE_LOCALISATION: Localisation[] = PHOTOS.map((p) => ({
+  kind: 'localiser' as const,
+  id: `lieu-${p.id}`,
+  question: 'Où se trouve ce lieu ?',
+  titre: p.place,
+  image: p.file,
+  theme: 'Lieux',
+  source: p.source,
+  credit: `${p.credit} · ${p.license}`,
+  lat: p.lat,
+  lon: p.lon,
+}));
 
 /** Points au maximum, et tolérance (écart relatif accepté pour un point) selon le niveau. */
 export const MAX_POINTS = 5000;
@@ -92,6 +129,7 @@ export const chooseSchema = z.object({
     .min(0)
     .max(NOMBRE_CHOIX - 1),
 });
+export const locateSchema = pinSchema;
 
 /** Points d'une estimation : le maximum pile sur la valeur, nul au-delà de la tolérance. */
 export function pointsEstimation(guess: number, reel: number, tolerance: number): number {
@@ -105,9 +143,54 @@ export function pointsIdentification(choix: number, bonne: number): number {
   return choix === bonne ? POINTS_IDENTIFICATION : 0;
 }
 
+/** Nombre de questions « Lequel a été publié en premier ? » par partie : chaque paire retire deux livres d'Attribuer. */
+export const PAIRES_CHRONOLOGIE = 12;
+/** Écart minimal entre deux années pour que la question ait une réponse nette. */
+const ECART_MIN_ANNEES = 5;
+
 /**
- * Prépare les quatre choix d'une identification : la bonne réponse et trois autres auteurs tirés dans la banque.
- * Renvoie null s'il n'y a pas assez d'auteurs distincts pour proposer quatre choix.
+ * Paires de livres pour le mode Chronologie : « Lequel a été publié en premier ? ». Chaque paire est une question à deux
+ * choix, prête à jouer. Renvoie aussi les livres utilisés, pour ne pas les reposer en Attribuer dans la même partie.
+ */
+export function pairesChronologie(livres: IdentificationBase[], random: () => number, n = PAIRES_CHRONOLOGIE) {
+  const melange = shuffle(livres, random);
+  const utilises = new Set<string>();
+  const paires: Identification[] = [];
+  for (let i = 0; i < melange.length && paires.length < n; i++) {
+    const a = melange[i]!;
+    if (utilises.has(a.id) || a.annee === undefined) continue;
+    const b = melange.find(
+      (x, j) =>
+        j > i &&
+        !utilises.has(x.id) &&
+        x.annee !== undefined &&
+        Math.abs(x.annee - a.annee!) >= ECART_MIN_ANNEES &&
+        x.titre !== a.titre,
+    );
+    if (!b) continue;
+    utilises.add(a.id);
+    utilises.add(b.id);
+    const [vieux, recent] = a.annee! <= b.annee! ? [a, b] : [b, a];
+    const choix = shuffle([vieux.titre, recent.titre], random);
+    paires.push({
+      kind: 'identifier',
+      id: `chrono-${vieux.id}-${recent.id}`,
+      question: 'Lequel a été publié en premier ?',
+      reponse: vieux.titre,
+      titre: vieux.titre,
+      theme: 'Littérature',
+      source: vieux.source,
+      credit: `Première publication : ${vieux.annee} (Open Library)`,
+      choix,
+      bonne: choix.indexOf(vieux.titre),
+    });
+  }
+  return { paires, utilises };
+}
+
+/**
+ * Prépare les quatre choix d'une identification : la bonne réponse et trois autres réponses du même thème.
+ * Renvoie null s'il n'y a pas assez de réponses distinctes pour proposer quatre choix.
  */
 export function preparerIdentification(base: IdentificationBase, auteurs: string[], random: () => number) {
   const leurres = shuffle([...new Set(auteurs.filter((a) => a !== base.reponse))], random).slice(0, NOMBRE_CHOIX - 1);
@@ -119,6 +202,7 @@ export function preparerIdentification(base: IdentificationBase, auteurs: string
 export interface Manche {
   entreeId: string;
   guesses: Record<string, number>;
+  pins: Record<string, Pin>;
   gains: Record<string, number>;
 }
 
@@ -126,20 +210,27 @@ export interface TirageState {
   settings: TirageSettings;
   phase: 'ready' | 'guess' | 'reveal' | 'final';
   names: Record<string, string>;
-  /** Manches tirées pour la partie, sans répétition, estimations et identifications mêlées. */
+  /** Manches tirées pour la partie, sans répétition, les trois modes mêlés. */
   entrees: Entree[];
   index: number;
   /** Estimation (valeur) ou choix (index) de chaque joueur pour la manche en cours. */
   guesses: Record<string, number>;
+  /** Point placé sur la carte par chaque joueur pour la manche en cours (mode Localiser). */
+  pins: Record<string, Pin>;
   guessEndsAt: number;
   points: Record<string, number>;
   manches: Manche[];
 }
 
+/** Les joueurs ayant déjà répondu, quel que soit le mode de la manche. */
+function aRepondu(s: TirageState, id: string): boolean {
+  return id in s.guesses || id in s.pins;
+}
+
 function beginRound(s: TirageState, ctx: GameContext): TirageState {
   const limit = s.settings.guessSeconds * 1000;
   ctx.schedule(ESTIMATE_TIMEOUT, limit);
-  return { ...s, phase: 'guess', guesses: {}, guessEndsAt: ctx.now() + limit };
+  return { ...s, phase: 'guess', guesses: {}, pins: {}, guessEndsAt: ctx.now() + limit };
 }
 
 function gainOf(entree: Entree, guess: number, difficulty: number): number {
@@ -147,7 +238,24 @@ function gainOf(entree: Entree, guess: number, difficulty: number): number {
     const tolerance = TOLERANCE_BY_DIFFICULTY[difficulty as 1 | 2 | 3];
     return pointsEstimation(guess, entree.valeur, tolerance);
   }
-  return pointsIdentification(guess, entree.bonne);
+  if (entree.kind === 'identifier') return pointsIdentification(guess, entree.bonne);
+  return 0;
+}
+
+/** Points d'un point posé sur la carte : la distance à la bonne place, avec le barème du niveau de Photo mystère. */
+function gainLocalisation(entree: Localisation, pin: Pin, difficulty: number): number {
+  const echelle = SCALE_BY_DIFFICULTY[difficulty as 1 | 2 | 3];
+  return pointsFor(distanceKm(pin, { lat: entree.lat, lon: entree.lon }), echelle);
+}
+
+/** Points d'un joueur pour la manche en cours, selon le mode : estimation, choix, ou point sur la carte. */
+function gainPourJoueur(entree: Entree, s: TirageState, id: string): number {
+  if (entree.kind === 'localiser') {
+    const pin = s.pins[id];
+    return pin ? gainLocalisation(entree, pin, s.settings.difficulty) : 0;
+  }
+  const guess = s.guesses[id];
+  return guess === undefined ? 0 : gainOf(entree, guess, s.settings.difficulty);
 }
 
 function reveal(s: TirageState, ctx: GameContext): TirageState {
@@ -157,13 +265,17 @@ function reveal(s: TirageState, ctx: GameContext): TirageState {
   let points = { ...s.points };
   const gains: Record<string, number> = {};
   for (const id of Object.keys(s.names)) {
-    const guess = s.guesses[id];
-    const gained = guess === undefined ? 0 : gainOf(entree, guess, s.settings.difficulty);
+    const gained = gainPourJoueur(entree, s, id);
     gains[id] = gained;
     points = addPoints(points, id, gained);
   }
   ctx.schedule(REVEAL_NEXT, REVEAL_DELAY_MS);
-  return { ...s, phase: 'reveal', points, manches: [...s.manches, { entreeId: entree.id, guesses: s.guesses, gains }] };
+  return {
+    ...s,
+    phase: 'reveal',
+    points,
+    manches: [...s.manches, { entreeId: entree.id, guesses: s.guesses, pins: s.pins, gains }],
+  };
 }
 
 function advance(s: TirageState, ctx: GameContext): TirageState {
@@ -178,7 +290,7 @@ function finish(s: TirageState, ctx: GameContext): TirageState {
   return { ...s, phase: 'final' };
 }
 
-/** Ce qui est révélé pour une manche : la valeur ou l'auteur, la source et l'image. */
+/** Ce qui est révélé pour une manche : la valeur, l'auteur ou le lieu, la source, l'image et le crédit. */
 function answerOf(entree: Entree) {
   if (entree.kind === 'estimer') {
     return {
@@ -190,12 +302,22 @@ function answerOf(entree: Entree) {
       credit: null,
     };
   }
+  if (entree.kind === 'localiser') {
+    return {
+      valeur: null,
+      reponse: entree.titre,
+      source: entree.source,
+      theme: entree.theme,
+      image: entree.image,
+      credit: entree.credit,
+    };
+  }
   return {
     valeur: null,
     reponse: entree.reponse,
     source: entree.source,
     theme: entree.theme,
-    image: entree.image,
+    image: entree.image ?? null,
     credit: entree.credit ?? null,
   };
 }
@@ -205,7 +327,7 @@ export const tirageSurprise: GameModule<TirageState, TirageSettings> = {
     id: 'tirage-surprise',
     category: 'quiz',
     name: 'Tirage surprise',
-    description: 'Des chiffres réels à deviner, et des tableaux à attribuer : tout est tiré au sort.',
+    description: 'Des chiffres réels, des tableaux à attribuer et des lieux à placer : tout est tiré au sort.',
     icon: '🎲',
     version: '1.0.0',
     apiVersion: 1,
@@ -213,15 +335,15 @@ export const tirageSurprise: GameModule<TirageState, TirageSettings> = {
     maxPlayers: 12,
     durationMin: 8,
     notice: {
-      goal: 'Deviner des chiffres réels, ou reconnaître l’auteur d’un tableau.',
+      goal: 'Deviner des chiffres réels, reconnaître un auteur, ou placer un lieu sur la carte.',
       steps: [
-        'Lisez la question sur l’écran principal. Elle peut être une estimation ou un choix.',
-        'Tapez votre estimation, ou touchez votre choix, sur votre téléphone, avant la fin du temps.',
-        'À la révélation, les points viennent de l’écart avec la bonne valeur, ou de la bonne réponse.',
+        'Lisez la question sur l’écran principal. Elle peut être une estimation, un choix ou un lieu à placer.',
+        'Tapez votre estimation, touchez votre choix, ou touchez la carte, avant la fin du temps.',
+        'À la révélation, les points viennent de l’écart avec la bonne valeur, de la bonne réponse, ou de la distance.',
       ],
       tips: [
         'Plus le niveau est difficile, plus la tolérance des estimations est étroite.',
-        'Les chiffres viennent de Wikidata (CC0), les tableaux du Met Museum (CC0), les espèces d’iNaturalist (crédit affiché).',
+        'Les chiffres viennent de Wikidata (CC0), les tableaux du Met Museum (CC0), les espèces d’iNaturalist (crédit affiché), les livres d’Open Library, les lieux de Wikimedia Commons (crédit affiché).',
       ],
     },
   },
@@ -229,15 +351,26 @@ export const tirageSurprise: GameModule<TirageState, TirageSettings> = {
   settingsSchema: tirageSettingsSchema,
   defaultSettings: tirageSettingsSchema.parse({}),
 
-  actions: { estimate: estimateSchema, choose: chooseSchema },
+  actions: { estimate: estimateSchema, choose: chooseSchema, locate: locateSchema },
 
   initialize(settings, players, ctx) {
     const parsed = tirageSettingsSchema.parse(settings);
-    const pool: Array<Estimation | IdentificationBase> = [...BANQUE, ...BANQUE_IDENTIFICATION];
+    // Les paires de Chronologie sont prêtes ; les livres qu'elles utilisent ne servent pas à Attribuer dans la même partie.
+    const { paires, utilises } = pairesChronologie(BANQUE_IDENTIFICATION, ctx.random);
+    const pool: Array<Estimation | IdentificationBase | Identification | Localisation> = [
+      ...BANQUE,
+      ...BANQUE_IDENTIFICATION.filter((e) => !utilises.has(e.id)),
+      ...paires,
+      ...BANQUE_LOCALISATION,
+    ];
     const entrees: Entree[] = [];
     for (const candidat of shuffle(pool, ctx.random)) {
       if (entrees.length >= parsed.rounds) break;
-      if (candidat.kind === 'estimer') {
+      if (candidat.kind === 'estimer' || candidat.kind === 'localiser') {
+        entrees.push(candidat);
+        continue;
+      }
+      if ('choix' in candidat) {
         entrees.push(candidat);
         continue;
       }
@@ -252,6 +385,7 @@ export const tirageSurprise: GameModule<TirageState, TirageSettings> = {
       entrees,
       index: 0,
       guesses: {},
+      pins: {},
       guessEndsAt: 0,
       points: {},
       manches: [],
@@ -266,7 +400,7 @@ export const tirageSurprise: GameModule<TirageState, TirageSettings> = {
     const names = { ...s.names };
     delete names[p.id];
     const next = { ...s, names };
-    if (next.phase === 'guess' && everyConnectedDone(ctx, Object.keys(next.names), (id) => id in next.guesses)) {
+    if (next.phase === 'guess' && everyConnectedDone(ctx, Object.keys(next.names), (id) => aRepondu(next, id))) {
       return reveal(next, ctx);
     }
     return next;
@@ -279,22 +413,28 @@ export const tirageSurprise: GameModule<TirageState, TirageSettings> = {
   },
 
   handleAction(s, p, type, payload, ctx): GameResult<TirageState> {
-    if (type !== 'estimate' && type !== 'choose') return fail('Action inconnue');
+    if (type !== 'estimate' && type !== 'choose' && type !== 'locate') return fail('Action inconnue');
     if (s.phase !== 'guess') return fail('Pas de question en cours');
     if (!(p.id in s.names)) return fail('Joueur inconnu');
     const entree = s.entrees[s.index];
     if (!entree) return fail('Pas de question en cours');
-    let guess: number;
+    let next: TirageState;
     if (type === 'estimate') {
-      if (entree.kind !== 'estimer') return fail('Cette question se répond par un choix');
-      guess = (payload as { valeur: number }).valeur;
+      if (entree.kind !== 'estimer') return fail('Cette question ne se répond pas par une estimation');
+      const valeur = (payload as { valeur: number }).valeur;
+      next = { ...s, guesses: { ...s.guesses, [p.id]: valeur } };
+    } else if (type === 'choose') {
+      if (entree.kind !== 'identifier') return fail('Cette question ne se répond pas par un choix');
+      const choix = (payload as { choix: number }).choix;
+      if (choix < 0 || choix >= entree.choix.length) return fail('Choix inconnu');
+      next = { ...s, guesses: { ...s.guesses, [p.id]: choix } };
     } else {
-      if (entree.kind !== 'identifier') return fail('Cette question se répond par une estimation');
-      guess = (payload as { choix: number }).choix;
-      if (guess < 0 || guess >= entree.choix.length) return fail('Choix inconnu');
+      if (entree.kind !== 'localiser') return fail('Cette question ne se place pas sur la carte');
+      const pin = locateSchema.safeParse(payload);
+      if (!pin.success) return fail('Position invalide');
+      next = { ...s, pins: { ...s.pins, [p.id]: pin.data } };
     }
-    const next: TirageState = { ...s, guesses: { ...s.guesses, [p.id]: guess } };
-    return ok(everyConnectedDone(ctx, Object.keys(next.names), (id) => id in next.guesses) ? reveal(next, ctx) : next);
+    return ok(everyConnectedDone(ctx, Object.keys(next.names), (id) => aRepondu(next, id)) ? reveal(next, ctx) : next);
   },
 
   onTimer(s, key, ctx) {
@@ -317,15 +457,17 @@ export const tirageSurprise: GameModule<TirageState, TirageSettings> = {
     return finish(s, ctx);
   },
 
-  // Vue publique : la question et les choix pendant la devinette, la bonne réponse seulement à la révélation.
+  // Vue publique : la question, les choix ou la carte pendant la devinette ; la bonne réponse seulement à la révélation.
   getPublicState(s) {
     const entree = s.entrees[s.index];
     const visible = entree && (s.phase === 'guess' || s.phase === 'reveal');
     const revealed = s.phase === 'reveal';
     const last = s.manches[s.manches.length - 1];
     const identification = entree?.kind === 'identifier' ? entree : null;
+    const localisation = entree?.kind === 'localiser' ? entree : null;
     const choixDe = (guess: number | null | undefined): string | null =>
       identification && guess !== null && guess !== undefined ? (identification.choix[guess] ?? null) : null;
+    const cible = revealed && localisation ? { lat: localisation.lat, lon: localisation.lon } : null;
     return {
       phase: s.phase,
       round: s.index + 1,
@@ -335,20 +477,27 @@ export const tirageSurprise: GameModule<TirageState, TirageSettings> = {
       kind: visible ? entree.kind : null,
       question: visible ? entree.question : null,
       unit: visible && entree.kind === 'estimer' ? entree.unite : null,
-      image: visible && identification ? identification.image : null,
+      image:
+        visible && (identification || localisation) ? (identification?.image ?? localisation?.image ?? null) : null,
       choices: visible && s.phase === 'guess' && identification ? identification.choix : null,
-      answered: Object.keys(s.guesses).length,
+      answered: new Set([...Object.keys(s.guesses), ...Object.keys(s.pins)]).size,
       playerCount: Object.keys(s.names).length,
       answer: revealed && entree ? answerOf(entree) : null,
+      target: cible,
       placements:
         revealed && last
-          ? Object.keys(s.names).map((id) => ({
-              playerId: id,
-              name: s.names[id] ?? '?',
-              guess: last.guesses[id] ?? null,
-              choice: choixDe(last.guesses[id]),
-              gained: last.gains[id] ?? 0,
-            }))
+          ? Object.keys(s.names).map((id) => {
+              const pin = last.pins[id] ?? null;
+              return {
+                playerId: id,
+                name: s.names[id] ?? '?',
+                guess: last.guesses[id] ?? null,
+                choice: choixDe(last.guesses[id]),
+                pin,
+                km: pin && cible ? Math.round(distanceKm(pin, cible)) : null,
+                gained: last.gains[id] ?? 0,
+              };
+            })
           : [],
       ranking: rankEntries(s.names, s.points),
     };
@@ -359,7 +508,8 @@ export const tirageSurprise: GameModule<TirageState, TirageSettings> = {
     const rank = rankEntries(s.names, s.points).find((e) => e.playerId === playerId)?.rank ?? null;
     return {
       myGuess: s.guesses[playerId] ?? null,
-      guessed: playerId in s.guesses,
+      myPin: s.pins[playerId] ?? null,
+      guessed: aRepondu(s, playerId),
       points: s.points[playerId] ?? 0,
       rank,
     };
@@ -370,7 +520,7 @@ export const tirageSurprise: GameModule<TirageState, TirageSettings> = {
       pending:
         s.phase === 'guess'
           ? Object.keys(s.names)
-              .filter((id) => !(id in s.guesses))
+              .filter((id) => !aRepondu(s, id))
               .map((id) => s.names[id])
           : [],
     };
@@ -380,10 +530,10 @@ export const tirageSurprise: GameModule<TirageState, TirageSettings> = {
     return s.phase === 'final';
   },
 
-  // Mode test : un robot répond au hasard (une estimation entre la moitié et le double, ou un choix au hasard).
+  // Mode test : un robot répond au hasard, près de la bonne place pour un lieu, entre la moitié et le double pour une estimation.
   suggest(s, playerId, random) {
     const entree = s.entrees[s.index];
-    if (s.phase !== 'guess' || !entree || playerId in s.guesses) return null;
+    if (s.phase !== 'guess' || !entree || aRepondu(s, playerId)) return null;
     const delayMs = 3000 + random() * 5000;
     const key = `answer-${s.index}-${playerId}`;
     if (entree.kind === 'identifier') {
@@ -393,6 +543,11 @@ export const tirageSurprise: GameModule<TirageState, TirageSettings> = {
         key,
         delayMs,
       };
+    }
+    if (entree.kind === 'localiser') {
+      const lat = Math.max(-85, Math.min(85, entree.lat + (random() - 0.5) * 40));
+      const lon = ((((entree.lon + (random() - 0.5) * 60 + 540) % 360) + 360) % 360) - 180;
+      return { type: 'locate', payload: { lat, lon }, key, delayMs };
     }
     return {
       type: 'estimate',

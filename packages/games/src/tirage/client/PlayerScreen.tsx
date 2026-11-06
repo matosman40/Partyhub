@@ -2,8 +2,9 @@ import { useState } from 'react';
 import type { PlayerViewProps } from '../../client/types.js';
 import { useRemaining } from '../../client/hooks.js';
 import { TimerBar } from '../../client/ui.js';
+import { PhotoMap, type MapMarker } from '../../photo-mystere/client/PhotoMap.js';
 
-/** Téléphone de Tirage surprise : une estimation à taper, ou un choix à toucher, puis le résultat. */
+/** Téléphone de Tirage surprise : une estimation à taper, un choix à toucher, ou un lieu à placer sur la carte. */
 export function TiragePlayer({ publicState: pub, playerState: me, send, now }: PlayerViewProps) {
   const remaining = useRemaining(pub?.endsAt, now);
   const [draft, setDraft] = useState('');
@@ -29,9 +30,10 @@ export function TiragePlayer({ publicState: pub, playerState: me, send, now }: P
   }
 
   const revealed = pub.phase === 'reveal';
-  const identification = pub.kind === 'identifier';
   const choix: string[] = pub.choices ?? [];
   const monChoix = me?.myGuess !== null && me?.myGuess !== undefined ? choix[me.myGuess] : undefined;
+  const localisation = pub.kind === 'localiser';
+  const choixPossible = pub.kind === 'identifier';
 
   return (
     <section className="player-game fade-in">
@@ -39,11 +41,26 @@ export function TiragePlayer({ publicState: pub, playerState: me, send, now }: P
         {pub.round} / {pub.total}
       </div>
       <h2 className="question-small">{pub.question}</h2>
+      {localisation && pub.image && <img className="tirage-photo-tel" src={pub.image} alt="Lieu à placer" />}
       {!revealed && (
         <>
           <TimerBar remaining={remaining} total={pub.guessSeconds * 1000} />
-          {identification ? (
-            me?.guessed ? (
+          {localisation && (
+            <>
+              <PhotoMap
+                label="Carte : touchez l’endroit où se trouve le lieu"
+                markers={monPoint(me?.myPin)}
+                onPick={remaining > 0 ? (lat, lon) => void send('locate', { lat, lon }) : undefined}
+              />
+              <p className="muted">
+                {me?.myPin
+                  ? 'Point placé. Touchez la carte pour le déplacer.'
+                  : 'Touchez la carte pour placer le lieu.'}
+              </p>
+            </>
+          )}
+          {choixPossible &&
+            (me?.guessed ? (
               <p className="notice">Choix enregistré : {monChoix ?? '…'}</p>
             ) : (
               <ul className="stack tirage-reponses" aria-label="Réponses possibles">
@@ -60,34 +77,63 @@ export function TiragePlayer({ publicState: pub, playerState: me, send, now }: P
                   </li>
                 ))}
               </ul>
-            )
-          ) : me?.guessed ? (
-            <p className="notice">
-              Estimation enregistrée : {me.myGuess?.toLocaleString('fr-FR')} {pub.unit}
-            </p>
-          ) : (
-            <EstimationForm
-              unit={pub.unit}
-              draft={draft}
-              setDraft={setDraft}
-              disabled={remaining <= 0}
-              onSubmit={(valeur) => void send('estimate', { valeur })}
-            />
-          )}
+            ))}
+          {pub.kind === 'estimer' &&
+            (me?.guessed ? (
+              <p className="notice">
+                Estimation enregistrée : {me.myGuess?.toLocaleString('fr-FR')} {pub.unit}
+              </p>
+            ) : (
+              <EstimationForm
+                unit={pub.unit}
+                draft={draft}
+                setDraft={setDraft}
+                disabled={remaining <= 0}
+                onSubmit={(valeur) => void send('estimate', { valeur })}
+              />
+            ))}
         </>
       )}
-      {revealed && pub.answer && !identification && (
+      {revealed && pub.answer && pub.kind === 'estimer' && (
         <p className="pm-status">
           Réponse : {pub.answer.valeur?.toLocaleString('fr-FR')} {pub.unit} · +{me?.points ?? 0} points au total
         </p>
       )}
-      {revealed && pub.answer && identification && (
+      {revealed && pub.answer && choixPossible && (
         <p className="pm-status">
           Réponse : {pub.answer.reponse} · +{me?.points ?? 0} points au total
         </p>
       )}
+      {revealed && pub.answer && localisation && pub.target && (
+        <>
+          <PhotoMap
+            label="Carte : le lieu et votre point"
+            markers={[
+              ...monPoint(me?.myPin),
+              { key: 'lieu', name: pub.answer.reponse ?? 'Lieu', ...pub.target, tone: 'answer' },
+            ]}
+            links={
+              me?.myPin
+                ? [
+                    {
+                      from: { key: 'moi', name: 'Vous', ...me.myPin, tone: 'me' },
+                      to: { key: 'lieu', name: 'Lieu', ...pub.target, tone: 'answer' },
+                    },
+                  ]
+                : undefined
+            }
+          />
+          <p className="pm-status">
+            Réponse : {pub.answer.reponse} · +{me?.points ?? 0} points au total
+          </p>
+        </>
+      )}
     </section>
   );
+}
+
+function monPoint(pin: { lat: number; lon: number } | null | undefined): MapMarker[] {
+  return pin ? [{ key: 'moi', name: 'Vous', lat: pin.lat, lon: pin.lon, tone: 'me' }] : [];
 }
 
 function EstimationForm({

@@ -21,13 +21,13 @@ cohérente parce que tout le tirage se fait à partir d'un **thème unique chois
 
 ## Modes de manche
 
-| Mode        | Question                                                  | Source possible                                          | Score                                  |
-| ----------- | --------------------------------------------------------- | -------------------------------------------------------- | -------------------------------------- |
-| Estimer     | « Quelle est la population de… ? » (un chiffre)           | Wikidata                                                 | écart relatif, comme « Plus ou moins » |
-| Identifier  | « Qui a peint ce tableau ? » / « Quelle espèce est-ce ? » | Met Museum (CC0), iNaturalist (photo sous licence libre) | quatre choix, comme le quiz            |
-| Localiser   | « Où se trouve… ? »                                       | Wikidata (coordonnées), Wikimedia Commons                | distance, comme Photo mystère          |
-| Attribuer   | « Qui a écrit ce livre ? »                                | Open Library                                             | quatre choix                           |
-| Chronologie | « Lequel est plus ancien ? »                              | Wikidata (dates)                                         | deux choix                             |
+| Mode                                   | Question                                                  | Source possible                                          | Score                                  |
+| -------------------------------------- | --------------------------------------------------------- | -------------------------------------------------------- | -------------------------------------- |
+| Estimer                                | « Quelle est la population de… ? » (un chiffre)           | Wikidata                                                 | écart relatif, comme « Plus ou moins » |
+| Identifier                             | « Qui a peint ce tableau ? » / « Quelle espèce est-ce ? » | Met Museum (CC0), iNaturalist (photo sous licence libre) | quatre choix, comme le quiz            |
+| Localiser (29 photos de Photo mystère) | barème et carte de Photo mystère                          |
+| Attribuer                              | « Qui a écrit ce livre ? »                                | Open Library                                             | quatre choix                           |
+| Chronologie                            | « Lequel est plus ancien ? »                              | Wikidata (dates)                                         | deux choix                             |
 
 ## Cohérence
 
@@ -102,16 +102,23 @@ Décisions retenues par défaut (à confirmer) : nom « Tirage surprise », mode
 
 **Livré dans l’arbre de travail, non committé** : Tirage surprise, deux modes mêlés dans une même partie.
 
-| Élément                            | État                         |
-| ---------------------------------- | ---------------------------- |
-| Estimer (Wikidata)                 | 59 pays, 8 sommets           |
-| Identifier : tableaux (Met, CC0)   | 60 entrées, images locales   |
-| Identifier : espèces (iNaturalist) | 63 entrées, crédit par photo |
-| Localiser, Attribuer, Chronologie  | non commencés                |
-| Thèmes libres avec IA              | non commencé                 |
+| Élément                            | État                                                       |
+| ---------------------------------- | ---------------------------------------------------------- |
+| Estimer (Wikidata)                 | 59 pays, 8 sommets                                         |
+| Identifier : tableaux (Met, CC0)   | 60 entrées, images locales                                 |
+| Identifier : espèces (iNaturalist) | 63 entrées, crédit par photo                               |
+| Attribuer (Open Library, CC0)      | 60 livres, 41 auteurs, sans image                          |
+| Chronologie (années Open Library)  | 12 paires par partie ; les livres sont retirés d’Attribuer |
+| Localiser                          | non commencé                                               |
+| Thèmes libres avec IA              | non commencé                                               |
 
 **Vérifié** : 710 tests `games`, 379 tests `web`, 1057 tests `server`, typecheck, lint, format ; partie complète dans le navigateur sur le serveur de test (port 8294).
 
 **Limites connues** : les altitudes viennent de Wikidata filtré, sans vérification source par source ; les images sont dans le dépôt (environ 14 Mo au total).
 
 **Décisions à confirmer** : nom « Tirage surprise » ; 1000 points pour une bonne réponse en mode Identifier, contre 5000 au maximum pour une estimation ; crédits affichés à la révélation.
+
+- **Fait (2026-11-06, Chronologie)** : « Lequel a été publié en premier ? » à deux choix. Les paires sont tirées parmi les livres, avec un écart d’au moins 5 ans. Les années viennent d’Open Library (première publication), pas de Wikidata : les dates de monuments mélangeaient début de chantier et fin de construction, et Wikidata contenait des erreurs (ex. Balmoral daté de 1390). Limite : la première publication d’Open Library n’est pas toujours exacte pour les œuvres peu connues.
+
+- **Fait (2026-11-06, Localiser)** : « Où se trouve ce lieu ? ». Les lieux sont les 29 photos de Photo mystère (licences et sources déjà contrôlées, pas de nouveau téléchargement). Le point se pose sur la carte du téléphone ; le score reprend le barème de Photo mystère selon le niveau. À la révélation, l’écran principal montre le lieu, les points posés et leur distance. Vérifié dans le navigateur : pose du point, révélation avec carte.
+- **Reste** : thèmes libres avec IA (prévus plus tard). Élargir la banque de lieux demandera un script Wikimedia Commons avec contrôle de licence par fichier.
