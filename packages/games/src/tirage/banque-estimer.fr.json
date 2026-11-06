@@ -472,6 +472,70 @@
       "unite": "habitants",
       "theme": "Pays",
       "source": "https://www.wikidata.org/wiki/Q912"
+    },
+    {
+      "id": "alt-Q513",
+      "question": "Quelle est l'altitude du sommet « Everest » ?",
+      "valeur": 8849,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q513"
+    },
+    {
+      "id": "alt-Q524",
+      "question": "Quelle est l'altitude du sommet « Vésuve » ?",
+      "valeur": 1281,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q524"
+    },
+    {
+      "id": "alt-Q583",
+      "question": "Quelle est l'altitude du sommet « mont Blanc » ?",
+      "valeur": 4806,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q583"
+    },
+    {
+      "id": "alt-Q16990",
+      "question": "Quelle est l'altitude du sommet « Etna » ?",
+      "valeur": 3357,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q16990"
+    },
+    {
+      "id": "alt-Q104674",
+      "question": "Quelle est l'altitude du sommet « Ben Nevis » ?",
+      "valeur": 1345,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q104674"
+    },
+    {
+      "id": "alt-Q214011",
+      "question": "Quelle est l'altitude du sommet « Kebnekaise » ?",
+      "valeur": 2097,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q214011"
+    },
+    {
+      "id": "alt-Q770496",
+      "question": "Quelle est l'altitude du sommet « mont Saint-Élie » ?",
+      "valeur": 5489,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q770496"
+    },
+    {
+      "id": "alt-Q155721",
+      "question": "Quelle est l'altitude du sommet « Brocken » ?",
+      "valeur": 1141,
+      "unite": "mètres",
+      "theme": "Monuments",
+      "source": "https://www.wikidata.org/wiki/Q155721"
     }
   ]
 }

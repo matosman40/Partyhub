@@ -1,0 +1,38 @@
+/* Tirage surprise : l'image du tableau à identifier et la liste des choix sur l'écran principal. */
+
+.tirage-image {
+  margin: 0 auto;
+  display: grid;
+  place-items: center;
+}
+
+.tirage-image img {
+  display: block;
+  max-width: min(100%, 560px);
+  max-height: 36vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 0.6rem;
+}
+
+.tirage-choix {
+  margin: 0 auto;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.5rem;
+  width: min(100%, 560px);
+  font-size: 1.25rem;
+  text-align: center;
+}
+
+.tirage-reponses {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.tirage-reponses li + li {
+  margin-top: 0.5rem;
+}

@@ -1,11 +1,14 @@
 import { z } from 'zod';
 import type { GameContext, GameModule, GameResult, PlayerRef, ScoreEntry } from '@partyhub/shared';
 import { addPoints, everyConnectedDone, fail, ok, rankEntries, shuffle } from '../common/engine.js';
-import banque from './banque-estimer.fr.json' with { type: 'json' };
+import banqueEstimer from './banque-estimer.fr.json' with { type: 'json' };
+import banqueEspeces from './banque-especes.fr.json' with { type: 'json' };
+import banqueIdentifier from './banque-identifier.fr.json' with { type: 'json' };
 
 /**
- * Tirage surprise, mode Estimer : chacun devine un chiffre réel (population, altitude). Le score dépend de l'écart
- * relatif à la bonne valeur, dans une tolérance qui dépend du niveau. Ce fichier contient les règles ; il est pur.
+ * Tirage surprise : chaque manche est tirée au hasard, soit en mode Estimer (un chiffre réel à deviner, Wikidata),
+ * soit en mode Identifier (l'auteur d'un tableau, parmi quatre choix, Met Museum). Ce fichier contient les règles ;
+ * il est pur.
  */
 
 export const tirageSettingsSchema = z.object({
@@ -16,7 +19,7 @@ export const tirageSettingsSchema = z.object({
 
 export type TirageSettings = z.infer<typeof tirageSettingsSchema>;
 
-const entreeSchema = z.object({
+const estimerSchema = z.object({
   id: z.string().min(1),
   question: z.string().min(5),
   valeur: z.number().int().min(0),
@@ -25,26 +28,92 @@ const entreeSchema = z.object({
   source: z.string().min(1),
 });
 
-export type Entree = z.infer<typeof entreeSchema>;
+const identifierSchema = z.object({
+  id: z.string().min(1),
+  question: z.string().min(5),
+  reponse: z.string().min(1),
+  titre: z.string().min(1),
+  image: z.string().startsWith('/tirage/'),
+  theme: z.string().min(1),
+  source: z.string().min(1),
+  /** Crédit du photographe ou de la collection, quand la licence le demande (CC BY, CC BY-SA). */
+  credit: z.string().min(1).optional(),
+});
 
-/** Banque chargée et validée au démarrage ; une entrée mal formée fait échouer le chargement, pas une partie. */
-export const BANQUE: Entree[] = z.object({ entrees: z.array(entreeSchema).min(1) }).parse(banque).entrees;
+/** Une estimation : le chiffre réel et son unité. */
+export interface Estimation extends z.infer<typeof estimerSchema> {
+  kind: 'estimer';
+}
+
+/** Une identification, telle qu'elle est dans la banque : la réponse seulement, les choix sont tirés en partie. */
+export interface IdentificationBase extends z.infer<typeof identifierSchema> {
+  kind: 'identifier';
+}
+
+/** Une identification prête à jouer : quatre choix, dont la bonne réponse à l'index `bonne`. */
+export interface Identification extends IdentificationBase {
+  choix: string[];
+  bonne: number;
+}
+
+export type Entree = Estimation | Identification;
+
+/** Banques chargées et validées au démarrage ; une entrée mal formée fait échouer le chargement, pas une partie. */
+export const BANQUE: Estimation[] = z
+  .object({ entrees: z.array(estimerSchema).min(1) })
+  .parse(banqueEstimer)
+  .entrees.map((e) => ({ ...e, kind: 'estimer' as const }));
+
+const identificationSchema = z.object({ entrees: z.array(identifierSchema).min(1) });
+
+/** Tableaux (Met Museum) et espèces (iNaturalist) : une seule liste, les distracteurs sont tirés dans le même thème. */
+export const BANQUE_IDENTIFICATION: IdentificationBase[] = [
+  ...identificationSchema.parse(banqueIdentifier).entrees,
+  ...identificationSchema.parse(banqueEspeces).entrees,
+].map((e) => ({ ...e, kind: 'identifier' as const }));
 
 /** Points au maximum, et tolérance (écart relatif accepté pour un point) selon le niveau. */
 export const MAX_POINTS = 5000;
 export const TOLERANCE_BY_DIFFICULTY: Record<1 | 2 | 3, number> = { 1: 1, 2: 0.5, 3: 0.2 };
+
+/** Points d'une bonne réponse en mode Identifier : moins qu'une estimation parfaite, car le choix est fermé. */
+export const POINTS_IDENTIFICATION = 1000;
+export const NOMBRE_CHOIX = 4;
 
 const ESTIMATE_TIMEOUT = 'estimate-timeout';
 const REVEAL_NEXT = 'reveal-next';
 const REVEAL_DELAY_MS = 12_000;
 
 export const estimateSchema = z.object({ valeur: z.number().int().min(0).max(1e13) });
+export const chooseSchema = z.object({
+  choix: z
+    .number()
+    .int()
+    .min(0)
+    .max(NOMBRE_CHOIX - 1),
+});
 
 /** Points d'une estimation : le maximum pile sur la valeur, nul au-delà de la tolérance. */
 export function pointsEstimation(guess: number, reel: number, tolerance: number): number {
   if (reel === 0) return guess === 0 ? MAX_POINTS : 0;
   const ecart = Math.abs(guess - reel) / reel;
   return Math.max(0, Math.round(MAX_POINTS * (1 - ecart / tolerance)));
+}
+
+/** Points d'un choix : POINTS_IDENTIFICATION pour la bonne réponse, rien sinon. */
+export function pointsIdentification(choix: number, bonne: number): number {
+  return choix === bonne ? POINTS_IDENTIFICATION : 0;
+}
+
+/**
+ * Prépare les quatre choix d'une identification : la bonne réponse et trois autres auteurs tirés dans la banque.
+ * Renvoie null s'il n'y a pas assez d'auteurs distincts pour proposer quatre choix.
+ */
+export function preparerIdentification(base: IdentificationBase, auteurs: string[], random: () => number) {
+  const leurres = shuffle([...new Set(auteurs.filter((a) => a !== base.reponse))], random).slice(0, NOMBRE_CHOIX - 1);
+  if (leurres.length < NOMBRE_CHOIX - 1) return null;
+  const choix = shuffle([base.reponse, ...leurres], random);
+  return { ...base, choix, bonne: choix.indexOf(base.reponse) } satisfies Identification;
 }
 
 export interface Manche {
@@ -57,9 +126,10 @@ export interface TirageState {
   settings: TirageSettings;
   phase: 'ready' | 'guess' | 'reveal' | 'final';
   names: Record<string, string>;
-  /** Entrées tirées pour la partie, sans répétition. */
+  /** Manches tirées pour la partie, sans répétition, estimations et identifications mêlées. */
   entrees: Entree[];
   index: number;
+  /** Estimation (valeur) ou choix (index) de chaque joueur pour la manche en cours. */
   guesses: Record<string, number>;
   guessEndsAt: number;
   points: Record<string, number>;
@@ -72,16 +142,23 @@ function beginRound(s: TirageState, ctx: GameContext): TirageState {
   return { ...s, phase: 'guess', guesses: {}, guessEndsAt: ctx.now() + limit };
 }
 
+function gainOf(entree: Entree, guess: number, difficulty: number): number {
+  if (entree.kind === 'estimer') {
+    const tolerance = TOLERANCE_BY_DIFFICULTY[difficulty as 1 | 2 | 3];
+    return pointsEstimation(guess, entree.valeur, tolerance);
+  }
+  return pointsIdentification(guess, entree.bonne);
+}
+
 function reveal(s: TirageState, ctx: GameContext): TirageState {
   ctx.cancel(ESTIMATE_TIMEOUT);
   const entree = s.entrees[s.index];
   if (!entree) return finish(s, ctx);
-  const tolerance = TOLERANCE_BY_DIFFICULTY[s.settings.difficulty as 1 | 2 | 3];
   let points = { ...s.points };
   const gains: Record<string, number> = {};
   for (const id of Object.keys(s.names)) {
     const guess = s.guesses[id];
-    const gained = guess === undefined ? 0 : pointsEstimation(guess, entree.valeur, tolerance);
+    const gained = guess === undefined ? 0 : gainOf(entree, guess, s.settings.difficulty);
     gains[id] = gained;
     points = addPoints(points, id, gained);
   }
@@ -101,12 +178,34 @@ function finish(s: TirageState, ctx: GameContext): TirageState {
   return { ...s, phase: 'final' };
 }
 
-export const tirageEstimer: GameModule<TirageState, TirageSettings> = {
+/** Ce qui est révélé pour une manche : la valeur ou l'auteur, la source et l'image. */
+function answerOf(entree: Entree) {
+  if (entree.kind === 'estimer') {
+    return {
+      valeur: entree.valeur,
+      reponse: null,
+      source: entree.source,
+      theme: entree.theme,
+      image: null,
+      credit: null,
+    };
+  }
+  return {
+    valeur: null,
+    reponse: entree.reponse,
+    source: entree.source,
+    theme: entree.theme,
+    image: entree.image,
+    credit: entree.credit ?? null,
+  };
+}
+
+export const tirageSurprise: GameModule<TirageState, TirageSettings> = {
   manifest: {
     id: 'tirage-surprise',
     category: 'quiz',
     name: 'Tirage surprise',
-    description: 'Des chiffres réels tirés au sort : devinez-les le plus près possible.',
+    description: 'Des chiffres réels à deviner, et des tableaux à attribuer : tout est tiré au sort.',
     icon: '🎲',
     version: '1.0.0',
     apiVersion: 1,
@@ -114,15 +213,15 @@ export const tirageEstimer: GameModule<TirageState, TirageSettings> = {
     maxPlayers: 12,
     durationMin: 8,
     notice: {
-      goal: 'Deviner au plus près des chiffres réels tirés au sort.',
+      goal: 'Deviner des chiffres réels, ou reconnaître l’auteur d’un tableau.',
       steps: [
-        'Lisez la question sur l’écran principal.',
-        'Tapez votre estimation sur votre téléphone, avant la fin du temps.',
-        'À la révélation, chacun gagne des points selon l’écart avec la bonne valeur.',
+        'Lisez la question sur l’écran principal. Elle peut être une estimation ou un choix.',
+        'Tapez votre estimation, ou touchez votre choix, sur votre téléphone, avant la fin du temps.',
+        'À la révélation, les points viennent de l’écart avec la bonne valeur, ou de la bonne réponse.',
       ],
       tips: [
-        'Plus le niveau est difficile, plus la tolérance est étroite.',
-        'Les chiffres viennent de Wikidata (CC0).',
+        'Plus le niveau est difficile, plus la tolérance des estimations est étroite.',
+        'Les chiffres viennent de Wikidata (CC0), les tableaux du Met Museum (CC0), les espèces d’iNaturalist (crédit affiché).',
       ],
     },
   },
@@ -130,11 +229,22 @@ export const tirageEstimer: GameModule<TirageState, TirageSettings> = {
   settingsSchema: tirageSettingsSchema,
   defaultSettings: tirageSettingsSchema.parse({}),
 
-  actions: { estimate: estimateSchema },
+  actions: { estimate: estimateSchema, choose: chooseSchema },
 
   initialize(settings, players, ctx) {
     const parsed = tirageSettingsSchema.parse(settings);
-    const entrees = shuffle(BANQUE, ctx.random).slice(0, Math.min(parsed.rounds, BANQUE.length));
+    const pool: Array<Estimation | IdentificationBase> = [...BANQUE, ...BANQUE_IDENTIFICATION];
+    const entrees: Entree[] = [];
+    for (const candidat of shuffle(pool, ctx.random)) {
+      if (entrees.length >= parsed.rounds) break;
+      if (candidat.kind === 'estimer') {
+        entrees.push(candidat);
+        continue;
+      }
+      const memeTheme = BANQUE_IDENTIFICATION.filter((e) => e.theme === candidat.theme).map((e) => e.reponse);
+      const prete = preparerIdentification(candidat, memeTheme, ctx.random);
+      if (prete) entrees.push(prete);
+    }
     return {
       settings: parsed,
       phase: 'ready',
@@ -169,11 +279,21 @@ export const tirageEstimer: GameModule<TirageState, TirageSettings> = {
   },
 
   handleAction(s, p, type, payload, ctx): GameResult<TirageState> {
-    if (type !== 'estimate') return fail('Action inconnue');
+    if (type !== 'estimate' && type !== 'choose') return fail('Action inconnue');
     if (s.phase !== 'guess') return fail('Pas de question en cours');
     if (!(p.id in s.names)) return fail('Joueur inconnu');
-    const { valeur } = payload as { valeur: number };
-    const next: TirageState = { ...s, guesses: { ...s.guesses, [p.id]: valeur } };
+    const entree = s.entrees[s.index];
+    if (!entree) return fail('Pas de question en cours');
+    let guess: number;
+    if (type === 'estimate') {
+      if (entree.kind !== 'estimer') return fail('Cette question se répond par un choix');
+      guess = (payload as { valeur: number }).valeur;
+    } else {
+      if (entree.kind !== 'identifier') return fail('Cette question se répond par une estimation');
+      guess = (payload as { choix: number }).choix;
+      if (guess < 0 || guess >= entree.choix.length) return fail('Choix inconnu');
+    }
+    const next: TirageState = { ...s, guesses: { ...s.guesses, [p.id]: guess } };
     return ok(everyConnectedDone(ctx, Object.keys(next.names), (id) => id in next.guesses) ? reveal(next, ctx) : next);
   },
 
@@ -197,29 +317,36 @@ export const tirageEstimer: GameModule<TirageState, TirageSettings> = {
     return finish(s, ctx);
   },
 
-  // Vue publique : la question pendant la devinette, la bonne valeur et les estimations seulement à la révélation.
+  // Vue publique : la question et les choix pendant la devinette, la bonne réponse seulement à la révélation.
   getPublicState(s) {
     const entree = s.entrees[s.index];
     const visible = entree && (s.phase === 'guess' || s.phase === 'reveal');
     const revealed = s.phase === 'reveal';
     const last = s.manches[s.manches.length - 1];
+    const identification = entree?.kind === 'identifier' ? entree : null;
+    const choixDe = (guess: number | null | undefined): string | null =>
+      identification && guess !== null && guess !== undefined ? (identification.choix[guess] ?? null) : null;
     return {
       phase: s.phase,
       round: s.index + 1,
       total: s.entrees.length,
       endsAt: s.phase === 'guess' ? s.guessEndsAt : undefined,
       guessSeconds: s.settings.guessSeconds,
+      kind: visible ? entree.kind : null,
       question: visible ? entree.question : null,
-      unit: visible ? entree.unite : null,
+      unit: visible && entree.kind === 'estimer' ? entree.unite : null,
+      image: visible && identification ? identification.image : null,
+      choices: visible && s.phase === 'guess' && identification ? identification.choix : null,
       answered: Object.keys(s.guesses).length,
       playerCount: Object.keys(s.names).length,
-      answer: revealed && entree ? { valeur: entree.valeur, source: entree.source, theme: entree.theme } : null,
+      answer: revealed && entree ? answerOf(entree) : null,
       placements:
         revealed && last
           ? Object.keys(s.names).map((id) => ({
               playerId: id,
               name: s.names[id] ?? '?',
               guess: last.guesses[id] ?? null,
+              choice: choixDe(last.guesses[id]),
               gained: last.gains[id] ?? 0,
             }))
           : [],
@@ -227,7 +354,7 @@ export const tirageEstimer: GameModule<TirageState, TirageSettings> = {
     };
   },
 
-  // Vue privée : sa propre estimation, jamais celles des autres avant la révélation.
+  // Vue privée : sa propre réponse, jamais celles des autres avant la révélation.
   getPlayerState(s, playerId) {
     const rank = rankEntries(s.names, s.points).find((e) => e.playerId === playerId)?.rank ?? null;
     return {
@@ -253,15 +380,25 @@ export const tirageEstimer: GameModule<TirageState, TirageSettings> = {
     return s.phase === 'final';
   },
 
-  // Mode test : un robot estime au hasard, entre la moitié et le double de la bonne valeur.
+  // Mode test : un robot répond au hasard (une estimation entre la moitié et le double, ou un choix au hasard).
   suggest(s, playerId, random) {
     const entree = s.entrees[s.index];
     if (s.phase !== 'guess' || !entree || playerId in s.guesses) return null;
+    const delayMs = 3000 + random() * 5000;
+    const key = `answer-${s.index}-${playerId}`;
+    if (entree.kind === 'identifier') {
+      return {
+        type: 'choose',
+        payload: { choix: Math.floor(random() * entree.choix.length) },
+        key,
+        delayMs,
+      };
+    }
     return {
       type: 'estimate',
       payload: { valeur: Math.round(entree.valeur * (0.5 + random() * 1.5)) },
-      key: `estimate-${s.index}-${playerId}`,
-      delayMs: 3000 + random() * 5000,
+      key,
+      delayMs,
     };
   },
 };

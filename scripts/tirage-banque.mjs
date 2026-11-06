@@ -26,8 +26,6 @@ async function sparql(query) {
   throw new Error('Wikidata indisponible');
 }
 
-const MONTAGNES_ACTIVES = false;
-
 const val = (b, k) => b[k]?.value;
 const id = (uri) => uri.replace('http://www.wikidata.org/entity/', '');
 
@@ -39,11 +37,16 @@ const pays = await sparql(`SELECT ?e ?l ?pop WHERE {
 } ORDER BY DESC(?pop) LIMIT 60`);
 
 await sleep(1500);
-const montagnes = await sparql(`SELECT ?e ?l ?h WHERE {
-  ?e wdt:P31/wdt:P279* wd:Q8502; wdt:P2044 ?h.
-  ?e rdfs:label ?l. FILTER(lang(?l) = "fr")
-  FILTER(?h > 1000 && ?h < 8849)
-} ORDER BY DESC(?h) LIMIT 60`);
+// Altitudes : seulement les montagnes très documentées (40 liens inter-wiki ou plus), valeur préférée, en mètres.
+// Le seuil écarte les entités homonymes (ex. « El Capitan » à 8 064 m). Une seule valeur par entité.
+const montagnes = await sparql(`SELECT ?e (SAMPLE(?lab) AS ?nom) (MIN(?h) AS ?alt) (MAX(?sl) AS ?sitelinks) WHERE {
+  ?e wdt:P31/wdt:P279* wd:Q8502; p:P2044 ?st; wikibase:sitelinks ?sl.
+  ?st wikibase:rank wikibase:PreferredRank; psv:P2044 ?v.
+  ?v wikibase:quantityAmount ?h; wikibase:quantityUnit wd:Q11573.
+  ?e rdfs:label ?lab. FILTER(lang(?lab) = "fr")
+  FILTER(?h > 1000 && ?h < 8850)
+  FILTER(?sl >= 40)
+} GROUP BY ?e ORDER BY DESC(?sitelinks) LIMIT 60`);
 
 const entrees = [
   ...pays.map((b) => ({
@@ -54,11 +57,10 @@ const entrees = [
     theme: 'Pays',
     source: `https://www.wikidata.org/wiki/${id(val(b, 'e'))}`,
   })),
-  // Altitudes désactivées : Wikidata mêle des entités homonymes (ex. « El Capitan » à 8 064 m). À réactiver après vérification.
-  ...(MONTAGNES_ACTIVES ? montagnes : []).map((b) => ({
+  ...montagnes.map((b) => ({
     id: `alt-${id(val(b, 'e'))}`,
-    question: `Quelle est l'altitude de ${val(b, 'l')} ?`,
-    valeur: Math.round(Number(val(b, 'h'))),
+    question: `Quelle est l'altitude du sommet « ${val(b, 'nom')} » ?`,
+    valeur: Math.round(Number(val(b, 'alt'))),
     unite: 'mètres',
     theme: 'Monuments',
     source: `https://www.wikidata.org/wiki/${id(val(b, 'e'))}`,

@@ -17,6 +17,7 @@ import './styles/tarot.css';
 import './styles/board.css';
 import './styles/quiz-phrases.css';
 import './styles/photo-mystere.css';
+import './styles/tirage.css';
 import './styles/championship.css';
 import './styles/catalog.css';
 import './styles/game-sheet.css';
