@@ -16,10 +16,18 @@ import banqueIdentifier from './banque-identifier.fr.json' with { type: 'json' }
  * Ce fichier contient les règles ; il est pur.
  */
 
+/** Thèmes au lancement : chaque manche vient d'un thème coché. Les thèmes libres avec IA ne sont pas encore là. */
+export const THEMES = ['Animaux', 'Monuments', 'Peintures', 'Pays', 'Littérature'] as const;
+export type Theme = (typeof THEMES)[number];
+
 export const tirageSettingsSchema = z.object({
   rounds: z.number().int().min(1).max(10).default(5),
   guessSeconds: z.number().int().min(20).max(180).default(60),
   difficulty: z.number().int().min(1).max(3).default(2),
+  themes: z
+    .array(z.enum(THEMES))
+    .min(1)
+    .default([...THEMES]),
 });
 
 export type TirageSettings = z.infer<typeof tirageSettingsSchema>;
@@ -102,7 +110,7 @@ export const BANQUE_LOCALISATION: Localisation[] = PHOTOS.map((p) => ({
   question: 'Où se trouve ce lieu ?',
   titre: p.place,
   image: p.file,
-  theme: 'Lieux',
+  theme: 'Monuments',
   source: p.source,
   credit: `${p.credit} · ${p.license}`,
   lat: p.lat,
@@ -356,12 +364,14 @@ export const tirageSurprise: GameModule<TirageState, TirageSettings> = {
   initialize(settings, players, ctx) {
     const parsed = tirageSettingsSchema.parse(settings);
     // Les paires de Chronologie sont prêtes ; les livres qu'elles utilisent ne servent pas à Attribuer dans la même partie.
-    const { paires, utilises } = pairesChronologie(BANQUE_IDENTIFICATION, ctx.random);
+    const themes = new Set<string>(parsed.themes);
+    const identifications = BANQUE_IDENTIFICATION.filter((e) => themes.has(e.theme));
+    const { paires, utilises } = pairesChronologie(identifications, ctx.random);
     const pool: Array<Estimation | IdentificationBase | Identification | Localisation> = [
-      ...BANQUE,
-      ...BANQUE_IDENTIFICATION.filter((e) => !utilises.has(e.id)),
+      ...BANQUE.filter((e) => themes.has(e.theme)),
+      ...identifications.filter((e) => !utilises.has(e.id)),
       ...paires,
-      ...BANQUE_LOCALISATION,
+      ...BANQUE_LOCALISATION.filter((e) => themes.has(e.theme)),
     ];
     const entrees: Entree[] = [];
     for (const candidat of shuffle(pool, ctx.random)) {

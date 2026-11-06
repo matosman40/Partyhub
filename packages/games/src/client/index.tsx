@@ -125,15 +125,13 @@ export const clientViews: Record<string, GameClientViews> = {
     return { Settings: QuizSettings, Host: QuizHost, Player: QuizPlayer };
   }),
   'tirage-surprise': lazyViews(async () => {
-    const [{ TirageHost }, { TiragePlayer }] = await Promise.all([
+    const [{ TirageHost }, { TiragePlayer }, { TirageSettings }] = await Promise.all([
       import('../tirage/client/HostScreen.js'),
       import('../tirage/client/PlayerScreen.js'),
+      import('../tirage/client/Settings.js'),
     ]);
     return {
-      Settings: fieldSettings([
-        { key: 'rounds', label: 'Questions', min: 1, max: 10 },
-        { key: 'guessSeconds', label: 'Secondes pour répondre', min: 20, max: 180 },
-      ]),
+      Settings: TirageSettings,
       Host: TirageHost,
       Player: TiragePlayer,
     };

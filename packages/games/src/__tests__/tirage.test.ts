@@ -9,6 +9,7 @@ import {
   pointsIdentification,
   pairesChronologie,
   preparerIdentification,
+  tirageSettingsSchema,
   tirageSurprise,
   type TirageState,
 } from '../tirage/module.js';
@@ -317,5 +318,39 @@ describe('mode Localiser : placer un lieu sur la carte', () => {
     expect(st.phase).toBe('reveal');
     expect(st.points[A.id]).toBe(MAX_POINTS);
     expect(st.points[B.id] ?? 0).toBeLessThan(MAX_POINTS / 10);
+  });
+});
+
+describe('thèmes au lancement', () => {
+  it('une partie limitée à un thème ne tire que ce thème', () => {
+    for (const seed of [1, 2, 3]) {
+      const h = harness({ connected: [A.id, B.id], random: mulberry32(seed) });
+      const s = tirageSurprise.initialize(
+        { rounds: 5, guessSeconds: 60, difficulty: 2, themes: ['Animaux'] },
+        [A, B],
+        h.ctx,
+      );
+      expect(s.entrees.length).toBeGreaterThan(0);
+      for (const e of s.entrees) {
+        expect(e.kind).toBe('identifier');
+        expect((e as { theme: string }).theme).toBe('Animaux');
+      }
+    }
+  });
+
+  it('une estimation et un lieu ne sortent que dans leur thème', () => {
+    const h = harness({ connected: [A.id, B.id], random: mulberry32(4) });
+    const s = tirageSurprise.initialize(
+      { rounds: 8, guessSeconds: 60, difficulty: 2, themes: ['Pays'] },
+      [A, B],
+      h.ctx,
+    );
+    expect(s.entrees.every((e) => e.kind === 'estimer' && e.theme === 'Pays')).toBe(true);
+  });
+
+  it('refuse une liste de thèmes vide ou inconnue', () => {
+    expect(tirageSettingsSchema.safeParse({ themes: [] }).success).toBe(false);
+    expect(tirageSettingsSchema.safeParse({ themes: ['Sciences'] }).success).toBe(false);
+    expect(tirageSettingsSchema.safeParse({}).success).toBe(true);
   });
 });

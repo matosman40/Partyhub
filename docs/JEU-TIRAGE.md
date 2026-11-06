@@ -122,3 +122,6 @@ Décisions retenues par défaut (à confirmer) : nom « Tirage surprise », mode
 
 - **Fait (2026-11-06, Localiser)** : « Où se trouve ce lieu ? ». Les lieux sont les 29 photos de Photo mystère (licences et sources déjà contrôlées, pas de nouveau téléchargement). Le point se pose sur la carte du téléphone ; le score reprend le barème de Photo mystère selon le niveau. À la révélation, l’écran principal montre le lieu, les points posés et leur distance. Vérifié dans le navigateur : pose du point, révélation avec carte.
 - **Reste** : thèmes libres avec IA (prévus plus tard). Élargir la banque de lieux demandera un script Wikimedia Commons avec contrôle de licence par fichier.
+
+- **Fait (2026-11-06, thèmes)** : réglage des thèmes au lancement. Cinq thèmes : Animaux, Monuments, Peintures, Pays, Littérature. Le thème « Sciences » du plan n’a pas de banque : il est remplacé par Littérature (livres). Les lieux de Localiser sont classés dans Monuments. Une partie ne tire que dans les thèmes cochés ; au moins un reste coché. Vérifié dans le salon (menu de l’hôte).
+- **Reste** : thèmes libres avec IA, prévus plus tard (job, avec secours sur la banque locale).
