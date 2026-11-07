@@ -1,5 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { activeMusicSlot, claimMusic, isImportedGame, mergeSfxFiles, musicForLobby } from '../sounds.js';
+import {
+  activeMusicSlot,
+  builtinGameMusic,
+  claimMusic,
+  DEFAULT_SFX_FILES,
+  isImportedGame,
+  mergeSfxFiles,
+  musicForLobby,
+  withDefaultSfx,
+} from '../sounds.js';
+import { existsSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 describe('Musique : emplacement actif', () => {
   it('le salon choisit menus avant la partie, fin de partie aux résultats, rien pendant le jeu', () => {
@@ -46,5 +57,26 @@ describe('Sons d’un jeu importé', () => {
   it('sans sons de jeu, les réglages globaux ne changent pas', () => {
     const global = { place: 'https://example.test/place.ogg' };
     expect(mergeSfxFiles(global, {})).toEqual(global);
+  });
+});
+
+describe('Sons livrés avec l’application', () => {
+  const publicDir = fileURLToPath(new URL('../../public', import.meta.url));
+
+  it('chaque bruitage a son fichier livré, et un choix de l’administration l’emporte', () => {
+    for (const url of Object.values(DEFAULT_SFX_FILES)) expect(existsSync(publicDir + url)).toBe(true);
+    const sfx = withDefaultSfx({ click: 'media-123', card: null });
+    expect(sfx.click).toBe('media-123');
+    expect(sfx.card).toBe('/sons/bruitages/card.mp3');
+    expect(sfx.turn).toBe('/sons/bruitages/turn.mp3');
+  });
+
+  it('un jeu intégré a sa musique de partie, un jeu inconnu n’en a pas', () => {
+    expect(builtinGameMusic('tarot')).toBe('/sons/musiques/tarot.mp3');
+    expect(builtinGameMusic('tirage-surprise')).toBe('/sons/musiques/quiz-party.mp3');
+    expect(builtinGameMusic('jeu-inconnu')).toBeNull();
+    for (const id of ['tarot', 'banquise', 'photo-mystere', 'sudoku']) {
+      expect(existsSync(publicDir + builtinGameMusic(id))).toBe(true);
+    }
   });
 });

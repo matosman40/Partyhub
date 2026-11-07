@@ -338,9 +338,9 @@ function scheduleStep(c: AudioContext, at: number, i: number): void {
   if (i % 4 === 2 && noise) burst(c, musicBus, at, 0.05, 0.25, 'highpass', 6000, 3000);
 }
 
-/** Démarre la musique de fond (à l’écran principal). */
+/** Démarre la musique de fond (à l’écran principal). Sans effet pendant qu’une musique de fichier est demandée. */
 export function startMusic(): void {
-  if (timer !== null) return;
+  if (timer !== null || loopWanted) return;
   const c = context();
   if (!c) return;
   nextTime = c.currentTime + 0.1;
@@ -367,10 +367,14 @@ export function stopMusic(): void {
 
 let loopSource: AudioBufferSourceNode | null = null;
 let loopToken = 0;
+/** Vrai entre `playLoopFile` et `stopLoopFile` : la boucle synthétisée cède alors la place au fichier. */
+let loopWanted = false;
 
 /** Joue un fichier audio en boucle, à la place de la boucle précédente. Ignoré si le son n’est pas disponible. */
 export function playLoopFile(url: string): void {
   stopLoopFile();
+  stopMusic();
+  loopWanted = true;
   const token = loopToken;
   const c = context();
   const bus = musicBus;
@@ -395,6 +399,7 @@ export function playLoopFile(url: string): void {
 /** Arrête la boucle de musique d’un paquet, s’il y en a une. */
 export function stopLoopFile(): void {
   loopToken++;
+  loopWanted = false;
   if (loopSource) {
     try {
       loopSource.stop();

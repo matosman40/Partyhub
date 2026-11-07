@@ -15,7 +15,7 @@ import type { AssetRecord } from './AssetLibrary.js';
 /** Sons : une piste de fond par menu, et un bruitage remplaçable par jeu, pris dans la médiathèque. */
 
 const SILENCE = 'Silence';
-const ORIGINAL = 'Son d’origine';
+const ORIGINAL = 'Son livré avec PartyHub';
 
 export function SoundSettingsAdmin({ libraryVersion }: { libraryVersion: number }) {
   const [draft, setDraft] = useState<SoundSettings | null>(null);
@@ -144,7 +144,9 @@ export function SoundSettingsAdmin({ libraryVersion }: { libraryVersion: number 
           onChange={(e) => chooseSfxVolume(Number(e.target.value))}
         />
       </label>
-      <p className="muted small">Un fichier remplace le son synthétisé d’origine de l’effet correspondant.</p>
+      <p className="muted small">
+        Un fichier de la médiathèque remplace le son livré avec PartyHub pour l’effet correspondant.
+      </p>
       {SFX_NAMES.map((name) => {
         const id = draft.sfx[name];
         return (

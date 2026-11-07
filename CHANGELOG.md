@@ -4,6 +4,10 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 
 ## [Non publié]
 
+### Ajouté
+
+- Sons livrés avec l'application : un fichier pour chacun des 14 bruitages (il remplace le son synthétisé tant que l'administration n'en choisit pas un autre), et une musique de partie pour chaque jeu intégré, jouée en boucle sur l'écran principal pendant la partie. Photo mystère et Tirage surprise empruntent celle de Quiz Party ; Banquise et Bombes Party abandonnent leur boucle synthétisée.
+
 ## [0.20.0] - 2026-11-06
 
 ### Ajouté

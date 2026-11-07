@@ -1,7 +1,7 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { isMuted, onMuteChange, playLoopFile, setSfxFiles, setSoundLevels, stopLoopFile } from '@partyhub/games/client';
 import { authHeaders, readProfileToken } from './profile/session.js';
-import type { MusicSlot, SfxName } from '@partyhub/shared';
+import { SFX_NAMES, type MusicSlot, type SfxName } from '@partyhub/shared';
 import { api } from './api.js';
 
 /**
@@ -51,9 +51,72 @@ export function mergeSfxFiles(
   return { ...global, ...game };
 }
 
-/** Règle la table des bruitages : ceux du jeu affiché d’abord, puis les réglages globaux. */
+/**
+ * Bruitages livrés avec l’application (`public/sons/bruitages/`) : ils remplacent les sons synthétisés tant que
+ * l’administration n’a pas choisi de fichier pour l’emplacement.
+ */
+export const DEFAULT_SFX_FILES: Record<SfxName, string> = Object.fromEntries(
+  SFX_NAMES.map((name) => [name, `/sons/bruitages/${name}.mp3`]),
+) as Record<SfxName, string>;
+
+/** Réglages globaux complétés par les bruitages livrés : un emplacement vide prend le fichier par défaut. Fonction pure. */
+export function withDefaultSfx(global: Partial<Record<SfxName, string | null>>): Record<SfxName, string> {
+  const out = { ...DEFAULT_SFX_FILES };
+  for (const name of SFX_NAMES) {
+    const chosen = global[name];
+    if (chosen) out[name] = chosen;
+  }
+  return out;
+}
+
+/** Règle la table des bruitages : ceux du jeu affiché d’abord, puis les réglages globaux, puis les fichiers livrés. */
 function applySfx(): void {
-  setSfxFiles(mergeSfxFiles(sounds?.sfx ?? {}, gameSfx));
+  setSfxFiles(mergeSfxFiles(withDefaultSfx(sounds?.sfx ?? {}), gameSfx));
+}
+
+/** Jeux intégrés qui ont une musique de partie livrée (`public/sons/musiques/<jeu>.mp3`). */
+const BUILTIN_MUSIC = new Set([
+  'association',
+  'aventure-ia',
+  'banquise',
+  'bombes-party',
+  'boum',
+  'cartes-coco',
+  'cartes-couleurs',
+  'essai-appareils',
+  'funambule',
+  'gags-en-rafale',
+  'imite-moi',
+  'imposteur',
+  'loups-village',
+  'micro-defis',
+  'mots-croises',
+  'phrases-trous',
+  'plus-ou-moins',
+  'plutot-qui',
+  'poker-texas',
+  'president',
+  'promoteur',
+  'quiz-party',
+  'rami-51',
+  'reflexe',
+  'sauteurs',
+  'solitaire',
+  'sudoku',
+  'taquin',
+  'tarot',
+]);
+
+/** Jeux sans piste propre : ils empruntent celle d’un jeu proche. */
+const BORROWED_MUSIC: Record<string, string> = {
+  'photo-mystere': 'quiz-party',
+  'tirage-surprise': 'quiz-party',
+};
+
+/** Musique de partie livrée pour un jeu intégré, ou null. Fonction pure. */
+export function builtinGameMusic(gameId: string): string | null {
+  const id = BORROWED_MUSIC[gameId] ?? gameId;
+  return BUILTIN_MUSIC.has(id) ? `/sons/musiques/${id}.mp3` : null;
 }
 
 function publishSounds(next: PublicSounds | null): void {
@@ -134,7 +197,12 @@ export function usePackageSounds(gameId: string | null, playing: boolean): void 
   const [partie, setPartie] = useState<string | null>(null);
   useEffect(() => {
     setPartie(null);
-    if (!gameId || !isImportedGame(gameId)) return;
+    if (!gameId) return;
+    if (!isImportedGame(gameId)) {
+      // Jeu intégré : bruitages globaux, et sa musique livrée pendant la partie.
+      setPartie(builtinGameMusic(gameId));
+      return;
+    }
     let current = true;
     void loadGameSounds(gameId).then((game) => {
       if (!current) return;
