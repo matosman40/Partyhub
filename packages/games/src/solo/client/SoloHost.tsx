@@ -27,6 +27,10 @@ export function SoloHost({ publicState: pub, now }: HostViewProps) {
 
   if (pub.phase === 'final') return <FinalHost ranking={pub.ranking} />;
 
+  if (pub.phase === 'preparation') {
+    return <WaitingScreen title={`${pub.icon} ${pub.name} : préparation`} text="Recherche de mots neufs…" />;
+  }
+
   if (pub.phase === 'ready') {
     return (
       <WaitingScreen

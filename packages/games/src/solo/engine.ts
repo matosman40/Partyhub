@@ -31,6 +31,8 @@ export interface SoloEngine<B> {
   solved(board: B): boolean;
   /** Vue du joueur : ce qu’il voit sur son écran, sans la solution. */
   view(board: B): unknown;
+  /** Contenu tiré en direct (réseau) avant la création des grilles ; null ou erreur : le jeu garde sa banque. */
+  liveWords?(random: () => number, signal: AbortSignal): Promise<unknown>;
 }
 
 export interface SoloOptions<B> {
@@ -47,8 +49,10 @@ export interface SoloState<B = any> {
   id: string;
   name: string;
   icon: string;
-  phase: 'ready' | 'play' | 'final';
+  phase: 'ready' | 'preparation' | 'play' | 'final';
   seed: number;
+  /** Contenu tiré en direct : undefined tant qu’il n’est pas demandé, puis le résultat (ou null). */
+  mots?: unknown[] | null;
   settings: Record<string, unknown> & { timeLimitSec: number };
   startedAt: number;
   endsAt: number;
@@ -119,6 +123,23 @@ export function createSoloGame<B>(opts: SoloOptions<B>): GameModule<SoloState<B>
     return rankEntries(s.players, points);
   }
 
+  /** Crée une grille par joueur et lance le chrono : le même tirage pour tous. */
+  function begin(s: SoloState<B>, ctx: GameContext, mots: unknown[] | null): SoloState<B> {
+    const boards: Record<string, B> = {};
+    for (const id of Object.keys(s.players)) {
+      boards[id] = engine.create(s.seed, { ...s.settings, mots });
+    }
+    const limitMs = s.settings.timeLimitSec * 1000;
+    if (limitMs > 0) ctx.schedule(LIMIT_TIMER, limitMs);
+    return {
+      ...s,
+      phase: 'play',
+      boards,
+      startedAt: ctx.now(),
+      endsAt: limitMs > 0 ? ctx.now() + limitMs : 0,
+    };
+  }
+
   function finish(s: SoloState<B>, ctx: GameContext): SoloState<B> {
     ctx.cancel(LIMIT_TIMER);
     return { ...s, phase: 'final' };
@@ -165,19 +186,24 @@ export function createSoloGame<B>(opts: SoloOptions<B>): GameModule<SoloState<B>
     start(s, ctx) {
       if (s.phase !== 'ready') return fail('La partie a déjà commencé');
       if (Object.keys(s.players).length === 0) return fail('Aucun joueur dans la salle');
-      const boards: Record<string, B> = {};
-      for (const id of Object.keys(s.players)) {
-        boards[id] = engine.create(s.seed, s.settings);
-      }
-      const limitMs = s.settings.timeLimitSec * 1000;
-      if (limitMs > 0) ctx.schedule(LIMIT_TIMER, limitMs);
-      return ok({
-        ...s,
-        phase: 'play',
-        boards,
-        startedAt: ctx.now(),
-        endsAt: limitMs > 0 ? ctx.now() + limitMs : 0,
-      });
+      // Contenu en direct : le réseau se fait dans un travail hors moteur ; les grilles suivent son résultat.
+      if (engine.liveWords && s.mots === undefined) return ok({ ...s, phase: 'preparation' });
+      return ok(begin(s, ctx, s.mots ?? null));
+    },
+
+    pendingJob(s) {
+      if (s.phase !== 'preparation' || !engine.liveWords) return null;
+      return { id: 'mots-en-direct', kind: 'solo-mots', input: {} };
+    },
+
+    runJob(job, ctx, signal) {
+      return engine.liveWords ? engine.liveWords(ctx.random, signal) : Promise.resolve(null);
+    },
+
+    completeJob(s, jobId, outcome, ctx) {
+      if (s.phase !== 'preparation' || jobId !== 'mots-en-direct') return s;
+      const mots = outcome.ok && Array.isArray(outcome.value) ? outcome.value : null;
+      return begin({ ...s, mots }, ctx, mots);
     },
 
     handleAction(s, p, type, payload, ctx) {

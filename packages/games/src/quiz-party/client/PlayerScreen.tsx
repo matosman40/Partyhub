@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { play } from '../../client/audio.js';
 import type { PlayerViewProps } from '../../client/types.js';
 import { useRemaining } from '../../client/hooks.js';
 import { LETTERS } from '../../client/ui.js';
@@ -10,6 +11,14 @@ export function QuizPlayer({ publicState: pub, playerState: me, now, send }: Pla
   // Retour visuel immédiat : le choix apparaît avant la confirmation du serveur.
   const [picked, setPicked] = useState<{ index: number; choice: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Bonne ou mauvaise réponse, une fois par question révélée.
+  const sonne = useRef<number | null>(null);
+  useEffect(() => {
+    if (!pub || pub.phase !== 'reveal' || me?.correct == null || sonne.current === pub.index) return;
+    sonne.current = pub.index;
+    play(me.correct ? 'right' : 'wrong');
+  }, [pub, me?.correct]);
 
   if (!pub) return null;
 
@@ -49,6 +58,7 @@ export function QuizPlayer({ publicState: pub, playerState: me, now, send }: Pla
     if (pub.phase !== 'question' || answered) return;
     setError(null);
     setPicked({ index, choice });
+    play('confirm');
     const res = await send('answer', { choice });
     if (!res.ok) {
       setPicked(null);

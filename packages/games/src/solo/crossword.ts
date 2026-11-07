@@ -3,6 +3,7 @@ import type { GameResult } from '@partyhub/shared';
 import rawWords from './words-fr.json' with { type: 'json' };
 import { seededRandom, shuffleWith } from './rng.js';
 import type { SoloEngine } from './engine.js';
+import { motsEnDirect } from './mots-en-direct.js';
 
 /**
  * Mots croisés : une grille générée à partir de la graine, à partir de mots et de définitions
@@ -10,10 +11,25 @@ import type { SoloEngine } from './engine.js';
  * solution, qui n’est jamais envoyée sur le téléphone.
  */
 
-const WORDS = z
-  .array(z.object({ word: z.string().regex(/^[A-Z]{3,12}$/), clue: z.string().min(3).max(90) }))
-  .min(10)
-  .parse(rawWords);
+export const MOT_SCHEMA = z.object({ word: z.string().regex(/^[A-Z]{3,12}$/), clue: z.string().min(3).max(90) });
+export type Mot = z.infer<typeof MOT_SCHEMA>;
+
+const WORDS: Mot[] = z.array(MOT_SCHEMA).min(10).parse(rawWords);
+
+/** Mots supplémentaires (tirés en direct) : seuls les mots bien formés sont gardés, les doublons écartés. */
+export function motsSupplementaires(brut: unknown): Mot[] {
+  if (!Array.isArray(brut)) return [];
+  const vus = new Set<string>();
+  const out: Mot[] = [];
+  for (const x of brut) {
+    const r = MOT_SCHEMA.safeParse(x);
+    if (r.success && !vus.has(r.data.word)) {
+      vus.add(r.data.word);
+      out.push(r.data);
+    }
+  }
+  return out;
+}
 
 /** Nombre minimal de mots pour qu’une grille soit acceptée. */
 const MIN_WORDS = 10;
@@ -50,7 +66,7 @@ const MAX_SIDE = 15;
 /** Parmi les meilleurs emplacements (à quelques points près), on tire au hasard pour varier. */
 const SCORE_MARGIN = 3;
 
-function attemptGrid(random: () => number): Placed[] {
+function attemptGrid(random: () => number, words: Mot[]): Placed[] {
   const letters = new Map<string, string>();
   const acrossCells = new Set<string>();
   const downCells = new Set<string>();
@@ -100,7 +116,7 @@ function attemptGrid(random: () => number): Placed[] {
   };
 
   // Premier mot : horizontal, à l’origine.
-  const ordered = [...WORDS].sort((a, b) => b.word.length - a.word.length);
+  const ordered = [...words].sort((a, b) => b.word.length - a.word.length);
   const pool = shuffleWith(ordered, random).sort((a, b) => b.word.length - a.word.length);
   const first = pool[0]!;
   place(first.word, first.clue, 0, 0, true);
@@ -201,22 +217,25 @@ function buildGrid(placed: Placed[]): CrosswordGrid {
   return { rows, cols, solution, numbers, clues };
 }
 
-const cache = new Map<number, CrosswordGrid>();
+const cache = new Map<string, CrosswordGrid>();
 
 /** Grille de la graine donnée : la même pour tous les joueurs d’une salle. */
-export function generateCrossword(seed: number): CrosswordGrid {
-  const hit = cache.get(seed);
+export function generateCrossword(seed: number, extra: Mot[] = []): CrosswordGrid {
+  const vus = new Set(extra.map((m) => m.word));
+  const words = [...WORDS.filter((m) => !vus.has(m.word)), ...extra];
+  const cleCache = `${seed}|${extra.map((m) => m.word).join(',')}`;
+  const hit = cache.get(cleCache);
   if (hit) return hit;
   const random = seededRandom(seed);
   let best: Placed[] = [];
   for (let attempt = 0; attempt < ATTEMPTS; attempt++) {
-    const placed = attemptGrid(random);
+    const placed = attemptGrid(random, words);
     if (placed.length > best.length) best = placed;
     if (placed.length >= MIN_WORDS) break;
   }
   const grid = buildGrid(best);
   if (cache.size >= 32) cache.delete(cache.keys().next().value!);
-  cache.set(seed, grid);
+  cache.set(cleCache, grid);
   return grid;
 }
 
@@ -239,9 +258,10 @@ export interface CrosswordBoard {
 export const crosswordEngine: SoloEngine<CrosswordBoard> = {
   extraSettings: {},
   playSchema,
+  liveWords: (random, signal) => motsEnDirect(random, signal),
 
-  create(seed) {
-    const grid = generateCrossword(seed);
+  create(seed, settings) {
+    const grid = generateCrossword(seed, motsSupplementaires(settings.mots));
     return { grid, letters: grid.solution.map(() => ''), errors: [] };
   },
 

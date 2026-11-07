@@ -22,6 +22,10 @@ export const SFX_NAMES = [
   'draw',
   'turn',
   'chip',
+  'right',
+  'wrong',
+  'countdown',
+  'confirm',
 ] as const;
 
 export type SfxName = (typeof SFX_NAMES)[number];
@@ -41,6 +45,10 @@ export const SFX_LABELS: Record<SfxName, string> = {
   draw: 'Pioche',
   turn: 'Votre tour',
   chip: 'Jetons poussés',
+  right: 'Bonne réponse',
+  wrong: 'Mauvaise réponse',
+  countdown: 'Compte à rebours',
+  confirm: 'Réponse enregistrée',
 };
 
 /** Emplacements de musique de fond. */

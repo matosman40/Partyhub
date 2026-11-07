@@ -6,22 +6,26 @@ Ce document décrit les sons de l'application, leur origine, leur format et leur
 
 Chaque bruitage a un fichier livré avec l'application, `packages/web/public/sons/bruitages/<nom>.mp3` (sons générés, voir section 3). L'administration peut le remplacer par un fichier de la médiathèque. Le son synthétisé de `packages/games/src/client/audio.ts` ne sert plus que pendant le chargement du fichier, ou si celui-ci est illisible.
 
-| Nom (`SfxName`) | Usage               | Libellé             |
-| --------------- | ------------------- | ------------------- |
-| `place`         | pose d'une pièce    | Pose d'une pièce    |
-| `explode`       | explosion           | Explosion           |
-| `crate`         | caisse brisée       | Caisse brisée       |
-| `pickup`        | ramassage           | Ramassage           |
-| `die`           | élimination         | Élimination         |
-| `hit`           | impact              | Impact              |
-| `start`         | lancement de partie | Lancement de partie |
-| `win`           | victoire            | Victoire            |
-| `final`         | fin de partie       | Fin de partie       |
-| `click`         | clic                | Clic                |
-| `card`          | carte posée         | Carte posée         |
-| `draw`          | pioche              | Pioche              |
-| `turn`          | votre tour          | Votre tour          |
-| `chip`          | jetons poussés      | Jetons poussés      |
+| Nom (`SfxName`) | Usage                                                  | Libellé             |
+| --------------- | ------------------------------------------------------ | ------------------- |
+| `place`         | pose d'une pièce                                       | Pose d'une pièce    |
+| `explode`       | explosion                                              | Explosion           |
+| `crate`         | caisse brisée                                          | Caisse brisée       |
+| `pickup`        | ramassage                                              | Ramassage           |
+| `die`           | élimination                                            | Élimination         |
+| `hit`           | impact                                                 | Impact              |
+| `start`         | lancement de partie                                    | Lancement de partie |
+| `win`           | victoire                                               | Victoire            |
+| `final`         | fin de partie                                          | Fin de partie       |
+| `click`         | clic                                                   | Clic                |
+| `card`          | carte posée                                            | Carte posée         |
+| `draw`          | pioche                                                 | Pioche              |
+| `turn`          | votre tour                                             | Votre tour          |
+| `chip`          | jetons poussés                                         | Jetons poussés      |
+| `right`         | bonne réponse (Quiz Party)                             | Bonne réponse       |
+| `wrong`         | mauvaise réponse (Quiz Party)                          | Mauvaise réponse    |
+| `countdown`     | compte à rebours, cinq dernières secondes (Quiz Party) | Compte à rebours    |
+| `confirm`       | réponse enregistrée (Quiz Party)                       | Réponse enregistrée |
 
 La liste est définie dans `packages/shared/src/sounds.ts`. Elle est partagée par le serveur, le téléphone et la TV : tout ajout passe par un plan validé.
 

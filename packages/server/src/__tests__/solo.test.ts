@@ -237,8 +237,13 @@ describe('Mots croisés', () => {
   it('accepte les lettres, signale les erreurs après vérification', () => {
     const { ctx } = makeCtx(['a']);
     const s = motsCroises.initialize({ timeLimitSec: 0 }, [players[0]!], ctx);
-    const started = motsCroises.start(s, ctx);
-    if (!started.ok) throw new Error(started.error);
+    const preparing = motsCroises.start(s, ctx);
+    if (!preparing.ok) throw new Error(preparing.error);
+    // Sans réseau, les mots en direct échouent : la grille part de la banque locale.
+    const started = {
+      ok: true as const,
+      state: motsCroises.completeJob!(preparing.state, 'mots-en-direct', { ok: false, error: 'hors ligne' }, ctx),
+    };
     const grid = generateCrossword(started.state.seed);
     const cell = grid.solution.findIndex((v) => v !== null);
     const wrong = grid.solution[cell] === 'A' ? 'B' : 'A';

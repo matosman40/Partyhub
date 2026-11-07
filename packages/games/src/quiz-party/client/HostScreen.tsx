@@ -1,4 +1,5 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
+import { play } from '../../client/audio.js';
 import type { HostViewProps } from '../../client/types.js';
 import { MoodsContext } from '../../client/avatar-context.js';
 import { useRemaining } from '../../client/hooks.js';
@@ -21,6 +22,15 @@ export function QuizHost(props: HostViewProps) {
 
 function QuizBoard({ publicState: pub, hostState: host, now }: HostViewProps) {
   const remaining = useRemaining(pub?.endsAt ?? pub?.answerEndsAt, now);
+  // Tic du compte à rebours, une fois par seconde sur les cinq dernières secondes de chaque question.
+  const dernier = useRef<string | null>(null);
+  useEffect(() => {
+    if (!pub || pub.phase !== 'question' || remaining > 5000 || remaining <= 0) return;
+    const cle = `${pub.index}-${Math.ceil(remaining / 1000)}`;
+    if (dernier.current === cle) return;
+    dernier.current = cle;
+    play('countdown');
+  }, [pub, remaining]);
 
   if (!pub) return null;
 

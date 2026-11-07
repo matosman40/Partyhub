@@ -11,6 +11,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 - Tirage surprise : questions neuves à chaque partie, tirées en direct des thèmes cochés : tableaux du Met Museum, espèces d'iNaturalist (crédit affiché) et lieux de Wikimedia Commons, jusqu'aux deux tiers des manches. Les banques locales gardent le reste, et prennent le relais sans Internet. Réglage pour couper le tirage en direct.
 - Quiz Party (questions intégrées) : questions neuves à chaque partie, tirées en direct : capitales de tous les États (Wikidata), pays d'un lieu photographié (Commons), peintre d'un tableau (Met Museum), nom d'une espèce (iNaturalist). Elles prennent jusqu'aux deux tiers de la partie ; les questions intégrées complètent, ou remplacent sans Internet (l'écran le dit). Réglage pour couper le tirage en direct.
 - Tests du serveur : aucune requête vers Internet (les jeux prennent alors leur banque locale).
+- Sons : quatre bruitages de plus, branchés sur Quiz Party : « Bonne réponse » et « Mauvaise réponse » à la révélation sur le téléphone, « Compte à rebours » sur les cinq dernières secondes de l'écran principal, « Réponse enregistrée » au choix du joueur. Fichiers livrés, synthèse de secours.
+- Mots croisés : mots et indices neufs à chaque partie, tirés de Wikidata (fruits, instruments, vêtements, sports, métiers, animaux ; noms communs seulement). La banque locale complète ou remplace sans Internet.
 - Serveur : relais d'images ouvertes (`/api/images-ouvertes`), seul chemin des images distantes vers les écrans : HTTPS, domaines fermés (Wikimedia, Met, iNaturalist), pas de redirection, 3 Mo au plus, format vérifié, débit plafonné, cache disque plafonné dans `DATA_DIR/images-ouvertes`.
 
 ## [0.20.0] - 2026-11-06

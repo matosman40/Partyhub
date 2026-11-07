@@ -290,6 +290,22 @@ function scheduleSound(name: Sfx): boolean {
     case 'click':
       tone(c, bus, 'square', 880, t, 0.04, 0.12);
       break;
+    case 'right':
+      // Bonne réponse : une quinte ascendante, claire.
+      [67, 74].forEach((n, i) => tone(c, bus, 'triangle', midi(n), t + i * 0.09, 0.28, 0.3));
+      break;
+    case 'wrong':
+      // Mauvaise réponse : deux notes descendantes, sans punition sonore.
+      [64, 57].forEach((n, i) => tone(c, bus, 'sine', midi(n), t + i * 0.12, 0.22, 0.22));
+      break;
+    case 'countdown':
+      // Compte à rebours : un tic sec.
+      tone(c, bus, 'square', 1500, t, 0.03, 0.1);
+      break;
+    case 'confirm':
+      // Réponse enregistrée : un petit blip discret.
+      tone(c, bus, 'sine', 1320, t, 0.06, 0.12);
+      break;
     case 'chip':
       // Jetons poussés sur le tapis : deux cliquetis rapprochés.
       burst(c, bus, t, 0.035, 0.35, 'highpass', 5200, 3800);

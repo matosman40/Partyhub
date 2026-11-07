@@ -35,6 +35,10 @@ export function SoloPlayer({ publicState: pub, playerState: me, now, send }: Pla
     );
   }
 
+  if (pub.phase === 'preparation') {
+    return <WaitingScreen title={`${pub.icon} ${pub.name}`} text="Préparation de votre grille…" />;
+  }
+
   if (pub.phase === 'ready') {
     return <WaitingScreen title={`${pub.icon} ${pub.name}`} text="La grille apparaîtra au lancement." />;
   }
