@@ -12,25 +12,26 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le [v
 - Catalogue : catégories en pastilles sur une ligne ; les autres filtres sont derrière « Plus de filtres ».
 - Cartes et liste du catalogue : emblème illustré pour les 29 jeux intégrés, logo SVG en secours pour les jeux importés.
 - Animations d'entrée en cascade et réactions au survol des cartes, coupées si l'appareil demande moins de mouvement.
-- Quiz Party et Photo mystère : curseur de difficulté (quiz : 2, 3 ou 4 choix ; photo : échelle de points, et pays affiché au niveau facile).
+- Photo mystère (nouveau jeu) : une photo s'affiche dans un viseur ; chacun place son point sur la carte du monde, et gagne d'autant plus de points qu'il est proche du lieu. 29 photos de Wikimedia Commons (licences libres, auteur et source affichés).
+- Tirage surprise (nouveau jeu) : chaque manche tire une question au hasard, sans répétition, dans les thèmes cochés au lancement (Animaux, Monuments, Peintures, Pays, Littérature).
+- Tirage surprise, mode Estimer : des chiffres réels de Wikidata à deviner ; le score dépend de l'écart et du niveau de difficulté. 67 questions : 59 pays et 8 sommets très documentés.
+- Tirage surprise, mode Identifier : un tableau à attribuer (60 œuvres du Met Museum, CC0), une espèce à reconnaître (63 photos iNaturalist sous licence libre, crédit affiché) ou un livre dont il faut trouver l'auteur (60 livres d'Open Library, métadonnées CC0, sans couverture). Quatre choix, 1000 points pour la bonne réponse.
+- Tirage surprise, mode Chronologie : « Lequel a été publié en premier ? », entre deux titres, d'après l'année de première publication (Open Library).
+- Tirage surprise, mode Localiser : une photo de lieu (celles de Photo mystère, licences contrôlées) à placer sur la carte ; le score suit le barème de Photo mystère.
+- Tirage surprise, thème libre : l'hôte tape un thème (ex. « fleuves ») ; Wikidata en donne la classe, puis des questions « Dans quel pays se trouve… ? » et des estimations de longueur (en kilomètres, quand Wikidata la donne). Si une IA est configurée, elle aide seulement à comprendre le thème tapé (termes de recherche) : questions et réponses viennent toujours de Wikidata, et l'écran principal montre la classe retenue.
+- Quiz Party : 79 questions tirées de données ouvertes (Wikidata, API Géo) : capitales, symboles chimiques, tableaux célèbres, départements. Script de génération et bilan des API publiques étudiées dans `docs/API-PUBLIQUES.md`.
 - Quiz Party : image jointe aux questions, et 13 questions « Qui a peint ce tableau ? » à partir de tableaux du Metropolitan Museum (CC0).
-- Tirage surprise (nouveau jeu, mode Estimer) : des chiffres réels de Wikidata à deviner ; le score dépend de l'écart et du niveau de difficulté. 67 questions : 59 pays et 8 sommets très documentés.
-- Tirage surprise, mode Identifier : chaque manche peut aussi être un tableau à attribuer (60 œuvres du Met Museum, CC0) ou une espèce à reconnaître (63 photos iNaturalist sous licence libre, crédit affiché). Quatre choix, 1000 points pour la bonne réponse. Les livres (60, Open Library, métadonnées CC0, sans couverture) posent la question « Qui a écrit « … » ? ». Mode Chronologie : « Lequel a été publié en premier ? », deux titres, à partir de l’année de première publication (Open Library). Mode Localiser : une photo de lieu (les 29 photos de Photo mystère, licences contrôlées) à placer sur la carte ; le score suit le barème de Photo mystère. Réglage des thèmes au lancement : Animaux, Monuments, Peintures, Pays, Littérature (Sciences n’a pas de banque). Thème libre : l’hôte tape un thème (ex. « fleuves »), Wikidata en donne la classe et des questions « Dans quel pays se trouve… ? » ; Les thèmes libres mêlent aussi des estimations de longueur (en kilomètres, quand Wikidata la donne) aux questions sur le pays. Si une IA est configurée, elle aide seulement à comprendre le thème tapé (termes de recherche) ; questions et réponses viennent toujours de Wikidata, et l’écran principal montre la classe retenue.
+- Quiz Party et Photo mystère : curseur de difficulté (quiz : 2, 3 ou 4 choix ; photo : échelle de points, et pays affiché au niveau facile).
 - Volumes : réglage général des bruitages dans l'administration, et volumes personnels de la musique et des bruitages sur chaque profil (page Profil). Appliqués tout de suite, sur toutes les pages.
-- Sons : `scripts/sons-activer.mjs` téléverse le lot dans la médiathèque d'une installation et affecte les bruitages (clic, carte, explosion, victoire, votre tour).
-- Lot de 8 sons libres (CC0, Openverse) — activé par le script ci-dessus dans packages/web/public/sons/, avec leur source dans SOURCES.json. Non affectés par défaut : à choisir dans la médiathèque.
-- Photo mystère : 29 lieux (et non 25) : Machu Picchu, la Statue de la Liberté, le Colisée et Uluru ajoutés.
+- Sons : lot de 8 sons libres (CC0, Openverse) dans `packages/web/public/sons/`, avec leur source dans `SOURCES.json`, non affectés par défaut. `scripts/sons-activer.mjs` les téléverse dans la médiathèque d'une installation et affecte cinq bruitages (clic, carte, explosion, victoire, votre tour).
 - Magasin : Plus ou moins, Réflexe et Plutôt qui ? sont construits en paquets de code signés (premier pas vers le magasin comme source unique des jeux). Une version de code remplace le jeu intégré de même identifiant ; le jeu intégré revient si le paquet est retiré.
 - Vues des jeux de code : elles reçoivent le style de l'application et ne se connectent plus au réseau pour les personnages.
-- Publication des jeux de code : workflow `publier-code.yml` (tags `code/<jeu>-vX.Y.Z`) avec signature et contrôle.
-- Sons : lot de 8 sons CC0 dans packages/web/public/sons/ (non affectés par défaut).
+- Publication des jeux de code depuis le dépôt `jeux-partyhub` : workflow `publier-code.yml` (tags `<jeu>-vX.Y.Z`, les seuls que lit le magasin), avec signature et contrôle.
 - Documentation : `docs/PLAN-MAGASIN-UNIQUE.md` (plan et avancement), `docs/JEU-TIRAGE.md`, `docs/OUTILS-EXTERNES.md`.
-- Photo mystère : un nouveau jeu. Une photo s'affiche dans un viseur ; chacun place son point sur la carte du monde, et gagne d'autant plus de points qu'il est proche du lieu. 29 photos de Wikimedia Commons (licences libres, auteur et source affichés).
-- Quiz Party : 79 questions tirées de données ouvertes (Wikidata, API Géo) : capitales, symboles chimiques, tableaux célèbres, départements. Script de génération et bilan des API publiques étudiées dans `docs/API-PUBLIQUES.md`.
 
 ### Modifié
 
-- Plus ou moins, Réflexe et Plutôt qui ? : version 2.0.3 du paquet de code (le numéro passe au-dessus des paquets de données publiés).
+- Plus ou moins, Réflexe et Plutôt qui ? : version 2.0.4 du paquet de code (le numéro passe au-dessus des paquets de données publiés).
 - Interface « nuit » : aplats, ombres décalées réservées aux éléments cliquables (jaune pour l'action principale, outremer pour la secondaire, rose pour le danger), icônes SVG à la place des emoji d'interface.
 - Jetons de couleur `--ink-emblem-background` ajoutés pour les vignettes avec emblème.
 
