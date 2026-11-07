@@ -6,7 +6,7 @@ import rawPhotos from './photos.fr.json' with { type: 'json' };
  * scripts/photo-mystere-photos.mjs à partir de Wikimedia Commons (licences libres, auteur et source notés).
  * Les coordonnées ne sortent jamais du serveur avant la révélation d’une manche.
  */
-const photoSchema = z.object({
+export const photoSchema = z.object({
   id: z.string().min(1),
   place: z.string().min(1),
   country: z.string().min(1),

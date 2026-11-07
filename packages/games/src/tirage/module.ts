@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { GameContext, GameModule, GameResult, PlayerRef, ScoreEntry } from '@partyhub/shared';
+import type { GameContext, GameModule, GameResult, JobOutcome, PlayerRef, ScoreEntry } from '@partyhub/shared';
 import { addPoints, everyConnectedDone, fail, ok, rankEntries, shuffle } from '../common/engine.js';
 import { distanceKm, pinSchema, pointsFor, SCALE_BY_DIFFICULTY, type Pin } from '../photo-mystere/module.js';
 import { PHOTOS } from '../photo-mystere/photos.js';
@@ -8,6 +8,7 @@ import banqueEspeces from './banque-especes.fr.json' with { type: 'json' };
 import banqueLivres from './banque-livres.fr.json' with { type: 'json' };
 import banqueIdentifier from './banque-identifier.fr.json' with { type: 'json' };
 import { rechercherThemeLibre, resultatLibreSchema, suggererTermes } from './theme-libre.js';
+import { questionsEnDirect, resultatDirectSchema } from './en-direct.js';
 
 /**
  * Tirage surprise : chaque manche est tirée au hasard parmi trois modes.
@@ -34,6 +35,8 @@ export const tirageSettingsSchema = z.object({
     (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
     z.string().max(40).optional(),
   ),
+  /** Questions neuves tirées en direct (Met Museum, iNaturalist, Wikidata et Commons) ; les banques locales complètent. */
+  enDirect: z.boolean().default(true),
 });
 
 export type TirageSettings = z.infer<typeof tirageSettingsSchema>;
@@ -53,7 +56,10 @@ const identifierSchema = z.object({
   reponse: z.string().min(1),
   titre: z.string().min(1),
   /** Image locale ; absente pour les livres (les couvertures ne sont pas libres). */
-  image: z.string().startsWith('/tirage/').optional(),
+  image: z
+    .string()
+    .refine((v) => v.startsWith('/tirage/') || v.startsWith('/api/images-ouvertes?u='))
+    .optional(),
   theme: z.string().min(1),
   source: z.string().min(1),
   /** Crédit du photographe ou de la collection, quand la licence le demande (CC BY, CC BY-SA). */
@@ -234,6 +240,8 @@ export interface TirageState {
   phase: 'ready' | 'preparation' | 'guess' | 'reveal' | 'final';
   /** Présent quand l'hôte a tapé un thème libre. */
   libre: LibreEtat | null;
+  /** Tirage en direct des thèmes cochés : « attente » jusqu’au résultat, puis « pret » ou « secours ». */
+  frais: 'attente' | 'pret' | 'secours' | null;
   names: Record<string, string>;
   /** Manches tirées pour la partie, sans répétition, les trois modes mêlés. */
   entrees: Entree[];
@@ -347,6 +355,45 @@ function answerOf(entree: Entree) {
   };
 }
 
+/**
+ * Résultat du tirage en direct : les questions neuves prennent jusqu’aux deux tiers des manches, les banques locales
+ * gardent le reste (estimations, livres, chronologie). En cas d’échec, la partie garde les manches déjà tirées.
+ */
+function completerFrais(s: TirageState, outcome: JobOutcome, ctx: GameContext): TirageState {
+  if (s.phase !== 'preparation' || s.frais !== 'attente') return s;
+  const parsed = outcome.ok ? resultatDirectSchema.safeParse(outcome.value) : null;
+  const neuves: Entree[] = [];
+  if (parsed?.success) {
+    const { identifications, lieux } = parsed.data;
+    for (const q of identifications) {
+      // Leurres : les autres réponses neuves du même thème, puis celles de la banque locale.
+      const memeTheme = [
+        ...identifications.filter((x) => x.theme === q.theme).map((x) => x.reponse),
+        ...BANQUE_IDENTIFICATION.filter((e) => e.theme === q.theme).map((e) => e.reponse),
+      ];
+      const prete = preparerIdentification({ ...q, kind: 'identifier' }, memeTheme, ctx.random);
+      if (prete) neuves.push(prete);
+    }
+    for (const l of lieux) {
+      neuves.push({ kind: 'localiser', question: 'Où se trouve ce lieu ?', theme: 'Monuments', ...l });
+    }
+  }
+  const rounds = s.settings.rounds;
+  const part = Math.min(neuves.length, Math.ceil((rounds * 2) / 3));
+  const choisies = shuffle(neuves, ctx.random).slice(0, part);
+  const ids = new Set(choisies.map((e) => e.id));
+  const reste = s.entrees.filter((e) => !ids.has(e.id)).slice(0, rounds - choisies.length);
+  // Si les banques locales ne suffisent pas à compléter, on prend davantage de questions neuves.
+  const complement = shuffle(neuves, ctx.random)
+    .filter((e) => !ids.has(e.id))
+    .slice(0, Math.max(0, rounds - choisies.length - reste.length));
+  const melangees = [...choisies, ...reste, ...complement];
+  const entrees = choisies.length > 0 ? shuffle(melangees, ctx.random) : melangees;
+  const next: TirageState = { ...s, frais: choisies.length > 0 ? 'pret' : 'secours', entrees, index: 0 };
+  if (entrees.length === 0) return finish(next, ctx);
+  return beginRound(next, ctx);
+}
+
 export const tirageSurprise: GameModule<TirageState, TirageSettings> = {
   manifest: {
     id: 'tirage-surprise',
@@ -412,6 +459,8 @@ export const tirageSurprise: GameModule<TirageState, TirageSettings> = {
       settings: parsed,
       phase: 'ready',
       libre,
+      // Le thème libre remplace les thèmes cochés : pas de tirage en direct de ces thèmes dans ce cas.
+      frais: parsed.enDirect && !libre ? 'attente' : null,
       names: Object.fromEntries(players.map((p) => [p.id, p.name])),
       entrees,
       index: 0,
@@ -441,24 +490,33 @@ export const tirageSurprise: GameModule<TirageState, TirageSettings> = {
     if (s.phase !== 'ready') return fail('La partie a déjà commencé');
     // Thème libre : la recherche Wikidata se fait dans un travail hors moteur ; la première manche suit son résultat.
     if (s.libre?.etat === 'attente') return ok({ ...s, phase: 'preparation' });
+    if (s.frais === 'attente') return ok({ ...s, phase: 'preparation' });
     if (s.entrees.length === 0) return fail('Aucune question disponible');
     return ok(beginRound(s, ctx));
   },
 
   // Travail hors moteur : la recherche du thème libre sur Wikidata (réseau), jamais dans le moteur.
   pendingJob(s) {
+    if (s.phase === 'preparation' && s.frais === 'attente') {
+      return { id: 'frais', kind: 'tirage-frais', input: { themes: s.settings.themes, nombre: s.settings.rounds } };
+    }
     if (s.phase !== 'preparation' || s.libre?.etat !== 'attente') return null;
     return { id: `theme:${s.libre.theme}`, kind: 'theme-libre', input: { theme: s.libre.theme } };
   },
 
   // L'IA de l'installation, si elle existe, propose des termes pour trouver la classe ; Wikidata donne les faits.
   async runJob(job, ctx, signal) {
+    if (job.kind === 'tirage-frais') {
+      const input = job.input as { themes: string[]; nombre: number };
+      return questionsEnDirect(input.themes, input.nombre, ctx.random, signal);
+    }
     const theme = (job.input as { theme: string }).theme;
     const termes = await suggererTermes(ctx, theme, signal);
     return rechercherThemeLibre(theme, signal, termes);
   },
 
   completeJob(s, jobId, outcome, ctx) {
+    if (jobId === 'frais') return completerFrais(s, outcome, ctx);
     if (s.phase !== 'preparation' || !s.libre || jobId !== `theme:${s.libre.theme}`) return s;
     const parsed = outcome.ok ? resultatLibreSchema.safeParse(outcome.value) : null;
     if (parsed?.success) {
@@ -577,6 +635,7 @@ export const tirageSurprise: GameModule<TirageState, TirageSettings> = {
     const cible = revealed && localisation ? { lat: localisation.lat, lon: localisation.lon } : null;
     return {
       phase: s.phase,
+      frais: s.frais,
       libre: s.libre
         ? { theme: s.libre.theme, etat: s.libre.etat, erreur: s.libre.erreur, classe: s.libre.classe }
         : null,

@@ -144,7 +144,7 @@ describe('thème libre : travail complet, Wikidata simulé', () => {
   it('montre à l’hôte la classe retenue', () => {
     const h = harness({ connected: [A.id, B.id], random: mulberry32(3) });
     const init = tirageSurprise.initialize(
-      { rounds: 3, guessSeconds: 60, difficulty: 2, themeLibre: 'fleuves' },
+      { enDirect: false, rounds: 3, guessSeconds: 60, difficulty: 2, themeLibre: 'fleuves' },
       [A, B],
       h.ctx,
     );

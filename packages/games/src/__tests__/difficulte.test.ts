@@ -61,7 +61,11 @@ describe('difficulté de Photo mystère : échelle et indice', () => {
       [1, true],
       [3, false],
     ] as const) {
-      let s = photoMystere.initialize({ rounds: 1, guessSeconds: 60, difficulty: niveau }, [A, B], h.ctx);
+      let s = photoMystere.initialize(
+        { enDirect: false, rounds: 1, guessSeconds: 60, difficulty: niveau },
+        [A, B],
+        h.ctx,
+      );
       s = must(photoMystere.start(s, h.ctx));
       const pub = photoMystere.getPublicState(s) as { photo: { indice: string | null } };
       expect(pub.photo.indice !== null).toBe(attendu);

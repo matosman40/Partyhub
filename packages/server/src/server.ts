@@ -37,6 +37,7 @@ import { AiRuntime } from './ai/runtime.js';
 import { IMAGES_DEFAULTS, buildImageProviders } from './images/config.js';
 import { createGameImages } from './images/game-images.js';
 import { ImageLibrary } from './images/library.js';
+import { OpenImageCache } from './images/open-images.js';
 import { PortraitGuard, portraitFromEnv, type PortraitSettings } from './images/portrait.js';
 import { GamePhotoStore } from './game-photos/store.js';
 import { DbBackupScheduler } from './db/backup.js';
@@ -173,6 +174,7 @@ export async function createServer(opts: ServerOptions): Promise<PartyServer> {
   // Images générées (portraits, fonds) : une bibliothèque partagée par les jeux, alimentée par les fournisseurs
   // configurés (Cloudflare, ModelScope). Sans fournisseur, les jeux gardent leur rendu de secours.
   const imageLibrary = new ImageLibrary(store);
+  const openImages = new OpenImageCache({ dir: path.join(config.dataDir, 'images-ouvertes') });
   // Captures de la première partie de chaque jeu (fiche du jeu), rangées dans le dossier de données.
   const gamePhotos = new GamePhotoStore(config.dataDir);
   const imageConfig = config.images ?? { providers: [], ...IMAGES_DEFAULTS };
@@ -254,6 +256,7 @@ export async function createServer(opts: ServerOptions): Promise<PartyServer> {
     onRestart: opts.onRestart,
     ai: aiRuntime,
     imageLibrary,
+    openImages,
     gamePhotos,
     journal: opts.journal,
     store,

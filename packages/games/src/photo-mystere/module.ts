@@ -1,7 +1,8 @@
 import { z } from 'zod';
 import type { GameContext, GameModule, GameResult, PlayerRef, ScoreEntry } from '@partyhub/shared';
 import { addPoints, everyConnectedDone, fail, ok, rankEntries, shuffle } from '../common/engine.js';
-import { PHOTOS, type Photo } from './photos.js';
+import { PHOTOS, photoSchema, type Photo } from './photos.js';
+import { photosEnDirect } from './en-direct.js';
 
 /**
  * Photo mystère : une photo de lieu s’affiche, chaque joueur place un point sur la carte du monde depuis son
@@ -14,6 +15,8 @@ export const photoSettingsSchema = z.object({
   guessSeconds: z.number().int().min(20).max(180).default(90),
   /** Niveau : 1 facile (le pays est affiché), 2 moyen (le défaut), 3 difficile (score plus sévère). */
   difficulty: z.number().int().min(1).max(3).default(2),
+  /** Photos tirées en direct (Wikidata et Wikimedia Commons) à chaque partie ; la banque locale complète. */
+  enDirect: z.boolean().default(true),
 });
 
 export type PhotoSettings = z.infer<typeof photoSettingsSchema>;
@@ -47,7 +50,9 @@ export interface RoundRecord {
 
 export interface PhotoState {
   settings: PhotoSettings;
-  phase: 'ready' | 'guess' | 'reveal' | 'final';
+  phase: 'ready' | 'preparation' | 'guess' | 'reveal' | 'final';
+  /** Tirage en direct : « attente » jusqu’au résultat, puis « pret » (photos neuves) ou « secours » (banque locale). */
+  direct: 'attente' | 'pret' | 'secours' | null;
   names: Record<string, string>;
   /** Photos tirées pour cette partie. Elles portent les coordonnées : aucune vue ne les expose avant révélation. */
   photos: Photo[];
@@ -74,6 +79,11 @@ export const SCALE_BY_DIFFICULTY: Record<1 | 2 | 3, number> = { 1: 3000, 2: SCAL
 /** Points d’une manche selon la distance : décroissance exponentielle, 5 000 pile sur la cible. */
 export function pointsFor(km: number, echelleKm: number = SCALE_KM): number {
   return Math.round(MAX_POINTS * Math.exp(-km / echelleKm));
+}
+
+/** Première lettre en capitale (« mont Song » → « Mont Song »). Fonction pure. */
+export function majuscule(texte: string): string {
+  return texte.charAt(0).toLocaleUpperCase('fr') + texte.slice(1);
 }
 
 function pickPhotos(count: number, random: () => number): Photo[] {
@@ -170,6 +180,7 @@ export const photoMystere: GameModule<PhotoState, PhotoSettings> = {
     return {
       settings: parsed,
       phase: 'ready',
+      direct: parsed.enDirect ? 'attente' : null,
       names: Object.fromEntries(players.map((p) => [p.id, p.name])),
       photos: pickPhotos(parsed.rounds, ctx.random),
       index: 0,
@@ -197,8 +208,31 @@ export const photoMystere: GameModule<PhotoState, PhotoSettings> = {
 
   start(s, ctx): GameResult<PhotoState> {
     if (s.phase !== 'ready') return fail('La partie a déjà commencé');
+    // Tirage en direct : le réseau se fait dans un travail hors moteur ; la première manche suit son résultat.
+    if (s.direct === 'attente') return ok({ ...s, phase: 'preparation' });
     if (s.photos.length === 0) return fail('Aucune photo disponible');
     return ok(beginRound(s, ctx));
+  },
+
+  pendingJob(s) {
+    if (s.phase !== 'preparation' || s.direct !== 'attente') return null;
+    return { id: 'photos-en-direct', kind: 'photos-en-direct', input: { nombre: s.settings.rounds } };
+  },
+
+  runJob(job, ctx, signal) {
+    return photosEnDirect((job.input as { nombre: number }).nombre, ctx.random, signal);
+  },
+
+  completeJob(s, jobId, outcome, ctx) {
+    if (s.phase !== 'preparation' || s.direct !== 'attente' || jobId !== 'photos-en-direct') return s;
+    const parsed = outcome.ok ? z.array(photoSchema).safeParse(outcome.value) : null;
+    const neuves = parsed?.success ? parsed.data.map((p) => ({ ...p, place: majuscule(p.place) })) : [];
+    // Les photos neuves d’abord, puis la banque locale pour compléter le nombre de manches.
+    const ids = new Set(neuves.map((p) => p.id));
+    const photos = [...neuves, ...s.photos.filter((p) => !ids.has(p.id))].slice(0, s.settings.rounds);
+    const next: PhotoState = { ...s, direct: neuves.length > 0 ? 'pret' : 'secours', photos };
+    if (photos.length === 0) return finish(next, ctx);
+    return beginRound(next, ctx);
   },
 
   handleAction(s, p, type, payload, ctx): GameResult<PhotoState> {
@@ -239,6 +273,7 @@ export const photoMystere: GameModule<PhotoState, PhotoSettings> = {
     const showPhoto = photo && (s.phase === 'guess' || s.phase === 'reveal');
     return {
       phase: s.phase,
+      direct: s.direct,
       round: s.index + 1,
       total: s.photos.length,
       guessSeconds: s.settings.guessSeconds,

@@ -21,7 +21,11 @@ export function TirageHost({ publicState: pub, now }: HostViewProps) {
     return (
       <section className="pm-host fade-in">
         <h2 className="big-title">Préparation</h2>
-        <p className="muted">Recherche du thème « {pub.libre?.theme} » sur Wikidata…</p>
+        <p className="muted">
+          {pub.libre
+            ? `Recherche du thème « ${pub.libre.theme} » sur Wikidata…`
+            : 'Recherche de questions neuves : tableaux, espèces et lieux…'}
+        </p>
       </section>
     );
   }

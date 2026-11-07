@@ -6,6 +6,7 @@ interface PhotoDraft {
   rounds: number;
   guessSeconds: number;
   difficulty: number;
+  enDirect?: boolean;
 }
 
 /** Libellés des trois niveaux, dans l’ordre du curseur. */
@@ -28,6 +29,15 @@ export function PhotoSettings({ settings, disabled, onChange }: SettingsProps) {
 
   return (
     <div className="settings">
+      <label className="field checkbox">
+        <input
+          type="checkbox"
+          checked={draft.enDirect !== false}
+          disabled={disabled}
+          onChange={(e) => commit({ ...draft, enDirect: e.target.checked })}
+        />
+        <span>Nouveaux lieux à chaque partie (Wikidata et Wikimedia Commons, demande Internet)</span>
+      </label>
       <label className="field">
         <span>Photos par partie</span>
         <input

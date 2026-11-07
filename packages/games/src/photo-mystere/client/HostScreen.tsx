@@ -26,6 +26,15 @@ export function PhotoHost({ publicState: pub, now }: HostViewProps) {
     );
   }
 
+  if (pub.phase === 'preparation') {
+    return (
+      <section className="pm-host fade-in">
+        <h2 className="big-title">Préparation</h2>
+        <p className="muted">Recherche de nouveaux lieux sur Wikidata et Wikimedia Commons…</p>
+      </section>
+    );
+  }
+
   if (pub.phase === 'ready' || !pub.photo) {
     return (
       <section className="pm-host fade-in">

@@ -82,6 +82,7 @@ import { aiProviderUpdateSchema } from '../ai/settings.js';
 import type { ServerSettingsService } from '../server-settings.js';
 import { PRESETS } from '../config.js';
 import { PortraitProviderError, sniffPortrait, type PortraitGuard } from '../images/portrait.js';
+import type { OpenImageCache } from '../images/open-images.js';
 import { PORTRAIT_MAX_BYTES, portraitRequestSchema, traitsToCharacter, type PortraitErrorCode } from '@partyhub/shared';
 
 const PORTRAIT_ROUTE = '/api/characters/from-photo';
@@ -128,6 +129,8 @@ export interface AppDeps {
   ai: AiRuntime;
   /** Images générées par IA (portraits, fonds) : servies publiquement par identifiant. */
   imageLibrary?: ImageLibrary;
+  /** Relais des images ouvertes tirées en direct par les jeux (Wikimedia, Met, iNaturalist). */
+  openImages?: OpenImageCache;
   /** Captures de la première partie de chaque jeu, montrées dans la fiche. */
   gamePhotos: GamePhotoStore;
   /** Mise à jour depuis l’administration (absente hors serveur complet). */
@@ -825,6 +828,25 @@ export function createApp(deps: AppDeps): express.Express {
     res.setHeader('Content-Type', image.mime);
     res.setHeader('Cache-Control', 'public, max-age=86400, immutable');
     res.send(image.bytes);
+  });
+
+  /** Images ouvertes tirées en direct par les jeux : domaines fermés, téléchargées une fois puis gardées. */
+  api.get('/images-ouvertes', (req, res) => {
+    const cache = deps.openImages;
+    if (!cache) {
+      res.status(404).json({ error: 'Image introuvable.' });
+      return;
+    }
+    void cache.get(req.query.u).then((image) => {
+      if (!image) {
+        res.status(404).json({ error: 'Image introuvable.' });
+        return;
+      }
+      res.setHeader('Content-Type', image.mime);
+      res.setHeader('Cache-Control', 'public, max-age=86400, immutable');
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.send(image.bytes);
+    });
   });
 
   /** Fonds d’écran affichés sur chaque écran (adresses des images de la médiathèque, ou null). */

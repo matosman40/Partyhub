@@ -65,7 +65,7 @@ describe('banque du mode Estimer', () => {
 describe('déroulé d’une partie Tirage surprise', () => {
   function setup(rounds = 2, difficulty = 2, kind: 'estimer' | 'identifier' = 'estimer') {
     const h = harness({ connected: [A.id, B.id], random: mulberry32(7) });
-    let s = tirageSurprise.initialize({ rounds, guessSeconds: 60, difficulty }, [A, B], h.ctx);
+    let s = tirageSurprise.initialize({ enDirect: false, rounds, guessSeconds: 60, difficulty }, [A, B], h.ctx);
     s = kind === 'estimer' ? estimationEnTete(s) : identificationEnTete(s);
     s = must(tirageSurprise.start(s, h.ctx));
     return { h, s };
@@ -186,7 +186,7 @@ describe('points d’une identification', () => {
 describe('déroulé en mode Identifier', () => {
   function setup() {
     const h = harness({ connected: [A.id, B.id], random: mulberry32(7) });
-    let s = tirageSurprise.initialize({ rounds: 3, guessSeconds: 60, difficulty: 2 }, [A, B], h.ctx);
+    let s = tirageSurprise.initialize({ enDirect: false, rounds: 3, guessSeconds: 60, difficulty: 2 }, [A, B], h.ctx);
     s = identificationEnTete(s);
     s = must(tirageSurprise.start(s, h.ctx));
     return { h, s };
@@ -267,7 +267,11 @@ describe('mode Chronologie : lequel a été publié en premier', () => {
     let tirees = 0;
     for (let seed = 1; seed <= 20; seed++) {
       const h = harness({ connected: [A.id, B.id], random: mulberry32(seed) });
-      const s = tirageSurprise.initialize({ rounds: 10, guessSeconds: 60, difficulty: 2 }, [A, B], h.ctx);
+      const s = tirageSurprise.initialize(
+        { enDirect: false, rounds: 10, guessSeconds: 60, difficulty: 2 },
+        [A, B],
+        h.ctx,
+      );
       expect(new Set(s.entrees.map((e) => e.id)).size).toBe(s.entrees.length);
       const chrono = s.entrees.filter((e) => e.id.startsWith('chrono-'));
       for (const e of chrono) expect(e.kind).toBe('identifier');
@@ -280,7 +284,7 @@ describe('mode Chronologie : lequel a été publié en premier', () => {
 describe('mode Localiser : placer un lieu sur la carte', () => {
   function setupLieu() {
     const h = harness({ connected: [A.id, B.id], random: mulberry32(9) });
-    let s = tirageSurprise.initialize({ rounds: 3, guessSeconds: 60, difficulty: 2 }, [A, B], h.ctx);
+    let s = tirageSurprise.initialize({ enDirect: false, rounds: 3, guessSeconds: 60, difficulty: 2 }, [A, B], h.ctx);
     const i = s.entrees.findIndex((e) => e.kind === 'localiser');
     s = { ...s, entrees: [s.entrees[i >= 0 ? i : 0]!, ...s.entrees.filter((_, j) => j !== (i >= 0 ? i : 0))] };
     s = must(tirageSurprise.start({ ...s, entrees: [BANQUE_LOCALISATION[0]!, ...s.entrees] }, h.ctx));
@@ -334,7 +338,7 @@ describe('thèmes au lancement', () => {
     for (const seed of [1, 2, 3]) {
       const h = harness({ connected: [A.id, B.id], random: mulberry32(seed) });
       const s = tirageSurprise.initialize(
-        { rounds: 5, guessSeconds: 60, difficulty: 2, themes: ['Animaux'] },
+        { enDirect: false, rounds: 5, guessSeconds: 60, difficulty: 2, themes: ['Animaux'] },
         [A, B],
         h.ctx,
       );
@@ -349,7 +353,7 @@ describe('thèmes au lancement', () => {
   it('une estimation et un lieu ne sortent que dans leur thème', () => {
     const h = harness({ connected: [A.id, B.id], random: mulberry32(4) });
     const s = tirageSurprise.initialize(
-      { rounds: 8, guessSeconds: 60, difficulty: 2, themes: ['Pays'] },
+      { enDirect: false, rounds: 8, guessSeconds: 60, difficulty: 2, themes: ['Pays'] },
       [A, B],
       h.ctx,
     );
@@ -406,7 +410,7 @@ describe('thème libre : travail hors moteur', () => {
   function attente(seed = 3) {
     const h = harness({ connected: [A.id, B.id], random: mulberry32(seed) });
     const init = tirageSurprise.initialize(
-      { rounds: 4, guessSeconds: 60, difficulty: 2, themeLibre: 'fleuves' },
+      { enDirect: false, rounds: 4, guessSeconds: 60, difficulty: 2, themeLibre: 'fleuves' },
       [A, B],
       h.ctx,
     );
@@ -570,7 +574,7 @@ describe('thème libre : estimations de longueur', () => {
       ],
     };
     const init = tirageSurprise.initialize(
-      { rounds: 4, guessSeconds: 60, difficulty: 2, themeLibre: 'fleuves' },
+      { enDirect: false, rounds: 4, guessSeconds: 60, difficulty: 2, themeLibre: 'fleuves' },
       [A, B],
       h.ctx,
     );
@@ -637,7 +641,7 @@ describe('thème libre : chronologie', () => {
       ],
     };
     const init = tirageSurprise.initialize(
-      { rounds: 3, guessSeconds: 60, difficulty: 2, themeLibre: 'châteaux' },
+      { enDirect: false, rounds: 3, guessSeconds: 60, difficulty: 2, themeLibre: 'châteaux' },
       [A, B],
       h.ctx,
     );

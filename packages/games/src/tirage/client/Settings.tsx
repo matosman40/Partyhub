@@ -10,6 +10,7 @@ interface TirageDraft {
   guessSeconds: number;
   themes: string[];
   themeLibre?: string;
+  enDirect?: boolean;
 }
 
 /** Réglages de Tirage surprise : nombre de manches, temps, et thèmes cochés. Le serveur valide les valeurs. */
@@ -60,6 +61,15 @@ export function TirageSettings({ settings, disabled, onChange }: SettingsProps) 
           onChange={(e) => setDraft({ ...draft, guessSeconds: Number(e.target.value) })}
           onBlur={() => commit({ ...draft, guessSeconds: clampInt(draft.guessSeconds, 20, 180) })}
         />
+      </label>
+      <label className="field checkbox">
+        <input
+          type="checkbox"
+          checked={draft.enDirect !== false}
+          disabled={disabled}
+          onChange={(e) => commit({ ...draft, enDirect: e.target.checked })}
+        />
+        <span>Questions neuves à chaque partie (Met Museum, iNaturalist, Wikimedia Commons, demande Internet)</span>
       </label>
       <label className="field">
         <span>Thème libre (facultatif)</span>
