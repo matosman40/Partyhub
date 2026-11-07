@@ -2,6 +2,8 @@ import { z } from 'zod';
 import type { GameContext, GameModule, GameResult, JobOutcome, PlayerRef, ScoreEntry } from '@partyhub/shared';
 import { QUESTIONS, type QuizQuestion } from './questions.js';
 import { QUIZ_JOB_KIND, runQuizJob, type QuizThemesInput } from './themes.js';
+import { questionsQuizEnDirect } from './en-direct.js';
+import { questionSchema } from './questions.js';
 import {
   BOT_KEYWORDS,
   TOPIC_SECONDS_DEFAULT,
@@ -25,6 +27,8 @@ export const quizSettingsSchema = z.object({
   speedBonus: z.boolean().default(true),
   /** Niveau de difficulté : 1 facile (2 choix), 2 moyen (3 choix), 3 difficile (4 choix, le défaut). */
   difficulty: z.number().int().min(1).max(3).default(3),
+  /** Questions intégrées : une partie des questions est tirée en direct (Wikidata, Commons, Met, iNaturalist). */
+  enDirect: z.boolean().default(true),
 });
 
 export type QuizSettings = z.infer<typeof quizSettingsSchema>;
@@ -61,7 +65,10 @@ const TOPIC_TIMEOUT = 'topic-timeout';
 
 const answerSchema = z.object({ choice: z.number().int().min(0).max(3) });
 
-export type QuizPhase = 'ready' | 'topics' | 'generating' | 'question' | 'reveal' | 'final';
+export type QuizPhase = 'ready' | 'preparation' | 'topics' | 'generating' | 'question' | 'reveal' | 'final';
+
+/** Identifiant du travail de tirage en direct (questions intégrées). */
+export const QUIZ_DIRECT_JOB = 'quiz-direct';
 
 export interface QuizGain {
   correct: boolean;
@@ -304,6 +311,30 @@ function publicView(s: QuizState) {
   };
 }
 
+/**
+ * Résultat du tirage en direct : les questions neuves prennent jusqu’aux deux tiers de la partie, les questions
+ * intégrées déjà tirées complètent. Sans réseau, la partie garde ses questions intégrées.
+ */
+function completerDirect(s: QuizState, outcome: JobOutcome, ctx: GameContext): QuizState {
+  if (s.phase !== 'preparation' || s.jobId !== QUIZ_DIRECT_JOB) return s;
+  const lues = outcome.ok && Array.isArray(outcome.value) ? outcome.value : [];
+  const neuves = lues.flatMap((q) => {
+    const r = questionSchema.safeParse(q);
+    return r.success ? [r.data] : [];
+  });
+  const total = s.settings.questionCount;
+  const part = Math.min(neuves.length, Math.ceil((total * 2) / 3));
+  const reste = s.questions.slice(0, total - part);
+  const complement = neuves.slice(part, part + Math.max(0, total - part - reste.length));
+  const questions = [...neuves.slice(0, part), ...reste, ...complement];
+  for (let i = questions.length - 1; i > 0; i--) {
+    const j = Math.floor(ctx.random() * (i + 1));
+    [questions[i], questions[j]] = [questions[j]!, questions[i]!];
+  }
+  const notice = neuves.length > 0 ? null : 'Internet ne répond pas : questions intégrées.';
+  return beginQuestion({ ...s, questions, index: 0, jobId: null, notice }, ctx);
+}
+
 export const quizParty: GameModule<QuizState, QuizSettings> = {
   manifest: {
     id: 'quiz-party',
@@ -392,6 +423,8 @@ export const quizParty: GameModule<QuizState, QuizSettings> = {
     if (Object.keys(s.players).length === 0) return fail('Aucun joueur dans la salle');
     if (s.settings.source === 'players') return ok(openTopics(s, ctx));
     if (s.questions.length === 0) return fail('Aucune question disponible');
+    // Tirage en direct : courte préparation, le réseau se fait dans un travail hors moteur.
+    if (s.settings.enDirect) return ok({ ...s, phase: 'preparation', jobId: QUIZ_DIRECT_JOB });
     return ok(beginQuestion(s, ctx));
   },
 
@@ -442,6 +475,9 @@ export const quizParty: GameModule<QuizState, QuizSettings> = {
 
   // Travail demandé à l’IA : les thèmes des joueurs et le nombre de questions.
   pendingJob(s: QuizState) {
+    if (s.phase === 'preparation' && s.jobId === QUIZ_DIRECT_JOB) {
+      return { id: QUIZ_DIRECT_JOB, kind: QUIZ_DIRECT_JOB, input: { count: s.settings.questionCount } };
+    }
     if (s.phase !== 'generating' || !s.topics || !s.jobId) return null;
     const input: QuizThemesInput = {
       themes: keywordThemes(s.topics, s.players).map(({ name, keywords }) => ({ name, keywords })),
@@ -450,9 +486,15 @@ export const quizParty: GameModule<QuizState, QuizSettings> = {
     return { id: s.jobId, kind: QUIZ_JOB_KIND, input };
   },
 
-  runJob: runQuizJob,
+  runJob(job, ctx, signal) {
+    if (job.kind === QUIZ_DIRECT_JOB) {
+      return questionsQuizEnDirect((job.input as { count: number }).count, ctx.random, signal);
+    }
+    return runQuizJob(job, ctx, signal);
+  },
 
   completeJob(s: QuizState, jobId: string, outcome: JobOutcome, ctx: GameContext) {
+    if (jobId === QUIZ_DIRECT_JOB) return completerDirect(s, outcome, ctx);
     if (s.phase !== 'generating' || s.jobId !== jobId) return s;
     const generated = outcome.ok && Array.isArray(outcome.value) ? (outcome.value as QuizQuestion[]) : null;
     if (generated && generated.length > 0) {

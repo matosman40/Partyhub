@@ -18,7 +18,9 @@ const imageSchema = z.object({
   src: z
     .string()
     .min(1)
-    .refine((src) => src.startsWith('/quiz-party/'), { message: 'L’image doit être servie sous /quiz-party/' }),
+    .refine((src) => src.startsWith('/quiz-party/') || src.startsWith('/api/images-ouvertes?u='), {
+      message: 'L’image doit être servie sous /quiz-party/ ou par le relais /api/images-ouvertes',
+    }),
   alt: z.string().min(1),
   credit: z.string().min(1),
   license: z.string().min(1),

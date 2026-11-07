@@ -39,7 +39,7 @@ describe('image d’une question du quiz', () => {
   it('la vue publique transmet l’image, sans révéler la réponse pendant la question', () => {
     const h = harness({ connected: [A.id, B.id] });
     let s = quizParty.initialize(
-      { source: 'curated', questionCount: 1, answerSeconds: 20, topicSeconds: 30, speedBonus: false },
+      { enDirect: false, source: 'curated', questionCount: 1, answerSeconds: 20, topicSeconds: 30, speedBonus: false },
       PLAYERS.slice(0, 2),
       h.ctx,
     );
@@ -59,7 +59,7 @@ describe('image d’une question du quiz', () => {
   it('sans image, la vue publique ne contient pas de champ image', () => {
     const h = harness({ connected: [A.id, B.id] });
     let s = quizParty.initialize(
-      { source: 'curated', questionCount: 1, answerSeconds: 20, topicSeconds: 30, speedBonus: false },
+      { enDirect: false, source: 'curated', questionCount: 1, answerSeconds: 20, topicSeconds: 30, speedBonus: false },
       PLAYERS.slice(0, 2),
       h.ctx,
     );

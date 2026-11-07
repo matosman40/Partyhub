@@ -122,8 +122,9 @@ function playWithBots(game: GameModule, players: PlayerRef[], settings: unknown,
       }
     }
 
-    // Travail hors moteur (IA) : sans IA, la salle le termine en échec et le moteur prend le relais.
-    const job = (state as { job?: { id: string } | null }).job;
+    // Travail hors moteur (IA, contenu en direct) : comme une salle sans IA ni Internet, il se termine en échec et le
+    // moteur prend le relais (banque locale).
+    const job = game.pendingJob?.(state) ?? (state as { job?: { id: string } | null }).job;
     if (!acted && job && game.completeJob) {
       state = game.completeJob(state, job.id, { ok: false, error: 'sans IA (test)' }, h.ctx);
       acted = true;

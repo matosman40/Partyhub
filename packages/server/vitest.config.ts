@@ -5,5 +5,7 @@ export default defineConfig({
     // Sous charge (99 fichiers en parallèle), 5 s ne suffisent pas à certains tests d’intégration.
     testTimeout: 20_000,
     hookTimeout: 20_000,
+    // Aucune requête vers Internet pendant les tests (contenu en direct des jeux compris).
+    setupFiles: ['src/__tests__/reseau-coupe.ts'],
   },
 });

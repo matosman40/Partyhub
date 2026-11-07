@@ -21,7 +21,11 @@ const bob: PlayerRef = { id: 'b', name: 'Bob' };
 
 function startedGame(questionCount = 3, answerSeconds = 20, speedBonus = true) {
   const { ctx, clock, timers } = makeCtx(['a', 'b']);
-  const init = quizParty.initialize({ questionCount, answerSeconds, speedBonus }, [alice, bob], ctx) as QuizState;
+  const init = quizParty.initialize(
+    { enDirect: false, questionCount, answerSeconds, speedBonus },
+    [alice, bob],
+    ctx,
+  ) as QuizState;
   const started = quizParty.start(init, ctx);
   if (!started.ok) throw new Error(started.error);
   return { state: started.state as QuizState, ctx, clock, timers };
@@ -75,7 +79,7 @@ describe('Quiz Party : règles de score', () => {
     const { ctx } = makeCtx(['a', 'b', 'c']);
     const carl: PlayerRef = { id: 'c', name: 'Carl' };
     const init = quizParty.initialize(
-      { questionCount: 1, answerSeconds: 20, speedBonus: false },
+      { enDirect: false, questionCount: 1, answerSeconds: 20, speedBonus: false },
       [alice, bob, carl],
       ctx,
     ) as QuizState;

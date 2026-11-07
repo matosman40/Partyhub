@@ -23,6 +23,15 @@ export function QuizPlayer({ publicState: pub, playerState: me, now, send }: Pla
       />
     );
   }
+  if (pub.phase === 'preparation') {
+    return (
+      <section className="player-game fade-in">
+        <p className="big">Préparation des questions…</p>
+        <p className="muted">Regardez l’écran principal.</p>
+      </section>
+    );
+  }
+
   if (pub.phase === 'generating') {
     return (
       <section className="player-game fade-in">

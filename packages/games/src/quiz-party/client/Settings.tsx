@@ -9,6 +9,7 @@ interface QuizDraft {
   topicSeconds: number;
   speedBonus: boolean;
   difficulty: number;
+  enDirect?: boolean;
 }
 
 /** Libellés des trois niveaux, dans l'ordre du curseur (1 facile, 2 moyen, 3 difficile). */
@@ -108,6 +109,17 @@ export function QuizSettings({ settings, disabled, onChange }: SettingsProps) {
         />
         <span>Bonus de rapidité</span>
       </label>
+      {draft.source === 'curated' && (
+        <label className="field checkbox">
+          <input
+            type="checkbox"
+            checked={draft.enDirect !== false}
+            disabled={disabled}
+            onChange={(e) => commit({ ...draft, enDirect: e.target.checked })}
+          />
+          <span>Questions neuves à chaque partie (Wikidata, Commons, Met Museum, iNaturalist, demande Internet)</span>
+        </label>
+      )}
     </div>
   );
 }

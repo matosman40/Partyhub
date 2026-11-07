@@ -28,7 +28,15 @@ describe('difficulté du quiz : nombre de choix', () => {
   it('au niveau facile, une partie n’affiche que deux choix', () => {
     const h = harness({ connected: [A.id, B.id] });
     let s = quizParty.initialize(
-      { source: 'curated', questionCount: 2, answerSeconds: 20, topicSeconds: 30, speedBonus: false, difficulty: 1 },
+      {
+        enDirect: false,
+        source: 'curated',
+        questionCount: 2,
+        answerSeconds: 20,
+        topicSeconds: 30,
+        speedBonus: false,
+        difficulty: 1,
+      },
       PLAYERS.slice(0, 2),
       h.ctx,
     );
@@ -40,7 +48,7 @@ describe('difficulté du quiz : nombre de choix', () => {
   it('le niveau par défaut garde les quatre choix', () => {
     const h = harness({ connected: [A.id, B.id] });
     let s = quizParty.initialize(
-      { source: 'curated', questionCount: 1, answerSeconds: 20, topicSeconds: 30, speedBonus: false },
+      { enDirect: false, source: 'curated', questionCount: 1, answerSeconds: 20, topicSeconds: 30, speedBonus: false },
       PLAYERS.slice(0, 2),
       h.ctx,
     );

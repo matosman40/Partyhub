@@ -42,6 +42,15 @@ function QuizBoard({ publicState: pub, hostState: host, now }: HostViewProps) {
     return <p className="center big">En attente du lancement…</p>;
   }
 
+  if (pub.phase === 'preparation') {
+    return (
+      <section className="fade-in">
+        <h2 className="big-title">Préparation</h2>
+        <p className="muted">Recherche de questions neuves : lieux, capitales, tableaux et espèces…</p>
+      </section>
+    );
+  }
+
   if (pub.phase === 'topics' || pub.phase === 'generating') {
     return <KeywordTurnsBoard topics={pub.topics} remaining={remaining} generating={pub.phase === 'generating'} />;
   }
